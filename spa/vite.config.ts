@@ -1,30 +1,24 @@
-import { fileURLToPath, URL } from 'node:url'
-
-import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
+import { ConfigEnv, defineConfig } from 'vite'
 import VueDevTools from 'vite-plugin-vue-devtools'
-
-
-import { resolve } from "path";
-import svgLoader from "vite-svg-loader";
+import svgLoader from 'vite-svg-loader'
 
 // https://vitejs.dev/config/
-export default ({ mode }) => {
+export default ({ command }: ConfigEnv) => {
 
     // For development w/ HMR, load the danx library + styles directly from the directory
-    // NOTE: These are the paths relative to the mounted quasar-ui-danx directory inside the mva docker container
-    const danx = (mode === "development" ? {
-        "quasar-ui-danx": resolve(__dirname, "../quasar-ui-danx/src"),
-        "quasar-ui-danx-styles": resolve(__dirname, "../quasar-ui-danx/src/styles/index.scss")
+
+    const danx = (command === 'serve' ? {
+        'quasar-ui-danx': resolve(__dirname, '../../quasar-ui-danx/ui/src'),
+        'quasar-ui-danx-styles': resolve(__dirname, '../../quasar-ui-danx/ui/src/styles/index.scss')
     } : {
         // Import from quasar-ui-danx module for production
-        "quasar-ui-danx-styles": "quasar-ui-danx/dist/style.css"
-    });
-
-    console.log("Danx", mode, danx);
+        'quasar-ui-danx-styles': 'quasar-ui-danx/dist/style.css'
+    })
+    console.log('Danx', command, danx)
 
     return defineConfig({
-        // base: mode === "production" ? "/build/" : "",
         // publicDir: "public",
         plugins: [vue(), VueDevTools(), svgLoader()],
         // server: {
@@ -40,11 +34,11 @@ export default ({ mode }) => {
         // },
         resolve: {
             alias: {
-                '@': fileURLToPath(new URL('./src', import.meta.url)),
+                '@': resolve(__dirname, './src'),
                 ...danx
             },
-            extensions: [".mjs", ".js", ".ts", ".mts", ".jsx", ".tsx", ".json", ".vue"]
-        },
+            extensions: ['.mjs', '.js', '.cjs', '.ts', '.mts', '.jsx', '.tsx', '.json', '.vue', 'scss']
+        }
         // build: {
         //     manifest: true,
         //     outDir: "public/build",
@@ -52,5 +46,5 @@ export default ({ mode }) => {
         //         input: "src/main.ts"
         //     }
         // }
-    });
+    })
 }

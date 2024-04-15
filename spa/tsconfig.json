@@ -1,11 +1,56 @@
 {
-  "files": [],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    },
-    {
-      "path": "./tsconfig.app.json"
+    //    "extends": "@vue/tsconfig/tsconfig.dom.json",
+    "include": [
+        "env.d.ts",
+        "vite.config.ts",
+        "svg-import.d.ts",
+        "src/**/*",
+        "src/**/*.vue",
+        "tailwind.config.ts",
+        "node_modules/quasar-ui-danx/**/*"
+    ],
+    "exclude": [
+        "src/**/__tests__/*"
+    ],
+    "compilerOptions": {
+        // Specify ECMAScript target version,
+        "target": "esnext",
+        // Specify module code generation,
+        "module": "esnext",
+        // Specify library files to be included in the compilation,
+        "lib": [
+            "dom",
+            "dom.iterable",
+            "esnext"
+        ],
+        // Allow JavaScript files to be compiled,
+        "allowJs": true,
+        // Skip type checking of all declaration files (*.d.ts),
+        "skipLibCheck": true,
+        // Enable compatibility with CommonJS modules for default exports,
+        "esModuleInterop": true,
+        // Allow default imports from modules with no default export,
+        "allowSyntheticDefaultImports": true,
+        // Enable all strict type-checking options,
+        "strict": false,
+        // Disallow inconsistently-cased references to the same file,
+        "forceConsistentCasingInFileNames": true,
+        // Specify module resolution strategy,
+        "moduleResolution": "node",
+        // Include modules imported with .json extension,
+        "resolveJsonModule": true,
+        // Ensure each file can be safely transpiled without relying on other imports,
+        "isolatedModules": true,
+        // Do not emit outputs (Vite handles the output),
+        "noEmit": true,
+        // Base directory to resolve non-relative module names,
+        "composite": true,
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "./src/*"
+            ]
+        }
     }
-  ]
 }
