@@ -1,3 +1,8 @@
+@import '@quasar/extras/material-icons/material-icons.css';
+@import 'quasar/dist/quasar.sass';
+//noinspection CssUnknownTarget - This is resolved in vite.config.ts
+@import 'quasar-ui-danx-styles';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
