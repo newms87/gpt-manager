@@ -11,6 +11,8 @@
 
 ## Domain Model
 
+https://miro.com/app/board/uXjVKU0jWSA=/
+
 ### Agents
 
 * id
