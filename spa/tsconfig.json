@@ -7,7 +7,8 @@
         "src/**/*",
         "src/**/*.vue",
         "tailwind.config.ts",
-        "node_modules/quasar-ui-danx/**/*"
+        "node_modules/quasar-ui-danx/**/*",
+        "../../quasar-ui-danx/**/*"
     ],
     "exclude": [
         "src/**/__tests__/*"

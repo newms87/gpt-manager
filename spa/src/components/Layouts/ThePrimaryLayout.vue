@@ -1,26 +1,51 @@
 <template>
-    <div id="primary-layout" class="min-w-xs">
+    <div id="primary-layout" class="min-w-xs h-full flex flex-col flex-nowrap bg-slate-900 text-slate-300">
         <ThePageHeader />
-        <CollapsableSidebar min-width="0" name="primary-nav">
-            <NavigationMenu :items="adminMenu" />
-        </CollapsableSidebar>
-        <transition
-            mode="out-in"
-            :duration="300"
-        >
-            <main :key="$route.name">
-                <slot />
-            </main>
-        </transition>
+
+        <div class="flex items-stretch flex-nowrap flex-grow">
+            <CollapsableSidebar v-model:collapse="isCollapsed" min-width="5rem" name="primary-nav">
+                <NavigationMenu
+                    :items="adminMenu"
+                    :collapsed="isCollapsed"
+                    class="h-full"
+                    item-class="text-sky-700 hover:text-sky-100 hover:bg-sky-700"
+                />
+            </CollapsableSidebar>
+            <Transition
+                mode="out-in"
+                :duration="300"
+            >
+                <main :key="$route.name">
+                    <slot />
+                </main>
+            </Transition>
+        </div>
     </div>
 </template>
 <script setup lang="ts">
 import ThePageHeader from "@/components/ThePageHeader";
+import router from "@/router";
+import { FaSolidCloudBolt as DashboardIcon, FaSolidRobot as AgentsIcon } from "danx-icon";
 import { useQuasar } from "quasar";
-import { CollapsableSidebar, FlashMessages } from "quasar-ui-danx";
-import { onMounted } from "vue";
+import { CollapsableSidebar, FlashMessages, NavigationMenu } from "quasar-ui-danx";
+import { onMounted, ref } from "vue";
+
+const isCollapsed = ref(false);
 
 onMounted(() => {
     FlashMessages.notify = useQuasar().notify;
 });
+
+const adminMenu = [
+    {
+        label: "Dashboard",
+        icon: DashboardIcon,
+        onClick: () => router.push({ name: "home" })
+    },
+    {
+        label: "Agents",
+        icon: AgentsIcon,
+        onClick: () => router.push({ name: "agents" })
+    }
+];
 </script>

@@ -477,6 +477,18 @@
   resolved "https://registry.yarnpkg.com/@eslint/js/-/js-8.57.0.tgz#a5417ae8427873f1dd08b70b3574b453e67b5f7f"
   integrity sha512-Ys+3g2TaW7gADOJzPt83SJtCDhMjndcDMFVQ/Tj9iA1BfJzFKD9mAUXT3OenpuPHbI6P/myECxRJrofUsDx/5g==
 
+"@fortawesome/fontawesome-common-types@6.5.2":
+  version "6.5.2"
+  resolved "https://registry.yarnpkg.com/@fortawesome/fontawesome-common-types/-/fontawesome-common-types-6.5.2.tgz#eaf2f5699f73cef198454ebc0c414e3688898179"
+  integrity sha512-gBxPg3aVO6J0kpfHNILc+NMhXnqHumFxOmjYCFfOiLZfwhnnfhtsdA2hfJlDnj+8PjAs6kKQPenOTKj3Rf7zHw==
+
+"@fortawesome/free-solid-svg-icons@^6.5.2":
+  version "6.5.2"
+  resolved "https://registry.yarnpkg.com/@fortawesome/free-solid-svg-icons/-/free-solid-svg-icons-6.5.2.tgz#9b40b077b27400a5e9fcbf2d15b986c7be69e9ca"
+  integrity sha512-QWFZYXFE7O1Gr1dTIp+D6UcFUF0qElOnZptpi7PBUMylJh+vFmIedVe1Ir6RM1t2tEQLLSV1k7bR4o92M+uqlw==
+  dependencies:
+    "@fortawesome/fontawesome-common-types" "6.5.2"
+
 "@heroicons/vue@v1":
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/@heroicons/vue/-/vue-1.0.6.tgz#d8b90734b436eb5a87f40cc300b64a0fb0031f7f"
@@ -1479,6 +1491,11 @@ csstype@^3.1.3:
   version "3.1.3"
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.1.3.tgz#d80ff294d114fb0e6ac500fbf85b60137d7eff81"
   integrity sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==
+
+danx-icon@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/danx-icon/-/danx-icon-1.0.2.tgz#04d5d2fb90ccd1525c628094d62615ac8bd8a67e"
+  integrity sha512-Rr4e+h/I8sBodD3Vrr+ViUNEUTsPCPe+YmPFpWcIwEZuIKNwELolbjxencxO7zHbCLvQ7Ulp1bHacOaeUEmFPw==
 
 data-view-buffer@^1.0.1:
   version "1.0.1"
@@ -3108,10 +3125,10 @@ punycode@^2.1.0:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.1.tgz#027422e2faec0b25e1549c3e1bd8309b9133b6e5"
   integrity sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==
 
-quasar-ui-danx@^0.2.23:
-  version "0.2.23"
-  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.2.23.tgz#2abe66dc9f1a07e66bbfa0c73b7823b78cbb83d5"
-  integrity sha512-kMFj97XeuKtu9mAu18x6Usqe2fWSxcrHOHZiQRgfx7k0vQDeSw/pOPrS5u0/+pIOKnbMt9H/jtOSAyHqDMfslg==
+quasar-ui-danx@^0.3.8:
+  version "0.3.8"
+  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.3.8.tgz#6c60218ace3d66486a0988fc86e9e4a8f3822d69"
+  integrity sha512-y0IF+omefadzEdLATVCHa7MS9OxUUmNPGOvgdFvPoXA4dKH2YPfRgXSeXKTUoS4EDN68rw3epo2qTPNBEfkWUw==
   dependencies:
     "@heroicons/vue" v1
     "@tinymce/tinymce-vue" "^5.1.1"

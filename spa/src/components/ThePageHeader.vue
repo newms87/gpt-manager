@@ -1,6 +1,6 @@
 <template>
     <QToolbar>
-        <QToolbarTitle class="bg-primary text-white py-2 bg-green-500">
+        <QToolbarTitle class="bg-sky-800 py-2">
             <QBtn
                 flat
                 round
@@ -12,8 +12,8 @@
     </QToolbar>
 </template>
 <script setup lang="ts">
-import { QBtn, QToolbar, QToolbarTitle } from 'quasar'
-import { useRoute } from 'vue-router'
+import { QBtn, QToolbar, QToolbarTitle } from "quasar";
+import { useRoute } from "vue-router";
 
-const route = useRoute()
+const route = useRoute();
 </script>
