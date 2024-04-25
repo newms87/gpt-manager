@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AgentsController;
+use App\Http\Routes\ActionRoute;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -12,3 +14,5 @@ Route::get('/', function () {
         ],
     ];
 });
+
+ActionRoute::routes('agents', new AgentsController);
