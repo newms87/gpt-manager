@@ -1,4 +1,4 @@
-.danx-table-summary-tr {
+.dx-table-summary-tr {
     @apply bg-slate-600;
 
     &.has-selection {
@@ -9,11 +9,23 @@
         @apply opacity-50;
     }
 
-    .danx-table-summary-td {
+    .dx-table-summary-td {
         @apply font-bold bg-slate-600 pl-7;
 
         &.has-selection {
             @apply bg-slate-200 text-slate-600 pl-6;
         }
     }
+}
+
+.q-field {
+    .q-field__inner {
+        .q-field__control {
+            @apply bg-slate-600 text-slate-200 rounded pl-4;
+        }
+    }
+}
+
+.q-date {
+    @apply bg-slate-600 text-slate-200;
 }

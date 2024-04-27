@@ -16,7 +16,6 @@ export const filterFields = computed(() => [
                 type: "multi-select",
                 name: "model",
                 label: "AI Model",
-                placeholder: "All Models",
                 options: filterFieldOptions.value["models"]
             }
         ]

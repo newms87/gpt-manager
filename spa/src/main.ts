@@ -2,6 +2,7 @@ import "./assets/main.scss";
 import { LocalStorage, Notify, Quasar } from "quasar";
 
 import { applyCssVars, request } from "quasar-ui-danx";
+import { default as twColors } from "tailwindcss/colors";
 
 import { createApp } from "vue";
 // eslint-disable-next-line import/extensions
@@ -22,7 +23,11 @@ request.configure({ baseUrl: import.meta.env.VITE_API_URL });
 const app = createApp(App);
 app.use(Quasar, {
     plugins: { Notify, LocalStorage },
-    config: {}
+    config: {
+        brand: {
+            primary: twColors.sky[800]
+        }
+    }
 });
 
 app.use(router);
