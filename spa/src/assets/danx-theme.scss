@@ -50,3 +50,7 @@ body {
         @apply px-6 py-4;
     }
 }
+
+.dx-collapsable-sidebar.primary-nav {
+    @apply border-r border-slate-500;
+}

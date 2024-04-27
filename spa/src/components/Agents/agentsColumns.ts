@@ -1,5 +1,6 @@
 import { filterActions } from "@/components/Agents/agentsActions";
 import { activatePanel } from "@/components/Agents/agentsControls";
+import { fDate } from "quasar-ui-danx";
 
 export const columns = [
     {
@@ -25,5 +26,13 @@ export const columns = [
         field: "temperature",
         sortable: true,
         required: true
+    },
+    {
+        name: "created_at",
+        label: "Created Date",
+        field: "created_at",
+        sortable: true,
+        align: "left",
+        format: fDate
     }
 ];

@@ -3,7 +3,7 @@
         <ThePageHeader />
 
         <div class="flex items-stretch flex-nowrap flex-grow">
-            <CollapsableSidebar v-model:collapse="isCollapsed" min-width="5rem" name="primary-nav">
+            <CollapsableSidebar v-model:collapse="isCollapsed" min-width="5rem" name="primary-nav" class="primary-nav">
                 <NavigationMenu
                     :items="adminMenu"
                     :collapsed="isCollapsed"
