@@ -21,7 +21,7 @@ export const Agents = {
     batchAction(action: string, targets: ActionTargetItem[], data: object) {
         return request.post(API_URL + `agents/batch-action`, { action, id: targets.map(r => r.id), data });
     },
-    download(filter) {
+    export(filter) {
         return downloadFile(API_URL + `agents/export`, "agents.csv", { filter });
     }
 };

@@ -1,5 +1,5 @@
 import { filterActions } from "@/components/Agents/agentsActions";
-import { activatePanel } from "@/components/Agents/agentsControls";
+import { AgentController } from "@/components/Agents/agentsControls";
 import { fDate } from "quasar-ui-danx";
 
 export const columns = [
@@ -11,7 +11,7 @@ export const columns = [
         sortable: true,
         required: true,
         actionMenu: filterActions({ menu: true }),
-        onClick: (agent) => activatePanel(agent, "edit")
+        onClick: (agent) => AgentController.activatePanel(agent, "edit")
     },
     {
         name: "model",
@@ -24,6 +24,7 @@ export const columns = [
         name: "temperature",
         label: "Temperature",
         field: "temperature",
+        align: "left",
         sortable: true,
         required: true
     },

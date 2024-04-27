@@ -1,11 +1,11 @@
-import { activatePanel, refreshAll } from "@/components/Agents/agentsControls";
+import { AgentController } from "@/components/Agents/agentsControls";
 import { Agents } from "@/routes/agents";
 import { ConfirmDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
 const onAction = Agents.applyAction;
 const onBatchAction = Agents.batchAction;
-const onFinish = refreshAll;
+const onFinish = AgentController.refreshAll;
 
 function formatConfirmText(actionText, agents) {
     return Array.isArray(agents) ? `${actionText} ${agents?.length} agents` : `${actionText} ${agents.name}`;
@@ -24,7 +24,7 @@ const items = [
         label: "Edit",
         name: "edit",
         menu: true,
-        onAction: async (action, target) => activatePanel(target, "edit")
+        onAction: async (action, target) => AgentController.activatePanel(target, "edit")
     }
 ];
 
