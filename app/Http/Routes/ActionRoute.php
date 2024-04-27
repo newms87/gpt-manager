@@ -5,6 +5,7 @@ namespace App\Http\Routes;
 
 use App\Http\Controllers\ActionController;
 use Flytedan\DanxLaravel\Requests\PagerRequest;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\RouteRegistrar;
 use Illuminate\Support\Facades\Route;
 
@@ -20,7 +21,7 @@ class ActionRoute extends Route
         // Strict naming / prefixing rules to ensure consistency
         $prefix = str_replace('.', '/', $name);
 
-        return static::prefix($prefix)->group(function () use ($name, $controller) {
+        return static::prefix($prefix)->withoutMiddleware([VerifyCsrfToken::class])->group(function () use ($name, $controller) {
             $getPost = ['GET', 'HEAD', 'POST'];
             // GET Data - NOTE: POST is included since filters can be too long for URLs in some browsers
             self::addRoute($getPost, 'list', [$controller::class, 'list'])->name($name . '.list');

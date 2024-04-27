@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Agent extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
-
+    
     public function team()
     {
         return $this->belongsTo(Team::class);

@@ -15,7 +15,7 @@
                 mode="out-in"
                 :duration="300"
             >
-                <main :key="$route.name">
+                <main :key="$route.name" class="w-full">
                     <slot />
                 </main>
             </Transition>
