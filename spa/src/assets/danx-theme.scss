@@ -54,3 +54,7 @@ body {
 .dx-collapsable-sidebar.primary-nav {
     @apply border-r border-slate-500;
 }
+
+.dx-batch-actions {
+    @apply px-5 bg-slate-600 rounded;
+}
