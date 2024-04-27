@@ -26,13 +26,13 @@ class ActionRoute extends Route
             // GET Data - NOTE: POST is included since filters can be too long for URLs in some browsers
             self::addRoute($getPost, 'list', [$controller::class, 'list'])->name($name . '.list');
             self::addRoute($getPost, 'summary', [$controller::class, 'summary'])->name($name . '.summary');
-            self::addRoute($getPost, 'filterFieldOptions', [$controller::class, 'filterFieldOptions'])->name($name . '.filterFieldOptions');
+            self::addRoute($getPost, 'filter-field-options', [$controller::class, 'filterFieldOptions'])->name($name . '.filterFieldOptions');
             self::get('{id}/details', fn($model) => $controller->details($controller->repo()->instance($model)))->name($name . '.details');
             self::get('export', [$controller::class, 'export'])->name($name . '.export');
 
             // Actions
-            self::post('{id}/applyAction', fn($model, PagerRequest $request) => $controller->applyAction($controller->repo()->instance($model), $request))->name($name . '.apply-action');
-            self::post('batchAction', [$controller::class, 'batchAction'])->name($name . '.batch-action');
+            self::post('{id}/apply-action', fn($model, PagerRequest $request) => $controller->applyAction($controller->repo()->instance($model), $request))->name($name . '.apply-action');
+            self::post('batch-action', [$controller::class, 'batchAction'])->name($name . '.batch-action');
 
         });
     }

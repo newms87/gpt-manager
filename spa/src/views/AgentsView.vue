@@ -16,6 +16,7 @@
             v-if="activeItem"
             v-model="activePanel"
             :panels="panels"
+            @close="activeItem = null"
         />
     </ActionTableLayout>
 </template>

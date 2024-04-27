@@ -12,6 +12,9 @@ export const Agents = {
     details(agent) {
         return request.get(API_URL + `agents/${agent.id}/details`);
     },
+    filterFieldOptions() {
+        return request.get(API_URL + "agents/filter-field-options");
+    },
     applyAction(action: string, target: ActionTargetItem, data: object) {
         return request.post(API_URL + `agents/${target.id}/apply-action`, { action, data });
     },
