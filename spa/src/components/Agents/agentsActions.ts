@@ -13,18 +13,19 @@ function formatConfirmText(actionText, agents) {
 
 const items = [
     {
-        name: "delete",
-        label: "Delete",
-        menu: true,
-        batch: true,
-        onFinish,
-        vnode: ads => h(ConfirmDialog, { confirmText: formatConfirmText("Delete", ads) })
-    },
-    {
         label: "Edit",
         name: "edit",
         menu: true,
         onAction: async (action, target) => AgentController.activatePanel(target, "edit")
+    },
+    {
+        name: "delete",
+        label: "Delete",
+        class: "text-red-500",
+        menu: true,
+        batch: true,
+        onFinish,
+        vnode: ads => h(ConfirmDialog, { confirmText: formatConfirmText("Delete", ads) })
     }
 ];
 

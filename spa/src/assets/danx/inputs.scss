@@ -1,0 +1,34 @@
+
+.q-field {
+	.q-field__inner {
+		.q-field__control {
+			height: auto;
+			@apply bg-slate-600 text-slate-200 rounded pl-4;
+		}
+	}
+
+	&.q-field--labeled.q-field--dense {
+		.q-field__native {
+			padding-top: 1.5em;
+			padding-bottom: .5em;
+		}
+	}
+
+	.q-field__label {
+		@apply text-slate-400 transition-colors;
+	}
+
+	.q-field__native {
+		@apply text-slate-200;
+	}
+
+	&.q-field--focused {
+		.q-field__label {
+			@apply text-slate-300;
+		}
+	}
+}
+
+.q-date {
+	@apply bg-slate-600 text-slate-200;
+}

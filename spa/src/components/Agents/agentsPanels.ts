@@ -1,10 +1,11 @@
 import { AgentController } from "@/components/Agents/agentsControls";
+import AgentInfo from "@/components/Agents/Panels/AgentInfo";
 import { computed, h } from "vue";
 
 export const panels = computed(() => [
-    {
-        name: "edit-agent",
-        label: "Edit Agent",
-        vnode: () => h("div", "Edit Agent " + AgentController.activeItem.value.name)
-    }
+	{
+		name: "edit",
+		label: "Details",
+		vnode: () => h(AgentInfo, { agent: AgentController.activeItem.value })
+	}
 ]);
