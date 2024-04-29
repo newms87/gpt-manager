@@ -4,9 +4,10 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { RenderedForm, TextField } from "quasar-ui-danx";
+import { AgentController } from "@/components/Agents/agentsControls";
+import { NumberField, RenderedForm, SelectField, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
-import { shallowRef } from "vue";
+import { computed, h } from "vue";
 
 interface Agent {
 	name: string;
@@ -20,17 +21,38 @@ const props = defineProps<{
 
 defineEmits(["change"]);
 
-const input = shallowRef({
+const input = computed(() => ({
 	name: props.agent.name,
 	temperature: props.agent.temperature,
 	model: props.agent.model
-});
+}));
+
 const agentForm: Form = {
 	fields: [
 		{
 			name: "name",
 			component: TextField,
 			label: "Agent Name",
+			required: true
+		},
+		{
+			name: "description",
+			vnode: (props) => h(TextField, { ...props, type: "textarea" }),
+			label: "Description"
+		},
+		{
+			name: "model",
+			vnode: (props) => h(SelectField, {
+				...props,
+				options: AgentController.getFieldOptions("models")
+			}),
+			label: "Model",
+			required: true
+		},
+		{
+			name: "temperature",
+			component: NumberField,
+			label: "Temperature",
 			required: true
 		}
 	]
