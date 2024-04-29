@@ -130,8 +130,8 @@ abstract class ActionController extends Controller
     public function applyAction($model, PagerRequest $request)
     {
         $input  = $request->input();
-        $action = $input['action'] ?? null;
-        $data   = $input['data'] ?? [];
+        $action = $input['action'] ?? $request->get('action');
+        $data   = $input['data'] ?? $request->get('data', []);
 
         try {
             $result = $this->repo()->applyAction($action, $model, $data);
