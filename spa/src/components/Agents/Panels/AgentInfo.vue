@@ -51,7 +51,7 @@ const agentForm: Form = {
 		},
 		{
 			name: "temperature",
-			component: NumberField,
+			vnode: (props) => h(NumberField, { ...props }),
 			label: "Temperature",
 			required: true
 		}

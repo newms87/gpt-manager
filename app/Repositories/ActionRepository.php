@@ -54,9 +54,10 @@ abstract class ActionRepository
     /**
      * The dynamic and / or static list of options for the filterable fields for the model table
      *
+     * @param array|null $filter
      * @return array
      */
-    public function filterFieldOptions($filter = [])
+    public function filterFieldOptions(?array $filter = []): array
     {
         return [];
     }

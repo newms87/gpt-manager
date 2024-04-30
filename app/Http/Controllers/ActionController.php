@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Repositories\ActionRepository;
 use Exception;
 use Flytedan\DanxLaravel\Helpers\FileHelper;
+use Flytedan\DanxLaravel\Models\Audit\ErrorLog;
 use Flytedan\DanxLaravel\Requests\PagerRequest;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -78,6 +79,7 @@ abstract class ActionController extends Controller
     /**
      * @param PagerRequest $request
      * @return AnonymousResourceCollection
+     * @throws Exception
      */
     public function list(PagerRequest $request)
     {
@@ -146,6 +148,7 @@ abstract class ActionController extends Controller
                 'error'   => true,
                 'message' => $throwable->getMessage(),
             ];
+            ErrorLog::logException('ERROR', $throwable);
 
             return response($response, 400);
         }

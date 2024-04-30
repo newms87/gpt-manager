@@ -7,10 +7,26 @@
 		}
 	}
 
-	&.q-field--labeled.q-field--dense {
+	&.q-input {
 		.q-field__native {
 			padding-top: 1.5em;
 			padding-bottom: .5em;
+		}
+
+		&.dx-number-field {
+			&.dx-prepend-label {
+				.q-field__control {
+					@apply p-0 rounded overflow-hidden;
+				}
+
+				.q-field__prepend {
+					@apply text-sm h-auto px-4 bg-slate-400 text-slate-800;
+				}
+
+				.q-field__native {
+					@apply py-2 text-right text-slate-200 pr-4;
+				}
+			}
 		}
 	}
 
