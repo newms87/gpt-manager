@@ -2,10 +2,11 @@
 
 namespace Database\Factories\Agent;
 
+use App\Models\Agent\Thread;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Agent\Thread>
+ * @extends Factory<Thread>
  */
 class ThreadFactory extends Factory
 {
@@ -17,7 +18,7 @@ class ThreadFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+
         ];
     }
 }

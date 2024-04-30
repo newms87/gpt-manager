@@ -658,16 +658,16 @@
         },
         {
             "name": "flytedan/danx-laravel",
-            "version": "1.0.35",
+            "version": "1.0.36",
             "source": {
                 "type": "git",
                 "url": "https://github.com/flytedan/danx-laravel.git",
-                "reference": "1a123c8070a75258c90f3e8a94504199bbe619ea"
+                "reference": "30ef940ec8410f1efadb054b95245ac4ef11cb78"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/flytedan/danx-laravel/zipball/1a123c8070a75258c90f3e8a94504199bbe619ea",
-                "reference": "1a123c8070a75258c90f3e8a94504199bbe619ea",
+                "url": "https://api.github.com/repos/flytedan/danx-laravel/zipball/30ef940ec8410f1efadb054b95245ac4ef11cb78",
+                "reference": "30ef940ec8410f1efadb054b95245ac4ef11cb78",
                 "shasum": ""
             },
             "require": {
@@ -712,9 +712,9 @@
             "description": "Danx Auditing, Logging, and Helpers",
             "support": {
                 "issues": "https://github.com/flytedan/danx-laravel/issues",
-                "source": "https://github.com/flytedan/danx-laravel/tree/1.0.35"
+                "source": "https://github.com/flytedan/danx-laravel/tree/1.0.36"
             },
-            "time": "2024-04-30T08:01:24+00:00"
+            "time": "2024-04-30T16:09:11+00:00"
         },
         {
             "name": "fruitcake/php-cors",

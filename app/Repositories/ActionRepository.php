@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 abstract class ActionRepository
 {
-    /** @var string|Model */
     public static string $model;
 
     /**
+     * Returns an empty model instance
      * @return Model
      * @throws Exception
      */
@@ -26,7 +26,14 @@ abstract class ActionRepository
         return new static::$model;
     }
 
-    public function instance($id)
+    /**
+     * Returns an instantiated model matching the ID
+     *
+     * @param $id
+     * @return Model|null
+     * @throws Exception
+     */
+    public function instance($id): ?Model
     {
         return $this->model()->find($id);
     }
@@ -36,19 +43,32 @@ abstract class ActionRepository
         return $this->model()->query();
     }
 
+    /**
+     * The query that will return the list of items based on the applied filter
+     * NOTE: you should use $this->query()->with(['relationship']) method to eager load relationships for better
+     * performance
+     *
+     * @return Builder
+     */
     public function listQuery(): Builder
     {
         return $this->query();
     }
 
-    public function summary($filter = [])
+    /**
+     * Returns a summary of the item list based on the applied filter
+     *
+     * @param array $filter
+     * @return array|object
+     */
+    public function summary(array $filter = []): array|object
     {
         return $this->query()->select([
             DB::raw('COUNT(*) as count'),
         ])
             ->filter($filter)
             ->getQuery()
-            ->first();
+            ->first() ?? [];
     }
 
     /**
@@ -62,6 +82,15 @@ abstract class ActionRepository
         return [];
     }
 
+    /**
+     * Applies the action to the model
+     *
+     * @param $action
+     * @param $model
+     * @param $data
+     * @return mixed
+     * @throws ValidationError
+     */
     public function applyAction($action, $model, $data)
     {
         // Handle the action
@@ -101,7 +130,7 @@ abstract class ActionRepository
      * @param array $filter
      * @return array
      */
-    public function export($filter = [])
+    public function export(array $filter = [])
     {
         return $this->query()
             ->filter($filter)

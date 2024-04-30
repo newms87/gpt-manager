@@ -1,14 +1,15 @@
 <template>
-    <ActionTableLayout
-        :controller="AgentController"
-        table-class="bg-slate-600"
-        show-filters
-        refresh-button
-        :filters="filters"
-        :actions="actions"
-        :columns="columns"
-        :panels="panels"
-    />
+	<ActionTableLayout
+		:controller="AgentController"
+		table-class="bg-slate-600"
+		filter-class="bg-slate-500"
+		show-filters
+		refresh-button
+		:filters="filters"
+		:actions="actions"
+		:columns="columns"
+		:panels="panels"
+	/>
 </template>
 <script setup>
 import { actions } from "@/components/Agents/agentsActions";
