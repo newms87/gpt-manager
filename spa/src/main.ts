@@ -22,12 +22,12 @@ request.configure({ baseUrl: import.meta.env.VITE_API_URL });
 
 const app = createApp(App);
 app.use(Quasar, {
-    plugins: { Notify, LocalStorage },
-    config: {
-        brand: {
-            primary: twColors.sky[800]
-        }
-    }
+	plugins: { Notify, LocalStorage },
+	config: {
+		brand: {
+			primary: twColors.sky[800]
+		}
+	}
 });
 
 app.use(router);

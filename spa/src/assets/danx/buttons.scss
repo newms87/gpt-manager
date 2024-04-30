@@ -1,11 +1,11 @@
 .dx-action-button {
-    @apply bg-slate-600 text-slate-200 transition-all cursor-pointer rounded outline outline-transparent;
+	@apply bg-slate-600 text-slate-200 transition-all cursor-pointer rounded outline outline-transparent;
 
-    &.dx-column-action-menu:hover {
-        @apply bg-slate-500 outline-slate-200;
-    }
+	&.dx-column-action-menu:hover {
+		@apply bg-slate-500 outline-slate-200;
+	}
 }
 
 .dx-batch-actions {
-    @apply px-5 bg-slate-600 rounded;
+	@apply px-5 bg-slate-600 rounded;
 }
