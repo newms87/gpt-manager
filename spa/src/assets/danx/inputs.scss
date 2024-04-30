@@ -9,7 +9,7 @@
 
 	&.q-input {
 		.q-field__native {
-			padding-top: 1.5em;
+			padding-top: .4em;
 			padding-bottom: .5em;
 		}
 
@@ -41,6 +41,22 @@
 	&.q-field--focused {
 		.q-field__label {
 			@apply text-slate-300;
+		}
+	}
+
+	&.dx-select-field {
+		.q-field__native {
+			@apply py-3;
+		}
+
+		&.q-field--labeled {
+			.q-field__native {
+				@apply py-1;
+
+				.q-field__input {
+					min-height: 0;
+				}
+			}
 		}
 	}
 }

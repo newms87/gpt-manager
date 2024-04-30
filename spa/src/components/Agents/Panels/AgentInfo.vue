@@ -13,6 +13,7 @@ interface Agent {
 	name: string;
 	model: string;
 	temperature: string;
+	description: string;
 }
 
 const props = defineProps<{
@@ -24,7 +25,8 @@ defineEmits(["change"]);
 const input = computed(() => ({
 	name: props.agent.name,
 	temperature: props.agent.temperature,
-	model: props.agent.model
+	model: props.agent.model,
+	description: props.agent.description
 }));
 
 const agentForm: Form = {
