@@ -1,13 +1,14 @@
 .dx-dialog {
 	.dx-dialog-card {
-		@apply bg-slate-800;
+		@apply bg-slate-800 shadow-none;
 	}
 
 	.dx-dialog-header {
-		@apply p-0;
+		@apply p-0 bg-slate-700;
 	}
 
 	.dx-dialog-title {
+		@apply px-4 py-2 text-xl;
 	}
 
 	.dx-dialog-subtitle {
@@ -15,17 +16,22 @@
 	}
 
 	.dx-dialog-content {
+		@apply p-6;
 	}
 
 	.dx-dialog-actions {
 	}
 
 	.dx-dialog-button {
-		@apply bg-slate-200 text-slate-600 rounded-none;
+		@apply rounded-none w-full;
+	}
 
-		&.dx-dialog-button-confirm {
-			@apply bg-sky-600 text-slate-200;
-		}
+	.dx-dialog-button-cancel {
+		@apply flex-grow bg-slate-300 text-slate-600;
+	}
+
+	.dx-dialog-button-confirm {
+		@apply flex-grow bg-sky-800 text-slate-200;
 	}
 
 	.dx-close-button {

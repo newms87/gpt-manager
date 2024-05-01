@@ -10,8 +10,8 @@ const onFinish = result => {
 	AgentController.refreshAll();
 };
 
-function formatConfirmText(actionText, agents) {
-	return Array.isArray(agents) ? `${actionText} ${agents?.length} agents` : `${actionText} ${agents.name}`;
+function nameOrCount(agents) {
+	return Array.isArray(agents) ? `${agents?.length} agents` : `${agents.name}`;
 }
 
 const items = [
@@ -33,7 +33,10 @@ const items = [
 		menu: true,
 		batch: true,
 		onFinish,
-		vnode: ads => h(ConfirmDialog, { confirmText: formatConfirmText("Delete", ads) })
+		vnode: ads => h(ConfirmDialog, { confirmText: `Delete ${nameOrCount(ads)}`, confirmClass: "bg-red-900" }, {
+			title: () => "Delete Agent",
+			default: () => `Are you sure you want to delete ${nameOrCount(ads)}?`
+		})
 	}
 ];
 
