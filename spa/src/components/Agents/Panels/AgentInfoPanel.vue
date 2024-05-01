@@ -9,13 +9,6 @@ import { NumberField, RenderedForm, SelectField, TextField } from "quasar-ui-dan
 import { Form } from "quasar-ui-danx/types";
 import { computed, h } from "vue";
 
-interface Agent {
-	name: string;
-	model: string;
-	temperature: string;
-	description: string;
-}
-
 const props = defineProps<{
 	agent: Agent,
 }>();
