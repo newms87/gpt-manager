@@ -22,6 +22,13 @@ class Agent extends Model implements AuditableContract
         'description',
     ];
 
+    public function casts()
+    {
+        return [
+            'functions' => 'json',
+        ];
+    }
+
     public function team()
     {
         return $this->belongsTo(Team::class);
@@ -42,10 +49,15 @@ class Agent extends Model implements AuditableContract
         return $this->belongsToMany(WorkflowJob::class);
     }
 
+    public static function getAiModelNames(): array
+    {
+        return array_keys(config('ai.models'));
+    }
+
     public static function booted()
     {
         static::creating(function (Agent $agent) {
-            $agent->team_id = $agent->team_id ?? user()->currentTeam->id;
+            $agent->team_id = $agent->team_id ?? user()->team_id;
         });
     }
 }

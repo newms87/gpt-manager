@@ -13,13 +13,13 @@ return new class extends Migration {
         Schema::create('agents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('team_id')->constrained();
-            $table->foreignId('knowledge_id')->constrained();
+            $table->foreignId('knowledge_id')->nullable()->constrained();
             $table->string('name');
-            $table->string('description', 1024);
-            $table->string('model');
-            $table->decimal('temperature', 5, 2);
+            $table->string('description', 1024)->default('');
+            $table->string('model')->default('');
+            $table->decimal('temperature', 5, 2)->default(0);
             $table->json('functions')->nullable();
-            $table->text('prompt');
+            $table->text('prompt')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

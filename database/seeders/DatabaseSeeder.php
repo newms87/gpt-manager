@@ -2,23 +2,32 @@
 
 namespace Database\Seeders;
 
+use App\Models\Agent\Agent;
+use App\Models\Team\Team;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $team = Team::firstWhere('name', 'Team Dan');
+        if (!$team) {
+            $team = Team::factory()->create([
+                'name' => 'Team Dan',
+            ]);
+        }
 
-        User::factory()->create([
-            'name'  => 'Test User',
-            'email' => 'dan@sagesweeper.com',
+        if (User::where('email', 'dan@sagesweeper.com')->doesntExist()) {
+            User::factory()->create([
+                'name'    => 'Daniel Newman',
+                'email'   => 'dan@sagesweeper.com',
+                'team_id' => $team,
+            ]);
+        }
+
+        Agent::factory()->count(20)->create([
+            'team_id' => $team->id,
         ]);
     }
 }

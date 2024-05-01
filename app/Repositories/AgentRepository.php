@@ -10,10 +10,8 @@ class AgentRepository extends ActionRepository
 
     public function filterFieldOptions(?array $filter = []): array
     {
-        $models = $this->query()->select(['model'])->distinct()->pluck('model');
-
         return [
-            'models' => $models,
+            'models' => Agent::getAiModelNames(),
         ];
     }
 }
