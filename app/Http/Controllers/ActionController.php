@@ -125,11 +125,11 @@ abstract class ActionController extends Controller
     }
 
     /**
-     * @param Model        $model
+     * @param Model|null   $model
      * @param PagerRequest $request
      * @return Response
      */
-    public function applyAction($model, PagerRequest $request)
+    public function applyAction(?Model $model, PagerRequest $request)
     {
         $input  = $request->input();
         $action = $input['action'] ?? $request->get('action');

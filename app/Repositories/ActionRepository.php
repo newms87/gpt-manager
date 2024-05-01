@@ -85,17 +85,17 @@ abstract class ActionRepository
     /**
      * Applies the action to the model
      *
-     * @param string $action The name of the action to perform
-     * @param Model  $model  The model instance to apply the action to
-     * @param array  $data   The data to apply to the model
+     * @param string     $action The name of the action to perform
+     * @param Model|null $model  The model instance to apply the action to
+     * @param array      $data   The data to apply to the model
      * @return mixed|bool|null
      * @throws ValidationError
      */
-    public function applyAction(string $action, Model $model, array $data)
+    public function applyAction(string $action, ?Model $model, array $data)
     {
         // Handle the action
         return match ($action) {
-            'create' => $model->fill($data)->save(),
+            'create' => $this->model()->fill($data)->save(),
             'update' => $model->update($data),
             'delete' => $model->delete(),
             default => throw new ValidationError("Invalid action: " . $action)

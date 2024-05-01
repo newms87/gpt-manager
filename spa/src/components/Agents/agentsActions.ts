@@ -1,7 +1,7 @@
 import { AgentController } from "@/components/Agents/agentsControls";
 import { Agents } from "@/routes/agents";
-import { ConfirmDialog, useActions } from "quasar-ui-danx";
-import { h } from "vue";
+import { ConfirmDialog, TextField, useActions } from "quasar-ui-danx";
+import { h, ref } from "vue";
 
 const onAction = Agents.applyAction;
 const onBatchAction = Agents.batchAction;
@@ -14,7 +14,23 @@ function nameOrCount(agents) {
 	return Array.isArray(agents) ? `${agents?.length} agents` : `${agents.name}`;
 }
 
+const newAgentName = ref("");
+
 const items = [
+	{
+		name: "create",
+		label: "Create Agent",
+		vnode: () => h(ConfirmDialog, { confirmText: "Create Agent" }, {
+			title: () => "Create Agent",
+			default: () => h(TextField, {
+				modelValue: newAgentName.value,
+				label: "Name",
+				"onUpdate:model-value": value => newAgentName.value = value
+			})
+		}),
+		onAction: (action, target) => Agents.applyAction(action, target, { name: newAgentName.value }),
+		onFinish
+	},
 	{
 		name: "update",
 		debounce: 500,
@@ -24,7 +40,7 @@ const items = [
 		label: "Edit",
 		name: "edit",
 		menu: true,
-		onAction: async (action, target) => AgentController.activatePanel(target, "edit")
+		onAction: (action, target) => AgentController.activatePanel(target, "edit")
 	},
 	{
 		name: "delete",

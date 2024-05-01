@@ -15,8 +15,8 @@ export const Agents = {
 	filterFieldOptions() {
 		return request.get(API_URL + "agents/filter-field-options");
 	},
-	applyAction(action: string, target: ActionTargetItem, data: object) {
-		return request.post(API_URL + `agents/${target.id}/apply-action`, { action, data });
+	applyAction(action: string, target: ActionTargetItem | null, data: object) {
+		return request.post(API_URL + `agents/${target ? target.id : "new"}/apply-action`, { action, data });
 	},
 	batchAction(action: string, targets: ActionTargetItem[], data: object) {
 		return request.post(API_URL + `agents/batch-action`, { action, id: targets.map(r => r.id), data });

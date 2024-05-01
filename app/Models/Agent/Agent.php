@@ -41,4 +41,11 @@ class Agent extends Model implements AuditableContract
     {
         return $this->belongsToMany(WorkflowJob::class);
     }
+
+    public static function booted()
+    {
+        static::creating(function (Agent $agent) {
+            $agent->team_id = $agent->team_id ?? user()->currentTeam->id;
+        });
+    }
 }
