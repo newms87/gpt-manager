@@ -29,7 +29,10 @@ const items = [
 			})
 		}),
 		onAction: (action, target) => Agents.applyAction(action, target, { name: newAgentName.value }),
-		onFinish
+		onFinish: (result) => {
+			onFinish(result);
+			AgentController.activatePanel(result.item, "edit");
+		}
 	},
 	{
 		name: "update",

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Repositories\ActionRepository;
 use Exception;
+use Flytedan\DanxLaravel\Exceptions\ValidationError;
 use Flytedan\DanxLaravel\Helpers\FileHelper;
 use Flytedan\DanxLaravel\Models\Audit\ErrorLog;
 use Flytedan\DanxLaravel\Requests\PagerRequest;
@@ -138,16 +139,30 @@ abstract class ActionController extends Controller
         try {
             $result = $this->repo()->applyAction($action, $model, $data);
 
+            if ($result instanceof Model) {
+                $model  = $result;
+                $result = true;
+            }
+
             return response([
                 'success' => true,
                 'result'  => $result,
-                'item'    => $this->item($model->refresh()),
+                'item'    => $this->item($model?->refresh()),
             ]);
         } catch(Throwable $throwable) {
             $response = [
                 'error'   => true,
                 'message' => $throwable->getMessage(),
             ];
+
+            if (config('app.debug') && !($throwable instanceof ValidationError)) {
+                $response += [
+                    'class' => get_class($throwable),
+                    'file'  => $throwable->getFile(),
+                    'line'  => $throwable->getLine(),
+                    'trace' => $throwable->getTrace(),
+                ];
+            }
             ErrorLog::logException('ERROR', $throwable);
 
             return response($response, 400);

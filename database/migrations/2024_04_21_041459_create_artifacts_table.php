@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->unsignedInteger('group_number');
             $table->string('name');
+            $table->string('model');
             $table->json('data');
             $table->timestamps();
             $table->softDeletes();
