@@ -5,16 +5,19 @@
 		</div>
 		<div class="bg-slate-600 p-3 rounded ml-3 text-sm flex-grow">
 			<div>{{ message.title }}</div>
+			<TextField v-model="text" />
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import { FaRegularUser as UserIcon, FaSolidRobot as AssistantIcon } from "danx-icon";
-import { computed } from "vue";
+import { TextField } from "quasar-ui-danx";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
 	message: ThreadMessage;
 }>();
+const text = ref(props.message.content);
 const avatar = computed(() => ({
 	icon: props.message.role === "user" ? UserIcon : AssistantIcon,
 	class: props.message.role === "user" ? "bg-lime-800" : "bg-sky-800"

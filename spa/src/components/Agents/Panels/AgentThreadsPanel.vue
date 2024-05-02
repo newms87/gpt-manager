@@ -1,6 +1,11 @@
 <template>
 	<div class="p-6">
-		<QBtn class="bg-lime-800 text-slate-300 text-lg w-full mb-5" @click="performAction('create-thread', agent)">
+		<QBtn
+			class="bg-lime-800 text-slate-300 text-lg w-full mb-5"
+			:loading="isSaving"
+			:disable="isSaving"
+			@click="onCreate"
+		>
 			<CreateIcon class="w-4 mr-3" />
 			Create Thread
 		</QBtn>
@@ -22,7 +27,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { performAction } from "@/components/Agents/agentsActions";
+import { performAction } from "@/components/Agents/agentActions";
 import ThreadCard from "@/components/Agents/Threads/ThreadCard";
 import ThreadMessageList from "@/components/Agents/Threads/ThreadMessageList";
 import { FaRegularMessage as CreateIcon } from "danx-icon";
@@ -40,4 +45,11 @@ const threadPanels = computed<ActionPanel[]>(() => props.agent.threads.map(threa
 	label: thread.name,
 	vnode: () => h(ThreadMessageList, { thread })
 })));
+
+const isSaving = ref(false);
+async function onCreate() {
+	isSaving.value = true;
+	await performAction("create-thread", props.agent);
+	isSaving.value = false;
+}
 </script>

@@ -7,15 +7,18 @@ use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use Flytedan\DanxLaravel\Exceptions\ValidationError;
 use Flytedan\DanxLaravel\Helpers\DateHelper;
+use Flytedan\DanxLaravel\Repositories\ActionRepository;
 
-class ThreadsRepository
+class ThreadRepository extends ActionRepository
 {
+    public static string $model = Thread::class;
+    
     public function create(Agent $agent, $name = ''): Thread
     {
         if (!$name) {
             $name = $agent->name . " " . DateHelper::formatDateTime(now());
         }
-        
+
         $thread = Thread::make()->forceFill([
             'team_id'  => user()->team_id,
             'user_id'  => user()->id,
@@ -25,6 +28,14 @@ class ThreadsRepository
         $thread->save();
 
         return $thread;
+    }
+
+    public function applyAction(string $action, $model = null, ?array $data = null)
+    {
+        return match ($action) {
+            'create-message' => app(MessageRepository::class)->create($model, $data),
+            default => parent::applyAction($action, $model, $data)
+        };
     }
 
     public function run(Thread $thread)

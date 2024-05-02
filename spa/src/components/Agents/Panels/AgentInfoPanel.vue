@@ -4,7 +4,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { AgentController } from "@/components/Agents/agentsControls";
+import { AgentController } from "@/components/Agents/agentControls";
 import { NumberField, RenderedForm, SelectField, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { computed, h } from "vue";

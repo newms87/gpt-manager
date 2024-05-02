@@ -1,6 +1,8 @@
 <?php
 
-use App\Http\Controllers\AgentsController;
+use App\Http\Controllers\Ai\AgentsController;
+use App\Http\Controllers\Ai\MessagesController;
+use App\Http\Controllers\Ai\ThreadsController;
 use App\Http\Controllers\ProfileController;
 use Flytedan\DanxLaravel\Http\Routes\ActionRoute;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +19,8 @@ Route::get('/', function () {
 });
 
 ActionRoute::routes('agents', new AgentsController);
+ActionRoute::routes('threads', new ThreadsController);
+ActionRoute::routes('messages', new MessagesController);
 
 Route::get('/dashboard', function () {
     return view('dashboard');

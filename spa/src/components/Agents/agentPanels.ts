@@ -1,5 +1,5 @@
-import { performAction } from "@/components/Agents/agentsActions";
-import { AgentController } from "@/components/Agents/agentsControls";
+import { performAction } from "@/components/Agents/agentActions";
+import { AgentController } from "@/components/Agents/agentControls";
 import { AgentInfoPanel, AgentPromptPanel } from "@/components/Agents/Panels";
 import AgentThreadsPanel from "@/components/Agents/Panels/AgentThreadsPanel";
 import { ActionPanel } from "quasar-ui-danx";

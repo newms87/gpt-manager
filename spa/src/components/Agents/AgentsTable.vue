@@ -16,11 +16,11 @@
 	</ActionTableLayout>
 </template>
 <script setup lang="ts">
-import { actions, performAction } from "@/components/Agents/agentsActions";
-import { columns } from "@/components/Agents/agentsColumns";
-import { AgentController } from "@/components/Agents/agentsControls";
-import { filters } from "@/components/Agents/agentsFilters";
-import { panels } from "@/components/Agents/agentsPanels";
+import { actions, performAction } from "@/components/Agents/agentActions";
+import { columns } from "@/components/Agents/agentColumns";
+import { AgentController } from "@/components/Agents/agentControls";
+import { filters } from "@/components/Agents/agentFilters";
+import { panels } from "@/components/Agents/agentPanels";
 import { ActionTableLayout } from "quasar-ui-danx";
 
 AgentController.initialize();

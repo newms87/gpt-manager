@@ -39,7 +39,7 @@ class AgentRepository extends ActionRepository
     {
         return match ($action) {
             'create' => $this->createAgent($data),
-            'create-thread' => app(ThreadsRepository::class)->create($model),
+            'create-thread' => app(ThreadRepository::class)->create($model),
             default => parent::applyAction($action, $model, $data)
         };
     }

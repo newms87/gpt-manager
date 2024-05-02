@@ -1,5 +1,5 @@
-import { filterActions } from "@/components/Agents/agentsActions";
-import { AgentController } from "@/components/Agents/agentsControls";
+import { filterActions } from "@/components/Agents/agentActions";
+import { AgentController } from "@/components/Agents/agentControls";
 import { fDate } from "quasar-ui-danx";
 
 export const columns = [

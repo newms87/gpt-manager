@@ -1,18 +1,15 @@
-import { AgentController } from "@/components/Agents/agentsControls";
-import { Agents } from "@/routes/agents";
-import { ActionOptions, ConfirmDialog, TextField, useActions } from "quasar-ui-danx";
+import { AgentController } from "@/components/Agents/agentControls";
+import { AgentRoutes } from "@/routes/agentRoutes";
+import { ActionOptions, ConfirmActionDialog, ConfirmDialog, TextField, useActions } from "quasar-ui-danx";
 import { h, ref } from "vue";
 
-const onAction = Agents.applyAction;
-const onBatchAction = Agents.batchAction;
+const onAction = AgentRoutes.applyAction;
+const onBatchAction = AgentRoutes.batchAction;
 const onFinish = result => {
 	AgentController.setItemInList(result.item);
 	AgentController.refreshAll();
+	AgentController.selectedRows.value = [];
 };
-
-function nameOrCount(agents) {
-	return Array.isArray(agents) ? `${agents?.length} agents` : `${agents.name}`;
-}
 
 const newAgentName = ref("");
 
@@ -28,7 +25,7 @@ const items: ActionOptions[] = [
 				"onUpdate:model-value": value => newAgentName.value = value
 			})
 		}),
-		onAction: (action, target) => Agents.applyAction(action, target, { name: newAgentName.value }),
+		onAction: (action, target) => AgentRoutes.applyAction(action, target, { name: newAgentName.value }),
 		onFinish: (result) => {
 			AgentController.activatePanel(result.item, "edit");
 			onFinish(result);
@@ -52,10 +49,7 @@ const items: ActionOptions[] = [
 		menu: true,
 		batch: true,
 		onFinish,
-		vnode: ads => h(ConfirmDialog, { confirmText: `Delete ${nameOrCount(ads)}`, confirmClass: "bg-red-900" }, {
-			title: () => "Delete Agent",
-			default: () => `Are you sure you want to delete ${nameOrCount(ads)}?`
-		})
+		vnode: target => h(ConfirmActionDialog, { action: "Delete", label: "Agents", target, confirmClass: "bg-red-900" })
 	},
 	{
 		name: "create-thread",

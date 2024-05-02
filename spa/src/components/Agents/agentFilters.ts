@@ -1,4 +1,4 @@
-import { AgentController } from "@/components/Agents/agentsControls";
+import { AgentController } from "@/components/Agents/agentControls";
 import { computed } from "vue";
 
 export const filters = computed(() => [

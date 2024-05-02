@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Ai;
 
 use App\Repositories\AgentRepository;
 use App\Resources\AgentResource;

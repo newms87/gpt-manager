@@ -16,6 +16,13 @@ class Message extends Model implements AuditableContract
         ROLE_USER = 'user',
         ROLE_ASSISTANT = 'assistant';
 
+    protected $fillable = [
+        'role',
+        'title',
+        'summary',
+        'content',
+    ];
+    
     public function thread()
     {
         return $this->belongsTo(Thread::class);
