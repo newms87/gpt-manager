@@ -18,6 +18,10 @@
 	}
 }
 
+.dx-column-link {
+	@apply p-3 inline-block;
+}
+
 .dx-action-table-filters {
 	@apply bg-slate-800;
 }

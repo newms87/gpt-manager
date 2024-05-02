@@ -26,6 +26,13 @@ export const columns = [
 		required: true
 	},
 	{
+		name: "threads",
+		label: "Threads",
+		align: "left",
+		format: (threads) => threads?.length || 0,
+		onClick: (agent) => AgentController.activatePanel(agent, "threads")
+	},
+	{
 		name: "description",
 		label: "Description",
 		sortable: true,
