@@ -2,22 +2,23 @@
 
 namespace Database\Factories\Agent;
 
+use App\Models\Agent\Message;
+use App\Models\Agent\Thread;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Agent\Message>
+ * @extends Factory<Message>
  */
 class MessageFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            //
+            'thread_id' => Thread::factory(),
+            'role'      => $this->faker->randomElement([Message::ROLE_USER, Message::ROLE_ASSISTANT]),
+            'title'     => $this->faker->sentence,
+            'summary'   => $this->faker->paragraph,
+            'content'   => $this->faker->paragraphs(3, true),
         ];
     }
 }

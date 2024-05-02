@@ -16,7 +16,7 @@ fi
 chmod -R ugo+rw /.composer
 
 # Fix permissions for Docker Desktop
-php artisan app:fix-permissions
+php artisan fix
 
 if [ $# -gt 0 ]; then
     if [ "$SUPERVISOR_PHP_USER" = "root" ]; then

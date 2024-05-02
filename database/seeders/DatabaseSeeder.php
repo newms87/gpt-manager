@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Agent\Agent;
+use App\Models\Agent\Thread;
 use App\Models\Team\Team;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -26,8 +27,7 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        Agent::factory()->count(20)->create([
-            'team_id' => $team->id,
-        ]);
+        $threads = Thread::factory()->forTeam($team)->count(3);
+        Agent::factory()->has($threads)->recycle($team)->count(20)->create();
     }
 }

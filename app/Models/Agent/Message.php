@@ -12,6 +12,10 @@ class Message extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
+    const
+        ROLE_USER = 'user',
+        ROLE_ASSISTANT = 'assistant';
+
     public function thread()
     {
         return $this->belongsTo(Thread::class);
