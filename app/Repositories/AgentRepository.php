@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Api\OpenAI\OpenAIApi;
 use App\Models\Agent\Agent;
+use App\Models\Agent\Thread;
 use Flytedan\DanxLaravel\Exceptions\ValidationError;
 use Flytedan\DanxLaravel\Repositories\ActionRepository;
 use Illuminate\Database\Eloquent\Model;
@@ -27,10 +28,18 @@ class AgentRepository extends ActionRepository
         return Agent::create($data);
     }
 
-    public function applyAction(string $action, ?Model $model, array $data)
+    /**
+     * @param string     $action
+     * @param Agent      $model
+     * @param array|null $data
+     * @return Thread|bool|Model|mixed|null
+     * @throws ValidationError
+     */
+    public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
             'create' => $this->createAgent($data),
+            'create-thread' => app(ThreadsRepository::class)->create($model),
             default => parent::applyAction($action, $model, $data)
         };
     }

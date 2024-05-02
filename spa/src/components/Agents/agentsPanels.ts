@@ -27,6 +27,7 @@ export const panels: ComputedRef<ActionPanel[]> = computed(() => [
 	{
 		name: "threads",
 		label: "Threads",
+		class: "w-[60rem]",
 		enabled: !!activeItem.value,
 		vnode: () => h(AgentThreadsPanel, {
 			agent: activeItem.value,

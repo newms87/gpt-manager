@@ -1,4 +1,5 @@
 interface Agent {
+	id: string;
 	name: string;
 	model: string;
 	temperature: string;

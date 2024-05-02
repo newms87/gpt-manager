@@ -1,6 +1,6 @@
 import { AgentController } from "@/components/Agents/agentsControls";
 import { Agents } from "@/routes/agents";
-import { ConfirmDialog, TextField, useActions } from "quasar-ui-danx";
+import { ActionOptions, ConfirmDialog, TextField, useActions } from "quasar-ui-danx";
 import { h, ref } from "vue";
 
 const onAction = Agents.applyAction;
@@ -16,7 +16,7 @@ function nameOrCount(agents) {
 
 const newAgentName = ref("");
 
-const items = [
+const items: ActionOptions[] = [
 	{
 		name: "create",
 		label: "Create Agent",
@@ -30,8 +30,8 @@ const items = [
 		}),
 		onAction: (action, target) => Agents.applyAction(action, target, { name: newAgentName.value }),
 		onFinish: (result) => {
-			onFinish(result);
 			AgentController.activatePanel(result.item, "edit");
+			onFinish(result);
 		}
 	},
 	{
@@ -56,6 +56,10 @@ const items = [
 			title: () => "Delete Agent",
 			default: () => `Are you sure you want to delete ${nameOrCount(ads)}?`
 		})
+	},
+	{
+		name: "create-thread",
+		onFinish
 	}
 ];
 

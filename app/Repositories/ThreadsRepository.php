@@ -6,17 +6,25 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use Flytedan\DanxLaravel\Exceptions\ValidationError;
+use Flytedan\DanxLaravel\Helpers\DateHelper;
 
 class ThreadsRepository
 {
-    public function create(Agent $agent, $name): Thread
+    public function create(Agent $agent, $name = ''): Thread
     {
-        return Thread::create([
+        if (!$name) {
+            $name = $agent->name . " " . DateHelper::formatDateTime(now());
+        }
+        
+        $thread = Thread::make()->forceFill([
             'team_id'  => user()->team_id,
             'user_id'  => user()->id,
             'name'     => $name,
             'agent_id' => $agent->id,
         ]);
+        $thread->save();
+
+        return $thread;
     }
 
     public function run(Thread $thread)
@@ -36,7 +44,7 @@ class ThreadsRepository
         ]);
 
         dump('running thread', $threadRun->toArray());
-        
+
         $response = $agent->getModelApi()->complete(
             $agent->model,
             $messages->pluck('content')->toArray(),

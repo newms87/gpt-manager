@@ -23,7 +23,7 @@ class AgentResource extends JsonResource
             'temperature'    => $this->temperature,
             'functions'      => $this->functions,
             'prompt'         => $this->prompt,
-            'threads'        => ThreadResource::collection($this->threads()->orderBy('name')->get()),
+            'threads'        => ThreadResource::collection($this->threads()->orderByDesc('created_at')->get()),
             'created_at'     => $this->created_at,
         ];
     }
