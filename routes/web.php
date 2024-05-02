@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\AgentsController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Routes\ActionRoute;
+use Flytedan\DanxLaravel\Http\Routes\ActionRoute;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {

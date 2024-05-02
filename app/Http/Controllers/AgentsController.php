@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Repositories\AgentRepository;
 use App\Resources\AgentResource;
+use Flytedan\DanxLaravel\Http\Controllers\ActionController;
 
 class AgentsController extends ActionController
 {
