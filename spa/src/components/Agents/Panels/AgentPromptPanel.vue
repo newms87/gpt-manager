@@ -1,6 +1,11 @@
 <template>
 	<div class="p-6">
-		<RenderedForm v-model:values="input" empty-value="" :form="agentForm" @update:values="$emit('change', $event)" />
+		<RenderedForm
+			v-model:values="input"
+			empty-value=""
+			:form="agentForm"
+			@update:values="$emit('change', $event)"
+		/>
 	</div>
 </template>
 <script setup lang="ts">
@@ -22,7 +27,7 @@ const agentForm: Form = {
 	fields: [
 		{
 			name: "prompt",
-			vnode: (props) => h(TextField, { ...props, type: "textarea" }),
+			vnode: (props) => h(TextField, { ...props, inputClass: "h-[80vh]", type: "textarea" }),
 			label: "Prompt"
 		}
 	]

@@ -16,7 +16,7 @@ class AgentFactory extends Factory
         return [
             'team_id'      => Team::factory(),
             'knowledge_id' => null,
-            'name'         => fake()->firstName,
+            'name'         => fake()->unique()->firstName,
             'description'  => fake()->paragraph,
             'model'        => fake()->randomElement(Agent::getAiModelNames()),
             'functions'    => [],

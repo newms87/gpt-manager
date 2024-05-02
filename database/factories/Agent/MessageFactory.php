@@ -15,10 +15,10 @@ class MessageFactory extends Factory
     {
         return [
             'thread_id' => Thread::factory(),
-            'role'      => $this->faker->randomElement([Message::ROLE_USER, Message::ROLE_ASSISTANT]),
-            'title'     => $this->faker->sentence,
-            'summary'   => $this->faker->paragraph,
-            'content'   => $this->faker->paragraphs(3, true),
+            'role'      => fake()->randomElement([Message::ROLE_USER, Message::ROLE_ASSISTANT]),
+            'title'     => fake()->sentence,
+            'summary'   => fake()->paragraph,
+            'content'   => fake()->paragraphs(3, true),
         ];
     }
 }

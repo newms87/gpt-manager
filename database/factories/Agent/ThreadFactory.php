@@ -20,8 +20,8 @@ class ThreadFactory extends Factory
             'team_id'  => Team::factory(),
             'user_id'  => fn(array $attributes) => User::factory()->create(['team_id' => $attributes['team_id']]),
             'agent_id' => fn(array $attributes) => Agent::factory()->create(['team_id' => $attributes['team_id']]),
-            'name'     => $this->faker->firstName,
-            'summary'  => $this->faker->paragraph,
+            'name'     => fake()->words(3, true),
+            'summary'  => fake()->paragraph,
         ];
     }
 
