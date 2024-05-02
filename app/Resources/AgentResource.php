@@ -18,6 +18,7 @@ class AgentResource extends JsonResource
             'knowledge_name' => $this->knowledge?->name,
             'name'           => $this->name,
             'description'    => $this->description,
+            'api'            => $this->api,
             'model'          => $this->model,
             'temperature'    => $this->temperature,
             'functions'      => $this->functions,

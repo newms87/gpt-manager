@@ -4,6 +4,8 @@ namespace App\Models\Agent;
 
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowJob;
+use App\Repositories\AgentRepository;
+use Exception;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -49,15 +51,26 @@ class Agent extends Model implements AuditableContract
         return $this->belongsToMany(WorkflowJob::class);
     }
 
-    public static function getAiModelNames(): array
+    public function getModelApi()
     {
-        return array_keys(config('ai.models'));
+        $apiClass = config('ai.apis')[$this->api] ?? null;
+        if (!$apiClass) {
+            throw new Exception('API class not found for ' . $this->api);
+        }
+
+        return new $apiClass();
     }
 
     public static function booted()
     {
         static::creating(function (Agent $agent) {
             $agent->team_id = $agent->team_id ?? user()->team_id;
+        });
+
+        static::saving(function (Agent $agent) {
+            if ($agent->isDirty('model')) {
+                $agent->api = AgentRepository::getApiFromModel($agent->model);
+            }
         });
     }
 }

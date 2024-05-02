@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Api\OpenAI\OpenAIApi;
 use App\Models\Agent\Agent;
 use Flytedan\DanxLaravel\Exceptions\ValidationError;
 use Flytedan\DanxLaravel\Repositories\ActionRepository;
@@ -18,6 +19,11 @@ class AgentRepository extends ActionRepository
             throw new ValidationError('An agent with this name already exists');
         }
 
+        $data += [
+            'api'   => OpenAIApi::$serviceName,
+            'model' => 'gpt-4-turbo',
+        ];
+
         return Agent::create($data);
     }
 
@@ -31,8 +37,54 @@ class AgentRepository extends ActionRepository
 
     public function filterFieldOptions(?array $filter = []): array
     {
+        $aiModels = collect(static::getAiModels())->sortKeys()->map(fn($aiModel) => [
+            'label' => $aiModel['api'] . ': ' . $aiModel['model'],
+            'value' => $aiModel['model'],
+        ])->values()->toArray();
+
         return [
-            'models' => Agent::getAiModelNames(),
+            'aiModels' => $aiModels,
         ];
+    }
+
+    /**
+     * Reverse lookup API from model
+     *
+     * @param string $model
+     * @return string|null
+     */
+    public static function getApiFromModel(string $model): ?string
+    {
+        foreach(static::getAiModels() as $aiModel) {
+            if ($aiModel['model'] === $model) {
+                return $aiModel['api'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get all available AI models
+     *
+     * @return array
+     */
+    public static function getAiModels(): array
+    {
+        return cache()->rememberForever('ai-models', function () {
+            $aiModels = [];
+
+            foreach(config('ai.apis') as $apiName => $apiClass) {
+                $models = $apiClass::make()->getModels();
+                foreach($models as $model) {
+                    $aiModels[$apiName . ':' . $model] = [
+                        'api'   => $apiName,
+                        'model' => $model,
+                    ];
+                }
+            }
+
+            return $aiModels;
+        });
     }
 }

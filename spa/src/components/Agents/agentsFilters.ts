@@ -16,7 +16,7 @@ export const filters = computed(() => [
 				type: "multi-select",
 				name: "model",
 				label: "AI Model",
-				options: AgentController.filterFieldOptions.value["models"]
+				options: AgentController.getFieldOptions("aiModels")
 			}
 		]
 	}

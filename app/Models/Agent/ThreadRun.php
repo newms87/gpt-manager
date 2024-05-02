@@ -13,6 +13,11 @@ class ThreadRun extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
+    const
+        STATUS_RUNNING = 'Running',
+        STATUS_COMPLETED = 'Completed',
+        STATUS_FAILED = 'Failed';
+
     public function thread()
     {
         return $this->belongsTo(Thread::class);

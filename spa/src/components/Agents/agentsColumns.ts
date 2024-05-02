@@ -13,6 +13,12 @@ export const columns = [
 		onClick: (agent) => AgentController.activatePanel(agent, "edit")
 	},
 	{
+		name: "api",
+		label: "API",
+		sortable: true,
+		align: "left"
+	},
+	{
 		name: "model",
 		label: "Model",
 		sortable: true,

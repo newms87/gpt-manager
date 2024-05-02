@@ -39,7 +39,7 @@ const agentForm: Form = {
 			name: "model",
 			vnode: (props) => h(SelectField, {
 				...props,
-				options: AgentController.getFieldOptions("models")
+				options: AgentController.getFieldOptions("aiModels")
 			}),
 			label: "Model",
 			required: true

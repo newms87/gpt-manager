@@ -19,6 +19,8 @@ return new class extends Migration {
             $table->datetime('completed_at')->nullable();
             $table->datetime('failed_at')->nullable();
             $table->datetime('refreshed_at')->nullable();
+            $table->unsignedBigInteger('input_tokens')->default(0);
+            $table->unsignedBigInteger('output_tokens')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });
