@@ -1,11 +1,14 @@
 <template>
-	<div class="py-3 flex items-center">
-		<div class="rounded-full p-3" :class="avatar.class">
-			<component :is="avatar.icon" class="w-3 text-slate-300" />
+	<div class="bg-slate-600 rounded overflow-hidden">
+		<div class="bg-violet-950 flex items-center p-1">
+			<div class="rounded-full p-1" :class="avatar.class">
+				<component :is="avatar.icon" class="w-2 text-slate-300" />
+			</div>
+			<div class="font-bold text-slate-400 ml-3">{{ message.title }}</div>
 		</div>
-		<div class="bg-slate-600 p-3 rounded ml-3 text-sm flex-grow">
-			<div>{{ message.title }}</div>
-			<TextField v-model="text" />
+
+		<div class="text-sm flex-grow">
+			<TextField v-model="text" type="textarea" autogrow />
 		</div>
 	</div>
 </template>

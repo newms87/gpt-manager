@@ -13,7 +13,8 @@ class MessageRepository extends ActionRepository
     public function create(Thread $thread, string $role, array $input = []): Message
     {
         $input += [
-            'title' => '(Empty)',
+            'title'   => '(Empty)',
+            'content' => '',
         ];
 
         return $thread->messages()->create([

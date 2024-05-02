@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Agent\Agent;
+use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use Flytedan\DanxLaravel\Exceptions\ValidationError;
@@ -12,7 +13,7 @@ use Flytedan\DanxLaravel\Repositories\ActionRepository;
 class ThreadRepository extends ActionRepository
 {
     public static string $model = Thread::class;
-    
+
     public function create(Agent $agent, $name = ''): Thread
     {
         if (!$name) {
@@ -33,7 +34,7 @@ class ThreadRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create-message' => app(MessageRepository::class)->create($model, $data),
+            'create-message' => app(MessageRepository::class)->create($model, $data['role'] ?? Message::ROLE_USER),
             default => parent::applyAction($action, $model, $data)
         };
     }
