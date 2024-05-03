@@ -31,7 +31,8 @@ import { performAction } from "@/components/Agents/agentActions";
 import ThreadCard from "@/components/Agents/Threads/ThreadCard";
 import ThreadMessageList from "@/components/Agents/Threads/ThreadMessageList";
 import { FaRegularMessage as CreateIcon } from "danx-icon";
-import { ActionPanel, PanelsDrawer } from "quasar-ui-danx";
+import { PanelsDrawer } from "quasar-ui-danx";
+import { ActionPanel } from "quasar-ui-danx/types";
 import { computed, h, ref } from "vue";
 
 const props = defineProps<{

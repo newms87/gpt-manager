@@ -2,12 +2,12 @@ import { performAction } from "@/components/Agents/agentActions";
 import { AgentController } from "@/components/Agents/agentControls";
 import { AgentInfoPanel, AgentPromptPanel } from "@/components/Agents/Panels";
 import AgentThreadsPanel from "@/components/Agents/Panels/AgentThreadsPanel";
-import { ActionPanel } from "quasar-ui-danx";
-import { computed, ComputedRef, h } from "vue";
+import { ActionPanel } from "quasar-ui-danx/types";
+import { computed, h } from "vue";
 
 const activeItem = computed(() => AgentController.activeItem.value);
 
-export const panels: ComputedRef<ActionPanel[]> = computed(() => [
+export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "edit",
 		label: "Details",

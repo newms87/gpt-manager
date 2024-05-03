@@ -3,15 +3,15 @@
 namespace App\Resources;
 
 use App\Models\Agent\Thread;
-use Illuminate\Http\Resources\Json\JsonResource;
+use Flytedan\DanxLaravel\Resources\ActionResource;
 
 /**
  * @mixin Thread
  * @property Thread $resource
  */
-class ThreadResource extends JsonResource
+class ThreadResource extends ActionResource
 {
-    public function toArray($request)
+    public function data(): array
     {
         return [
             'id'       => $this->id,

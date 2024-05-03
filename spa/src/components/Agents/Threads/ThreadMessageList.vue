@@ -13,6 +13,7 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { AgentThread } from "@/components/Agents/agents";
 import { performAction } from "@/components/Agents/Threads/threadActions";
 import ThreadMessageCard from "@/components/Agents/Threads/ThreadMessageCard";
 import { FaRegularMessage as CreateIcon } from "danx-icon";
@@ -21,6 +22,8 @@ import { ref } from "vue";
 const props = defineProps<{
 	thread: AgentThread;
 }>();
+
+console.log("loaded thread", props.thread);
 
 const isSaving = ref(false);
 async function onCreate() {

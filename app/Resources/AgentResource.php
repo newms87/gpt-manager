@@ -3,15 +3,15 @@
 namespace App\Resources;
 
 use App\Models\Agent\Agent;
-use Illuminate\Http\Resources\Json\JsonResource;
+use Flytedan\DanxLaravel\Resources\ActionResource;
 
 /**
  * @mixin Agent
  * @property Agent $resource
  */
-class AgentResource extends JsonResource
+class AgentResource extends ActionResource
 {
-    public function toArray($request)
+    public function data(): array
     {
         return [
             'id'             => $this->id,

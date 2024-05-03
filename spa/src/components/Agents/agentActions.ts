@@ -1,17 +1,17 @@
 import { AgentController } from "@/components/Agents/agentControls";
 import { AgentRoutes } from "@/routes/agentRoutes";
-import { ActionOptions, ConfirmActionDialog, ConfirmDialog, TextField, useActions } from "quasar-ui-danx";
+import { ConfirmActionDialog, ConfirmDialog, TextField, useActions } from "quasar-ui-danx";
+import { ActionOptions } from "quasar-ui-danx/types";
 import { h, ref } from "vue";
 
-const onAction = AgentRoutes.applyAction;
-const onBatchAction = AgentRoutes.batchAction;
-const onFinish = result => {
-	AgentController.setItemInList(result.item);
-	AgentController.refreshAll();
-	AgentController.selectedRows.value = [];
-};
-
 const newAgentName = ref("");
+
+// This is the default action options for all items
+const forAllItems: ActionOptions = {
+	onAction: AgentRoutes.applyAction,
+	onBatchAction: AgentRoutes.batchAction,
+	onBatchSuccess: AgentController.clearSelectedRows
+};
 
 const items: ActionOptions[] = [
 	{
@@ -28,13 +28,13 @@ const items: ActionOptions[] = [
 		onAction: (action, target) => AgentRoutes.applyAction(action, target, { name: newAgentName.value }),
 		onFinish: (result) => {
 			AgentController.activatePanel(result.item, "edit");
-			onFinish(result);
+			AgentController.refreshAll();
 		}
 	},
 	{
 		name: "update",
 		debounce: 500,
-		onFinish
+		onFinish: AgentController.refreshAll
 	},
 	{
 		label: "Edit",
@@ -48,16 +48,13 @@ const items: ActionOptions[] = [
 		class: "text-red-500",
 		menu: true,
 		batch: true,
-		onFinish,
+		onFinish: AgentController.refreshAll,
 		vnode: target => h(ConfirmActionDialog, { action: "Delete", label: "Agents", target, confirmClass: "bg-red-900" })
 	},
 	{
 		name: "create-thread",
-		onFinish
+		onFinish: AgentController.refreshAll
 	}
 ];
 
-export const { performAction, filterActions, actions } = useActions(items, {
-	onAction,
-	onBatchAction
-});
+export const { performAction, filterActions, actions } = useActions(items, forAllItems);

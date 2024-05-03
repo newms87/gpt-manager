@@ -3,15 +3,15 @@
 namespace App\Resources;
 
 use App\Models\Agent\Message;
-use Illuminate\Http\Resources\Json\JsonResource;
+use Flytedan\DanxLaravel\Resources\ActionResource;
 
 /**
  * @mixin Message
  * @property Message $resource
  */
-class MessageResource extends JsonResource
+class MessageResource extends ActionResource
 {
-    public function toArray($request)
+    public function data(): array
     {
         return [
             'id'        => $this->id,

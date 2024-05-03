@@ -11,6 +11,8 @@
 </template>
 
 <script setup lang="ts">
+import { AgentThread } from "@/components/Agents/agents";
+
 defineEmits(["open"]);
 defineProps<{
 	thread: AgentThread;
