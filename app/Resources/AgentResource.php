@@ -11,6 +11,8 @@ use Flytedan\DanxLaravel\Resources\ActionResource;
  */
 class AgentResource extends ActionResource
 {
+    protected static ?string $type = 'Agent';
+
     public function data(): array
     {
         return [
@@ -23,7 +25,7 @@ class AgentResource extends ActionResource
             'temperature'    => $this->temperature,
             'functions'      => $this->functions,
             'prompt'         => $this->prompt,
-            'threads'        => ThreadResource::collection($this->threads()->orderByDesc('created_at')->get()),
+            'thread_count'   => $this->threads()->count(),
             'created_at'     => $this->created_at,
         ];
     }

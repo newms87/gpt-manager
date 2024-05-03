@@ -11,6 +11,8 @@ use Flytedan\DanxLaravel\Resources\ActionResource;
  */
 class ThreadResource extends ActionResource
 {
+    public static ?string $type = 'Thread';
+    
     public function data(): array
     {
         return [

@@ -1,8 +1,9 @@
 import { filterActions } from "@/components/Agents/agentActions";
 import { AgentController } from "@/components/Agents/agentControls";
-import { fDate } from "quasar-ui-danx";
+import { fDate, fNumber } from "quasar-ui-danx";
+import { TableColumn } from "quasar-ui-danx/types";
 
-export const columns = [
+export const columns: TableColumn[] = [
 	{
 		name: "name",
 		label: "Name",
@@ -32,10 +33,10 @@ export const columns = [
 		required: true
 	},
 	{
-		name: "threads",
+		name: "thread_count",
 		label: "Threads",
 		align: "left",
-		format: (threads) => threads?.length || 0,
+		format: fNumber,
 		onClick: (agent) => AgentController.activatePanel(agent, "threads")
 	},
 	{

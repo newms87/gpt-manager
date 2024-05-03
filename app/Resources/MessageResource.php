@@ -11,6 +11,8 @@ use Flytedan\DanxLaravel\Resources\ActionResource;
  */
 class MessageResource extends ActionResource
 {
+    public static ?string $type = 'Message';
+    
     public function data(): array
     {
         return [

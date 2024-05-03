@@ -1,5 +1,5 @@
 <template>
-	<div class="p-6">
+	<div>
 		<ThreadMessageCard v-for="message in thread.messages" :key="message.id" :message="message" class="mb-5" />
 		<QBtn
 			class="bg-lime-800 text-slate-300 text-lg w-full"
@@ -22,8 +22,6 @@ import { ref } from "vue";
 const props = defineProps<{
 	thread: AgentThread;
 }>();
-
-console.log("loaded thread", props.thread);
 
 const isSaving = ref(false);
 async function onCreate() {

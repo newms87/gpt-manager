@@ -69,7 +69,7 @@ class Agent extends Model implements AuditableContract
 
         static::saving(function (Agent $agent) {
             if ($agent->isDirty('model')) {
-                $agent->api = AgentRepository::getApiFromModel($agent->model);
+                $agent->api = AgentRepository::getApiForModel($agent->model);
             }
         });
     }

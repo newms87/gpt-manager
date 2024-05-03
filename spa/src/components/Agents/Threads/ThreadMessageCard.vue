@@ -1,6 +1,6 @@
 <template>
 	<div class="bg-slate-600 rounded overflow-hidden">
-		<div class="bg-violet-950 flex items-center p-1">
+		<div class="bg-sky-800 flex items-center p-1">
 			<div>
 				<QBtn @click="performAction('update', message, {role: message.role === 'user' ? 'assistant' : 'user'})">
 					<div class="rounded-full p-1" :class="avatar.class">

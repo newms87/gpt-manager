@@ -62,7 +62,7 @@ class AgentRepository extends ActionRepository
      * @param string $model
      * @return string|null
      */
-    public static function getApiFromModel(string $model): ?string
+    public static function getApiForModel(string $model): ?string
     {
         foreach(static::getAiModels() as $aiModel) {
             if ($aiModel['model'] === $model) {

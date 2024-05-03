@@ -8,6 +8,10 @@
 
 .dx-panels-drawer-body {
 	@apply bg-slate-900;
+
+	.q-tab-panels .q-panel {
+		@apply overflow-x-hidden;
+	}
 }
 
 .dx-panels-drawer-tabs {

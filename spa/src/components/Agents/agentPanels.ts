@@ -2,6 +2,7 @@ import { performAction } from "@/components/Agents/agentActions";
 import { AgentController } from "@/components/Agents/agentControls";
 import { AgentInfoPanel, AgentPromptPanel } from "@/components/Agents/Panels";
 import AgentThreadsPanel from "@/components/Agents/Panels/AgentThreadsPanel";
+import { BadgeTab } from "quasar-ui-danx";
 import { ActionPanel } from "quasar-ui-danx/types";
 import { computed, h } from "vue";
 
@@ -29,6 +30,7 @@ export const panels = computed<ActionPanel[]>(() => [
 		label: "Threads",
 		class: "w-[60rem]",
 		enabled: !!activeItem.value,
+		tabVnode: () => h(BadgeTab, { count: activeItem.value?.thread_count }),
 		vnode: () => h(AgentThreadsPanel, {
 			agent: activeItem.value,
 			onChange: input => performAction("update", activeItem.value, input)

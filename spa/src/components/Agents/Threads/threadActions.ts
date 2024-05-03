@@ -27,15 +27,12 @@ const items: ActionOptions[] = [
 	{
 		name: "create-message",
 		optimistic: (action, target, data) => {
-			// target.messages.push({
-			// 	...data,
-			// 	id: "new",
-			// 	title: "(Empty)",
-			// 	role: "user"
-			// });
-		},
-		onSuccess: (results) => {
-			// storeObject("threads", results.item);
+			target.messages.push({
+				...data,
+				id: "new",
+				title: "(Empty)",
+				role: "user"
+			});
 		},
 		onFinish: AgentController.refreshAll
 	}
