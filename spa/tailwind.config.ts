@@ -1,16 +1,19 @@
 /** @type {import("tailwindcss").Config} */
 export const colors = {};
+import typography from "@tailwindcss/typography";
 
 export default {
-    content: [
-        "./src/**/*.{html,js,vue,ts}",
-        "../../quasar-ui-danx/ui/src/**/*.{html,js,vue,ts}"
-    ],
-    theme: {
-        extend: {
-            colors
-        }
-    },
-    plugins: []
+	content: [
+		"./src/**/*.{html,js,vue,ts}",
+		"../../quasar-ui-danx/ui/src/**/*.{html,js,vue,ts}"
+	],
+	theme: {
+		extend: {
+			colors
+		}
+	},
+	plugins: [
+		typography()
+	]
 };
 

@@ -22,10 +22,9 @@
 		</div>
 
 		<div class="text-sm flex-grow">
-			<TextField
-				v-model="content"
-				type="textarea"
-				autogrow
+			<MarkdownEditor
+				v-model="markdownContent"
+				editor-class="text-slate-200 p-3"
 				@update:model-value="updateDebouncedAction.trigger(message, {content})"
 			/>
 		</div>
@@ -34,8 +33,8 @@
 <script setup lang="ts">
 import { ThreadMessage } from "@/components/Agents/agents";
 import { getAction } from "@/components/Agents/Threads/threadMessageActions";
+import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { FaRegularUser as UserIcon, FaSolidRobot as AssistantIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
-import { TextField } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
@@ -43,6 +42,13 @@ const props = defineProps<{
 }>();
 
 const content = ref(props.message.content);
+const markdownContent = computed({
+	get: () => content.value,
+	set: (value: string) => {
+		console.log("updating content", value);
+		content.value = value;
+	}
+});
 const avatar = computed(() => ({
 	icon: props.message.role === "user" ? UserIcon : AssistantIcon,
 	class: props.message.role === "user" ? "bg-lime-800" : "bg-sky-800"
