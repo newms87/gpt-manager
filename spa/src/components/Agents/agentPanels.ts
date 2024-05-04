@@ -32,8 +32,7 @@ export const panels = computed<ActionPanel[]>(() => [
 		enabled: !!activeItem.value,
 		tabVnode: () => h(BadgeTab, { count: activeItem.value?.thread_count }),
 		vnode: () => h(AgentThreadsPanel, {
-			agent: activeItem.value,
-			onChange: input => performAction("update", activeItem.value, input)
+			agent: activeItem.value
 		})
 	}
 ]);

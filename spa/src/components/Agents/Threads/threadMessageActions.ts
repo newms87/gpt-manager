@@ -1,4 +1,5 @@
 import { AgentController } from "@/components/Agents/agentControls";
+import { ThreadMessage } from "@/components/Agents/agents";
 import { MessageRoutes } from "@/routes/agentRoutes";
 import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { ActionOptions } from "quasar-ui-danx/types";
@@ -11,8 +12,13 @@ const forAllItems: ActionOptions = {
 const items: ActionOptions[] = [
 	{
 		name: "update",
+		optimistic: true
+	},
+	{
+		name: "updateDebounced",
+		alias: "update",
 		debounce: 500,
-		onFinish: AgentController.refreshAll
+		optimistic: true
 	},
 	{
 		name: "delete",
@@ -21,7 +27,12 @@ const items: ActionOptions[] = [
 		menu: true,
 		batch: true,
 		onFinish: AgentController.refreshAll,
-		vnode: target => h(ConfirmActionDialog, { action: "Delete", label: "Messages", target, confirmClass: "bg-red-900" })
+		vnode: (target: ThreadMessage) => !target.content ? false : h(ConfirmActionDialog, {
+			action: "Delete",
+			label: "Messages",
+			target,
+			confirmClass: "bg-red-900"
+		})
 	}
 ];
 

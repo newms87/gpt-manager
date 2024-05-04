@@ -12,8 +12,7 @@ const forAllItems: ActionOptions = {
 const items: ActionOptions[] = [
 	{
 		name: "update",
-		debounce: 500,
-		onFinish: AgentController.refreshAll
+		debounce: 500
 	},
 	{
 		name: "delete",

@@ -8,9 +8,14 @@
 					</div>
 				</QBtn>
 			</div>
-			<div class="font-bold text-slate-400 ml-3">{{ message.title }}</div>
+			<div class="font-bold text-slate-400 ml-3 flex-grow">{{ message.title }}</div>
 			<div>
-				<QBtn @click="performAction('delete', message)">
+				<QBtn
+					:loading="isDeleting"
+					:disable="isDeleting"
+					class="text-red-300 hover:bg-red-500 shadow-none"
+					@click.stop="onDelete"
+				>
 					<DeleteIcon class="w-3" />
 				</QBtn>
 			</div>
@@ -21,7 +26,7 @@
 				v-model="content"
 				type="textarea"
 				autogrow
-				@update:model-value="performAction('update', message, {content})"
+				@update:model-value="performAction('updateDebounced', message, {content})"
 			/>
 		</div>
 	</div>
@@ -36,9 +41,17 @@ import { computed, ref } from "vue";
 const props = defineProps<{
 	message: ThreadMessage;
 }>();
+
 const content = ref(props.message.content);
 const avatar = computed(() => ({
 	icon: props.message.role === "user" ? UserIcon : AssistantIcon,
 	class: props.message.role === "user" ? "bg-lime-800" : "bg-sky-800"
 }));
+
+const isDeleting = ref(false);
+async function onDelete() {
+	isDeleting.value = true;
+	await performAction("delete", props.message);
+	isDeleting.value = false;
+}
 </script>

@@ -37,8 +37,10 @@ const props = defineProps<{
 const isDeleting = ref(false);
 async function onDelete() {
 	isDeleting.value = true;
-	await performAction("delete", props.thread);
+	const result = await performAction("delete", props.thread);
 	isDeleting.value = false;
-	emit("close");
+	if (result?.success) {
+		emit("close");
+	}
 }
 </script>
