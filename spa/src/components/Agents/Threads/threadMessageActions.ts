@@ -26,7 +26,7 @@ const items: ActionOptions[] = [
 		class: "text-red-500",
 		menu: true,
 		batch: true,
-		onFinish: AgentController.refreshAll,
+		onFinish: AgentController.getActiveItemDetails,
 		vnode: (target: ThreadMessage) => !target.content ? false : h(ConfirmActionDialog, {
 			action: "Delete",
 			label: "Messages",
@@ -36,4 +36,4 @@ const items: ActionOptions[] = [
 	}
 ];
 
-export const { performAction, actions } = useActions(items, forAllItems);
+export const { getAction, getActions } = useActions(items, forAllItems);

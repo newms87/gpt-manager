@@ -57,4 +57,4 @@ const items: ActionOptions[] = [
 	}
 ];
 
-export const { performAction, filterActions, actions } = useActions(items, forAllItems);
+export const { getAction, getActions } = useActions(items, forAllItems);

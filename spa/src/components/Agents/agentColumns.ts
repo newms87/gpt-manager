@@ -1,4 +1,4 @@
-import { filterActions } from "@/components/Agents/agentActions";
+import { getActions } from "@/components/Agents/agentActions";
 import { AgentController } from "@/components/Agents/agentControls";
 import { fDate, fNumber } from "quasar-ui-danx";
 import { TableColumn } from "quasar-ui-danx/types";
@@ -10,7 +10,7 @@ export const columns: TableColumn[] = [
 		align: "left",
 		sortable: true,
 		required: true,
-		actionMenu: filterActions({ menu: true }),
+		actionMenu: getActions({ menu: true }),
 		onClick: (agent) => AgentController.activatePanel(agent, "edit")
 	},
 	{

@@ -1,4 +1,4 @@
-import { performAction } from "@/components/Agents/agentActions";
+import { getAction } from "@/components/Agents/agentActions";
 import { AgentController } from "@/components/Agents/agentControls";
 import { AgentInfoPanel, AgentPromptPanel } from "@/components/Agents/Panels";
 import AgentThreadsPanel from "@/components/Agents/Panels/AgentThreadsPanel";
@@ -7,6 +7,7 @@ import { ActionPanel } from "quasar-ui-danx/types";
 import { computed, h } from "vue";
 
 const activeItem = computed(() => AgentController.activeItem.value);
+const updateAction = getAction("update");
 
 export const panels = computed<ActionPanel[]>(() => [
 	{
@@ -14,7 +15,7 @@ export const panels = computed<ActionPanel[]>(() => [
 		label: "Details",
 		vnode: () => h(AgentInfoPanel, {
 			agent: activeItem.value,
-			onChange: input => performAction("update", activeItem.value, input)
+			onChange: input => updateAction.trigger(activeItem.value, input)
 		})
 	},
 	{
@@ -22,7 +23,7 @@ export const panels = computed<ActionPanel[]>(() => [
 		label: "Prompt",
 		vnode: () => h(AgentPromptPanel, {
 			agent: activeItem.value,
-			onChange: input => performAction("update", activeItem.value, input)
+			onChange: input => updateAction.trigger(activeItem.value, input)
 		})
 	},
 	{

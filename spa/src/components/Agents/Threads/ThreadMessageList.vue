@@ -1,32 +1,38 @@
 <template>
 	<div>
 		<ThreadMessageCard v-for="message in thread.messages" :key="message.id" :message="message" class="mb-5" />
-		<QBtn
-			class="bg-lime-800 text-slate-300 text-lg w-full"
-			:loading="isSaving"
-			:disable="isSaving"
-			@click="onCreate"
-		>
-			<CreateIcon class="w-4 mr-3" />
-			Create Message
-		</QBtn>
+		<div class="flex items-center">
+			<QBtn
+				class="bg-sky-700 text-slate-200 text-lg flex-grow"
+				:loading="createMessageAction.isApplying"
+				:disable="createMessageAction.isApplying"
+				@click="createMessageAction.trigger(thread)"
+			>
+				<CreateIcon class="w-4 mr-3" />
+				Create Message
+			</QBtn>
+			<QBtn
+				class="bg-lime-800 text-slate-300 text-lg ml-6"
+				:disable="runAction.isApplying || thread.messages.length === 0"
+				:loading="runAction.isApplying"
+				@click="runAction.trigger(thread)"
+			>
+				<RunIcon class="w-4" />
+			</QBtn>
+		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import { AgentThread } from "@/components/Agents/agents";
-import { performAction } from "@/components/Agents/Threads/threadActions";
+import { getAction } from "@/components/Agents/Threads/threadActions";
 import ThreadMessageCard from "@/components/Agents/Threads/ThreadMessageCard";
-import { FaRegularMessage as CreateIcon } from "danx-icon";
-import { ref } from "vue";
+import { FaRegularMessage as CreateIcon, FaSolidPlay as RunIcon } from "danx-icon";
 
-const props = defineProps<{
+defineProps<{
 	thread: AgentThread;
 }>();
 
-const isSaving = ref(false);
-async function onCreate() {
-	isSaving.value = true;
-	await performAction("create-message", props.thread);
-	isSaving.value = false;
-}
+const createMessageAction = getAction("create-message");
+const runAction = getAction("run");
+console.log("runAction", runAction);
 </script>

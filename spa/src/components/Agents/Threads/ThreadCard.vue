@@ -5,9 +5,9 @@
 				<h5 class="flex-grow">{{ thread.name }}</h5>
 				<QBtn
 					class="text-lime-800 bg-green-200 hover:bg-lime-800 hover:text-green-200 mr-6"
-					:disable="isRunning"
-					:loading="isRunning"
-					@click.stop="onRun"
+					:disable="runAction.isApplying"
+					:loading="runAction.isApplying"
+					@click.stop="runAction.trigger(thread)"
 				>
 					<RunIcon class="w-3 mr-2" />
 					Run Thread
@@ -15,8 +15,8 @@
 				</QBtn>
 				<QBtn
 					class="text-red-900 hover:bg-red-300 shadow-none"
-					:disable="isDeleting"
-					:loading="isDeleting"
+					:disable="deleteAction.isApplying"
+					:loading="deleteAction.isApplying"
 					@click.stop="onDelete"
 				>
 					<DeleteIcon class="w-4" />
@@ -32,10 +32,9 @@
 
 <script setup lang="ts">
 import { AgentThread } from "@/components/Agents/agents";
-import { performAction } from "@/components/Agents/Threads/threadActions";
+import { getAction } from "@/components/Agents/Threads/threadActions";
 import ThreadMessageList from "@/components/Agents/Threads/ThreadMessageList";
 import { FaRegularTrashCan as DeleteIcon, FaSolidPlay as RunIcon } from "danx-icon";
-import { ref } from "vue";
 
 const emit = defineEmits(["open", "close"]);
 const props = defineProps<{
@@ -43,17 +42,11 @@ const props = defineProps<{
 	active?: boolean;
 }>();
 
-const isRunning = ref(false);
-async function onRun() {
-	isRunning.value = true;
-	await performAction("run", props.thread);
-	isRunning.value = false;
-}
-const isDeleting = ref(false);
+const runAction = getAction("run");
+const deleteAction = getAction("delete");
+
 async function onDelete() {
-	isDeleting.value = true;
-	const result = await performAction("delete", props.thread);
-	isDeleting.value = false;
+	const result = await deleteAction.trigger(props.thread);
 	if (result?.success) {
 		emit("close");
 	}

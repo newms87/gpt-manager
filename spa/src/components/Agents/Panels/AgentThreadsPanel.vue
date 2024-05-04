@@ -3,9 +3,9 @@
 		<QBtn
 			class="text-lg w-full mb-5 transition-all"
 			:class="{'bg-lime-800 text-slate-300': !activeThread, 'bg-sky-800 text-slate-200': !!activeThread}"
-			:loading="isSaving"
-			:disable="isSaving"
-			@click="activeThread ? (activeThread = null) : onCreate"
+			:loading="createThreadAction.isApplying"
+			:disable="createThreadAction.isApplying"
+			@click="activeThread ? (activeThread = null) : createThreadAction.trigger(props.agent)"
 		>
 			<template v-if="activeThread">
 				<BackIcon class="w-4 mr-3" />
@@ -31,12 +31,12 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { performAction } from "@/components/Agents/agentActions";
+import { getAction } from "@/components/Agents/agentActions";
 import { Agent, AgentThread } from "@/components/Agents/agents";
 import ThreadCard from "@/components/Agents/Threads/ThreadCard";
 import { FaRegularHandBackFist as BackIcon, FaRegularMessage as CreateIcon } from "danx-icon";
 import { ListTransition } from "quasar-ui-danx";
-import { computed, ref, shallowRef } from "vue";
+import { computed, shallowRef } from "vue";
 
 const props = defineProps<{
 	agent: Agent,
@@ -45,10 +45,5 @@ const props = defineProps<{
 const activeThread = shallowRef<AgentThread | null>(null);
 const visibleThreads = computed(() => activeThread.value ? [activeThread.value] : props.agent.threads);
 
-const isSaving = ref(false);
-async function onCreate() {
-	isSaving.value = true;
-	await performAction("create-thread", props.agent);
-	isSaving.value = false;
-}
+const createThreadAction = getAction("create-thread");
 </script>

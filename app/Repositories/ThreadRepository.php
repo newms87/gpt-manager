@@ -62,7 +62,6 @@ class ThreadRepository extends ActionRepository
             $messages
         );
 
-        dump($messages, $response);
         $this->handleResponse($thread, $threadRun, $response);
 
         return $threadRun;
