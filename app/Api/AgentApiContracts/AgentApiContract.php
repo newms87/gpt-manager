@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Api;
+namespace App\Api\AgentApiContracts;
 
-interface AgentModelApiContract
+interface AgentApiContract
 {
     /**
      * Returns an array of model ID strings
@@ -16,7 +16,7 @@ interface AgentModelApiContract
      * @param string $model
      * @param float  $temperature
      * @param array  $messages
-     * @return array
+     * @return AgentCompletionResponseContract
      */
-    public function complete(string $model, float $temperature, array $messages): array;
+    public function complete(string $model, float $temperature, array $messages): AgentCompletionResponseContract;
 }

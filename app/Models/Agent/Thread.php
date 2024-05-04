@@ -32,4 +32,18 @@ class Thread extends Model implements AuditableContract
     {
         return $this->belongsTo(Agent::class);
     }
+
+    /**
+     * Format the messages to be sent to an AI completion API
+     * @return array
+     */
+    public function getMessagesForApi(): array
+    {
+        return $this->messages->map(function ($message) {
+            return [
+                'role'    => $message->role,
+                'content' => $message->content,
+            ];
+        })->toArray();
+    }
 }

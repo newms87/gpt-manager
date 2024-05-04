@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Api\OpenAI\OpenAIApi;
+use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
 use App\Models\Agent\Thread;
 use Flytedan\DanxLaravel\Exceptions\ValidationError;
@@ -13,6 +13,11 @@ class AgentRepository extends ActionRepository
 {
     public static string $model = Agent::class;
 
+    /**
+     * @param array $data
+     * @return Agent
+     * @throws ValidationError
+     */
     public function createAgent(array $data): Model
     {
         // TODO: Implement this via Laravel validation
@@ -20,12 +25,32 @@ class AgentRepository extends ActionRepository
             throw new ValidationError('An agent with this name already exists');
         }
 
-        $data += [
-            'api'   => OpenAIApi::$serviceName,
-            'model' => 'gpt-4-turbo',
-        ];
+        if (!empty($data['model'])) {
+            $data['api'] = AgentRepository::getApiForModel($data['model']);
+        } else {
+            $data += [
+                'api'   => OpenAiApi::$serviceName,
+                'model' => 'gpt-4-turbo',
+            ];
+        }
 
         return Agent::create($data);
+    }
+
+    /**
+     * @param Agent $agent
+     * @param array $data
+     * @return Agent
+     */
+    public function updateAgent(Agent $agent, array $data): Model
+    {
+        if (!empty($data['model'])) {
+            $data['api'] = AgentRepository::getApiForModel($data['model']);
+        }
+
+        $agent->update($data);
+
+        return $agent;
     }
 
     /**
@@ -39,6 +64,7 @@ class AgentRepository extends ActionRepository
     {
         return match ($action) {
             'create' => $this->createAgent($data),
+            'update' => $this->updateAgent($model, $data),
             'create-thread' => app(ThreadRepository::class)->create($model),
             default => parent::applyAction($action, $model, $data)
         };

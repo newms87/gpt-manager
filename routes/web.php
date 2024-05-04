@@ -19,7 +19,9 @@ Route::get('/', function () {
 });
 
 ActionRoute::routes('agents', new AgentsController);
-ActionRoute::routes('threads', new ThreadsController);
+ActionRoute::routes('threads', new ThreadsController)->group(function () {
+    Route::post('/{thread}/run', [ThreadsController::class, 'run'])->name('threads.run');
+});
 ActionRoute::routes('messages', new MessagesController);
 
 Route::get('/dashboard', function () {

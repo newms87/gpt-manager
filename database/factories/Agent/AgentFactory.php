@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Agent;
 
+use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
 use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -14,9 +15,9 @@ class AgentFactory extends Factory
     public function definition(): array
     {
         $models = [
-            ['id' => 'gpt-4-turbo', 'api' => 'OpenAi'],
-            ['id' => 'gpt-4', 'api' => 'OpenAi'],
-            ['id' => 'gpt-3.5-turbo', 'api' => 'OpenAi'],
+            ['id' => 'gpt-4-turbo', 'api' => OpenAiApi::$serviceName],
+            ['id' => 'gpt-4', 'api' => OpenAiApi::$serviceName],
+            ['id' => 'gpt-3.5-turbo', 'api' => OpenAiApi::$serviceName],
             ['id' => 'claude-opus', 'api' => 'Anthropic'],
         ];
 

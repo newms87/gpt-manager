@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use App\Models\Agent\Agent;
 use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
@@ -35,6 +36,7 @@ class ThreadRepository extends ActionRepository
     {
         return match ($action) {
             'create-message' => app(MessageRepository::class)->create($model, $data['role'] ?? Message::ROLE_USER),
+            'run' => $this->run($model),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -42,27 +44,42 @@ class ThreadRepository extends ActionRepository
     public function run(Thread $thread)
     {
         $agent    = $thread->agent;
-        $messages = $thread->messages;
+        $messages = $thread->getMessagesForApi();
 
-        if ($messages->isEmpty()) {
+        if (!$messages) {
             throw new ValidationError('You must add messages to the thread before running it.');
         }
 
         $threadRun = $thread->runs()->create([
-            'thread_id'       => $thread->id,
-            'last_message_id' => $messages->last()->id,
+            'last_message_id' => $thread->messages->last()->id,
             'status'          => ThreadRun::STATUS_RUNNING,
             'started_at'      => now(),
         ]);
 
-        dump('running thread', $threadRun->toArray());
-
         $response = $agent->getModelApi()->complete(
             $agent->model,
-            $messages->pluck('content')->toArray(),
-            $agent->temperature
+            $agent->temperature,
+            $messages
         );
 
-        dump($response);
+        dump($messages, $response);
+        $this->handleResponse($thread, $threadRun, $response);
+
+        return $threadRun;
+    }
+
+    public function handleResponse(Thread $thread, ThreadRun $threadRun, AgentCompletionResponseContract $response): void
+    {
+        $threadRun->update([
+            'status'        => ThreadRun::STATUS_COMPLETED,
+            'completed_at'  => now(),
+            'input_tokens'  => $response->inputTokens(),
+            'output_tokens' => $response->outputTokens(),
+        ]);
+
+        $thread->messages()->create([
+            'role'    => Message::ROLE_ASSISTANT,
+            'content' => $response->getMessage(),
+        ]);
     }
 }

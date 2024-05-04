@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Api\OpenAI;
+namespace App\Api\OpenAi;
 
-use App\Api\AgentModelApiContract;
+use App\Api\AgentApiContracts\AgentApiContract;
+use App\Api\OpenAi\Classes\OpenAiCompletionResponse;
 use Flytedan\DanxLaravel\Api\BearerTokenApi;
 use Flytedan\DanxLaravel\Exceptions\ApiException;
 
-class OpenAIApi extends BearerTokenApi implements AgentModelApiContract
+class OpenAiApi extends BearerTokenApi implements AgentApiContract
 {
     public static string $serviceName = 'OpenAI';
 
@@ -27,12 +28,14 @@ class OpenAIApi extends BearerTokenApi implements AgentModelApiContract
         return collect($data)->pluck('id')->toArray();
     }
 
-    public function complete(string $model, float $temperature, array $messages): array
+    public function complete(string $model, float $temperature, array $messages): OpenAiCompletionResponse
     {
-        return $this->post('chat/completions', [
+        $response = $this->post('chat/completions', [
             'model'       => $model,
             'messages'    => $messages,
             'temperature' => $temperature,
         ])->json();
+
+        return OpenAiCompletionResponse::make($response);
     }
 }

@@ -18,6 +18,27 @@ class ThreadRun extends Model implements AuditableContract
         STATUS_COMPLETED = 'Completed',
         STATUS_FAILED = 'Failed';
 
+    protected $fillable = [
+        'completed_at',
+        'failed_at',
+        'input_tokens',
+        'last_message_id',
+        'output_tokens',
+        'refreshed_at',
+        'started_at',
+        'status',
+    ];
+
+    public function casts()
+    {
+        return [
+            'started_at'   => 'datetime',
+            'completed_at' => 'datetime',
+            'failed_at'    => 'datetime',
+            'refreshed_at' => 'datetime',
+        ];
+    }
+
     public function thread()
     {
         return $this->belongsTo(Thread::class);

@@ -2,9 +2,9 @@
 
 namespace App\Models\Agent;
 
+use App\Api\AgentApiContracts\AgentApiContract;
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowJob;
-use App\Repositories\AgentRepository;
 use Exception;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
@@ -51,7 +51,7 @@ class Agent extends Model implements AuditableContract
         return $this->belongsToMany(WorkflowJob::class);
     }
 
-    public function getModelApi()
+    public function getModelApi(): AgentApiContract
     {
         $apiClass = config('ai.apis')[$this->api] ?? null;
         if (!$apiClass) {
@@ -65,12 +65,6 @@ class Agent extends Model implements AuditableContract
     {
         static::creating(function (Agent $agent) {
             $agent->team_id = $agent->team_id ?? user()->team_id;
-        });
-
-        static::saving(function (Agent $agent) {
-            if ($agent->isDirty('model')) {
-                $agent->api = AgentRepository::getApiForModel($agent->model);
-            }
         });
     }
 }

@@ -1,9 +1,9 @@
 <?php
 
-use App\Api\OpenAI\OpenAIApi;
+use App\Api\OpenAi\OpenAiApi;
 
 return [
     'apis' => [
-        OpenAIApi::$serviceName => OpenAIApi::class,
+        OpenAiApi::$serviceName => OpenAiApi::class,
     ],
 ];
