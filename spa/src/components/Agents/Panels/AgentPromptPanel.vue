@@ -9,9 +9,10 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { Agent } from "@/components/Agents/agents";
 import { RenderedForm, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
-import { computed, h } from "vue";
+import { h, ref } from "vue";
 
 const props = defineProps<{
 	agent: Agent,
@@ -19,9 +20,7 @@ const props = defineProps<{
 
 defineEmits(["change"]);
 
-const input = computed(() => ({
-	prompt: props.agent.prompt
-}));
+const input = ref({ prompt: props.agent.prompt });
 
 const agentForm: Form = {
 	fields: [

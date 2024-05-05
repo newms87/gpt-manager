@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { defaultValueCtx, Editor, rootCtx } from "@milkdown/core";
 import { block } from "@milkdown/plugin-block";
-import { diagram } from "@milkdown/plugin-diagram";
 import { listener, listenerCtx } from "@milkdown/plugin-listener";
 import { prism } from "@milkdown/plugin-prism";
 import { commonmark } from "@milkdown/preset-commonmark";
@@ -24,7 +23,6 @@ useEditor((root) => {
 		.use(prism)
 		.use(block)
 		.use(listener)
-		.use(diagram)
 		.use(commonmark);
 });
 </script>

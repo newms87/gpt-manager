@@ -5,9 +5,10 @@
 </template>
 <script setup lang="ts">
 import { AgentController } from "@/components/Agents/agentControls";
+import { Agent } from "@/components/Agents/agents";
 import { NumberField, RenderedForm, SelectField, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
-import { computed, h } from "vue";
+import { h, ref } from "vue";
 
 const props = defineProps<{
 	agent: Agent,
@@ -15,12 +16,12 @@ const props = defineProps<{
 
 defineEmits(["change"]);
 
-const input = computed(() => ({
+const input = ref({
 	name: props.agent.name,
 	temperature: props.agent.temperature,
 	model: props.agent.model,
 	description: props.agent.description
-}));
+});
 
 const agentForm: Form = {
 	fields: [

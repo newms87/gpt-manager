@@ -33,7 +33,7 @@ const items: ActionOptions[] = [
 	},
 	{
 		name: "update",
-		debounce: 500,
+		debounce: 1000,
 		onFinish: AgentController.refreshAll
 	},
 	{
