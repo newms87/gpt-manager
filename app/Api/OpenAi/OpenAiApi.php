@@ -28,13 +28,12 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         return collect($data)->pluck('id')->toArray();
     }
 
-    public function complete(string $model, float $temperature, array $messages): OpenAiCompletionResponse
+    public function complete(string $model, array $messages, array $options): OpenAiCompletionResponse
     {
         $response = $this->post('chat/completions', [
-            'model'       => $model,
-            'messages'    => $messages,
-            'temperature' => $temperature,
-        ])->json();
+                'model'    => $model,
+                'messages' => $messages,
+            ] + $options)->json();
 
         return OpenAiCompletionResponse::make($response);
     }

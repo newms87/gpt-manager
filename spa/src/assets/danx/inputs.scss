@@ -64,3 +64,11 @@
 .q-date {
 	@apply bg-slate-600 text-slate-200;
 }
+
+.danx-input-chars {
+	@apply text-slate-400 text-right text-xs;
+
+	&.danx-input-chars--error {
+		@apply text-red-500;
+	}
+}

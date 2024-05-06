@@ -18,16 +18,18 @@ class Agent extends Model implements AuditableContract
 
     protected $fillable = [
         'name',
+        'api',
         'model',
         'temperature',
         'prompt',
         'description',
+        'tools',
     ];
 
     public function casts()
     {
         return [
-            'functions' => 'json',
+            'tools' => 'json',
         ];
     }
 
@@ -49,6 +51,24 @@ class Agent extends Model implements AuditableContract
     public function workflowJobs()
     {
         return $this->belongsToMany(WorkflowJob::class);
+    }
+
+    public function formatTools()
+    {
+        $availableTools = collect(config('ai.tools'))->keyBy('name');
+        $tools          = [];
+        foreach($this->tools as $name) {
+            $availableTool = $availableTools->get($name);
+            if (!$availableTool) {
+                continue;
+            }
+            $tools[] = [
+                'type'     => 'function',
+                'function' => $availableTool,
+            ];
+        }
+
+        return $tools;
     }
 
     public function getModelApi(): AgentApiContract

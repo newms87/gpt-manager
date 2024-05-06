@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->string('api');
             $table->string('model');
             $table->decimal('temperature', 5, 2)->default(0);
-            $table->json('functions')->nullable();
+            $table->json('tools')->nullable();
             $table->text('prompt')->nullable();
             $table->timestamps();
             $table->softDeletes();

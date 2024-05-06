@@ -5,6 +5,7 @@ use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\ThreadsController;
 use App\Http\Controllers\ProfileController;
 use Flytedan\DanxLaravel\Http\Routes\ActionRoute;
+use Flytedan\DanxLaravel\Http\Routes\FileUploadRoute;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -18,6 +19,7 @@ Route::get('/', function () {
     ];
 });
 
+FileUploadRoute::routes();
 ActionRoute::routes('agents', new AgentsController);
 ActionRoute::routes('threads', new ThreadsController)->group(function () {
     Route::post('/{thread}/run', [ThreadsController::class, 'run'])->name('threads.run');

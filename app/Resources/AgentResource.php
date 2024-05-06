@@ -23,7 +23,7 @@ class AgentResource extends ActionResource
             'api'            => $this->api,
             'model'          => $this->model,
             'temperature'    => $this->temperature,
-            'functions'      => $this->functions,
+            'tools'          => $this->tools,
             'prompt'         => $this->prompt,
             'thread_count'   => $this->threads()->count(),
             'created_at'     => $this->created_at,

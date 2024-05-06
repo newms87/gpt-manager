@@ -14,9 +14,9 @@ interface AgentApiContract
      * Completes the messages with the given model and temperature
      *
      * @param string $model
-     * @param float  $temperature
      * @param array  $messages
+     * @param array  $options
      * @return AgentCompletionResponseContract
      */
-    public function complete(string $model, float $temperature, array $messages): AgentCompletionResponseContract;
+    public function complete(string $model, array $messages, array $options): AgentCompletionResponseContract;
 }

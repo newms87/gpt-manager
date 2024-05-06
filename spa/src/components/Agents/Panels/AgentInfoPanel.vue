@@ -1,9 +1,10 @@
 <template>
 	<div class="p-6">
-		<RenderedForm v-model:values="input" empty-value="" :form="agentForm" @update:values="$emit('change', $event)" />
+		<RenderedForm v-model:values="input" empty-value="" :form="agentForm" @update:values="onChange" />
 	</div>
 </template>
 <script setup lang="ts">
+import { getAction } from "@/components/Agents/agentActions";
 import { AgentController } from "@/components/Agents/agentControls";
 import { Agent } from "@/components/Agents/agents";
 import { NumberField, RenderedForm, SelectField, TextField } from "quasar-ui-danx";
@@ -14,8 +15,7 @@ const props = defineProps<{
 	agent: Agent,
 }>();
 
-defineEmits(["change"]);
-
+const updateAction = getAction("update-debounced");
 const input = ref({
 	name: props.agent.name,
 	temperature: props.agent.temperature,
@@ -23,17 +23,21 @@ const input = ref({
 	description: props.agent.description
 });
 
+function onChange(input) {
+	updateAction.trigger(props.agent, input);
+}
+
 const agentForm: Form = {
 	fields: [
 		{
 			name: "name",
-			component: TextField,
+			vnode: (props) => h(TextField, { ...props, maxLength: 256 }),
 			label: "Agent Name",
 			required: true
 		},
 		{
 			name: "description",
-			vnode: (props) => h(TextField, { ...props, type: "textarea" }),
+			vnode: (props) => h(TextField, { ...props, type: "textarea", inputClass: "h-56", maxLength: 512 }),
 			label: "Description"
 		},
 		{

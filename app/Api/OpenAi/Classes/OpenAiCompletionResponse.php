@@ -2,6 +2,7 @@
 
 namespace App\Api\OpenAi\Classes;
 
+use App\AiTools\AiToolCaller;
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use Flytedan\DanxLaravel\Input\Input;
 
@@ -20,9 +21,27 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
         parent::__construct($items);
     }
 
+    public function isToolCall(): bool
+    {
+        return $this->choices[0]['finish_reason'] === 'tool_calls';
+    }
+
     public function isFinished(): bool
     {
         return $this->choices[0]['finish_reason'] === 'stop';
+    }
+
+    public function getToolCalls(): array
+    {
+        $toolCalls = [];
+        foreach($this->choices[0]['message']['tool_calls'] as $toolCall) {
+            if ($toolCall['type'] === 'function') {
+                $function    = $toolCall['function'];
+                $toolCalls[] = new AiToolCaller($function['name'], json_decode($function['arguments'], true));
+            }
+        }
+
+        return $toolCalls;
     }
 
     public function getMessage(): string

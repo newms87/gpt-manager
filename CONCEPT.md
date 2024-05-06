@@ -41,9 +41,9 @@ https://miro.com/app/board/uXjVKU0jWSA=/
 * parsed_text TEXT
 * images JSON
 
-## Functions
+## AI Tools
 
-Functions are the meat of GPT Manager.
+AI Tools are the meat of GPT Manager.
 The value comes from a generalized set of utilities that enables other services
 using GPT manager to accomplish their tasks.
 

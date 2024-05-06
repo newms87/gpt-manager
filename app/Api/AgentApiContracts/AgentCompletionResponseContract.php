@@ -2,8 +2,17 @@
 
 namespace App\Api\AgentApiContracts;
 
+use App\AiTools\AiToolCaller;
+
 interface AgentCompletionResponseContract
 {
+    public function isToolCall(): bool;
+
+    /**
+     * @return array|AiToolCaller[]
+     */
+    public function getToolCalls(): array;
+
     /**
      * The completion is finished
      * @return bool

@@ -70,6 +70,10 @@ class AgentRepository extends ActionRepository
         };
     }
 
+    /**
+     * @param array|null $filter
+     * @return array
+     */
     public function filterFieldOptions(?array $filter = []): array
     {
         $aiModels = collect(static::getAiModels())->sortKeys()->map(fn($aiModel) => [
@@ -77,8 +81,11 @@ class AgentRepository extends ActionRepository
             'value' => $aiModel['model'],
         ])->values()->toArray();
 
+        $aiTools = config('ai.tools');
+
         return [
             'aiModels' => $aiModels,
+            'aiTools'  => $aiTools,
         ];
     }
 

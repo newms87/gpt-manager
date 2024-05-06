@@ -1,7 +1,6 @@
 import { getAction } from "@/components/Agents/agentActions";
 import { AgentController } from "@/components/Agents/agentControls";
-import { AgentInfoPanel, AgentPromptPanel } from "@/components/Agents/Panels";
-import AgentThreadsPanel from "@/components/Agents/Panels/AgentThreadsPanel";
+import { AgentInfoPanel, AgentPromptPanel, AgentThreadsPanel, AgentToolsPanel } from "@/components/Agents/Panels";
 import { BadgeTab } from "quasar-ui-danx";
 import { ActionPanel } from "quasar-ui-danx/types";
 import { computed, h } from "vue";
@@ -14,8 +13,7 @@ export const panels = computed<ActionPanel[]>(() => [
 		name: "edit",
 		label: "Details",
 		vnode: () => h(AgentInfoPanel, {
-			agent: activeItem.value,
-			onChange: input => updateAction.trigger(activeItem.value, input)
+			agent: activeItem.value
 		})
 	},
 	{
@@ -24,6 +22,14 @@ export const panels = computed<ActionPanel[]>(() => [
 		vnode: () => h(AgentPromptPanel, {
 			agent: activeItem.value,
 			onChange: input => updateAction.trigger(activeItem.value, input)
+		})
+	},
+	{
+		name: "tools",
+		label: "Tools",
+		tabVnode: () => h(BadgeTab, { count: activeItem.value?.tools.length }),
+		vnode: () => h(AgentToolsPanel, {
+			agent: activeItem.value
 		})
 	},
 	{

@@ -30,7 +30,7 @@ class AgentFactory extends Factory
             'description'  => fake()->paragraph,
             'api'          => $model['api'],
             'model'        => $model['id'],
-            'functions'    => [],
+            'tools'        => fake()->randomElements(collect(config('ai.tools'))->pluck('name')->toArray()),
             'temperature'  => 0,
             'prompt'       => fake()->paragraphs(10, true),
         ];

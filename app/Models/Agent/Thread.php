@@ -39,11 +39,20 @@ class Thread extends Model implements AuditableContract
      */
     public function getMessagesForApi(): array
     {
-        return $this->messages->map(function ($message) {
-            return [
+        $messages = collect([
+            [
+                'role'    => Message::ROLE_USER,
+                'content' => $this->agent->prompt,
+            ],
+        ]);
+
+        foreach($this->messages as $message) {
+            $messages->push([
                 'role'    => $message->role,
                 'content' => $message->content,
-            ];
-        })->toArray();
+            ]);
+        }
+
+        return $messages->toArray();
     }
 }

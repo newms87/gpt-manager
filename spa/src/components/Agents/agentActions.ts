@@ -33,8 +33,13 @@ const items: ActionOptions[] = [
 	},
 	{
 		name: "update",
+		onFinish: AgentController.loadList
+	},
+	{
+		name: "update-debounced",
+		alias: "update",
 		debounce: 1000,
-		onFinish: AgentController.refreshAll
+		onFinish: AgentController.loadList
 	},
 	{
 		label: "Edit",

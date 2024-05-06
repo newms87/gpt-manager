@@ -7,6 +7,7 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
+use Exception;
 use Flytedan\DanxLaravel\Exceptions\ValidationError;
 use Flytedan\DanxLaravel\Helpers\DateHelper;
 use Flytedan\DanxLaravel\Repositories\ActionRepository;
@@ -53,13 +54,26 @@ class ThreadRepository extends ActionRepository
         $threadRun = $thread->runs()->create([
             'last_message_id' => $thread->messages->last()->id,
             'status'          => ThreadRun::STATUS_RUNNING,
+            'temperature'     => $agent->temperature,
+            'tools'           => $agent->tools,
+            'tool_choice'     => 'auto',
+            'response_format' => 'text',
+            'seed'            => config('ai.seed'),
             'started_at'      => now(),
         ]);
 
+        $options = [
+            'temperature'     => $threadRun->temperature,
+            'tools'           => $agent->formatTools(),
+            'tool_choice'     => $threadRun->tool_choice,
+            'response_format' => $threadRun->response_format,
+            'seed'            => $threadRun->seed,
+        ];
+
         $response = $agent->getModelApi()->complete(
             $agent->model,
-            $agent->temperature,
-            $messages
+            $messages,
+            $options
         );
 
         $this->handleResponse($thread, $threadRun, $response);
@@ -69,16 +83,26 @@ class ThreadRepository extends ActionRepository
 
     public function handleResponse(Thread $thread, ThreadRun $threadRun, AgentCompletionResponseContract $response): void
     {
-        $threadRun->update([
-            'status'        => ThreadRun::STATUS_COMPLETED,
-            'completed_at'  => now(),
-            'input_tokens'  => $response->inputTokens(),
-            'output_tokens' => $response->outputTokens(),
-        ]);
+        if ($response->isToolCall()) {
+            foreach($response->getToolCalls() as $toolCall) {
+                $result = $toolCall->call();
 
-        $thread->messages()->create([
-            'role'    => Message::ROLE_ASSISTANT,
-            'content' => $response->getMessage(),
-        ]);
+                dump("tool call result", $result);
+            }
+        } elseif ($response->isFinished()) {
+            $threadRun->update([
+                'status'        => ThreadRun::STATUS_COMPLETED,
+                'completed_at'  => now(),
+                'input_tokens'  => $response->inputTokens(),
+                'output_tokens' => $response->outputTokens(),
+            ]);
+
+            $thread->messages()->create([
+                'role'    => Message::ROLE_ASSISTANT,
+                'content' => $response->getMessage(),
+            ]);
+        } else {
+            throw new Exception('Unexpected response from AI model');
+        }
     }
 }
