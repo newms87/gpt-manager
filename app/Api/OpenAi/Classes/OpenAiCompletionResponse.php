@@ -31,22 +31,27 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
         return $this->choices[0]['finish_reason'] === 'stop';
     }
 
-    public function getToolCalls(): array
+    public function getDataFields(): array
+    {
+        return collect($this->choices[0]['message'])->except(['role', 'message'])->toArray();
+    }
+
+    public function getToolCallerFunctions(): array
     {
         $toolCalls = [];
         foreach($this->choices[0]['message']['tool_calls'] as $toolCall) {
             if ($toolCall['type'] === 'function') {
                 $function    = $toolCall['function'];
-                $toolCalls[] = new AiToolCaller($function['name'], json_decode($function['arguments'], true));
+                $toolCalls[] = new AiToolCaller($toolCall['id'], $function['name'], json_decode($function['arguments'], true));
             }
         }
 
         return $toolCalls;
     }
 
-    public function getMessage(): string
+    public function getContent(): ?string
     {
-        return $this->choices[0]['message']['content'];
+        return $this->choices[0]['message']['content'] ?? null;
     }
 
     public function inputTokens(): int

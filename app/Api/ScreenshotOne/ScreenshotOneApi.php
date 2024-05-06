@@ -52,7 +52,7 @@ class ScreenshotOneApi extends BearerTokenApi
 
             // Storage options
             'store'                     => true,
-            'storage_path'              => $path,
+            'storage_path'              => preg_replace("/\\.[a-z0-9]{2,3}$/", '', $path),
             'storage_bucket'            => config('screenshotone.s3_bucket'),
             'storage_return_location'   => true,
             'response_type'             => 'json',
@@ -67,7 +67,7 @@ class ScreenshotOneApi extends BearerTokenApi
         if (!$location) {
             throw new ApiException("ScreenshotOne failed to take screenshot of $url");
         }
-        
+
         return $location;
     }
 }

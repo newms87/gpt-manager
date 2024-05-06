@@ -6,11 +6,13 @@ use BadFunctionCallException;
 
 class AiToolCaller
 {
+    protected string $id;
     protected string $name;
     protected array  $arguments;
 
-    public function __construct(string $name, array $arguments = [])
+    public function __construct(string $id, string $name, array $arguments = [])
     {
+        $this->id        = $id;
         $this->name      = $name;
         $this->arguments = $arguments;
     }
@@ -24,6 +26,16 @@ class AiToolCaller
         }
 
         return $tool->execute($this->arguments);
+    }
+
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    public function getName()
+    {
+        return $this->name;
     }
 
     protected function getTool(): ?AiToolContract

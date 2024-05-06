@@ -1,4 +1,4 @@
-import { ActionTargetItem } from "quasar-ui-danx/types";
+import { ActionTargetItem, AnyObject } from "quasar-ui-danx/types";
 
 export interface Agent extends ActionTargetItem {
 	id: string;
@@ -21,5 +21,6 @@ export interface ThreadMessage extends ActionTargetItem {
 	id: number;
 	role: "assistant" | "user";
 	title: string;
-	content: string;
+	content?: string;
+	data?: AnyObject;
 }

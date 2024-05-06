@@ -70,13 +70,18 @@ class ThreadRepository extends ActionRepository
             'seed'            => $threadRun->seed,
         ];
 
-        $response = $agent->getModelApi()->complete(
-            $agent->model,
-            $messages,
-            $options
-        );
+        do {
+            $response = $agent->getModelApi()->complete(
+                $agent->model,
+                $messages,
+                $options
+            );
 
-        $this->handleResponse($thread, $threadRun, $response);
+            $this->handleResponse($thread, $threadRun, $response);
+
+            // Get the messages for the next iteration
+            $messages = $thread->getMessagesForApi();
+        } while(!$response->isFinished());
 
         return $threadRun;
     }
@@ -84,11 +89,24 @@ class ThreadRepository extends ActionRepository
     public function handleResponse(Thread $thread, ThreadRun $threadRun, AgentCompletionResponseContract $response): void
     {
         if ($response->isToolCall()) {
-            foreach($response->getToolCalls() as $toolCall) {
-                $result = $toolCall->call();
+            $thread->messages()->create([
+                'role'    => Message::ROLE_ASSISTANT,
+                'content' => $response->getContent(),
+                'data'    => $response->getDataFields(),
+            ]);
 
-                dump("tool call result", $result);
+            foreach($response->getToolCallerFunctions() as $toolCallerFunction) {
+                $content = $toolCallerFunction->call();
+                $thread->messages()->create([
+                    'role'    => Message::ROLE_TOOL,
+                    'content' => is_string($content) ? $content : json_encode($content),
+                    'data'    => [
+                        'tool_call_id' => $toolCallerFunction->getId(),
+                        'name'         => $toolCallerFunction->getName(),
+                    ],
+                ]);
             }
+            $threadRun->update(['refreshed_at' => now()]);
         } elseif ($response->isFinished()) {
             $threadRun->update([
                 'status'        => ThreadRun::STATUS_COMPLETED,
@@ -99,7 +117,7 @@ class ThreadRepository extends ActionRepository
 
             $thread->messages()->create([
                 'role'    => Message::ROLE_ASSISTANT,
-                'content' => $response->getMessage(),
+                'content' => $response->getContent(),
             ]);
         } else {
             throw new Exception('Unexpected response from AI model');

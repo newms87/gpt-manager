@@ -46,11 +46,16 @@ class Thread extends Model implements AuditableContract
             ],
         ]);
 
-        foreach($this->messages as $message) {
+        foreach($this->messages()->get() as $message) {
+            $content = $message->content;
+            // If first and last character of the message is a [ and ] or a { and } then json decode the message
+            if (in_array(substr($content, 0, 1), ['[', '{']) && in_array(substr($message->content, -1), [']', '}'])) {
+                $content = json_decode($content, true);
+            }
             $messages->push([
-                'role'    => $message->role,
-                'content' => $message->content,
-            ]);
+                    'role'    => $message->role,
+                    'content' => $content,
+                ] + ($message->data ?? []));
         }
 
         return $messages->toArray();

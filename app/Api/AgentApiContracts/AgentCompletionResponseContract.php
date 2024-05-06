@@ -8,10 +8,12 @@ interface AgentCompletionResponseContract
 {
     public function isToolCall(): bool;
 
+    public function getDataFields(): array;
+
     /**
      * @return array|AiToolCaller[]
      */
-    public function getToolCalls(): array;
+    public function getToolCallerFunctions(): array;
 
     /**
      * The completion is finished
@@ -21,9 +23,9 @@ interface AgentCompletionResponseContract
 
     /**
      * The message from the agent
-     * @return string
+     * @return ?string
      */
-    public function getMessage(): string;
+    public function getContent(): ?string;
 
     /**
      * The number of tokens used for the prompt

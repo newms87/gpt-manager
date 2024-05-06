@@ -12,7 +12,7 @@ use Flytedan\DanxLaravel\Resources\ActionResource;
 class MessageResource extends ActionResource
 {
     public static ?string $type = 'Message';
-    
+
     public function data(): array
     {
         return [
@@ -21,6 +21,7 @@ class MessageResource extends ActionResource
             'title'     => $this->title,
             'summary'   => $this->summary,
             'content'   => $this->content,
+            'data'      => $this->data,
             'timestamp' => $this->updated_at,
         ];
     }

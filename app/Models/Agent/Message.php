@@ -14,15 +14,24 @@ class Message extends Model implements AuditableContract
 
     const
         ROLE_USER = 'user',
-        ROLE_ASSISTANT = 'assistant';
+        ROLE_ASSISTANT = 'assistant',
+        ROLE_TOOL = 'tool';
 
     protected $fillable = [
         'role',
         'title',
         'summary',
         'content',
+        'data',
     ];
-    
+
+    public function casts()
+    {
+        return [
+            'data' => 'json',
+        ];
+    }
+
     public function thread()
     {
         return $this->belongsTo(Thread::class);

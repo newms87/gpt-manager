@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->string('role');
             $table->string('title')->nullable();
             $table->text('summary')->nullable();
-            $table->text('content');
+            $table->text('content')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

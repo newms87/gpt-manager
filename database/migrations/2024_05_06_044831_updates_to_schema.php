@@ -17,6 +17,10 @@ return new class extends Migration {
             $table->string('response_format')->default('text')->after('tool_choice');
             $table->string('seed')->nullable()->after('response_format');
         });
+
+        Schema::table('messages', function (Blueprint $table) {
+            $table->json('data')->nullable()->after('content');
+        });
     }
 
     /**
@@ -30,6 +34,10 @@ return new class extends Migration {
             $table->dropColumn('tool_choice');
             $table->dropColumn('response_format');
             $table->dropColumn('seed');
+        });
+
+        Schema::table('messages', function (Blueprint $table) {
+            $table->dropColumn('data');
         });
     }
 };

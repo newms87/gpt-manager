@@ -6,7 +6,6 @@ use App\Api\ScreenshotOne\ScreenshotOneApi;
 use BadFunctionCallException;
 use Flytedan\DanxLaravel\Helpers\FileHelper;
 use Flytedan\DanxLaravel\Models\Utilities\StoredFile;
-use Illuminate\Support\Facades\Storage;
 
 class UrlToScreenshotAiTool implements AiToolContract
 {
@@ -34,21 +33,32 @@ class UrlToScreenshotAiTool implements AiToolContract
         $filepath   = "url-to-screenshot/" . md5($url) . ".jpg";
         $storedFile = StoredFile::firstWhere('filepath', $filepath);
 
-        if ($storedFile) {
-            return $storedFile;
+        if (!$storedFile) {
+            $storedUrl = ScreenshotOneApi::make()->take($url, $filepath);
+
+            $storedFile = StoredFile::create([
+                'disk'     => 's3',
+                'name'     => 'UrlToScreenshot ' . now()->toDateTimeString(),
+                'filename' => basename($filepath),
+                'filepath' => $filepath,
+                'mime'     => FileHelper::getMimeFromExtension($filepath),
+                'url'      => $storedUrl,
+                'size'     => 0,
+            ]);
         }
 
-        $storedUrl = ScreenshotOneApi::make()->take($url, $filepath);
 
-        $size = Storage::disk('s3')->size($filepath);
-
-        return StoredFile::create([
-            'disk'     => 's3',
-            'name'     => 'UrlToScreenshot ' . now()->toDateTimeString(),
-            'filepath' => $filepath,
-            'mime'     => FileHelper::getMimeFromExtension($filepath),
-            'url'      => $storedUrl,
-            'size'     => $size,
-        ]);
+        return [
+            [
+                'type' => 'text',
+                'text' => 'Analyze the screenshot to answer the question.',
+            ],
+            [
+                'type'      => 'image_url',
+                'image_url' => [
+                    'url' => $storedFile->url,
+                ],
+            ],
+        ];
     }
 }
