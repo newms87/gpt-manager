@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<ThreadMessageCard v-for="message in thread.messages" :key="message.id" :message="message" class="mb-5" />
-		<div class="flex items-center">
+		<div class="flex items-stretch">
 			<QBtn
 				class="bg-sky-700 text-slate-200 text-lg flex-grow"
 				:loading="createMessageAction.isApplying"

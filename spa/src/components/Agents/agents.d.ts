@@ -19,7 +19,7 @@ export interface AgentThread extends ActionTargetItem {
 
 export interface ThreadMessage extends ActionTargetItem {
 	id: number;
-	role: "assistant" | "user";
+	role: "assistant" | "user" | "tool";
 	title: string;
 	content?: string;
 	data?: AnyObject;

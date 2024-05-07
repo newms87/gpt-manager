@@ -4,7 +4,7 @@
 			<div>
 				<QBtn @click="updateAction.trigger(message, {role: message.role === 'user' ? 'assistant' : 'user'})">
 					<div class="rounded-full p-1" :class="avatar.class">
-						<component :is="avatar.icon" class="w-3 text-slate-300" />
+						<component :is="avatar.icon" class="w-3 text-slate-300" :class="avatar.iconClass" />
 					</div>
 				</QBtn>
 			</div>
@@ -27,6 +27,14 @@
 				editor-class="text-slate-200 p-3"
 				@update:model-value="updateDebouncedAction.trigger(message, {content})"
 			/>
+			<template v-if="dataContent">
+				<div class="px-3 text-amber-600 text-sm font-bold">Data Content (read only)</div>
+				<MarkdownEditor
+					readonly
+					class="px-3 pb-3"
+					:model-value="dataContent"
+				/>
+			</template>
 		</div>
 	</div>
 </template>
@@ -34,25 +42,76 @@
 import { ThreadMessage } from "@/components/Agents/agents";
 import { getAction } from "@/components/Agents/Threads/threadMessageActions";
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { FaRegularUser as UserIcon, FaSolidRobot as AssistantIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
+import {
+	FaRegularUser as UserIcon,
+	FaSolidRobot as AssistantIcon,
+	FaSolidToolbox as ToolIcon,
+	FaSolidTrash as DeleteIcon
+} from "danx-icon";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
 	message: ThreadMessage;
 }>();
 
+function isJSON(string: string | object) {
+	if (!string) {
+		return false;
+	}
+	if (typeof string === "object") {
+		return true;
+	}
+	try {
+		JSON.parse(string);
+		return true;
+	} catch (e) {
+		return false;
+	}
+}
+
+function fJSON(string: string | object) {
+	if (!string) {
+		return string;
+	}
+
+	try {
+		if (typeof string === "object") {
+			return JSON.stringify(string, null, 2);
+		}
+		return JSON.stringify(JSON.parse(string), null, 2);
+	} catch (e) {
+		return string;
+	}
+}
+
+function fMarkdownJSON(string: string | object) {
+	if (string && isJSON(string)) {
+		return `\`\`\`json\n${fJSON(string)}\n\`\`\``;
+	}
+	return string;
+}
+
 const content = ref(props.message.content);
 const markdownContent = computed({
-	get: () => content.value,
+	get: () => fMarkdownJSON(content.value),
 	set: (value: string) => {
-		console.log("updating content", value);
 		content.value = value;
 	}
 });
-const avatar = computed(() => ({
-	icon: props.message.role === "user" ? UserIcon : AssistantIcon,
-	class: props.message.role === "user" ? "bg-lime-800" : "bg-sky-800"
-}));
+const dataContent = computed(() => fMarkdownJSON(props.message.data));
+
+const avatar = computed(() => {
+	switch (props.message.role) {
+		case "user":
+			return { icon: UserIcon, class: "bg-lime-800" };
+		case "assistant":
+			return { icon: AssistantIcon, class: "bg-sky-800", iconClass: "w-4" };
+		case "tool":
+			return { icon: ToolIcon, class: "bg-amber-300", iconClass: "text-amber-700" };
+		default:
+			return { icon: UserIcon, class: "bg-red-800" };
+	}
+});
 
 const deleteAction = getAction("delete");
 const updateAction = getAction("update");

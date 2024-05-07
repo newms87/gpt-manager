@@ -1,8 +1,8 @@
 <template>
 	<div class="dx-markdown-editor">
 		<MilkdownProvider>
-			<MilkdownEditor v-model="content" :class="editorClass" />
-			<MaxLengthCounter :length="content" :max-length="maxLength" />
+			<MilkdownEditor v-model="content" :class="editorClass" :readonly="readonly" />
+			<MaxLengthCounter v-if="maxLength && !readonly" :length="content?.length || 0" :max-length="maxLength" />
 		</MilkdownProvider>
 	</div>
 </template>
@@ -15,5 +15,6 @@ const content = defineModel({ type: String });
 defineProps<{
 	editorClass?: string | object;
 	maxLength?: number;
+	readonly?: boolean;
 }>();
 </script>
