@@ -31,7 +31,7 @@ const agentForm: Form = {
 	fields: [
 		{
 			name: "name",
-			vnode: (props) => h(TextField, { ...props, maxLength: 256 }),
+			vnode: (props) => h(TextField, { ...props, maxLength: 40 }),
 			label: "Agent Name",
 			required: true
 		},

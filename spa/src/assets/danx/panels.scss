@@ -1,9 +1,9 @@
 .dx-panels-drawer-header {
 	@apply bg-sky-900;
-}
 
-.dx-close-button {
-	@apply bg-slate-200 text-slate-600;
+	.dx-close-button {
+		@apply text-slate-200 h-10;
+	}
 }
 
 .dx-panels-drawer-body {

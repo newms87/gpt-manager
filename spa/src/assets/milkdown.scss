@@ -50,4 +50,17 @@
 	* + p {
 		margin-top: .75em;
 	}
+
+	pre[data-language] {
+		@apply bg-gray-950 text-slate-300 p-2 rounded relative my-2;
+
+		&::before {
+			content: attr(data-language); /* This gets the value of the data-language attribute */
+			@apply text-[.7em] absolute top-0 right-0 p-1 bg-gray-800 text-gray-400 rounded-bl;
+		}
+
+		&[data-language="yaml"] {
+			@apply text-lime-700;
+		}
+	}
 }

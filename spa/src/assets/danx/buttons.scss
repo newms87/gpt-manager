@@ -11,6 +11,8 @@
 }
 
 .q-btn {
+	min-height: auto;
+
 	&:before {
 		@apply shadow-none;
 	}

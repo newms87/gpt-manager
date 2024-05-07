@@ -72,3 +72,9 @@
 		@apply text-red-500;
 	}
 }
+
+.q-checkbox {
+	.q-checkbox__inner--truthy .q-checkbox__bg {
+		@apply bg-inherit;
+	}
+}

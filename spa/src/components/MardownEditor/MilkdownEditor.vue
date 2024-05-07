@@ -8,6 +8,8 @@ import { nord } from "@milkdown/theme-nord";
 import { Milkdown, useEditor } from "@milkdown/vue";
 import "@milkdown/theme-nord/style.css";
 import "prism-themes/themes/prism-nord.css";
+import "prosemirror-view/style/prosemirror.css";
+import "prosemirror-tables/style/tables.css";
 
 const content = defineModel({ type: String });
 useEditor((root) => {

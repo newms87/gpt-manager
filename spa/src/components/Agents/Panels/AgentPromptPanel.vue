@@ -11,7 +11,8 @@
 <script setup lang="ts">
 import { getAction } from "@/components/Agents/agentActions";
 import { Agent } from "@/components/Agents/agents";
-import { RenderedForm, TextField } from "quasar-ui-danx";
+import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import { RenderedForm } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { h, ref } from "vue";
 
@@ -26,8 +27,12 @@ const agentForm: Form = {
 	fields: [
 		{
 			name: "prompt",
-			vnode: (props) => h(TextField, { ...props, inputClass: "h-[80vh]", maxLength: 200000, type: "textarea" }),
-			label: "Prompt"
+			vnode: (props) => console.log("propsmd", props) || h(MarkdownEditor, {
+				...props,
+				editorClass: "h-[80vh] bg-slate-600 rounded p-4",
+				maxLength: 100000
+			}),
+			label: "Prompt Milk"
 		}
 	]
 };
