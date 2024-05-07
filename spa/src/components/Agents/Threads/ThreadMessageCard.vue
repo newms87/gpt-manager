@@ -48,48 +48,12 @@ import {
 	FaSolidToolbox as ToolIcon,
 	FaSolidTrash as DeleteIcon
 } from "danx-icon";
+import { fMarkdownJSON } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
 	message: ThreadMessage;
 }>();
-
-function isJSON(string: string | object) {
-	if (!string) {
-		return false;
-	}
-	if (typeof string === "object") {
-		return true;
-	}
-	try {
-		JSON.parse(string);
-		return true;
-	} catch (e) {
-		return false;
-	}
-}
-
-function fJSON(string: string | object) {
-	if (!string) {
-		return string;
-	}
-
-	try {
-		if (typeof string === "object") {
-			return JSON.stringify(string, null, 2);
-		}
-		return JSON.stringify(JSON.parse(string), null, 2);
-	} catch (e) {
-		return string;
-	}
-}
-
-function fMarkdownJSON(string: string | object) {
-	if (string && isJSON(string)) {
-		return `\`\`\`json\n${fJSON(string)}\n\`\`\``;
-	}
-	return string;
-}
 
 const content = ref(props.message.content);
 const markdownContent = computed({
@@ -98,9 +62,13 @@ const markdownContent = computed({
 		content.value = value;
 	}
 });
-const dataContent = computed(() => fMarkdownJSON(props.message.data));
+const dataContent = computed<string>(() => fMarkdownJSON(props.message.data) || "");
 
-const avatar = computed(() => {
+const avatar = computed<{
+	icon: any;
+	class: string;
+	iconClass?: string;
+}>(() => {
 	switch (props.message.role) {
 		case "user":
 			return { icon: UserIcon, class: "bg-lime-800" };
