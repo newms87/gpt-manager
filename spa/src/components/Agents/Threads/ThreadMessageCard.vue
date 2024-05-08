@@ -39,7 +39,10 @@
 				/>
 			</template>
 			<template v-if="showFiles">
-				<MultiFileField v-model="files" />
+				<MultiFileField
+					v-model="files"
+					@update:model-value="saveFilesAction.trigger(message, { ids: files.map(f => f.id) })"
+				/>
 			</template>
 		</div>
 	</div>
@@ -94,9 +97,6 @@ const avatar = computed<{
 
 const deleteAction = getAction("delete");
 const updateAction = getAction("update");
+const saveFilesAction = getAction("save-files");
 const updateDebouncedAction = getAction("updateDebounced");
-
-function addImage() {
-	console.log("add image");
-}
 </script>

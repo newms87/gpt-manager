@@ -43,12 +43,16 @@
 		}
 	}
 
+	[contenteditable] {
+		@apply outline-none bg-slate-800 text-slate-300 rounded;
+	}
+
 	p {
-		margin-bottom: .75em;
+		@apply p-1.5 mb-3 border-none outline-none;
 	}
 
 	* + p {
-		margin-top: .75em;
+		@apply mt-3
 	}
 
 	pre[data-language] {
