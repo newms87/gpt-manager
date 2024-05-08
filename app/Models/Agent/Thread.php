@@ -3,6 +3,7 @@
 namespace App\Models\Agent;
 
 use App\Models\Team\Team;
+use Exception;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,6 +37,7 @@ class Thread extends Model implements AuditableContract
     /**
      * Format the messages to be sent to an AI completion API
      * @return array
+     * @throws Exception
      */
     public function getMessagesForApi(): array
     {
@@ -48,10 +50,35 @@ class Thread extends Model implements AuditableContract
 
         foreach($this->messages()->get() as $message) {
             $content = $message->content;
-            // If first and last character of the message is a [ and ] or a { and } then json decode the message
-            if (in_array(substr($content, 0, 1), ['[', '{']) && in_array(substr($message->content, -1), [']', '}'])) {
+            // If first and last character of the message is a [ and ] then json decode the message as its an array of message elements (ie: text or image_url)
+            if (in_array(substr($content, 0, 1), ['[']) && in_array(substr($message->content, -1), [']'])) {
                 $content = json_decode($content, true);
             }
+            $files = $message->storedFiles()->get();
+
+            // Add Image URLs to the content
+            if ($files->isNotEmpty()) {
+                if (is_string($content)) {
+                    $content = [
+                        [
+                            'type' => 'text',
+                            'text' => $content,
+                        ],
+                    ];
+                }
+
+                foreach($files as $file) {
+                    if ($file->isImage()) {
+                        $content[] = [
+                            'type'      => 'image_url',
+                            'image_url' => ['url' => $file->url],
+                        ];
+                    } else {
+                        throw new Exception('Only images are supported for now.');
+                    }
+                }
+            }
+
             $messages->push([
                     'role'    => $message->role,
                     'content' => $content,

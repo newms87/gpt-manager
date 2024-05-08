@@ -8,8 +8,8 @@
 			@click="activeThread ? (activeThread = null) : createThreadAction.trigger(props.agent)"
 		>
 			<template v-if="activeThread">
-				<BackIcon class="w-4 mr-3" />
-				Back
+				<CloseIcon class="w-4 mr-3" />
+				Close Thread
 			</template>
 			<template v-else>
 				<CreateIcon class="w-4 mr-3" />
@@ -34,7 +34,7 @@
 import { getAction } from "@/components/Agents/agentActions";
 import { Agent, AgentThread } from "@/components/Agents/agents";
 import ThreadCard from "@/components/Agents/Threads/ThreadCard";
-import { FaRegularHandBackFist as BackIcon, FaRegularMessage as CreateIcon } from "danx-icon";
+import { FaRegularMessage as CreateIcon, FaSolidArrowLeft as CloseIcon } from "danx-icon";
 import { ListTransition } from "quasar-ui-danx";
 import { computed, shallowRef } from "vue";
 

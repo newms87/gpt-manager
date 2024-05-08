@@ -10,7 +10,7 @@
 			</div>
 			<div class="font-bold text-slate-400 ml-3 flex-grow">{{ message.title }}</div>
 			<div class="text-slate-300">
-				<QBtn class="mr-2" @click="showFiles = true">
+				<QBtn class="mr-2" @click="showFiles = !showFiles">
 					<AddImageIcon class="w-4" />
 				</QBtn>
 				<QBtn
