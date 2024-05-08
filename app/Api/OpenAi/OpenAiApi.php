@@ -25,7 +25,7 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
             throw new ApiException('Failed to fetch models from OpenAI API');
         }
 
-        return collect($data)->pluck('id')->toArray();
+        return $data;
     }
 
     public function complete(string $model, array $messages, array $options): OpenAiCompletionResponse

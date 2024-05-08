@@ -1,6 +1,6 @@
 <template>
-	<div class="bg-slate-600 rounded overflow-hidden">
-		<div class="bg-sky-800 flex items-center p-1">
+	<div class="overflow-hidden">
+		<div class="bg-slate-500 rounded flex items-center">
 			<div>
 				<QBtn @click="updateAction.trigger(message, {role: message.role === 'user' ? 'assistant' : 'user'})">
 					<div class="rounded-full p-1" :class="avatar.class">
@@ -24,17 +24,17 @@
 			</div>
 		</div>
 
-		<div class="text-sm flex-grow">
+		<div class="text-sm flex-grow mt-3">
 			<MarkdownEditor
 				v-model="markdownContent"
-				editor-class="text-slate-200 p-3"
+				editor-class="text-slate-200"
 				@update:model-value="updateDebouncedAction.trigger(message, {content})"
 			/>
 			<template v-if="dataContent">
-				<div class="px-3 text-amber-600 text-sm font-bold">Data Content (read only)</div>
+				<div class="text-amber-800 text-sm font-bold mt-3 mb-2">Data Content (read only)</div>
 				<MarkdownEditor
 					readonly
-					class="px-3 pb-3"
+					class="pb-3"
 					:model-value="dataContent"
 				/>
 			</template>
@@ -89,7 +89,7 @@ const avatar = computed<{
 		case "assistant":
 			return { icon: AssistantIcon, class: "bg-sky-800", iconClass: "w-4" };
 		case "tool":
-			return { icon: ToolIcon, class: "bg-amber-300", iconClass: "text-amber-700" };
+			return { icon: ToolIcon, class: "bg-indigo-800", iconClass: "text-amber-700" };
 		default:
 			return { icon: UserIcon, class: "bg-red-800" };
 	}

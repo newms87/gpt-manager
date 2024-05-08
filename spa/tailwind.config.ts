@@ -1,5 +1,9 @@
 /** @type {import("tailwindcss").Config} */
-export const colors = {};
+export const colors = {
+	"slate": {
+		"450": "rgb(143,153,174)"
+	}
+};
 import typography from "@tailwindcss/typography";
 
 export default {

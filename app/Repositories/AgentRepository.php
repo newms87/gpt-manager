@@ -76,10 +76,16 @@ class AgentRepository extends ActionRepository
      */
     public function filterFieldOptions(?array $filter = []): array
     {
-        $aiModels = collect(static::getAiModels())->sortKeys()->map(fn($aiModel) => [
-            'label' => $aiModel['api'] . ': ' . $aiModel['model'],
-            'value' => $aiModel['model'],
-        ])->values()->toArray();
+        $aiModels = collect(static::getAiModels())->sortKeys()->map(function ($aiModel) {
+            $input  = $aiModel['details']['input'] * 1000;
+            $output = $aiModel['details']['output'] * 1000;
+
+            return [
+                'label'   => $aiModel['api'] . ': ' . $aiModel['name'] . " (\$$input in + \$$output out / 1M tokens)",
+                'value'   => $aiModel['name'],
+                'details' => $aiModel['details'],
+            ];
+        })->values()->toArray();
 
         $aiTools = config('ai.tools');
 
@@ -98,7 +104,7 @@ class AgentRepository extends ActionRepository
     public static function getApiForModel(string $model): ?string
     {
         foreach(static::getAiModels() as $aiModel) {
-            if ($aiModel['model'] === $model) {
+            if ($aiModel['name'] === $model) {
                 return $aiModel['api'];
             }
         }
@@ -113,20 +119,20 @@ class AgentRepository extends ActionRepository
      */
     public static function getAiModels(): array
     {
-        return cache()->rememberForever('ai-models', function () {
-            $aiModels = [];
+        $aiModels = [];
+        $aiConfig = config('ai');
 
-            foreach(config('ai.apis') as $apiName => $apiClass) {
-                $models = $apiClass::make()->getModels();
-                foreach($models as $model) {
-                    $aiModels[$apiName . ':' . $model] = [
-                        'api'   => $apiName,
-                        'model' => $model,
-                    ];
-                }
+        foreach($aiConfig['apis'] as $apiName => $apiClass) {
+            $models = $aiConfig['models'][$apiName] ?? [];
+            foreach($models as $modelName => $model) {
+                $aiModels[$apiName . ':' . $modelName] = [
+                    'api'     => $apiName,
+                    'name'    => $modelName,
+                    'details' => $model,
+                ];
             }
+        }
 
-            return $aiModels;
-        });
+        return $aiModels;
     }
 }

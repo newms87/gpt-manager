@@ -1,17 +1,20 @@
 <template>
 	<QCard class="bg-slate-400 text-slate-700">
 		<QCardSection>
-			<div class="flex items-center cursor-pointer" @click="$emit('open')">
-				<h5 class="flex-grow">{{ thread.name }}</h5>
+			<div class="flex items-center flex-nowrap cursor-pointer" @click="$emit('open')">
+				<h5 class="flex-grow overflow-hidden overflow-ellipsis text-no-wrap mr-3">{{ thread.name }}</h5>
 				<QBtn
-					class="text-lime-800 bg-green-200 hover:bg-lime-800 hover:text-green-200 mr-6"
+					class="text-lime-800 bg-green-200 hover:bg-lime-800 hover:text-green-200 mr-6 px-3"
 					:disable="runAction.isApplying"
 					:loading="runAction.isApplying"
 					@click.stop="runAction.trigger(thread)"
 				>
-					<RunIcon class="w-3 mr-2" />
-					Run Thread
-					({{ thread.messages.length }} messages)
+					<div class="flex flex-nowrap items-center">
+						<RunIcon class="w-3 mr-2" />
+						<div class="text-no-wrap">
+							Run ({{ thread.messages.length }} messages)
+						</div>
+					</div>
 				</QBtn>
 				<QBtn
 					class="text-red-900 hover:bg-red-300 shadow-none"
