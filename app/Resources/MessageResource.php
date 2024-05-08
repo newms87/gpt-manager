@@ -4,6 +4,7 @@ namespace App\Resources;
 
 use App\Models\Agent\Message;
 use Flytedan\DanxLaravel\Resources\ActionResource;
+use Flytedan\DanxLaravel\Resources\StoredFileResource;
 
 /**
  * @mixin Message
@@ -11,7 +12,7 @@ use Flytedan\DanxLaravel\Resources\ActionResource;
  */
 class MessageResource extends ActionResource
 {
-    public static ?string $type = 'Message';
+    public static string $type = 'Message';
 
     public function data(): array
     {
@@ -21,6 +22,7 @@ class MessageResource extends ActionResource
             'title'     => $this->title,
             'summary'   => $this->summary,
             'content'   => $this->content,
+            'files'     => StoredFileResource::collection($this->storedFiles),
             'data'      => $this->data,
             'timestamp' => $this->updated_at,
         ];

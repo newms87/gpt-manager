@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { defaultValueCtx, Editor, editorViewOptionsCtx, rootCtx } from "@milkdown/core";
 import { block } from "@milkdown/plugin-block";
+import { history } from "@milkdown/plugin-history";
 import { listener, listenerCtx } from "@milkdown/plugin-listener";
 import { prism } from "@milkdown/plugin-prism";
 import { commonmark } from "@milkdown/preset-commonmark";
@@ -21,12 +22,13 @@ useEditor((root) => {
 		.config(nord)
 		.config((ctx) => {
 			ctx.set(rootCtx, root);
-			ctx.set(defaultValueCtx, content.value);
+			ctx.set(defaultValueCtx, content.value || "");
 			ctx.get(listenerCtx).markdownUpdated((ctx, markdown) => {
 				content.value = markdown;
 			});
 			ctx.set(editorViewOptionsCtx, { editable: () => !props.readonly });
 		})
+		.use(history)
 		.use(prism)
 		.use(block)
 		.use(listener)

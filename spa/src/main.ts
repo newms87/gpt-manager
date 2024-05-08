@@ -1,7 +1,7 @@
 import "./assets/main.scss";
 import { LocalStorage, Notify, Quasar } from "quasar";
 
-import { applyCssVars, request } from "quasar-ui-danx";
+import { applyCssVars, configure } from "quasar-ui-danx";
 import twColors from "tailwindcss/colors";
 
 import { createApp } from "vue";
@@ -18,7 +18,17 @@ import "@/assets/main.scss";
 // Inject all the CSS vars for our colors to override the Danx defaults
 applyCssVars(colors, "tw-");
 
-request.configure({ baseUrl: import.meta.env.VITE_API_URL });
+const baseUrl = import.meta.env.VITE_API_URL;
+configure({
+	request: {
+		baseUrl: baseUrl
+	},
+	fileUpload: {
+		directory: "stored-files",
+		presignedUploadUrl: (path, name, mime) => `${baseUrl}/file-upload/presigned-upload-url?path=${path}&name=${name}&mime=${mime}`,
+		uploadCompletedUrl: (fileId) => `${baseUrl}/file-upload/presigned-upload-url-completed/${fileId}`
+	}
+});
 
 const app = createApp(App);
 app.use(Quasar, {

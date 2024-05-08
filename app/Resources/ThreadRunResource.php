@@ -11,7 +11,7 @@ use Flytedan\DanxLaravel\Resources\ActionResource;
  */
 class ThreadRunResource extends ActionResource
 {
-    public static ?string $type = 'ThreadRun';
+    public static string $type = 'ThreadRun';
 
     public function data(): array
     {

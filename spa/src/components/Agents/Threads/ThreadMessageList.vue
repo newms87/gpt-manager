@@ -12,7 +12,7 @@
 				Create Message
 			</QBtn>
 			<QBtn
-				class="bg-lime-800 text-slate-300 text-lg ml-6"
+				class="bg-lime-800 text-slate-300 text-lg ml-6 p-3"
 				:disable="runAction.isApplying || thread.messages.length === 0"
 				:loading="runAction.isApplying"
 				@click="runAction.trigger(thread)"
@@ -34,5 +34,4 @@ defineProps<{
 
 const createMessageAction = getAction("create-message");
 const runAction = getAction("run");
-console.log("runAction", runAction);
 </script>

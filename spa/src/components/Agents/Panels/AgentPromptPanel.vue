@@ -29,7 +29,7 @@ const agentForm: Form = {
 			name: "prompt",
 			vnode: (props) => console.log("propsmd", props) || h(MarkdownEditor, {
 				...props,
-				editorClass: "h-[80vh] bg-slate-600 rounded p-4",
+				editorClass: "min-h-[80vh] bg-slate-600 rounded p-4",
 				maxLength: 100000
 			}),
 			label: "Prompt Milk"

@@ -10,7 +10,7 @@ use App\Models\Agent\Agent;
  */
 class AgentDetailsResource extends AgentResource
 {
-    protected static ?string $type = 'Agent';
+    protected static string $type = 'Agent';
 
     public function data(): array
     {

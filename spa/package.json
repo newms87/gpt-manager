@@ -19,6 +19,7 @@
     "@milkdown/ctx": "^7.3.6",
     "@milkdown/plugin-block": "^7.3.6",
     "@milkdown/plugin-diagram": "^7.3.6",
+    "@milkdown/plugin-history": "^7.3.6",
     "@milkdown/plugin-listener": "^7.3.6",
     "@milkdown/plugin-prism": "^7.3.6",
     "@milkdown/preset-commonmark": "^7.3.6",

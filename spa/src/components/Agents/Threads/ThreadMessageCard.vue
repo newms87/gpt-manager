@@ -9,11 +9,14 @@
 				</QBtn>
 			</div>
 			<div class="font-bold text-slate-400 ml-3 flex-grow">{{ message.title }}</div>
-			<div>
+			<div class="text-slate-300">
+				<QBtn class="mr-2" @click="showFiles = true">
+					<AddImageIcon class="w-4" />
+				</QBtn>
 				<QBtn
 					:loading="deleteAction.isApplying"
 					:disable="deleteAction.isApplying"
-					class="text-slate-300 hover:bg-red-900 shadow-none"
+					class="hover:bg-red-900 shadow-none mr-2"
 					@click.stop="deleteAction.trigger(message)"
 				>
 					<DeleteIcon class="w-3" />
@@ -35,6 +38,9 @@
 					:model-value="dataContent"
 				/>
 			</template>
+			<template v-if="showFiles">
+				<MultiFileField v-model="files" />
+			</template>
 		</div>
 	</div>
 </template>
@@ -44,11 +50,13 @@ import { getAction } from "@/components/Agents/Threads/threadMessageActions";
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import {
 	FaRegularUser as UserIcon,
+	FaSolidImage as AddImageIcon,
 	FaSolidRobot as AssistantIcon,
 	FaSolidToolbox as ToolIcon,
 	FaSolidTrash as DeleteIcon
 } from "danx-icon";
-import { fMarkdownJSON } from "quasar-ui-danx";
+import { fMarkdownJSON, MultiFileField } from "quasar-ui-danx";
+import { UploadedFile } from "quasar-ui-danx/types";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
@@ -56,6 +64,7 @@ const props = defineProps<{
 }>();
 
 const content = ref(props.message.content);
+const files = ref<UploadedFile[]>(props.message.files || []);
 const markdownContent = computed({
 	get: () => fMarkdownJSON(content.value),
 	set: (value: string) => {
@@ -63,6 +72,8 @@ const markdownContent = computed({
 	}
 });
 const dataContent = computed<string>(() => fMarkdownJSON(props.message.data) || "");
+
+const showFiles = ref(files.value.length > 0);
 
 const avatar = computed<{
 	icon: any;
@@ -84,4 +95,8 @@ const avatar = computed<{
 const deleteAction = getAction("delete");
 const updateAction = getAction("update");
 const updateDebouncedAction = getAction("updateDebounced");
+
+function addImage() {
+	console.log("add image");
+}
 </script>

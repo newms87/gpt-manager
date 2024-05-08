@@ -11,6 +11,7 @@
 					:val="tool.name"
 					:label="tool.name"
 					class="font-bold text-xl"
+					@update:model-value="updateAction.trigger(agent, { tools: selectedTools })"
 				/>
 				<div class="ml-10">{{ tool.description }}</div>
 			</div>
@@ -22,6 +23,7 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { getAction } from "@/components/Agents/agentActions";
 import { AgentController } from "@/components/Agents/agentControls";
 import { Agent } from "@/components/Agents/agents";
 import { computed, ref } from "vue";
@@ -29,8 +31,6 @@ import { computed, ref } from "vue";
 const props = defineProps<{
 	agent: Agent,
 }>();
-
-defineEmits(["change"]);
 
 interface AiTool {
 	name: string;
@@ -40,4 +40,5 @@ interface AiTool {
 
 const selectedTools = ref(props.agent.tools);
 const availableTools = computed<AiTool[]>(() => AgentController.getFieldOptions("aiTools"));
+const updateAction = getAction("update");
 </script>

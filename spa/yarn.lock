@@ -750,6 +750,14 @@
     tslib "^2.5.0"
     unist-util-visit "^5.0.0"
 
+"@milkdown/plugin-history@^7.3.6":
+  version "7.3.6"
+  resolved "https://registry.yarnpkg.com/@milkdown/plugin-history/-/plugin-history-7.3.6.tgz#94f66b180dcf01f02ce3a7e983024669be7aa2c4"
+  integrity sha512-c6JCwzGTp+N+9ZDtJ3YsmY5jU1j/OYr4kPok/zpSufihSK+np5+ixsuhmVLfyNlpllDiOD1HaxScRCdJGWa7tQ==
+  dependencies:
+    "@milkdown/utils" "7.3.6"
+    tslib "^2.5.0"
+
 "@milkdown/plugin-listener@^7.3.6":
   version "7.3.6"
   resolved "https://registry.yarnpkg.com/@milkdown/plugin-listener/-/plugin-listener-7.3.6.tgz#352b6241ca71233521bae599357b13d7da8e806d"

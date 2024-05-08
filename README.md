@@ -5,7 +5,9 @@
 ### Laravel API
 
 ```
-sail up
+sail up -d
+sail artisan migrate:fresh --seed
+sail artisan storage:link
 ```
 
 ### SPA

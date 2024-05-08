@@ -11,7 +11,7 @@ use Flytedan\DanxLaravel\Resources\ActionResource;
  */
 class AgentResource extends ActionResource
 {
-    protected static ?string $type = 'Agent';
+    protected static string $type = 'Agent';
 
     public function data(): array
     {

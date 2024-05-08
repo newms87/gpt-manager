@@ -9,11 +9,3 @@
 .dx-batch-actions {
 	@apply px-5 bg-slate-600 rounded;
 }
-
-.q-btn {
-	min-height: auto;
-
-	&:before {
-		@apply shadow-none;
-	}
-}
