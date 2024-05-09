@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Workflow;
 
+use App\Models\Workflow\Workflow;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,7 +18,10 @@ class WorkflowJobFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'workflow_id' => Workflow::factory(),
+            'name'        => fake()->unique()->name,
+            'description' => fake()->sentence,
+            'config'      => null,
         ];
     }
 }

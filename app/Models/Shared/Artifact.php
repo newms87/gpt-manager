@@ -11,4 +11,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Artifact extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
+
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
 }

@@ -1,32 +1,35 @@
 <?php
 
-namespace App\Models\Workflow;
+namespace App\Models\Shared;
 
-use App\Models\Team\Team;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
+use Flytedan\DanxLaravel\Models\Utilities\StoredFile;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Workflow extends Model implements AuditableContract
+class InputSource extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
     protected $guarded = [
         'id',
+        'tokens',
         'created_at',
         'updated_at',
         'deleted_at',
     ];
-    
-    public function team()
+
+    public function casts()
     {
-        return $this->belongsTo(Team::class);
+        return [
+            'data' => 'json',
+        ];
     }
 
-    public function workflowJobs()
+    public function storedFiles()
     {
-        return $this->hasMany(WorkflowJob::class);
+        return $this->morphMany(StoredFile::class, 'storable');
     }
 }

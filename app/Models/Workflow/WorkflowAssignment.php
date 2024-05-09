@@ -2,16 +2,16 @@
 
 namespace App\Models\Workflow;
 
-use App\Models\Team\Team;
+use App\Models\Agent\Agent;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Workflow extends Model implements AuditableContract
+class WorkflowAssignment extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes;
+    use HasFactory, SoftDeletes, AuditableTrait;
 
     protected $guarded = [
         'id',
@@ -19,14 +19,14 @@ class Workflow extends Model implements AuditableContract
         'updated_at',
         'deleted_at',
     ];
-    
-    public function team()
+
+    public function agent()
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsTo(Agent::class);
     }
 
-    public function workflowJobs()
+    public function workflowJob()
     {
-        return $this->hasMany(WorkflowJob::class);
+        return $this->belongsTo(WorkflowJob::class);
     }
 }

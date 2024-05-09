@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { defaultValueCtx, Editor, editorViewOptionsCtx, rootCtx } from "@milkdown/core";
 import { block } from "@milkdown/plugin-block";
+import { clipboard } from "@milkdown/plugin-clipboard";
 import { history } from "@milkdown/plugin-history";
 import { listener, listenerCtx } from "@milkdown/plugin-listener";
 import { prism } from "@milkdown/plugin-prism";
@@ -29,6 +30,7 @@ useEditor((root) => {
 			ctx.set(editorViewOptionsCtx, { editable: () => !props.readonly });
 		})
 		.use(history)
+		.use(clipboard)
 		.use(prism)
 		.use(block)
 		.use(listener)
