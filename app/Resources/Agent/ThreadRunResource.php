@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Resources;
+namespace App\Resources\Agent;
 
 use App\Models\Agent\ThreadRun;
 use Flytedan\DanxLaravel\Resources\ActionResource;

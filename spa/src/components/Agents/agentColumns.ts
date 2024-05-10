@@ -33,10 +33,11 @@ export const columns: TableColumn[] = [
 		required: true
 	},
 	{
-		name: "thread_count",
+		name: "threads_count",
 		label: "Threads",
 		align: "left",
 		format: fNumber,
+		sortable: true,
 		onClick: (agent) => AgentController.activatePanel(agent, "threads")
 	},
 	{

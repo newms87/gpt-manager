@@ -8,7 +8,10 @@
 					</div>
 				</QBtn>
 			</div>
-			<div class="font-bold text-slate-400 ml-3 flex-grow">{{ message.title }}</div>
+			<div class="font-bold text-slate-400 ml-3 flex-grow">{{
+					message.title || fDateTime(message.created_at)
+				}}
+			</div>
 			<div class="text-slate-300">
 				<QBtn class="mr-2" @click="showFiles = !showFiles">
 					<AddImageIcon class="w-4" />
@@ -58,7 +61,7 @@ import {
 	FaSolidToolbox as ToolIcon,
 	FaSolidTrash as DeleteIcon
 } from "danx-icon";
-import { fMarkdownJSON, MultiFileField } from "quasar-ui-danx";
+import { fDateTime, fMarkdownJSON, MultiFileField } from "quasar-ui-danx";
 import { UploadedFile } from "quasar-ui-danx/types";
 import { computed, ref } from "vue";
 

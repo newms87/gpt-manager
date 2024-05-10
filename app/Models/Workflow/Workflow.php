@@ -19,7 +19,7 @@ class Workflow extends Model implements AuditableContract
         'updated_at',
         'deleted_at',
     ];
-    
+
     public function team()
     {
         return $this->belongsTo(Team::class);
@@ -28,5 +28,10 @@ class Workflow extends Model implements AuditableContract
     public function workflowJobs()
     {
         return $this->hasMany(WorkflowJob::class);
+    }
+
+    public function workflowRuns()
+    {
+        return $this->hasMany(WorkflowRun::class);
     }
 }

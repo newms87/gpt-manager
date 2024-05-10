@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Ai;
 
 use App\Repositories\MessageRepository;
-use App\Resources\MessageResource;
+use App\Resources\Agent\MessageResource;
 use Flytedan\DanxLaravel\Http\Controllers\ActionController;
 
 class MessagesController extends ActionController

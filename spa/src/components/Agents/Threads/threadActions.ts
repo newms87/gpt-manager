@@ -29,7 +29,7 @@ const items: ActionOptions[] = [
 			target.messages.push({
 				...data,
 				id: "new",
-				title: "(Empty)",
+				title: "",
 				role: "user"
 			});
 		},

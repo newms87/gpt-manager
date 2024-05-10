@@ -1,5 +1,6 @@
 <?php
 
+use Flytedan\DanxLaravel\Audit\AuditDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -32,6 +33,9 @@ return new class extends Migration {
         }
 
         if (!Schema::hasTable('audit_request')) {
+            // Clear any audit request IDs as the table might have bene re-created and the old ID no longer exists
+            AuditDriver::$auditRequest = null;
+
             Schema::create('audit_request', function (Blueprint $table) {
                 $table->bigIncrements('id');
                 $table->string('session_id')->index();

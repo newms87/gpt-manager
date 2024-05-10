@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Resources;
+namespace App\Resources\Agent;
 
 use App\Models\Agent\Agent;
 use Flytedan\DanxLaravel\Resources\ActionResource;
@@ -25,7 +25,7 @@ class AgentResource extends ActionResource
             'temperature'    => $this->temperature,
             'tools'          => $this->tools,
             'prompt'         => $this->prompt,
-            'thread_count'   => $this->threads()->count(),
+            'threads_count'  => $this->threads_count,
             'created_at'     => $this->created_at,
         ];
     }

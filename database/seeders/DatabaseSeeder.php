@@ -27,7 +27,9 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $threads = Thread::factory()->forTeam($team)->count(3);
-        Agent::factory()->has($threads)->recycle($team)->count(20)->create();
+        for($i = 0; $i < 20; $i++) {
+            $threads = Thread::factory()->forTeam($team)->count(fake()->numberBetween(0, 3));
+            Agent::factory()->has($threads)->recycle($team)->create();
+        }
     }
 }

@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Ai;
 
 use App\Models\Agent\Thread;
 use App\Repositories\ThreadRepository;
-use App\Resources\ThreadResource;
-use App\Resources\ThreadRunResource;
+use App\Resources\Agent\ThreadResource;
+use App\Resources\Agent\ThreadRunResource;
 use Flytedan\DanxLaravel\Http\Controllers\ActionController;
 
 class ThreadsController extends ActionController

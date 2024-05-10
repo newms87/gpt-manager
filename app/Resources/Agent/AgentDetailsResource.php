@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Resources;
+namespace App\Resources\Agent;
 
 use App\Models\Agent\Agent;
 
@@ -10,8 +10,6 @@ use App\Models\Agent\Agent;
  */
 class AgentDetailsResource extends AgentResource
 {
-    protected static string $type = 'Agent';
-
     public function data(): array
     {
         return [

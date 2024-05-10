@@ -74,7 +74,7 @@ class AgentRepository extends ActionRepository
      * @param array|null $filter
      * @return array
      */
-    public function filterFieldOptions(?array $filter = []): array
+    public function fieldOptions(?array $filter = []): array
     {
         $aiModels = collect(static::getAiModels())->sortKeys()->map(function ($aiModel) {
             $input  = $aiModel['details']['input'] * 1000;

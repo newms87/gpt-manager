@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Ai;
 
 use App\Repositories\AgentRepository;
-use App\Resources\AgentDetailsResource;
-use App\Resources\AgentResource;
+use App\Resources\Agent\AgentDetailsResource;
+use App\Resources\Agent\AgentResource;
 use Flytedan\DanxLaravel\Http\Controllers\ActionController;
 
 class AgentsController extends ActionController
