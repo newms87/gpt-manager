@@ -1,6 +1,6 @@
 <template>
 	<ActionTableLayout
-		:controller="AgentController"
+		:controller="WorkflowController"
 		table-class="bg-slate-600"
 		filter-class="bg-slate-500"
 		show-filters
@@ -16,13 +16,13 @@
 	</ActionTableLayout>
 </template>
 <script setup lang="ts">
-import { getAction, getActions } from "@/components/Agents/agentActions";
-import { columns } from "@/components/Agents/agentColumns";
-import { AgentController } from "@/components/Agents/agentControls";
-import { filters } from "@/components/Agents/agentFilters";
-import { panels } from "@/components/Agents/agentPanels";
+import { getAction, getActions } from "@/components/Workflows/workflowActions";
+import { columns } from "@/components/Workflows/workflowColumns";
+import { WorkflowController } from "@/components/Workflows/workflowControls";
+import { filters } from "@/components/Workflows/workflowFilters";
+import { panels } from "@/components/Workflows/workflowPanels";
 import { ActionTableLayout } from "quasar-ui-danx";
 
-AgentController.initialize();
+WorkflowController.initialize();
 const createAction = getAction("create");
 </script>

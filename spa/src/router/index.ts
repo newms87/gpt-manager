@@ -1,4 +1,4 @@
-import { AgentsView, DashboardView } from "@/views";
+import { AgentsView, DashboardView, WorkflowsView } from "@/views";
 import { createRouter, createWebHistory } from "vue-router";
 
 const router = createRouter({
@@ -9,6 +9,12 @@ const router = createRouter({
 			name: "home",
 			component: DashboardView,
 			meta: { title: "Danx Home" }
+		},
+		{
+			path: "/workflows",
+			name: "workflows",
+			component: WorkflowsView,
+			meta: { title: "Workflows" }
 		},
 		{
 			path: "/agents",

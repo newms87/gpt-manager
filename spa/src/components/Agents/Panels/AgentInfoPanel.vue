@@ -1,6 +1,12 @@
 <template>
 	<div class="p-6">
-		<RenderedForm v-model:values="input" empty-value="" :form="agentForm" @update:values="onChange" />
+		<RenderedForm
+			v-model:values="input"
+			empty-value=""
+			:form="agentForm"
+			:saving="updateAction.isApplying"
+			@update:values="updateAction.trigger(agent, input)"
+		/>
 	</div>
 </template>
 <script setup lang="ts">
@@ -22,10 +28,6 @@ const input = ref({
 	model: props.agent.model,
 	description: props.agent.description
 });
-
-function onChange(input) {
-	updateAction.trigger(props.agent, input);
-}
 
 const agentForm: Form = {
 	fields: [

@@ -18,6 +18,8 @@ class WorkflowRepository extends ActionRepository
      */
     public function createWorkflow(array $data): Model
     {
+        $data['team_id'] = team()->id;
+        
         Validator::make($data, [
             'name' => 'required|string|max:80|unique:workflows',
         ])->validate();

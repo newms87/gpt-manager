@@ -27,7 +27,7 @@ export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "tools",
 		label: "Tools",
-		tabVnode: () => h(BadgeTab, { count: activeItem.value?.tools.length }),
+		tabVnode: () => h(BadgeTab, { count: activeItem.value?.tools?.length }),
 		vnode: () => h(AgentToolsPanel, {
 			agent: activeItem.value
 		})

@@ -5,14 +5,26 @@ namespace App\Models\Workflow;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Contracts\ComputedStatusContract;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
+use Flytedan\DanxLaravel\Traits\CountableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkflowRun extends Model implements AuditableContract, ComputedStatusContract
 {
-    use HasFactory, SoftDeletes, AuditableTrait;
+    use HasFactory, SoftDeletes, AuditableTrait, CountableTrait;
 
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
+
+    public array $relatedCounters = [
+        Workflow::class => 'runs_count',
+    ];
+    
     const string
         STATUS_PENDING = 'Pending',
         STATUS_RUNNING = 'Running',
@@ -25,7 +37,7 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
         self::STATUS_COMPLETED,
         self::STATUS_FAILED,
     ];
-    
+
     public static function booted()
     {
         static::saving(function ($workflowTask) {

@@ -19,10 +19,9 @@ class WorkflowResource extends ActionResource
             'id'          => $this->id,
             'name'        => $this->name,
             'description' => $this->description,
-            'run_count'   => $this->workflowRuns()->count(),
-            'job_count'   => $this->workflowJobs()->count(),
-
-            'created_at' => $this->created_at,
+            'runs_count'  => $this->runs_count,
+            'jobs_count'  => $this->jobs_count,
+            'created_at'  => $this->created_at,
         ];
     }
 }
