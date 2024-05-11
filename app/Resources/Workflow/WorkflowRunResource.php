@@ -3,6 +3,7 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowRun;
+use App\Resources\InputSource\InputSourceResource;
 use Flytedan\DanxLaravel\Resources\ActionResource;
 
 /**

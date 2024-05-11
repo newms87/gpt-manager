@@ -1,7 +1,8 @@
-import { getActions } from "@/components/Modules/Workflows/workflowActions";
-import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
+import { getActions } from "@/components/Modules/InputSources/inputSourceActions";
+import { InputSourceController } from "@/components/Modules/InputSources/inputSourceControls";
 import { fDate, fNumber } from "quasar-ui-danx";
 import { TableColumn } from "quasar-ui-danx/types";
+import { h } from "vue";
 
 export const columns: TableColumn[] = [
 	{
@@ -11,7 +12,7 @@ export const columns: TableColumn[] = [
 		sortable: true,
 		required: true,
 		actionMenu: getActions({ menu: true }),
-		onClick: (workflow) => WorkflowController.activatePanel(workflow, "edit")
+		onClick: (inputSource) => InputSourceController.activatePanel(inputSource, "edit")
 	},
 	{
 		name: "description",
@@ -20,20 +21,18 @@ export const columns: TableColumn[] = [
 		align: "left"
 	},
 	{
-		name: "jobs_count",
-		label: "Workflow Jobs",
+		name: "data",
+		label: "Input",
 		align: "left",
-		format: fNumber,
-		sortable: true,
-		onClick: (workflow) => WorkflowController.activatePanel(workflow, "jobs")
+		vnode: () => h("div", "Render the data for a column")
 	},
 	{
-		name: "runs_count",
-		label: "Workflow Runs",
+		name: "workflow_runs_count",
+		label: "InputSource Runs",
 		align: "left",
 		format: fNumber,
 		sortable: true,
-		onClick: (workflow) => WorkflowController.activatePanel(workflow, "runs")
+		onClick: (inputSource) => InputSourceController.activatePanel(inputSource, "runs")
 	},
 	{
 		name: "created_at",

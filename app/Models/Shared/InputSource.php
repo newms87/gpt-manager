@@ -13,12 +13,9 @@ class InputSource extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
-    protected $guarded = [
-        'id',
-        'tokens',
-        'created_at',
-        'updated_at',
-        'deleted_at',
+    protected $fillable = [
+        'name',
+        'description',
     ];
 
     public function casts()

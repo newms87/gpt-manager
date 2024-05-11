@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Ai\AgentsController;
+use App\Http\Controllers\Ai\InputSourcesController;
 use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\ThreadsController;
 use App\Http\Controllers\Ai\WorkflowAssignmentsController;
@@ -37,6 +38,9 @@ Route::get('/dashboard', function () {
 
 // Utility
 FileUploadRoute::routes();
+
+// Input Sources
+ActionRoute::routes('input-sources', new InputSourcesController);
 
 // Workflows
 ActionRoute::routes('workflows', new WorkflowsController);

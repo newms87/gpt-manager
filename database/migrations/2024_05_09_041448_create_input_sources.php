@@ -15,8 +15,10 @@ return new class extends Migration {
             $table->foreignId('team_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained();
             $table->string('name');
+            $table->string('description')->default('');
             $table->json('data')->nullable();
-            $table->unsignedInteger('tokens');
+            $table->unsignedInteger('tokens')->default(0);
+            $table->unsignedInteger('workflow_runs_count')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });

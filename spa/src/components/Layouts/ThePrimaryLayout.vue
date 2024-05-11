@@ -25,7 +25,12 @@
 <script setup lang="ts">
 import ThePageHeader from "@/components/ThePageHeader";
 import router from "@/router";
-import { FaSolidCloudBolt as DashboardIcon, FaSolidRobot as AgentsIcon, FaSolidWorm as WorkflowsIcon } from "danx-icon";
+import {
+	FaSolidCloudBolt as DashboardIcon,
+	FaSolidFile as InputSourcesIcon,
+	FaSolidRobot as AgentsIcon,
+	FaSolidWorm as WorkflowsIcon
+} from "danx-icon";
 import { useQuasar } from "quasar";
 import { CollapsableSidebar, FlashMessages, NavigationMenu } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
@@ -41,6 +46,11 @@ const adminMenu = [
 		label: "Dashboard",
 		icon: DashboardIcon,
 		onClick: () => router.push({ name: "home" })
+	},
+	{
+		label: "Input Sources",
+		icon: InputSourcesIcon,
+		onClick: () => router.push({ name: "input-sources" })
 	},
 	{
 		label: "Workflows",

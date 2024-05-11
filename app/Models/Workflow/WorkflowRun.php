@@ -23,7 +23,8 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
     ];
 
     public array $relatedCounters = [
-        Workflow::class => 'runs_count',
+        Workflow::class    => 'runs_count',
+        InputSource::class => 'workflow_runs_count',
     ];
 
     const string

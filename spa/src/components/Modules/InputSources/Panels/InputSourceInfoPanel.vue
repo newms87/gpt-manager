@@ -5,25 +5,25 @@
 			empty-value=""
 			:form="workflowForm"
 			:saving="updateAction.isApplying"
-			@update:values="updateAction.trigger(workflow, input)"
+			@update:values="updateAction.trigger(inputSource, input)"
 		/>
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/workflowActions";
-import { Workflow } from "@/components/Modules/Workflows/workflows";
+import { InputSource } from "@/components/Modules/InputSources/input-sources";
+import { getAction } from "@/components/Modules/InputSources/inputSourceActions";
 import { RenderedForm, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { h, ref } from "vue";
 
 const props = defineProps<{
-	workflow: Workflow,
+	inputSource: InputSource,
 }>();
 
 const updateAction = getAction("update-debounced");
 const input = ref({
-	name: props.workflow.name,
-	description: props.workflow.description
+	name: props.inputSource.name,
+	description: props.inputSource.description
 });
 
 const workflowForm: Form = {
@@ -31,7 +31,7 @@ const workflowForm: Form = {
 		{
 			name: "name",
 			vnode: (props) => h(TextField, { ...props, maxLength: 40 }),
-			label: "Workflow Name",
+			label: "Name",
 			required: true
 		},
 		{
