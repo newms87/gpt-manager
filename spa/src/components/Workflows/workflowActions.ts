@@ -59,6 +59,12 @@ const items: ActionOptions[] = [
 		onFinish: WorkflowController.loadList
 	},
 	{
+		name: "update-job",
+		alias: "update",
+		debounce: 500,
+		onAction: WorkflowJobRoutes.applyAction
+	},
+	{
 		name: "assign-agent",
 		vnode: (target) => h(AssignAgentDialog, { job: target }),
 		onAction: WorkflowJobRoutes.applyAction

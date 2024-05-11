@@ -2,7 +2,13 @@
 	<QCard class="bg-indigo-300 text-indigo-600 rounded-lg overflow-hidden">
 		<QCardSection class="flex items-center flex-nowrap">
 			<div class="flex-grow">
-				<div class=" font-bold">{{ job.name }}</div>
+				<div class=" font-bold">
+					<EditOnClickTextField
+						:model-value="job.name"
+						class="hover:bg-indigo-200"
+						@update:model-value="updateJobAction.trigger(job, { name: $event})"
+					/>
+				</div>
 				<div class="text-sm text-indigo-500">{{ job.description }}</div>
 			</div>
 			<div class="px-4">
@@ -44,6 +50,7 @@ import TrashButton from "@/components/Shared/Buttons/TrashButton";
 import { getAction } from "@/components/Workflows/workflowActions";
 import { WorkflowJob } from "@/components/Workflows/workflows";
 import { FaSolidPlugCircleCheck as AssignIcon } from "danx-icon";
+import { EditOnClickTextField } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineProps<{
@@ -51,6 +58,7 @@ defineProps<{
 }>();
 
 const showAssignments = ref(false);
+const updateJobAction = getAction("update-job");
 const assignAgentAction = getAction("assign-agent");
 const unassignAgentAction = getAction("unassign-agent");
 </script>
