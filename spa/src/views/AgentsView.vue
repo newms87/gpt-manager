@@ -2,5 +2,5 @@
 	<AgentsTable />
 </template>
 <script setup>
-import AgentsTable from "@/components/Agents/AgentsTable";
+import AgentsTable from "@/components/Modules/Agents/AgentsTable";
 </script>
