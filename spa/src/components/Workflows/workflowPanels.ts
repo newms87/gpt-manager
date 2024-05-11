@@ -17,6 +17,7 @@ export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "jobs",
 		label: "Jobs",
+		class: "w-[60rem]",
 		tabVnode: () => h(BadgeTab, { count: activeItem.value.jobs?.length }),
 		vnode: () => h(WorkflowJobsPanel, {
 			workflow: activeItem.value

@@ -2,8 +2,7 @@
 .q-field {
 	.q-field__inner {
 		.q-field__control {
-			height: auto;
-			@apply bg-slate-600 text-slate-200 rounded pl-4;
+			@apply h-auto rounded pl-4 bg-slate-600 text-slate-200;
 		}
 	}
 
@@ -45,8 +44,20 @@
 	}
 
 	&.dx-select-field {
+		@apply pb-0;
+
 		.q-field__native {
 			@apply py-3;
+		}
+
+		&.q-select--multiple {
+			.q-field__native {
+				@apply py-0;
+
+				.q-chip {
+					@apply h-auto px-4 py-1;
+				}
+			}
 		}
 
 		&.q-field--labeled {
@@ -76,5 +87,19 @@
 .q-checkbox {
 	.q-checkbox__inner--truthy .q-checkbox__bg {
 		@apply bg-inherit;
+	}
+}
+
+.form-input-indigo {
+	.q-field {
+		.q-field__inner {
+			.q-field__control {
+				@apply bg-indigo-400 text-indigo-200;
+
+				.q-chip {
+					@apply bg-indigo-700 text-indigo-300;
+				}
+			}
+		}
 	}
 }

@@ -61,8 +61,23 @@ const items: ActionOptions[] = [
 	{
 		name: "update-job",
 		alias: "update",
+		optimistic: true,
+		onAction: WorkflowJobRoutes.applyAction
+	},
+	{
+		name: "update-job-debounced",
+		alias: "update",
 		debounce: 500,
 		onAction: WorkflowJobRoutes.applyAction
+	},
+	{
+		name: "delete-job",
+		alias: "delete",
+		vnode: (target) => h(ConfirmActionDialog, { action: "Delete Job", target, confirmClass: "bg-red-700" }),
+		onAction: async (...params) => {
+			await WorkflowJobRoutes.applyAction(...params);
+			await WorkflowController.getActiveItemDetails();
+		}
 	},
 	{
 		name: "assign-agent",

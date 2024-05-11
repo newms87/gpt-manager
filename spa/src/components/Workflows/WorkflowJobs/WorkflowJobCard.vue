@@ -1,64 +1,68 @@
 <template>
-	<QCard class="bg-indigo-300 text-indigo-600 rounded-lg overflow-hidden">
-		<QCardSection class="flex items-center flex-nowrap">
-			<div class="flex-grow">
-				<div class=" font-bold">
-					<EditOnClickTextField
-						:model-value="job.name"
-						class="hover:bg-indigo-200"
-						@update:model-value="updateJobAction.trigger(job, { name: $event})"
-					/>
+	<QCard class="bg-indigo-300 text-indigo-600 rounded-lg overflow-hidden form-input-indigo">
+		<QCardSection>
+			<div class="flex items-center flex-nowrap">
+				<div class="flex-grow">
+					<div class=" font-bold">
+						<EditOnClickTextField
+							:model-value="job.name"
+							class="hover:bg-indigo-200"
+							@update:model-value="updateJobDebouncedAction.trigger(job, { name: $event})"
+						/>
+					</div>
+					<div class="text-sm text-indigo-500">{{ job.description }}</div>
 				</div>
-				<div class="text-sm text-indigo-500">{{ job.description }}</div>
+				<div class="px-4">
+					{{ job.runs_count }} Runs
+				</div>
+				<div class="pl-4">
+					<QBtn class="bg-indigo-700 text-indigo-300 px-4" @click="showAssignments = !showAssignments">
+						{{ job.assignments.length }} Assignments
+					</QBtn>
+				</div>
+				<div class="ml-4">
+					<TrashButton :saving="deleteJobAction.isApplying" @click="deleteJobAction.trigger(job)" />
+				</div>
 			</div>
-			<div class="px-4">
-				{{ job.runs_count }} Runs
-			</div>
-			<div class="pl-4">
-				<QBtn class="bg-indigo-700 text-indigo-300 px-4" @click="showAssignments = !showAssignments">
-					{{ job.assignments.length }} Assignments
-				</QBtn>
-			</div>
-		</QCardSection>
-		<QCardSection v-if="showAssignments" class="pt-0">
-			<QSeparator class="bg-indigo-900" />
-			<div
-				v-for="assignment in job.assignments"
-				:key="assignment.id"
-				class="p-4 bg-indigo-200 text-indigo-800 flex items-center"
-			>
-				<div class="font-bold">{{ assignment.agent.name }}</div>
-				<div class="flex-grow ml-2 text-xs">{{ assignment.agent.model }}</div>
-				<TrashButton
-					:saving="unassignAgentAction.isApplying"
-					class="hover:bg-red-300"
-					@click="unassignAgentAction.trigger(assignment)"
+			<div>
+				<div>Depends On</div>
+				<SelectField
+					:model-value="job.config?.depends || []"
+					clearable
+					multiple
+					:options="jobOptions"
+					@update:model-value="updateJobAction.trigger(job, {config: { ...job.config, depends: $event}})"
 				/>
 			</div>
-			<QBtn
-				class="bg-indigo-700 text-indigo-300 px-4 w-full mt-2"
-				@click="assignAgentAction.trigger(job)"
-			>
-				<AssignIcon class="w-4 mr-3" />
-				Assign Agent
-			</QBtn>
 		</QCardSection>
+		<MaxHeightTransition max-height="20em">
+			<QCardSection v-if="showAssignments" class="pt-0 max-h-[20em] overflow-y-auto">
+				<QSeparator class="bg-indigo-900" />
+				<WorkflowAssignmentsList :job="job" />
+			</QCardSection>
+		</MaxHeightTransition>
 	</QCard>
 </template>
 <script setup lang="ts">
 import TrashButton from "@/components/Shared/Buttons/TrashButton";
 import { getAction } from "@/components/Workflows/workflowActions";
-import { WorkflowJob } from "@/components/Workflows/workflows";
-import { FaSolidPlugCircleCheck as AssignIcon } from "danx-icon";
-import { EditOnClickTextField } from "quasar-ui-danx";
-import { ref } from "vue";
+import { Workflow, WorkflowJob } from "@/components/Workflows/workflows";
+import { EditOnClickTextField, MaxHeightTransition, SelectField } from "quasar-ui-danx";
+import { computed, ref } from "vue";
+import WorkflowAssignmentsList from "./WorkflowAssignmentsList";
 
-defineProps<{
+const props = defineProps<{
 	job: WorkflowJob;
+	workflow: Workflow;
 }>();
 
 const showAssignments = ref(false);
 const updateJobAction = getAction("update-job");
-const assignAgentAction = getAction("assign-agent");
-const unassignAgentAction = getAction("unassign-agent");
+const updateJobDebouncedAction = getAction("update-job-debounced");
+const deleteJobAction = getAction("delete-job");
+
+const jobOptions = computed(() => props.workflow.jobs.filter(job => job.id !== props.job.id).map((job) => ({
+	label: job.name,
+	value: job.id
+})));
 </script>
