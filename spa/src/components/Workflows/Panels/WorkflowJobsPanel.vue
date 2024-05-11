@@ -9,10 +9,13 @@
 			<CreateIcon class="w-4 mr-3" />
 			Create Job
 		</QBtn>
+
+		<WorkflowJobCard v-for="job in workflow.jobs" :key="job.id" class="mb-5" :job="job" />
 	</div>
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Workflows/workflowActions";
+import WorkflowJobCard from "@/components/Workflows/WorkflowJobs/WorkflowJobCard";
 import { Workflow } from "@/components/Workflows/workflows";
 import { FaSolidAddressCard as CreateIcon } from "danx-icon";
 

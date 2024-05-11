@@ -2,7 +2,6 @@
 
 namespace App\Models\Workflow;
 
-use App\Models\Agent\Agent;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Flytedan\DanxLaravel\Traits\CountableTrait;
@@ -37,13 +36,13 @@ class WorkflowJob extends Model implements AuditableContract
         return $this->belongsTo(Workflow::class);
     }
 
-    public function workflowJobRuns()
+    public function workflowTasks()
     {
-        return $this->hasMany(WorkflowRun::class);
+        return $this->hasMany(WorkflowTask::class);
     }
 
-    public function agents()
+    public function workflowAssignments()
     {
-        return $this->belongsToMany(Agent::class);
+        return $this->hasMany(WorkflowAssignment::class);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Models\Shared\InputSource;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Contracts\ComputedStatusContract;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
@@ -24,7 +25,7 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
     public array $relatedCounters = [
         Workflow::class => 'runs_count',
     ];
-    
+
     const string
         STATUS_PENDING = 'Pending',
         STATUS_RUNNING = 'Running',
@@ -48,6 +49,11 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
     public function workflow()
     {
         return $this->belongsTo(Workflow::class);
+    }
+
+    public function inputSource()
+    {
+        return $this->belongsTo(InputSource::class);
     }
 
     public function computeStatus(): static

@@ -1,5 +1,6 @@
 import { WorkflowInfoPanel, WorkflowJobsPanel, WorkflowRunsPanel } from "@/components/Workflows/Panels";
 import { WorkflowController } from "@/components/Workflows/workflowControls";
+import { BadgeTab } from "quasar-ui-danx";
 import { ActionPanel } from "quasar-ui-danx/types";
 import { computed, h } from "vue";
 
@@ -16,6 +17,7 @@ export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "jobs",
 		label: "Jobs",
+		tabVnode: () => h(BadgeTab, { count: activeItem.value.jobs?.length }),
 		vnode: () => h(WorkflowJobsPanel, {
 			workflow: activeItem.value
 		})
@@ -23,6 +25,7 @@ export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "runs",
 		label: "Runs",
+		tabVnode: () => h(BadgeTab, { count: activeItem.value.runs?.length }),
 		vnode: () => h(WorkflowRunsPanel, {
 			workflow: activeItem.value
 		})

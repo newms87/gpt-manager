@@ -1,6 +1,6 @@
 .dx-dialog {
 	.dx-dialog-card {
-		@apply bg-slate-800 shadow-none;
+		@apply bg-slate-800 shadow-none overflow-hidden;
 	}
 
 	.dx-dialog-header {

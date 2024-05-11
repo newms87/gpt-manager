@@ -1,5 +1,6 @@
 import { WorkflowController } from "@/components/Workflows/workflowControls";
-import { WorkflowRoutes } from "@/routes/workflowRoutes";
+import { AssignAgentDialog } from "@/components/Workflows/WorkflowJobs";
+import { WorkflowJobsRoutes, WorkflowRoutes } from "@/routes/workflowRoutes";
 import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { ActionOptions } from "quasar-ui-danx/types";
 import { h } from "vue";
@@ -17,7 +18,6 @@ const items: ActionOptions[] = [
 		name: "create",
 		label: "Create Workflow",
 		vnode: () => h(CreateNewWithNameDialog, { title: "Create Workflow" }),
-		onAction: (action, target, input) => WorkflowRoutes.applyAction(action, target, input),
 		onFinish: (result) => {
 			WorkflowController.activatePanel(result.item, "edit");
 			WorkflowController.refreshAll();
@@ -56,8 +56,13 @@ const items: ActionOptions[] = [
 	{
 		name: "create-job",
 		vnode: () => h(CreateNewWithNameDialog, { title: "Create Workflow Job", confirmText: "Create Job" }),
-		onAction: (action, target, input) => WorkflowRoutes.applyAction(action, target, input),
-		onFinish: WorkflowController.refreshAll
+		onFinish: WorkflowController.loadList
+	},
+	{
+		name: "assign-agent",
+		vnode: (action, target) => h(AssignAgentDialog, { job: target }),
+		onAction: WorkflowJobsRoutes.applyAction,
+		onFinish: WorkflowController.loadList
 	}
 ];
 

@@ -2,6 +2,7 @@
 
 namespace App\Models\Team;
 
+use App\Models\Agent\Agent;
 use App\Models\User;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
@@ -16,5 +17,10 @@ class Team extends Model implements AuditableContract
     public function users()
     {
         return $this->belongsToMany(User::class);
+    }
+
+    public function agents()
+    {
+        return $this->hasMany(Agent::class);
     }
 }
