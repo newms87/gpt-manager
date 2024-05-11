@@ -1,10 +1,9 @@
 import { WorkflowController } from "@/components/Workflows/workflowControls";
 import { WorkflowRoutes } from "@/routes/workflowRoutes";
-import { ConfirmActionDialog, ConfirmDialog, TextField, useActions } from "quasar-ui-danx";
+import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { ActionOptions } from "quasar-ui-danx/types";
-import { h, ref } from "vue";
-
-const newWorkflowName = ref("");
+import { h } from "vue";
+import { CreateNewWithNameDialog } from "../Shared";
 
 // This is the default action options for all items
 const forAllItems: ActionOptions = {
@@ -17,15 +16,8 @@ const items: ActionOptions[] = [
 	{
 		name: "create",
 		label: "Create Workflow",
-		vnode: () => h(ConfirmDialog, { confirmText: "Create Workflow" }, {
-			title: () => "Create Workflow",
-			default: () => h(TextField, {
-				modelValue: newWorkflowName.value,
-				label: "Name",
-				"onUpdate:model-value": value => newWorkflowName.value = value
-			})
-		}),
-		onAction: (action, target) => WorkflowRoutes.applyAction(action, target, { name: newWorkflowName.value }),
+		vnode: () => h(CreateNewWithNameDialog, { title: "Create Workflow" }),
+		onAction: (action, target, input) => WorkflowRoutes.applyAction(action, target, input),
 		onFinish: (result) => {
 			WorkflowController.activatePanel(result.item, "edit");
 			WorkflowController.refreshAll();
@@ -63,6 +55,8 @@ const items: ActionOptions[] = [
 	},
 	{
 		name: "create-job",
+		vnode: () => h(CreateNewWithNameDialog, { title: "Create Workflow Job", confirmText: "Create Job" }),
+		onAction: (action, target, input) => WorkflowRoutes.applyAction(action, target, input),
 		onFinish: WorkflowController.refreshAll
 	}
 ];
