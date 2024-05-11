@@ -22,7 +22,7 @@ class WorkflowJobRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'assign-agent' => $this->assignAgent($model, $data),
+            'assign-agent' => $this->assignAgents($model, $data),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -32,25 +32,29 @@ class WorkflowJobRepository extends ActionRepository
      *
      * @param WorkflowJob $workflowJob
      * @param             $data
-     * @return WorkflowAssignment
+     * @return WorkflowAssignment[]
      * @throws ValidationError
      */
-    public function assignAgent(WorkflowJob $workflowJob, $data): WorkflowAssignment
+    public function assignAgents(WorkflowJob $workflowJob, $data): array
     {
-        $agent = team()->agents()->find($data['id']);
+        $agents = team()->agents()->whereIn('id', $data['ids'])->get();
 
-        if (!$agent) {
-            throw new ValidationError('Agent was not found on your team\'s account.');
+        if ($agents->isEmpty()) {
+            throw new ValidationError('No agents were not found matching the list provided on your team\'s account.');
         }
 
-        $assignment = $workflowJob->workflowAssignments()->make()->forceFill([
-            'agent_id'     => $agent->id,
-            'max_attempts' => $data['max_attempts'] ?? 1,
-            'is_required'  => $data['is_required'] ?? true,
-            'group'        => $data['group'] ?? '',
-        ]);
-        $assignment->save();
+        $assignments = [];
+        foreach($agents as $agent) {
+            $assignment = $workflowJob->workflowAssignments()->make()->forceFill([
+                'agent_id'     => $agent->id,
+                'max_attempts' => $data['max_attempts'] ?? 1,
+                'is_required'  => $data['is_required'] ?? true,
+                'group'        => $data['group'] ?? '',
+            ]);
+            $assignment->save();
+            $assignments[] = $assignment;
+        }
 
-        return $assignment;
+        return $assignments;
     }
 }

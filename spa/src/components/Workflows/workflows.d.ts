@@ -17,7 +17,7 @@ export interface WorkflowJob extends ActionTargetItem {
 	assignments: WorkflowAssignment[];
 }
 
-export interface WorkflowAssignment {
+export interface WorkflowAssignment extends ActionTargetItem {
 	id: number;
 	agent: Agent;
 	is_required: boolean;

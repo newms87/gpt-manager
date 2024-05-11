@@ -1,6 +1,6 @@
 import { WorkflowController } from "@/components/Workflows/workflowControls";
 import { AssignAgentDialog } from "@/components/Workflows/WorkflowJobs";
-import { WorkflowJobsRoutes, WorkflowRoutes } from "@/routes/workflowRoutes";
+import { WorkflowAssignmentRoutes, WorkflowJobRoutes, WorkflowRoutes } from "@/routes/workflowRoutes";
 import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { ActionOptions } from "quasar-ui-danx/types";
 import { h } from "vue";
@@ -60,9 +60,14 @@ const items: ActionOptions[] = [
 	},
 	{
 		name: "assign-agent",
-		vnode: (action, target) => h(AssignAgentDialog, { job: target }),
-		onAction: WorkflowJobsRoutes.applyAction,
-		onFinish: WorkflowController.loadList
+		vnode: (target) => h(AssignAgentDialog, { job: target }),
+		onAction: WorkflowJobRoutes.applyAction
+	},
+	{
+		name: "unassign-agent",
+		alias: "delete",
+		onAction: WorkflowAssignmentRoutes.applyAction,
+		onFinish: WorkflowController.getActiveItemDetails
 	}
 ];
 

@@ -16,14 +16,7 @@
 				<QBtn class="mr-2" @click="showFiles = !showFiles">
 					<AddImageIcon class="w-4" />
 				</QBtn>
-				<QBtn
-					:loading="deleteAction.isApplying"
-					:disable="deleteAction.isApplying"
-					class="hover:bg-red-900 shadow-none mr-2"
-					@click.stop="deleteAction.trigger(message)"
-				>
-					<DeleteIcon class="w-3" />
-				</QBtn>
+				<TrashButton :saving="deleteAction.isApplying" class="mr-2" @click.stop="deleteAction.trigger(message)" />
 			</div>
 		</div>
 
@@ -54,12 +47,12 @@
 import { ThreadMessage } from "@/components/Agents/agents";
 import { getAction } from "@/components/Agents/Threads/threadMessageActions";
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import TrashButton from "@/components/Shared/Buttons/TrashButton";
 import {
 	FaRegularUser as UserIcon,
 	FaSolidImage as AddImageIcon,
 	FaSolidRobot as AssistantIcon,
-	FaSolidToolbox as ToolIcon,
-	FaSolidTrash as DeleteIcon
+	FaSolidToolbox as ToolIcon
 } from "danx-icon";
 import { fDateTime, fMarkdownJSON, MultiFileField } from "quasar-ui-danx";
 import { UploadedFile } from "quasar-ui-danx/types";

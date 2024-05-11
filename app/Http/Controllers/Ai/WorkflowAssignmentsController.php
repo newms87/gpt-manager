@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Ai;
 
+use App\Repositories\WorkflowAssignmentRepository;
 use App\Resources\Workflow\WorkflowAssignmentResource;
 use Flytedan\DanxLaravel\Http\Controllers\ActionController;
-use Flytedan\DanxLaravel\Repositories\ActionRepository;
 
 class WorkflowAssignmentsController extends ActionController
 {
-    public static string  $repo            = ActionRepository::class;
+    public static string  $repo            = WorkflowAssignmentRepository::class;
     public static ?string $resource        = WorkflowAssignmentResource::class;
     public static ?string $detailsResource = WorkflowAssignmentResource::class;
 }

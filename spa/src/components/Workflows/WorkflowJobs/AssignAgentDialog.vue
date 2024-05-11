@@ -6,9 +6,10 @@
 		@close="$emit('close')"
 	>
 		<SelectField
-			v-model="agentId"
+			v-model="agentIds"
 			label="Agent"
-			:options="WorkflowController.getFieldOptions('agents').filter(a => !job.agents.find(ja => ja.id === a.value))"
+			multiple
+			:options="availableAgents"
 		/>
 	</ConfirmDialog>
 </template>
@@ -16,17 +17,19 @@
 import { WorkflowController } from "@/components/Workflows/workflowControls";
 import { WorkflowJob } from "@/components/Workflows/workflows";
 import { ConfirmDialog, FlashMessages, SelectField } from "quasar-ui-danx";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 const emit = defineEmits(["confirm", "close"]);
-defineProps<{
+const props = defineProps<{
 	job: WorkflowJob
 }>();
-const agentId = ref(null);
+const agentIds = ref([]);
 function onConfirm() {
-	if (!agentId.value) {
-		return FlashMessages.error("Please select an agent");
+	if (agentIds.value.length === 0) {
+		return FlashMessages.error("Please select at least 1 agent to assign.");
 	}
-	emit("confirm", { id: agentId.value });
+	emit("confirm", { ids: agentIds.value });
 }
+
+const availableAgents = computed(() => WorkflowController.getFieldOptions("agents").filter(a => !props.job.assignments.find(ja => ja.agent.id === a.value)));
 </script>
