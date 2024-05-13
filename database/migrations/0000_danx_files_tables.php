@@ -34,6 +34,10 @@ return new class extends Migration {
                 $table->timestamps();
                 $table->unique(['storable_id', 'storable_type', 'stored_file_id'], 'stored_file_storables_unique');
             });
+
+            Schema::table('stored_file_storables', function (Blueprint $table) {
+                $table->foreign('stored_file_id')->references('id')->on('stored_files')->cascadeOnDelete();
+            });
         }
     }
 

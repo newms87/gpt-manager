@@ -64,7 +64,7 @@ class InputSourcesRepository extends ActionRepository
     {
         if (isset($data['files'])) {
             $files = StoredFile::whereIn('id', collect($data['files'])->pluck('id'))->get();
-            $inputSource->storedFiles()->saveMany($files);
+            $inputSource->storedFiles()->sync($files);
         }
     }
 }

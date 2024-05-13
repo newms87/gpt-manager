@@ -32,7 +32,7 @@ class InputSource extends Model implements AuditableContract
 
     public function storedFiles(): StoredFile|MorphToMany
     {
-        return $this->morphToMany(StoredFile::class, 'storable');
+        return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables');
     }
 
     public function workflowRuns(): HasMany|WorkflowRun

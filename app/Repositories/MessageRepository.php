@@ -26,8 +26,7 @@ class MessageRepository extends ActionRepository
     public function saveFiles(Message $message, $fileIds)
     {
         $storedFiles = StoredFile::whereIn('id', $fileIds)->get();
-        $message->storedFiles()->saveMany($storedFiles);
-        $message->storedFiles()->whereNotIn('id', $fileIds)->delete();
+        $message->storedFiles()->sync($storedFiles);
 
         return $message->load('storedFiles');
     }

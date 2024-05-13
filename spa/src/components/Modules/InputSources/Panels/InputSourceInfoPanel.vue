@@ -23,7 +23,8 @@ const props = defineProps<{
 const updateAction = getAction("update-debounced");
 const input = ref({
 	name: props.inputSource.name,
-	description: props.inputSource.description
+	description: props.inputSource.description,
+	files: props.inputSource.files
 });
 
 const workflowForm: Form = {

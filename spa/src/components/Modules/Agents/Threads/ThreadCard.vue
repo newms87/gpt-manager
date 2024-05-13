@@ -2,7 +2,14 @@
 	<QCard class="bg-slate-400 text-slate-700">
 		<QCardSection>
 			<div class="flex items-center flex-nowrap cursor-pointer" @click="$emit('open')">
-				<h5 class="flex-grow overflow-hidden overflow-ellipsis text-no-wrap mr-3">{{ thread.name }}</h5>
+				<h5 class="flex-grow overflow-hidden overflow-ellipsis text-no-wrap mr-3">
+
+					<EditOnClickTextField
+						:model-value="thread.name"
+						class="hover:bg-slate-300"
+						@update:model-value="updateAction.trigger(thread, { name: $event })"
+					/>
+				</h5>
 				<QBtn
 					class="text-lime-800 bg-green-200 hover:bg-lime-800 hover:text-green-200 mr-6 px-3"
 					:disable="runAction.isApplying"
@@ -38,6 +45,7 @@ import { AgentThread } from "@/components/Modules/Agents/agents";
 import { getAction } from "@/components/Modules/Agents/Threads/threadActions";
 import ThreadMessageList from "@/components/Modules/Agents/Threads/ThreadMessageList";
 import { FaRegularTrashCan as DeleteIcon, FaSolidPlay as RunIcon } from "danx-icon";
+import { EditOnClickTextField } from "quasar-ui-danx";
 
 const emit = defineEmits(["open", "close"]);
 const props = defineProps<{
@@ -46,6 +54,7 @@ const props = defineProps<{
 }>();
 
 const runAction = getAction("run");
+const updateAction = getAction("update");
 const deleteAction = getAction("delete");
 
 async function onDelete() {

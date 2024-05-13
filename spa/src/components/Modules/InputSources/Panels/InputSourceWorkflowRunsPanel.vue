@@ -1,12 +1,17 @@
 <template>
 	<div class="p-6">
-		Input Workflow Runs
+		<WorkflowRunCard
+			v-for="workflowRun in inputSource.workflowRuns"
+			:key="workflowRun.id"
+			:workflow-run="workflowRun"
+		/>
 	</div>
 </template>
 <script setup lang="ts">
-import { WorkflowRun } from "@/components/Modules/Workflows/workflows";
+import { InputSource } from "@/components/Modules/InputSources/input-sources";
+import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 
 defineProps<{
-	workflowRuns: WorkflowRun[];
+	inputSource: InputSource;
 }>();
 </script>

@@ -8,9 +8,12 @@
 					</div>
 				</QBtn>
 			</div>
-			<div class="font-bold text-slate-400 ml-3 flex-grow">{{
-					message.title || fDateTime(message.created_at)
-				}}
+			<div class="font-bold text-slate-400 ml-1 flex-grow">
+				<EditOnClickTextField
+					editing-class="bg-slate-600"
+					:model-value="message.title || fDateTime(message.created_at)"
+					@update:model-value="updateDebouncedAction.trigger(message, {title: $event})"
+				/>
 			</div>
 			<div class="text-slate-300">
 				<QBtn class="mr-2" @click="showFiles = !showFiles">
@@ -54,7 +57,7 @@ import {
 	FaSolidRobot as AssistantIcon,
 	FaSolidToolbox as ToolIcon
 } from "danx-icon";
-import { fDateTime, fMarkdownJSON, MultiFileField } from "quasar-ui-danx";
+import { EditOnClickTextField, fDateTime, fMarkdownJSON, MultiFileField } from "quasar-ui-danx";
 import { UploadedFile } from "quasar-ui-danx/types";
 import { computed, ref } from "vue";
 

@@ -22,20 +22,20 @@ export const panels = computed<ActionPanel[]>(() => [
 		})
 	},
 	{
+		name: "tools",
+		label: "Tools",
+		tabVnode: () => h(BadgeTab, { count: activeItem.value?.tools?.length }),
+		vnode: () => h(AgentToolsPanel, {
+			agent: activeItem.value
+		})
+	},
+	{
 		name: "prompt",
 		label: "Prompt",
 		class: "w-[60rem]",
 		vnode: () => h(AgentPromptPanel, {
 			agent: activeItem.value,
 			onChange: input => updateAction.trigger(activeItem.value, input)
-		})
-	},
-	{
-		name: "tools",
-		label: "Tools",
-		tabVnode: () => h(BadgeTab, { count: activeItem.value?.tools?.length }),
-		vnode: () => h(AgentToolsPanel, {
-			agent: activeItem.value
 		})
 	},
 	{

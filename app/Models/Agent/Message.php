@@ -7,7 +7,7 @@ use Flytedan\DanxLaravel\Models\Utilities\StoredFile;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Message extends Model implements AuditableContract
@@ -39,8 +39,8 @@ class Message extends Model implements AuditableContract
         return $this->belongsTo(Thread::class);
     }
 
-    public function storedFiles(): MorphMany|StoredFile|array
+    public function storedFiles(): MorphToMany|StoredFile
     {
-        return $this->morphMany(StoredFile::class, 'storable');
+        return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables');
     }
 }
