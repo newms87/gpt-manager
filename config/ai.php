@@ -5,8 +5,9 @@ use App\Api\OpenAi\OpenAiApi;
 
 return [
     // The seed to use for AI completions to ensure consistent results
-    'seed'   => env('AI_SEED', 11181987),
-    'models' => [
+    'seed'          => env('AI_SEED', 11181987),
+    'default_model' => 'gpt-4-turbo-2024-04-09',
+    'models'        => [
         OpenAiApi::$serviceName => [
             'gpt-4-turbo-2024-04-09' => [
                 'input'  => .01,
@@ -43,10 +44,10 @@ return [
             ],
         ],
     ],
-    'apis'   => [
+    'apis'          => [
         OpenAiApi::$serviceName => OpenAiApi::class,
     ],
-    'tools'  => [
+    'tools'         => [
         [
             'name'        => 'code-interpreter',
             'description' => 'Run code in a variety of languages and return the output',

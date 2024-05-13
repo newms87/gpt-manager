@@ -64,12 +64,17 @@ class ThreadRepository extends ActionRepository
 
         $options = [
             'temperature'     => $threadRun->temperature,
-            'tools'           => $agent->formatTools(),
             'tool_choice'     => $threadRun->tool_choice,
             'response_format' => $threadRun->response_format,
             'seed'            => $threadRun->seed,
         ];
 
+        $tools = $agent->formatTools();
+
+        if ($tools) {
+            $options['tools'] = $tools;
+        }
+        
         do {
             $response = $agent->getModelApi()->complete(
                 $agent->model,

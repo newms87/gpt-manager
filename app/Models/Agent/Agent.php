@@ -11,6 +11,8 @@ use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class Agent extends Model implements AuditableContract
 {
@@ -18,18 +20,19 @@ class Agent extends Model implements AuditableContract
 
     protected $fillable = [
         'name',
+        'description',
         'api',
         'model',
         'temperature',
         'prompt',
-        'description',
         'tools',
     ];
 
     public function casts()
     {
         return [
-            'tools' => 'json',
+            'tools'       => 'json',
+            'temperature' => 'float',
         ];
     }
 
@@ -57,7 +60,7 @@ class Agent extends Model implements AuditableContract
     {
         $availableTools = collect(config('ai.tools'))->keyBy('name');
         $tools          = [];
-        foreach($this->tools as $name) {
+        foreach(($this->tools ?: []) as $name) {
             $availableTool = $availableTools->get($name);
             if (!$availableTool) {
                 continue;
@@ -79,6 +82,28 @@ class Agent extends Model implements AuditableContract
         }
 
         return new $apiClass();
+    }
+
+    /**
+     * @return static
+     * @throws ValidationException
+     */
+    public function validate(): static
+    {
+        validator($this->toArray(), [
+            'name'        => [
+                'required',
+                'max:80',
+                'string',
+                Rule::unique('agents')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
+            ],
+            'api'         => 'required|string',
+            'model'       => 'required|string',
+            'temperature' => 'required|numeric',
+            'tools'       => 'nullable|array',
+        ])->validate();
+
+        return $this;
     }
 
     public static function booted()

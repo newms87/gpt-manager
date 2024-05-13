@@ -24,6 +24,7 @@ export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "prompt",
 		label: "Prompt",
+		class: "w-[60rem]",
 		vnode: () => h(AgentPromptPanel, {
 			agent: activeItem.value,
 			onChange: input => updateAction.trigger(activeItem.value, input)

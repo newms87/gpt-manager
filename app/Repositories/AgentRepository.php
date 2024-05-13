@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
 use App\Models\Agent\Thread;
 use Flytedan\DanxLaravel\Exceptions\ValidationError;
@@ -16,25 +15,20 @@ class AgentRepository extends ActionRepository
     /**
      * @param array $data
      * @return Agent
-     * @throws ValidationError
      */
-    public function createAgent(array $data): Model
+    public function createAgent(array $data): Agent
     {
-        // TODO: Implement this via Laravel validation
-        if (Agent::where('name', $data['name'] ?? '')->exists()) {
-            throw new ValidationError('An agent with this name already exists');
-        }
+        $agent = Agent::make()->forceFill([
+            'team_id' => team()->id,
+        ]);
 
-        if (!empty($data['model'])) {
-            $data['api'] = AgentRepository::getApiForModel($data['model']);
-        } else {
-            $data += [
-                'api'   => OpenAiApi::$serviceName,
-                'model' => 'gpt-4-turbo',
-            ];
-        }
+        $data += [
+            'model'       => config('ai.default_model'),
+            'temperature' => 0,
+            'tools'       => [],
+        ];
 
-        return Agent::create($data);
+        return $this->updateAgent($agent, $data);
     }
 
     /**
@@ -42,13 +36,12 @@ class AgentRepository extends ActionRepository
      * @param array $data
      * @return Agent
      */
-    public function updateAgent(Agent $agent, array $data): Model
+    public function updateAgent(Agent $agent, array $data): Agent
     {
-        if (!empty($data['model'])) {
-            $data['api'] = AgentRepository::getApiForModel($data['model']);
-        }
+        $agent->fill($data);
+        $agent->api = AgentRepository::getApiForModel($agent->model);
 
-        $agent->update($data);
+        $agent->validate()->save($data);
 
         return $agent;
     }

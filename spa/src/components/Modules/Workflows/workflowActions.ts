@@ -20,18 +20,16 @@ const items: ActionOptions[] = [
 		vnode: () => h(CreateNewWithNameDialog, { title: "Create Workflow" }),
 		onFinish: (result) => {
 			WorkflowController.activatePanel(result.item, "edit");
-			WorkflowController.refreshAll();
+			WorkflowController.loadListAndSummary();
 		}
 	},
 	{
-		name: "update",
-		onFinish: WorkflowController.loadList
+		name: "update"
 	},
 	{
 		name: "update-debounced",
 		alias: "update",
-		debounce: 1000,
-		onFinish: WorkflowController.loadList
+		debounce: 1000
 	},
 	{
 		label: "Edit",
@@ -45,7 +43,7 @@ const items: ActionOptions[] = [
 		class: "text-red-500",
 		menu: true,
 		batch: true,
-		onFinish: WorkflowController.refreshAll,
+		onFinish: WorkflowController.loadListAndSummary,
 		vnode: target => h(ConfirmActionDialog, {
 			action: "Delete",
 			label: "Workflows",
@@ -55,8 +53,7 @@ const items: ActionOptions[] = [
 	},
 	{
 		name: "create-job",
-		vnode: () => h(CreateNewWithNameDialog, { title: "Create Workflow Job", confirmText: "Create Job" }),
-		onFinish: WorkflowController.loadList
+		vnode: () => h(CreateNewWithNameDialog, { title: "Create Workflow Job", confirmText: "Create Job" })
 	},
 	{
 		name: "update-job",

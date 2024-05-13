@@ -1,5 +1,6 @@
 <template>
 	<ActionTableLayout
+		title="Input Sources"
 		:controller="InputSourceController"
 		table-class="bg-slate-600"
 		filter-class="bg-slate-500"

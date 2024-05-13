@@ -19,18 +19,16 @@ const items: ActionOptions[] = [
 		vnode: () => h(CreateNewWithNameDialog, { title: "Create InputSource" }),
 		onFinish: (result) => {
 			InputSourceController.activatePanel(result.item, "edit");
-			InputSourceController.refreshAll();
+			InputSourceController.loadListAndSummary();
 		}
 	},
 	{
-		name: "update",
-		onFinish: InputSourceController.loadList
+		name: "update"
 	},
 	{
 		name: "update-debounced",
 		alias: "update",
-		debounce: 1000,
-		onFinish: InputSourceController.loadList
+		debounce: 1000
 	},
 	{
 		label: "Edit",
@@ -44,7 +42,7 @@ const items: ActionOptions[] = [
 		class: "text-red-500",
 		menu: true,
 		batch: true,
-		onFinish: InputSourceController.refreshAll,
+		onFinish: InputSourceController.loadListAndSummary,
 		vnode: target => h(ConfirmActionDialog, {
 			action: "Delete",
 			label: "InputSources",

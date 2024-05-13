@@ -14,6 +14,12 @@ export const columns: TableColumn[] = [
 		onClick: (agent) => AgentController.activatePanel(agent, "edit")
 	},
 	{
+		name: "description",
+		label: "Description",
+		sortable: true,
+		align: "left"
+	},
+	{
 		name: "api",
 		label: "API",
 		sortable: true,
@@ -39,12 +45,6 @@ export const columns: TableColumn[] = [
 		format: fNumber,
 		sortable: true,
 		onClick: (agent) => AgentController.activatePanel(agent, "threads")
-	},
-	{
-		name: "description",
-		label: "Description",
-		sortable: true,
-		align: "left"
 	},
 	{
 		name: "created_at",

@@ -20,7 +20,7 @@ const items: ActionOptions[] = [
 		onAction: (action, target, input) => AgentRoutes.applyAction(action, target, input),
 		onFinish: (result) => {
 			AgentController.activatePanel(result.item, "edit");
-			AgentController.refreshAll();
+			AgentController.loadListAndSummary();
 		}
 	},
 	{
@@ -45,12 +45,11 @@ const items: ActionOptions[] = [
 		class: "text-red-500",
 		menu: true,
 		batch: true,
-		onFinish: AgentController.refreshAll,
+		onFinish: AgentController.loadListAndSummary,
 		vnode: target => h(ConfirmActionDialog, { action: "Delete", label: "Agents", target, confirmClass: "bg-red-900" })
 	},
 	{
-		name: "create-thread",
-		onFinish: AgentController.refreshAll
+		name: "create-thread"
 	}
 ];
 

@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { InputSource } from "@/components/Modules/InputSources/input-sources";
 import { getAction } from "@/components/Modules/InputSources/inputSourceActions";
-import { RenderedForm, TextField } from "quasar-ui-danx";
+import { MultiFileField, RenderedForm, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { h, ref } from "vue";
 
@@ -38,6 +38,11 @@ const workflowForm: Form = {
 			name: "description",
 			vnode: (props) => h(TextField, { ...props, type: "textarea", inputClass: "h-56", maxLength: 512 }),
 			label: "Description"
+		},
+		{
+			name: "files",
+			vnode: (props) => h(MultiFileField, { ...props }),
+			label: "Files"
 		}
 	]
 };

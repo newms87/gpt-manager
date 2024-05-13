@@ -2,12 +2,17 @@
 
 namespace App\Models\Shared;
 
+use App\Models\Workflow\WorkflowRun;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Models\Utilities\StoredFile;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class InputSource extends Model implements AuditableContract
 {
@@ -25,8 +30,27 @@ class InputSource extends Model implements AuditableContract
         ];
     }
 
-    public function storedFiles()
+    public function storedFiles(): StoredFile|MorphToMany
     {
-        return $this->morphMany(StoredFile::class, 'storable');
+        return $this->morphToMany(StoredFile::class, 'storable');
+    }
+
+    public function workflowRuns(): HasMany|WorkflowRun
+    {
+        return $this->hasMany(WorkflowRun::class);
+    }
+
+    public function validate(): static
+    {
+        Validator::make($this->getAttributes(), [
+            'name' => [
+                'required',
+                'max:80',
+                'string',
+                Rule::unique('input_sources')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
+            ],
+        ])->validate();
+
+        return $this;
     }
 }

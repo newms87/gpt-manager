@@ -13,7 +13,7 @@
 import { getAction } from "@/components/Modules/Agents/agentActions";
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { Agent } from "@/components/Modules/Agents/agents";
-import { NumberField, RenderedForm, SelectField, TextField } from "quasar-ui-danx";
+import { RenderedForm, SelectField, SliderNumberField, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { h, ref } from "vue";
 
@@ -53,7 +53,13 @@ const agentForm: Form = {
 		},
 		{
 			name: "temperature",
-			vnode: (props) => h(NumberField, { ...props }),
+			vnode: (props) => h(SliderNumberField, {
+				...props,
+				min: 0,
+				max: 2,
+				step: .1,
+				dark: true
+			}),
 			label: "Temperature",
 			required: true
 		}

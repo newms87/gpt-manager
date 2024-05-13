@@ -1,5 +1,6 @@
 <template>
 	<ActionTableLayout
+		title="Workflows"
 		:controller="WorkflowController"
 		table-class="bg-slate-600"
 		filter-class="bg-slate-500"
