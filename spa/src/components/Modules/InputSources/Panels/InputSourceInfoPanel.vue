@@ -1,6 +1,7 @@
 <template>
 	<div class="p-6">
 		<RenderedForm
+			v-if="input.files"
 			v-model:values="input"
 			empty-value=""
 			:form="workflowForm"
@@ -14,7 +15,7 @@ import { InputSource } from "@/components/Modules/InputSources/input-sources";
 import { getAction } from "@/components/Modules/InputSources/inputSourceActions";
 import { MultiFileField, RenderedForm, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
-import { h, ref } from "vue";
+import { h, ref, watch } from "vue";
 
 const props = defineProps<{
 	inputSource: InputSource,
@@ -25,6 +26,13 @@ const input = ref({
 	name: props.inputSource.name,
 	description: props.inputSource.description,
 	files: props.inputSource.files
+});
+
+// Load the files if they have been loaded after the component is mounted
+watch(() => props.inputSource.files, () => {
+	if (!input.value.files) {
+		input.value.files = props.inputSource.files;
+	}
 });
 
 const workflowForm: Form = {
