@@ -25,6 +25,7 @@ class InputSourceResource extends ActionResource
             'workflow_runs_count' => $this->workflow_runs_count,
             'thumb'               => $thumbFile ? StoredFileResource::make($thumbFile) : null,
             'created_at'          => $this->created_at,
+            'updated_at'          => $this->updated_at,
         ];
     }
 }

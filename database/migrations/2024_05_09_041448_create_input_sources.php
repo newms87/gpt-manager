@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->constrained();
             $table->string('name');
             $table->string('description')->default('');
+            $table->text('content')->nullable();
             $table->json('data')->nullable();
             $table->unsignedInteger('tokens')->default(0);
             $table->unsignedInteger('workflow_runs_count')->default(0);

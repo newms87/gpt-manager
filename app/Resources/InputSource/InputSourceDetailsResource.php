@@ -15,6 +15,7 @@ class InputSourceDetailsResource extends InputSourceResource
     {
         return [
                 'files'        => StoredFileResource::collection($this->storedFiles),
+                'content'      => $this->content,
                 'workflowRuns' => $this->workflowRuns,
             ] + parent::data();
     }

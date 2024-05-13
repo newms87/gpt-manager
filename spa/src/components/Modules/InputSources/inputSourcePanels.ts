@@ -1,6 +1,10 @@
 import { InputSource } from "@/components/Modules/InputSources/input-sources";
 import { InputSourceController } from "@/components/Modules/InputSources/inputSourceControls";
-import { InputSourceInfoPanel, InputSourceWorkflowRunsPanel } from "@/components/Modules/InputSources/Panels";
+import {
+	InputSourceInfoPanel,
+	InputSourceInputPanel,
+	InputSourceWorkflowRunsPanel
+} from "@/components/Modules/InputSources/Panels";
 import { BadgeTab } from "quasar-ui-danx";
 import { ActionPanel } from "quasar-ui-danx/types";
 import { computed, h } from "vue";
@@ -10,8 +14,15 @@ const activeItem = computed<InputSource>(() => InputSourceController.activeItem.
 export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "edit",
-		label: "Details",
+		label: "Info",
 		vnode: () => h(InputSourceInfoPanel, {
+			inputSource: activeItem.value
+		})
+	},
+	{
+		name: "input",
+		label: "Input",
+		vnode: () => h(InputSourceInputPanel, {
 			inputSource: activeItem.value
 		})
 	},

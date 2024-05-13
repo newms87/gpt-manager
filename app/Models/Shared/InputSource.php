@@ -21,6 +21,7 @@ class InputSource extends Model implements AuditableContract
     protected $fillable = [
         'name',
         'description',
+        'content',
     ];
 
     public function casts()

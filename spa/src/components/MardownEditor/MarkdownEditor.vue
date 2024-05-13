@@ -1,5 +1,8 @@
 <template>
 	<div class="dx-markdown-editor">
+		<div v-if="label" class="mb-2 text-sm">
+			{{ label }}
+		</div>
 		<MilkdownProvider>
 			<MilkdownEditor v-model.trim="content" :class="editorClass" :readonly="readonly" />
 			<MaxLengthCounter v-if="maxLength && !readonly" :length="content?.length || 0" :max-length="maxLength" />
@@ -16,5 +19,6 @@ defineProps<{
 	editorClass?: string | object;
 	maxLength?: number;
 	readonly?: boolean;
+	label?: string;
 }>();
 </script>
