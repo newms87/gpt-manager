@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('thread_runs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('thread_id')->constrained();
-            $table->foreignId('last_message_id')->constrained('messages');
+            $table->foreignId('last_message_id')->nullable()->constrained('messages');
             $table->string('status');
             $table->datetime('started_at')->nullable();
             $table->datetime('completed_at')->nullable();

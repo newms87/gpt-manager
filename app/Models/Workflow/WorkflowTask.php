@@ -3,12 +3,15 @@
 namespace App\Models\Workflow;
 
 use App\Models\Agent\Thread;
+use App\Models\Shared\Artifact;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Contracts\ComputedStatusContract;
 use Flytedan\DanxLaravel\Models\Job\JobDispatch;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkflowTask extends Model implements AuditableContract, ComputedStatusContract
@@ -42,29 +45,39 @@ class WorkflowTask extends Model implements AuditableContract, ComputedStatusCon
         });
     }
 
-    public function workflowRun()
+    public function workflowRun(): BelongsTo|WorkflowRun
     {
         return $this->belongsTo(WorkflowRun::class);
     }
 
-    public function workflowJob()
+    public function workflowJob(): BelongsTo|WorkflowJob
     {
         return $this->belongsTo(WorkflowJob::class);
     }
 
-    public function workflowAssignment()
+    public function workflowAssignment(): BelongsTo|WorkflowAssignment
     {
         return $this->belongsTo(WorkflowAssignment::class);
     }
 
-    public function thread()
+    public function thread(): BelongsTo|Thread
     {
         return $this->belongsTo(Thread::class);
     }
 
-    public function jobDispatch()
+    public function artifact(): MorphOne|Artifact
+    {
+        return $this->morphOne(Artifact::class, 'artifactables', 'artifactable_id', 'artifact_id');
+    }
+
+    public function jobDispatch(): BelongsTo|JobDispatch
     {
         return $this->belongsTo(JobDispatch::class);
+    }
+
+    public function isComplete(): bool
+    {
+        return $this->status === self::STATUS_COMPLETED;
     }
 
     public function computeStatus(): static

@@ -3,13 +3,17 @@
 namespace App\Repositories;
 
 use App\Models\Agent\Agent;
+use App\Models\Shared\InputSource;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowJob;
+use App\Models\Workflow\WorkflowRun;
+use App\Services\Workflow\WorkflowService;
 use Flytedan\DanxLaravel\Exceptions\ValidationError;
 use Flytedan\DanxLaravel\Repositories\ActionRepository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class WorkflowRepository extends ActionRepository
 {
@@ -27,6 +31,7 @@ class WorkflowRepository extends ActionRepository
         return match ($action) {
             'create' => $this->createWorkflow($data),
             'create-job' => $this->createWorkflowJob($model, $data),
+            'run-workflow' => $this->runWorkflow($data),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -65,5 +70,35 @@ class WorkflowRepository extends ActionRepository
         return [
             'agents' => team()->agents->map(fn(Agent $agent) => ['value' => $agent->id, 'label' => $agent->name]),
         ];
+    }
+
+    /**
+     * @param $data
+     * @return void
+     * @throws ValidationError
+     * @throws Throwable
+     */
+    public function runWorkflow($data): void
+    {
+        $inputSourceId = $data['input_source_id'] ?? null;
+        $workflowId    = $data['workflow_id'] ?? null;
+        $workflow      = Workflow::find($workflowId);
+        $inputSource   = InputSource::find($inputSourceId);
+
+        if (!$workflow) {
+            throw new ValidationError('Workflow was not found');
+        }
+
+        if (!$inputSource) {
+            throw new ValidationError('Input Source was not found');
+        }
+
+        $workflowRun = $workflow->workflowRuns()->create([
+            'input_source_id' => $inputSourceId,
+            'status'          => WorkflowRun::STATUS_PENDING,
+        ]);
+
+        // TODO: Move this to a job
+        WorkflowService::start($workflowRun);
     }
 }

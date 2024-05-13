@@ -52,7 +52,6 @@ class ThreadRepository extends ActionRepository
         }
 
         $threadRun = $thread->runs()->create([
-            'last_message_id' => $thread->messages->last()->id,
             'status'          => ThreadRun::STATUS_RUNNING,
             'temperature'     => $agent->temperature,
             'tools'           => $agent->tools,
@@ -74,7 +73,7 @@ class ThreadRepository extends ActionRepository
         if ($tools) {
             $options['tools'] = $tools;
         }
-        
+
         do {
             $response = $agent->getModelApi()->complete(
                 $agent->model,
@@ -113,16 +112,17 @@ class ThreadRepository extends ActionRepository
             }
             $threadRun->update(['refreshed_at' => now()]);
         } elseif ($response->isFinished()) {
-            $threadRun->update([
-                'status'        => ThreadRun::STATUS_COMPLETED,
-                'completed_at'  => now(),
-                'input_tokens'  => $response->inputTokens(),
-                'output_tokens' => $response->outputTokens(),
-            ]);
-
-            $thread->messages()->create([
+            $lastMessage = $thread->messages()->create([
                 'role'    => Message::ROLE_ASSISTANT,
                 'content' => $response->getContent(),
+            ]);;
+
+            $threadRun->update([
+                'status'          => ThreadRun::STATUS_COMPLETED,
+                'completed_at'    => now(),
+                'input_tokens'    => $response->inputTokens(),
+                'output_tokens'   => $response->outputTokens(),
+                'last_message_id' => $lastMessage->id,
             ]);
         } else {
             throw new Exception('Unexpected response from AI model');

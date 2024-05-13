@@ -21,7 +21,7 @@ class WorkflowJobFactory extends Factory
             'workflow_id' => Workflow::factory(),
             'name'        => fake()->unique()->name,
             'description' => fake()->sentence,
-            'config'      => null,
+            'depends_on'  => null,
         ];
     }
 }

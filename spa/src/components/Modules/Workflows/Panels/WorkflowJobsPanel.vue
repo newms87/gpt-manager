@@ -43,8 +43,8 @@ const jobFlowDiagram = computed(() => {
 	}
 
 	for (const job of props.workflow.jobs) {
-		if (job.config?.depends?.length > 0) {
-			diagram += `${job.config.depends.join(" & ")}--> ${job.id}\n`;
+		if (job.depends_on?.length > 0) {
+			diagram += `${job.depends_on.join(" & ")}--> ${job.id}\n`;
 		}
 	}
 

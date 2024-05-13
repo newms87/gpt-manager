@@ -27,11 +27,11 @@
 			<div>
 				<div>Depends On</div>
 				<SelectField
-					:model-value="job.config?.depends || []"
+					:model-value="job.depends_on || []"
 					clearable
 					multiple
 					:options="jobOptions"
-					@update:model-value="updateJobAction.trigger(job, {config: { ...job.config, depends: $event}})"
+					@update:model-value="updateJobAction.trigger(job, {depends_on: $event})"
 				/>
 			</div>
 		</QCardSection>

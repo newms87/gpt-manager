@@ -1,5 +1,5 @@
 <template>
-	<QCard>
+	<QCard class="bg-slate-800 text-slate-300">
 		<QCardSection class="flex items-center justify-between">
 			<div>Workflow Run {{ workflowRun.id }}</div>
 			<div>{{ workflowRun.status }}</div>

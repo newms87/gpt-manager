@@ -57,6 +57,16 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
         return $this->belongsTo(InputSource::class);
     }
 
+    public function pendingTasks()
+    {
+        return $this->hasMany(WorkflowTask::class)->where('status', WorkflowTask::STATUS_PENDING);
+    }
+    
+    public function remainingTasks()
+    {
+        return $this->hasMany(WorkflowTask::class)->whereIn('status', [WorkflowTask::STATUS_PENDING, WorkflowTask::STATUS_RUNNING]);
+    }
+
     public function computeStatus(): static
     {
         if ($this->started_at === null) {

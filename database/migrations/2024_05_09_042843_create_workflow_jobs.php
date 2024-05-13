@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->foreignId('workflow_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('description')->default('');
-            $table->json('config')->nullable();
+            $table->json('depends_on')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

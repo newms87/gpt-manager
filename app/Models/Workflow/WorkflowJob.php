@@ -7,6 +7,8 @@ use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Flytedan\DanxLaravel\Traits\CountableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkflowJob extends Model implements AuditableContract
@@ -27,21 +29,26 @@ class WorkflowJob extends Model implements AuditableContract
     public function casts()
     {
         return [
-            'config' => 'array',
+            'depends_on' => 'array',
         ];
     }
 
-    public function workflow()
+    public function workflow(): BelongsTo|Workflow
     {
         return $this->belongsTo(Workflow::class);
     }
 
-    public function workflowTasks()
+    public function workflowTasks(): HasMany|WorkflowTask
     {
         return $this->hasMany(WorkflowTask::class);
     }
 
-    public function workflowAssignments()
+    public function remainingTasks(): HasMany|WorkflowTask
+    {
+        return $this->hasMany(WorkflowTask::class)->whereIn('status', [WorkflowTask::STATUS_PENDING, WorkflowTask::STATUS_RUNNING]);
+    }
+
+    public function workflowAssignments(): HasMany|WorkflowAssignment
     {
         return $this->hasMany(WorkflowAssignment::class);
     }

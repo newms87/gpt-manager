@@ -52,6 +52,9 @@ const items: ActionOptions[] = [
 		})
 	},
 	{
+		name: "run-workflow"
+	},
+	{
 		name: "create-job",
 		vnode: () => h(CreateNewWithNameDialog, { title: "Create Workflow Job", confirmText: "Create Job" })
 	},
