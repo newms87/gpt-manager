@@ -1,4 +1,4 @@
-import { AgentsView, DashboardView, InputSourcesView, WorkflowsView } from "@/views";
+import { AgentsView, AuditRequestsView, DashboardView, InputSourcesView, WorkflowsView } from "@/views";
 import { createRouter, createWebHistory } from "vue-router";
 
 const router = createRouter({
@@ -27,6 +27,12 @@ const router = createRouter({
 			name: "agents",
 			component: AgentsView,
 			meta: { title: "Agents" }
+		},
+		{
+			path: "/audit-requests",
+			name: "audit-requests",
+			component: AuditRequestsView,
+			meta: { title: "Auditing" }
 		}
 	]
 });

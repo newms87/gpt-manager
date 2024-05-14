@@ -7,6 +7,7 @@ use App\Http\Controllers\Ai\ThreadsController;
 use App\Http\Controllers\Ai\WorkflowAssignmentsController;
 use App\Http\Controllers\Ai\WorkflowJobsController;
 use App\Http\Controllers\Ai\WorkflowsController;
+use App\Http\Controllers\Audit\AuditRequestsController;
 use App\Http\Controllers\ProfileController;
 use Flytedan\DanxLaravel\Http\Routes\ActionRoute;
 use Flytedan\DanxLaravel\Http\Routes\FileUploadRoute;
@@ -53,6 +54,9 @@ ActionRoute::routes('threads', new ThreadsController)->group(function () {
     Route::post('/{thread}/run', [ThreadsController::class, 'run'])->name('threads.run');
 });
 ActionRoute::routes('messages', new MessagesController);
+
+// Audits
+ActionRoute::routes('audit-requests', new AuditRequestsController);
 
 // Imports
 require __DIR__ . '/auth.php';

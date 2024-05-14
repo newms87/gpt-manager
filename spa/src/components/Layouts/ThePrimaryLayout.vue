@@ -5,7 +5,7 @@
 		<div class="flex items-stretch flex-nowrap flex-grow overflow-hidden">
 			<CollapsableSidebar v-model:collapse="isCollapsed" min-width="5rem" name="primary-nav" class="primary-nav">
 				<NavigationMenu
-					:items="adminMenu"
+					:items="adminNavigation"
 					:collapsed="isCollapsed"
 					class="h-full"
 					item-class="text-sky-700 hover:text-sky-100 hover:bg-sky-700"
@@ -24,13 +24,7 @@
 </template>
 <script setup lang="ts">
 import ThePageHeader from "@/components/ThePageHeader";
-import router from "@/router";
-import {
-	FaSolidCloudBolt as DashboardIcon,
-	FaSolidFile as InputSourcesIcon,
-	FaSolidRobot as AgentsIcon,
-	FaSolidWorm as WorkflowsIcon
-} from "danx-icon";
+import { adminNavigation } from "@/navigation";
 import { useQuasar } from "quasar";
 import { CollapsableSidebar, FlashMessages, NavigationMenu } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
@@ -41,26 +35,4 @@ onMounted(() => {
 	FlashMessages.notify = useQuasar().notify;
 });
 
-const adminMenu = [
-	{
-		label: "Dashboard",
-		icon: DashboardIcon,
-		onClick: () => router.push({ name: "home" })
-	},
-	{
-		label: "Input Sources",
-		icon: InputSourcesIcon,
-		onClick: () => router.push({ name: "input-sources" })
-	},
-	{
-		label: "Workflows",
-		icon: WorkflowsIcon,
-		onClick: () => router.push({ name: "workflows" })
-	},
-	{
-		label: "Agents",
-		icon: AgentsIcon,
-		onClick: () => router.push({ name: "agents" })
-	}
-];
 </script>

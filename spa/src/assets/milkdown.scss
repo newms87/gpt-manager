@@ -72,3 +72,23 @@
 		}
 	}
 }
+
+.markdown-code-only {
+	[contenteditable] {
+		@apply p-0 bg-inherit;
+	}
+}
+
+.dx-markdown-editor {
+	&.md-bg-lime-200 {
+		[contenteditable] {
+			@apply bg-lime-200;
+		}
+	}
+
+	&.md-bg-red-200 {
+		[contenteditable] {
+			@apply bg-red-200;
+		}
+	}
+}
