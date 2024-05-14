@@ -1,7 +1,7 @@
 <template>
 	<div class="p-6">
 		<MarkdownEditor
-			editor-class="markdown-code-only"
+			class="markdown-code-only"
 			:model-value="fMarkdownJSON(auditRequest.request)"
 			readonly
 		/>

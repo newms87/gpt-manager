@@ -2,6 +2,8 @@ import { AuditRequest } from "@/components/Modules/Audits/audit-requests";
 import { AuditRequestController } from "@/components/Modules/Audits/auditRequestControls";
 import {
 	AuditRequestAuditsPanel,
+	AuditRequestErrorsPanel,
+	AuditRequestJobsPanel,
 	AuditRequestRequestPanel,
 	AuditRequestResponsePanel
 } from "@/components/Modules/Audits/Panels";
@@ -32,6 +34,40 @@ export const panels = computed<ActionPanel[]>(() => [
 		label: "Audits",
 		class: "w-[80em]",
 		vnode: () => h(AuditRequestAuditsPanel, {
+			auditRequest: activeItem.value
+		})
+	},
+	{
+		name: "api-logs",
+		label: "API Logs",
+		class: "w-[80em]",
+		vnode: () => h(AuditRequestAuditsPanel, {
+			auditRequest: activeItem.value
+		})
+	},
+	{
+		name: "ran-jobs",
+		label: "Ran Jobs",
+		class: "w-[80em]",
+		vnode: () => h(AuditRequestJobsPanel, {
+			auditRequest: activeItem.value,
+			jobs: activeItem.value.ran_jobs || []
+		})
+	},
+	{
+		name: "dispatched-jobs",
+		label: "Dispatched Jobs",
+		class: "w-[80em]",
+		vnode: () => h(AuditRequestJobsPanel, {
+			auditRequest: activeItem.value,
+			jobs: activeItem.value.dispatched_jobs || []
+		})
+	},
+	{
+		name: "errors",
+		label: "Errors",
+		class: "w-[80em]",
+		vnode: () => h(AuditRequestErrorsPanel, {
 			auditRequest: activeItem.value
 		})
 	}

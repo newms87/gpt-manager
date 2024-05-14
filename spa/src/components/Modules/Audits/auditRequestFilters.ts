@@ -10,6 +10,12 @@ export const filters = computed(() => [
 				name: "created_at",
 				label: "Created Date",
 				inline: true
+			},
+			{
+				type: "multi-select",
+				name: "requestMethod",
+				label: "Method",
+				options: ["GET", "POST", "PUT", "PATCH", "DELETE"]
 			}
 		]
 	}

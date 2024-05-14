@@ -72,6 +72,41 @@ export const columns: TableColumn[] = [
 		format: fNumber
 	},
 	{
+		name: "audits_count",
+		label: "Audits",
+		align: "left",
+		format: fNumber,
+		onClick: (target) => AuditRequestController.activatePanel(target, "audits")
+	},
+	{
+		name: "api_logs_count",
+		label: "API Logs",
+		align: "left",
+		format: fNumber,
+		onClick: (target) => AuditRequestController.activatePanel(target, "api-logs")
+	},
+	{
+		name: "ran_jobs_count",
+		label: "Ran Jobs",
+		align: "left",
+		format: fNumber,
+		onClick: (target) => AuditRequestController.activatePanel(target, "ran-jobs")
+	},
+	{
+		name: "dispatched_jobs_count",
+		label: "Dispatched Jobs",
+		align: "left",
+		format: fNumber,
+		onClick: (target) => AuditRequestController.activatePanel(target, "dispatched-jobs")
+	},
+	{
+		name: "error_log_entries_count",
+		label: "Errors",
+		align: "left",
+		format: fNumber,
+		onClick: (target) => AuditRequestController.activatePanel(target, "errors")
+	},
+	{
 		name: "environment",
 		label: "Environment",
 		sortable: true,
