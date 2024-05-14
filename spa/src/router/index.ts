@@ -1,4 +1,11 @@
-import { AgentsView, AuditRequestsView, DashboardView, InputSourcesView, WorkflowsView } from "@/views";
+import {
+	AgentsView,
+	AuditRequestsView,
+	DashboardView,
+	InputSourcesView,
+	PageNotFoundView,
+	WorkflowsView
+} from "@/views";
 import { createRouter, createWebHistory } from "vue-router";
 
 const router = createRouter({
@@ -11,28 +18,32 @@ const router = createRouter({
 			meta: { title: "Danx Home" }
 		},
 		{
-			path: "/input-sources",
+			path: "/input-sources/:id?/:panel?",
 			name: "input-sources",
 			component: InputSourcesView,
-			meta: { title: "Input Sources" }
+			meta: { title: "Input Sources", type: "InputSource" }
 		},
 		{
-			path: "/workflows",
+			path: "/workflows/:id?/:panel?",
 			name: "workflows",
 			component: WorkflowsView,
-			meta: { title: "Workflows" }
+			meta: { title: "Workflows", type: "Workflow" }
 		},
 		{
-			path: "/agents",
+			path: "/agents/:id?/:panel?",
 			name: "agents",
 			component: AgentsView,
-			meta: { title: "Agents" }
+			meta: { title: "Agents", type: "Agent" }
 		},
 		{
-			path: "/audit-requests",
+			path: "/audit-requests/:id?/:panel?",
 			name: "audit-requests",
 			component: AuditRequestsView,
-			meta: { title: "Auditing" }
+			meta: { title: "Auditing", type: "AuditRequest" }
+		},
+		{
+			path: "/:pathMatch(.*)*",
+			component: PageNotFoundView
 		}
 	]
 });

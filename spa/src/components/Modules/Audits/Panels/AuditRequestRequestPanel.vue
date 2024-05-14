@@ -1,10 +1,12 @@
 <template>
 	<div class="p-6">
 		<MarkdownEditor
+			v-if="auditRequest.request"
 			class="markdown-code-only"
 			:model-value="fMarkdownJSON(auditRequest.request)"
 			readonly
 		/>
+		<QSkeleton v-else class="w-full rounded h-96" />
 	</div>
 </template>
 <script setup lang="ts">

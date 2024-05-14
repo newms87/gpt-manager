@@ -6,7 +6,8 @@
 			:model-value="fMarkdownJSON(auditRequest.response)"
 			readonly
 		/>
-		<div v-else class="text-lg text-gray-500">No response</div>
+		<div v-else-if="auditRequest.response === null" class="text-lg text-gray-500">No response</div>
+		<QSkeleton v-else class="w-full rounded h-96" />
 	</div>
 </template>
 <script setup lang="ts">

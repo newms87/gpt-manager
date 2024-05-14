@@ -48,6 +48,5 @@ const runWorkflowAction = getAction("run-workflow");
 
 onMounted(async () => {
 	workflows.value = (await WorkflowRoutes.list({ page: 1, rowsPerPage: 1000 })).data;
-	console.log("got workflows", workflows.value);
 });
 </script>
