@@ -1,7 +1,11 @@
 <template>
 	<QCard class="bg-slate-800 text-slate-300">
 		<QCardSection class="flex items-center justify-between">
-			<div>Workflow Run {{ workflowRun.id }}</div>
+			<div>
+				<a @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
+					{{ workflowRun.workflow_name }} ({{ workflowRun.workflow_id }})
+				</a>
+			</div>
 			<div>{{ workflowRun.status }}</div>
 			<div>{{ fDateTime(workflowRun.started_at) }}</div>
 		</QCardSection>

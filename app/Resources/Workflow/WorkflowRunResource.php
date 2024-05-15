@@ -17,13 +17,16 @@ class WorkflowRunResource extends ActionResource
     public function data(): array
     {
         return [
-            'id'           => $this->id,
-            'status'       => $this->status,
-            'inputSource'  => InputSourceResource::make($this->inputSource),
-            'started_at'   => $this->started_at,
-            'completed_at' => $this->completed_at,
-            'failed_at'    => $this->failed_at,
-            'created_at'   => $this->created_at,
+            'id'              => $this->id,
+            'workflow_id'     => $this->workflow_id,
+            'workflow_name'   => $this->workflow->name,
+            'status'          => $this->status,
+            'inputSource'     => InputSourceResource::make($this->inputSource),
+            'workflowJobRuns' => $this->workflowJobRuns,
+            'started_at'      => $this->started_at,
+            'completed_at'    => $this->completed_at,
+            'failed_at'       => $this->failed_at,
+            'created_at'      => $this->created_at,
         ];
     }
 }

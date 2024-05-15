@@ -100,7 +100,7 @@ export const columns: TableColumn[] = [
 		onClick: (target) => AuditRequestController.activatePanel(target, "dispatched-jobs")
 	},
 	{
-		name: "error_log_entries_count",
+		name: "errors_count",
 		label: "Errors",
 		align: "left",
 		format: fNumber,

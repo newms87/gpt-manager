@@ -10,18 +10,14 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('workflow_tasks', function (Blueprint $table) {
+        Schema::create('workflow_job_runs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained();
-            $table->foreignId('workflow_job_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('workflow_job_run_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('workflow_assignment_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('thread_id')->nullable()->constrained();
             $table->string('status');
+            $table->foreignId('workflow_job_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('workflow_run_id')->constrained()->cascadeOnDelete();
             $table->datetime('started_at')->nullable();
             $table->datetime('completed_at')->nullable();
             $table->datetime('failed_at')->nullable();
-            $table->foreignId('job_dispatch_id')->nullable()->constrained('job_dispatch');
             $table->timestamps();
             $table->softDeletes();
         });
@@ -32,6 +28,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('workflow_tasks');
+        Schema::dropIfExists('workflow_job_runs');
     }
 };

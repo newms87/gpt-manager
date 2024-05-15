@@ -9,6 +9,8 @@ use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Flytedan\DanxLaravel\Traits\CountableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkflowRun extends Model implements AuditableContract, ComputedStatusContract
@@ -40,31 +42,26 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
         self::STATUS_FAILED,
     ];
 
-    public static function booted()
+    public static function booted(): void
     {
         static::saving(function ($workflowTask) {
             $workflowTask->computeStatus();
         });
     }
 
-    public function workflow()
+    public function workflow(): BelongsTo|Workflow
     {
         return $this->belongsTo(Workflow::class);
     }
 
-    public function inputSource()
+    public function inputSource(): BelongsTo|InputSource
     {
         return $this->belongsTo(InputSource::class);
     }
 
-    public function pendingTasks()
+    public function workflowJobRuns(): HasMany|WorkflowJobRun
     {
-        return $this->hasMany(WorkflowTask::class)->where('status', WorkflowTask::STATUS_PENDING);
-    }
-    
-    public function remainingTasks()
-    {
-        return $this->hasMany(WorkflowTask::class)->whereIn('status', [WorkflowTask::STATUS_PENDING, WorkflowTask::STATUS_RUNNING]);
+        return $this->hasMany(WorkflowJobRun::class);
     }
 
     public function computeStatus(): static

@@ -2,21 +2,19 @@
 
 namespace Database\Factories\Workflow;
 
+use App\Models\Team\Team;
+use App\Models\Workflow\Workflow;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Workflow\Workflow>
+ * @extends Factory<Workflow>
  */
 class WorkflowFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
+            'team_id'     => Team::factory(),
             'name'        => fake()->unique()->name,
             'description' => fake()->sentence,
         ];

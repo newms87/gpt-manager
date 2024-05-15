@@ -20,7 +20,7 @@ class WorkflowJobResource extends ActionResource
             'name'        => $this->name,
             'description' => $this->description,
             'assignments' => WorkflowAssignmentResource::collection($this->workflowAssignments),
-            'runs_count'  => $this->workflowTasks()->count(),
+            'runs_count'  => $this->workflowJobRuns()->count(),
             'depends_on'  => $this->depends_on ?: [],
             'created_at'  => $this->created_at,
         ];

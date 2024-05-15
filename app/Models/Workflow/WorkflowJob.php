@@ -38,6 +38,11 @@ class WorkflowJob extends Model implements AuditableContract
         return $this->belongsTo(Workflow::class);
     }
 
+    public function workflowJobRuns(): HasMany|WorkflowJobRun
+    {
+        return $this->hasMany(WorkflowJobRun::class);
+    }
+    
     public function workflowTasks(): HasMany|WorkflowTask
     {
         return $this->hasMany(WorkflowTask::class);

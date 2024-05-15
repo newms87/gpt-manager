@@ -3,15 +3,17 @@
 namespace App\Services\Workflow;
 
 use App\Jobs\RunWorkflowTaskJob;
+use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class WorkflowService
 {
     /**
-     * Begin the Workflow by creating all the tasks for jobs that do not have any dependencies
+     * Begin the Workflow by creating all the jobs for the Workflow Run
      *
      * @throws Throwable
      */
@@ -22,20 +24,89 @@ class WorkflowService
 
         $workflowJobs = $workflowRun->workflow->workflowJobs()->get();
         foreach($workflowJobs as $workflowJob) {
-            Log::debug("Creating tasks for job $workflowJob->id");
-
-            $assignments = $workflowJob->workflowAssignments()->get();
-            foreach($assignments as $assignment) {
-                $assignment->workflowTasks()->create([
-                    'user_id'         => user()->id,
-                    'workflow_run_id' => $workflowRun->id,
-                    'workflow_job_id' => $workflowJob->id,
-                    'status'          => WorkflowTask::STATUS_PENDING,
-                ]);
-            }
+            Log::debug("Creating run for Workflow Job $workflowJob->name ($workflowJob->id)");
+            $workflowRun->workflowJobRuns()->create([
+                'workflow_job_id' => $workflowJob->id,
+            ]);
         }
 
-        static::dispatchTasksWithDependenciesMet($workflowRun);
+        static::dispatchPendingWorkflowJobs($workflowRun);
+    }
+
+    /**
+     * Dispatch any pending workflow run jobs that have their dependencies met
+     *
+     * @param WorkflowRun $workflowRun
+     * @return void
+     * @throws Throwable
+     */
+    public static function dispatchPendingWorkflowJobs(WorkflowRun $workflowRun): void
+    {
+        /** @var WorkflowJobRun[][]|Collection $workflowJobRunsByStatus */
+        $workflowJobRunsByStatus = $workflowRun->workflowJobRuns()->get()->keyBy('workflow_job_id')->groupBy('status');
+
+        if ($workflowJobRunsByStatus->has(WorkflowRun::STATUS_FAILED)) {
+            Log::warning("Workflow Run has failed jobs, stopping dispatch");
+
+            return;
+        }
+
+        /** @var WorkflowJobRun[]|Collection $completedJobRuns */
+        $completedJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_COMPLETED);
+        $completedIds     = $completedJobRuns?->pluck('workflow_job_id')->toArray() ?? [];
+        /** @var WorkflowJobRun[]|Collection $pendingJobRuns */
+        $pendingJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_PENDING);
+
+        foreach($pendingJobRuns as $pendingJobRun) {
+            $dependsOnJobIds = $pendingJobRun->workflowJob->depends_on ?: [];
+
+            // If the job has not been completed, then we cannot dispatch this task
+            if (count(array_diff($dependsOnJobIds, $completedIds)) > 0) {
+                Log::debug("Job {$pendingJobRun->workflowJob->name} has dependencies that have not yet completed");
+                continue;
+            }
+
+            Log::debug("Dispatching job $pendingJobRun->id");
+            
+            $pendingJobRun->tasks()->create([
+                'user_id'         => user()->id,
+                'workflow_run_id' => $workflowRun->id,
+                'workflow_job_id' => $pendingJobRun->workflowJob->id,
+                'status'          => WorkflowTask::STATUS_PENDING,
+            ]);
+        }
+
+
+        $assignments = $workflowJob->workflowAssignments()->get();
+        foreach($assignments as $assignment) {
+            $assignment->workflowTasks()->create([
+                'user_id'         => user()->id,
+                'workflow_run_id' => $workflowRun->id,
+                'workflow_job_id' => $workflowJob->id,
+                'status'          => WorkflowTask::STATUS_PENDING,
+            ]);
+        }
+
+        // Get a mapped list of jobs and whether they have been completed
+        $completedJobRuns = [];
+        foreach($workflow->workflowJobs as $workflowJob) {
+            $completedJobRuns[$workflowJob->id] = $workflowJob->remainingTasks()->count() === 0;
+        }
+
+        // Dispatch any tasks that have their dependencies met
+        foreach($workflowRun->pendingTasks as $pendingTask) {
+            $dependsOnJobIds = $pendingTask->workflowJob->depends_on ?: [];
+
+            foreach($dependsOnJobIds as $workflowJobId) {
+                // If the job has not been completed, then we cannot dispatch this task
+                if (empty($completedJobRuns[$workflowJobId])) {
+                    continue 2;
+                }
+            }
+
+            Log::debug("Dispatching task $pendingTask->id");
+            (new RunWorkflowTaskJob($pendingTask))->dispatch();
+        }
     }
 
     /**
@@ -71,40 +142,6 @@ class WorkflowService
         }
 
 
-        WorkflowService::dispatchTasksWithDependenciesMet($workflowRun);
-    }
-
-    /**
-     * Dispatch the next set of tasks for the Workflow Run if there are any remaining to be dispatched that have their
-     * dependencies met
-     *
-     * @param WorkflowRun $workflowRun
-     * @return void
-     * @throws Throwable
-     */
-    public static function dispatchTasksWithDependenciesMet(WorkflowRun $workflowRun): void
-    {
-        $workflow = $workflowRun->workflow;
-
-        // Get a mapped list of jobs and whether they have been completed
-        $completedJobs = [];
-        foreach($workflow->workflowJobs as $workflowJob) {
-            $completedJobs[$workflowJob->id] = $workflowJob->remainingTasks()->count() === 0;
-        }
-
-        // Dispatch any tasks that have their dependencies met
-        foreach($workflowRun->pendingTasks as $pendingTask) {
-            $dependsOnJobs = $pendingTask->workflowJob->depends_on ?: [];
-
-            foreach($dependsOnJobs as $workflowJobId) {
-                // If the job has not been completed, then we cannot dispatch this task
-                if (empty($completedJobs[$workflowJobId])) {
-                    continue 2;
-                }
-            }
-
-            Log::debug("Dispatching task $pendingTask->id");
-            (new RunWorkflowTaskJob($pendingTask))->dispatch();
-        }
+        WorkflowService::dispatchPendingWorkflowJobs($workflowRun);
     }
 }
