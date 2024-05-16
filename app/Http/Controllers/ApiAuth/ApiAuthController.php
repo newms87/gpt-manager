@@ -16,4 +16,11 @@ class ApiAuthController extends Controller
 
         return response()->json(['token' => user()->createToken('authToken')->plainTextToken]);
     }
+
+    public function logout()
+    {
+        user()->tokens()->delete();
+
+        return response()->json(['message' => 'Logged out']);
+    }
 }

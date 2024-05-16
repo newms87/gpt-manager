@@ -7,7 +7,10 @@
 					<AccountIcon class="w-4" />
 
 					<QMenu>
-						<a class="p-3 block hover:bg-slate-600 text-slate-300" @click="$router.push({ name: 'logout' })">Logout</a>
+						<a
+							class="p-3 block hover:bg-slate-600 text-slate-300"
+							@click="$router.push({ name: 'auth.logout' })"
+						>Logout</a>
 					</QMenu>
 				</QBtn>
 			</div>

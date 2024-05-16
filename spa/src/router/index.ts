@@ -1,4 +1,7 @@
+import ThePageLayout from "@/components/Layouts/ThePageLayout";
+import ThePrimaryLayout from "@/components/Layouts/ThePrimaryLayout";
 import { isAuthenticated, setAuthToken } from "@/helpers/auth";
+import { AuthRoutes } from "@/routes/authRoutes";
 import {
 	AgentsView,
 	AuditRequestsView,
@@ -8,6 +11,7 @@ import {
 	PageNotFoundView,
 	WorkflowsView
 } from "@/views";
+import { FlashMessages } from "quasar-ui-danx";
 import { createRouter, createWebHistory } from "vue-router";
 
 const router = createRouter({
@@ -16,48 +20,68 @@ const router = createRouter({
 		{
 			path: "/",
 			name: "home",
-			component: DashboardView,
-			meta: { title: "Danx Home" }
+			redirect: { name: "dashboard" },
+			component: ThePageLayout,
+			children: [
+				{
+					path: "/",
+					name: "dashboard",
+					component: DashboardView,
+					meta: { title: "Danx Home" }
+				},
+				{
+					path: "/input-sources/:id?/:panel?",
+					name: "input-sources",
+					component: InputSourcesView,
+					meta: { title: "Input Sources", type: "InputSource" }
+				},
+				{
+					path: "/workflows/:id?/:panel?",
+					name: "workflows",
+					component: WorkflowsView,
+					meta: { title: "Workflows", type: "Workflow" }
+				},
+				{
+					path: "/agents/:id?/:panel?",
+					name: "agents",
+					component: AgentsView,
+					meta: { title: "Agents", type: "Agent" }
+				},
+				{
+					path: "/audit-requests/:id?/:panel?",
+					name: "audit-requests",
+					component: AuditRequestsView,
+					meta: { title: "Auditing", type: "AuditRequest" }
+				}
+			]
 		},
 		{
-			path: "/login",
-			name: "login",
-			component: LoginView,
-			meta: { title: "Login" }
-		},
-		{
-			path: "/logout",
-			name: "logout",
-			beforeEnter: () => {
-				setAuthToken("");
-				return { name: "login" };
-			},
-			meta: { title: "Logout" },
-			component: PageNotFoundView
-		},
-		{
-			path: "/input-sources/:id?/:panel?",
-			name: "input-sources",
-			component: InputSourcesView,
-			meta: { title: "Input Sources", type: "InputSource" }
-		},
-		{
-			path: "/workflows/:id?/:panel?",
-			name: "workflows",
-			component: WorkflowsView,
-			meta: { title: "Workflows", type: "Workflow" }
-		},
-		{
-			path: "/agents/:id?/:panel?",
-			name: "agents",
-			component: AgentsView,
-			meta: { title: "Agents", type: "Agent" }
-		},
-		{
-			path: "/audit-requests/:id?/:panel?",
-			name: "audit-requests",
-			component: AuditRequestsView,
-			meta: { title: "Auditing", type: "AuditRequest" }
+			path: "/auth",
+			name: "auth",
+			redirect: { name: "auth.login" },
+			component: ThePrimaryLayout,
+			children: [
+				{
+					path: "/login",
+					name: "auth.login",
+					component: LoginView,
+					meta: { title: "Login" }
+				},
+				{
+					path: "/logout",
+					name: "auth.logout",
+					beforeEnter: async () => {
+						const result = await AuthRoutes.logout();
+						if (result.error) {
+							FlashMessages.error(result.message || "An error occurred while logging you out. Please contact us for help");
+						}
+						setAuthToken("");
+						return { name: "auth.login" };
+					},
+					meta: { title: "Logout" },
+					component: PageNotFoundView
+				}
+			]
 		},
 		{
 			path: "/:pathMatch(.*)*",
@@ -67,11 +91,11 @@ const router = createRouter({
 });
 
 // Login navigation guard
-router.beforeEach(async (to, from) => {
-	const isLogin = to.name === "login";
+router.beforeEach(async (to) => {
+	const isLogin = to.name === "auth.login";
 
 	if (!isLogin && !isAuthenticated()) {
-		return { name: "login" };
+		return { name: "auth.login" };
 	}
 
 	if (isLogin && isAuthenticated()) {

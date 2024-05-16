@@ -1,10 +1,6 @@
 <template>
-	<ThePageLayout>
-		<div class="flex items-center justify-center h-full text-4xl">
-			Dashboard Under Construction
-		</div>
-	</ThePageLayout>
+	<div class="flex items-center justify-center h-full text-4xl">
+		Dashboard Under Construction
+	</div>
 </template>
-<script setup>
-import ThePageLayout from "@/components/Layouts/ThePageLayout";
-</script>
+<script setup></script>

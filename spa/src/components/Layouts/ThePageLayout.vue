@@ -14,8 +14,6 @@
 				/>
 			</CollapsableSidebar>
 		</template>
-
-		<slot />
 	</ThePrimaryLayout>
 </template>
 <script setup lang="ts">

@@ -1,9 +1,6 @@
 <template>
-	<ThePageLayout>
-		<AgentsTable />
-	</ThePageLayout>
+	<AgentsTable />
 </template>
 <script setup>
-import ThePageLayout from "@/components/Layouts/ThePageLayout";
 import AgentsTable from "@/components/Modules/Agents/AgentsTable";
 </script>

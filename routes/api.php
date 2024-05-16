@@ -19,6 +19,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/login', [ApiAuthController::class, 'login'])->withoutMiddleware('auth:sanctum');
+Route::any('/logout', [ApiAuthController::class, 'logout']);
 
 // Dashboard
 Route::get('/dashboard', function () {

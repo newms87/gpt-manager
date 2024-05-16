@@ -9,7 +9,9 @@
 				:duration="300"
 			>
 				<main :key="$route.name" class="flex-grow overflow-hidden">
-					<slot />
+					<slot>
+						<RouterView />
+					</slot>
 				</main>
 			</Transition>
 		</div>
