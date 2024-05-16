@@ -1,7 +1,6 @@
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 import { ConfigEnv, defineConfig } from "vite";
-import VueDevTools from "vite-plugin-vue-devtools";
 import svgLoader from "vite-svg-loader";
 
 // https://vitejs.dev/config/
@@ -19,7 +18,11 @@ export default ({ command }: ConfigEnv) => {
 	console.log("Danx", command, danx);
 
 	return defineConfig({
-		plugins: [vue(), VueDevTools(), svgLoader()],
+		plugins: [
+			vue(),
+			// VueDevTools(),
+			svgLoader()
+		],
 		resolve: {
 			alias: {
 				"@": resolve(__dirname, "./src"),

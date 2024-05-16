@@ -1,7 +1,7 @@
 import "./assets/main.scss";
 import { LocalStorage, Notify, Quasar } from "quasar";
 
-import { applyCssVars, configure } from "quasar-ui-danx";
+import { applyCssVars, configure, request } from "quasar-ui-danx";
 import twColors from "tailwindcss/colors";
 
 import { createApp } from "vue";
@@ -25,8 +25,8 @@ configure({
 	},
 	fileUpload: {
 		directory: "stored-files",
-		presignedUploadUrl: (path, name, mime) => `${baseUrl}/file-upload/presigned-upload-url?path=${path}&name=${name}&mime=${mime}`,
-		uploadCompletedUrl: (fileId) => `${baseUrl}/file-upload/presigned-upload-url-completed/${fileId}`
+		createPresignedUpload: (path, name, mime) => request.get(`${baseUrl}/file-upload/presigned-upload-url?path=${path}&name=${name}&mime=${mime}`),
+		presignedUploadCompleted: (fileId) => request.post(`${baseUrl}/file-upload/presigned-upload-url-completed/${fileId}`)
 	}
 });
 

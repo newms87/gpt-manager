@@ -1,3 +1,4 @@
+import { AuditRequestController } from "@/components/Modules/Audits/auditRequestControls";
 import { computed } from "vue";
 
 export const filters = computed(() => [
@@ -16,6 +17,12 @@ export const filters = computed(() => [
 				name: "requestMethod",
 				label: "Method",
 				options: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+			},
+			{
+				type: "single-select",
+				name: "url",
+				label: "URL",
+				options: AuditRequestController.getFieldOptions("urls")
 			}
 		]
 	}

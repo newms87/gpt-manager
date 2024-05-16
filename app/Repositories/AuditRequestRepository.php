@@ -14,4 +14,13 @@ class AuditRequestRepository extends ActionRepository
     {
         throw new ValidationError("Actions are not allowed on Audit Requests");
     }
+
+    public function fieldOptions(?array $filter = []): array
+    {
+        $urls = $this->query()->distinct()->pluck('url')->toArray();
+
+        return [
+            'urls' => $urls,
+        ];
+    }
 }
