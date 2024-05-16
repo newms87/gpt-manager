@@ -1,8 +1,10 @@
+import { isAuthenticated } from "@/helpers/auth";
 import {
 	AgentsView,
 	AuditRequestsView,
 	DashboardView,
 	InputSourcesView,
+	LoginView,
 	PageNotFoundView,
 	WorkflowsView
 } from "@/views";
@@ -16,6 +18,12 @@ const router = createRouter({
 			name: "home",
 			component: DashboardView,
 			meta: { title: "Danx Home" }
+		},
+		{
+			path: "/login",
+			name: "login",
+			component: LoginView,
+			meta: { title: "Login" }
 		},
 		{
 			path: "/input-sources/:id?/:panel?",
@@ -46,6 +54,14 @@ const router = createRouter({
 			component: PageNotFoundView
 		}
 	]
+});
+
+// Login navigation guard
+router.beforeEach(async (to, from) => {
+	console.log("before", to);
+	if (to.name !== "login" && !isAuthenticated()) {
+		return { name: "login" };
+	}
 });
 
 router.afterEach(to => {
