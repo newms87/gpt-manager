@@ -1,4 +1,4 @@
-import { isAuthenticated } from "@/helpers/auth";
+import { isAuthenticated, setAuthToken } from "@/helpers/auth";
 import {
 	AgentsView,
 	AuditRequestsView,
@@ -24,6 +24,16 @@ const router = createRouter({
 			name: "login",
 			component: LoginView,
 			meta: { title: "Login" }
+		},
+		{
+			path: "/logout",
+			name: "logout",
+			beforeEnter: () => {
+				setAuthToken("");
+				return { name: "login" };
+			},
+			meta: { title: "Logout" },
+			component: PageNotFoundView
 		},
 		{
 			path: "/input-sources/:id?/:panel?",
@@ -58,9 +68,14 @@ const router = createRouter({
 
 // Login navigation guard
 router.beforeEach(async (to, from) => {
-	console.log("before", to);
-	if (to.name !== "login" && !isAuthenticated()) {
+	const isLogin = to.name === "login";
+
+	if (!isLogin && !isAuthenticated()) {
 		return { name: "login" };
+	}
+
+	if (isLogin && isAuthenticated()) {
+		return { name: "home" };
 	}
 });
 

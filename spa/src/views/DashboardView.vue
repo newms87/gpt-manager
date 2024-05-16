@@ -1,12 +1,10 @@
 <template>
-	<div class="danx-styles">
-		Dashboard
-	</div>
+	<ThePageLayout>
+		<div class="flex items-center justify-center h-full text-4xl">
+			Dashboard Under Construction
+		</div>
+	</ThePageLayout>
 </template>
 <script setup>
-import { onMounted } from "vue";
-
-onMounted(() => {
-	console.log("Dashboard view mounted");
-});
+import ThePageLayout from "@/components/Layouts/ThePageLayout";
 </script>

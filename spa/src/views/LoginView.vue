@@ -8,7 +8,7 @@
 					</div>
 					<div class="mt-6">
 						<div>
-							<TextField v-model="input.username" label="Email" @keyup.enter="onNext" />
+							<TextField v-model="input.email" label="Email" @keyup.enter="onNext" />
 						</div>
 						<div ref="passwordField" class="mt-3">
 							<TextField
@@ -20,7 +20,16 @@
 						</div>
 
 						<div class="mt-4">
-							<QBtn class="bg-sky-800 text-sky-200 w-full" @click="onLogin">Log In</QBtn>
+							<QBtn
+								class="bg-sky-800 text-sky-200 w-full"
+								:loading="isLoggingIn"
+								:disable="isLoggingIn"
+								@click="onLogin"
+							>Log In
+							</QBtn>
+						</div>
+						<div class="mt-3">
+							<QBanner v-if="errorMsg" class="bg-red-800 text-red-300 rounded">{{ errorMsg }}</QBanner>
 						</div>
 					</div>
 				</QCardSection>
@@ -30,25 +39,35 @@
 </template>
 <script setup lang="ts">
 import ThePrimaryLayout from "@/components/Layouts/ThePrimaryLayout";
+import { setAuthToken } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
 import { TextField } from "quasar-ui-danx";
 import { ref } from "vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const input = ref({
-	username: "",
+	email: "",
 	password: ""
 });
 
 const isLoggingIn = ref(false);
 const passwordField = ref(null);
+const errorMsg = ref("");
 async function onLogin() {
 	isLoggingIn.value = true;
-	await AuthRoutes.login(input.value);
+	const result = await AuthRoutes.login(input.value);
+
+	if (result.error) {
+		errorMsg.value = result.error;
+	} else {
+		setAuthToken(result.token);
+		await router.push({ name: "home" });
+	}
 	isLoggingIn.value = false;
 }
 function onNext() {
-	console.log("pas", passwordField.value);
-	// Focus the <input /> field inside the passwordField ref
 	passwordField.value.querySelector("input").focus();
 }
 </script>
