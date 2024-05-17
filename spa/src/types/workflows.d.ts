@@ -1,5 +1,6 @@
 import { Agent, AgentThread } from "@/types/agents";
-import { Artifact, InputSource } from "@/types/input-sources";
+import { Artifact } from "@/types/artifacts";
+import { InputSource } from "@/types/input-sources";
 import { ActionTargetItem, AnyObject } from "quasar-ui-danx/types";
 
 export interface Workflow extends ActionTargetItem {
@@ -53,6 +54,7 @@ export interface WorkflowRun extends ActionTargetItem {
 	completed_at: string;
 	started_at: string;
 	failed_at: string;
-	inputSource: InputSource;
-	workflowJobRuns: WorkflowRunJob[];
+	inputSource?: InputSource;
+	workflowJobRuns?: WorkflowRunJob[];
+	artifacts?: Artifact[];
 }

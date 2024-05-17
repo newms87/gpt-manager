@@ -113,7 +113,7 @@ class WorkflowService
             Log::debug("Setting artifact");
 
             // Save the artifact from the completed task
-            $workflowJobRun->artifact()->save($task->artifact()->first());
+            $workflowJobRun->artifacts()->save($task->artifact()->first());
 
             // If we have finished all tasks in the workflow job run, then mark job as completed and notify the workflow run
             if ($isFinished) {
@@ -160,7 +160,7 @@ class WorkflowService
 
         if ($workflowJobRun->isComplete()) {
             // Save the artifact from the completed task
-            $workflowRun->artifact()->save($workflowJobRun->artifact()->first());
+            $workflowRun->artifacts()->save($workflowJobRun->artifacts()->first());
 
             // If we have completed all Workflow Job Runs in the workflow run, then mark the workflow run as completed
             if ($workflowRun->remainingJobRuns()->doesntExist()) {

@@ -55,7 +55,7 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
         return $this->tasks()->whereIn('status', [WorkflowTask::STATUS_PENDING, WorkflowTask::STATUS_RUNNING]);
     }
 
-    public function artifact()
+    public function artifacts()
     {
         return $this->morphToMany(Artifact::class, 'artifactable');
     }
@@ -64,7 +64,7 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
     {
         return $this->status === WorkflowRun::STATUS_COMPLETED;
     }
-    
+
     public function computeStatus(): static
     {
         if ($this->started_at === null) {

@@ -14,7 +14,7 @@ class WorkflowDetailsResource extends WorkflowResource
     {
         return [
                 'jobs' => WorkflowJobResource::collection($this->workflowJobs),
-                'runs' => WorkflowRunResource::collection($this->workflowRuns),
+                'runs' => WorkflowRunDetailsResource::collection($this->workflowRuns),
             ] + parent::data();
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Resources\InputSource;
 
 use App\Models\Shared\InputSource;
-use App\Resources\Workflow\WorkflowRunResource;
 use Flytedan\DanxLaravel\Resources\StoredFileResource;
 
 /**
@@ -17,7 +16,7 @@ class InputSourceDetailsResource extends InputSourceResource
         return [
                 'files'        => StoredFileResource::collection($this->storedFiles),
                 'content'      => $this->content,
-                'workflowRuns' => WorkflowRunResource::collection($this->workflowRuns),
+                'workflowRuns' => InputSourceWorkflowRunDetailsResource::collection($this->workflowRuns),
             ] + parent::data();
     }
 }
