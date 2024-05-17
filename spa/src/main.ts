@@ -1,7 +1,8 @@
 import "./assets/main.scss";
+import { setAuthToken } from "@/helpers/auth";
 import { LocalStorage, Notify, Quasar } from "quasar";
 
-import { applyCssVars, configure, request } from "quasar-ui-danx";
+import { applyCssVars, configure, FlashMessages, request } from "quasar-ui-danx";
 import twColors from "tailwindcss/colors";
 
 import { createApp } from "vue";
@@ -21,7 +22,12 @@ applyCssVars(colors, "tw-");
 const baseUrl = import.meta.env.VITE_API_URL;
 configure({
 	request: {
-		baseUrl: baseUrl
+		baseUrl: baseUrl,
+		onUnauthorized: () => {
+			setAuthToken("");
+			FlashMessages.error("You have been logged out. Please log in again.");
+			router.push({ name: "auth.login" });
+		}
 	},
 	fileUpload: {
 		directory: "stored-files",
