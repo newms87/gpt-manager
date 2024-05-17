@@ -11,7 +11,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Agents/agentActions";
-import { Agent } from "@/components/Modules/Agents/agents";
+import { Agent } from "@/types/agents";
 import { RenderedForm } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { h, ref } from "vue";

@@ -45,8 +45,8 @@
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
-import { Workflow, WorkflowJob } from "@/components/Modules/Workflows/workflows";
 import TrashButton from "@/components/Shared/Buttons/TrashButton";
+import { Workflow, WorkflowJob } from "@/types/workflows";
 import { EditOnClickTextField, MaxHeightTransition, SelectField } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import WorkflowAssignmentsList from "./WorkflowAssignmentsList";

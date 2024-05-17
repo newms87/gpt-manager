@@ -10,7 +10,7 @@
 </template>
 <script setup lang="ts">
 import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
-import { Workflow } from "@/components/Modules/Workflows/workflows";
+import { Workflow } from "@/types/workflows";
 
 defineProps<{
 	workflow: Workflow,

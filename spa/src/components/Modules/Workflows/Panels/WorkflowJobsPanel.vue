@@ -23,8 +23,8 @@
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import WorkflowJobCard from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobCard";
-import { Workflow } from "@/components/Modules/Workflows/workflows";
 import RenderDiagram from "@/components/Shared/Diagrams/RenderDiagram";
+import { Workflow } from "@/types/workflows";
 import { FaSolidAddressCard as CreateIcon } from "danx-icon";
 import { ListTransition } from "quasar-ui-danx";
 import { computed } from "vue";

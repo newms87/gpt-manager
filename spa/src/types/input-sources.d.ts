@@ -1,4 +1,4 @@
-import { WorkflowRun } from "@/components/Modules/Workflows/workflows";
+import { WorkflowRun } from "@/types/workflows";
 import { ActionTargetItem, AnyObject, UploadedFile } from "quasar-ui-danx/types";
 
 export interface InputSource extends ActionTargetItem {
@@ -13,4 +13,14 @@ export interface InputSource extends ActionTargetItem {
 	workflowRuns?: WorkflowRun[];
 	created_at: string;
 	updated_at: string;
+}
+
+export interface Artifact {
+	id: number;
+	name: string;
+	group: string;
+	model: string;
+	content: string;
+	data: AnyObject;
+	created_at: string;
 }

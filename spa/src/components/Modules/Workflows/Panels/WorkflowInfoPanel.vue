@@ -11,7 +11,7 @@
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
-import { Workflow } from "@/components/Modules/Workflows/workflows";
+import { Workflow } from "@/types/workflows";
 import { RenderedForm, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { h, ref } from "vue";

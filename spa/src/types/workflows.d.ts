@@ -1,5 +1,5 @@
-import { Agent } from "@/components/Modules/Agents/agents";
-import { InputSource } from "@/components/Modules/InputSources/input-sources";
+import { Agent, AgentThread } from "@/types/agents";
+import { Artifact, InputSource } from "@/types/input-sources";
 import { ActionTargetItem, AnyObject } from "quasar-ui-danx/types";
 
 export interface Workflow extends ActionTargetItem {
@@ -20,10 +20,24 @@ export interface WorkflowJob extends ActionTargetItem {
 
 export interface WorkflowRunJob {
 	id: number;
-
+	status: string;
+	completed_at: string;
+	started_at: string;
+	failed_at: string;
+	tasks: WorkflowTask[];
 }
 
-export interface WorkflowAssignment extends ActionTargetItem {
+export interface WorkflowTask {
+	id: number;
+	status: string;
+	completed_at: string;
+	started_at: string;
+	failed_at: string;
+	artifact?: Artifact;
+	thread: AgentThread;
+}
+
+export interface WorkflowAssignment {
 	id: number;
 	agent: Agent;
 	is_required: boolean;
@@ -40,5 +54,5 @@ export interface WorkflowRun extends ActionTargetItem {
 	started_at: string;
 	failed_at: string;
 	inputSource: InputSource;
-	jobs: WorkflowRunJob[];
+	workflowJobRuns: WorkflowRunJob[];
 }

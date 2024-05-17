@@ -1,6 +1,6 @@
 import { AgentController } from "@/components/Modules/Agents/agentControls";
-import { ThreadMessage } from "@/components/Modules/Agents/agents";
 import { MessageRoutes } from "@/routes/agentRoutes";
+import { ThreadMessage } from "@/types/agents";
 import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { ActionOptions } from "quasar-ui-danx/types";
 import { h } from "vue";

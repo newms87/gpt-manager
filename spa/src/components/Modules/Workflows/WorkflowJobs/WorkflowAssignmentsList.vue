@@ -24,8 +24,8 @@
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
-import { WorkflowJob } from "@/components/Modules/Workflows/workflows";
 import TrashButton from "@/components/Shared/Buttons/TrashButton";
+import { WorkflowJob } from "@/types/workflows";
 import { FaSolidPlugCircleCheck as AssignIcon } from "danx-icon";
 
 defineProps<{

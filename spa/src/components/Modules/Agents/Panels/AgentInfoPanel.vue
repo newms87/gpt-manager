@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Agents/agentActions";
 import { AgentController } from "@/components/Modules/Agents/agentControls";
-import { Agent } from "@/components/Modules/Agents/agents";
+import { Agent } from "@/types/agents";
 import { RenderedForm, SelectField, SliderNumberField, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { h, ref } from "vue";

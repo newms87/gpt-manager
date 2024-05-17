@@ -23,9 +23,9 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { AgentThread } from "@/components/Modules/Agents/agents";
 import { getAction } from "@/components/Modules/Agents/Threads/threadActions";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
+import { AgentThread } from "@/types/agents";
 import { FaRegularMessage as CreateIcon, FaSolidPlay as RunIcon } from "danx-icon";
 
 defineProps<{

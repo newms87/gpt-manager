@@ -1,10 +1,10 @@
-import { InputSource } from "@/components/Modules/InputSources/input-sources";
 import { InputSourceController } from "@/components/Modules/InputSources/inputSourceControls";
 import {
 	InputSourceInfoPanel,
 	InputSourceInputPanel,
 	InputSourceWorkflowRunsPanel
 } from "@/components/Modules/InputSources/Panels";
+import { InputSource } from "@/types/input-sources";
 import { BadgeTab } from "quasar-ui-danx";
 import { ActionPanel } from "quasar-ui-danx/types";
 import { computed, h } from "vue";

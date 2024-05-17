@@ -30,10 +30,10 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { InputSource } from "@/components/Modules/InputSources/input-sources";
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 import { WorkflowRoutes } from "@/routes/workflowRoutes";
+import { InputSource } from "@/types/input-sources";
 import { FaSolidCirclePlay as RunIcon } from "danx-icon";
 import { SelectField } from "quasar-ui-danx";
 import { onMounted, ref, shallowRef } from "vue";

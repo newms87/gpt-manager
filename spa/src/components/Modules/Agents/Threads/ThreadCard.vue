@@ -41,9 +41,9 @@
 </template>
 
 <script setup lang="ts">
-import { AgentThread } from "@/components/Modules/Agents/agents";
 import { getAction } from "@/components/Modules/Agents/Threads/threadActions";
 import ThreadMessageList from "@/components/Modules/Agents/Threads/ThreadMessageList";
+import { AgentThread } from "@/types/agents";
 import { FaRegularTrashCan as DeleteIcon, FaSolidPlay as RunIcon } from "danx-icon";
 import { EditOnClickTextField } from "quasar-ui-danx";
 

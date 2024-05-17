@@ -22,7 +22,7 @@ class WorkflowRunResource extends ActionResource
             'workflow_name'   => $this->workflow->name,
             'status'          => $this->status,
             'inputSource'     => InputSourceResource::make($this->inputSource),
-            'workflowJobRuns' => $this->workflowJobRuns,
+            'workflowJobRuns' => WorkflowJobRunResource::collection($this->workflowJobRuns),
             'started_at'      => $this->started_at,
             'completed_at'    => $this->completed_at,
             'failed_at'       => $this->failed_at,

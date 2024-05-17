@@ -15,7 +15,7 @@
 </template>
 <script setup lang="ts">
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
-import { WorkflowJob } from "@/components/Modules/Workflows/workflows";
+import { WorkflowJob } from "@/types/workflows";
 import { ConfirmDialog, FlashMessages, SelectField } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 

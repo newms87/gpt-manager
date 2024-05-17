@@ -48,9 +48,9 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { ThreadMessage } from "@/components/Modules/Agents/agents";
 import { getAction } from "@/components/Modules/Agents/Threads/threadMessageActions";
 import TrashButton from "@/components/Shared/Buttons/TrashButton";
+import { ThreadMessage } from "@/types/agents";
 import {
 	FaRegularUser as UserIcon,
 	FaSolidImage as AddImageIcon,

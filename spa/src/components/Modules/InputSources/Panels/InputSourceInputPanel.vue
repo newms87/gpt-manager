@@ -13,8 +13,8 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { InputSource } from "@/components/Modules/InputSources/input-sources";
 import { getAction } from "@/components/Modules/InputSources/inputSourceActions";
+import { InputSource } from "@/types/input-sources";
 import { MultiFileField, RenderedForm } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { h, ref, watch } from "vue";

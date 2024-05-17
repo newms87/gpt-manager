@@ -32,8 +32,8 @@
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Agents/agentActions";
-import { Agent, AgentThread } from "@/components/Modules/Agents/agents";
 import ThreadCard from "@/components/Modules/Agents/Threads/ThreadCard";
+import { Agent, AgentThread } from "@/types/agents";
 import { FaRegularMessage as CreateIcon, FaSolidArrowLeft as CloseIcon } from "danx-icon";
 import { ListTransition } from "quasar-ui-danx";
 import { computed, shallowRef } from "vue";

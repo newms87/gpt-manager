@@ -11,8 +11,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { InputSource } from "@/components/Modules/InputSources/input-sources";
 import { getAction } from "@/components/Modules/InputSources/inputSourceActions";
+import { InputSource } from "@/types/input-sources";
 import { RenderedForm, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { h, ref } from "vue";
