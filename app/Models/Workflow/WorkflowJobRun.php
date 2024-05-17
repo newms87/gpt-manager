@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Models\Shared\Artifact;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Contracts\ComputedStatusContract;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
@@ -33,7 +34,7 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
     {
         return $this->belongsTo(WorkflowRun::class);
     }
-    
+
     public function workflowJob(): BelongsTo|WorkflowJob
     {
         return $this->belongsTo(WorkflowJob::class);
@@ -54,6 +55,16 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
         return $this->tasks()->whereIn('status', [WorkflowTask::STATUS_PENDING, WorkflowTask::STATUS_RUNNING]);
     }
 
+    public function artifact()
+    {
+        return $this->morphToMany(Artifact::class, 'artifactable');
+    }
+
+    public function isComplete(): bool
+    {
+        return $this->status === WorkflowRun::STATUS_COMPLETED;
+    }
+    
     public function computeStatus(): static
     {
         if ($this->started_at === null) {

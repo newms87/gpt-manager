@@ -10,10 +10,10 @@ class WorkflowTaskFactory extends Factory
     public function definition(): array
     {
         return [
-            'status'       => fake()->randomElement(WorkflowTask::STATUSES),
-            'started_at'   => fake()->boolean ? fake()->dateTime : null,
-            'completed_at' => fake()->boolean ? fake()->dateTime : null,
-            'failed_at'    => fake()->boolean ? fake()->dateTime : null,
+            'status'       => WorkflowTask::STATUS_PENDING,
+            'started_at'   => null,
+            'completed_at' => null,
+            'failed_at'    => null,
         ];
     }
 }

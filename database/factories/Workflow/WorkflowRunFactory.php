@@ -14,10 +14,10 @@ class WorkflowRunFactory extends Factory
         return [
             'workflow_id'     => Workflow::factory(),
             'input_source_id' => InputSource::factory(),
-            'status'          => fake()->randomElement(WorkflowRun::STATUSES),
-            'started_at'      => fake()->boolean ? fake()->dateTime : null,
-            'completed_at'    => fake()->boolean ? fake()->dateTime : null,
-            'failed_at'       => fake()->boolean ? fake()->dateTime : null,
+            'status'          => WorkflowRun::STATUS_PENDING,
+            'started_at'      => null,
+            'completed_at'    => null,
+            'failed_at'       => null,
         ];
     }
 }

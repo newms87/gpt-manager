@@ -6,6 +6,7 @@ use App\Jobs\RunWorkflowTaskJob;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
+use Flytedan\DanxLaravel\Helpers\LockHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -82,10 +83,9 @@ class WorkflowService
     }
 
     /**
-     * A Workflow Task has finished. Set the Workflow Run as failed if the task is not complete.
-     * If the Workflow Run has no more tasks to complete, then mark it as completed.
-     * Otherwise, dispatch the next set of tasks for the Workflow Run if there are any remaining to be dispatched that
-     * have their dependencies met.
+     * A Workflow Task has finished. Set the Workflow Job Run as failed if the task is not complete.
+     * If the Workflow Job Run has no more tasks to complete, then mark it as completed.
+     * If Completed, notify the Workflow Run that the Workflow Job has finished.
      *
      * @param WorkflowTask $task
      * @return void
@@ -93,31 +93,89 @@ class WorkflowService
      */
     public static function taskFinished(WorkflowTask $task): void
     {
-        $workflowRun = $task->workflowJobRun->workflowRun;
+        Log::debug("Task {$task->id} has finished: {$task->status}");
+        $workflowJobRun = $task->workflowJobRun;
 
-        if (!$task->isComplete()) {
+        // If the workflow run has failed, stop processing
+        if ($workflowJobRun->failed_at) {
+            Log::debug("Workflow Job Run has already failed, stopping dispatch");
+
+            return;
+        }
+
+        // Make sure race conditions don't allow a Job to be marked completed when another task failed
+        LockHelper::acquire($workflowJobRun);
+
+        $isFinished = $workflowJobRun->remainingTasks()->count() === 0;
+
+        // If the task completed successfully, then save the artifact and mark the job as completed if there are no more tasks
+        if ($task->isComplete()) {
+            Log::debug("Setting artifact");
+
+            // Save the artifact from the completed task
+            $workflowJobRun->artifact()->save($task->artifact()->first());
+
+            // If we have finished all tasks in the workflow job run, then mark job as completed and notify the workflow run
+            if ($isFinished) {
+                // The workflow Job Run has completed successfully. Save the artifact from the completed task and notify the Workflow Run
+                $workflowJobRun->completed_at = now();
+                $workflowJobRun->save();
+            }
+        } else {
+            $workflowJobRun->failed_at = now();
+            $workflowJobRun->save();
+        }
+
+        LockHelper::release($workflowJobRun);
+
+        if ($isFinished) {
+            WorkflowService::workflowJobRunFinished($workflowJobRun);
+        }
+    }
+
+    /**
+     * A Workflow Job Run has finished. Set the Workflow Run as failed if the Workflow Job Run failed.
+     * If the Workflow Job Run succeeded and the Workflow has no more jobs running, then mark the Workflow Run it as
+     * completed. Otherwise, dispatch the next set of Workflow Job Runs if there are any remaining to be dispatched that
+     * have their dependencies met.
+     *
+     * @param WorkflowJobRun $workflowJobRun
+     * @return void
+     * @throws Throwable
+     */
+    public static function workflowJobRunFinished(WorkflowJobRun $workflowJobRun): void
+    {
+        Log::debug("Workflow Job Run {$workflowJobRun->id} has finished: {$workflowJobRun->status}");
+        $workflowRun = $workflowJobRun->workflowRun;
+
+        // If the workflow run has failed, stop processing
+        if ($workflowRun->failed_at) {
+            Log::debug("Workflow Run has already failed, stopping dispatch");
+
+            return;
+        }
+
+        // Make sure no race conditions accidentally complete a workflow when another one failed or double dispatch jobs
+        LockHelper::acquire($workflowRun);
+
+        if ($workflowJobRun->isComplete()) {
+            // Save the artifact from the completed task
+            $workflowRun->artifact()->save($workflowJobRun->artifact()->first());
+
+            // If we have completed all Workflow Job Runs in the workflow run, then mark the workflow run as completed
+            if ($workflowRun->remainingJobRuns()->doesntExist()) {
+                $workflowRun->completed_at = now();
+                $workflowRun->save();
+            } else {
+                // Dispatch the next set of Workflow Job Runs
+                WorkflowService::dispatchPendingWorkflowJobs($workflowRun);
+            }
+        } else {
+            // If the Workflow Job Run failed, then mark the Workflow Run as failed
             $workflowRun->failed_at = now();
             $workflowRun->save();
         }
 
-        // If the workflow run has failed, stop processing
-        if ($workflowRun->failed_at) {
-            Log::debug("Workflow Run has failed, stopping dispatch");
-
-            return;
-        }
-
-        // If we have completed all tasks in the workflow run, then mark the workflow run as completed
-        if ($workflowRun->remainingTasks()->count() === 0) {
-            $workflowRun->completed_at = now();
-            $workflowRun->save();
-
-            // Save the artifact from the completed task
-            $workflowRun->artifact()->save($task->artifact()->first());
-
-            return;
-        }
-        
-        WorkflowService::dispatchPendingWorkflowJobs($workflowRun);
+        LockHelper::release($workflowRun);
     }
 }
