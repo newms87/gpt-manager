@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Models\Shared\Artifact;
 use App\Models\Shared\InputSource;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Contracts\ComputedStatusContract;
@@ -62,6 +63,11 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
     public function workflowJobRuns(): HasMany|WorkflowJobRun
     {
         return $this->hasMany(WorkflowJobRun::class);
+    }
+
+    public function artifact()
+    {
+        return $this->morphToMany(Artifact::class, 'artifactable');
     }
 
     public function computeStatus(): static

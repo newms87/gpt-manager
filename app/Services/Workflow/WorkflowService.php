@@ -55,7 +55,7 @@ class WorkflowService
         $completedJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_COMPLETED);
         $completedIds     = $completedJobRuns?->pluck('workflow_job_id')->toArray() ?? [];
         /** @var WorkflowJobRun[]|Collection $pendingJobRuns */
-        $pendingJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_PENDING);
+        $pendingJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_PENDING) ?? [];
 
         foreach($pendingJobRuns as $pendingJobRun) {
             $workflowJob     = $pendingJobRun->workflowJob;
@@ -67,8 +67,6 @@ class WorkflowService
                 continue;
             }
 
-            Log::debug("Dispatching Workflow Job $pendingJobRun->id");
-
             $assignments = $workflowJob->workflowAssignments()->get();
             foreach($assignments as $assignment) {
                 $pendingTask = $pendingJobRun->tasks()->create([
@@ -78,7 +76,6 @@ class WorkflowService
                     'status'                 => WorkflowTask::STATUS_PENDING,
                 ]);
 
-                Log::debug("\tDispatching Workflow Task $pendingTask->id");
                 (new RunWorkflowTaskJob($pendingTask))->dispatch();
             }
         }
@@ -96,7 +93,7 @@ class WorkflowService
      */
     public static function taskFinished(WorkflowTask $task): void
     {
-        $workflowRun = $task->workflowRun;
+        $workflowRun = $task->workflowJobRun->workflowRun;
 
         if (!$task->isComplete()) {
             $workflowRun->failed_at = now();
@@ -105,6 +102,8 @@ class WorkflowService
 
         // If the workflow run has failed, stop processing
         if ($workflowRun->failed_at) {
+            Log::debug("Workflow Run has failed, stopping dispatch");
+
             return;
         }
 
@@ -113,10 +112,12 @@ class WorkflowService
             $workflowRun->completed_at = now();
             $workflowRun->save();
 
+            // Save the artifact from the completed task
+            $workflowRun->artifact()->save($task->artifact()->first());
+
             return;
         }
-
-
+        
         WorkflowService::dispatchPendingWorkflowJobs($workflowRun);
     }
 }

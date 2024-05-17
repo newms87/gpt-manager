@@ -81,7 +81,7 @@ class Agent extends Model implements AuditableContract
             throw new Exception('API class not found for ' . $this->api);
         }
 
-        return new $apiClass();
+        return app($apiClass);
     }
 
     /**

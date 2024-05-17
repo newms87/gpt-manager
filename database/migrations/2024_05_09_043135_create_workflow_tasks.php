@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->foreignId('workflow_job_run_id')->constrained()->cascadeOnDelete();
             $table->foreignId('workflow_assignment_id')->constrained()->cascadeOnDelete();
             $table->foreignId('thread_id')->nullable()->constrained();
+            $table->foreignId('artifact_id')->nullable()->constrained();
             $table->string('status');
             $table->datetime('started_at')->nullable();
             $table->datetime('completed_at')->nullable();

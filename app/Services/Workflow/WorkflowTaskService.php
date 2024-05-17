@@ -7,6 +7,7 @@ use App\Repositories\MessageRepository;
 use App\Repositories\ThreadRepository;
 use Exception;
 use Flytedan\DanxLaravel\Jobs\Job;
+use Flytedan\DanxLaravel\Models\Audit\ErrorLog;
 use Throwable;
 
 class WorkflowTaskService
@@ -24,7 +25,7 @@ class WorkflowTaskService
         $workflowTask->jobDispatch()->associate(Job::$runningJob);
         $workflowTask->save();
 
-        $inputSource = $workflowTask->workflowRun->inputSource;
+        $inputSource = $workflowTask->workflowJobRun->workflowRun->inputSource;
         $assignment  = $workflowTask->workflowAssignment;
 
         try {
@@ -40,17 +41,18 @@ class WorkflowTaskService
 
             // Produce the artifact
             $lastMessage = $threadRun->lastMessage;
-            $workflowTask->artifact()->create([
+            $a           = $workflowTask->artifact()->create([
                 'group'   => $assignment->group,
                 'name'    => "Workflow Task: {$workflowTask->id}",
                 'model'   => $assignment->agent->model,
                 'content' => $lastMessage->content,
                 'data'    => $lastMessage->data,
             ]);
-
+            
             $workflowTask->completed_at = now();
             $workflowTask->save();
         } catch(Exception $e) {
+            ErrorLog::logException(ErrorLog::ERROR, $e);
             $workflowTask->failed_at = now();
             $workflowTask->save();
         }

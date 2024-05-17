@@ -11,7 +11,7 @@ use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkflowTask extends Model implements AuditableContract, ComputedStatusContract
@@ -65,9 +65,9 @@ class WorkflowTask extends Model implements AuditableContract, ComputedStatusCon
         return $this->belongsTo(Thread::class);
     }
 
-    public function artifact(): MorphOne|Artifact
+    public function artifact(): MorphToMany|Artifact
     {
-        return $this->morphOne(Artifact::class, 'artifactables', 'artifactable_id', 'artifact_id');
+        return $this->morphToMany(Artifact::class, 'artifactable');
     }
 
     public function jobDispatch(): BelongsTo|JobDispatch
