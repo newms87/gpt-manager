@@ -3,6 +3,7 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowTask;
+use App\Resources\Agent\ThreadResource;
 use Flytedan\DanxLaravel\Resources\ActionResource;
 
 /**
@@ -17,11 +18,14 @@ class WorkflowTaskResource extends ActionResource
     {
         return [
             'id'           => $this->id,
+            'agent_name'   => $this->workflowAssignment->agent->name,
+            'model'        => $this->workflowAssignment->agent->model,
             'status'       => $this->status,
             'started_at'   => $this->started_at,
             'completed_at' => $this->completed_at,
             'failed_at'    => $this->failed_at,
             'job_logs'     => $this->jobDispatch?->runningAuditRequest?->logs,
+            'thread'       => $this->thread ? ThreadResource::make($this->thread) : null,
             'created_at'   => $this->created_at,
         ];
     }

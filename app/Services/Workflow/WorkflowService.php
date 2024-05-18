@@ -166,7 +166,7 @@ class WorkflowService
 
         if ($workflowJobRun->isComplete()) {
             // Save the artifact from the completed task
-            $workflowRun->artifacts()->save($workflowJobRun->artifacts()->first());
+            $workflowRun->artifacts()->saveMany($workflowJobRun->artifacts()->get());
 
             // If we have completed all Workflow Job Runs in the workflow run, then mark the workflow run as completed
             if ($workflowRun->remainingJobRuns()->doesntExist()) {

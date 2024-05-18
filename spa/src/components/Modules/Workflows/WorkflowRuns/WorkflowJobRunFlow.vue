@@ -37,8 +37,8 @@
 			</div>
 		</div>
 		<div v-if="displayStatus">
-			<div v-for="job in displayJobs" :key="job.id">
-				<WorkflowJobRunCard :job-run="job" :default-tab="displayStatus" />
+			<div v-for="job in displayJobs" :key="job.id" class="m-3">
+				<WorkflowJobRunCard :job-run="job" />
 			</div>
 		</div>
 	</div>

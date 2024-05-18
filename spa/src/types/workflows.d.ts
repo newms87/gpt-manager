@@ -31,6 +31,8 @@ export interface WorkflowJobRun {
 
 export interface WorkflowTask {
 	id: number;
+	agent_name: string;
+	model: string;
 	status: string;
 	completed_at: string;
 	started_at: string;
@@ -40,7 +42,7 @@ export interface WorkflowTask {
 	job_logs: string;
 }
 
-export interface WorkflowAssignment {
+export interface WorkflowAssignment extends ActionTargetItem {
 	id: number;
 	agent: Agent;
 	is_required: boolean;

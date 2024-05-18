@@ -37,6 +37,7 @@ class WorkflowTaskService
                 'content' => $inputSource->content,
             ]);
             app(MessageRepository::class)->saveFiles($message, $inputSource->storedFiles->pluck('id')->toArray());
+            $workflowTask->thread()->associate($thread)->save();
 
             Log::debug("$thread created for $workflowTask");
 
@@ -47,7 +48,7 @@ class WorkflowTaskService
             $lastMessage = $threadRun->lastMessage;
             $artifact    = $workflowTask->artifact()->create([
                 'group'   => $assignment->group,
-                'name'    => "Workflow Task: {$workflowTask->id}",
+                'name'    => $workflowTask->workflowJob->name . ": {$assignment->agent->name} ($workflowTask->id)",
                 'model'   => $assignment->agent->model,
                 'content' => $lastMessage->content,
                 'data'    => $lastMessage->data,

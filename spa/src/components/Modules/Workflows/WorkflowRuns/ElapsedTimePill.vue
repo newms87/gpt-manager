@@ -6,14 +6,15 @@ import { DateTime, fElapsedTime } from "quasar-ui-danx";
 import { onMounted, onUnmounted, ref } from "vue";
 
 export interface ElapsedTimePillProps {
-	start: string;
+	start?: string;
 	end?: string;
 	timerClass?: string;
 }
 
 const props = withDefaults(defineProps<ElapsedTimePillProps>(), {
+	start: null,
 	end: null,
-	timerClass: "py-1 px-3 bg-slate-800 rounded-lg text-xs mr-4 w-32 text-center"
+	timerClass: "py-1 px-3 bg-slate-800 rounded-lg text-xs w-32 text-center"
 });
 
 const taskTimer = ref(calcTaskTimer());

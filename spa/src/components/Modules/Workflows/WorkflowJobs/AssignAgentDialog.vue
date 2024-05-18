@@ -7,7 +7,7 @@
 	>
 		<SelectField
 			v-model="agentIds"
-			label="Agent"
+			placeholder="(Select Agents)"
 			multiple
 			:options="availableAgents"
 		/>
