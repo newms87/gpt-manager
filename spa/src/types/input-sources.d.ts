@@ -11,6 +11,7 @@ export interface InputSource extends ActionTargetItem {
 	tokens: number;
 	workflow_runs_count: number;
 	workflowRuns?: WorkflowRun[];
+	has_active_workflow_run: boolean;
 	created_at: string;
 	updated_at: string;
 }

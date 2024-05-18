@@ -42,7 +42,7 @@ class WorkflowJob extends Model implements AuditableContract
     {
         return $this->hasMany(WorkflowJobRun::class);
     }
-    
+
     public function workflowTasks(): HasMany|WorkflowTask
     {
         return $this->hasMany(WorkflowTask::class);
@@ -56,5 +56,10 @@ class WorkflowJob extends Model implements AuditableContract
     public function workflowAssignments(): HasMany|WorkflowAssignment
     {
         return $this->hasMany(WorkflowAssignment::class);
+    }
+
+    public function __toString()
+    {
+        return "<Workflow Job ($this->id) $this->name>";
     }
 }

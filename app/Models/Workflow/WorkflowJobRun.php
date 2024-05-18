@@ -79,4 +79,9 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
 
         return $this;
     }
+
+    public function __toString()
+    {
+        return "<WorkflowJobRun $this->id [$this->status]>";
+    }
 }

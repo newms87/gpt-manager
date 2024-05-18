@@ -30,15 +30,16 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { InputSourceController } from "@/components/Modules/InputSources/inputSourceControls";
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 import { WorkflowRoutes } from "@/routes/workflowRoutes";
 import { InputSource } from "@/types/input-sources";
 import { FaSolidCirclePlay as RunIcon } from "danx-icon";
 import { SelectField } from "quasar-ui-danx";
-import { onMounted, ref, shallowRef } from "vue";
+import { onMounted, ref, shallowRef, watch } from "vue";
 
-defineProps<{
+const props = defineProps<{
 	inputSource: InputSource;
 }>();
 
@@ -48,5 +49,22 @@ const runWorkflowAction = getAction("run-workflow");
 
 onMounted(async () => {
 	workflows.value = (await WorkflowRoutes.list({ page: 1, rowsPerPage: 1000 })).data;
+	refreshInputSource();
 });
+
+watch(() => props.inputSource.__timestamp, refreshInputSource);
+
+let refreshTimeout = null;
+function refreshInputSource() {
+	if (refreshTimeout) {
+		clearTimeout(refreshTimeout);
+		refreshTimeout = null;
+	}
+
+	if (props.inputSource.has_active_workflow_run) {
+		refreshTimeout = setTimeout(() => {
+			InputSourceController.getActiveItemDetails();
+		}, 5000);
+	}
+}
 </script>

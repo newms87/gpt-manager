@@ -19,13 +19,14 @@ class InputSourceResource extends ActionResource
         $thumbFile = $this->storedFiles()->first();
 
         return [
-            'id'                  => $this->id,
-            'name'                => $this->name,
-            'description'         => $this->description,
-            'workflow_runs_count' => $this->workflow_runs_count,
-            'thumb'               => $thumbFile ? StoredFileResource::make($thumbFile) : null,
-            'created_at'          => $this->created_at,
-            'updated_at'          => $this->updated_at,
+            'id'                      => $this->id,
+            'name'                    => $this->name,
+            'description'             => $this->description,
+            'workflow_runs_count'     => $this->workflow_runs_count,
+            'thumb'                   => $thumbFile ? StoredFileResource::make($thumbFile) : null,
+            'has_active_workflow_run' => $this->activeWorkflowRuns()->exists(),
+            'created_at'              => $this->created_at,
+            'updated_at'              => $this->updated_at,
         ];
     }
 }

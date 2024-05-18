@@ -11,6 +11,7 @@ use Exception;
 use Flytedan\DanxLaravel\Exceptions\ValidationError;
 use Flytedan\DanxLaravel\Helpers\DateHelper;
 use Flytedan\DanxLaravel\Repositories\ActionRepository;
+use Illuminate\Support\Facades\Log;
 
 class ThreadRepository extends ActionRepository
 {
@@ -75,6 +76,9 @@ class ThreadRepository extends ActionRepository
         }
 
         do {
+            $messageCount = count($messages);
+            Log::debug("$thread running with $messageCount messages for $agent");
+
             $response = $agent->getModelApi()->complete(
                 $agent->model,
                 $messages,

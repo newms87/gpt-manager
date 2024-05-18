@@ -7,6 +7,7 @@ use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowJob;
 use Exception;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
+use Flytedan\DanxLaravel\Helpers\StringHelper;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -111,5 +112,10 @@ class Agent extends Model implements AuditableContract
         static::creating(function (Agent $agent) {
             $agent->team_id = $agent->team_id ?? user()->team_id;
         });
+    }
+
+    public function __toString()
+    {
+        return "<Agent ($this->id) " . StringHelper::limitText(20, $this->name) . ": $this->api $this->model>";
     }
 }

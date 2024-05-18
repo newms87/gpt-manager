@@ -5,6 +5,7 @@ namespace App\Models\Agent;
 use App\Models\Team\Team;
 use Exception;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
+use Flytedan\DanxLaravel\Helpers\StringHelper;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Flytedan\DanxLaravel\Traits\CountableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -98,5 +99,10 @@ class Thread extends Model implements AuditableContract
         }
 
         return $messages->toArray();
+    }
+
+    public function __toString()
+    {
+        return "<Thread ($this->id) " . StringHelper::limitText(20, $this->name) . ">";
     }
 }

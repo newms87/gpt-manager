@@ -8,6 +8,7 @@ use App\Repositories\ThreadRepository;
 use Exception;
 use Flytedan\DanxLaravel\Jobs\Job;
 use Flytedan\DanxLaravel\Models\Audit\ErrorLog;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class WorkflowTaskService
@@ -21,6 +22,7 @@ class WorkflowTaskService
      */
     public static function start(WorkflowTask $workflowTask): void
     {
+        Log::debug("$workflowTask started");
         $workflowTask->started_at = now();
         $workflowTask->jobDispatch()->associate(Job::$runningJob);
         $workflowTask->save();
@@ -36,21 +38,25 @@ class WorkflowTaskService
             ]);
             app(MessageRepository::class)->saveFiles($message, $inputSource->storedFiles->pluck('id')->toArray());
 
+            Log::debug("$thread created for $workflowTask");
+
             // Run the thread
             $threadRun = app(ThreadRepository::class)->run($thread);
 
             // Produce the artifact
             $lastMessage = $threadRun->lastMessage;
-            $a           = $workflowTask->artifact()->create([
+            $artifact    = $workflowTask->artifact()->create([
                 'group'   => $assignment->group,
                 'name'    => "Workflow Task: {$workflowTask->id}",
                 'model'   => $assignment->agent->model,
                 'content' => $lastMessage->content,
                 'data'    => $lastMessage->data,
             ]);
-            
+
             $workflowTask->completed_at = now();
             $workflowTask->save();
+
+            Log::debug("$workflowTask created $artifact");
         } catch(Exception $e) {
             ErrorLog::logException(ErrorLog::ERROR, $e);
             $workflowTask->failed_at = now();

@@ -25,7 +25,7 @@ class WorkflowService
 
         $workflowJobs = $workflowRun->workflow->workflowJobs()->get();
         foreach($workflowJobs as $workflowJob) {
-            Log::debug("Creating run for Workflow Job $workflowJob->name ($workflowJob->id)");
+            Log::debug("Creating run for $workflowJob");
             $workflowRun->workflowJobRuns()->create([
                 'workflow_job_id' => $workflowJob->id,
             ]);
@@ -58,6 +58,8 @@ class WorkflowService
         /** @var WorkflowJobRun[]|Collection $pendingJobRuns */
         $pendingJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_PENDING) ?? [];
 
+        Log::debug("$workflowRun dispatching {$pendingJobRuns->count()} Pending Workflow Job Runs");
+
         foreach($pendingJobRuns as $pendingJobRun) {
             $workflowJob     = $pendingJobRun->workflowJob;
             $dependsOnJobIds = $workflowJob->depends_on ?: [];
@@ -67,6 +69,9 @@ class WorkflowService
                 Log::debug("Job {$workflowJob->name} has dependencies that have not yet completed");
                 continue;
             }
+
+            $pendingJobRun->started_at = now();
+            $pendingJobRun->save();
 
             $assignments = $workflowJob->workflowAssignments()->get();
             foreach($assignments as $assignment) {
@@ -93,12 +98,12 @@ class WorkflowService
      */
     public static function taskFinished(WorkflowTask $task): void
     {
-        Log::debug("Task {$task->id} has finished: {$task->status}");
+        Log::debug("$task finished running");
         $workflowJobRun = $task->workflowJobRun;
 
         // If the workflow run has failed, stop processing
         if ($workflowJobRun->failed_at) {
-            Log::debug("Workflow Job Run has already failed, stopping dispatch");
+            Log::debug("$workflowJobRun has already failed, stopping dispatch");
 
             return;
         }
@@ -110,10 +115,10 @@ class WorkflowService
 
         // If the task completed successfully, then save the artifact and mark the job as completed if there are no more tasks
         if ($task->isComplete()) {
-            Log::debug("Setting artifact");
-
             // Save the artifact from the completed task
-            $workflowJobRun->artifacts()->save($task->artifact()->first());
+            $artifact = $task->artifact()->first();
+            $workflowJobRun->artifacts()->save($artifact);
+            Log::debug("$workflowJobRun attached $artifact");
 
             // If we have finished all tasks in the workflow job run, then mark job as completed and notify the workflow run
             if ($isFinished) {
@@ -122,6 +127,7 @@ class WorkflowService
                 $workflowJobRun->save();
             }
         } else {
+            Log::debug("$workflowJobRun has failed");
             $workflowJobRun->failed_at = now();
             $workflowJobRun->save();
         }
@@ -145,12 +151,12 @@ class WorkflowService
      */
     public static function workflowJobRunFinished(WorkflowJobRun $workflowJobRun): void
     {
-        Log::debug("Workflow Job Run {$workflowJobRun->id} has finished: {$workflowJobRun->status}");
+        Log::debug("$workflowJobRun finished running");
         $workflowRun = $workflowJobRun->workflowRun;
 
         // If the workflow run has failed, stop processing
         if ($workflowRun->failed_at) {
-            Log::debug("Workflow Run has already failed, stopping dispatch");
+            Log::debug("$workflowRun has already failed, stopping dispatch");
 
             return;
         }
@@ -166,6 +172,7 @@ class WorkflowService
             if ($workflowRun->remainingJobRuns()->doesntExist()) {
                 $workflowRun->completed_at = now();
                 $workflowRun->save();
+                Log::debug("$workflowRun has completed");
             } else {
                 // Dispatch the next set of Workflow Job Runs
                 WorkflowService::dispatchPendingWorkflowJobs($workflowRun);
@@ -174,6 +181,7 @@ class WorkflowService
             // If the Workflow Job Run failed, then mark the Workflow Run as failed
             $workflowRun->failed_at = now();
             $workflowRun->save();
+            Log::debug("$workflowRun has failed");
         }
 
         LockHelper::release($workflowRun);

@@ -18,4 +18,9 @@ class Artifact extends Model implements AuditableContract
         'updated_at',
         'deleted_at',
     ];
+
+    public function __toString()
+    {
+        return "<Artifact ($this->id) $this->name>";
+    }
 }

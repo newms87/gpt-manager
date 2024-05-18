@@ -41,6 +41,11 @@ class InputSource extends Model implements AuditableContract
         return $this->hasMany(WorkflowRun::class);
     }
 
+    public function activeWorkflowRuns(): HasMany|WorkflowRun
+    {
+        return $this->workflowRuns()->whereIn('status', [WorkflowRun::STATUS_PENDING, WorkflowRun::STATUS_RUNNING]);
+    }
+
     public function validate(): static
     {
         Validator::make($this->getAttributes(), [

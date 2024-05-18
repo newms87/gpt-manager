@@ -23,8 +23,11 @@
 		</div>
 		<div class="flex items-stretch">
 			<div class="p-3">
-				<div class="">Results</div>
-				<ArtifactCard v-for="artifact in workflowRun.artifacts" :key="artifact.id" :artifact="artifact" />
+				<div v-if="artifactCount === 0" class="text-slate-300">No results</div>
+				<template v-else>
+					<div class="text-sky-800 p-2">{{ artifactCount }} Results</div>
+					<ArtifactCard v-for="artifact in workflowRun.artifacts" :key="artifact.id" :artifact="artifact" />
+				</template>
 			</div>
 		</div>
 	</QCard>
@@ -44,4 +47,5 @@ const pendingJobCount = computed(() => props.workflowRun.workflowJobRuns?.filter
 const runningJobCount = computed(() => props.workflowRun.workflowJobRuns?.filter(j => j.status === WORKFLOW_STATUS.RUNNING).length);
 const completedJobCount = computed(() => props.workflowRun.workflowJobRuns?.filter(j => j.status === WORKFLOW_STATUS.COMPLETED).length);
 const failedJobCount = computed(() => props.workflowRun.workflowJobRuns?.filter(j => j.status === WORKFLOW_STATUS.FAILED).length);
+const artifactCount = computed(() => props.workflowRun.artifacts?.length);
 </script>
