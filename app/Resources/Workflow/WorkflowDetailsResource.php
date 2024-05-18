@@ -12,9 +12,12 @@ class WorkflowDetailsResource extends WorkflowResource
 {
     public function data(): array
     {
+        $jobs = $this->workflowJobs()->get();
+        $runs = $this->workflowRuns()->get();
+
         return [
-                'jobs' => WorkflowJobResource::collection($this->workflowJobs),
-                'runs' => WorkflowRunDetailsResource::collection($this->workflowRuns),
+                'jobs' => $jobs ? WorkflowJobResource::collection($jobs) : [],
+                'runs' => $runs ? WorkflowRunDetailsResource::collection($runs) : [],
             ] + parent::data();
     }
 }

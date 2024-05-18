@@ -13,7 +13,7 @@
 			<QBtn
 				class="text-lg mb-5 bg-lime-800 text-slate-300"
 				:loading="runWorkflowAction.isApplying"
-				:disable="runWorkflowAction.isApplying"
+				:disable="runWorkflowAction.isApplying || !workflowId"
 				@click="runWorkflowAction.trigger(null, {workflow_id: workflowId, input_source_id: inputSource.id})"
 			>
 				<RunIcon class="w-4 mr-3" />

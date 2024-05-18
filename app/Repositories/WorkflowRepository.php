@@ -74,11 +74,11 @@ class WorkflowRepository extends ActionRepository
 
     /**
      * @param $data
-     * @return void
+     * @return WorkflowRun
      * @throws ValidationError
      * @throws Throwable
      */
-    public function runWorkflow($data): void
+    public function runWorkflow($data): WorkflowRun
     {
         $inputSourceId = $data['input_source_id'] ?? null;
         $workflowId    = $data['workflow_id'] ?? null;
@@ -97,8 +97,9 @@ class WorkflowRepository extends ActionRepository
             'input_source_id' => $inputSourceId,
             'status'          => WorkflowRun::STATUS_PENDING,
         ]);
-
-        // TODO: Move this to a job
+        
         WorkflowService::start($workflowRun);
+
+        return $workflowRun;
     }
 }
