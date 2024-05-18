@@ -1,9 +1,11 @@
 import { AuditRequest } from "@/components/Modules/Audits/audit-requests";
 import { AuditRequestController } from "@/components/Modules/Audits/auditRequestControls";
 import {
+	AuditRequestApiLogsPanel,
 	AuditRequestAuditsPanel,
 	AuditRequestErrorsPanel,
 	AuditRequestJobsPanel,
+	AuditRequestLogsPanel,
 	AuditRequestRequestPanel,
 	AuditRequestResponsePanel
 } from "@/components/Modules/Audits/Panels";
@@ -31,6 +33,14 @@ export const panels = computed<ActionPanel[]>(() => [
 		})
 	},
 	{
+		name: "logs",
+		label: "Logs",
+		class: "w-[80em]",
+		vnode: () => h(AuditRequestLogsPanel, {
+			auditRequest: activeItem.value
+		})
+	},
+	{
 		name: "audits",
 		label: "Audits",
 		class: "w-[80em]",
@@ -44,7 +54,7 @@ export const panels = computed<ActionPanel[]>(() => [
 		label: "API Logs",
 		class: "w-[80em]",
 		tabVnode: () => h(BadgeTab, { count: activeItem.value.api_logs_count }),
-		vnode: () => h(AuditRequestAuditsPanel, {
+		vnode: () => h(AuditRequestApiLogsPanel, {
 			auditRequest: activeItem.value
 		})
 	},
