@@ -13,7 +13,7 @@ class WorkflowDetailsResource extends WorkflowResource
     public function data(): array
     {
         $jobs = $this->workflowJobs()->get();
-        $runs = $this->workflowRuns()->get();
+        $runs = $this->workflowRuns()->orderByDesc('id')->get();
 
         return [
                 'jobs' => $jobs ? WorkflowJobResource::collection($jobs) : [],

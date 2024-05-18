@@ -6,6 +6,7 @@ use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\ThreadsController;
 use App\Http\Controllers\Ai\WorkflowAssignmentsController;
 use App\Http\Controllers\Ai\WorkflowJobsController;
+use App\Http\Controllers\Ai\WorkflowRunsController;
 use App\Http\Controllers\Ai\WorkflowsController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
@@ -35,6 +36,7 @@ ActionRoute::routes('input-sources', new InputSourcesController);
 // Workflows
 ActionRoute::routes('workflows', new WorkflowsController);
 ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
+ActionRoute::routes('workflow-runs', new WorkflowRunsController);
 ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);
 
 // Agents

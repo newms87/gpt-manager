@@ -3,11 +3,14 @@
 		<div class="flex items-center justify-between p-3">
 			<div>
 				<a @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
-					{{ workflowRun.workflow_name }} ({{ workflowRun.workflow_id }})
+					{{ workflowRun.workflow_name }} ({{ workflowRun.id }})
 				</a>
 			</div>
 			<div>{{ workflowRun.status }}</div>
 			<div>{{ fDateTime(workflowRun.started_at) }}</div>
+			<div>
+				<TrashButton :saving="removeWorkflowRunAction.isApplying" @click="onRemove" />
+			</div>
 		</div>
 		<div class="flex items-stretch">
 			<div class="bg-slate-700 text-slate-300 flex items-center p-3 w-1/3">{{ pendingJobCount }} Pending
@@ -35,10 +38,13 @@
 <script setup lang="ts">
 import ArtifactCard from "@/components/Modules/Artifacts/ArtifactCard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
+import TrashButton from "@/components/Shared/Buttons/TrashButton";
 import { WorkflowRun } from "@/types/workflows";
 import { fDateTime } from "quasar-ui-danx";
 import { computed } from "vue";
 
+const emit = defineEmits(["remove"]);
 const props = defineProps<{
 	workflowRun: WorkflowRun;
 }>();
@@ -48,4 +54,10 @@ const runningJobCount = computed(() => props.workflowRun.workflowJobRuns?.filter
 const completedJobCount = computed(() => props.workflowRun.workflowJobRuns?.filter(j => j.status === WORKFLOW_STATUS.COMPLETED).length);
 const failedJobCount = computed(() => props.workflowRun.workflowJobRuns?.filter(j => j.status === WORKFLOW_STATUS.FAILED).length);
 const artifactCount = computed(() => props.workflowRun.artifacts?.length);
+
+const removeWorkflowRunAction = getAction("delete");
+async function onRemove() {
+	await removeWorkflowRunAction.trigger(props.workflowRun);
+	emit("remove");
+}
 </script>

@@ -24,14 +24,14 @@ class WorkflowRepository extends ActionRepository
      * @param Model|Workflow|null $model
      * @param array|null          $data
      * @return Workflow|WorkflowJob|bool|Model|mixed|null
-     * @throws ValidationError
+     * @throws ValidationError|Throwable
      */
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
             'create' => $this->createWorkflow($data),
             'create-job' => $this->createWorkflowJob($model, $data),
-            'run-workflow' => $this->runWorkflow($data),
+            'run-workflow' => $this->runWorkflow($model, $data),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -73,21 +73,16 @@ class WorkflowRepository extends ActionRepository
     }
 
     /**
-     * @param $data
+     * @param Workflow $workflow
+     * @param          $data
      * @return WorkflowRun
-     * @throws ValidationError
      * @throws Throwable
+     * @throws ValidationError
      */
-    public function runWorkflow($data): WorkflowRun
+    public function runWorkflow(Workflow $workflow, $data): WorkflowRun
     {
         $inputSourceId = $data['input_source_id'] ?? null;
-        $workflowId    = $data['workflow_id'] ?? null;
-        $workflow      = Workflow::find($workflowId);
         $inputSource   = InputSource::find($inputSourceId);
-
-        if (!$workflow) {
-            throw new ValidationError('Workflow was not found');
-        }
 
         if (!$inputSource) {
             throw new ValidationError('Input Source was not found');
@@ -97,7 +92,7 @@ class WorkflowRepository extends ActionRepository
             'input_source_id' => $inputSourceId,
             'status'          => WorkflowRun::STATUS_PENDING,
         ]);
-        
+
         WorkflowService::start($workflowRun);
 
         return $workflowRun;
