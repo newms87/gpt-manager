@@ -1,46 +1,55 @@
 <template>
 	<QCard class="bg-slate-800 text-slate-300 rounded overflow-hidden">
-		<div class="flex items-center justify-between p-3">
-			<div>
+		<div class="flex items-center justify-between">
+			<div class="flex-grow cursor-pointer py-4 px-3" @click="showJobsWithStatus = showJobsWithStatus ? '' : 'all'">
 				<a @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
 					{{ workflowRun.workflow_name }} ({{ workflowRun.id }})
 				</a>
 			</div>
-			<div>{{ workflowRun.status }}</div>
-			<div>{{ fDateTime(workflowRun.started_at) }}</div>
-			<div>
-				<TrashButton :saving="removeWorkflowRunAction.isApplying" @click="onRemove" />
+			<div class="mx-2">
+				<QBtn
+					class="bg-sky-800 text-sky-300 py-1 px-2"
+					:disable="artifactCount === 0"
+					@click="showArtifacts = !showArtifacts"
+				>
+					{{ artifactCount }} Results
+				</QBtn>
+			</div>
+			<div class="mx-2">
+				<ElapsedTimePill
+					timer-class="bg-slate-900 font-bold rounded-lg text-xs w-32 text-center py-2"
+					:start="workflowRun.started_at"
+					:end="workflowRun.failed_at || workflowRun.completed_at"
+				/>
+			</div>
+			<div class="px-4 py-1.5 rounded-lg mx-2" :class="WORKFLOW_STATUS.resolve(workflowRun.status).classPrimary">
+				Workflow {{ workflowRun.status }}
+			</div>
+			<div class="mr-1">
+				<TrashButton :saving="removeWorkflowRunAction.isApplying" class="p-4" @click="onRemove" />
 			</div>
 		</div>
-		<WorkflowJobRunFlow :workflow-run="workflowRun" />
+		<WorkflowJobRunFlow v-model="showJobsWithStatus" :workflow-run="workflowRun" />
 		<div class="flex items-stretch">
-			<div class="p-3">
-				<div v-if="artifactCount === 0" class="text-slate-300">No results</div>
-				<template v-else>
-					<QBtn class="bg-sky-800 text-sky-300 py-1 px-2" @click="showArtifacts = !showArtifacts">
-						{{ artifactCount }} Results
-					</QBtn>
-
-					<ListTransition v-if="showArtifacts">
-						<ArtifactCard
-							v-for="artifact in workflowRun.artifacts"
-							:key="artifact.id"
-							:artifact="artifact"
-							class="my-3"
-						/>
-					</ListTransition>
-				</template>
+			<div v-if="showArtifacts" class="p-3">
+				<ArtifactCard
+					v-for="artifact in workflowRun.artifacts"
+					:key="artifact.id"
+					:artifact="artifact"
+					class="my-3"
+				/>
 			</div>
 		</div>
 	</QCard>
 </template>
 <script setup lang="ts">
 import ArtifactCard from "@/components/Modules/Artifacts/ArtifactCard";
+import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
+import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import WorkflowJobRunFlow from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunFlow";
 import TrashButton from "@/components/Shared/Buttons/TrashButton";
 import { WorkflowRun } from "@/types/workflows";
-import { fDateTime, ListTransition } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const emit = defineEmits(["remove"]);
@@ -50,6 +59,7 @@ const props = defineProps<{
 
 const artifactCount = computed(() => props.workflowRun.artifacts?.length);
 const showArtifacts = ref(false);
+const showJobsWithStatus = ref("");
 
 const removeWorkflowRunAction = getAction("delete");
 async function onRemove() {

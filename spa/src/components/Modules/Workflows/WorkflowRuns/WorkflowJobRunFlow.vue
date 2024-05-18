@@ -36,7 +36,7 @@
 				</div>
 			</div>
 		</div>
-		<div v-if="displayJobs.length > 0">
+		<div v-if="displayStatus">
 			<div v-for="job in displayJobs" :key="job.id">
 				<WorkflowJobRunCard :job-run="job" :default-tab="displayStatus" />
 			</div>
@@ -47,7 +47,9 @@
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import WorkflowJobRunCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunCard";
 import { WorkflowRun } from "@/types/workflows";
-import { computed, ref } from "vue";
+import { computed } from "vue";
+
+const displayStatus = defineModel<string>();
 
 const props = defineProps<{
 	workflowRun: WorkflowRun;
@@ -58,8 +60,8 @@ const runningJobs = computed(() => props.workflowRun.workflowJobRuns?.filter(j =
 const completedJobs = computed(() => props.workflowRun.workflowJobRuns?.filter(j => j.status === WORKFLOW_STATUS.COMPLETED.value));
 const failedJobs = computed(() => props.workflowRun.workflowJobRuns?.filter(j => j.status === WORKFLOW_STATUS.FAILED.value));
 
-const displayStatus = ref("");
-const displayJobs = computed(() => props.workflowRun.workflowJobRuns?.filter(j => displayStatus.value ? j.status === displayStatus.value : true) || []);
+const displayJobs = computed(() => displayStatus.value === "all" ? props.workflowRun.workflowJobRuns : props.workflowRun.workflowJobRuns?.filter(j => j.status === displayStatus.value));
+
 function filterStatus(status) {
 	if (displayStatus.value === status) {
 		displayStatus.value = "";

@@ -14,7 +14,7 @@
 					</template>
 				</QBtn>
 			</div>
-			<div class="py-1 px-3 bg-slate-800 rounded-lg text-xs mr-4 w-32 text-center">{{ taskTimer }}</div>
+			<ElapsedTimePill :start="task.started_at" :end="task.failed_at || task.completed_at" />
 			<div class="py-1 px-3 rounded-xl w-24 text-center" :class="workflowTaskStatus.classAlt">{{ task.status }}</div>
 		</div>
 		<div v-if="showLogs">
@@ -26,10 +26,10 @@
 </template>
 <script setup lang="ts">
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import { WorkflowTask } from "@/types/workflows";
 import { FaSolidEye as ShowIcon, FaSolidEyeSlash as HideIcon } from "danx-icon";
-import { fElapsedTime } from "quasar-ui-danx";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
 	task: WorkflowTask;
@@ -37,24 +37,6 @@ const props = defineProps<{
 
 const workflowTaskStatus = computed(() => WORKFLOW_STATUS.resolve(props.task.status));
 const showLogs = ref(false);
-
-const taskTimer = ref(calcTaskTimer());
-onMounted(() => {
-	const interval = setInterval(() => {
-		taskTimer.value = calcTaskTimer();
-	}, 1000);
-	onUnmounted(() => clearInterval(interval));
-});
-
-function calcTaskTimer() {
-	if (props.task.completed_at) {
-		return fElapsedTime(props.task.started_at, props.task.completed_at);
-	}
-	if (props.task.failed_at) {
-		return fElapsedTime(props.task.started_at, props.task.failed_at);
-	}
-	return fElapsedTime(props.task.started_at);
-}
 
 const logItems = computed(() => props.task.job_logs?.split("\n") || []);
 </script>

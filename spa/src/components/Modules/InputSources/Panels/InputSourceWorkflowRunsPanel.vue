@@ -25,7 +25,7 @@
 			v-for="workflowRun in inputSource.workflowRuns"
 			:key="workflowRun.id"
 			:workflow-run="workflowRun"
-			class="mb-2"
+			class="mb-4"
 			@remove="InputSourceController.getActiveItemDetails"
 		/>
 	</div>

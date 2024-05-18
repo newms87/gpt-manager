@@ -2,12 +2,15 @@
 	<QCard class="rounded overflow-hidden p-4 bg-sky-950">
 		<div class="flex items-center">
 			<div class="flex-grow flex-nowrap flex items-center">
-				<div class="text-lg">{{ jobRun.workflowJob.name }} ({{ jobRun.id }})</div>
+				<div class="text-base">{{ jobRun.workflowJob.name }} ({{ jobRun.id }})</div>
 				<div class="text-base text-sky-500 ml-3">
 					<SelectField v-model="tasksTab" :options="options" />
 				</div>
 			</div>
-			<div class="text-lg font-bold py-2 px-4 rounded-xl" :class="workflowStatus.classPrimary">{{ jobRun.status }}</div>
+			<div class="text-md font-bold py-2 px-4 rounded-xl" :class="workflowStatus.classPrimary">{{
+					jobRun.status
+				}}
+			</div>
 		</div>
 		<div class="mt-4 w-full">
 			<WorkflowTaskCard
