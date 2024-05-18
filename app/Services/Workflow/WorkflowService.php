@@ -32,6 +32,24 @@ class WorkflowService
         }
 
         static::dispatchPendingWorkflowJobs($workflowRun);
+        static::dispatchPendingWorkflowTasks($workflowRun);
+    }
+
+    /**
+     * @param WorkflowRun $workflowRun
+     * @return void
+     * @throws Throwable
+     */
+    public static function dispatchPendingWorkflowTasks(WorkflowRun $workflowRun): void
+    {
+        foreach($workflowRun->runningJobRuns()->get() as $pendingJobRun) {
+            foreach($pendingJobRun->pendingTasks()->get() as $pendingTask) {
+                Log::debug("$workflowRun dispatching $pendingTask");
+                $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
+                $pendingTask->job_dispatch_id = $job?->getJobDispatch()?->id;
+                $pendingTask->save();
+            }
+        }
     }
 
     /**
@@ -58,8 +76,6 @@ class WorkflowService
         /** @var WorkflowJobRun[]|Collection $pendingJobRuns */
         $pendingJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_PENDING) ?? [];
 
-        Log::debug("$workflowRun dispatching {$pendingJobRuns->count()} Pending Workflow Job Runs");
-
         foreach($pendingJobRuns as $pendingJobRun) {
             $workflowJob     = $pendingJobRun->workflowJob;
             $dependsOnJobIds = $workflowJob->depends_on ?: [];
@@ -70,19 +86,19 @@ class WorkflowService
                 continue;
             }
 
+            Log::debug("$workflowRun dispatching $pendingJobRun");
+
             $pendingJobRun->started_at = now();
             $pendingJobRun->save();
 
             $assignments = $workflowJob->workflowAssignments()->get();
             foreach($assignments as $assignment) {
-                $pendingTask = $pendingJobRun->tasks()->create([
+                $pendingJobRun->tasks()->create([
                     'user_id'                => user()->id,
                     'workflow_job_id'        => $workflowJob->id,
                     'workflow_assignment_id' => $assignment->id,
                     'status'                 => WorkflowTask::STATUS_PENDING,
                 ]);
-
-                (new RunWorkflowTaskJob($pendingTask))->dispatch();
             }
         }
     }
@@ -166,16 +182,15 @@ class WorkflowService
 
         if ($workflowJobRun->isComplete()) {
             // Save the artifact from the completed task
-            $workflowRun->artifacts()->saveMany($workflowJobRun->artifacts()->get());
+            $artifacts = $workflowJobRun->artifacts()->get();
+            $workflowRun->artifacts()->saveMany($artifacts);
+            Log::debug("$workflowRun attached {$artifacts->count()} artifacts");
 
             // If we have completed all Workflow Job Runs in the workflow run, then mark the workflow run as completed
             if ($workflowRun->remainingJobRuns()->doesntExist()) {
                 $workflowRun->completed_at = now();
                 $workflowRun->save();
                 Log::debug("$workflowRun has completed");
-            } else {
-                // Dispatch the next set of Workflow Job Runs
-                WorkflowService::dispatchPendingWorkflowJobs($workflowRun);
             }
         } else {
             // If the Workflow Job Run failed, then mark the Workflow Run as failed
@@ -184,6 +199,17 @@ class WorkflowService
             Log::debug("$workflowRun has failed");
         }
 
-        LockHelper::release($workflowRun);
+        if ($workflowRun->isRunning()) {
+            Log::debug("$workflowRun dispatching next jobs..");
+            // Dispatch the next set of Workflow Job Runs
+            WorkflowService::dispatchPendingWorkflowJobs($workflowRun);
+
+            // Release the lock here as its possible while we are dispatching the tasks, another task has completed and would like to proceed
+            LockHelper::release($workflowRun);
+            WorkflowService::dispatchPendingWorkflowTasks($workflowRun);
+        } else {
+            Log::debug("$workflowRun done");
+            LockHelper::release($workflowRun);
+        }
     }
 }

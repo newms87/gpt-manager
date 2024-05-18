@@ -24,7 +24,8 @@ const router = createRouter({
 			component: ThePageLayout,
 			children: [
 				{
-					path: "/",
+					path: "/dashboard",
+					alias: "/api/dashboard",
 					name: "dashboard",
 					component: DashboardView,
 					meta: { title: "Danx Home" }

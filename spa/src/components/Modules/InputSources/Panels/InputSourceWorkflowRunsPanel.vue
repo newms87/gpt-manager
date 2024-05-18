@@ -55,6 +55,7 @@ onMounted(async () => {
 
 watch(() => props.inputSource.__timestamp, refreshInputSource);
 
+// TODO: Convert this to an action behavior / feature... Controller.startPollingActiveItemDetails()
 let refreshTimeout = null;
 function refreshInputSource() {
 	if (refreshTimeout) {

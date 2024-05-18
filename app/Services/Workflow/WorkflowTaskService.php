@@ -3,10 +3,8 @@
 namespace App\Services\Workflow;
 
 use App\Models\Workflow\WorkflowTask;
-use App\Repositories\MessageRepository;
 use App\Repositories\ThreadRepository;
 use Exception;
-use Flytedan\DanxLaravel\Jobs\Job;
 use Flytedan\DanxLaravel\Models\Audit\ErrorLog;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -24,19 +22,28 @@ class WorkflowTaskService
     {
         Log::debug("$workflowTask started");
         $workflowTask->started_at = now();
-        $workflowTask->jobDispatch()->associate(Job::$runningJob);
         $workflowTask->save();
 
-        $inputSource = $workflowTask->workflowJobRun->workflowRun->inputSource;
-        $assignment  = $workflowTask->workflowAssignment;
+        $workflowJobRun = $workflowTask->workflowJobRun;
+        $inputSource    = $workflowJobRun->workflowRun->inputSource;
+        $assignment     = $workflowTask->workflowAssignment;
 
         try {
+            $threadName = $workflowTask->workflowJob->name . ": {$assignment->agent->name} ($workflowTask->id)";
+            $thread     = app(ThreadRepository::class)->create($assignment->agent, $threadName);
+
             // Create a thread w/ a message containing the Input Source content and files
-            $thread  = app(ThreadRepository::class)->create($assignment->agent, "Workflow Task: {$workflowTask->id}");
-            $message = app(MessageRepository::class)->create($thread, MessageRepository::$model::ROLE_USER, [
-                'content' => $inputSource->content,
-            ]);
-            app(MessageRepository::class)->saveFiles($message, $inputSource->storedFiles->pluck('id')->toArray());
+            $artifacts = $workflowJobRun->artifacts()->get();
+            if ($artifacts) {
+                foreach($artifacts as $artifact) {
+                    app(ThreadRepository::class)->addMessageToThread($thread, $artifact->content);
+                }
+            } else {
+                $content = $inputSource->content;
+                $fileIds = $inputSource->storedFiles->pluck('id')->toArray();
+                app(ThreadRepository::class)->addMessageToThread($thread, $content, $fileIds);
+            }
+
             $workflowTask->thread()->associate($thread)->save();
 
             Log::debug("$thread created for $workflowTask");
@@ -48,7 +55,7 @@ class WorkflowTaskService
             $lastMessage = $threadRun->lastMessage;
             $artifact    = $workflowTask->artifact()->create([
                 'group'   => $assignment->group,
-                'name'    => $workflowTask->workflowJob->name . ": {$assignment->agent->name} ($workflowTask->id)",
+                'name'    => $thread->name,
                 'model'   => $assignment->agent->model,
                 'content' => $lastMessage->content,
                 'data'    => $lastMessage->data,

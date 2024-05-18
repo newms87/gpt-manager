@@ -2,22 +2,22 @@
 
 namespace Database\Factories\Shared;
 
+use App\Models\Shared\Artifact;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Shared\Artifact>
+ * @extends Factory<Artifact>
  */
 class ArtifactFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            //
+            'group'   => fake()->word,
+            'name'    => fake()->word,
+            'model'   => fake()->word,
+            'content' => fake()->sentence(),
+            'data'    => null,
         ];
     }
 }

@@ -20,4 +20,19 @@ class WorkflowRunFactory extends Factory
             'failed_at'       => null,
         ];
     }
+
+    public function started(): self
+    {
+        return $this->state(['started_at' => now()]);
+    }
+
+    public function completed(): self
+    {
+        return $this->state(['started_at' => now(), 'completed_at' => now()]);
+    }
+
+    public function failed(): self
+    {
+        return $this->state(['started_at' => now(), 'failed_at' => now()]);
+    }
 }

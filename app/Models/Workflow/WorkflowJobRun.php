@@ -38,7 +38,7 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
             'failed_at'    => 'datetime',
         ];
     }
-    
+
     public function workflowRun(): BelongsTo|WorkflowRun
     {
         return $this->belongsTo(WorkflowRun::class);
@@ -62,6 +62,11 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
     public function remainingTasks(): HasMany|WorkflowTask
     {
         return $this->tasks()->whereIn('status', [WorkflowTask::STATUS_PENDING, WorkflowTask::STATUS_RUNNING]);
+    }
+
+    public function completedTasks(): HasMany|WorkflowTask
+    {
+        return $this->tasks()->where('status', WorkflowTask::STATUS_COMPLETED);
     }
 
     public function artifacts()
@@ -91,6 +96,6 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
 
     public function __toString()
     {
-        return "<WorkflowJobRun $this->id [$this->status]>";
+        return "<WorkflowJobRun ($this->id) {$this->workflowJob->name} [$this->status]>";
     }
 }

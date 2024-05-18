@@ -14,7 +14,7 @@ class WorkflowFactory extends Factory
     public function definition(): array
     {
         return [
-            'team_id'     => Team::factory(),
+            'team_id'     => user()?->team ?? Team::factory(),
             'name'        => fake()->unique()->name,
             'description' => fake()->sentence,
         ];
