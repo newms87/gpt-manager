@@ -18,6 +18,7 @@ class WorkflowJobRunResource extends ActionResource
         return [
             'id'           => $this->id,
             'workflowJob'  => WorkflowJobResource::make($this->workflowJob),
+            'tasks'        => WorkflowTaskResource::collection($this->tasks),
             'status'       => $this->status,
             'started_at'   => $this->started_at,
             'completed_at' => $this->completed_at,

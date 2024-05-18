@@ -19,12 +19,13 @@ export interface WorkflowJob extends ActionTargetItem {
 	assignments: WorkflowAssignment[];
 }
 
-export interface WorkflowRunJob {
+export interface WorkflowJobRun {
 	id: number;
 	status: string;
 	completed_at: string;
 	started_at: string;
 	failed_at: string;
+	workflowJob: WorkflowJob;
 	tasks: WorkflowTask[];
 }
 
@@ -36,6 +37,7 @@ export interface WorkflowTask {
 	failed_at: string;
 	artifact?: Artifact;
 	thread: AgentThread;
+	job_logs: string;
 }
 
 export interface WorkflowAssignment {
@@ -55,6 +57,6 @@ export interface WorkflowRun extends ActionTargetItem {
 	started_at: string;
 	failed_at: string;
 	inputSource?: InputSource;
-	workflowJobRuns?: WorkflowRunJob[];
+	workflowJobRuns?: WorkflowJobRun[];
 	artifacts?: Artifact[];
 }
