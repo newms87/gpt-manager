@@ -18,12 +18,12 @@
 			</div>
 		</div>
 		<div v-if="showThread">
-			<ThreadCard :thread="task.thread" />
+			<ThreadMessageList readonly :thread="task.thread" />
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
-import ThreadCard from "@/components/Modules/Agents/Threads/ThreadCard";
+import ThreadMessageList from "@/components/Modules/Agents/Threads/ThreadMessageList";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";

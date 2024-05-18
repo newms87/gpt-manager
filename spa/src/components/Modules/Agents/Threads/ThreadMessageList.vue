@@ -1,7 +1,13 @@
 <template>
 	<div>
-		<ThreadMessageCard v-for="message in thread.messages" :key="message.id" :message="message" class="mb-5" />
-		<div class="flex items-stretch">
+		<ThreadMessageCard
+			v-for="message in thread.messages"
+			:key="message.id"
+			:readonly="readonly"
+			:message="message"
+			class="mb-5"
+		/>
+		<div v-if="!readonly" class="flex items-stretch">
 			<QBtn
 				class="bg-sky-700 text-slate-200 text-lg flex-grow"
 				:loading="createMessageAction.isApplying"
@@ -30,6 +36,7 @@ import { FaRegularMessage as CreateIcon, FaSolidPlay as RunIcon } from "danx-ico
 
 defineProps<{
 	thread: AgentThread;
+	readonly?: boolean
 }>();
 
 const createMessageAction = getAction("create-message");

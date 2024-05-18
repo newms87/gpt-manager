@@ -2,7 +2,10 @@
 	<div class="overflow-hidden">
 		<div class="bg-slate-500 rounded flex items-center">
 			<div>
-				<QBtn @click="updateAction.trigger(message, {role: message.role === 'user' ? 'assistant' : 'user'})">
+				<QBtn
+					:disable="readonly"
+					@click="updateAction.trigger(message, {role: message.role === 'user' ? 'assistant' : 'user'})"
+				>
 					<div class="rounded-full p-1" :class="avatar.class">
 						<component :is="avatar.icon" class="w-3 text-slate-300" :class="avatar.iconClass" />
 					</div>
@@ -10,6 +13,7 @@
 			</div>
 			<div class="font-bold text-slate-400 ml-1 flex-grow">
 				<EditOnClickTextField
+					:readonly="readonly"
 					editing-class="bg-slate-600"
 					:model-value="message.title || fDateTime(message.created_at)"
 					@update:model-value="updateDebouncedAction.trigger(message, {title: $event})"
@@ -19,13 +23,19 @@
 				<QBtn class="mr-2" @click="showFiles = !showFiles">
 					<AddImageIcon class="w-4" />
 				</QBtn>
-				<TrashButton :saving="deleteAction.isApplying" class="mr-2" @click.stop="deleteAction.trigger(message)" />
+				<TrashButton
+					v-if="!readonly"
+					:saving="deleteAction.isApplying"
+					class="mr-2"
+					@click.stop="deleteAction.trigger(message)"
+				/>
 			</div>
 		</div>
 
 		<div class="text-sm flex-grow mt-3">
 			<MarkdownEditor
 				v-model="markdownContent"
+				:readonly="readonly"
 				editor-class="text-slate-200"
 				@update:model-value="updateDebouncedAction.trigger(message, {content})"
 			/>
@@ -40,6 +50,7 @@
 			<template v-if="showFiles">
 				<MultiFileField
 					v-model="files"
+					:readonly="readonly"
 					@update:model-value="saveFilesAction.trigger(message, { ids: files.map(f => f.id) })"
 				/>
 			</template>
@@ -63,6 +74,7 @@ import { computed, ref } from "vue";
 
 const props = defineProps<{
 	message: ThreadMessage;
+	readonly?: boolean;
 }>();
 
 const content = ref(props.message.content);
