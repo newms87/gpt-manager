@@ -28,6 +28,7 @@
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import { WorkflowTask } from "@/types/workflows";
 import { FaSolidEye as ShowIcon, FaSolidEyeSlash as HideIcon } from "danx-icon";
+import { fElapsedTime } from "quasar-ui-danx";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
 const props = defineProps<{
@@ -46,16 +47,13 @@ onMounted(() => {
 });
 
 function calcTaskTimer() {
-	return fDuration(new Date().getTime() - new Date(props.task.started_at).getTime());
-}
-
-function fDuration(duration) {
-	const seconds = Math.floor((duration / 1000) % 60);
-	const minutes = Math.floor((duration / (1000 * 60)) % 60);
-	const hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
-	const days = Math.floor(duration / (1000 * 60 * 60 * 24));
-
-	return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+	if (props.task.completed_at) {
+		return fElapsedTime(props.task.started_at, props.task.completed_at);
+	}
+	if (props.task.failed_at) {
+		return fElapsedTime(props.task.started_at, props.task.failed_at);
+	}
+	return fElapsedTime(props.task.started_at);
 }
 
 const logItems = computed(() => props.task.job_logs?.split("\n") || []);

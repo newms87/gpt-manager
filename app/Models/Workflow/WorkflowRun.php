@@ -50,6 +50,15 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
         });
     }
 
+    public function casts()
+    {
+        return [
+            'started_at'   => 'datetime',
+            'completed_at' => 'datetime',
+            'failed_at'    => 'datetime',
+        ];
+    }
+
     public function workflow(): BelongsTo|Workflow
     {
         return $this->belongsTo(Workflow::class);
