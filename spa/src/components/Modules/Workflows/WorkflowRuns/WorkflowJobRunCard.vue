@@ -1,33 +1,21 @@
 <template>
-	<QCard class="bg-indigo-900 text-indigo-200 rounded overflow-hidden p-4">
+	<QCard class="rounded overflow-hidden p-4 bg-sky-950">
 		<div class="flex items-center">
 			<div class="flex-grow flex-nowrap flex items-center">
 				<div class="text-lg">{{ jobRun.workflowJob.name }} ({{ jobRun.id }})</div>
-				<div class="text-base text-sky-500 ml-3">{{ jobRun.tasks.length }} Tasks</div>
-			</div>
-			<div class="text-lg font-bold">{{ jobRun.status }}</div>
-		</div>
-		<div class="mt-4">
-			<div class="flex items-stretch flex-nowrap task-selector flex-shrink-0">
-				<div
-					v-for="tab in tabs"
-					:key="tab.status.value"
-					class="task-menu-item"
-					:class="{'is-active' : tasksTab === tab.status.value, [tab.status.classPrimary]: true}"
-					@click="tasksTab = tab.status.value"
-				>{{
-						tab.tasks.length
-					}}
-					{{ tab.label }}
-					Tasks
+				<div class="text-base text-sky-500 ml-3">
+					<SelectField v-model="tasksTab" :options="options" />
 				</div>
 			</div>
-			<div class="p-3 w-full min-h-56" :class="workflowStatus.classPrimary">
-				<template v-for="(task, index) in displayTasks" :key="task.id">
-					<WorkflowTaskCard :task="task" />
-					<QSeparator v-if="index !== displayTasks.length - 1" :class="workflowStatus.classAlt" class="my-3" />
-				</template>
-			</div>
+			<div class="text-lg font-bold py-2 px-4 rounded-xl" :class="workflowStatus.classPrimary">{{ jobRun.status }}</div>
+		</div>
+		<div class="mt-4 w-full">
+			<WorkflowTaskCard
+				v-for="task in displayTasks"
+				:key="task.id"
+				:task="task"
+				class="my-1"
+			/>
 		</div>
 	</QCard>
 </template>
@@ -35,6 +23,7 @@
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import WorkflowTaskCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowTaskCard";
 import { WorkflowJobRun } from "@/types/workflows";
+import { SelectField } from "quasar-ui-danx";
 import { computed, shallowRef } from "vue";
 
 const props = defineProps<{
@@ -42,35 +31,35 @@ const props = defineProps<{
 	defaultTab?: string;
 }>();
 
-const tasksTab = shallowRef(props.defaultTab || WORKFLOW_STATUS.PENDING.value);
+const tasksTab = shallowRef(props.defaultTab || "all");
 const pendingTasks = computed(() => props.jobRun.tasks.filter(t => t.status === WORKFLOW_STATUS.PENDING.value) || []);
 const runningTasks = computed(() => props.jobRun.tasks.filter(t => t.status === WORKFLOW_STATUS.RUNNING.value) || []);
 const completedTasks = computed(() => props.jobRun.tasks.filter(t => t.status === WORKFLOW_STATUS.COMPLETED.value) || []);
 const failedTasks = computed(() => props.jobRun.tasks.filter(t => t.status === WORKFLOW_STATUS.FAILED.value) || []);
-const displayTasks = computed(() => props.jobRun.tasks.filter(t => t.status === tasksTab.value) || []);
+const displayTasks = computed(() => tasksTab.value === "all" ? props.jobRun.tasks : props.jobRun.tasks.filter(t => t.status === tasksTab.value));
 
-const workflowStatus = computed(() => WORKFLOW_STATUS.resolve(tasksTab.value));
+const workflowStatus = computed(() => WORKFLOW_STATUS.resolve(props.jobRun.status));
 
-const tabs = computed(() => [
+const options = computed(() => [
 	{
-		status: WORKFLOW_STATUS.PENDING,
-		label: "Pending",
-		tasks: pendingTasks.value
+		value: "all",
+		label: `All ${props.jobRun.tasks.length} Tasks`
 	},
 	{
-		status: WORKFLOW_STATUS.RUNNING,
-		label: "Running",
-		tasks: runningTasks.value
+		value: WORKFLOW_STATUS.PENDING.value,
+		label: pendingTasks.value.length + " Pending Tasks"
 	},
 	{
-		status: WORKFLOW_STATUS.COMPLETED,
-		label: "Completed",
-		tasks: completedTasks.value
+		value: WORKFLOW_STATUS.RUNNING.value,
+		label: runningTasks.value.length + " Running Tasks"
 	},
 	{
-		status: WORKFLOW_STATUS.FAILED,
-		label: "Failed",
-		tasks: failedTasks.value
+		value: WORKFLOW_STATUS.COMPLETED.value,
+		label: completedTasks.value.length + " Completed Tasks"
+	},
+	{
+		value: WORKFLOW_STATUS.FAILED.value,
+		label: failedTasks.value.length + " Failed Tasks"
 	}
 ]);
 </script>

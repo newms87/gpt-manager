@@ -65,7 +65,7 @@ function refreshInputSource() {
 	if (props.inputSource.has_active_workflow_run) {
 		refreshTimeout = setTimeout(() => {
 			InputSourceController.getActiveItemDetails();
-		}, 5000);
+		}, 1000);
 	}
 }
 

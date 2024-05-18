@@ -3,8 +3,8 @@
 		<div class="flex items-stretch">
 			<div
 				class="flex items-center p-3 w-1/3 cursor-pointer hover:opacity-80"
-				:class="WORKFLOW_STATUS.PENDING.classPrimary"
-				@click="displayStatus = WORKFLOW_STATUS.PENDING.value"
+				:class="{[WORKFLOW_STATUS.PENDING.classPrimary]: true, 'opacity-30': isStatusHidden(WORKFLOW_STATUS.PENDING.value)}"
+				@click="filterStatus(WORKFLOW_STATUS.PENDING.value)"
 			>{{
 					pendingJobs.length
 				}} Pending
@@ -12,8 +12,8 @@
 			</div>
 			<div
 				class="flex items-center p-3 w-1/3 cursor-pointer hover:opacity-80"
-				:class="WORKFLOW_STATUS.RUNNING.classPrimary"
-				@click="displayStatus = WORKFLOW_STATUS.RUNNING.value"
+				:class="{[WORKFLOW_STATUS.RUNNING.classPrimary]: true, 'opacity-30': isStatusHidden(WORKFLOW_STATUS.RUNNING.value)}"
+				@click="filterStatus(WORKFLOW_STATUS.RUNNING.value)"
 			>{{
 					runningJobs.length
 				}} Running
@@ -22,15 +22,15 @@
 			<div class="w-1/3">
 				<div
 					class="px-3 py-1.5  cursor-pointer hover:opacity-80"
-					:class="WORKFLOW_STATUS.COMPLETED.classPrimary"
-					@click="displayStatus = WORKFLOW_STATUS.COMPLETED.value"
+					:class="{[WORKFLOW_STATUS.COMPLETED.classPrimary]: true, 'opacity-30': isStatusHidden(WORKFLOW_STATUS.COMPLETED.value)}"
+					@click="filterStatus(WORKFLOW_STATUS.COMPLETED.value)"
 				>{{ completedJobs.length }}
 					Completed
 				</div>
 				<div
 					class="px-3 py-1.5  cursor-pointer hover:opacity-80"
-					:class="WORKFLOW_STATUS.FAILED.classPrimary"
-					@click="displayStatus = WORKFLOW_STATUS.FAILED.value"
+					:class="{[WORKFLOW_STATUS.FAILED.classPrimary]: true, 'opacity-30': isStatusHidden(WORKFLOW_STATUS.FAILED.value)}"
+					@click="filterStatus(WORKFLOW_STATUS.FAILED.value)"
 				>{{ failedJobs.length }}
 					Failed
 				</div>
@@ -58,6 +58,16 @@ const runningJobs = computed(() => props.workflowRun.workflowJobRuns?.filter(j =
 const completedJobs = computed(() => props.workflowRun.workflowJobRuns?.filter(j => j.status === WORKFLOW_STATUS.COMPLETED.value));
 const failedJobs = computed(() => props.workflowRun.workflowJobRuns?.filter(j => j.status === WORKFLOW_STATUS.FAILED.value));
 
-const displayStatus = ref(WORKFLOW_STATUS.PENDING.value);
-const displayJobs = computed(() => props.workflowRun.workflowJobRuns?.filter(j => j.status === displayStatus.value) || []);
+const displayStatus = ref("");
+const displayJobs = computed(() => props.workflowRun.workflowJobRuns?.filter(j => displayStatus.value ? j.status === displayStatus.value : true) || []);
+function filterStatus(status) {
+	if (displayStatus.value === status) {
+		displayStatus.value = "";
+	} else {
+		displayStatus.value = status;
+	}
+}
+function isStatusHidden(status) {
+	return displayStatus.value && displayStatus.value !== status;
+}
 </script>
