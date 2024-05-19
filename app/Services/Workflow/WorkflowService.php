@@ -78,7 +78,7 @@ class WorkflowService
 
         foreach($pendingJobRuns as $pendingJobRun) {
             $workflowJob     = $pendingJobRun->workflowJob;
-            $dependsOnJobIds = $workflowJob->depends_on ?: [];
+            $dependsOnJobIds = $workflowJob->dependencies()->pluck('depends_on_workflow_job_id') ?: [];
 
             // If the job has not been completed, then we cannot dispatch this task
             if (count(array_diff($dependsOnJobIds, $completedIds)) > 0) {

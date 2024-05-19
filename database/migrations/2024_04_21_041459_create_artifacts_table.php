@@ -12,7 +12,6 @@ return new class extends Migration {
     {
         Schema::create('artifacts', function (Blueprint $table) {
             $table->id();
-            $table->string('group')->default('');
             $table->string('name');
             $table->string('model');
             $table->text('content')->nullable();

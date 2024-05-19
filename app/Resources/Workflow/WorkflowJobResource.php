@@ -16,13 +16,13 @@ class WorkflowJobResource extends ActionResource
     public function data(): array
     {
         return [
-            'id'          => $this->id,
-            'name'        => $this->name,
-            'description' => $this->description,
-            'assignments' => WorkflowAssignmentResource::collection($this->workflowAssignments),
-            'runs_count'  => $this->workflowJobRuns()->count(),
-            'depends_on'  => $this->depends_on ?: [],
-            'created_at'  => $this->created_at,
+            'id'           => $this->id,
+            'name'         => $this->name,
+            'description'  => $this->description,
+            'assignments'  => WorkflowAssignmentResource::collection($this->workflowAssignments),
+            'runs_count'   => $this->workflowJobRuns()->count(),
+            'dependencies' => $this->dependencies() ?: [],
+            'created_at'   => $this->created_at,
         ];
     }
 }

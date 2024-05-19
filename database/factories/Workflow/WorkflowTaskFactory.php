@@ -10,6 +10,7 @@ class WorkflowTaskFactory extends Factory
     public function definition(): array
     {
         return [
+            'group'        => '',
             'status'       => WorkflowTask::STATUS_PENDING,
             'started_at'   => null,
             'completed_at' => null,

@@ -13,7 +13,6 @@ class ArtifactFactory extends Factory
     public function definition(): array
     {
         return [
-            'group'   => fake()->word,
             'name'    => fake()->word,
             'model'   => fake()->word,
             'content' => fake()->sentence(),

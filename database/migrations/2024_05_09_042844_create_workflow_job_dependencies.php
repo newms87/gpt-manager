@@ -10,14 +10,12 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('workflow_assignments', function (Blueprint $table) {
+        Schema::create('workflow_job_dependencies', function (Blueprint $table) {
             $table->id();
             $table->foreignId('workflow_job_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('agent_id')->constrained()->cascadeOnDelete();
-            $table->boolean('is_required')->default(true);
-            $table->unsignedInteger('max_attempts')->default(1);
+            $table->foreignId('depends_on_workflow_job_id')->constrained('workflow_jobs')->cascadeOnDelete();
+            $table->string('group_by')->default('');
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
@@ -26,6 +24,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('workflow_assignments');
+        Schema::dropIfExists('workflow_job_dependencies');
     }
 };

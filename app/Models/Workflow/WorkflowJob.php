@@ -26,16 +26,19 @@ class WorkflowJob extends Model implements AuditableContract
         Workflow::class => 'jobs_count',
     ];
 
-    public function casts()
-    {
-        return [
-            'depends_on' => 'array',
-        ];
-    }
-
     public function workflow(): BelongsTo|Workflow
     {
         return $this->belongsTo(Workflow::class);
+    }
+
+    public function dependencies(): HasMany|WorkflowJobDependency
+    {
+        return $this->hasMany(WorkflowJobDependency::class);
+    }
+
+    public function dependents(): HasMany|WorkflowJobDependency
+    {
+        return $this->hasMany(WorkflowJobDependency::class, 'depends_on_workflow_job_id');
     }
 
     public function workflowJobRuns(): HasMany|WorkflowJobRun

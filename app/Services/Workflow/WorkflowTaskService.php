@@ -2,6 +2,8 @@
 
 namespace App\Services\Workflow;
 
+use App\Models\Agent\Thread;
+use App\Models\Shared\InputSource;
 use App\Models\Workflow\WorkflowTask;
 use App\Repositories\ThreadRepository;
 use Exception;
@@ -68,25 +70,38 @@ class WorkflowTaskService
         Log::debug("$workflowTask created $thread");
 
         // If we have dependencies, we want to use the artifacts from the dependencies
-        if ($workflowJob->depends_on) {
-            foreach($workflowJob->depends_on as $workflowJobId) {
-                $dependsOnWorkflowJobRun = $workflowRun->workflowJobRuns->where('workflow_job_id', $workflowJobId)->first();
+        if ($workflowJob->dependencies->isNotEmpty()) {
+            foreach($workflowJob->dependencies as $dependency) {
+                $dependsOnWorkflowJobRun = $workflowRun->workflowJobRuns->where('workflow_job_id', $dependency->depends_on_workflow_job_id)->first();
 
-                foreach($dependsOnWorkflowJobRun->artifacts as $artifact) {
-                    Log::debug("$thread using $artifact from $dependsOnWorkflowJobRun");
-                    app(ThreadRepository::class)->addMessageToThread($thread, $artifact->content);
-                }
+                WorkflowTaskService::addThreadMessagesFromArtifacts($thread, $dependsOnWorkflowJobRun->artifacts, $dependency->group_by);
             }
         } else {
             // If we have no dependencies, then we want to use the input source
-            $inputSource = $workflowJobRun->workflowRun->inputSource;
-            $content     = $inputSource->content;
-            $fileIds     = $inputSource->storedFiles->pluck('id')->toArray();
-            app(ThreadRepository::class)->addMessageToThread($thread, $content, $fileIds);
+            WorkflowTaskService::addThreadMessageFromInputSource($thread, $workflowRun->inputSource);
         }
 
         $workflowTask->thread()->associate($thread)->save();
 
         return $thread;
+    }
+
+    public static function addThreadMessagesFromArtifacts(Thread $thread, $artifacts, $groupBy)
+    {
+        foreach($artifacts as $artifact) {
+            if ($groupBy) {
+                $artifact = $artifact->where('group', $groupBy)->first();
+            }
+            Log::debug("$thread added $artifact");
+            app(ThreadRepository::class)->addMessageToThread($thread, $artifact->content);
+        }
+    }
+
+    public static function addThreadMessageFromInputSource(Thread $thread, InputSource $inputSource)
+    {
+        $content = $inputSource->content;
+        $fileIds = $inputSource->storedFiles->pluck('id')->toArray();
+        app(ThreadRepository::class)->addMessageToThread($thread, $content, $fileIds);
+        Log::debug("$thread added $inputSource");
     }
 }

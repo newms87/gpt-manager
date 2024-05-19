@@ -15,7 +15,6 @@ class WorkflowAssignmentFactory extends Factory
             'agent_id'        => Agent::factory(),
             'is_required'     => fake()->boolean,
             'max_attempts'    => fake()->numberBetween(1, 3),
-            'group'           => 'Group ' . fake()->randomLetter(),
         ];
     }
 }

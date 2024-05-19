@@ -47,7 +47,7 @@ export interface WorkflowAssignment extends ActionTargetItem {
 	agent: Agent;
 	is_required: boolean;
 	max_attempts: number;
-	group: string;
+	group_by: string;
 }
 
 export interface WorkflowRun extends ActionTargetItem {

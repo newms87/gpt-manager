@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->string('title')->nullable();
             $table->text('summary')->nullable();
             $table->text('content')->nullable();
+            $table->json('data')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
