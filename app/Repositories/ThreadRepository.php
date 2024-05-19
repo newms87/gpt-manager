@@ -34,14 +34,17 @@ class ThreadRepository extends ActionRepository
         return $thread;
     }
 
-    public function addMessageToThread(Thread $thread, string $content = '', array $fileIds = null): Thread
+    public function addMessageToThread(Thread $thread, ?string $content = null, ?array $fileIds = null): Thread
     {
         if ($content || $fileIds) {
             $message = $thread->messages()->create([
                 'role'    => Message::ROLE_USER,
                 'content' => $content,
             ]);
-            app(MessageRepository::class)->saveFiles($message, $fileIds);
+
+            if ($fileIds) {
+                app(MessageRepository::class)->saveFiles($message, $fileIds);
+            }
         }
 
         return $thread;
@@ -56,7 +59,16 @@ class ThreadRepository extends ActionRepository
         };
     }
 
-    public function run(Thread $thread)
+    /**
+     * Run the thread with the agent by calling the AI model API
+     *
+     * TODO: Refactor into a Service
+     *
+     * @param Thread $thread
+     * @return ThreadRun
+     * @throws ValidationError
+     */
+    public function run(Thread $thread): ThreadRun
     {
         $agent    = $thread->agent;
         $messages = $thread->getMessagesForApi();

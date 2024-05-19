@@ -172,7 +172,6 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->assertNotNull($pendingTaskB, 'Job B should have a completed task');
         $threadB = $pendingTaskB->thread()->first();
         $this->assertNotNull($threadB, 'Job B should have a thread created');
-        dump('thread message', $threadB->messages->toArray());
         $this->assertEquals($threadB->messages()->first()->content, $artifactContent, 'Job B should have the artifact content from Job A');
     }
 }

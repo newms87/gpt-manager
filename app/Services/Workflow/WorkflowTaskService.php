@@ -24,35 +24,15 @@ class WorkflowTaskService
         $workflowTask->started_at = now();
         $workflowTask->save();
 
-        $workflowJobRun = $workflowTask->workflowJobRun;
-        $inputSource    = $workflowJobRun->workflowRun->inputSource;
-        $assignment     = $workflowTask->workflowAssignment;
-
         try {
-            $threadName = $workflowTask->workflowJob->name . ": {$assignment->agent->name} ($workflowTask->id)";
-            $thread     = app(ThreadRepository::class)->create($assignment->agent, $threadName);
-
-            // Create a thread w/ a message containing the Input Source content and files
-            $artifacts = $workflowJobRun->artifacts()->get();
-            if ($artifacts) {
-                foreach($artifacts as $artifact) {
-                    app(ThreadRepository::class)->addMessageToThread($thread, $artifact->content);
-                }
-            } else {
-                $content = $inputSource->content;
-                $fileIds = $inputSource->storedFiles->pluck('id')->toArray();
-                app(ThreadRepository::class)->addMessageToThread($thread, $content, $fileIds);
-            }
-
-            $workflowTask->thread()->associate($thread)->save();
-
-            Log::debug("$thread created for $workflowTask");
+            $thread = WorkflowTaskService::setupTaskThread($workflowTask);
 
             // Run the thread
             $threadRun = app(ThreadRepository::class)->run($thread);
 
             // Produce the artifact
             $lastMessage = $threadRun->lastMessage;
+            $assignment  = $workflowTask->workflowAssignment;
             $artifact    = $workflowTask->artifact()->create([
                 'group'   => $assignment->group,
                 'name'    => $thread->name,
@@ -73,5 +53,40 @@ class WorkflowTaskService
 
         // Notify the Workflow our task is finished
         WorkflowService::taskFinished($workflowTask);
+    }
+
+    public static function setupTaskThread(WorkflowTask $workflowTask)
+    {
+        $workflowJobRun = $workflowTask->workflowJobRun;
+        $workflowRun    = $workflowJobRun->workflowRun;
+        $assignment     = $workflowTask->workflowAssignment;
+        $workflowJob    = $workflowTask->workflowJob;
+
+        $threadName = $workflowTask->workflowJob->name . ": {$assignment->agent->name} ($workflowTask->id)";
+        $thread     = app(ThreadRepository::class)->create($assignment->agent, $threadName);
+
+        Log::debug("$workflowTask created $thread");
+
+        // If we have dependencies, we want to use the artifacts from the dependencies
+        if ($workflowJob->depends_on) {
+            foreach($workflowJob->depends_on as $workflowJobId) {
+                $dependsOnWorkflowJobRun = $workflowRun->workflowJobRuns->where('workflow_job_id', $workflowJobId)->first();
+
+                foreach($dependsOnWorkflowJobRun->artifacts as $artifact) {
+                    Log::debug("$thread using $artifact from $dependsOnWorkflowJobRun");
+                    app(ThreadRepository::class)->addMessageToThread($thread, $artifact->content);
+                }
+            }
+        } else {
+            // If we have no dependencies, then we want to use the input source
+            $inputSource = $workflowJobRun->workflowRun->inputSource;
+            $content     = $inputSource->content;
+            $fileIds     = $inputSource->storedFiles->pluck('id')->toArray();
+            app(ThreadRepository::class)->addMessageToThread($thread, $content, $fileIds);
+        }
+
+        $workflowTask->thread()->associate($thread)->save();
+
+        return $thread;
     }
 }

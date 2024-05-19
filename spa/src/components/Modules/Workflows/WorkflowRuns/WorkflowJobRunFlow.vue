@@ -70,6 +70,6 @@ function filterStatus(status) {
 	}
 }
 function isStatusHidden(status) {
-	return displayStatus.value && displayStatus.value !== status;
+	return displayStatus.value && displayStatus.value !== "all" && displayStatus.value !== status;
 }
 </script>
