@@ -1,6 +1,7 @@
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 import { ConfigEnv, defineConfig } from "vite";
+// import VueDevTools from "vite-plugin-vue-devtools";
 import svgLoader from "vite-svg-loader";
 
 // https://vitejs.dev/config/

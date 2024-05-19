@@ -31,7 +31,7 @@ const agentForm: Form = {
 				...props,
 				maxLength: 100000
 			}),
-			label: "Prompt Milk"
+			label: "Prompt"
 		}
 	]
 };

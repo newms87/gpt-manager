@@ -7,13 +7,7 @@
 				</a>
 			</div>
 			<div class="mx-2">
-				<QBtn
-					class="bg-sky-800 text-sky-300 py-1 px-2"
-					:disable="artifactCount === 0"
-					@click="showArtifacts = !showArtifacts"
-				>
-					{{ artifactCount }} Results
-				</QBtn>
+				<ShowHideButton v-model="showArtifacts" :label="artifactCount + ' Artifacts'" class="bg-sky-800 text-sky-200" />
 			</div>
 			<div class="mx-2">
 				<ElapsedTimePill
@@ -48,6 +42,7 @@ import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
 import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import WorkflowJobRunFlow from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunFlow";
+import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import TrashButton from "@/components/Shared/Buttons/TrashButton";
 import { WorkflowRun } from "@/types/workflows";
 import { computed, ref } from "vue";
