@@ -93,7 +93,7 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
     {
         return $this->status === self::STATUS_COMPLETED;
     }
-    
+
     public function isRunning(): bool
     {
         return $this->status === self::STATUS_RUNNING;
@@ -112,6 +112,21 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
         }
 
         return $this;
+    }
+
+    public function getTotalInputTokens()
+    {
+        return $this->workflowJobRuns->sum(fn(WorkflowJobRun $jobRun) => $jobRun->getTotalInputTokens());
+    }
+
+    public function getTotalOutputTokens()
+    {
+        return $this->workflowJobRuns->sum(fn(WorkflowJobRun $jobRun) => $jobRun->getTotalOutputTokens());
+    }
+
+    public function getTotalCost()
+    {
+        return $this->workflowJobRuns->sum(fn(WorkflowJobRun $jobRun) => $jobRun->getTotalCost());
     }
 
     public function __toString()

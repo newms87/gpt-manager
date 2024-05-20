@@ -11,6 +11,9 @@
 					jobRun.status
 				}}
 			</div>
+			<div class="ml-2">
+				<WorkflowCostsButton :usage="jobRun.usage" />
+			</div>
 		</div>
 		<div class="mt-4 w-full">
 			<WorkflowTaskCard
@@ -24,6 +27,7 @@
 </template>
 <script setup lang="ts">
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import WorkflowCostsButton from "@/components/Modules/Workflows/WorkflowRuns/WorkflowCostsButton";
 import WorkflowTaskCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowTaskCard";
 import { WorkflowJobRun } from "@/types/workflows";
 import { SelectField } from "quasar-ui-danx";

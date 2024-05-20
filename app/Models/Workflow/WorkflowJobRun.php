@@ -94,6 +94,21 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
         return $this;
     }
 
+    public function getTotalInputTokens()
+    {
+        return $this->tasks->sum(fn(WorkflowTask $task) => $task->getTotalInputTokens());
+    }
+
+    public function getTotalOutputTokens()
+    {
+        return $this->tasks->sum(fn(WorkflowTask $task) => $task->getTotalOutputTokens());
+    }
+
+    public function getTotalCost()
+    {
+        return $this->tasks->sum(fn(WorkflowTask $task) => $task->getTotalCost());
+    }
+
     public function __toString()
     {
         return "<WorkflowJobRun ($this->id) {$this->workflowJob->name} [$this->status]>";

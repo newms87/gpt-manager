@@ -35,6 +35,7 @@ export interface WorkflowJobRun {
 	failed_at: string;
 	workflowJob: WorkflowJob;
 	tasks: WorkflowTask[];
+	usage: WorkflowUsage;
 }
 
 export interface WorkflowTask {
@@ -50,6 +51,7 @@ export interface WorkflowTask {
 	artifact?: Artifact;
 	thread: AgentThread;
 	job_logs: string;
+	usage: WorkflowUsage;
 }
 
 export interface WorkflowAssignment extends ActionTargetItem {
@@ -71,4 +73,11 @@ export interface WorkflowRun extends ActionTargetItem {
 	inputSource?: InputSource;
 	workflowJobRuns?: WorkflowJobRun[];
 	artifacts?: Artifact[];
+	usage: WorkflowUsage;
+}
+
+export interface WorkflowUsage {
+	input_tokens: number;
+	output_tokens: number;
+	cost: number;
 }

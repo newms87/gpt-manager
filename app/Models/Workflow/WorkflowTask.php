@@ -104,6 +104,21 @@ class WorkflowTask extends Model implements AuditableContract, ComputedStatusCon
         return $this;
     }
 
+    public function getTotalInputTokens()
+    {
+        return $this->thread?->getTotalInputTokens() ?? 0;
+    }
+
+    public function getTotalOutputTokens()
+    {
+        return $this->thread?->getTotalOutputTokens() ?? 0;
+    }
+
+    public function getTotalCost()
+    {
+        return $this->thread?->getTotalCost() ?? 0;
+    }
+
     public function __toString()
     {
         return "<WorkflowTask $this->id {$this->workflowJob->name} group=$this->group [$this->status]>";

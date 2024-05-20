@@ -28,6 +28,11 @@ class WorkflowTaskResource extends ActionResource
             'failed_at'    => $this->failed_at,
             'job_logs'     => $this->jobDispatch?->runningAuditRequest?->logs,
             'thread'       => $this->thread ? ThreadResource::make($this->thread) : null,
+            'usage'        => [
+                'input_tokens'  => $this->getTotalInputTokens(),
+                'output_tokens' => $this->getTotalOutputTokens(),
+                'cost'          => $this->getTotalCost(),
+            ],
             'created_at'   => $this->created_at,
         ];
     }

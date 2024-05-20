@@ -128,4 +128,17 @@ class AgentRepository extends ActionRepository
 
         return $aiModels;
     }
+
+    public function calcTotalCost(Agent $agent, $inputTokens, $outputToken)
+    {
+        $inputTokens = $inputTokens ?? 0;
+        $outputToken = $outputToken ?? 0;
+        $modelCosts  = config('ai.models')[$agent->api][$agent->model] ?? null;
+
+        if (!$modelCosts) {
+            return null;
+        }
+
+        return ($modelCosts['input'] * $inputTokens / 1000) + ($modelCosts['output'] * $outputToken / 1000);
+    }
 }

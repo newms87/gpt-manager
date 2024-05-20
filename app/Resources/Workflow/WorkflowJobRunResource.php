@@ -24,6 +24,11 @@ class WorkflowJobRunResource extends ActionResource
             'completed_at' => $this->completed_at,
             'failed_at'    => $this->failed_at,
             'created_at'   => $this->created_at,
+            'usage'        => [
+                'input_tokens'  => $this->getTotalInputTokens(),
+                'output_tokens' => $this->getTotalOutputTokens(),
+                'cost'          => $this->getTotalCost(),
+            ],
         ];
     }
 }
