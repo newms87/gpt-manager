@@ -7,8 +7,8 @@ use App\Models\Shared\Artifact;
 use App\Models\Shared\InputSource;
 use App\Models\Workflow\WorkflowTask;
 use App\Repositories\ThreadRepository;
-use Exception;
 use Flytedan\DanxLaravel\Models\Audit\ErrorLog;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -50,7 +50,7 @@ class WorkflowTaskService
             $workflowTask->save();
 
             Log::debug("$workflowTask created $artifact");
-        } catch(Exception $e) {
+        } catch(Throwable $e) {
             ErrorLog::logException(ErrorLog::ERROR, $e);
             $workflowTask->failed_at = now();
             $workflowTask->save();
@@ -100,13 +100,13 @@ class WorkflowTaskService
     /**
      * Add messages from artifacts to a thread
      *
-     * @param Thread     $thread
-     * @param Artifact[] $artifacts
-     * @param            $groupBy
-     * @param            $group
+     * @param Thread                $thread
+     * @param Artifact[]|Collection $artifacts
+     * @param                       $groupBy
+     * @param                       $group
      * @return void
      */
-    public static function addThreadMessagesFromArtifacts(Thread $thread, array $artifacts, $groupBy, $group): void
+    public static function addThreadMessagesFromArtifacts(Thread $thread, $artifacts, $groupBy, $group): void
     {
         foreach($artifacts as $artifact) {
             if ($groupBy) {

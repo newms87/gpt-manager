@@ -1,7 +1,7 @@
 <template>
-	<div class="flex items-center bg-indigo-800 text-indigo-200 rounded-lg overflow-hidden">
-		<div class="text-base font-bold flex-grow px-2">{{ dependency.depends_on_name }}</div>
-		<div class="ml-4 flex items-center">
+	<div class="flex items-center flex-nowrap bg-indigo-800 text-indigo-200 rounded-lg overflow-hidden">
+		<div class="text-base font-bold flex-grow px-2 text-no-wrap text-ellipsis">{{ dependency.depends_on_name }}</div>
+		<div class="ml-4 flex items-center flex-nowrap">
 			<div class="mr-2">Group By</div>
 			<TextField
 				v-model="groupBy"
