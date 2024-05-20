@@ -37,14 +37,17 @@ const createJobAction = getAction("create-job");
 const jobFlowDiagram = computed(() => {
 	if (!props.workflow.jobs) return;
 
-	let diagram = "";
+	let diagram = `IS(Input Source)\n`;
 	for (const job of props.workflow.jobs) {
 		diagram += `${job.id}(${job.name})\n`;
 	}
 
 	for (const job of props.workflow.jobs) {
-		if (job.depends_on?.length > 0) {
-			diagram += `${job.depends_on.join(" & ")}--> ${job.id}\n`;
+		if (job.use_input_source) {
+			diagram += `IS--> ${job.id}\n`;
+		}
+		if (job.dependencies?.length > 0) {
+			diagram += `${job.dependencies.map(d => d.depends_on_id).join(" & ")}--> ${job.id}\n`;
 		}
 	}
 

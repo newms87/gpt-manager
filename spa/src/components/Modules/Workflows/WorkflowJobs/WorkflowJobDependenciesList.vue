@@ -1,6 +1,5 @@
 <template>
 	<div class="p-3">
-		<div class="font-bold mb-3 underline">Depends On</div>
 		<template v-if="job.dependencies">
 			<WorkflowJobDependencyItem
 				v-for="dependency in job.dependencies"

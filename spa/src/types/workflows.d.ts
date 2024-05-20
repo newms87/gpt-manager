@@ -24,6 +24,7 @@ export interface WorkflowJob extends ActionTargetItem {
 	description: string;
 	dependencies: WorkflowJobDependency[];
 	assignments: WorkflowAssignment[];
+	use_input_source: boolean;
 }
 
 export interface WorkflowJobRun {

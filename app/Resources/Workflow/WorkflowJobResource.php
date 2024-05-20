@@ -24,7 +24,7 @@ class WorkflowJobResource extends ActionResource
             'assignments'      => WorkflowAssignmentResource::collection($this->workflowAssignments),
             'runs_count'       => $this->workflowJobRuns()->count(),
             'dependencies'     => $dependencies->isNotEmpty() ? WorkflowJobDependencyResource::collection($dependencies) : null,
-            'use_input_source' => true,
+            'use_input_source' => $this->use_input_source,
             'created_at'       => $this->created_at,
         ];
     }

@@ -19,6 +19,15 @@
 				</div>
 				<TrashButton :saving="deleteJobAction.isApplying" class="p-4" @click="deleteJobAction.trigger(job)" />
 			</div>
+			<div class="p-2">
+				<div class="py-1 px-2 bg-indigo-900 text-indigo-300 rounded-lg w-52">
+					<QCheckbox
+						:model-value="!!job.use_input_source"
+						label="Include Input Source?"
+						@update:model-value="updateJobAction.trigger(job, {use_input_source: $event})"
+					/>
+				</div>
+			</div>
 			<WorkflowJobDependenciesList :workflow="workflow" :job="job" />
 		</div>
 		<MaxHeightTransition max-height="20em">
@@ -46,5 +55,6 @@ defineProps<{
 
 const showAssignments = ref(false);
 const updateJobDebouncedAction = getAction("update-job-debounced");
+const updateJobAction = getAction("update-job");
 const deleteJobAction = getAction("delete-job");
 </script>
