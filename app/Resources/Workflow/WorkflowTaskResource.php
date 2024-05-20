@@ -18,6 +18,8 @@ class WorkflowTaskResource extends ActionResource
     {
         return [
             'id'           => $this->id,
+            'job_name'     => $this->workflowJob->name,
+            'group'        => $this->group,
             'agent_name'   => $this->workflowAssignment->agent->name,
             'model'        => $this->workflowAssignment->agent->model,
             'status'       => $this->status,

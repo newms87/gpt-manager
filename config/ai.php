@@ -43,14 +43,6 @@ return [
                 'input'  => .0015,
                 'output' => .0020,
             ],
-            'davinci-002'            => [
-                'input'  => .002,
-                'output' => .002,
-            ],
-            'babbage-002'            => [
-                'input'  => .0004,
-                'output' => .0004,
-            ],
         ],
     ],
     'apis'          => [

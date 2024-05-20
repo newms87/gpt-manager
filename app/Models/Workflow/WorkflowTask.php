@@ -106,6 +106,6 @@ class WorkflowTask extends Model implements AuditableContract, ComputedStatusCon
 
     public function __toString()
     {
-        return "<WorkflowTask $this->id [$this->status]>";
+        return "<WorkflowTask $this->id {$this->workflowJob->name} group=$this->group [$this->status]>";
     }
 }

@@ -36,10 +36,13 @@ class WorkflowTaskService
             // Produce the artifact
             $lastMessage = $threadRun->lastMessage;
             $assignment  = $workflowTask->workflowAssignment;
-            $artifact    = $workflowTask->artifact()->create([
+
+            $content = WorkflowTaskService::cleanContent($lastMessage->content);
+
+            $artifact = $workflowTask->artifact()->create([
                 'name'    => $thread->name,
                 'model'   => $assignment->agent->model,
-                'content' => $lastMessage->content,
+                'content' => $content,
                 'data'    => $lastMessage->data,
             ]);
 
@@ -57,14 +60,20 @@ class WorkflowTaskService
         WorkflowService::taskFinished($workflowTask);
     }
 
-    public static function setupTaskThread(WorkflowTask $workflowTask)
+    /**
+     * Create a thread for the task and add messages from the input source or dependencies
+     *
+     * @param WorkflowTask $workflowTask
+     * @return Thread
+     */
+    public static function setupTaskThread(WorkflowTask $workflowTask): Thread
     {
         $workflowJobRun = $workflowTask->workflowJobRun;
         $workflowRun    = $workflowJobRun->workflowRun;
         $assignment     = $workflowTask->workflowAssignment;
         $workflowJob    = $workflowTask->workflowJob;
 
-        $threadName = $workflowTask->workflowJob->name . " Group " . ($workflowTask->group ?: '(default)') . ": {$assignment->agent->name} ($workflowTask->id)";
+        $threadName = $workflowTask->workflowJob->name . " ($workflowTask->id) [group: " . ($workflowTask->group ?: 'default') . "] by {$assignment->agent->name}";
         $thread     = app(ThreadRepository::class)->create($assignment->agent, $threadName);
 
         Log::debug("$workflowTask created $thread");
@@ -97,7 +106,7 @@ class WorkflowTaskService
      * @param            $group
      * @return void
      */
-    public static function addThreadMessagesFromArtifacts(Thread $thread, $artifacts, $groupBy, $group): void
+    public static function addThreadMessagesFromArtifacts(Thread $thread, array $artifacts, $groupBy, $group): void
     {
         foreach($artifacts as $artifact) {
             if ($groupBy) {
@@ -120,11 +129,29 @@ class WorkflowTaskService
         }
     }
 
+    /**
+     * Create a message and append it to the thread based on the Input Source content + files
+     *
+     * @param Thread      $thread
+     * @param InputSource $inputSource
+     * @return void
+     */
     public static function addThreadMessageFromInputSource(Thread $thread, InputSource $inputSource): void
     {
         $content = $inputSource->content;
         $fileIds = $inputSource->storedFiles->pluck('id')->toArray();
         app(ThreadRepository::class)->addMessageToThread($thread, $content, $fileIds);
         Log::debug("$thread added $inputSource");
+    }
+
+    /**
+     * Cleans the AI Model responses to make sure we have valid JSON, if the response is JSON
+     * @param $content
+     * @return string
+     */
+    public static function cleanContent($content): string
+    {
+        // Remove any ```json and trailing ``` from content if they are present
+        return preg_replace('/^```json\n(.*)\n```$/s', '$1', trim($content));
     }
 }

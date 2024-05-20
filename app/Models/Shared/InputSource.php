@@ -62,6 +62,6 @@ class InputSource extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "Input Source $this->name";
+        return "<InputSource ($this->id) $this->name>";
     }
 }

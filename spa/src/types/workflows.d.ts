@@ -39,6 +39,8 @@ export interface WorkflowJobRun {
 
 export interface WorkflowTask {
 	id: number;
+	job_name: string;
+	group: string;
 	agent_name: string;
 	model: string;
 	status: string;

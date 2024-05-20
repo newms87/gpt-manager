@@ -39,4 +39,26 @@ class ArrayHelperTest extends TestCase
             ],
         ], $result);
     }
+
+    public function test_groupByDot_handlesSingleLevelArray()
+    {
+        // Given
+        $array = [
+            'questions' => [
+                "Question 1",
+                "Question 2",
+                "Question 3",
+            ],
+        ];
+
+        // When
+        $result = ArrayHelper::groupByDot($array, 'questions');
+
+        // Then
+        $this->assertEquals([
+            "Question 1",
+            "Question 2",
+            "Question 3",
+        ], $result);
+    }
 }

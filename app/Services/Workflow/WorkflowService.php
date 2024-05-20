@@ -44,7 +44,7 @@ class WorkflowService
     {
         foreach($workflowRun->runningJobRuns()->get() as $pendingJobRun) {
             foreach($pendingJobRun->pendingTasks()->get() as $pendingTask) {
-                Log::debug("$workflowRun dispatching $pendingTask");
+                Log::debug("$pendingJobRun dispatching $pendingTask");
                 $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
                 $pendingTask->job_dispatch_id = $job?->getJobDispatch()?->id;
                 $pendingTask->save();
@@ -148,8 +148,10 @@ class WorkflowService
             $artifacts       = $dependsOnJobRun->artifacts()->get();
             foreach($artifacts as $artifact) {
                 $artifactGroups = $artifact->groupContentBy($dependsOnJob['groupBy']);
-                $groups         = array_keys($artifactGroups);
-                $taskGroups     = array_merge($taskGroups, $groups);
+                if ($artifactGroups) {
+                    $groups     = array_keys($artifactGroups);
+                    $taskGroups = array_merge($taskGroups, $groups);
+                }
             }
         }
 
