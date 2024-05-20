@@ -15,13 +15,15 @@ class WorkflowJobResource extends ActionResource
 
     public function data(): array
     {
+        $dependencies = $this->dependencies;
+
         return [
             'id'               => $this->id,
             'name'             => $this->name,
             'description'      => $this->description,
             'assignments'      => WorkflowAssignmentResource::collection($this->workflowAssignments),
             'runs_count'       => $this->workflowJobRuns()->count(),
-            'dependencies'     => $this->dependencies() ?: [],
+            'dependencies'     => $dependencies->isNotEmpty() ? WorkflowJobDependencyResource::collection($dependencies) : null,
             'use_input_source' => true,
             'created_at'       => $this->created_at,
         ];

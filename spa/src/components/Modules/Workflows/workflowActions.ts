@@ -80,6 +80,10 @@ const items: ActionOptions[] = [
 		}
 	},
 	{
+		name: "set-dependencies",
+		onAction: WorkflowJobRoutes.applyAction
+	},
+	{
 		name: "assign-agent",
 		vnode: (target) => h(AssignAgentDialog, { job: target }),
 		onAction: WorkflowJobRoutes.applyAction

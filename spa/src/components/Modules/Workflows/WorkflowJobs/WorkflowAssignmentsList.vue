@@ -1,15 +1,15 @@
 <template>
-	<div>
+	<div class="py-2">
 		<div
 			v-for="assignment in job.assignments"
 			:key="assignment.id"
-			class="p-4 bg-indigo-200 text-indigo-800 flex items-center"
+			class="py-1 flex items-center"
 		>
 			<div class="font-bold">{{ assignment.agent.name }}</div>
 			<div class="flex-grow ml-2 text-xs">{{ assignment.agent.model }}</div>
 			<TrashButton
 				:saving="unassignAgentAction.isApplying"
-				class="hover:bg-red-300"
+				class="p-2 hover:bg-indigo-400"
 				@click="unassignAgentAction.trigger(assignment)"
 			/>
 		</div>

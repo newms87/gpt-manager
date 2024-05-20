@@ -1,7 +1,7 @@
 import { Agent, AgentThread } from "@/types/agents";
 import { Artifact } from "@/types/artifacts";
 import { InputSource } from "@/types/input-sources";
-import { ActionTargetItem, AnyObject } from "quasar-ui-danx/types";
+import { ActionTargetItem } from "quasar-ui-danx/types";
 
 export interface Workflow extends ActionTargetItem {
 	id: string;
@@ -11,11 +11,18 @@ export interface Workflow extends ActionTargetItem {
 	runs?: WorkflowRun[];
 }
 
+export interface WorkflowJobDependency {
+	id: number;
+	depends_on_id: number;
+	depends_on_name: string;
+	group_by: string;
+}
+
 export interface WorkflowJob extends ActionTargetItem {
 	id: number;
 	name: string;
 	description: string;
-	config: AnyObject;
+	dependencies: WorkflowJobDependency[];
 	assignments: WorkflowAssignment[];
 }
 

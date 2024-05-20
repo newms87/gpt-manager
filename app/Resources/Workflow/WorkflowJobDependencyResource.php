@@ -16,9 +16,10 @@ class WorkflowJobDependencyResource extends ActionResource
     public function data(): array
     {
         return [
-            'id'         => $this->id,
-            'depends_on' => $this->dependsOn->name,
-            'group_by'   => $this->group_by,
+            'id'              => $this->id,
+            'depends_on_id'   => $this->dependsOn->id,
+            'depends_on_name' => $this->dependsOn->name,
+            'group_by'        => $this->group_by,
         ];
     }
 }

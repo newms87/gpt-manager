@@ -12,7 +12,7 @@
 import { FaSolidTrash as TrashIcon } from "danx-icon";
 
 defineProps<{
-	saving: boolean;
+	saving?: boolean;
 	class?: "hover:bg-red-900"
 }>();
 </script>

@@ -1,40 +1,26 @@
 <template>
-	<QCard class="bg-indigo-300 text-indigo-600 rounded-lg overflow-hidden form-input-indigo">
-		<QCardSection>
-			<div class="flex items-center flex-nowrap">
+	<QCard class="bg-indigo-300 text-indigo-600 rounded-lg overflow-hidden form-input-indigo border-indigo-400 border">
+		<div>
+			<div class="flex items-center flex-nowrap bg-indigo-950 text-indigo-300">
 				<div class="flex-grow">
-					<div class=" font-bold">
-						<EditOnClickTextField
-							:model-value="job.name"
-							class="hover:bg-indigo-200"
-							@update:model-value="updateJobDebouncedAction.trigger(job, { name: $event})"
-						/>
-					</div>
+					<EditOnClickTextField
+						:model-value="job.name"
+						class="hover:bg-indigo-900 text-lg"
+						@update:model-value="updateJobDebouncedAction.trigger(job, { name: $event})"
+					/>
 					<div class="text-sm text-indigo-500">{{ job.description }}</div>
 				</div>
-				<div class="px-4">
-					{{ job.runs_count }} Runs
-				</div>
 				<div class="pl-4">
-					<QBtn class="bg-indigo-700 text-indigo-300 px-4" @click="showAssignments = !showAssignments">
-						{{ job.assignments.length }} Assignments
-					</QBtn>
+					<ShowHideButton
+						v-model="showAssignments"
+						:label="job.assignments.length + 'Assignments'"
+						class="bg-indigo-300 text-indigo-900 rounded"
+					/>
 				</div>
-				<div class="ml-4">
-					<TrashButton :saving="deleteJobAction.isApplying" @click="deleteJobAction.trigger(job)" />
-				</div>
+				<TrashButton :saving="deleteJobAction.isApplying" class="p-4" @click="deleteJobAction.trigger(job)" />
 			</div>
-			<div>
-				<div>Depends On</div>
-				<SelectField
-					:model-value="job.depends_on || []"
-					clearable
-					multiple
-					:options="jobOptions"
-					@update:model-value="updateJobAction.trigger(job, {depends_on: $event})"
-				/>
-			</div>
-		</QCardSection>
+			<WorkflowJobDependenciesList :workflow="workflow" :job="job" />
+		</div>
 		<MaxHeightTransition max-height="20em">
 			<QCardSection v-if="showAssignments" class="pt-0 max-h-[20em] overflow-y-auto">
 				<QSeparator class="bg-indigo-900" />
@@ -45,24 +31,20 @@
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
+import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
+import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import TrashButton from "@/components/Shared/Buttons/TrashButton";
 import { Workflow, WorkflowJob } from "@/types/workflows";
-import { EditOnClickTextField, MaxHeightTransition, SelectField } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { EditOnClickTextField, MaxHeightTransition } from "quasar-ui-danx";
+import { ref } from "vue";
 import WorkflowAssignmentsList from "./WorkflowAssignmentsList";
 
-const props = defineProps<{
+defineProps<{
 	job: WorkflowJob;
 	workflow: Workflow;
 }>();
 
 const showAssignments = ref(false);
-const updateJobAction = getAction("update-job");
 const updateJobDebouncedAction = getAction("update-job-debounced");
 const deleteJobAction = getAction("delete-job");
-
-const jobOptions = computed(() => props.workflow.jobs.filter(job => job.id !== props.job.id).map((job) => ({
-	label: job.name,
-	value: job.id
-})));
 </script>
