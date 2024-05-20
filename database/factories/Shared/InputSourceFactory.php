@@ -14,13 +14,8 @@ class InputSourceFactory extends Factory
             'team_id' => Team::factory(),
             'user_id' => User::factory(),
             'name'    => fake()->unique()->name,
-            'data'    => [
-                [
-                    'name'  => 'message',
-                    'type'  => 'text',
-                    'value' => fake()->sentence,
-                ],
-            ],
+            'content' => fake()->sentence,
+            'data'    => [],
             'tokens'  => fake()->numberBetween(1, 1000),
         ];
     }

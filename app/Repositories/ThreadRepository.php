@@ -34,12 +34,12 @@ class ThreadRepository extends ActionRepository
         return $thread;
     }
 
-    public function addMessageToThread(Thread $thread, ?string $content = null, ?array $fileIds = null): Thread
+    public function addMessageToThread(Thread $thread, $content = null, ?array $fileIds = null): Thread
     {
         if ($content || $fileIds) {
             $message = $thread->messages()->create([
                 'role'    => Message::ROLE_USER,
-                'content' => $content,
+                'content' => is_string($content) ? $content : json_encode($content),
             ]);
 
             if ($fileIds) {

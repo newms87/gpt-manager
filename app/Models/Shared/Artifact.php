@@ -3,6 +3,7 @@
 namespace App\Models\Shared;
 
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
+use Flytedan\DanxLaravel\Helpers\ArrayHelper;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,13 @@ class Artifact extends Model implements AuditableContract
         'updated_at',
         'deleted_at',
     ];
+
+    public function groupContentBy($key)
+    {
+        $data = json_decode($this->content, true);
+
+        return ArrayHelper::groupByDot($data, $key);
+    }
 
     public function __toString()
     {

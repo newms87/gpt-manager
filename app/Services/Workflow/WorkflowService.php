@@ -72,17 +72,33 @@ class WorkflowService
 
         /** @var WorkflowJobRun[]|Collection $completedJobRuns */
         $completedJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_COMPLETED);
-        $completedIds     = $completedJobRuns?->pluck('workflow_job_id')->toArray() ?? [];
         /** @var WorkflowJobRun[]|Collection $pendingJobRuns */
         $pendingJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_PENDING) ?? [];
 
         foreach($pendingJobRuns as $pendingJobRun) {
-            $workflowJob     = $pendingJobRun->workflowJob;
-            $dependsOnJobIds = $workflowJob->dependencies()->pluck('depends_on_workflow_job_id') ?: [];
+            $workflowJob   = $pendingJobRun->workflowJob;
+            $dependencies  = $workflowJob->dependencies()->get();
+            $dependsOnJobs = [];
 
-            // If the job has not been completed, then we cannot dispatch this task
-            if (count(array_diff($dependsOnJobIds, $completedIds)) > 0) {
-                Log::debug("Job {$workflowJob->name} has dependencies that have not yet completed");
+            // Resolve the dependencies from the completed job runs.
+            // Associate the completed job run with the dependency configuration, so we can group the output data of the artifacts to pass to the next job.
+            if ($completedJobRuns) {
+                foreach($dependencies as $dependency) {
+                    $completedJobRun = $completedJobRuns->where('workflow_job_id', $dependency->depends_on_workflow_job_id)->first();
+
+                    if ($completedJobRun) {
+                        $dependsOnJobs[$dependency->depends_on_workflow_job_id] = [
+                            'id'      => $dependency->depends_on_workflow_job_id,
+                            'jobRun'  => $completedJobRun,
+                            'groupBy' => $dependency->group_by,
+                        ];
+                    }
+                }
+            }
+
+            // If the job has dependencies that have not yet completed, then skip this job
+            if (count($dependsOnJobs) < $dependencies->count()) {
+                Log::debug("Job $workflowJob->name has dependencies that have not yet completed");
                 continue;
             }
 
@@ -91,16 +107,53 @@ class WorkflowService
             $pendingJobRun->started_at = now();
             $pendingJobRun->save();
 
+            // Resolve the unique task groups to create a task for each group.
+            // If there are no task groups, just setup a default task group
+            $taskGroups  = WorkflowService::getTaskGroups($dependsOnJobs) ?: [''];
             $assignments = $workflowJob->workflowAssignments()->get();
             foreach($assignments as $assignment) {
-                $pendingJobRun->tasks()->create([
-                    'user_id'                => user()->id,
-                    'workflow_job_id'        => $workflowJob->id,
-                    'workflow_assignment_id' => $assignment->id,
-                    'status'                 => WorkflowTask::STATUS_PENDING,
-                ]);
+                foreach($taskGroups as $taskGroup) {
+                    $pendingJobRun->tasks()->create([
+                        'user_id'                => user()->id,
+                        'workflow_job_id'        => $workflowJob->id,
+                        'workflow_assignment_id' => $assignment->id,
+                        'group'                  => $taskGroup,
+                        'status'                 => WorkflowTask::STATUS_PENDING,
+                    ]);
+                }
             }
         }
+    }
+
+    /**
+     * Resolves all the groupings of data from the artifacts produced by the WorkflowJobRun dependencies.
+     * NOTE: if no group by is set on the WorkflowJobDependency, then it is skipped.
+     * returning an empty set of task groups means the entire artifact should be used for all tasks, and only 1 task
+     * per assignment should be created.
+     * @param array $dependsOnJobs
+     * @return array
+     */
+    public static function getTaskGroups(array $dependsOnJobs): array
+    {
+        $taskGroups = [];
+
+        foreach($dependsOnJobs as $dependsOnJob) {
+            // If the dependency has no grouping set, then skip it
+            if (empty($dependsOnJob['groupBy'])) {
+                continue;
+            }
+
+            /** @var WorkflowJobRun $dependsOnJobRun */
+            $dependsOnJobRun = $dependsOnJob['jobRun'];
+            $artifacts       = $dependsOnJobRun->artifacts()->get();
+            foreach($artifacts as $artifact) {
+                $artifactGroups = $artifact->groupContentBy($dependsOnJob['groupBy']);
+                $groups         = array_keys($artifactGroups);
+                $taskGroups     = array_merge($taskGroups, $groups);
+            }
+        }
+
+        return $taskGroups;
     }
 
     /**

@@ -12,7 +12,7 @@ use Tests\TestCase;
  */
 trait AiMockData
 {
-    public function openAiAgent($user = null)
+    public function openAiAgent($attributes = [], $user = null): Agent
     {
         if (!$user) {
             $user = user();
@@ -20,6 +20,7 @@ trait AiMockData
 
         return Agent::factory()->recycle($user)->create([
             'api' => OpenAiApi::$serviceName,
+            ...$attributes,
         ]);
     }
 
@@ -28,9 +29,9 @@ trait AiMockData
         $this->mock(OpenAiApi::class)->shouldNotReceive('complete');
     }
 
-    public function mocksOpenAiCompletionResponse($content = 'Mock completion message content', $finishReason = 'stop', $usage = null): void
+    public function mocksOpenAiCompletionResponse($content = 'Mock completion message content', $finishReason = 'stop', $usage = null)
     {
-        $this->mock(OpenAiApi::class)->shouldReceive('complete')->once()->andReturn(OpenAiCompletionResponse::make([
+        return $this->mock(OpenAiApi::class)->shouldReceive('complete')->andReturn(OpenAiCompletionResponse::make([
             'choices' => [
                 [
                     'message'       => ['content' => $content],

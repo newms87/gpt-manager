@@ -15,6 +15,7 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
         // Always reset all jobs to enabled in case a previous test disabled something
         Job::enableAll();
+        $this->artisan('migrate');
         $this->artisan('db:seed --class=TestingSeeder');
     }
 }

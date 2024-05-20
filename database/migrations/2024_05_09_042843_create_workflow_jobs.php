@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->foreignId('workflow_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('description')->default('');
+            $table->boolean('use_input_source')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });
