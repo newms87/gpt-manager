@@ -6,11 +6,13 @@ use App\Models\Team\Team;
 use App\Repositories\AgentRepository;
 use Exception;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
+use Flytedan\DanxLaravel\Services\TranscodeFileService;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Flytedan\DanxLaravel\Traits\CountableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 
 class Thread extends Model implements AuditableContract
 {
@@ -88,6 +90,16 @@ class Thread extends Model implements AuditableContract
                             'type'      => 'image_url',
                             'image_url' => ['url' => $file->url],
                         ];
+                    } elseif ($file->isPdf()) {
+                        $transcodes = $file->transcodes()->where('transcode_name', TranscodeFileService::TRANSCODE_PDF_TO_IMAGES)->get();
+
+                        foreach($transcodes as $transcode) {
+                            $content[] = [
+                                'type'      => 'image_url',
+                                'image_url' => ['url' => $transcode->url],
+                            ];
+                            Log::debug("$message appending transcoded file $transcode->url");
+                        }
                     } else {
                         throw new Exception('Only images are supported for now.');
                     }

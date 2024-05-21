@@ -33,6 +33,9 @@ class TranscodeInputSourceWorkflowTool extends WorkflowTool
             foreach($inputSource->storedFiles as $storedFile) {
                 app(TranscodeFileService::class)->pdfToImages($storedFile);
             }
+
+            $inputSource->is_transcoded = true;
+            $inputSource->save();
         }
     }
 }
