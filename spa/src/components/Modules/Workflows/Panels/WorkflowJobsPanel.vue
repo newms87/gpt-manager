@@ -1,5 +1,8 @@
 <template>
-	<div class="p-6 flex items-stretch flex-nowrap">
+	<div class="p-6 flex flex-col items-stretch flex-nowrap">
+		<div v-if="jobFlowDiagram" class="mb-4 h-56">
+			<RenderDiagram :diagram="jobFlowDiagram" class="bg-sky-900 rounded h-full" theme="dark" />
+		</div>
 		<div class="flex-grow">
 			<ListTransition>
 				<WorkflowJobCard
@@ -21,9 +24,6 @@
 				<CreateIcon class="w-4 mr-3" />
 				Add Job
 			</QBtn>
-		</div>
-		<div v-if="jobFlowDiagram" class="pl-4">
-			<RenderDiagram :diagram="jobFlowDiagram" class="bg-sky-900 rounded" theme="dark" />
 		</div>
 	</div>
 </template>

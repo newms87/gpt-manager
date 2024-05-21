@@ -1,5 +1,5 @@
 <template>
-	<div ref="diagramDiv" class="w-full h-full"></div>
+	<div ref="diagramDiv" class="render-diagram w-full h-full"></div>
 </template>
 <script setup lang="ts">
 import mermaid from "mermaid";
@@ -10,7 +10,7 @@ const props = withDefaults(defineProps<{
 	type?: string;
 	theme?: string;
 }>(), {
-	type: "flowchart TD",
+	type: "flowchart LR",
 	theme: "default"
 });
 
@@ -30,3 +30,11 @@ async function drawDiagram() {
 }
 watch(() => props.diagram, drawDiagram);
 </script>
+
+<style scoped>
+.render-diagram {
+	&:deep(svg) {
+		max-height: 100%;
+	}
+}
+</style>

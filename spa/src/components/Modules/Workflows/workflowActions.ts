@@ -81,7 +81,8 @@ const items: ActionOptions[] = [
 	},
 	{
 		name: "set-dependencies",
-		onAction: WorkflowJobRoutes.applyAction
+		onAction: WorkflowJobRoutes.applyAction,
+		onFinish: WorkflowController.getActiveItemDetails
 	},
 	{
 		name: "assign-agent",
