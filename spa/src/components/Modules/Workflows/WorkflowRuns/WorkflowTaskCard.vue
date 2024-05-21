@@ -2,17 +2,22 @@
 	<div class="bg-slate-600 rounded-lg overflow-hidden">
 		<div class="flex items-center flex-nowrap pr-2">
 			<div class="flex-grow flex-nowrap flex items-center">
-				<div class="text-xs py-4 px-2 bg-gray-700">Task ({{ task.id }})</div>
-				<div class="text-lg font-bold px-2">{{ task.job_name }}</div>
-				<div class="bg-slate-400 text-slate-800 text-sm px-2 py-1 rounded-lg">Group: {{ task.group || "N/A" }}</div>
-				<div class="text-sm text-slate-400 ml-3">by {{ task.agent_name }}</div>
+				<div class="text-xs py-6 px-2 bg-gray-700">Task ({{ task.id }})</div>
+				<div>
+					<div class="text-lg font-bold px-2 text-ellipsis">{{ task.job_name }}</div>
+					<div class="flex items-center flex-nowrap px-2">
+						<div class="bg-slate-400 text-slate-800 text-sm px-2 py-1 rounded-lg text-no-wrap">
+							Group: {{ task.group || "N/A" }}
+						</div>
+						<div class="text-sm text-slate-400 ml-3 text-no-wrap">by {{ task.agent_name }}</div>
+					</div>
+				</div>
 			</div>
 			<ShowHideButton v-if="task.thread" v-model="showThread" label="Thread" class="bg-sky-800 mx-1 text-sm" />
 			<ShowHideButton v-model="showLogs" label="Logs" class="bg-slate-800 mx-1 text-sm" />
 			<ElapsedTimePill :start="task.started_at" :end="task.failed_at || task.completed_at" class="mx-1" />
-			<div class="py-1 px-3 rounded-xl w-24 text-center ml-1" :class="workflowTaskStatus.classAlt">{{
-					task.status
-				}}
+			<div class="py-1 px-3 rounded-xl w-24 text-center ml-1" :class="workflowTaskStatus.classAlt">
+				{{ task.status }}
 			</div>
 			<div class="ml-2">
 				<WorkflowCostsButton :usage="task.usage" />

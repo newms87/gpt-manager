@@ -27,22 +27,24 @@ return [
                     'tile'   => '512x512',
                 ],
             ],
-            'gpt-4'                  => [
-                'input'  => .03,
-                'output' => .06,
-            ],
-            'gpt-4-32k'              => [
-                'input'  => .06,
-                'output' => .12,
-            ],
             'gpt-3.5-turbo-0125'     => [
                 'input'  => .0005,
                 'output' => .0015,
             ],
-            'gpt-3.5-turbo-instruct' => [
-                'input'  => .0015,
-                'output' => .0020,
-            ],
+
+            // These models are either too expensive / don't seem to work / limited capabilities
+            //            'gpt-4'                  => [
+            //                'input'  => .03,
+            //                'output' => .06,
+            //            ],
+            //            'gpt-4-32k'              => [
+            //                'input'  => .06,
+            //                'output' => .12,
+            //            ],
+            //            'gpt-3.5-turbo-instruct' => [
+            //                'input'  => .0015,
+            //                'output' => .0020,
+            //            ],
         ],
     ],
     'apis'          => [

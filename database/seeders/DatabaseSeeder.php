@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
 use App\Models\Agent\Thread;
 use App\Models\Shared\InputSource;
@@ -37,18 +38,24 @@ class DatabaseSeeder extends Seeder
 
         $questionAgent  = Agent::factory()->recycle($team)->create([
             'name'        => 'Question Maker',
+            'api'         => OpenAiApi::$serviceName,
+            'model'       => config('ai.default_model'),
             'description' => 'Generates questions based on the provided topic',
             'prompt'      => "Based on the provided topic, generate 3 deeply profound questions. Your response will be a valid JSON object in the form:\n\n```json\n{\"questions\":[\"Question 1\",\"Question 2\",\"Question 3\"]}\n```",
             'tools'       => [],
         ]);
         $answerAgent    = Agent::factory()->recycle($team)->create([
             'name'        => 'Question Answerer',
+            'api'         => OpenAiApi::$serviceName,
+            'model'       => config('ai.default_model'),
             'description' => 'Answers questions based on the provided topic',
             'prompt'      => "Answer the given question to the best of your knowledge. Give a robust response covering all facets of the topic",
             'tools'       => [],
         ]);
         $validatorAgent = Agent::factory()->recycle($team)->create([
             'name'        => 'Answer Validator',
+            'api'         => OpenAiApi::$serviceName,
+            'model'       => config('ai.default_model'),
             'description' => 'Validates the question and answer pair to ensure they are related and the answer is valid',
             'prompt'      => "Check the provided topic, the generated question and the provided answer and verify the question is related to the topic and the answer is a valid response to the question. Your response will be a valid JSON object in the form:\n\n```json\n{\"valid\":true}\n\nor\n\n{\"valid\":false,\"reason\":\"The reason the answer is invalid\"}\n```",
             'tools'       => [],

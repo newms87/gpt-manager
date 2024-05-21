@@ -1,13 +1,15 @@
 <template>
-	<QBtn class="py-1 px-2 flex items-center flex-nowrap" @click="isShowing = !isShowing">
-		<template v-if="isShowing">
-			<HideIcon class="w-4 mr-2" />
-			{{ hideLabel || label }}
-		</template>
-		<template v-else>
-			<ShowIcon class="w-4 mr-2" />
-			{{ viewLabel || label }}
-		</template>
+	<QBtn class="py-1 px-2" @click="isShowing = !isShowing">
+		<div class="flex items-center flex-nowrap">
+			<template v-if="isShowing">
+				<HideIcon class="w-4 mr-2" />
+				<div>{{ hideLabel || label }}</div>
+			</template>
+			<template v-else>
+				<ShowIcon class="w-4 mr-2" />
+				<div>{{ viewLabel || label }}</div>
+			</template>
+		</div>
 	</QBtn>
 </template>
 <script lang="ts" setup>
