@@ -12,7 +12,7 @@ class WorkflowDetailsResource extends WorkflowResource
 {
     public function data(): array
     {
-        $jobs = $this->workflowJobs()->get();
+        $jobs = $this->sortedAgentWorkflowJobs()->get();
         $runs = $this->workflowRuns()->orderByDesc('id')->get();
 
         return [

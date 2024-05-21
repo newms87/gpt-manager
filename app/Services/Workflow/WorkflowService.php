@@ -2,11 +2,8 @@
 
 namespace App\Services\Workflow;
 
-use App\Jobs\RunWorkflowTaskJob;
-use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
-use App\WorkflowTools\TranscodeInputSourceWorkflowTool;
 use Flytedan\DanxLaravel\Helpers\LockHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -24,50 +21,17 @@ class WorkflowService
         $workflowRun->started_at = now();
         $workflowRun->save();
 
-        // Setup the Input Source Transcoding Job
-        static::prependTranscodeInputSourceJobInWorkflow($workflowRun->workflow);
-
         // Create all the jobs for the workflow run
         $workflowJobs = $workflowRun->workflow->workflowJobs()->get();
         foreach($workflowJobs as $workflowJob) {
-            Log::debug("Creating run for $workflowJob");
-            $workflowRun->workflowJobRuns()->create([
+            $workflowJobRun = $workflowRun->workflowJobRuns()->create([
                 'workflow_job_id' => $workflowJob->id,
             ]);
+            Log::debug("$workflowJob created $workflowJobRun");
         }
 
         static::dispatchPendingWorkflowJobs($workflowRun);
-        static::dispatchPendingWorkflowTasks($workflowRun);
-    }
-
-    public static function prependTranscodeInputSourceJobInWorkflow(Workflow $workflow): void
-    {
-        $name = 'Prepare Input Source';
-
-        // If the job already exists, then there is nothing to do
-        if ($workflow->workflowJobs()->where('name', $name)->exists()) {
-            Log::debug("$workflow already has $name job");
-
-            return;
-        }
-
-        $workflowJobs            = $workflow->workflowJobs()->get();
-        $transcodeInputSourceJob = $workflow->workflowJobs()->create([
-            'name'             => $name,
-            'use_input_source' => true,
-            'workflow_tool'    => TranscodeInputSourceWorkflowTool::class,
-        ]);
-
-        // Only make the Input source a dependency for the jobs that require it
-        foreach($workflowJobs as $workflowJob) {
-            if ($workflowJob->use_input_source) {
-                $workflowJob->dependencies()->create([
-                    'depends_on_workflow_job_id' => $transcodeInputSourceJob->id,
-                ]);
-            }
-        }
-
-        Log::debug("$workflow prepended $transcodeInputSourceJob");
+        WorkflowTaskService::dispatchPendingWorkflowTasks($workflowRun);
     }
 
     /**
@@ -83,7 +47,7 @@ class WorkflowService
         $workflowJobRunsByStatus = $workflowRun->workflowJobRuns()->get()->keyBy('workflow_job_id')->groupBy('status');
 
         if ($workflowJobRunsByStatus->has(WorkflowRun::STATUS_FAILED)) {
-            Log::warning("Workflow Run has failed jobs, stopping dispatch");
+            Log::warning("$workflowRun has failed jobs, stopping dispatch");
 
             return;
         }
@@ -116,7 +80,7 @@ class WorkflowService
 
             // If the job has dependencies that have not yet completed, then skip this job
             if (count($dependsOnJobs) < $dependencies->count()) {
-                Log::debug("Job $workflowJob->name has dependencies that have not yet completed");
+                Log::debug("Waiting for dependencies: " . $dependencies->reduce(fn($str, $d) => $str . $d . ', ', ''));
                 continue;
             }
 
@@ -126,23 +90,6 @@ class WorkflowService
             $pendingJobRun->save();
 
             $workflowJob->getWorkflowTool()->assignTasks($pendingJobRun, $dependsOnJobs);
-        }
-    }
-
-    /**
-     * @param WorkflowRun $workflowRun
-     * @return void
-     * @throws Throwable
-     */
-    public static function dispatchPendingWorkflowTasks(WorkflowRun $workflowRun): void
-    {
-        foreach($workflowRun->runningJobRuns()->get() as $pendingJobRun) {
-            foreach($pendingJobRun->pendingTasks()->get() as $pendingTask) {
-                Log::debug("$pendingJobRun dispatching $pendingTask");
-                $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
-                $pendingTask->job_dispatch_id = $job?->getJobDispatch()?->id;
-                $pendingTask->save();
-            }
         }
     }
 
@@ -197,7 +144,7 @@ class WorkflowService
 
             // Release the lock here as its possible while we are dispatching the tasks, another task has completed and would like to proceed
             LockHelper::release($workflowRun);
-            WorkflowService::dispatchPendingWorkflowTasks($workflowRun);
+            WorkflowTaskService::dispatchPendingWorkflowTasks($workflowRun);
         } else {
             Log::debug("$workflowRun done");
             LockHelper::release($workflowRun);

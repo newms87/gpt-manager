@@ -15,6 +15,7 @@ export interface WorkflowJobDependency {
 	id: number;
 	depends_on_id: number;
 	depends_on_name: string;
+	depends_on_workflow_tool: string;
 	group_by: string;
 }
 
@@ -25,6 +26,7 @@ export interface WorkflowJob extends ActionTargetItem {
 	dependencies: WorkflowJobDependency[];
 	assignments: WorkflowAssignment[];
 	use_input_source: boolean;
+	workflow_tool: string;
 }
 
 export interface WorkflowJobRun {

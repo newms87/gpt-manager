@@ -9,6 +9,8 @@ use Flytedan\DanxLaravel\Services\TranscodeFileService;
 
 class TranscodeInputSourceWorkflowTool extends WorkflowTool
 {
+    public static $toolName = 'Prepare Input Source';
+    
     public function assignTasks(WorkflowJobRun $workflowJobRun, array $dependsOnJobs): void
     {
         // Always create 1 task to transcode the input source

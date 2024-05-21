@@ -34,4 +34,14 @@ class Workflow extends Model implements AuditableContract
     {
         return $this->hasMany(WorkflowRun::class);
     }
+
+    public function sortedAgentWorkflowJobs()
+    {
+        return $this->workflowJobs()->orderBy('dependency_level')->orderBy('name');
+    }
+
+    public function __toString()
+    {
+        return "<Workflow ($this->id) $this->name>";
+    }
 }

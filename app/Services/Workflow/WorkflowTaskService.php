@@ -2,6 +2,8 @@
 
 namespace App\Services\Workflow;
 
+use App\Jobs\RunWorkflowTaskJob;
+use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
 use Flytedan\DanxLaravel\Helpers\LockHelper;
 use Flytedan\DanxLaravel\Models\Audit\ErrorLog;
@@ -102,6 +104,23 @@ class WorkflowTaskService
             $workflowJobRun->save();
             $workflowJobRun->workflowRun->failed_at = now();
             $workflowJobRun->workflowRun->save();
+        }
+    }
+
+    /**
+     * @param WorkflowRun $workflowRun
+     * @return void
+     * @throws Throwable
+     */
+    public static function dispatchPendingWorkflowTasks(WorkflowRun $workflowRun): void
+    {
+        foreach($workflowRun->runningJobRuns()->get() as $pendingJobRun) {
+            foreach($pendingJobRun->pendingTasks()->get() as $pendingTask) {
+                Log::debug("$pendingJobRun dispatching $pendingTask");
+                $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
+                $pendingTask->job_dispatch_id = $job?->getJobDispatch()?->id;
+                $pendingTask->save();
+            }
         }
     }
 }

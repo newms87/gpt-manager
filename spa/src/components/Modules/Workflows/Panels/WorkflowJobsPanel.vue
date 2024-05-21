@@ -2,7 +2,14 @@
 	<div class="p-6 flex items-stretch flex-nowrap">
 		<div class="flex-grow">
 			<ListTransition>
-				<WorkflowJobCard v-for="job in workflow.jobs" :key="job.id" class="mb-5" :job="job" :workflow="workflow" />
+				<WorkflowJobCard
+					v-for="job in workflow.jobs"
+					:key="job.id"
+					class="mb-5"
+					:job="job"
+					:workflow="workflow"
+					:readonly="!!job.workflow_tool"
+				/>
 			</ListTransition>
 
 			<QBtn
@@ -37,15 +44,12 @@ const createJobAction = getAction("create-job");
 const jobFlowDiagram = computed(() => {
 	if (!props.workflow.jobs) return;
 
-	let diagram = `IS(Input Source)\n`;
+	let diagram = "";
 	for (const job of props.workflow.jobs) {
 		diagram += `${job.id}(${job.name})\n`;
 	}
 
 	for (const job of props.workflow.jobs) {
-		if (job.use_input_source) {
-			diagram += `IS--> ${job.id}\n`;
-		}
 		if (job.dependencies?.length > 0) {
 			diagram += `${job.dependencies.map(d => d.depends_on_id).join(" & ")}--> ${job.id}\n`;
 		}

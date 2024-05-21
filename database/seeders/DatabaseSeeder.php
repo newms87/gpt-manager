@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
-use App\Models\Agent\Thread;
 use App\Models\Shared\InputSource;
 use App\Models\Team\Team;
 use App\Models\User;
@@ -15,6 +14,12 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
+    {
+        $team = $this->createUserWithTeam();
+        $this->createWorkflowWithAgents($team);
+    }
+
+    public function createUserWithTeam(): Team
     {
         $team = Team::firstWhere('name', 'Team Dan');
         if (!$team) {
@@ -31,11 +36,11 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        for($i = 0; $i < 3; $i++) {
-            $threads = Thread::factory()->forTeam($team)->count(fake()->numberBetween(0, 3));
-            Agent::factory()->has($threads)->recycle($team)->create();
-        }
+        return $team;
+    }
 
+    public function createWorkflowWithAgents(Team $team): void
+    {
         $questionAgent  = Agent::factory()->recycle($team)->create([
             'name'        => 'Question Maker',
             'api'         => OpenAiApi::$serviceName,

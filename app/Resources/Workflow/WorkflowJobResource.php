@@ -25,6 +25,7 @@ class WorkflowJobResource extends ActionResource
             'runs_count'       => $this->workflowJobRuns()->count(),
             'dependencies'     => $dependencies->isNotEmpty() ? WorkflowJobDependencyResource::collection($dependencies) : null,
             'use_input_source' => $this->use_input_source,
+            'workflow_tool'    => $this->workflow_tool,
             'created_at'       => $this->created_at,
         ];
     }
