@@ -45,7 +45,7 @@ function isCircularDependency(dependencyJob: WorkflowJob) {
 }
 
 function hasDependency(dependencyJob: WorkflowJob) {
-	return props.job.dependencies.some(d => d.depends_on_id === dependencyJob.id);
+	return props.job.dependencies?.some(d => d.depends_on_id === dependencyJob.id);
 }
 
 const dependencyOptions = computed(() => props.workflow.jobs.filter(job => !hasDependency(job) && !job.workflow_tool && !isCircularDependency(job))

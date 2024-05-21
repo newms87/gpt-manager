@@ -11,6 +11,8 @@ use Flytedan\DanxLaravel\Repositories\ActionRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class WorkflowJobRepository extends ActionRepository
 {
@@ -26,11 +28,30 @@ class WorkflowJobRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
+            'create' => $this->create(Workflow::find($data['workflow_id']), $data),
             'update' => $this->update($model, $data),
             'assign-agent' => $this->assignAgents($model, $data),
             'set-dependencies' => $this->setDependencies($model, $data),
             default => parent::applyAction($action, $model, $data)
         };
+    }
+
+    /**
+     * @param Workflow $workflow
+     * @param          $data
+     * @return void
+     * @throws ValidationError
+     */
+    public function create(Workflow $workflow, $data)
+    {
+        Validator::make($data, [
+            'name' => ['required', 'max:80', 'string', Rule::unique('workflow_jobs')->where('workflow_id', $workflow->id)],
+        ])->validate();
+
+        $workflowJob = $workflow->workflowJobs()->create($data);
+        $this->setDependencies($workflowJob, $data['dependencies'] ?? []);
+
+        return $workflowJob;
     }
 
     /**
@@ -43,8 +64,6 @@ class WorkflowJobRepository extends ActionRepository
         $workflowJob->update($data);
 
         if ($workflowJob->wasChanged('use_input_source')) {
-
-            dump('input source changed ' . $workflowJob, $workflowJob->use_input_source);
             $this->applyTranscodeInputSourceJobInWorkflow($workflowJob->workflow);
             $this->calculateDependencyLevels($workflowJob->workflow);
         }
@@ -179,24 +198,20 @@ class WorkflowJobRepository extends ActionRepository
 
         // Only make the Input source a dependency for the jobs that require it
         foreach($workflowJobs as $workflowJob) {
-            dump('applying to ' . $workflowJob);
             // Skip assigning the input source job to itself
             if ($workflowJob->id === $transcodeInputSourceJob?->id) {
                 continue;
             }
 
             $inputSourceDependency = $workflowJob->dependencies()->firstWhere('depends_on_workflow_job_id', $transcodeInputSourceJob->id);
-            dump("resolve dependency: " . $inputSourceDependency);
             if ($workflowJob->use_input_source) {
                 if (!$inputSourceDependency) {
-                    dump("creating dependency");
                     $workflowJob->dependencies()->create([
                         'depends_on_workflow_job_id' => $transcodeInputSourceJob->id,
                     ]);
                 }
             } else {
                 $inputSourceDependency?->delete();
-                dump("deleting dependency");
             }
         }
 

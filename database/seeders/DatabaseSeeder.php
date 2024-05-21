@@ -93,7 +93,7 @@ class DatabaseSeeder extends Seeder
             ->hasWorkflowAssignments(1, ['agent_id' => $validatorAgent])
             ->hasDependencies(1, ['depends_on_workflow_job_id' => $answerJob])
             ->create([
-                'name'             => 'Validates a Question and Answer created by AI agents',
+                'name'             => 'Validate Question and Answer',
                 'description'      => 'Validate the question and answer pair to ensure they are related and the answer is valid',
                 'use_input_source' => true,
             ]);

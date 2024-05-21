@@ -12,7 +12,6 @@ use Flytedan\DanxLaravel\Exceptions\ValidationError;
 use Flytedan\DanxLaravel\Repositories\ActionRepository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Throwable;
 
 class WorkflowRepository extends ActionRepository
@@ -30,7 +29,7 @@ class WorkflowRepository extends ActionRepository
     {
         return match ($action) {
             'create' => $this->createWorkflow($data),
-            'create-job' => $this->createWorkflowJob($model, $data),
+            'create-job' => app(WorkflowJobRepository::class)->create($model, $data),
             'run-workflow' => $this->runWorkflow($model, $data),
             default => parent::applyAction($action, $model, $data)
         };
@@ -52,19 +51,9 @@ class WorkflowRepository extends ActionRepository
     }
 
     /**
-     * @param Workflow $workflow
-     * @param          $data
-     * @return WorkflowJob
+     * @param array|null $filter
+     * @return array
      */
-    public function createWorkflowJob(Workflow $workflow, $data): WorkflowJob
-    {
-        Validator::make($data, [
-            'name' => ['required', 'max:80', 'string', Rule::unique('workflow_jobs')->where('workflow_id', $workflow->id)],
-        ])->validate();
-
-        return $workflow->workflowJobs()->create($data);
-    }
-
     public function fieldOptions(?array $filter = []): array
     {
         return [
