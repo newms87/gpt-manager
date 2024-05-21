@@ -61,6 +61,14 @@ class WorkflowJob extends Model implements AuditableContract
         return $this->hasMany(WorkflowAssignment::class);
     }
 
+    public function delete()
+    {
+        $this->dependencies()->delete();
+        $this->dependents()->delete();
+
+        return parent::delete();
+    }
+
     public function __toString()
     {
         return "<Workflow Job ($this->id) $this->name>";
