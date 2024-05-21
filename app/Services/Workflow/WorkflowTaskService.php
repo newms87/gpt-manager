@@ -2,13 +2,9 @@
 
 namespace App\Services\Workflow;
 
-use App\Models\Agent\Thread;
-use App\Models\Shared\Artifact;
-use App\Models\Shared\InputSource;
 use App\Models\Workflow\WorkflowTask;
-use App\Repositories\ThreadRepository;
+use Flytedan\DanxLaravel\Helpers\LockHelper;
 use Flytedan\DanxLaravel\Models\Audit\ErrorLog;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -28,28 +24,11 @@ class WorkflowTaskService
         $workflowTask->save();
 
         try {
-            $thread = WorkflowTaskService::setupTaskThread($workflowTask);
-
-            // Run the thread
-            $threadRun = app(ThreadRepository::class)->run($thread);
-
-            // Produce the artifact
-            $lastMessage = $threadRun->lastMessage;
-            $assignment  = $workflowTask->workflowAssignment;
-
-            $content = WorkflowTaskService::cleanContent($lastMessage->content);
-
-            $artifact = $workflowTask->artifact()->create([
-                'name'    => $thread->name,
-                'model'   => $assignment->agent->model,
-                'content' => $content,
-                'data'    => $lastMessage->data,
-            ]);
+            // Run the workflow tool for the task
+            $workflowTask->workflowJob->getWorkflowTool()->runTask($workflowTask);
 
             $workflowTask->completed_at = now();
             $workflowTask->save();
-
-            Log::debug("$workflowTask created $artifact");
         } catch(Throwable $e) {
             ErrorLog::logException(ErrorLog::ERROR, $e);
             $workflowTask->failed_at = now();
@@ -57,101 +36,72 @@ class WorkflowTaskService
         }
 
         // Notify the Workflow our task is finished
-        WorkflowService::taskFinished($workflowTask);
+        static::taskFinished($workflowTask);
     }
 
     /**
-     * Create a thread for the task and add messages from the input source or dependencies
+     * A Workflow Task has finished. Set the Workflow Job Run as failed if the task is not complete.
+     * If the Workflow Job Run has no more tasks to complete, then mark it as completed.
+     * If Completed, notify the Workflow Run that the Workflow Job has finished.
      *
-     * @param WorkflowTask $workflowTask
-     * @return Thread
-     */
-    public static function setupTaskThread(WorkflowTask $workflowTask): Thread
-    {
-        $workflowJobRun = $workflowTask->workflowJobRun;
-        $workflowRun    = $workflowJobRun->workflowRun;
-        $assignment     = $workflowTask->workflowAssignment;
-        $workflowJob    = $workflowTask->workflowJob;
-
-        $threadName = $workflowTask->workflowJob->name . " ($workflowTask->id) [group: " . ($workflowTask->group ?: 'default') . "] by {$assignment->agent->name}";
-        $thread     = app(ThreadRepository::class)->create($assignment->agent, $threadName);
-
-        Log::debug("$workflowTask created $thread");
-
-        if ($workflowJob->use_input_source) {
-            // If we have no dependencies, then we want to use the input source
-            WorkflowTaskService::addThreadMessageFromInputSource($thread, $workflowRun->inputSource);
-        }
-
-        // If we have dependencies, we want to use the artifacts from the dependencies
-        if ($workflowJob->dependencies->isNotEmpty()) {
-            foreach($workflowJob->dependencies as $dependency) {
-                $dependsOnWorkflowJobRun = $workflowRun->workflowJobRuns->where('workflow_job_id', $dependency->depends_on_workflow_job_id)->first();
-
-                WorkflowTaskService::addThreadMessagesFromArtifacts($thread, $dependsOnWorkflowJobRun->artifacts, $dependency->group_by, $workflowTask->group);
-            }
-        }
-
-        $workflowTask->thread()->associate($thread)->save();
-
-        return $thread;
-    }
-
-    /**
-     * Add messages from artifacts to a thread
-     *
-     * @param Thread                $thread
-     * @param Artifact[]|Collection $artifacts
-     * @param                       $groupBy
-     * @param                       $group
+     * @param WorkflowTask $task
      * @return void
+     * @throws Throwable
      */
-    public static function addThreadMessagesFromArtifacts(Thread $thread, $artifacts, $groupBy, $group): void
+    public static function taskFinished(WorkflowTask $task): void
     {
-        foreach($artifacts as $artifact) {
-            if ($groupBy) {
-                $groupedContent = $artifact->groupContentBy($groupBy);
-                if (!$groupedContent) {
-                    Log::debug("$thread skipped $artifact: missing group by field $groupBy");
-                    continue;
+        Log::debug("$task finished running");
+        $workflowJobRun = $task->workflowJobRun;
+
+        try {
+            // If the workflow run has failed, stop processing
+            if ($workflowJobRun->failed_at) {
+                Log::debug("$workflowJobRun has already failed, stopping dispatch");
+
+                return;
+            }
+
+            // Make sure race conditions don't allow a Job to be marked completed when another task failed
+            LockHelper::acquire($workflowJobRun);
+
+            $isFinished = $workflowJobRun->remainingTasks()->count() === 0;
+
+            // If the task completed successfully, then save the artifact and mark the job as completed if there are no more tasks
+            if ($task->isComplete()) {
+                // Save the artifact from the completed task
+                $artifact = $task->artifact()->first();
+
+                if ($artifact) {
+                    $workflowJobRun->artifacts()->save($artifact);
+                    Log::debug("$workflowJobRun attached $artifact");
                 }
-                $content = $groupedContent[$group] ?? null;
-                if (!$content) {
-                    Log::debug("$thread skipped $artifact: grouped content does not have group $group");
-                    continue;
+
+                // If we have finished all tasks in the workflow job run, then mark job as completed and notify the workflow run
+                if ($isFinished) {
+                    // The workflow Job Run has completed successfully. Save the artifact from the completed task and notify the Workflow Run
+                    $workflowJobRun->completed_at = now();
+                    $workflowJobRun->save();
                 }
-                app(ThreadRepository::class)->addMessageToThread($thread, $content);
-                Log::debug("$thread added message for group $group from $artifact (used group by $groupBy)");
             } else {
-                app(ThreadRepository::class)->addMessageToThread($thread, $artifact->content);
-                Log::debug("$thread added message for $artifact");
+                Log::debug("$workflowJobRun has failed");
+                $workflowJobRun->failed_at = now();
+                $workflowJobRun->save();
             }
+
+            LockHelper::release($workflowJobRun);
+
+            if ($isFinished) {
+                WorkflowService::workflowJobRunFinished($workflowJobRun);
+            }
+        } catch(Throwable $e) {
+            // If there was an exception while processing the next dispatch, then mark the task and the workflow as failed
+            ErrorLog::logException(ErrorLog::ERROR, $e);
+            $task->failed_at = now();
+            $task->save();
+            $workflowJobRun->failed_at = now();
+            $workflowJobRun->save();
+            $workflowJobRun->workflowRun->failed_at = now();
+            $workflowJobRun->workflowRun->save();
         }
-    }
-
-    /**
-     * Create a message and append it to the thread based on the Input Source content + files
-     *
-     * @param Thread      $thread
-     * @param InputSource $inputSource
-     * @return void
-     */
-    public static function addThreadMessageFromInputSource(Thread $thread, InputSource $inputSource): void
-    {
-        $content = $inputSource->content;
-        $fileIds = $inputSource->storedFiles->pluck('id')->toArray();
-        app(ThreadRepository::class)->addMessageToThread($thread, $content, $fileIds);
-        Log::debug("$thread added $inputSource");
-    }
-
-    /**
-     * Cleans the AI Model responses to make sure we have valid JSON, if the response is JSON
-     * @param $content
-     * @return string
-     */
-    public static function cleanContent($content): string
-    {
-        // Remove any ```json and trailing ``` from content if they are present
-        return preg_replace('/^```json\n(.*)\n```$/s', '$1', trim($content));
     }
 }

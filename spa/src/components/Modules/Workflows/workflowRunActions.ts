@@ -19,6 +19,20 @@ const items: ActionOptions[] = [
 			target,
 			confirmClass: "bg-red-900"
 		})
+	},
+	{
+		name: "restart-workflow",
+		vnode: target => h(ConfirmActionDialog, {
+			action: "Restart Workflow Run",
+			target
+		})
+	},
+	{
+		name: "restart-job",
+		vnode: target => h(ConfirmActionDialog, {
+			action: "Restart Workflow Job Run",
+			target
+		})
 	}
 ];
 

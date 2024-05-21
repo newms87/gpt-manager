@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->string('name');
             $table->string('description')->default('');
             $table->boolean('use_input_source')->default(true);
+            $table->string('workflow_tool')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

@@ -6,6 +6,7 @@ use App\Models\Workflow\WorkflowRun;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Models\Utilities\StoredFile;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,7 +44,10 @@ class InputSource extends Model implements AuditableContract
 
     public function activeWorkflowRuns(): HasMany|WorkflowRun
     {
-        return $this->workflowRuns()->whereIn('status', [WorkflowRun::STATUS_PENDING, WorkflowRun::STATUS_RUNNING]);
+        return $this->workflowRuns()->where(function (Builder $builder) {
+            $builder->whereIn('status', [WorkflowRun::STATUS_PENDING, WorkflowRun::STATUS_RUNNING])
+                ->orWhereHas('runningJobRuns');
+        });
     }
 
     public function validate(): static

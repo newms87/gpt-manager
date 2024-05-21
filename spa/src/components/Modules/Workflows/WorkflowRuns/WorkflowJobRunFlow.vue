@@ -38,7 +38,7 @@
 		</div>
 		<div v-if="displayStatus">
 			<div v-for="job in displayJobs" :key="job.id" class="m-3">
-				<WorkflowJobRunCard :job-run="job" />
+				<WorkflowJobRunCard :job-run="job" :workflow-run="workflowRun" />
 			</div>
 		</div>
 	</div>

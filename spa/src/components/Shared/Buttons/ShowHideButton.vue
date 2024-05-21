@@ -1,5 +1,5 @@
 <template>
-	<QBtn class="py-1 px-2" @click="isShowing = !isShowing">
+	<QBtn class="py-1 px-2 flex items-center flex-nowrap" @click="isShowing = !isShowing">
 		<template v-if="isShowing">
 			<HideIcon class="w-4 mr-2" />
 			{{ hideLabel || label }}

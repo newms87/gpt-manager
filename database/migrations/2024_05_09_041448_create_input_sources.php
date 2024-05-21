@@ -20,6 +20,7 @@ return new class extends Migration {
             $table->json('data')->nullable();
             $table->unsignedInteger('tokens')->default(0);
             $table->unsignedInteger('workflow_runs_count')->default(0);
+            $table->boolean('is_transcoded')->default(false);
             $table->timestamps();
             $table->softDeletes();
         });

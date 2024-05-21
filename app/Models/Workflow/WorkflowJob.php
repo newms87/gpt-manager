@@ -2,6 +2,8 @@
 
 namespace App\Models\Workflow;
 
+use App\WorkflowTools\RunAgentThreadWorkflowTool;
+use App\WorkflowTools\WorkflowTool;
 use Flytedan\DanxLaravel\Contracts\AuditableContract;
 use Flytedan\DanxLaravel\Traits\AuditableTrait;
 use Flytedan\DanxLaravel\Traits\CountableTrait;
@@ -59,6 +61,11 @@ class WorkflowJob extends Model implements AuditableContract
     public function workflowAssignments(): HasMany|WorkflowAssignment
     {
         return $this->hasMany(WorkflowAssignment::class);
+    }
+
+    public function getWorkflowTool(): WorkflowTool
+    {
+        return app($this->workflow_tool ?: RunAgentThreadWorkflowTool::class);
     }
 
     public function delete()

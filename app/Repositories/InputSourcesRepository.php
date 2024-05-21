@@ -40,9 +40,7 @@ class InputSourcesRepository extends ActionRepository
         $inputSource = InputSource::make()->forceFill($data)->validate();
         $inputSource->save();
 
-        if (!empty($data['files'])) {
-            $inputSource->storedFiles()->saveMany(collect($data['files'])->pluck('id'));
-        }
+        $this->syncStoredFiles($inputSource, $data);
 
         return $inputSource;
     }
@@ -60,11 +58,20 @@ class InputSourcesRepository extends ActionRepository
         return $inputSource;
     }
 
+    /**
+     * Sync the stored files for the input source and set them to be transcoded
+     *
+     * @param InputSource $inputSource
+     * @param array       $data
+     * @return void
+     */
     public function syncStoredFiles(InputSource $inputSource, array $data): void
     {
         if (isset($data['files'])) {
             $files = StoredFile::whereIn('id', collect($data['files'])->pluck('id'))->get();
             $inputSource->storedFiles()->sync($files);
+            $inputSource->is_transcoded = false;
+            $inputSource->save();
         }
     }
 }

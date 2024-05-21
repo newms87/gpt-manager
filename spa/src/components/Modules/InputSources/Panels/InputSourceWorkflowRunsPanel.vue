@@ -58,16 +58,18 @@ watch(() => props.inputSource.__timestamp, refreshInputSource);
 // TODO: Convert this to an action behavior / feature... Controller.startPollingActiveItemDetails()
 let refreshTimeout = null;
 function refreshInputSource() {
+	console.log("refresh setup", props.inputSource);
 	if (refreshTimeout) {
 		clearTimeout(refreshTimeout);
 		refreshTimeout = null;
 	}
 
-	if (props.inputSource.has_active_workflow_run) {
-		refreshTimeout = setTimeout(() => {
+	refreshTimeout = setTimeout(() => {
+		console.log("props.input", props.inputSource.has_active_workflow_run);
+		if (props.inputSource.has_active_workflow_run) {
 			InputSourceController.getActiveItemDetails();
-		}, 1000);
-	}
+		}
+	}, 2000);
 }
 
 async function onRunWorkflow() {

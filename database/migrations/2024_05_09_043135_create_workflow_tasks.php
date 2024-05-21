@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->constrained();
             $table->foreignId('workflow_job_id')->constrained()->cascadeOnDelete();
             $table->foreignId('workflow_job_run_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('workflow_assignment_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('workflow_assignment_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignId('thread_id')->nullable()->constrained();
             $table->foreignId('artifact_id')->nullable()->constrained();
             $table->string('group')->default('');

@@ -45,8 +45,8 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
 
     public static function booted(): void
     {
-        static::saving(function ($workflowTask) {
-            $workflowTask->computeStatus();
+        static::saving(function (WorkflowRun $workflowRun) {
+            $workflowRun->computeStatus();
         });
     }
 
@@ -72,6 +72,12 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
     public function workflowJobRuns(): HasMany|WorkflowJobRun
     {
         return $this->hasMany(WorkflowJobRun::class);
+    }
+
+    public function sortedWorkflowJobRuns(): HasMany|WorkflowJobRun
+    {
+        // Sort workflow job runs by status: Running, Pending, Completed, Failed
+        return $this->workflowJobRuns()->orderBy('started_at');
     }
 
     public function runningJobRuns(): HasMany|WorkflowJobRun

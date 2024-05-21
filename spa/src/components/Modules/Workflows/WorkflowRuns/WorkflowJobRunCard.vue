@@ -7,9 +7,16 @@
 					<SelectField v-model="tasksTab" :options="options" />
 				</div>
 			</div>
-			<div class="text-md font-bold py-2 px-4 rounded-xl" :class="workflowStatus.classPrimary">{{
-					jobRun.status
-				}}
+			<div
+				class="flex items-center flex-nowrap text-md font-bold py-2 px-4 rounded-xl"
+				:class="workflowStatus.classPrimary"
+			>
+				<div>{{ jobRun.status }}</div>
+				<RestartIcon
+					v-if="jobRun.status !== WORKFLOW_STATUS.PENDING.value"
+					class="w-4 cursor-pointer	ml-2"
+					@click="restartJobAction.trigger(workflowRun, {workflow_job_run_id: jobRun.id})"
+				/>
 			</div>
 			<div class="ml-2">
 				<WorkflowCostsButton :usage="jobRun.usage" />
@@ -27,17 +34,21 @@
 </template>
 <script setup lang="ts">
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
 import WorkflowCostsButton from "@/components/Modules/Workflows/WorkflowRuns/WorkflowCostsButton";
 import WorkflowTaskCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowTaskCard";
-import { WorkflowJobRun } from "@/types/workflows";
+import { WorkflowJobRun, WorkflowRun } from "@/types/workflows";
+import { FaSolidArrowsRotate as RestartIcon } from "danx-icon";
 import { SelectField } from "quasar-ui-danx";
 import { computed, shallowRef } from "vue";
 
 const props = defineProps<{
+	workflowRun: WorkflowRun;
 	jobRun: WorkflowJobRun;
 	defaultTab?: string;
 }>();
 
+const restartJobAction = getAction("restart-job");
 const tasksTab = shallowRef(props.defaultTab || "all");
 const pendingTasks = computed(() => props.jobRun.tasks.filter(t => t.status === WORKFLOW_STATUS.PENDING.value) || []);
 const runningTasks = computed(() => props.jobRun.tasks.filter(t => t.status === WORKFLOW_STATUS.RUNNING.value) || []);

@@ -17,7 +17,7 @@ class WorkflowRunDetailsResource extends WorkflowRunResource
     {
         return [
                 'inputSource'     => InputSourceResource::make($this->inputSource),
-                'workflowJobRuns' => WorkflowJobRunResource::collection($this->workflowJobRuns),
+                'workflowJobRuns' => WorkflowJobRunResource::collection($this->sortedWorkflowJobRuns()->get()),
             ] + parent::data();
     }
 }

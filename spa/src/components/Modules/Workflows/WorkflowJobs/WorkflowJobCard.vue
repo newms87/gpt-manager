@@ -8,7 +8,6 @@
 						class="hover:bg-indigo-900 text-lg"
 						@update:model-value="updateJobDebouncedAction.trigger(job, { name: $event})"
 					/>
-					<div class="text-sm text-indigo-500">{{ job.description }}</div>
 				</div>
 				<div class="pl-4">
 					<ShowHideButton

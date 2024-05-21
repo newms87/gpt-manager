@@ -3,11 +3,11 @@
 namespace App\Services\Workflow;
 
 use App\Jobs\RunWorkflowTaskJob;
+use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
-use App\Models\Workflow\WorkflowTask;
+use App\WorkflowTools\TranscodeInputSourceWorkflowTool;
 use Flytedan\DanxLaravel\Helpers\LockHelper;
-use Flytedan\DanxLaravel\Models\Audit\ErrorLog;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -24,6 +24,10 @@ class WorkflowService
         $workflowRun->started_at = now();
         $workflowRun->save();
 
+        // Setup the Input Source Transcoding Job
+        static::prependTranscodeInputSourceJobInWorkflow($workflowRun->workflow);
+
+        // Create all the jobs for the workflow run
         $workflowJobs = $workflowRun->workflow->workflowJobs()->get();
         foreach($workflowJobs as $workflowJob) {
             Log::debug("Creating run for $workflowJob");
@@ -36,21 +40,34 @@ class WorkflowService
         static::dispatchPendingWorkflowTasks($workflowRun);
     }
 
-    /**
-     * @param WorkflowRun $workflowRun
-     * @return void
-     * @throws Throwable
-     */
-    public static function dispatchPendingWorkflowTasks(WorkflowRun $workflowRun): void
+    public static function prependTranscodeInputSourceJobInWorkflow(Workflow $workflow): void
     {
-        foreach($workflowRun->runningJobRuns()->get() as $pendingJobRun) {
-            foreach($pendingJobRun->pendingTasks()->get() as $pendingTask) {
-                Log::debug("$pendingJobRun dispatching $pendingTask");
-                $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
-                $pendingTask->job_dispatch_id = $job?->getJobDispatch()?->id;
-                $pendingTask->save();
+        $name = 'Prepare Input Source';
+
+        // If the job already exists, then there is nothing to do
+        if ($workflow->workflowJobs()->where('name', $name)->exists()) {
+            Log::debug("$workflow already has $name job");
+
+            return;
+        }
+
+        $workflowJobs            = $workflow->workflowJobs()->get();
+        $transcodeInputSourceJob = $workflow->workflowJobs()->create([
+            'name'             => $name,
+            'use_input_source' => true,
+            'workflow_tool'    => TranscodeInputSourceWorkflowTool::class,
+        ]);
+
+        // Only make the Input source a dependency for the jobs that require it
+        foreach($workflowJobs as $workflowJob) {
+            if ($workflowJob->use_input_source) {
+                $workflowJob->dependencies()->create([
+                    'depends_on_workflow_job_id' => $transcodeInputSourceJob->id,
+                ]);
             }
         }
+
+        Log::debug("$workflow prepended $transcodeInputSourceJob");
     }
 
     /**
@@ -108,117 +125,24 @@ class WorkflowService
             $pendingJobRun->started_at = now();
             $pendingJobRun->save();
 
-            // Resolve the unique task groups to create a task for each group.
-            // If there are no task groups, just setup a default task group
-            $taskGroups  = WorkflowService::getTaskGroups($dependsOnJobs) ?: [''];
-            $assignments = $workflowJob->workflowAssignments()->get();
-            foreach($assignments as $assignment) {
-                foreach($taskGroups as $taskGroup) {
-                    $pendingJobRun->tasks()->create([
-                        'user_id'                => user()->id,
-                        'workflow_job_id'        => $workflowJob->id,
-                        'workflow_assignment_id' => $assignment->id,
-                        'group'                  => $taskGroup,
-                        'status'                 => WorkflowTask::STATUS_PENDING,
-                    ]);
-                }
-            }
+            $workflowJob->getWorkflowTool()->assignTasks($pendingJobRun, $dependsOnJobs);
         }
     }
 
     /**
-     * Resolves all the groupings of data from the artifacts produced by the WorkflowJobRun dependencies.
-     * NOTE: if no group by is set on the WorkflowJobDependency, then it is skipped.
-     * returning an empty set of task groups means the entire artifact should be used for all tasks, and only 1 task
-     * per assignment should be created.
-     * @param array $dependsOnJobs
-     * @return array
-     */
-    public static function getTaskGroups(array $dependsOnJobs): array
-    {
-        $taskGroups = [];
-
-        foreach($dependsOnJobs as $dependsOnJob) {
-            // If the dependency has no grouping set, then skip it
-            if (empty($dependsOnJob['groupBy'])) {
-                continue;
-            }
-
-            /** @var WorkflowJobRun $dependsOnJobRun */
-            $dependsOnJobRun = $dependsOnJob['jobRun'];
-            $artifacts       = $dependsOnJobRun->artifacts()->get();
-            foreach($artifacts as $artifact) {
-                $artifactGroups = $artifact->groupContentBy($dependsOnJob['groupBy']);
-                if ($artifactGroups) {
-                    $groups     = array_keys($artifactGroups);
-                    $taskGroups = array_merge($taskGroups, $groups);
-                }
-            }
-        }
-
-        return $taskGroups;
-    }
-
-    /**
-     * A Workflow Task has finished. Set the Workflow Job Run as failed if the task is not complete.
-     * If the Workflow Job Run has no more tasks to complete, then mark it as completed.
-     * If Completed, notify the Workflow Run that the Workflow Job has finished.
-     *
-     * @param WorkflowTask $task
+     * @param WorkflowRun $workflowRun
      * @return void
      * @throws Throwable
      */
-    public static function taskFinished(WorkflowTask $task): void
+    public static function dispatchPendingWorkflowTasks(WorkflowRun $workflowRun): void
     {
-        Log::debug("$task finished running");
-        $workflowJobRun = $task->workflowJobRun;
-
-        try {
-            // If the workflow run has failed, stop processing
-            if ($workflowJobRun->failed_at) {
-                Log::debug("$workflowJobRun has already failed, stopping dispatch");
-
-                return;
+        foreach($workflowRun->runningJobRuns()->get() as $pendingJobRun) {
+            foreach($pendingJobRun->pendingTasks()->get() as $pendingTask) {
+                Log::debug("$pendingJobRun dispatching $pendingTask");
+                $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
+                $pendingTask->job_dispatch_id = $job?->getJobDispatch()?->id;
+                $pendingTask->save();
             }
-
-            // Make sure race conditions don't allow a Job to be marked completed when another task failed
-            LockHelper::acquire($workflowJobRun);
-
-            $isFinished = $workflowJobRun->remainingTasks()->count() === 0;
-
-            // If the task completed successfully, then save the artifact and mark the job as completed if there are no more tasks
-            if ($task->isComplete()) {
-                // Save the artifact from the completed task
-                $artifact = $task->artifact()->first();
-                $workflowJobRun->artifacts()->save($artifact);
-                Log::debug("$workflowJobRun attached $artifact");
-
-                // If we have finished all tasks in the workflow job run, then mark job as completed and notify the workflow run
-                if ($isFinished) {
-                    // The workflow Job Run has completed successfully. Save the artifact from the completed task and notify the Workflow Run
-                    $workflowJobRun->completed_at = now();
-                    $workflowJobRun->save();
-                }
-            } else {
-                Log::debug("$workflowJobRun has failed");
-                $workflowJobRun->failed_at = now();
-                $workflowJobRun->save();
-            }
-
-            LockHelper::release($workflowJobRun);
-
-            if ($isFinished) {
-                WorkflowService::workflowJobRunFinished($workflowJobRun);
-            }
-        } catch(Throwable $e) {
-            // If there was an exception while processing the next dispatch, then mark the task and the workflow as failed
-            ErrorLog::logException(ErrorLog::ERROR, $e);
-            $task->failed_at = now();
-            $task->save();
-            $workflowJobRun->failed_at = now();
-            $workflowJobRun->save();
-            $workflowJobRun->workflowRun->failed_at = now();
-            $workflowJobRun->workflowRun->save();
         }
     }
 

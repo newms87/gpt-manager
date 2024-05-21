@@ -90,7 +90,6 @@ class WorkflowRepository extends ActionRepository
 
         $workflowRun = $workflow->workflowRuns()->create([
             'input_source_id' => $inputSourceId,
-            'status'          => WorkflowRun::STATUS_PENDING,
         ]);
 
         WorkflowService::start($workflowRun);
