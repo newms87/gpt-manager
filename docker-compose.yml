@@ -19,7 +19,7 @@ services:
         entrypoint: [ "/bin/bash", "-c", "./laravel-entrypoint.sh" ]
         volumes:
             - '.:/var/www/html'
-            - '../danx-laravel:/var/www/danx-laravel'
+            - '../danx:/var/www/danx'
         networks:
             - sail
         depends_on:

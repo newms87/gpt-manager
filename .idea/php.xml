@@ -143,6 +143,11 @@
       <path value="$PROJECT_DIR$/vendor/laravel/vapor-cli" />
       <path value="$PROJECT_DIR$/vendor/james-heinrich/getid3" />
       <path value="$PROJECT_DIR$/vendor/owen-it/laravel-auditing" />
+      <path value="$PROJECT_DIR$/vendor/laravel/vapor-core" />
+      <path value="$PROJECT_DIR$/vendor/symfony/psr-http-message-bridge" />
+      <path value="$PROJECT_DIR$/vendor/nyholm/psr7" />
+      <path value="$PROJECT_DIR$/vendor/riverline/multipart-parser" />
+      <path value="$PROJECT_DIR$/vendor/hollodotme/fast-cgi-client" />
       <path value="$PROJECT_DIR$/vendor/newms87/danx" />
     </include_path>
   </component>
