@@ -4,7 +4,7 @@ namespace App\Services\Workflow;
 
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
-use Flytedan\DanxLaravel\Helpers\LockHelper;
+use Newms87\Danx\Helpers\LockHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;

@@ -10,7 +10,7 @@ Route::get('/healthcheck', function () {
         'gpt-manager' => [
             'author' => 'Daniel Newman',
             'email'  => 'newms87@gmail.com',
-            'github' => 'https://github.com/flytedan/gpt-manager',
+            'github' => 'https://github.com/newms87/gpt-manager',
         ],
     ];
 });

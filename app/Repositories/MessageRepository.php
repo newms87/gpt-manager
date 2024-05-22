@@ -4,8 +4,8 @@ namespace App\Repositories;
 
 use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
-use Flytedan\DanxLaravel\Models\Utilities\StoredFile;
-use Flytedan\DanxLaravel\Repositories\ActionRepository;
+use Newms87\Danx\Models\Utilities\StoredFile;
+use Newms87\Danx\Repositories\ActionRepository;
 
 class MessageRepository extends ActionRepository
 {

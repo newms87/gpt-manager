@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Workflow\WorkflowTask;
 use App\Services\Workflow\WorkflowTaskService;
-use Flytedan\DanxLaravel\Jobs\Job;
+use Newms87\Danx\Jobs\Job;
 
 class RunWorkflowTaskJob extends Job
 {

@@ -3,9 +3,9 @@
 namespace App\Models\Workflow;
 
 use App\Models\Shared\Artifact;
-use Flytedan\DanxLaravel\Contracts\AuditableContract;
-use Flytedan\DanxLaravel\Contracts\ComputedStatusContract;
-use Flytedan\DanxLaravel\Traits\AuditableTrait;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Contracts\ComputedStatusContract;
+use Newms87\Danx\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

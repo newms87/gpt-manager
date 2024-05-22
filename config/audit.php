@@ -1,6 +1,6 @@
 <?php
 
-use Flytedan\DanxLaravel\Models\Audit\Audit;
+use Newms87\Danx\Models\Audit\Audit;
 
 return [
 
@@ -140,7 +140,7 @@ return [
     |
     */
 
-    'driver' => \Flytedan\DanxLaravel\Audit\AuditDriver::class,
+    'driver' => \Newms87\Danx\Audit\AuditDriver::class,
 
     /*
     |--------------------------------------------------------------------------

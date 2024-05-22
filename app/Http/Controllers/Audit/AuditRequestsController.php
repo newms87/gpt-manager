@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Audit;
 use App\Repositories\AuditRequestRepository;
 use App\Resources\Audit\AuditRequestDetailsResource;
 use App\Resources\Audit\AuditRequestResource;
-use Flytedan\DanxLaravel\Http\Controllers\ActionController;
+use Newms87\Danx\Http\Controllers\ActionController;
 
 class AuditRequestsController extends ActionController
 {

@@ -6,7 +6,7 @@ use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowJobDependency;
 use App\Repositories\WorkflowJobRepository;
-use Flytedan\DanxLaravel\Exceptions\ValidationError;
+use Newms87\Danx\Exceptions\ValidationError;
 use Tests\AuthenticatedTestCase;
 
 class WorkflowJobRepositoryTest extends AuthenticatedTestCase

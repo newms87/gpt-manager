@@ -4,8 +4,8 @@ namespace App\Repositories;
 
 use App\Models\Agent\Agent;
 use App\Models\Agent\Thread;
-use Flytedan\DanxLaravel\Exceptions\ValidationError;
-use Flytedan\DanxLaravel\Repositories\ActionRepository;
+use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Repositories\ActionRepository;
 use Illuminate\Database\Eloquent\Model;
 
 class AgentRepository extends ActionRepository

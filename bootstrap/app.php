@@ -1,6 +1,6 @@
 <?php
 
-use Flytedan\DanxLaravel\Middleware\AuditingMiddleware;
+use Newms87\Danx\Middleware\AuditingMiddleware;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;

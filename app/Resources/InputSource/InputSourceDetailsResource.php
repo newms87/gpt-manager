@@ -3,7 +3,7 @@
 namespace App\Resources\InputSource;
 
 use App\Models\Shared\InputSource;
-use Flytedan\DanxLaravel\Resources\StoredFileResource;
+use Newms87\Danx\Resources\StoredFileResource;
 
 /**
  * @mixin InputSource

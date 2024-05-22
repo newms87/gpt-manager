@@ -2,5 +2,5 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    \Flytedan\DanxLaravel\Providers\SortFilterServiceProvider::class,
+    \Newms87\Danx\Providers\SortFilterServiceProvider::class,
 ];

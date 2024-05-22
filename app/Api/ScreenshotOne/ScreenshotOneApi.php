@@ -2,9 +2,9 @@
 
 namespace App\Api\ScreenshotOne;
 
-use Flytedan\DanxLaravel\Api\BearerTokenApi;
-use Flytedan\DanxLaravel\Exceptions\ApiException;
-use Flytedan\DanxLaravel\Exceptions\ApiRequestException;
+use Newms87\Danx\Api\BearerTokenApi;
+use Newms87\Danx\Exceptions\ApiException;
+use Newms87\Danx\Exceptions\ApiRequestException;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;

@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use Flytedan\DanxLaravel\Helpers\ArrayHelper;
+use Newms87\Danx\Helpers\ArrayHelper;
 use Illuminate\Foundation\Testing\TestCase;
 
 class ArrayHelperTest extends TestCase

@@ -7,7 +7,7 @@ use App\Models\Shared\Artifact;
 use App\Models\Shared\InputSource;
 use App\Models\Workflow\WorkflowTask;
 use App\Repositories\ThreadRepository;
-use Flytedan\DanxLaravel\Exceptions\ValidationError;
+use Newms87\Danx\Exceptions\ValidationError;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 

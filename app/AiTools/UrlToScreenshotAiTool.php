@@ -4,8 +4,8 @@ namespace App\AiTools;
 
 use App\Api\ScreenshotOne\ScreenshotOneApi;
 use BadFunctionCallException;
-use Flytedan\DanxLaravel\Helpers\FileHelper;
-use Flytedan\DanxLaravel\Models\Utilities\StoredFile;
+use Newms87\Danx\Helpers\FileHelper;
+use Newms87\Danx\Models\Utilities\StoredFile;
 
 class UrlToScreenshotAiTool implements AiToolContract
 {

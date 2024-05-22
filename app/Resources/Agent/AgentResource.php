@@ -3,7 +3,7 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\Agent;
-use Flytedan\DanxLaravel\Resources\ActionResource;
+use Newms87\Danx\Resources\ActionResource;
 
 /**
  * @mixin Agent

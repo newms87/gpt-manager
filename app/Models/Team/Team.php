@@ -4,8 +4,8 @@ namespace App\Models\Team;
 
 use App\Models\Agent\Agent;
 use App\Models\User;
-use Flytedan\DanxLaravel\Contracts\AuditableContract;
-use Flytedan\DanxLaravel\Traits\AuditableTrait;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;

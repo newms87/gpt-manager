@@ -2,8 +2,8 @@
 
 namespace App\Resources\Audit;
 
-use Flytedan\DanxLaravel\Models\Audit\ApiLog;
-use Flytedan\DanxLaravel\Resources\ActionResource;
+use Newms87\Danx\Models\Audit\ApiLog;
+use Newms87\Danx\Resources\ActionResource;
 
 /**
  * @mixin ApiLog

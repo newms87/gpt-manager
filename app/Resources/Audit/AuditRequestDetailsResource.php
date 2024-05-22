@@ -2,7 +2,7 @@
 
 namespace App\Resources\Audit;
 
-use Flytedan\DanxLaravel\Models\Audit\AuditRequest;
+use Newms87\Danx\Models\Audit\AuditRequest;
 
 /**
  * @mixin AuditRequest

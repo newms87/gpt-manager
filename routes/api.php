@@ -10,8 +10,8 @@ use App\Http\Controllers\Ai\WorkflowRunsController;
 use App\Http\Controllers\Ai\WorkflowsController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
-use Flytedan\DanxLaravel\Http\Routes\ActionRoute;
-use Flytedan\DanxLaravel\Http\Routes\FileUploadRoute;
+use Newms87\Danx\Http\Routes\ActionRoute;
+use Newms87\Danx\Http\Routes\FileUploadRoute;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 

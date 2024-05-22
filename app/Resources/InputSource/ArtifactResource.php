@@ -3,7 +3,7 @@
 namespace App\Resources\InputSource;
 
 use App\Models\Shared\Artifact;
-use Flytedan\DanxLaravel\Resources\ActionResource;
+use Newms87\Danx\Resources\ActionResource;
 
 /**
  * @mixin Artifact

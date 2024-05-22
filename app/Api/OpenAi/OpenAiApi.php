@@ -4,8 +4,8 @@ namespace App\Api\OpenAi;
 
 use App\Api\AgentApiContracts\AgentApiContract;
 use App\Api\OpenAi\Classes\OpenAiCompletionResponse;
-use Flytedan\DanxLaravel\Api\BearerTokenApi;
-use Flytedan\DanxLaravel\Exceptions\ApiException;
+use Newms87\Danx\Api\BearerTokenApi;
+use Newms87\Danx\Exceptions\ApiException;
 
 class OpenAiApi extends BearerTokenApi implements AgentApiContract
 {

@@ -4,7 +4,7 @@ namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowRun;
 use App\Resources\InputSource\ArtifactResource;
-use Flytedan\DanxLaravel\Resources\ActionResource;
+use Newms87\Danx\Resources\ActionResource;
 
 /**
  * @mixin WorkflowRun

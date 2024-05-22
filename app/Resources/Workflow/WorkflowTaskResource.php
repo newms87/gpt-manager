@@ -4,7 +4,7 @@ namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowTask;
 use App\Resources\Agent\ThreadResource;
-use Flytedan\DanxLaravel\Resources\ActionResource;
+use Newms87\Danx\Resources\ActionResource;
 
 /**
  * @mixin WorkflowTask

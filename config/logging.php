@@ -1,6 +1,6 @@
 <?php
 
-use Flytedan\DanxLaravel\Logging\Audit\AuditLogLogger;
+use Newms87\Danx\Logging\Audit\AuditLogLogger;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;

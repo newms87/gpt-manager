@@ -3,9 +3,9 @@
 namespace App\Repositories;
 
 use App\Models\Shared\InputSource;
-use Flytedan\DanxLaravel\Exceptions\ValidationError;
-use Flytedan\DanxLaravel\Models\Utilities\StoredFile;
-use Flytedan\DanxLaravel\Repositories\ActionRepository;
+use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Models\Utilities\StoredFile;
+use Newms87\Danx\Repositories\ActionRepository;
 use Illuminate\Database\Eloquent\Model;
 
 class InputSourcesRepository extends ActionRepository

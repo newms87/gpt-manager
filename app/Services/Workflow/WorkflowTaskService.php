@@ -5,8 +5,8 @@ namespace App\Services\Workflow;
 use App\Jobs\RunWorkflowTaskJob;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
-use Flytedan\DanxLaravel\Helpers\LockHelper;
-use Flytedan\DanxLaravel\Models\Audit\ErrorLog;
+use Newms87\Danx\Helpers\LockHelper;
+use Newms87\Danx\Models\Audit\ErrorLog;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 

@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Workflow\WorkflowAssignment;
-use Flytedan\DanxLaravel\Repositories\ActionRepository;
+use Newms87\Danx\Repositories\ActionRepository;
 
 class WorkflowAssignmentRepository extends ActionRepository
 {

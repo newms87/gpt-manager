@@ -4,9 +4,9 @@ namespace App\Models\Workflow;
 
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
 use App\WorkflowTools\WorkflowTool;
-use Flytedan\DanxLaravel\Contracts\AuditableContract;
-use Flytedan\DanxLaravel\Traits\AuditableTrait;
-use Flytedan\DanxLaravel\Traits\CountableTrait;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\CountableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

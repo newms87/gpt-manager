@@ -5,8 +5,8 @@ namespace App\Repositories;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Workflow\WorkflowService;
 use App\Services\Workflow\WorkflowTaskService;
-use Flytedan\DanxLaravel\Exceptions\ValidationError;
-use Flytedan\DanxLaravel\Repositories\ActionRepository;
+use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Repositories\ActionRepository;
 
 class WorkflowRunRepository extends ActionRepository
 {

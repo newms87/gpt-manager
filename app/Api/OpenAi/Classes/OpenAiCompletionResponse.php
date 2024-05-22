@@ -4,7 +4,7 @@ namespace App\Api\OpenAi\Classes;
 
 use App\AiTools\AiToolCaller;
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
-use Flytedan\DanxLaravel\Input\Input;
+use Newms87\Danx\Input\Input;
 
 /**
  * @property string $id      Unique identifier for the object

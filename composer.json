@@ -11,13 +11,13 @@
         "php": "^8.3",
         "aws/aws-sdk-php": "^3.305",
         "doctrine/dbal": "^4.0",
-        "flytedan/danx-laravel": "^1.0",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "laravel/vapor-cli": "^1.65",
         "league/flysystem": "^3.27",
-        "league/flysystem-aws-s3-v3": "^3.27"
+        "league/flysystem-aws-s3-v3": "^3.27",
+        "newms87/danx": "^1.2"
     },
     "require-dev": {
         "beyondcode/laravel-dump-server": "^2.0",

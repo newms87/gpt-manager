@@ -8,9 +8,9 @@ use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use Exception;
-use Flytedan\DanxLaravel\Exceptions\ValidationError;
-use Flytedan\DanxLaravel\Helpers\DateHelper;
-use Flytedan\DanxLaravel\Repositories\ActionRepository;
+use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Helpers\DateHelper;
+use Newms87\Danx\Repositories\ActionRepository;
 use Illuminate\Support\Facades\Log;
 
 class ThreadRepository extends ActionRepository

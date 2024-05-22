@@ -6,7 +6,7 @@ use App\Models\Agent\Thread;
 use App\Repositories\ThreadRepository;
 use App\Resources\Agent\ThreadResource;
 use App\Resources\Agent\ThreadRunResource;
-use Flytedan\DanxLaravel\Http\Controllers\ActionController;
+use Newms87\Danx\Http\Controllers\ActionController;
 
 class ThreadsController extends ActionController
 {

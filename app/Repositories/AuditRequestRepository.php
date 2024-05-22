@@ -2,9 +2,9 @@
 
 namespace App\Repositories;
 
-use Flytedan\DanxLaravel\Exceptions\ValidationError;
-use Flytedan\DanxLaravel\Models\Audit\AuditRequest;
-use Flytedan\DanxLaravel\Repositories\ActionRepository;
+use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Models\Audit\AuditRequest;
+use Newms87\Danx\Repositories\ActionRepository;
 
 class AuditRequestRepository extends ActionRepository
 {

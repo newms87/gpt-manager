@@ -3,8 +3,8 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\Message;
-use Flytedan\DanxLaravel\Resources\ActionResource;
-use Flytedan\DanxLaravel\Resources\StoredFileResource;
+use Newms87\Danx\Resources\ActionResource;
+use Newms87\Danx\Resources\StoredFileResource;
 
 /**
  * @mixin Message

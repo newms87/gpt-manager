@@ -3,7 +3,7 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\Workflow;
-use Flytedan\DanxLaravel\Resources\ActionResource;
+use Newms87\Danx\Resources\ActionResource;
 
 /**
  * @mixin Workflow

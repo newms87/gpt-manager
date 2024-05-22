@@ -3,7 +3,7 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\Thread;
-use Flytedan\DanxLaravel\Resources\ActionResource;
+use Newms87\Danx\Resources\ActionResource;
 
 /**
  * @mixin Thread

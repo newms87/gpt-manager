@@ -4,7 +4,7 @@ namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowAssignment;
 use App\Resources\Agent\AgentResource;
-use Flytedan\DanxLaravel\Resources\ActionResource;
+use Newms87\Danx\Resources\ActionResource;
 
 /**
  * @mixin WorkflowAssignment

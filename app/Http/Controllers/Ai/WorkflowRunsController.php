@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Ai;
 use App\Repositories\WorkflowRunRepository;
 use App\Resources\Workflow\WorkflowRunDetailsResource;
 use App\Resources\Workflow\WorkflowRunResource;
-use Flytedan\DanxLaravel\Http\Controllers\ActionController;
+use Newms87\Danx\Http\Controllers\ActionController;
 
 class WorkflowRunsController extends ActionController
 {

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Ai;
 use App\Repositories\AgentRepository;
 use App\Resources\Agent\AgentDetailsResource;
 use App\Resources\Agent\AgentResource;
-use Flytedan\DanxLaravel\Http\Controllers\ActionController;
+use Newms87\Danx\Http\Controllers\ActionController;
 
 class AgentsController extends ActionController
 {
