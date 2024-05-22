@@ -30,6 +30,9 @@ export default ({ command }: ConfigEnv) => {
 				...danx
 			},
 			extensions: [".mjs", ".js", ".cjs", ".ts", ".mts", ".jsx", ".tsx", ".json", ".vue", "scss"]
+		},
+		server: {
+			port: 5173
 		}
 	});
 }
