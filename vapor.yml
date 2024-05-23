@@ -8,7 +8,7 @@ environments:
     runtime: 'php-8.3:al2'
     database: predict_serverless
     database_user: gptmanager
-    domain: ai.on-demands.com
+    domain: api.ai.on-demands.com
     build:
       - 'COMPOSER_MIRROR_PATH_REPOS=1 composer install --no-dev'
       - 'php artisan event:cache'
