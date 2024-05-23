@@ -1,6 +1,5 @@
 <template>
 	<div class="flex items-center justify-center h-full text-4xl">
-		Dashboard Under Construction. Please check back later.
+		Dashboard Under Construction
 	</div>
 </template>
-<script setup></script>

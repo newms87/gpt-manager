@@ -1,5 +1,5 @@
 import "./assets/main.scss";
-import { setAuthToken } from "@/helpers/auth";
+import { getAuthToken, isAuthenticated, setAuthToken } from "@/helpers/auth";
 import { LocalStorage, Notify, Quasar } from "quasar";
 
 import { applyCssVars, configure, FlashMessages, request } from "quasar-ui-danx";
@@ -23,6 +23,10 @@ const baseUrl = import.meta.env.VITE_API_URL;
 configure({
 	request: {
 		baseUrl: baseUrl,
+		headers: {
+			"X-App-Version": import.meta.env.VITE_APP_APP_VERSION,
+			Authorization: isAuthenticated() ? `Bearer ${getAuthToken()}` : undefined
+		},
 		onUnauthorized: () => {
 			setAuthToken("");
 			FlashMessages.error("You have been logged out. Please log in again.");
@@ -49,3 +53,5 @@ app.use(Quasar, {
 app.use(router);
 
 app.mount("#app");
+
+console.log(`GPT Manager is running at ${import.meta.env.VITE_API_URL} in mode ${import.meta.env.MODE}: version ${import.meta.env.VITE_APP_APP_VERSION}`);
