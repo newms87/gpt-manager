@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->unsignedBigInteger('team_id')->nullable()->index('users_team_id_foreign');
+            $table->foreignId('team_id')->nullable()->after('id')->constrained();
         });
     }
 
@@ -21,8 +21,7 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropIndex('users_team_id_foreign');
-            $table->dropColumn('team_id');
+            $table->dropConstrainedForeignId('team_id');
         });
     }
 };
