@@ -5,6 +5,10 @@ environments:
   production:
     memory: 1024
     cli-memory: 512
+    queue-concurrency: 100
+    timeout: 60
+    cli-timeout: 600
+    queue-timeout: 600
     runtime: 'php-8.3:al2'
     database: predict_serverless
     database_user: gptmanager

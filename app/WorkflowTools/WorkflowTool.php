@@ -4,26 +4,36 @@ namespace App\WorkflowTools;
 
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowTask;
+use Illuminate\Support\Facades\Log;
 
 abstract class WorkflowTool
 {
     abstract public function runTask(WorkflowTask $workflowTask): void;
-    
+
     public function assignTasks(WorkflowJobRun $workflowJobRun, array $dependsOnJobs): void
     {
         // Resolve the unique task groups to create a task for each group.
         // If there are no task groups, just setup a default task group
         $taskGroups  = $this->getTaskGroups($dependsOnJobs) ?: [''];
         $assignments = $workflowJobRun->workflowJob->workflowAssignments()->get();
+
+        if ($assignments->isEmpty()) {
+            Log::debug("$workflowJobRun has no assignments, skipping task creation");
+
+            return;
+        }
+
         foreach($assignments as $assignment) {
             foreach($taskGroups as $taskGroup) {
-                $workflowJobRun->tasks()->create([
+                $task = $workflowJobRun->tasks()->create([
                     'user_id'                => user()->id,
                     'workflow_job_id'        => $workflowJobRun->workflow_job_id,
                     'workflow_assignment_id' => $assignment->id,
                     'group'                  => $taskGroup,
                     'status'                 => WorkflowTask::STATUS_PENDING,
                 ]);
+
+                Log::debug("$workflowJobRun created $task for $assignment with group $taskGroup");
             }
         }
     }
