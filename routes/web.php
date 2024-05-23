@@ -29,6 +29,3 @@ Route::middleware('auth')->group(function () {
 
 // Imports
 require __DIR__ . '/auth.php';
-
-// Redirect all traffic to the SPA
-Route::get('{any}', fn() => redirect(app_url(request()->path())))->where('any', '.*');
