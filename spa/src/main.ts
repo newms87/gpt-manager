@@ -54,4 +54,4 @@ app.use(router);
 
 app.mount("#app");
 
-console.log(`GPT Manager is running at ${import.meta.env.VITE_API_URL} in mode ${import.meta.env.MODE}: version ${import.meta.env.VITE_APP_APP_VERSION}`);
+console.log(`GPT Manager is running at ${import.meta.env.VITE_API_URL} in mode ${import.meta.env.MODE}` + (import.meta.env.VITE_APP_APP_VERSION ? `: version ${import.meta.env.VITE_APP_APP_VERSION}` : ""));

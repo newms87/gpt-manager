@@ -23,7 +23,8 @@ import { InputSourceController } from "@/components/Modules/InputSources/inputSo
 import { filters } from "@/components/Modules/InputSources/inputSourceFilters";
 import { panels } from "@/components/Modules/InputSources/inputSourcePanels";
 import { ActionTableLayout } from "quasar-ui-danx";
+import { useRouter } from "vue-router";
 
-InputSourceController.initialize();
+InputSourceController.initialize({ vueRouter: useRouter() });
 const createAction = getAction("create");
 </script>

@@ -23,7 +23,8 @@ import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { filters } from "@/components/Modules/Agents/agentFilters";
 import { panels } from "@/components/Modules/Agents/agentPanels";
 import { ActionTableLayout } from "quasar-ui-danx";
+import { useRouter } from "vue-router";
 
-AgentController.initialize();
+AgentController.initialize({ vueRouter: useRouter() });
 const createAction = getAction("create");
 </script>
