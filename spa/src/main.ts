@@ -2,7 +2,7 @@ import "./assets/main.scss";
 import { getAuthToken, isAuthenticated, setAuthToken } from "@/helpers/auth";
 import { LocalStorage, Notify, Quasar } from "quasar";
 
-import { applyCssVars, configure, FlashMessages, request } from "quasar-ui-danx";
+import { applyCssVars, configure, FlashMessages, refreshApplication, request } from "quasar-ui-danx";
 import twColors from "tailwindcss/colors";
 
 import { createApp } from "vue";
@@ -27,8 +27,11 @@ configure({
 			"X-App-Version": import.meta.env.VITE_APP_APP_VERSION || "local",
 			Authorization: isAuthenticated() ? `Bearer ${getAuthToken()}` : undefined
 		},
-		onApVersionMismatch() {
-			FlashMessages.error("This version of the app is no longer supported. Please refresh the page to get the latest version.");
+		onAppVersionMismatch: () => {
+			refreshApplication(() => {
+				// Once the iframe has loaded, prompt the user to refresh
+				FlashMessages.warning("A new version of the app is available. Please refresh the page to get the latest version.");
+			});
 		},
 		onUnauthorized() {
 			setAuthToken("");

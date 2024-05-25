@@ -1,6 +1,5 @@
 <?php
 
-use Newms87\Danx\Middleware\AuditingMiddleware;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
@@ -15,6 +14,8 @@ use Illuminate\Http\Middleware\ValidatePostSize;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Newms87\Danx\Middleware\AppVersionMiddleware;
+use Newms87\Danx\Middleware\AuditingMiddleware;
 
 require_once __DIR__ . '/helpers.php';
 
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             PreventRequestsDuringMaintenance::class,
             ValidatePostSize::class,
             TrimStrings::class,
+            AppVersionMiddleware::class,
         ]);
 
         $middleware->group('web', [

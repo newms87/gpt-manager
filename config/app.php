@@ -3,6 +3,12 @@
 return [
 
     /*
+     * The version of the application. This is set to the git commit sha so we know exactly what code is running.
+     * Also sent in the response headers.
+     */
+    'version' => env('VAPOR_COMMIT_HASH', 'local'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Name
     |--------------------------------------------------------------------------
