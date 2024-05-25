@@ -1,5 +1,5 @@
 import { AuditRequestController } from "@/components/Modules/Audits/auditRequestControls";
-import { fDate, fNumber } from "quasar-ui-danx";
+import { dbDateTime, fNumber } from "quasar-ui-danx";
 import { TableColumn } from "quasar-ui-danx/types";
 
 export const columns: TableColumn[] = [
@@ -22,7 +22,7 @@ export const columns: TableColumn[] = [
 		label: "Created Date",
 		sortable: true,
 		align: "left",
-		format: fDate
+		format: dbDateTime
 	},
 	{
 		name: "http_method",

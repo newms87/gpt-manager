@@ -16,6 +16,7 @@ export const filters = computed(() => [
 				type: "multi-select",
 				name: "requestMethod",
 				label: "Method",
+				placeholder: "(All Methods)",
 				options: ["GET", "POST", "PUT", "PATCH", "DELETE"]
 			},
 			{

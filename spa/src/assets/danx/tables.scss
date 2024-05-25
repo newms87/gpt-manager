@@ -1,3 +1,9 @@
+.dx-action-table {
+	&.dx-is-loading-list {
+		@apply opacity-80;
+	}
+}
+
 .dx-table-summary-tr {
 	@apply bg-slate-600;
 
