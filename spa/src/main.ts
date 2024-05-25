@@ -24,10 +24,13 @@ configure({
 	request: {
 		baseUrl: baseUrl,
 		headers: {
-			"X-App-Version": import.meta.env.VITE_APP_APP_VERSION,
+			"X-App-Version": import.meta.env.VITE_APP_APP_VERSION || "local",
 			Authorization: isAuthenticated() ? `Bearer ${getAuthToken()}` : undefined
 		},
-		onUnauthorized: () => {
+		onApVersionMismatch() {
+			FlashMessages.error("This version of the app is no longer supported. Please refresh the page to get the latest version.");
+		},
+		onUnauthorized() {
 			setAuthToken("");
 			FlashMessages.error("You have been logged out. Please log in again.");
 			router.push({ name: "auth.login" });
