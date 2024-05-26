@@ -56,8 +56,12 @@ async function onLogin() {
 	isLoggingIn.value = true;
 	const result = await AuthRoutes.login(input.value);
 
-	if (result.error) {
-		errorMsg.value = result.error;
+	if (!result || result.error) {
+		if (!result || result.exception) {
+			errorMsg.value = "An error occurred. Please try again.";
+		} else {
+			errorMsg.value = (typeof result.error === "string" ? result.error : result.message) || "An unexpected error occurred.";
+		}
 	} else {
 		setAuthToken(result.token);
 		await router.push({ name: "home" });

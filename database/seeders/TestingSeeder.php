@@ -19,11 +19,12 @@ class TestingSeeder extends Seeder
 
         $email = config('gpt-manager.email');
         if (User::where('email', $email)->doesntExist()) {
-            User::factory()->create([
-                'name'    => 'Daniel Newman',
-                'email'   => $email,
-                'team_id' => $team,
+            $user = User::factory()->create([
+                'name'  => 'Daniel Newman',
+                'email' => $email,
             ]);
+
+            $user->teams()->save($team);
         }
     }
 }

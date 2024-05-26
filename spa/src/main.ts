@@ -33,10 +33,14 @@ configure({
 				FlashMessages.warning("A new version of the app is available. Please refresh the page to get the latest version.");
 			});
 		},
-		onUnauthorized() {
+		onUnauthorized(result) {
 			setAuthToken("");
-			FlashMessages.error("You have been logged out. Please log in again.");
-			router.push({ name: "auth.login" });
+			if (router.currentRoute.value.name !== "auth.login") {
+				FlashMessages.error("You have been logged out. Please log in again.");
+				router.push({ name: "auth.login" });
+			}
+
+			return result;
 		}
 	},
 	fileUpload: {

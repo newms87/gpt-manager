@@ -6,14 +6,14 @@ use App\Api\AgentApiContracts\AgentApiContract;
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowJob;
 use Exception;
-use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Helpers\StringHelper;
-use Newms87\Danx\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Helpers\StringHelper;
+use Newms87\Danx\Traits\AuditableTrait;
 
 class Agent extends Model implements AuditableContract
 {
@@ -110,7 +110,7 @@ class Agent extends Model implements AuditableContract
     public static function booted()
     {
         static::creating(function (Agent $agent) {
-            $agent->team_id = $agent->team_id ?? user()->team_id;
+            $agent->team_id = $agent->team_id ?? team()->id;
         });
     }
 

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -32,8 +32,8 @@ class User extends Authenticatable
         ];
     }
 
-    public function team(): BelongsTo|Team
+    public function teams(): BelongsToMany|Team
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsToMany(Team::class);
     }
 }

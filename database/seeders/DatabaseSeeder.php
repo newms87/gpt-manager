@@ -6,7 +6,6 @@ use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
 use App\Models\Shared\InputSource;
 use App\Models\Team\Team;
-use App\Models\User;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowJob;
 use Illuminate\Database\Seeder;
@@ -15,28 +14,9 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $team = $this->createUserWithTeam();
-        $this->createWorkflowWithAgents($team);
-    }
-
-    public function createUserWithTeam(): Team
-    {
+        $this->call(TestingSeeder::class);
         $team = Team::firstWhere('name', 'Team Dan');
-        if (!$team) {
-            $team = Team::factory()->create([
-                'name' => 'Team Dan',
-            ]);
-        }
-
-        if (User::where('email', 'dan@sagesweeper.com')->doesntExist()) {
-            User::factory()->create([
-                'name'    => 'Daniel Newman',
-                'email'   => 'dan@sagesweeper.com',
-                'team_id' => $team,
-            ]);
-        }
-
-        return $team;
+        $this->createWorkflowWithAgents($team);
     }
 
     public function createWorkflowWithAgents(Team $team): void

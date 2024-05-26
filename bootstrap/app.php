@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuthTeamMiddleware;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
@@ -51,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             //            'throttle:api',
             SubstituteBindings::class,
             'auth:sanctum',
+            AuthTeamMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

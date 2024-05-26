@@ -8,10 +8,10 @@ use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\DateHelper;
 use Newms87\Danx\Repositories\ActionRepository;
-use Illuminate\Support\Facades\Log;
 
 class ThreadRepository extends ActionRepository
 {
@@ -24,7 +24,7 @@ class ThreadRepository extends ActionRepository
         }
 
         $thread = Thread::make()->forceFill([
-            'team_id'  => user()->team_id,
+            'team_id'  => team()->id,
             'user_id'  => user()->id,
             'name'     => $name,
             'agent_id' => $agent->id,
