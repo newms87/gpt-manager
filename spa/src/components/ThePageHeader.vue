@@ -1,8 +1,12 @@
 <template>
 	<QToolbar>
 		<QToolbarTitle class="bg-sky-800 py-2 flex items-center">
-			<div class="pl-3 flex-grow">Sage Sweeper</div>
-			<div class="px-3">
+			<div class="pl-3 flex-grow">{{ siteSettings.name }}</div>
+			<div class="px-3 flex items-center flex-nowrap">
+				<div class="mr-4">
+					<div v-if="authUser" class="text-sm">{{ authUser.email }}</div>
+					<div class="text-xs text-slate-400">{{ authTeam }}</div>
+				</div>
 				<QBtn class="bg-sky-950 px-1 py-3 shadow-2" round>
 					<AccountIcon class="w-4" />
 
@@ -21,6 +25,8 @@
 	</QToolbar>
 </template>
 <script setup lang="ts">
+import { siteSettings } from "@/config";
+import { authTeam, authUser } from "@/helpers";
 import router from "@/router";
 import { FaSolidUser as AccountIcon } from "danx-icon";
 import { QToolbar, QToolbarTitle } from "quasar";

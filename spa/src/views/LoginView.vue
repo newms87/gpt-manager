@@ -38,7 +38,7 @@
 </template>
 <script setup lang="ts">
 import { siteSettings } from "@/config";
-import { authTeam, setAuthTeam, setAuthToken } from "@/helpers/auth";
+import { authTeam, setAuthTeam, setAuthToken, setAuthUser } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
 import { TextField } from "quasar-ui-danx";
 import { ref } from "vue";
@@ -70,6 +70,9 @@ async function onLogin() {
 		setAuthToken(result.token);
 		if (result.team) {
 			setAuthTeam(result.team);
+		}
+		if (result.user) {
+			setAuthUser(result.user);
 		}
 		await router.push({ name: "home" });
 	}
