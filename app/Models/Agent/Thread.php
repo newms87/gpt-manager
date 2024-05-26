@@ -5,14 +5,14 @@ namespace App\Models\Agent;
 use App\Models\Team\Team;
 use App\Repositories\AgentRepository;
 use Exception;
-use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Services\TranscodeFileService;
-use Newms87\Danx\Traits\AuditableTrait;
-use Newms87\Danx\Traits\CountableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Services\TranscodeFileService;
+use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\CountableTrait;
 
 class Thread extends Model implements AuditableContract
 {

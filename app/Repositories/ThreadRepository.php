@@ -76,10 +76,9 @@ class ThreadRepository extends ActionRepository
      */
     public function run(Thread $thread): ThreadRun
     {
-        $agent    = $thread->agent;
-        $messages = $thread->getMessagesForApi();
+        $agent = $thread->agent;
 
-        if (!$messages) {
+        if ($thread->messages()->doesntExist()) {
             throw new ValidationError('You must add messages to the thread before running it.');
         }
 
@@ -107,6 +106,8 @@ class ThreadRepository extends ActionRepository
         }
 
         do {
+            // Get the messages for the next iteration
+            $messages     = $thread->getMessagesForApi();
             $messageCount = count($messages);
             Log::debug("$thread running with $messageCount messages for $agent");
 
@@ -117,9 +118,6 @@ class ThreadRepository extends ActionRepository
             );
 
             $this->handleResponse($thread, $threadRun, $response);
-
-            // Get the messages for the next iteration
-            $messages = $thread->getMessagesForApi();
         } while(!$response->isFinished());
 
         return $threadRun;
