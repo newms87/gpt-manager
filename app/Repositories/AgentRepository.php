@@ -4,13 +4,19 @@ namespace App\Repositories;
 
 use App\Models\Agent\Agent;
 use App\Models\Agent\Thread;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Repositories\ActionRepository;
-use Illuminate\Database\Eloquent\Model;
 
 class AgentRepository extends ActionRepository
 {
     public static string $model = Agent::class;
+
+    public function query(): Builder
+    {
+        return parent::query()->where('team_id', team()->id);
+    }
 
     /**
      * @param array $data

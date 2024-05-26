@@ -3,14 +3,20 @@
 namespace App\Repositories;
 
 use App\Models\Shared\InputSource;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\ActionRepository;
-use Illuminate\Database\Eloquent\Model;
 
 class InputSourcesRepository extends ActionRepository
 {
     public static string $model = InputSource::class;
+
+    public function query(): Builder
+    {
+        return parent::query()->where('team_id', team()->id);
+    }
 
     /**
      * @param string                 $action

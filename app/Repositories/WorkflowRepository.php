@@ -8,15 +8,21 @@ use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Workflow\WorkflowService;
-use Newms87\Danx\Exceptions\ValidationError;
-use Newms87\Danx\Repositories\ActionRepository;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
+use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Repositories\ActionRepository;
 use Throwable;
 
 class WorkflowRepository extends ActionRepository
 {
     public static string $model = Workflow::class;
+
+    public function query(): Builder
+    {
+        return parent::query()->where('team_id', team()->id);
+    }
 
     /**
      * @param string              $action

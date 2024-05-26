@@ -8,6 +8,7 @@ use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\DateHelper;
@@ -16,6 +17,11 @@ use Newms87\Danx\Repositories\ActionRepository;
 class ThreadRepository extends ActionRepository
 {
     public static string $model = Thread::class;
+
+    public function query(): Builder
+    {
+        return parent::query()->where('team_id', team()->id);
+    }
 
     public function create(Agent $agent, $name = ''): Thread
     {
