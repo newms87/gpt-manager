@@ -8,16 +8,17 @@ class ApiAuthController extends Controller
 {
     public function login()
     {
-        $credentials = request(['email', 'password', 'team_name']);
+        $credentials = request(['email', 'password']);
+        $teamName    = request()->get('team_name');
 
         if (!auth()->attempt($credentials)) {
             return response()->json(['error' => 'Invalid Credentials'], 401);
         }
 
-        if (!empty($credentials['team_name'])) {
-            $team = user()->teams()->firstWhere('name', $credentials['team_name']);
+        if ($teamName) {
+            $team = user()->teams()->firstWhere('name', $teamName);
             if (!$team) {
-                return response()->json(['error' => 'Invalid Team'], 401);
+                return response()->json(['error' => "You are not on the team $teamName"], 401);
             }
         } else {
             $team = user()->teams()->first();
@@ -27,7 +28,10 @@ class ApiAuthController extends Controller
             return response()->json(['error' => 'User does not have a team'], 401);
         }
 
-        return response()->json(['token' => user()->createToken($team->name)->plainTextToken]);
+        return response()->json([
+            'token' => user()->createToken($team->name)->plainTextToken,
+            'team'  => $team->name,
+        ]);
     }
 
     public function logout()

@@ -1,11 +1,12 @@
 <template>
 	<div class="flex items-center justify-center h-full">
-		<QCard class="bg-slate-700 p-6">
+		<QCard class="bg-slate-700 p-6 min-w-96">
 			<QCardSection>
 				<div class="pb-3">
-					<h4>Sage Sweeper Log In</h4>
+					<h4>{{ siteSettings.name }} Log In</h4>
+					<div v-if="authTeam" class="mt-3">{{ authTeam }}</div>
 				</div>
-				<div class="mt-6">
+				<div class="mt-3">
 					<div>
 						<TextField v-model="input.email" label="Email" @keyup.enter="onNext" />
 					</div>
@@ -36,7 +37,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { setAuthToken } from "@/helpers/auth";
+import { siteSettings } from "@/config";
+import { authTeam, setAuthTeam, setAuthToken } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
 import { TextField } from "quasar-ui-danx";
 import { ref } from "vue";
@@ -46,12 +48,14 @@ const router = useRouter();
 
 const input = ref({
 	email: "",
-	password: ""
+	password: "",
+	team_name: authTeam.value
 });
 
 const isLoggingIn = ref(false);
 const passwordField = ref(null);
 const errorMsg = ref("");
+
 async function onLogin() {
 	isLoggingIn.value = true;
 	const result = await AuthRoutes.login(input.value);
@@ -64,6 +68,9 @@ async function onLogin() {
 		}
 	} else {
 		setAuthToken(result.token);
+		if (result.team) {
+			setAuthTeam(result.team);
+		}
 		await router.push({ name: "home" });
 	}
 	isLoggingIn.value = false;

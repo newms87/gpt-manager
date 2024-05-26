@@ -8,9 +8,12 @@
 
 					<QMenu>
 						<a
+							v-ripple
 							class="p-3 block hover:bg-slate-600 text-slate-300"
-							@click="$router.push({ name: 'auth.logout' })"
-						>Logout</a>
+							@click="onLogout"
+						>
+							{{ isLoggingOut ? "Logging Out..." : "Log Out" }}
+						</a>
 					</QMenu>
 				</QBtn>
 			</div>
@@ -18,6 +21,15 @@
 	</QToolbar>
 </template>
 <script setup lang="ts">
+import router from "@/router";
 import { FaSolidUser as AccountIcon } from "danx-icon";
 import { QToolbar, QToolbarTitle } from "quasar";
+import { ref } from "vue";
+
+const isLoggingOut = ref(false);
+function onLogout() {
+	isLoggingOut.value = true;
+	router.push({ name: "auth.logout" });
+	isLoggingOut.value = false;
+}
 </script>

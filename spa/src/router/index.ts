@@ -1,5 +1,6 @@
 import ThePageLayout from "@/components/Layouts/ThePageLayout";
 import ThePrimaryLayout from "@/components/Layouts/ThePrimaryLayout";
+import { siteSettings } from "@/config";
 import { isAuthenticated, setAuthToken } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
 import {
@@ -105,7 +106,7 @@ router.beforeEach(async (to) => {
 });
 
 router.afterEach(to => {
-	document.title = (to.meta.title ? `${to.meta.title} | ` : "") + "Sage Sweeper";
+	document.title = (to.meta.title ? `${to.meta.title} | ` : "") + siteSettings.value.name;
 });
 
 export default router;
