@@ -4,14 +4,16 @@ namespace App\Models\Workflow;
 
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
 use App\WorkflowTools\WorkflowTool;
-use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Traits\AuditableTrait;
-use Newms87\Danx\Traits\CountableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\CountableTrait;
 
 class WorkflowJob extends Model implements AuditableContract
 {
@@ -74,6 +76,13 @@ class WorkflowJob extends Model implements AuditableContract
         $this->dependents()->delete();
 
         return parent::delete();
+    }
+
+    public function validate(): void
+    {
+        Validator::make($this->toArray(), [
+            'name' => ['required', 'max:80', 'string', Rule::unique('workflow_jobs')->where('workflow_id', $this->workflow_id)->whereNull('deleted_at')],
+        ])->validate();
     }
 
     public function __toString()

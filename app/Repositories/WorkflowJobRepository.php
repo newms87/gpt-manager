@@ -6,13 +6,11 @@ use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowAssignment;
 use App\Models\Workflow\WorkflowJob;
 use App\WorkflowTools\TranscodeInputSourceWorkflowTool;
-use Newms87\Danx\Exceptions\ValidationError;
-use Newms87\Danx\Repositories\ActionRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
+use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Repositories\ActionRepository;
 
 class WorkflowJobRepository extends ActionRepository
 {
@@ -44,11 +42,9 @@ class WorkflowJobRepository extends ActionRepository
      */
     public function create(Workflow $workflow, $data)
     {
-        Validator::make($data, [
-            'name' => ['required', 'max:80', 'string', Rule::unique('workflow_jobs')->where('workflow_id', $workflow->id)],
-        ])->validate();
-
-        $workflowJob = $workflow->workflowJobs()->create($data);
+        $workflowJob = $workflow->workflowJobs()->make($data);
+        $workflowJob->validate();
+        $workflowJob->save();
         $this->setDependencies($workflowJob, $data['dependencies'] ?? []);
 
         return $workflowJob;
