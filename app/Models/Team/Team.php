@@ -25,4 +25,9 @@ class Team extends Model implements AuditableContract
     {
         return $this->hasMany(Agent::class);
     }
+
+    public function __toString()
+    {
+        return "<Team ($this->id) $this->name>";
+    }
 }

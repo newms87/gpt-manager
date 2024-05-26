@@ -47,7 +47,7 @@ class Message extends Model implements AuditableContract
 
     public function __toString()
     {
-        $message = $this->title ?: $this->summary ?: StringHelper::limitText($this->content, 50) ?: '(Empty)';
+        $message = $this->title ?: $this->summary ?: StringHelper::limitText(50, $this->content) ?: '(Empty)';
 
         return "<Message ($this->id) $message>";
     }

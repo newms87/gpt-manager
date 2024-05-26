@@ -3,11 +3,11 @@
 namespace App\Models\Workflow;
 
 use App\Models\Agent\Agent;
-use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowAssignment extends Model implements AuditableContract
 {
@@ -33,5 +33,10 @@ class WorkflowAssignment extends Model implements AuditableContract
     public function workflowTasks()
     {
         return $this->hasMany(WorkflowTask::class);
+    }
+
+    public function __toString()
+    {
+        return "<WorkflowAssignment ($this->id) {$this->agent->name}";
     }
 }

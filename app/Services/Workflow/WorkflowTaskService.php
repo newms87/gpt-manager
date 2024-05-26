@@ -23,7 +23,7 @@ class WorkflowTaskService
     {
         LockHelper::acquire($workflowTask);
 
-        if (!$workflowTask->status !== WorkflowRun::STATUS_PENDING) {
+        if ($workflowTask->status !== WorkflowRun::STATUS_PENDING) {
             Log::debug("$workflowTask has already been run");
             LockHelper::release($workflowTask);
 
