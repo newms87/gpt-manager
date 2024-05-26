@@ -24,6 +24,8 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    public ?Team $currentTeam = null;
+
     protected function casts(): array
     {
         return [

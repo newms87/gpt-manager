@@ -8,27 +8,28 @@ use Newms87\Danx\Jobs\Job;
 if (!function_exists('team')) {
     function team(): ?Team
     {
-        static $team;
+        $user = user();
 
-        if (!$team) {
+        if (!$user) {
+            return null;
+        }
+
+        if (Job::$runningJob) {
+            $teamId = Job::$runningJob->data['team_id'] ?? null;
+            if ($teamId && $user->currentTeam?->id !== $teamId) {
+                $user->currentTeam = Team::find($teamId);
+                Log::debug("Job running for $user->currentTeam");
+            }
+        } elseif (!$user->currentTeam) {
             /** @var PersonalAccessToken $token */
-            $token = user()->currentAccessToken();
+            $token = $user->currentAccessToken();
 
             // The token name matches the name of the team the user is authorized to access
             if ($token) {
-                $team = auth()->user()->teams()->firstWhere('name', $token->name);
-            }
-
-            if (Job::$runningJob) {
-                $teamId = Job::$runningJob->data['team_id'] ?? null;
-                if ($teamId) {
-                    $team = Team::find($teamId);
-                }
-
-                Log::debug("Job running for $team");
+                $user->currentTeam = $user->teams()->firstWhere('name', $token->name);
             }
         }
 
-        return $team;
+        return $user->currentTeam;
     }
 }

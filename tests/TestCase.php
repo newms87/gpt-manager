@@ -2,9 +2,9 @@
 
 namespace Tests;
 
-use Flytedan\DanxLaravel\Jobs\Job;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Newms87\Danx\Jobs\Job;
 
 abstract class TestCase extends BaseTestCase
 {
