@@ -6,7 +6,7 @@ environments:
     memory: 1024
     cli-memory: 512
     queue-concurrency: 100
-    timeout: 60
+    timeout: 600
     cli-timeout: 600
     queue-timeout: 600
     runtime: 'php-8.3:al2'

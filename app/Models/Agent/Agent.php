@@ -54,7 +54,7 @@ class Agent extends Model implements AuditableContract
 
     public function workflowJobs()
     {
-        return $this->belongsToMany(WorkflowJob::class);
+        return $this->belongsToMany(WorkflowJob::class)->withTimestamps();
     }
 
     public function formatTools()

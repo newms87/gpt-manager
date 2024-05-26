@@ -18,7 +18,7 @@ class Team extends Model implements AuditableContract
 
     public function users(): BelongsToMany|User
     {
-        return $this->belongsToMany(User::class);
+        return $this->belongsToMany(User::class)->withTimestamps();
     }
 
     public function agents(): HasMany|Agent

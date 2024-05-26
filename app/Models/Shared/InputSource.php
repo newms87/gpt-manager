@@ -3,9 +3,6 @@
 namespace App\Models\Shared;
 
 use App\Models\Workflow\WorkflowRun;
-use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Models\Utilities\StoredFile;
-use Newms87\Danx\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +11,9 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Models\Utilities\StoredFile;
+use Newms87\Danx\Traits\AuditableTrait;
 
 class InputSource extends Model implements AuditableContract
 {
@@ -34,7 +34,7 @@ class InputSource extends Model implements AuditableContract
 
     public function storedFiles(): StoredFile|MorphToMany
     {
-        return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables');
+        return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
     }
 
     public function workflowRuns(): HasMany|WorkflowRun

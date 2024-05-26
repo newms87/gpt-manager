@@ -4,9 +4,9 @@ namespace App\Services\Workflow;
 
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
-use Newms87\Danx\Helpers\LockHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Newms87\Danx\Helpers\LockHelper;
 use Throwable;
 
 class WorkflowService
@@ -121,7 +121,7 @@ class WorkflowService
         if ($workflowJobRun->isComplete()) {
             // Save the artifact from the completed task
             $artifacts = $workflowJobRun->artifacts()->get();
-            $workflowRun->artifacts()->saveMany($artifacts);
+            $workflowRun->artifacts()->syncWithoutDetaching($artifacts);
             Log::debug("$workflowRun attached {$artifacts->count()} artifacts");
 
             // If we have completed all Workflow Job Runs in the workflow run, then mark the workflow run as completed

@@ -37,10 +37,10 @@ class WorkflowJobRepository extends ActionRepository
     /**
      * @param Workflow $workflow
      * @param          $data
-     * @return void
+     * @return WorkflowJob
      * @throws ValidationError
      */
-    public function create(Workflow $workflow, $data)
+    public function create(Workflow $workflow, $data): WorkflowJob
     {
         $workflowJob = $workflow->workflowJobs()->make($data);
         $workflowJob->validate();

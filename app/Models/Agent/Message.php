@@ -42,7 +42,7 @@ class Message extends Model implements AuditableContract
 
     public function storedFiles(): MorphToMany|StoredFile
     {
-        return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables');
+        return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
     }
 
     public function __toString()

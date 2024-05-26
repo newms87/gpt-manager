@@ -3,14 +3,14 @@
 namespace App\Models\Workflow;
 
 use App\Models\Shared\Artifact;
-use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Contracts\ComputedStatusContract;
-use Newms87\Danx\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Contracts\ComputedStatusContract;
+use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusContract
 {
@@ -71,7 +71,7 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
 
     public function artifacts()
     {
-        return $this->morphToMany(Artifact::class, 'artifactable');
+        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps();
     }
 
     public function isComplete(): bool

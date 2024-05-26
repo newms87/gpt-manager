@@ -5,9 +5,9 @@ namespace App\Services\Workflow;
 use App\Jobs\RunWorkflowTaskJob;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
+use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Models\Audit\ErrorLog;
-use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class WorkflowTaskService
@@ -21,6 +21,15 @@ class WorkflowTaskService
      */
     public static function start(WorkflowTask $workflowTask): void
     {
+        LockHelper::acquire($workflowTask);
+
+        if (!$workflowTask->status !== WorkflowRun::STATUS_PENDING) {
+            Log::debug("$workflowTask has already been run");
+            LockHelper::release($workflowTask);
+
+            return;
+        }
+
         Log::debug("$workflowTask started");
         $workflowTask->started_at = now();
         $workflowTask->save();
@@ -35,6 +44,8 @@ class WorkflowTaskService
             ErrorLog::logException(ErrorLog::ERROR, $e);
             $workflowTask->failed_at = now();
             $workflowTask->save();
+        } finally {
+            LockHelper::release($workflowTask);
         }
 
         // Notify the Workflow our task is finished
@@ -74,7 +85,7 @@ class WorkflowTaskService
                 $artifact = $task->artifact()->first();
 
                 if ($artifact) {
-                    $workflowJobRun->artifacts()->save($artifact);
+                    $workflowJobRun->artifacts()->syncWithoutDetaching($artifact);
                     Log::debug("$workflowJobRun attached $artifact");
                 }
 
