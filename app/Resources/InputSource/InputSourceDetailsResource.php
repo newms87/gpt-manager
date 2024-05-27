@@ -3,7 +3,7 @@
 namespace App\Resources\InputSource;
 
 use App\Models\Shared\InputSource;
-use Newms87\Danx\Resources\StoredFileResource;
+use Newms87\Danx\Resources\StoredFileWithTranscodesResource;
 
 /**
  * @mixin InputSource
@@ -16,7 +16,7 @@ class InputSourceDetailsResource extends InputSourceResource
         $runs = $this->workflowRuns()->orderByDesc('id')->get();
 
         return [
-                'files'        => StoredFileResource::collection($this->storedFiles),
+                'files'        => StoredFileWithTranscodesResource::collection($this->storedFiles),
                 'content'      => $this->content,
                 'workflowRuns' => $runs ? InputSourceWorkflowRunDetailsResource::collection($runs) : [],
             ] + parent::data();

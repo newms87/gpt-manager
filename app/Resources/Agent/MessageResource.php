@@ -4,7 +4,7 @@ namespace App\Resources\Agent;
 
 use App\Models\Agent\Message;
 use Newms87\Danx\Resources\ActionResource;
-use Newms87\Danx\Resources\StoredFileResource;
+use Newms87\Danx\Resources\StoredFileWithTranscodesResource;
 
 /**
  * @mixin Message
@@ -22,7 +22,7 @@ class MessageResource extends ActionResource
             'title'      => $this->title,
             'summary'    => $this->summary,
             'content'    => $this->content,
-            'files'      => StoredFileResource::collection($this->storedFiles),
+            'files'      => StoredFileWithTranscodesResource::collection($this->storedFiles),
             'data'       => $this->data,
             'timestamp'  => $this->updated_at,
             'created_at' => $this->created_at,

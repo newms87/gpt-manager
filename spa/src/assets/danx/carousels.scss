@@ -1,0 +1,13 @@
+.q-carousel {
+	.q-carousel__thumbnail {
+		@apply opacity-60 outline-1;
+
+		&:hover {
+			@apply outline outline-sky-600;
+		}
+
+		&.q-carousel__thumbnail--active {
+			@apply outline outline-sky-800 opacity-100;
+		}
+	}
+}
