@@ -21,9 +21,8 @@ class WorkflowServiceTest extends AuthenticatedTestCase
     {
         // Given
         $this->mocksOpenAiCompletionResponse()->once();
-        $agent       = $this->openAiAgent();
-        $workflow    = Workflow::factory()->create();
-        $workflowJob = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create();
+        $workflow = Workflow::factory()->create();
+        $this->openAiWorkflowJob($workflow);
         $workflowRun = WorkflowRun::factory()->recycle($workflow)->create();
 
         // When
@@ -37,9 +36,8 @@ class WorkflowServiceTest extends AuthenticatedTestCase
     {
         // Given
         $this->mocksOpenAiCompletionResponse()->once();
-        $agent       = $this->openAiAgent();
-        $workflow    = Workflow::factory()->create();
-        $workflowJob = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create();
+        $workflow = Workflow::factory()->create();
+        $this->openAiWorkflowJob($workflow);
         $workflowRun = WorkflowRun::factory()->recycle($workflow)->create();
 
         // When
@@ -64,10 +62,9 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         // Given
         RunWorkflowTaskJob::disable();
         $this->mocksOpenAiNotCalled();
-        $agent        = $this->openAiAgent();
         $workflow     = Workflow::factory()->create();
-        $workflowJobA = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create();
-        $workflowJobB = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create();
+        $workflowJobA = $this->openAiWorkflowJob($workflow);
+        $workflowJobB = $this->openAiWorkflowJob($workflow);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id]);
         $workflowRun = WorkflowRun::factory()->recycle($workflow)->create();
 
@@ -84,15 +81,36 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->assertNull($workflowJobRunB->started_at, 'Job B should not have been dispatched yet since Job A has not completed');
     }
 
+    public function test_start_pendingWorkflowJobCompletedIfNotTasksRequired(): void
+    {
+        // Given
+        RunWorkflowTaskJob::disable();
+        $this->mocksOpenAiNotCalled();
+        $workflow     = Workflow::factory()->create();
+        $workflowJobA = WorkflowJob::factory()->recycle($workflow)->create();
+        $workflowRun  = WorkflowRun::factory()->recycle($workflow)->create();
+
+        // When
+        WorkflowService::start($workflowRun);
+
+        // Then
+        $workflowJobRunA = $workflowRun->workflowJobRuns()->where('workflow_job_id', $workflowJobA->id)->first();
+        $this->assertNotNull($workflowJobRunA->started_at, 'Job A was not dispatched');
+        $this->assertNotNull($workflowJobRunA->completed_at, 'Job A should have been completed immediately as there were no assignments / tasks');
+        $this->assertNull($workflowJobRunA->failed_at, 'Job A should not have failed as the task has not run yet');
+
+        $workflowRun->refresh();
+        $this->assertNotNull($workflowRun->completed_at, 'The workflow run should be completed since all the jobs are complete');
+    }
+
     public function test_workflowJobRunFinished_dependentJobDispatchedAfterDependencyCompleted(): void
     {
         // Given
         RunWorkflowTaskJob::disable();
         $this->mocksOpenAiNotCalled();
-        $agent        = $this->openAiAgent();
         $workflow     = Workflow::factory()->create();
-        $workflowJobA = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create();
-        $workflowJobB = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create();
+        $workflowJobA = $this->openAiWorkflowJob($workflow);
+        $workflowJobB = $this->openAiWorkflowJob($workflow);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id]);
         $workflowRun     = WorkflowRun::factory()->recycle($workflow)->started()->create();
         $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
@@ -116,10 +134,9 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         // Given
         RunWorkflowTaskJob::disable();
         $this->mocksOpenAiNotCalled();
-        $agent        = $this->openAiAgent();
         $workflow     = Workflow::factory()->create();
-        $workflowJobA = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create();
-        $workflowJobB = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create();
+        $workflowJobA = $this->openAiWorkflowJob($workflow);
+        $workflowJobB = $this->openAiWorkflowJob($workflow);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id]);
         $workflowRun     = WorkflowRun::factory()->recycle($workflow)->create();
         $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
@@ -142,10 +159,9 @@ class WorkflowServiceTest extends AuthenticatedTestCase
     {
         // Given
         $this->mocksOpenAiCompletionResponse()->once();
-        $agent        = $this->openAiAgent();
         $workflow     = Workflow::factory()->create();
-        $workflowJobA = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create(['name' => 'Job A']);
-        $workflowJobB = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create(['name' => 'Job B',]);
+        $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
+        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B']);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id]);
         $workflowRun     = WorkflowRun::factory()->recycle($workflow)->started()->create();
         $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
@@ -184,14 +200,9 @@ class WorkflowServiceTest extends AuthenticatedTestCase
     {
         // Given
         $this->mocksOpenAiCompletionResponse()->twice();
-        $agentPrompt  = 'Multiple Task Dispatch Prompt';
-        $agent        = $this->openAiAgent(['prompt' => $agentPrompt]);
         $workflow     = Workflow::factory()->create();
-        $workflowJobA = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create(['name' => 'Job A']);
-        $workflowJobB = WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create([
-            'name'             => 'Job B',
-            'use_input_source' => true,
-        ]);
+        $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
+        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B', 'use_input_source' => true]);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id, 'group_by' => 'service_dates.date']);
         $inputSourceContent = 'Multiple Task Input Source Content';
         $inputSource        = InputSource::factory()->create(['name' => $inputSourceContent, 'content' => $inputSourceContent]);

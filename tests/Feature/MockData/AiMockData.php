@@ -5,6 +5,8 @@ namespace Tests\Feature\MockData;
 use App\Api\OpenAi\Classes\OpenAiCompletionResponse;
 use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
+use App\Models\Workflow\Workflow;
+use App\Models\Workflow\WorkflowJob;
 use Tests\TestCase;
 
 /**
@@ -12,6 +14,13 @@ use Tests\TestCase;
  */
 trait AiMockData
 {
+    public function openAiWorkflowJob(Workflow $workflow, $attributes = [])
+    {
+        $agent = $this->openAiAgent();
+
+        return WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create($attributes);
+    }
+
     public function openAiAgent($attributes = [], $user = null): Agent
     {
         if (!$user) {

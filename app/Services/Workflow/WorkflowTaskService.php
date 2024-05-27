@@ -126,6 +126,18 @@ class WorkflowTaskService
     public static function dispatchPendingWorkflowTasks(WorkflowRun $workflowRun): void
     {
         foreach($workflowRun->runningJobRuns()->get() as $pendingJobRun) {
+            $pendingTasks = $pendingJobRun->pendingTasks()->get();
+
+            // If there are no tasks, the job is automatically completed
+            if ($pendingTasks->isEmpty()) {
+                $pendingJobRun->completed_at = now();
+                $pendingJobRun->save();
+                Log::debug("$pendingJobRun has no pending tasks, marking job as complete");
+                WorkflowService::workflowJobRunFinished($pendingJobRun);
+                continue;
+            }
+
+            // Dispatch an async job for each pending task in the workflow job
             foreach($pendingJobRun->pendingTasks()->get() as $pendingTask) {
                 Log::debug("$pendingJobRun dispatching $pendingTask");
                 $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
