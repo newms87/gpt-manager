@@ -22,7 +22,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $this->mocksOpenAiCompletionResponse()->once();
         $workflow = Workflow::factory()->create();
-        $this->openAiWorkflowJob($workflow);
+        $this->openAiWorkflowJob($workflow, ['use_input_source' => true]);
         $workflowRun = WorkflowRun::factory()->recycle($workflow)->create();
 
         // When
@@ -37,7 +37,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $this->mocksOpenAiCompletionResponse()->once();
         $workflow = Workflow::factory()->create();
-        $this->openAiWorkflowJob($workflow);
+        $this->openAiWorkflowJob($workflow, ['use_input_source' => true]);
         $workflowRun = WorkflowRun::factory()->recycle($workflow)->create();
 
         // When
@@ -161,7 +161,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->mocksOpenAiCompletionResponse()->once();
         $workflow     = Workflow::factory()->create();
         $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
-        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B']);
+        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B', 'use_input_source' => true]);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id]);
         $workflowRun     = WorkflowRun::factory()->recycle($workflow)->started()->create();
         $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
@@ -186,9 +186,95 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->assertEquals($threadB->messages[1]->content, $artifactContent, 'Job B second message should have the artifact content from Job A');
     }
 
-    public function test_workflowJobRunFinished_multipleTasksDispatchedForAssignmentWithGroupBy(): void
+    public function test_workflowJobRunFinished_multipleTasksDispatchedForAssignmentWithGroupByOfArrayOfPrimitives(): void
     {
-        $this->markTestSkipped('This test is not yet implemented');
+        // Given
+        $this->mocksOpenAiCompletionResponse()->twice();
+        $workflow     = Workflow::factory()->create();
+        $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
+        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B']);
+        $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id, 'group_by' => 'service_dates']);
+        $workflowRun     = WorkflowRun::factory()->recycle($workflow)->started()->create();
+        $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
+            'completed_at' => now(),
+            'started_at'   => now(),
+        ]);
+        $serviceDates    = ['2022-01-01', '2022-02-01'];
+        $artifactContent = json_encode([
+            'service_dates' => $serviceDates,
+        ]);
+        $artifact        = Artifact::factory()->create(['content' => $artifactContent]);
+        $workflowJobRunA->artifacts()->save($artifact);
+        $workflowJobRunB = WorkflowJobRun::factory()->recycle($workflowJobB)->recycle($workflowRun)->create();
+
+        // When
+        WorkflowService::workflowJobRunFinished($workflowJobRunA);
+
+        // Then
+        $workflowJobRunB->refresh();
+        $this->assertEquals(WorkflowRun::STATUS_COMPLETED, $workflowJobRunB->status, 'Job B should have been completed');
+
+        $completedTasks = $workflowJobRunB->completedTasks()->get();
+        $this->assertCount(2, $completedTasks, 'Job B should have 2 tasks, 1 for each service date');
+
+        // Verify 1st Task messages are correct
+        $firstTask = $completedTasks->first();
+        $this->assertEquals($serviceDates[0], $firstTask->group, 'The first task should have the first service date as the task group');
+        $firstTaskMessage = $firstTask->thread()->first()->messages()->first();
+        $this->assertEquals($serviceDates[0], $firstTaskMessage->content, 'Job B should have the first service date as the second thread message');
+
+        // Verify 2nd Task messages are correct
+        $secondTask = $completedTasks->last();
+        $this->assertEquals($serviceDates[1], $secondTask->group, 'The second task should have the second service date as the task group');
+        $secondTaskMessage = $secondTask->thread()->first()->messages()->first();
+        $this->assertEquals($serviceDates[1], $secondTaskMessage->content, 'Job B should have the second service date as the second message');
+    }
+
+    public function test_workflowJobRunFinished_multipleTasksDispatchedForAssignmentWithGroupByOfArrayOfArray(): void
+    {
+        // Given
+        $this->mocksOpenAiCompletionResponse()->twice();
+        $workflow     = Workflow::factory()->create();
+        $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
+        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B']);
+        $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id, 'group_by' => 'service_dates']);
+        $workflowRun     = WorkflowRun::factory()->recycle($workflow)->started()->create();
+        $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
+            'completed_at' => now(),
+            'started_at'   => now(),
+        ]);
+        $serviceDates    = [
+            ['date' => '2022-01-01', 'service' => 'Service A'],
+            ['date' => '2022-02-01', 'service' => 'Service B'],
+        ];
+        $artifactContent = json_encode([
+            'service_dates' => $serviceDates,
+        ]);
+        $artifact        = Artifact::factory()->create(['content' => $artifactContent]);
+        $workflowJobRunA->artifacts()->save($artifact);
+        $workflowJobRunB = WorkflowJobRun::factory()->recycle($workflowJobB)->recycle($workflowRun)->create();
+
+        // When
+        WorkflowService::workflowJobRunFinished($workflowJobRunA);
+
+        // Then
+        $workflowJobRunB->refresh();
+        $this->assertEquals(WorkflowRun::STATUS_COMPLETED, $workflowJobRunB->status, 'Job B should have been completed');
+
+        $completedTasks = $workflowJobRunB->completedTasks()->get();
+        $this->assertCount(2, $completedTasks, 'Job B should have 2 tasks, 1 for each service date');
+
+        // Verify 1st Task messages are correct
+        $firstTask = $completedTasks->first();
+        $this->assertEquals(0, $firstTask->group, 'The first task should have the first service date as the task group');
+        $firstTaskMessage = $firstTask->thread()->first()->messages()->first();
+        $this->assertEquals($serviceDates[0], json_decode($firstTaskMessage->content, true), 'Job B should have the first service date as the second thread message');
+
+        // Verify 2nd Task messages are correct
+        $secondTask = $completedTasks->last();
+        $this->assertEquals(1, $secondTask->group, 'The second task should have the second service date as the task group');
+        $secondTaskMessage = $secondTask->thread()->first()->messages()->first();
+        $this->assertEquals($serviceDates[1], json_decode($secondTaskMessage->content, true), 'Job B should have the second service date as the second message');
     }
 
     public function test_workflowJobRunFinished_jobAndTaskFailedForAssignmentWithGroupByMissingDataPoint(): void
@@ -196,7 +282,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->markTestSkipped('This test is not yet implemented');
     }
 
-    public function test_workflowJobRunFinished_multipleTasksDispatchedForAssignmentWithGroupByOfArrayOfData(): void
+    public function test_workflowJobRunFinished_multipleTasksDispatchedForAssignmentWithGroupByOfKeyInArrayOfArray(): void
     {
         // Given
         $this->mocksOpenAiCompletionResponse()->twice();

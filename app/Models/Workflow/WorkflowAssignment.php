@@ -37,6 +37,6 @@ class WorkflowAssignment extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<WorkflowAssignment ($this->id) {$this->agent->name}";
+        return "<WorkflowAssignment ($this->id) {$this->agent->name}>";
     }
 }

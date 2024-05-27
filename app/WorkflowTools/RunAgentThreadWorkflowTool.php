@@ -7,9 +7,9 @@ use App\Models\Shared\Artifact;
 use App\Models\Shared\InputSource;
 use App\Models\Workflow\WorkflowTask;
 use App\Repositories\ThreadRepository;
-use Newms87\Danx\Exceptions\ValidationError;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Newms87\Danx\Exceptions\ValidationError;
 
 class RunAgentThreadWorkflowTool extends WorkflowTool
 {
@@ -68,7 +68,6 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
         if ($workflowJob->dependencies->isNotEmpty()) {
             foreach($workflowJob->dependencies as $dependency) {
                 $dependsOnWorkflowJobRun = $workflowRun->workflowJobRuns->where('workflow_job_id', $dependency->depends_on_workflow_job_id)->first();
-
                 $this->addThreadMessagesFromArtifacts($thread, $dependsOnWorkflowJobRun->artifacts, $dependency->group_by, $workflowTask->group);
             }
         }
@@ -98,7 +97,7 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
                 }
                 $content = $groupedContent[$group] ?? null;
                 if (!$content) {
-                    Log::debug("$thread skipped $artifact: grouped content does not have group $group");
+                    Log::debug("$thread skipped $artifact: grouped content does not have any content in group $group");
                     continue;
                 }
                 app(ThreadRepository::class)->addMessageToThread($thread, $content);

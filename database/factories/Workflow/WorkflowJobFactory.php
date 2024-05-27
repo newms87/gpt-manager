@@ -17,7 +17,7 @@ class WorkflowJobFactory extends Factory
             'workflow_id'      => Workflow::factory(),
             'name'             => fake()->unique()->name,
             'description'      => fake()->sentence,
-            'use_input_source' => true,
+            'use_input_source' => false,
         ];
     }
 }

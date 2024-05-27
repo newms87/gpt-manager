@@ -61,9 +61,9 @@ abstract class WorkflowTool
             $artifacts       = $dependsOnJobRun->artifacts()->get();
             foreach($artifacts as $artifact) {
                 $artifactGroups = $artifact->groupContentBy($dependsOnJob['groupBy']);
-                if ($artifactGroups) {
-                    $groups     = array_keys($artifactGroups);
-                    $taskGroups = array_merge($taskGroups, $groups);
+
+                foreach(array_keys($artifactGroups) as $key) {
+                    $taskGroups[$key] = $key;
                 }
             }
         }
