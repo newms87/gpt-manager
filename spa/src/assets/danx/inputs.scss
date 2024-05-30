@@ -54,15 +54,22 @@
 		@apply pb-0;
 
 		.q-field__native {
-			@apply py-4;
+			@apply py-3;
+
+			.dx-selected-label {
+				@apply py-1;
+			}
 		}
 
 		&.q-select--multiple {
 			.q-field__native {
-				@apply py-0;
+
+				.dx-selected-chips {
+					@apply py-0;
+				}
 
 				.q-chip {
-					@apply h-auto px-4 py-1;
+					@apply h-auto px-4 py-1 m-0;
 				}
 			}
 		}
