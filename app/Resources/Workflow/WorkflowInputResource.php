@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Resources\InputSource;
+namespace App\Resources\Workflow;
 
-use App\Models\Shared\InputSource;
+use App\Models\Workflow\WorkflowInput;
 use Newms87\Danx\Resources\ActionResource;
 use Newms87\Danx\Resources\StoredFileResource;
 
 /**
- * @mixin InputSource
- * @property InputSource $resource
+ * @mixin WorkflowInput
+ * @property WorkflowInput $resource
  */
-class InputSourceResource extends ActionResource
+class WorkflowInputResource extends ActionResource
 {
-    protected static string $type = 'InputSource';
+    protected static string $type = 'WorkflowInput';
 
     public function data(): array
     {

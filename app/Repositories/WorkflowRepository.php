@@ -3,8 +3,8 @@
 namespace App\Repositories;
 
 use App\Models\Agent\Agent;
-use App\Models\Shared\InputSource;
 use App\Models\Workflow\Workflow;
+use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Workflow\WorkflowService;
@@ -76,15 +76,15 @@ class WorkflowRepository extends ActionRepository
      */
     public function runWorkflow(Workflow $workflow, $data): WorkflowRun
     {
-        $inputSourceId = $data['input_source_id'] ?? null;
-        $inputSource   = InputSource::find($inputSourceId);
+        $workflowInputId = $data['workflow_input_id'] ?? null;
+        $workflowInput   = WorkflowInput::find($workflowInputId);
 
-        if (!$inputSource) {
-            throw new ValidationError('Input Source was not found');
+        if (!$workflowInput) {
+            throw new ValidationError('Workflow Input was not found');
         }
 
         $workflowRun = $workflow->workflowRuns()->create([
-            'input_source_id' => $inputSourceId,
+            'workflow_input_id' => $workflowInputId,
         ]);
 
         WorkflowService::start($workflowRun);

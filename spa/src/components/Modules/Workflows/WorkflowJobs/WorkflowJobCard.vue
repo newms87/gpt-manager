@@ -25,9 +25,9 @@
 				<div class="p-2">
 					<div class="py-1 px-2 bg-indigo-900 text-indigo-300 rounded-lg w-52">
 						<QCheckbox
-							:model-value="!!job.use_input_source"
-							label="Include Input Source?"
-							@update:model-value="updateJobAction.trigger(job, {use_input_source: $event})"
+							:model-value="!!job.use_input"
+							label="Include Workflow Input?"
+							@update:model-value="updateJobAction.trigger(job, {use_input: $event})"
 						/>
 					</div>
 					<WorkflowJobDependenciesList :workflow="workflow" :job="job" />

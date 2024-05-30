@@ -5,26 +5,26 @@
 			empty-value=""
 			:form="workflowForm"
 			:saving="updateAction.isApplying"
-			:saved-at="inputSource.updated_at"
-			@update:values="updateAction.trigger(inputSource, input)"
+			:saved-at="workflowInput.updated_at"
+			@update:values="updateAction.trigger(workflowInput, input)"
 		/>
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/InputSources/inputSourceActions";
-import { InputSource } from "@/types/input-sources";
+import { getAction } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputActions";
+import { WorkflowInput } from "@/types/workflow-inputs";
 import { RenderedForm, TextField } from "quasar-ui-danx";
 import { Form } from "quasar-ui-danx/types";
 import { h, ref } from "vue";
 
 const props = defineProps<{
-	inputSource: InputSource,
+	workflowInput: WorkflowInput,
 }>();
 
 const updateAction = getAction("update-debounced");
 const input = ref({
-	name: props.inputSource.name,
-	description: props.inputSource.description
+	name: props.workflowInput.name,
+	description: props.workflowInput.description
 });
 
 const workflowForm: Form = {

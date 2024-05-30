@@ -7,9 +7,9 @@ import {
 	AgentsView,
 	AuditRequestsView,
 	DashboardView,
-	InputSourcesView,
 	LoginView,
 	PageNotFoundView,
+	WorkflowInputsView,
 	WorkflowsView
 } from "@/views";
 import { FlashMessages } from "quasar-ui-danx";
@@ -32,10 +32,10 @@ const router = createRouter({
 					meta: { title: "Danx Home" }
 				},
 				{
-					path: "/input-sources/:id?/:panel?",
-					name: "input-sources",
-					component: InputSourcesView,
-					meta: { title: "Input Sources", type: "InputSource" }
+					path: "/workflow-inputs/:id?/:panel?",
+					name: "workflow-inputs",
+					component: WorkflowInputsView,
+					meta: { title: "Workflow Inputs", type: "WorkflowInput" }
 				},
 				{
 					path: "/workflows/:id?/:panel?",

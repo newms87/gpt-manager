@@ -3,9 +3,9 @@
 namespace Tests\Feature\Workflow;
 
 use App\Jobs\RunWorkflowTaskJob;
-use App\Models\Shared\Artifact;
-use App\Models\Shared\InputSource;
+use App\Models\Workflow\Artifact;
 use App\Models\Workflow\Workflow;
+use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
@@ -22,7 +22,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $this->mocksOpenAiCompletionResponse()->once();
         $workflow = Workflow::factory()->create();
-        $this->openAiWorkflowJob($workflow, ['use_input_source' => true]);
+        $this->openAiWorkflowJob($workflow, ['use_input' => true]);
         $workflowRun = WorkflowRun::factory()->recycle($workflow)->create();
 
         // When
@@ -37,7 +37,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $this->mocksOpenAiCompletionResponse()->once();
         $workflow = Workflow::factory()->create();
-        $this->openAiWorkflowJob($workflow, ['use_input_source' => true]);
+        $this->openAiWorkflowJob($workflow, ['use_input' => true]);
         $workflowRun = WorkflowRun::factory()->recycle($workflow)->create();
 
         // When
@@ -161,7 +161,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->mocksOpenAiCompletionResponse()->once();
         $workflow     = Workflow::factory()->create();
         $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
-        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B', 'use_input_source' => true]);
+        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B', 'use_input' => true]);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id]);
         $workflowRun     = WorkflowRun::factory()->recycle($workflow)->started()->create();
         $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
@@ -182,7 +182,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->assertNotNull($pendingTaskB, 'Job B should have a completed task');
         $threadB = $pendingTaskB->thread()->first();
         $this->assertNotNull($threadB, 'Job B should have a thread created');
-        $this->assertEquals($threadB->messages[0]->content, $workflowRun->inputSource->content, 'Job B first message should have the input source content');
+        $this->assertEquals($threadB->messages[0]->content, $workflowRun->workflowInput->content, 'Job B first message should have the workflow input content');
         $this->assertEquals($threadB->messages[1]->content, $artifactContent, 'Job B second message should have the artifact content from Job A');
     }
 
@@ -288,23 +288,23 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->mocksOpenAiCompletionResponse()->twice();
         $workflow     = Workflow::factory()->create();
         $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
-        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B', 'use_input_source' => true]);
+        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B', 'use_input' => true]);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id, 'group_by' => 'service_dates.date']);
-        $inputSourceContent = 'Multiple Task Input Source Content';
-        $inputSource        = InputSource::factory()->create(['name' => $inputSourceContent, 'content' => $inputSourceContent]);
-        $workflowRun        = WorkflowRun::factory()->recycle($workflow)->recycle($inputSource)->started()->create();
-        $workflowJobRunA    = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
+        $workflowInputContent = 'Multiple Task Workflow Input Content';
+        $workflowInput        = WorkflowInput::factory()->create(['name' => $workflowInputContent, 'content' => $workflowInputContent]);
+        $workflowRun          = WorkflowRun::factory()->recycle($workflow)->recycle($workflowInput)->started()->create();
+        $workflowJobRunA      = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
             'completed_at' => now(),
             'started_at'   => now(),
         ]);
-        $serviceDates       = [
+        $serviceDates         = [
             ['date' => '2022-01-01', 'service' => 'Service A'],
             ['date' => '2022-02-01', 'service' => 'Service B'],
         ];
-        $artifactContent    = json_encode([
+        $artifactContent      = json_encode([
             'service_dates' => $serviceDates,
         ]);
-        $artifact           = Artifact::factory()->create(['content' => $artifactContent]);
+        $artifact             = Artifact::factory()->create(['content' => $artifactContent]);
         $workflowJobRunA->artifacts()->save($artifact);
         $workflowJobRunB = WorkflowJobRun::factory()->recycle($workflowJobB)->recycle($workflowRun)->create();
 
@@ -322,7 +322,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $firstTask = $completedTasks->first();
         $this->assertEquals($serviceDates[0]['date'], $firstTask->group, 'The first task should have the first service date as the task group');
         $firstTaskMessages = $firstTask->thread()->first()->messages()->get();
-        $this->assertEquals($inputSourceContent, $firstTaskMessages[0]->content, 'Job B should have the input source content as the first thread message');
+        $this->assertEquals($workflowInputContent, $firstTaskMessages[0]->content, 'Job B should have the workflow input content as the first thread message');
         $firstTaskServiceDateData = json_decode($firstTaskMessages[1]->content, true);
         $this->assertNotNull($firstTaskServiceDateData, 'Job B should have a thread w/ a message that is JSON encoded with the service date data');
         $this->assertEquals($serviceDates[0]['date'], $firstTaskServiceDateData['date'], 'Job B should have the first service date as the thread input');
@@ -332,7 +332,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $secondTask = $completedTasks->last();
         $this->assertEquals($serviceDates[1]['date'], $secondTask->group, 'The second task should have the second service date as the task group');
         $secondTaskMessages = $secondTask->thread()->first()->messages()->get();
-        $this->assertEquals($inputSourceContent, $secondTaskMessages[0]->content, 'Job B should have the input source content as the first thread message');
+        $this->assertEquals($workflowInputContent, $secondTaskMessages[0]->content, 'Job B should have the workflow input content as the first thread message');
         $secondTaskServiceDateData = json_decode($secondTaskMessages[1]->content, true);
         $this->assertNotNull($secondTaskServiceDateData, 'Job B should have a thread w/ a message that is JSON encoded with the service date data');
         $this->assertEquals($serviceDates[1]['date'], $secondTaskServiceDateData['date'], 'Job B should have the second service date as the thread input');

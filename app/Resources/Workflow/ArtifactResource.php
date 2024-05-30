@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Resources\InputSource;
+namespace App\Resources\Workflow;
 
-use App\Models\Shared\Artifact;
+use App\Models\Workflow\Artifact;
 use Newms87\Danx\Resources\ActionResource;
 
 /**

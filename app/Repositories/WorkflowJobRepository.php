@@ -5,7 +5,7 @@ namespace App\Repositories;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowAssignment;
 use App\Models\Workflow\WorkflowJob;
-use App\WorkflowTools\TranscodeInputSourceWorkflowTool;
+use App\WorkflowTools\TranscodeWorkflowInputWorkflowTool;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -59,8 +59,8 @@ class WorkflowJobRepository extends ActionRepository
     {
         $workflowJob->update($data);
 
-        if ($workflowJob->wasChanged('use_input_source')) {
-            $this->applyTranscodeInputSourceJobInWorkflow($workflowJob->workflow);
+        if ($workflowJob->wasChanged('use_input')) {
+            $this->applyTranscodeWorkflowInputJobInWorkflow($workflowJob->workflow);
             $this->calculateDependencyLevels($workflowJob->workflow);
         }
 
@@ -108,7 +108,7 @@ class WorkflowJobRepository extends ActionRepository
     public function setDependencies(WorkflowJob $workflowJob, $dependencies): bool
     {
         $this->assignDependenciesToWorkflowJob($workflowJob, $dependencies);
-        $this->applyTranscodeInputSourceJobInWorkflow($workflowJob->workflow);
+        $this->applyTranscodeWorkflowInputJobInWorkflow($workflowJob->workflow);
         $this->calculateDependencyLevels($workflowJob->workflow);
 
         return true;
@@ -169,49 +169,49 @@ class WorkflowJobRepository extends ActionRepository
     }
 
     /**
-     * Prepends a Transcode Input Source job to the workflow if it does not already exist.
-     * This will ensure that the input source is prepared for the jobs that require it before running the rest of the
-     * workflow. The Transcode Input Source job will be a dependency for all jobs that require the input source (ie:
-     * use_input_source).
+     * Prepends a Transcode Workflow Input job to the workflow if it does not already exist.
+     * This will ensure that the workflow input is prepared for the jobs that require it before running the rest of the
+     * workflow. The Transcode Workflow Input job will be a dependency for all jobs that require the workflow input (ie:
+     * use_input).
      *
      * @param Workflow $workflow
      * @return void
      */
-    public function applyTranscodeInputSourceJobInWorkflow(Workflow $workflow): void
+    public function applyTranscodeWorkflowInputJobInWorkflow(Workflow $workflow): void
     {
         // If the job already exists, then there is nothing to do
-        $transcodeInputSourceJob = $workflow->workflowJobs()->firstWhere('name', TranscodeInputSourceWorkflowTool::$toolName);
+        $transcodeWorkflowInputJob = $workflow->workflowJobs()->firstWhere('name', TranscodeWorkflowInputWorkflowTool::$toolName);
 
-        if (!$transcodeInputSourceJob) {
-            $transcodeInputSourceJob = $workflow->workflowJobs()->create([
-                'name'             => TranscodeInputSourceWorkflowTool::$toolName,
-                'use_input_source' => true,
-                'workflow_tool'    => TranscodeInputSourceWorkflowTool::class,
+        if (!$transcodeWorkflowInputJob) {
+            $transcodeWorkflowInputJob = $workflow->workflowJobs()->create([
+                'name'          => TranscodeWorkflowInputWorkflowTool::$toolName,
+                'use_input'     => true,
+                'workflow_tool' => TranscodeWorkflowInputWorkflowTool::class,
             ]);
         }
 
         $workflowJobs = $workflow->workflowJobs()->get();
 
-        // Only make the Input source a dependency for the jobs that require it
+        // Only make the Workflow input a dependency for the jobs that require it
         foreach($workflowJobs as $workflowJob) {
-            // Skip assigning the input source job to itself
-            if ($workflowJob->id === $transcodeInputSourceJob?->id) {
+            // Skip assigning the workflow input job to itself
+            if ($workflowJob->id === $transcodeWorkflowInputJob?->id) {
                 continue;
             }
 
-            $inputSourceDependency = $workflowJob->dependencies()->firstWhere('depends_on_workflow_job_id', $transcodeInputSourceJob->id);
-            if ($workflowJob->use_input_source) {
-                if (!$inputSourceDependency) {
+            $workflowInputDependency = $workflowJob->dependencies()->firstWhere('depends_on_workflow_job_id', $transcodeWorkflowInputJob->id);
+            if ($workflowJob->use_input) {
+                if (!$workflowInputDependency) {
                     $workflowJob->dependencies()->create([
-                        'depends_on_workflow_job_id' => $transcodeInputSourceJob->id,
+                        'depends_on_workflow_job_id' => $transcodeWorkflowInputJob->id,
                     ]);
                 }
             } else {
-                $inputSourceDependency?->delete();
+                $workflowInputDependency?->delete();
             }
         }
 
-        Log::debug("$workflow prepended $transcodeInputSourceJob");
+        Log::debug("$workflow prepended $transcodeWorkflowInputJob");
     }
 
     /**

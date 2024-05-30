@@ -3,7 +3,6 @@
 namespace App\Models\Workflow;
 
 use App\Models\Agent\Thread;
-use App\Models\Shared\Artifact;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

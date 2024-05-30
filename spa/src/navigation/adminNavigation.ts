@@ -2,7 +2,7 @@ import router from "@/router";
 import {
 	FaSolidCloudBolt as DashboardIcon,
 	FaSolidDatabase as AuditsIcon,
-	FaSolidFile as InputSourcesIcon,
+	FaSolidFile as WorkflowInputsIcon,
 	FaSolidRobot as AgentsIcon,
 	FaSolidWorm as WorkflowsIcon
 } from "danx-icon";
@@ -14,9 +14,9 @@ export default [
 		onClick: () => router.push({ name: "home" })
 	},
 	{
-		label: "Input Sources",
-		icon: InputSourcesIcon,
-		onClick: () => router.push({ name: "input-sources" })
+		label: "Workflow Inputs",
+		icon: WorkflowInputsIcon,
+		onClick: () => router.push({ name: "workflow-inputs" })
 	},
 	{
 		label: "Workflows",

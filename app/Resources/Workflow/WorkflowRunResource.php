@@ -3,7 +3,6 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowRun;
-use App\Resources\InputSource\ArtifactResource;
 use Newms87\Danx\Resources\ActionResource;
 
 /**

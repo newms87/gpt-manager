@@ -3,8 +3,8 @@
 namespace App\WorkflowTools;
 
 use App\Models\Agent\Thread;
-use App\Models\Shared\Artifact;
-use App\Models\Shared\InputSource;
+use App\Models\Workflow\Artifact;
+use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowTask;
 use App\Repositories\ThreadRepository;
 use Illuminate\Support\Collection;
@@ -42,7 +42,7 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
     }
 
     /**
-     * Create a thread for the task and add messages from the input source or dependencies
+     * Create a thread for the task and add messages from the workflow input or dependencies
      *
      * @param WorkflowTask $workflowTask
      * @return Thread
@@ -59,9 +59,9 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
 
         Log::debug("$workflowTask created $thread");
 
-        if ($workflowJob->use_input_source) {
-            // If we have no dependencies, then we want to use the input source
-            $this->addThreadMessageFromInputSource($thread, $workflowRun->inputSource);
+        if ($workflowJob->use_input) {
+            // If we have no dependencies, then we want to use the workflow input
+            $this->addThreadMessageFromWorkflowInput($thread, $workflowRun->workflowInput);
         }
 
         // If we have dependencies, we want to use the artifacts from the dependencies
@@ -110,18 +110,18 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
     }
 
     /**
-     * Create a message and append it to the thread based on the Input Source content + files
+     * Create a message and append it to the thread based on the Workflow Input content + files
      *
-     * @param Thread      $thread
-     * @param InputSource $inputSource
+     * @param Thread        $thread
+     * @param WorkflowInput $workflowInput
      * @return void
      */
-    public function addThreadMessageFromInputSource(Thread $thread, InputSource $inputSource): void
+    public function addThreadMessageFromWorkflowInput(Thread $thread, WorkflowInput $workflowInput): void
     {
-        $content = $inputSource->content;
-        $fileIds = $inputSource->storedFiles->pluck('id')->toArray();
+        $content = $workflowInput->content;
+        $fileIds = $workflowInput->storedFiles->pluck('id')->toArray();
         app(ThreadRepository::class)->addMessageToThread($thread, $content, $fileIds);
-        Log::debug("$thread added $inputSource");
+        Log::debug("$thread added $workflowInput");
     }
 
     /**

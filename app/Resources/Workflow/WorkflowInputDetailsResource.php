@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Resources\InputSource;
+namespace App\Resources\Workflow;
 
-use App\Models\Shared\InputSource;
+use App\Models\Workflow\WorkflowInput;
 use Newms87\Danx\Resources\StoredFileWithTranscodesResource;
 
 /**
- * @mixin InputSource
- * @property InputSource $resource
+ * @mixin WorkflowInput
+ * @property WorkflowInput $resource
  */
-class InputSourceDetailsResource extends InputSourceResource
+class WorkflowInputDetailsResource extends WorkflowInputResource
 {
     public function data(): array
     {
@@ -18,7 +18,7 @@ class InputSourceDetailsResource extends InputSourceResource
         return [
                 'files'        => StoredFileWithTranscodesResource::collection($this->storedFiles),
                 'content'      => $this->content,
-                'workflowRuns' => $runs ? InputSourceWorkflowRunDetailsResource::collection($runs) : [],
+                'workflowRuns' => $runs ? WorkflowInputWorkflowRunDetailsResource::collection($runs) : [],
             ] + parent::data();
     }
 }

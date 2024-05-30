@@ -1,16 +1,14 @@
 <?php
 
-namespace App\Resources\InputSource;
+namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowRun;
-use App\Resources\Workflow\WorkflowJobRunResource;
-use App\Resources\Workflow\WorkflowRunResource;
 
 /**
  * @mixin WorkflowRun
  * @property WorkflowRun $resource
  */
-class InputSourceWorkflowRunDetailsResource extends WorkflowRunResource
+class WorkflowInputWorkflowRunDetailsResource extends WorkflowRunResource
 {
     protected static string $type = 'WorkflowRun';
 

@@ -1,19 +1,19 @@
 <?php
 
 use App\Http\Controllers\Ai\AgentsController;
-use App\Http\Controllers\Ai\InputSourcesController;
 use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\ThreadsController;
 use App\Http\Controllers\Ai\WorkflowAssignmentsController;
+use App\Http\Controllers\Ai\WorkflowInputsController;
 use App\Http\Controllers\Ai\WorkflowJobsController;
 use App\Http\Controllers\Ai\WorkflowRunsController;
 use App\Http\Controllers\Ai\WorkflowsController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
-use Newms87\Danx\Http\Routes\ActionRoute;
-use Newms87\Danx\Http\Routes\FileUploadRoute;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Newms87\Danx\Http\Routes\ActionRoute;
+use Newms87\Danx\Http\Routes\FileUploadRoute;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -30,11 +30,10 @@ Route::get('/dashboard', function () {
 // Utility
 FileUploadRoute::routes();
 
-// Input Sources
-ActionRoute::routes('input-sources', new InputSourcesController);
 
 // Workflows
 ActionRoute::routes('workflows', new WorkflowsController);
+ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
 ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController);
 ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);

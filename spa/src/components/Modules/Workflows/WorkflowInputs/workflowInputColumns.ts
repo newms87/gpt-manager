@@ -1,5 +1,5 @@
-import { getActions } from "@/components/Modules/InputSources/inputSourceActions";
-import { InputSourceController } from "@/components/Modules/InputSources/inputSourceControls";
+import { getActions } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputActions";
+import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { fDate, fNumber } from "quasar-ui-danx";
 import { TableColumn } from "quasar-ui-danx/types";
 import { h } from "vue";
@@ -12,7 +12,7 @@ export const columns: TableColumn[] = [
 		sortable: true,
 		required: true,
 		actionMenu: getActions({ menu: true }),
-		onClick: (inputSource) => InputSourceController.activatePanel(inputSource, "edit")
+		onClick: (workflowInput) => WorkflowInputController.activatePanel(workflowInput, "edit")
 	},
 	{
 		name: "description",
@@ -28,11 +28,11 @@ export const columns: TableColumn[] = [
 	},
 	{
 		name: "workflow_runs_count",
-		label: "InputSource Runs",
+		label: "WorkflowInput Runs",
 		align: "left",
 		format: fNumber,
 		sortable: true,
-		onClick: (inputSource) => InputSourceController.activatePanel(inputSource, "runs")
+		onClick: (workflowInput) => WorkflowInputController.activatePanel(workflowInput, "runs")
 	},
 	{
 		name: "created_at",

@@ -14,10 +14,10 @@ class WorkflowJobFactory extends Factory
     public function definition(): array
     {
         return [
-            'workflow_id'      => Workflow::factory(),
-            'name'             => fake()->unique()->name,
-            'description'      => fake()->sentence,
-            'use_input_source' => false,
+            'workflow_id' => Workflow::factory(),
+            'name'        => fake()->unique()->name,
+            'description' => fake()->sentence,
+            'use_input'   => false,
         ];
     }
 }

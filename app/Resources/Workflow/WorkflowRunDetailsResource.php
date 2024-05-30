@@ -3,7 +3,6 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowRun;
-use App\Resources\InputSource\InputSourceResource;
 
 /**
  * @mixin WorkflowRun
@@ -16,7 +15,7 @@ class WorkflowRunDetailsResource extends WorkflowRunResource
     public function data(): array
     {
         return [
-                'inputSource'     => InputSourceResource::make($this->inputSource),
+                'workflowInput'   => WorkflowInputResource::make($this->workflowInput),
                 'workflowJobRuns' => WorkflowJobRunResource::collection($this->sortedWorkflowJobRuns()->get()),
             ] + parent::data();
     }

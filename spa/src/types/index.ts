@@ -1,4 +1,4 @@
 export * from "./agents";
 export * from "./artifacts";
-export * from "./input-sources";
+export * from "./workflow-inputs";
 export * from "./workflows";

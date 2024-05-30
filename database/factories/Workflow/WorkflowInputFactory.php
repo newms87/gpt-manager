@@ -1,12 +1,12 @@
 <?php
 
-namespace Database\Factories\Shared;
+namespace Database\Factories\Workflow;
 
 use App\Models\Team\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class InputSourceFactory extends Factory
+class WorkflowInputFactory extends Factory
 {
     public function definition(): array
     {

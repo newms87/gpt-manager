@@ -22,26 +22,26 @@
 		</div>
 
 		<WorkflowRunCard
-			v-for="workflowRun in inputSource.workflowRuns"
+			v-for="workflowRun in workflowInput.workflowRuns"
 			:key="workflowRun.id"
 			:workflow-run="workflowRun"
 			class="mb-4"
-			@remove="InputSourceController.getActiveItemDetails"
+			@remove="WorkflowInputController.getActiveItemDetails"
 		/>
 	</div>
 </template>
 <script setup lang="ts">
-import { InputSourceController } from "@/components/Modules/InputSources/inputSourceControls";
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
+import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 import { WorkflowRoutes } from "@/routes/workflowRoutes";
-import { InputSource } from "@/types/input-sources";
+import { WorkflowInput } from "@/types/workflow-inputs";
 import { FaSolidCirclePlay as RunIcon } from "danx-icon";
 import { SelectField } from "quasar-ui-danx";
 import { onMounted, ref, shallowRef, watch } from "vue";
 
 const props = defineProps<{
-	inputSource: InputSource;
+	workflowInput: WorkflowInput;
 }>();
 
 const workflowId = ref(null);
@@ -50,22 +50,22 @@ const runWorkflowAction = getAction("run-workflow");
 
 onMounted(async () => {
 	workflows.value = (await WorkflowRoutes.list({ page: 1, rowsPerPage: 1000 })).data;
-	refreshInputSource();
+	refreshWorkflowInput();
 });
 
-watch(() => props.inputSource.__timestamp, refreshInputSource);
+watch(() => props.workflowInput.__timestamp, refreshWorkflowInput);
 
 // TODO: Convert this to an action behavior / feature... Controller.startPollingActiveItemDetails()
 let refreshTimeout = null;
-function refreshInputSource() {
+function refreshWorkflowInput() {
 	if (refreshTimeout) {
 		clearTimeout(refreshTimeout);
 		refreshTimeout = null;
 	}
 
 	refreshTimeout = setTimeout(() => {
-		if (props.inputSource.has_active_workflow_run) {
-			InputSourceController.getActiveItemDetails();
+		if (props.workflowInput.has_active_workflow_run) {
+			WorkflowInputController.getActiveItemDetails();
 		}
 	}, 2000);
 }
@@ -74,7 +74,7 @@ async function onRunWorkflow() {
 	await runWorkflowAction.trigger({
 		id: workflowId.value,
 		__type: "Workflow"
-	}, { input_source_id: props.inputSource.id });
-	await InputSourceController.getActiveItemDetails();
+	}, { workflow_input_id: props.workflowInput.id });
+	await WorkflowInputController.getActiveItemDetails();
 }
 </script>

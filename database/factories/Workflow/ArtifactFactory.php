@@ -1,8 +1,8 @@
 <?php
 
-namespace Database\Factories\Shared;
+namespace Database\Factories\Workflow;
 
-use App\Models\Shared\Artifact;
+use App\Models\Workflow\Artifact;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

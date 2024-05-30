@@ -2,8 +2,6 @@
 
 namespace App\Models\Workflow;
 
-use App\Models\Shared\Artifact;
-use App\Models\Shared\InputSource;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,8 +24,8 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
     ];
 
     public array $relatedCounters = [
-        Workflow::class    => 'runs_count',
-        InputSource::class => 'workflow_runs_count',
+        Workflow::class      => 'runs_count',
+        WorkflowInput::class => 'workflow_runs_count',
     ];
 
     const string
@@ -64,9 +62,9 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
         return $this->belongsTo(Workflow::class);
     }
 
-    public function inputSource(): BelongsTo|InputSource
+    public function workflowInput(): BelongsTo|WorkflowInput
     {
-        return $this->belongsTo(InputSource::class);
+        return $this->belongsTo(WorkflowInput::class);
     }
 
     public function workflowJobRuns(): HasMany|WorkflowJobRun

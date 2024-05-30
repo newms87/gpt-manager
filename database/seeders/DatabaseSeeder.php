@@ -4,9 +4,9 @@ namespace Database\Seeders;
 
 use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
-use App\Models\Shared\InputSource;
 use App\Models\Team\Team;
 use App\Models\Workflow\Workflow;
+use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowJob;
 use Illuminate\Database\Seeder;
 
@@ -55,35 +55,35 @@ class DatabaseSeeder extends Seeder
             ->recycle($workflow)
             ->hasWorkflowAssignments(1, ['agent_id' => $questionAgent])
             ->create([
-                'name'             => 'Ask Question Job',
-                'description'      => 'Generate a question based on a topic',
-                'use_input_source' => true,
+                'name'        => 'Ask Question Job',
+                'description' => 'Generate a question based on a topic',
+                'use_input'   => true,
             ]);
         $answerJob   = WorkflowJob::factory()
             ->recycle($workflow)
             ->hasWorkflowAssignments(1, ['agent_id' => $answerAgent])
             ->hasDependencies(1, ['depends_on_workflow_job_id' => $questionJob, 'group_by' => 'questions'])
             ->create([
-                'name'             => 'Answer Question Job',
-                'description'      => 'Answer a question based on a topic',
-                'use_input_source' => false,
+                'name'        => 'Answer Question Job',
+                'description' => 'Answer a question based on a topic',
+                'use_input'   => false,
             ]);
         WorkflowJob::factory()
             ->recycle($workflow)
             ->hasWorkflowAssignments(1, ['agent_id' => $validatorAgent])
             ->hasDependencies(1, ['depends_on_workflow_job_id' => $answerJob])
             ->create([
-                'name'             => 'Validate Question and Answer',
-                'description'      => 'Validate the question and answer pair to ensure they are related and the answer is valid',
-                'use_input_source' => true,
+                'name'        => 'Validate Question and Answer',
+                'description' => 'Validate the question and answer pair to ensure they are related and the answer is valid',
+                'use_input'   => true,
             ]);
 
-        InputSource::factory()->create([
+        WorkflowInput::factory()->create([
             'name'        => 'Topic: History of Computers',
             'description' => 'The topic to generate questions and answers for',
             'content'     => "Topic: History of Computers",
         ]);
-        InputSource::factory()->create([
+        WorkflowInput::factory()->create([
             'name'        => 'Topic: Tom Hanks',
             'description' => 'The topic to generate questions and answers for',
             'content'     => "Topic: Tom Hanks",

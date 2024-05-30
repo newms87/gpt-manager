@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Models\Shared;
+namespace App\Models\Workflow;
 
-use App\Models\Workflow\WorkflowRun;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +14,7 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class InputSource extends Model implements AuditableContract
+class WorkflowInput extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
@@ -57,7 +56,7 @@ class InputSource extends Model implements AuditableContract
                 'required',
                 'max:80',
                 'string',
-                Rule::unique('input_sources')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
+                Rule::unique('workflow_inputs')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
             ],
         ])->validate();
 
@@ -66,6 +65,6 @@ class InputSource extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<InputSource ($this->id) $this->name>";
+        return "<WorkflowInput ($this->id) $this->name>";
     }
 }
