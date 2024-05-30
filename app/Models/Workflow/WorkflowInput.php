@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Traits\HasObjectTags;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowInput extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, HasObjectTags, SoftDeletes;
 
     protected $fillable = [
         'name',
