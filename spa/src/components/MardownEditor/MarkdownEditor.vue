@@ -1,8 +1,8 @@
 <template>
 	<div class="dx-markdown-editor">
-		<div v-if="label" class="mb-2 text-sm">
+		<FieldLabel v-if="label" class="mb-2 text-sm" :label="label">
 			{{ label }}
-		</div>
+		</FieldLabel>
 		<MilkdownProvider>
 			<MilkdownEditor v-if="!isRaw" v-model.trim="content" :class="editorClass" :readonly="readonly" />
 			<TextField v-else v-model.trim="content" :readonly="readonly" type="textarea" autogrow />
@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import MilkdownEditor from "@/components/MardownEditor/MilkdownEditor";
 import { MilkdownProvider } from "@milkdown/vue";
-import { MaxLengthCounter, TextField } from "quasar-ui-danx";
+import { FieldLabel, MaxLengthCounter, TextField } from "quasar-ui-danx";
 
 const content = defineModel({ type: String });
 const isRaw = defineModel("isRaw", { type: Boolean, default: false });

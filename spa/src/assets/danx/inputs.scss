@@ -1,3 +1,10 @@
+.dx-field-label {
+	@apply text-xs block mb-1.5;
+
+	.dx-field-required {
+		@apply text-red-500 ml-0.5;
+	}
+}
 
 .q-field {
 	.q-field__inner {
@@ -47,7 +54,7 @@
 		@apply pb-0;
 
 		.q-field__native {
-			@apply py-3;
+			@apply py-4;
 		}
 
 		&.q-select--multiple {
@@ -56,16 +63,6 @@
 
 				.q-chip {
 					@apply h-auto px-4 py-1;
-				}
-			}
-		}
-
-		&.q-field--labeled {
-			.q-field__native {
-				@apply py-1;
-
-				.q-field__input {
-					min-height: 0;
 				}
 			}
 		}

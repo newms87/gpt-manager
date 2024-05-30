@@ -1,6 +1,6 @@
 <template>
 	<div class="p-6">
-		<div class="flex flex-nowrap items-stretch justify-between">
+		<div class="flex flex-nowrap items-stretch justify-between mb-4">
 			<div class="flex-grow mr-4">
 				<SelectField
 					v-model="workflowId"
@@ -11,7 +11,7 @@
 				/>
 			</div>
 			<QBtn
-				class="text-lg mb-5 bg-lime-800 text-slate-300"
+				class="text-lg bg-lime-800 text-slate-300 px-6"
 				:loading="runWorkflowAction.isApplying"
 				:disable="runWorkflowAction.isApplying || !workflowId"
 				@click="onRunWorkflow"
