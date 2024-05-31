@@ -2,10 +2,12 @@
 
 namespace App\Models\Workflow;
 
+use App\Models\ContentSource\ContentSource;
 use App\Traits\HasObjectTags;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,10 +16,11 @@ use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\CountableTrait;
 
 class WorkflowInput extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasObjectTags, SoftDeletes;
+    use HasFactory, AuditableTrait, HasObjectTags, SoftDeletes, CountableTrait;
 
     protected $fillable = [
         'name',
@@ -25,11 +28,20 @@ class WorkflowInput extends Model implements AuditableContract
         'content',
     ];
 
+    public array $relatedCounters = [
+        ContentSource::class => 'workflow_inputs_count',
+    ];
+
     public function casts()
     {
         return [
             'data' => 'json',
         ];
+    }
+
+    public function contentSource(): BelongsTo|ContentSource
+    {
+        return $this->belongsTo(ContentSource::class);
     }
 
     public function storedFiles(): StoredFile|MorphToMany
