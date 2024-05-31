@@ -35,9 +35,10 @@ export const columns: TableColumn[] = [
 	},
 	{
 		name: "fetched_at",
-		label: "Last",
+		label: "Last Fetched",
 		sortable: true,
-		align: "left"
+		align: "left",
+		format: fDate
 	},
 	{
 		name: "workflow_inputs_count",

@@ -1,20 +1,31 @@
 <template>
 	<div class="p-6">
-		<RenderedForm
-			v-model:values="input"
-			empty-value=""
-			:form="contentSourceForm"
-			:saving="updateAction.isApplying"
-			@update:values="updateAction.trigger(contentSource, input)"
+		<TextField v-model="input.name" label="Name" required :max-length="40" @update:model-value="onUpdate" />
+		<TextField
+			v-model="input.url"
+			label="URL"
+			required
+			:max-length="2048"
+			class="mt-4"
+			@update:model-value="onUpdate"
+		/>
+		<TextField
+			v-model="input.polling_interval"
+			label="Polling Interval (in minutes)"
+			required
+			type="number"
+			:min="1"
+			:max="60*60*24*365"
+			class="mt-4"
+			@update:model-value="onUpdate"
 		/>
 	</div>
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/ContentSources/contentSourceActions";
 import { ContentSource } from "@/types";
-import { RenderedForm, TextField } from "quasar-ui-danx";
-import { Form } from "quasar-ui-danx/types";
-import { h, ref } from "vue";
+import { TextField } from "quasar-ui-danx";
+import { ref } from "vue";
 
 const props = defineProps<{
 	contentSource: ContentSource,
@@ -23,22 +34,11 @@ const props = defineProps<{
 const updateAction = getAction("update-debounced");
 const input = ref({
 	name: props.contentSource.name,
-	url: props.contentSource.url
+	url: props.contentSource.url,
+	polling_interval: props.contentSource.polling_interval
 });
 
-const contentSourceForm: Form = {
-	fields: [
-		{
-			name: "name",
-			vnode: (props) => h(TextField, { ...props, maxLength: 40 }),
-			label: "Name",
-			required: true
-		},
-		{
-			name: "url",
-			vnode: (props) => h(TextField, { ...props, maxLength: 2048 }),
-			label: "URL"
-		}
-	]
-};
+function onUpdate() {
+	updateAction.trigger(props.contentSource, input.value);
+}
 </script>
