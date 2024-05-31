@@ -6,6 +6,7 @@ import { AuthRoutes } from "@/routes/authRoutes";
 import {
 	AgentsView,
 	AuditRequestsView,
+	ContentSourcesView,
 	DashboardView,
 	LoginView,
 	PageNotFoundView,
@@ -30,6 +31,12 @@ const router = createRouter({
 					name: "dashboard",
 					component: DashboardView,
 					meta: { title: "Danx Home" }
+				},
+				{
+					path: "/content-sources/:id?/:panel?",
+					name: "content-sources",
+					component: ContentSourcesView,
+					meta: { title: "Content Sources", type: "ContentSource" }
 				},
 				{
 					path: "/workflow-inputs/:id?/:panel?",

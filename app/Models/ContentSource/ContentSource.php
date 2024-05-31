@@ -15,6 +15,10 @@ class ContentSource extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
+    const
+        TYPE_API = 'api',
+        TYPE_RSS = 'rss';
+
     protected $fillable = [
         'name',
         'type',
@@ -51,7 +55,7 @@ class ContentSource extends Model implements AuditableContract
             ],
             'team_id' => 'required|integer',
             'type'    => 'required|string',
-            'url'     => 'required|string|url',
+            'url'     => 'string|url',
         ])->validate();
 
         return $this;

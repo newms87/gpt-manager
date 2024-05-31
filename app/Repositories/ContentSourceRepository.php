@@ -37,6 +37,10 @@ class ContentSourceRepository extends ActionRepository
 
     public function create(array $data): ContentSource
     {
+        $data += [
+            'type' => ContentSource::TYPE_API,
+        ];
+
         $contentSource          = ContentSource::make($data);
         $contentSource->team_id = team()->id;
         $contentSource->validate();

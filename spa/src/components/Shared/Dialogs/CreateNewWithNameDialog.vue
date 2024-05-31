@@ -6,6 +6,7 @@
 		@close="$emit('close')"
 	>
 		<TextField v-model="name" label="Name" />
+		<slot />
 	</ConfirmDialog>
 </template>
 <script setup lang="ts">

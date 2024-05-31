@@ -1,5 +1,6 @@
 export { default as AgentsView } from "./AgentsView.vue";
 export { default as AuditRequestsView } from "./AuditRequestsView.vue";
+export { default as ContentSourcesView } from "./ContentSourcesView.vue";
 export { default as DashboardView } from "./DashboardView.vue";
 export { default as LoginView } from "./LoginView.vue";
 export { default as PageNotFoundView } from "./PageNotFoundView.vue";

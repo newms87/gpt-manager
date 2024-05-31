@@ -15,11 +15,11 @@ return new class extends Migration {
             $table->foreignId('team_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('type');
-            $table->string('url', 2048);
+            $table->string('url', 2048)->default('');
             $table->json('config')->nullable();
             $table->unsignedInteger('per_page')->default(1000);
             $table->unsignedInteger('polling_interval')->default(60)->comment('in minutes');
-            $table->timestamp('polled_at');
+            $table->timestamp('fetched_at')->nullable();
             $table->unsignedInteger('workflow_inputs_count')->default(0);
             $table->timestamps();
             $table->softDeletes();

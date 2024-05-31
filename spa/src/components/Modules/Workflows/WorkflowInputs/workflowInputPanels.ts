@@ -15,16 +15,12 @@ export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "edit",
 		label: "Info",
-		vnode: () => h(WorkflowInputInfoPanel, {
-			workflowInput: activeItem.value
-		})
+		vnode: () => h(WorkflowInputInfoPanel, { workflowInput: activeItem.value })
 	},
 	{
 		name: "input",
 		label: "Input",
-		vnode: () => h(WorkflowInputInputPanel, {
-			workflowInput: activeItem.value
-		})
+		vnode: () => h(WorkflowInputInputPanel, { workflowInput: activeItem.value })
 	},
 	{
 		name: "runs",

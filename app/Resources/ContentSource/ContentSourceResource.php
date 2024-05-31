@@ -16,14 +16,16 @@ class ContentSourceResource extends ActionResource
     public function data(): array
     {
         return [
-            'id'               => $this->id,
-            'name'             => $this->name,
-            'type'             => $this->type,
-            'url'              => $this->url,
-            'config'           => $this->config,
-            'per_page'         => $this->per_page,
-            'polling_interval' => $this->polling_interval,
-            'created_at'       => $this->created_at,
+            'id'                    => $this->id,
+            'name'                  => $this->name,
+            'type'                  => $this->type,
+            'url'                   => $this->url,
+            'config'                => $this->config,
+            'per_page'              => $this->per_page,
+            'polling_interval'      => $this->polling_interval,
+            'fetched_at'            => $this->fetched_at,
+            'workflow_inputs_count' => $this->workflow_inputs_count,
+            'created_at'            => $this->created_at,
         ];
     }
 }

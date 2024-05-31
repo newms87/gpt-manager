@@ -15,8 +15,7 @@
 
 	&.q-input {
 		.q-field__native {
-			padding-top: .4em;
-			padding-bottom: .5em;
+			@apply py-3
 		}
 
 		&.dx-number-field {
