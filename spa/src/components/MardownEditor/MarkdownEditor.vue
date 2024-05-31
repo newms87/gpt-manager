@@ -20,14 +20,29 @@
 import MilkdownEditor from "@/components/MardownEditor/MilkdownEditor";
 import { MilkdownProvider } from "@milkdown/vue";
 import { FieldLabel, MaxLengthCounter, TextField } from "quasar-ui-danx";
+import { nextTick, watch } from "vue";
 
 const content = defineModel({ type: String });
 const isRaw = defineModel("isRaw", { type: Boolean, default: false });
-defineProps<{
+const props = defineProps<{
 	editorClass?: string | object;
 	maxLength?: number;
 	readonly?: boolean;
 	label?: string;
+	syncModelChanges?: boolean;
 }>();
 
+// Watch for changes in the content and update the model if the syncModelChanges prop is set
+if (props.syncModelChanges) {
+	watch(() => content.value, () => {
+		// Milkdown editor is challenging to get to be reactive, so as a quick workaround,
+		// just rebuild the editor when the content changes
+		if (!isRaw.value) {
+			isRaw.value = true;
+			nextTick(() => {
+				isRaw.value = false;
+			});
+		}
+	});
+}
 </script>
