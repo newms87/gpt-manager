@@ -31,7 +31,8 @@ class ContentSource extends Model implements AuditableContract
     public function casts()
     {
         return [
-            'config' => 'json',
+            'config'     => 'json',
+            'fetched_at' => 'datetime',
         ];
     }
 

@@ -2,6 +2,8 @@
 
 namespace App\Api\ConfigurableApi;
 
+use Carbon\Carbon;
+
 class ConfigurableApiConfig
 {
     protected array $config;
@@ -20,7 +22,7 @@ class ConfigurableApiConfig
     {
         return strtoupper($this->getMethod()) === 'GET';
     }
-    
+
     public function getPerPage()
     {
         return $this->config['per_page'] ?? 1000;
@@ -39,6 +41,21 @@ class ConfigurableApiConfig
     public function getHeaders()
     {
         return $this->config['headers'] ?? [];
+    }
+
+    public function getListUri()
+    {
+        return $this->config['list_uri'] ?? '';
+    }
+
+    public function getTimestampFormat(): string
+    {
+        return $this->config['timestamp_format'] ?? 'Y-m-d H:i:s';
+    }
+
+    public function getMinimumTimestamp(): Carbon
+    {
+        return carbon($this->config['minimum_timestamp'] ?? null);
     }
 
     public function getTotalField()
@@ -69,5 +86,20 @@ class ConfigurableApiConfig
     public function getTimestampField()
     {
         return $this->config['fields']['timestamp'] ?? 'timestamp';
+    }
+
+    public function getItemIdField()
+    {
+        return $this->config['fields']['id'] ?? 'id';
+    }
+
+    public function getItemDateField()
+    {
+        return $this->config['fields']['date'] ?? 'date';
+    }
+
+    public function getItemNameField()
+    {
+        return $this->config['fields']['name'] ?? 'name';
     }
 }

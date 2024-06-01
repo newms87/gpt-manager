@@ -57,16 +57,23 @@ const methodOptions = [
 function mapConfig(cfg) {
 	return {
 		method: cfg?.method || "GET",
+		list_uri: cfg?.list_uri || "",
 		per_page: cfg?.per_page || 1000,
 		use_offset: cfg?.use_offset || false,
-		rateLimits: cfg?.rateLimits || [],
+		rate_limits: cfg?.rate_limits || [],
 		headers: cfg?.headers || {},
+		timestamp_format: cfg?.timestamp_format || "Y-m-d H:i:s",
+		min_timestamp: cfg?.min_timestamp || "2020-01-01",
 		fields: {
 			total: cfg?.fields?.total || "total",
 			per_page: cfg?.fields?.per_page || "per_page",
 			page: cfg?.fields?.page || "page",
 			offset: cfg?.fields?.offset || "offset",
-			timestamp: cfg?.fields?.timestamp || "timestamp"
+			timestamp: cfg?.fields?.timestamp || "timestamp",
+			items: cfg?.fields?.items || "items",
+			item_id: cfg?.fields?.item_id || "id",
+			item_name: cfg?.fields?.item_name || "name",
+			item_date: cfg?.fields?.item_date || "date"
 		}
 	};
 }
