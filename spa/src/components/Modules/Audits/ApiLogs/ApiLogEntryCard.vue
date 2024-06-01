@@ -14,16 +14,16 @@
 		</div>
 		<div class="mt-5">
 			<div v-for="header in requestHeaders" :key="header.name" class="flex items-center flex-nowrap space-x-2 py-1">
-				<div class="slate-500 min-w-32">{{ header.name }}:</div>
+				<div class="text-slate-400 min-w-32">{{ header.name }}:</div>
 				<div>{{ header.value }}</div>
 			</div>
 		</div>
 		<div class="my-4">
-			<div class="font-bold">Request</div>
+			<div class="font-bold mb-2">Request</div>
 			<MarkdownEditor :model-value="fMarkdownJSON(apiLog.request)" readonly />
 		</div>
 		<div class="my-4">
-			<div>Response</div>
+			<div class="font-bold mb-2">Response</div>
 			<MarkdownEditor :model-value="fMarkdownJSON(apiLog.response)" readonly />
 		</div>
 	</QCard>

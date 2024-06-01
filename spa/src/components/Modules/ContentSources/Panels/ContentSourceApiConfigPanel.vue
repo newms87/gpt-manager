@@ -58,12 +58,14 @@ function mapConfig(cfg) {
 	return {
 		method: cfg?.method || "GET",
 		per_page: cfg?.per_page || 1000,
+		use_offset: cfg?.use_offset || false,
 		rateLimits: cfg?.rateLimits || [],
 		headers: cfg?.headers || {},
 		fields: {
 			total: cfg?.fields?.total || "total",
 			per_page: cfg?.fields?.per_page || "per_page",
 			page: cfg?.fields?.page || "page",
+			offset: cfg?.fields?.offset || "offset",
 			timestamp: cfg?.fields?.timestamp || "timestamp"
 		}
 	};
