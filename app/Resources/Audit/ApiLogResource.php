@@ -21,7 +21,7 @@ class ApiLogResource extends ActionResource
             'service_name'     => $this->service_name,
             'status_code'      => $this->status_code,
             'method'           => $this->method,
-            'url '             => $this->full_url,
+            'url'              => $this->full_url,
             'request'          => $this->request,
             'response'         => $this->response,
             'request_headers'  => $this->request_headers,

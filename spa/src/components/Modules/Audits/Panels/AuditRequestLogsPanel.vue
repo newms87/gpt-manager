@@ -13,5 +13,5 @@ const props = defineProps<{
 	auditRequest: AuditRequest,
 }>();
 
-const logItems = computed(() => props.auditRequest.logs.split("\n"));
+const logItems = computed(() => props.auditRequest.logs?.split("\n") || []);
 </script>
