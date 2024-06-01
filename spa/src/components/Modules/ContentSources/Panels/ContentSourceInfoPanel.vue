@@ -20,12 +20,24 @@
 			class="mt-4"
 			@update:model-value="onUpdate"
 		/>
+
+		<div class="mt-8 flex items-center space-x-2">
+			<div class="bg-slate-700 p-3 rounded flex-grow">Last Fetch: {{ fDateTime(contentSource.fetched_at) }}</div>
+			<QBtn
+				class="bg-sky-800 text-slate-300 w-48 py-2.5"
+				:disable="fetchAction.isApplying"
+				:loading="fetchAction.isApplying"
+				@click="fetchAction.trigger(contentSource)"
+			>
+				Run Now
+			</QBtn>
+		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/ContentSources/contentSourceActions";
 import { ContentSource } from "@/types";
-import { NumberField, TextField } from "quasar-ui-danx";
+import { fDateTime, NumberField, TextField } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const props = defineProps<{
@@ -33,6 +45,7 @@ const props = defineProps<{
 }>();
 
 const updateAction = getAction("update-debounced");
+const fetchAction = getAction("fetch");
 const input = ref({
 	name: props.contentSource.name,
 	url: props.contentSource.url,

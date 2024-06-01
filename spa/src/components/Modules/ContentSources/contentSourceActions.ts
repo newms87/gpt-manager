@@ -49,6 +49,9 @@ const items: ActionOptions[] = [
 			target,
 			confirmClass: "bg-red-900"
 		})
+	},
+	{
+		name: "fetch"
 	}
 ];
 
