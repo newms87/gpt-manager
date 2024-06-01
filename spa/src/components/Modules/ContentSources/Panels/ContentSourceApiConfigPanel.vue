@@ -1,6 +1,15 @@
 <template>
 	<div class="p-6 flex flex-col items-stretch flex-nowrap">
 		<SelectField v-model="input.config.method" :options="methodOptions" @update="onUpdate" />
+		<NumberField
+			v-model="input.config.per_page"
+			:min="1"
+			:max="999999"
+			label="Per Page"
+			class="mt-4"
+			prepend-label
+			@update="onUpdate"
+		/>
 		<MarkdownEditor
 			class="mt-4"
 			sync-model-changes
@@ -21,7 +30,7 @@
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/ContentSources/contentSourceActions";
 import { ContentSource } from "@/types";
-import { fMarkdownJSON, SelectField } from "quasar-ui-danx";
+import { fMarkdownJSON, NumberField, SelectField } from "quasar-ui-danx";
 import { ref, watch } from "vue";
 
 const props = defineProps<{
@@ -48,6 +57,7 @@ const methodOptions = [
 function mapConfig(cfg) {
 	return {
 		method: cfg?.method || "GET",
+		per_page: cfg?.per_page || 1000,
 		rateLimits: cfg?.rateLimits || [],
 		headers: cfg?.headers || {},
 		fields: {

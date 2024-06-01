@@ -9,13 +9,14 @@
 			class="mt-4"
 			@update:model-value="onUpdate"
 		/>
-		<TextField
+		<NumberField
 			v-model="input.polling_interval"
 			label="Polling Interval (in minutes)"
+			placeholder="Enter Interval..."
 			required
-			type="number"
 			:min="1"
 			:max="60*60*24*365"
+			prepend-label
 			class="mt-4"
 			@update:model-value="onUpdate"
 		/>
@@ -24,7 +25,7 @@
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/ContentSources/contentSourceActions";
 import { ContentSource } from "@/types";
-import { TextField } from "quasar-ui-danx";
+import { NumberField, TextField } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const props = defineProps<{
