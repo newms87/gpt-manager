@@ -2,16 +2,18 @@
 
 namespace App\Api\ScreenshotOne;
 
-use Newms87\Danx\Api\BearerTokenApi;
+use GuzzleHttp\Exception\GuzzleException;
+use Newms87\Danx\Api\Api;
 use Newms87\Danx\Exceptions\ApiException;
 use Newms87\Danx\Exceptions\ApiRequestException;
-use GuzzleHttp\Exception\GuzzleException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
-class ScreenshotOneApi extends BearerTokenApi
+class ScreenshotOneApi extends Api
 {
     public static string $serviceName = 'ScreenshotOne';
+
+    protected ?string $token = null;
 
     public function __construct()
     {
@@ -19,11 +21,11 @@ class ScreenshotOneApi extends BearerTokenApi
         $this->token      = config('screenshotone.api_key');
     }
 
-    public function getHeaders()
+    public function getRequestHeaders(): array
     {
         return [
-            'X-Access-Key' => $this->token,
-        ];
+                'X-Access-Key' => $this->token,
+            ] + parent::getRequestHeaders();
     }
 
     /**

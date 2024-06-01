@@ -49,8 +49,16 @@ export interface ErrorLogEntry {
 	line: string;
 	message: string;
 	data: string;
-	stack_trace: string;
+	stack_trace: StackTraceEntry[];
 	created_at: string;
+}
+
+export interface StackTraceEntry {
+	file: string;
+	line: string;
+	function: string;
+	class: string;
+	type: string;
 }
 
 export interface AuditRequest extends ActionTargetItem {
