@@ -55,7 +55,7 @@ class ConfigurableApiConfig
 
     public function getMinimumTimestamp(): Carbon
     {
-        return carbon($this->config['minimum_timestamp'] ?? null);
+        return carbon($this->config['minimum_timestamp'] ?? '1979-01-01 00:00:00');
     }
 
     public function getTotalField()
@@ -86,6 +86,14 @@ class ConfigurableApiConfig
     public function getTimestampField()
     {
         return $this->config['fields']['timestamp'] ?? 'timestamp';
+    }
+
+    /**
+     * For now checkpoint and timestamp are the same, but might need to update in case checkpoint should be an ID
+     */
+    public function getCheckpointField()
+    {
+        return $this->getTimestampField();
     }
 
     public function getItemIdField()

@@ -1,13 +1,16 @@
 <template>
 	<QCard class="bg-slate-700 p-3">
-		<div class="flex items-center">
-			<div class="flex items-center space-x-3 flex-grow">
+		<div class="flex items-center flex-nowrap overflow-hidden">
+			<div class="flex items-center flex-nowrap space-x-3 flex-grow">
 				<div class="rounded-2xl px-3 py-1" :class="methodClass">{{ apiLog.method }}</div>
 				<div class="bg-slate-500 rounded-2xl px-3 py-1">{{ apiLog.status_code }}</div>
-				<div class="font-semibold text-base">{{ apiLog.url }}</div>
+				<div class="font-semibold text-base text-no-wrap overflow-hidden overflow-ellipsis max-w-[50rem]">
+					{{ decodedUrl }}
+					<QTooltip>{{ decodedUrl }}</QTooltip>
+				</div>
 			</div>
 			<div class="flex items-center">
-				<div class="bg-slate-900 px-4 py-1 rounded-2xl">
+				<div class="bg-slate-900 px-4 py-1 rounded-2xl text-no-wrap">
 					{{ fDateTime(apiLog.created_at) }}
 				</div>
 			</div>
@@ -58,4 +61,6 @@ const methodClass = computed(() => {
 			return "bg-red-800";
 	}
 });
+
+const decodedUrl = computed(() => decodeURIComponent(props.apiLog.url).replace(/ /g, "+"));
 </script>

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Api;
+namespace App\Api\ConfigurableApi;
 
-use App\Api\ConfigurableApi\ConfigurableApiConfig;
+use Illuminate\Support\Arr;
 use Newms87\Danx\Api\Api;
 use Newms87\Danx\Exceptions\ApiException;
 
@@ -17,6 +17,7 @@ class ConfigurableApi extends Api
         static::$serviceName = $serviceName;
         $this->config        = $config;
         $this->baseApiUrl    = $url;
+        $this->rateLimits    = $config->getRateLimits();
     }
 
     public function getRequestHeaders(): array
@@ -24,7 +25,7 @@ class ConfigurableApi extends Api
         return $this->config->getHeaders() + parent::getRequestHeaders();
     }
 
-    public function getItems($uri, $params = [], $page = 1, $perPage = null): array
+    public function getItems($uri, $params = [], $page = 1, $perPage = null): ConfigurableApiListResponse
     {
         $perPage = $perPage ?: $this->config->getPerPage();
 
@@ -47,11 +48,15 @@ class ConfigurableApi extends Api
         }
 
         $itemsField = $this->config->getItemsField();
+        $totalField = $this->config->getTotalField();
 
-        if (!isset($response[$itemsField])) {
+        if (!Arr::has($response, $itemsField)) {
             throw new ApiException("The response from the API did not contain the expected items field: " . $itemsField);
         }
 
-        return $response[$itemsField] ?: [];
+        $items = Arr::get($response, $itemsField) ?? [];
+        $total = Arr::get($response, $totalField) ?? 0;
+
+        return new ConfigurableApiListResponse($this->config, $items, $page, $total);
     }
 }

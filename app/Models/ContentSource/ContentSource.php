@@ -25,6 +25,7 @@ class ContentSource extends Model implements AuditableContract
         'url',
         'config',
         'per_page',
+        'last_checkpoint',
         'polling_interval',
     ];
 

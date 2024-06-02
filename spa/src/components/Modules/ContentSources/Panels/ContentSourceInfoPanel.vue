@@ -21,6 +21,13 @@
 			@update:model-value="onUpdate"
 		/>
 
+		<div class="mt-8">
+			<TextField
+				v-model="input.last_checkpoint"
+				label="Last Checkpoint"
+				placeholder="N/A"
+			/>
+		</div>
 		<div class="mt-8 flex items-center space-x-2">
 			<div class="bg-slate-700 p-3 rounded flex-grow">Last Fetch: {{ fDateTime(contentSource.fetched_at) }}</div>
 			<QBtn
@@ -49,6 +56,7 @@ const fetchAction = getAction("fetch");
 const input = ref({
 	name: props.contentSource.name,
 	url: props.contentSource.url,
+	last_checkpoint: props.contentSource.last_checkpoint,
 	polling_interval: props.contentSource.polling_interval
 });
 

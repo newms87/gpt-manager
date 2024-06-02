@@ -17,8 +17,8 @@ return new class extends Migration {
             $table->string('type');
             $table->string('url', 2048)->default('');
             $table->json('config')->nullable();
-            $table->unsignedInteger('per_page')->default(1000);
             $table->unsignedInteger('polling_interval')->default(60)->comment('in minutes');
+            $table->string('last_checkpoint')->nullable()->comment("The most recent ordered identifier / timestamp / indicator from the source");
             $table->timestamp('fetched_at')->nullable();
             $table->unsignedInteger('workflow_inputs_count')->default(0);
             $table->timestamps();

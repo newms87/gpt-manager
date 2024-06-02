@@ -6,9 +6,9 @@ export interface ContentSource extends ActionTargetItem {
 	type: string;
 	url: string;
 	config: object;
-	per_page: number;
-	fetched_at: string;
+	last_checkpoint: string;
 	polling_interval: number;
 	workflow_inputs_count: number;
+	fetched_at: string;
 	created_at: string;
 }

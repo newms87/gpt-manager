@@ -2,7 +2,7 @@
 
 namespace App\Services\ContentSource;
 
-use App\Api\ConfigurableApi;
+use App\Api\ConfigurableApi\ConfigurableApi;
 use App\Api\ConfigurableApi\ConfigurableApiConfig;
 use App\Models\ContentSource\ContentSource;
 
@@ -18,21 +18,34 @@ class ContentSourceFetchService
 
         // Add the timestamp to the URL
         $timestamp = $apiConfig->getMinimumTimestamp();
-        if ($contentSource->fetched_at) {
-            $timestamp = $timestamp->max($contentSource->fetched_at);
+        if ($contentSource->last_checkpoint) {
+            $timestamp = $timestamp->max(carbon($contentSource->last_checkpoint));
         }
         $resolvedUri = str_replace('{timestamp}', $timestamp->format($apiConfig->getTimestampFormat()), $listUri);
         $page        = 1;
 
-        // TODO: Implement pagination
-        $items = $api->getItems($resolvedUri, [], $page);
+        $limit = 4;
 
-        $this->storeWorkflowInputs($contentSource, $apiConfig, $items);
+        // Keep fetching pages and storing responses until we have all pages fetched
+        do {
+            $apiListResponse = $api->getItems($resolvedUri, [], $page);
+            $this->storeWorkflowInputs($contentSource, $apiConfig, $apiListResponse->getItems());
 
-        return $items;
+            $contentSource->fetched_at      = now();
+            $contentSource->last_checkpoint = $apiListResponse->getCheckpoint();
+            $contentSource->save();
+
+            dump('fetched page ' . $page . ' of ' . $contentSource->name . ': ' . $contentSource->last_checkpoint . ' -- ' . $apiListResponse->count() . ' / ' . $apiListResponse->getTotal(), $apiListResponse->hasMore());
+            sleep(2000);
+            if ($limit-- <= 0) {
+                break;
+            }
+        } while($apiListResponse->hasMore());
+
+        return true;
     }
 
-    public function storeWorkflowInputs(ContentSource $contentSource, ConfigurableApiConfig $apiConfig, $items)
+    public function storeWorkflowInputs(ContentSource $contentSource, ConfigurableApiConfig $apiConfig, $items): void
     {
         $idField   = $apiConfig->getItemIdField();
         $dateField = $apiConfig->getItemDateField();
@@ -43,15 +56,14 @@ class ContentSourceFetchService
             $recordDate = $item[$dateField] ?? null;
             $recordName = $item[$nameField] ?? null;
 
-            $contentSource->workflowInputs()->make()->forceFill([
+            $workflowInput = $contentSource->workflowInputs()->make()->forceFill([
                 'team_id' => team()->id,
                 'user_id' => user()->id,
                 'name'    => $contentSource->name . ': ' . implode(' ', array_filter([$recordId, $recordName, $recordDate])),
                 'data'    => $item,
-            ])->save();
+            ]);
+            $workflowInput->save();
+            $workflowInput->addObjectTag('content-source', 'api');
         }
-
-        $contentSource->fetched_at = now();
-        $contentSource->save();
     }
 }
