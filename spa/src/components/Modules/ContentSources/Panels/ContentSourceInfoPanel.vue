@@ -26,6 +26,7 @@
 				v-model="input.last_checkpoint"
 				label="Last Checkpoint"
 				placeholder="N/A"
+				@update:model-value="onUpdate"
 			/>
 		</div>
 		<div class="mt-8 flex items-center space-x-2">

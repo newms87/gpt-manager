@@ -4,16 +4,18 @@
 			<div class="flex items-center flex-nowrap space-x-3 flex-grow">
 				<div class="rounded-2xl px-3 py-1" :class="methodClass">{{ apiLog.method }}</div>
 				<div class="bg-slate-500 rounded-2xl px-3 py-1">{{ apiLog.status_code }}</div>
-				<div class="font-semibold text-base text-no-wrap overflow-hidden overflow-ellipsis max-w-[50rem]">
-					{{ decodedUrl }}
-					<QTooltip>{{ decodedUrl }}</QTooltip>
-				</div>
 			</div>
-			<div class="flex items-center">
+			<div class="flex items-center flex-nowrap flex-shrink-0">
+				<ShowHideButton v-model="showRequest" label="Request" class="bg-slate-800 mr-2" />
+				<ShowHideButton v-model="showResponse" label="Response" class="bg-slate-800 mr-2" />
 				<div class="bg-slate-900 px-4 py-1 rounded-2xl text-no-wrap">
 					{{ fDateTime(apiLog.created_at) }}
 				</div>
 			</div>
+		</div>
+		<div class="mt-5 font-semibold text-base text-no-wrap overflow-hidden overflow-ellipsis max-w-full">
+			{{ decodedUrl }}
+			<QTooltip>{{ decodedUrl }}</QTooltip>
 		</div>
 		<div class="mt-5">
 			<div v-for="header in requestHeaders" :key="header.name" class="flex items-center flex-nowrap space-x-2 py-1">
@@ -21,11 +23,11 @@
 				<div>{{ header.value }}</div>
 			</div>
 		</div>
-		<div class="my-4">
+		<div v-if="showRequest" class="my-4">
 			<div class="font-bold mb-2">Request</div>
 			<MarkdownEditor :model-value="fMarkdownJSON(apiLog.request)" readonly />
 		</div>
-		<div class="my-4">
+		<div v-if="showResponse" class="my-4">
 			<div class="font-bold mb-2">Response</div>
 			<MarkdownEditor :model-value="fMarkdownJSON(apiLog.response)" readonly />
 		</div>
@@ -34,8 +36,9 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { ApiLog } from "@/components/Modules/Audits/audit-requests";
+import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import { fDateTime, fMarkdownJSON } from "quasar-ui-danx";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
 	apiLog: ApiLog
@@ -63,4 +66,7 @@ const methodClass = computed(() => {
 });
 
 const decodedUrl = computed(() => decodeURIComponent(props.apiLog.url).replace(/ /g, "+"));
+
+const showRequest = ref(false);
+const showResponse = ref(false);
 </script>

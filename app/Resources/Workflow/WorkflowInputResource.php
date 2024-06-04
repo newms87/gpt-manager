@@ -25,6 +25,7 @@ class WorkflowInputResource extends ActionResource
             'workflow_runs_count'     => $this->workflow_runs_count,
             'thumb'                   => $thumbFile ? StoredFileResource::make($thumbFile) : null,
             'has_active_workflow_run' => $this->activeWorkflowRuns()->exists(),
+            'tags'                    => $this->objectTags()->pluck('name'),
             'created_at'              => $this->created_at,
             'updated_at'              => $this->updated_at,
         ];

@@ -5,6 +5,7 @@ namespace App\Models\ContentSource;
 use App\Models\Workflow\WorkflowInput;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -15,7 +16,7 @@ class ContentSource extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
-    const
+    const string
         TYPE_API = 'api',
         TYPE_RSS = 'rss';
 
@@ -29,7 +30,7 @@ class ContentSource extends Model implements AuditableContract
         'polling_interval',
     ];
 
-    public function casts()
+    public function casts(): array
     {
         return [
             'config'     => 'json',
@@ -37,7 +38,7 @@ class ContentSource extends Model implements AuditableContract
         ];
     }
 
-    public function workflowInputs()
+    public function workflowInputs(): HasMany|WorkflowInput
     {
         return $this->hasMany(WorkflowInput::class);
     }

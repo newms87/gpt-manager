@@ -2,17 +2,22 @@ import { getActions } from "@/components/Modules/Workflows/WorkflowInputs/workfl
 import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { fDate, fNumber } from "quasar-ui-danx";
 import { TableColumn } from "quasar-ui-danx/types";
-import { h } from "vue";
 
 export const columns: TableColumn[] = [
 	{
-		name: "name",
-		label: "Name",
+		name: "id",
+		label: "ID",
 		align: "left",
 		sortable: true,
 		required: true,
 		actionMenu: getActions({ menu: true }),
 		onClick: (workflowInput) => WorkflowInputController.activatePanel(workflowInput, "edit")
+	},
+	{
+		name: "name",
+		label: "Name",
+		align: "left",
+		sortable: true
 	},
 	{
 		name: "description",
@@ -21,10 +26,10 @@ export const columns: TableColumn[] = [
 		align: "left"
 	},
 	{
-		name: "data",
-		label: "Input",
+		name: "tags",
+		label: "Tags",
 		align: "left",
-		vnode: () => h("div", "Render the data for a column")
+		format: v => v.join(", ")
 	},
 	{
 		name: "workflow_runs_count",

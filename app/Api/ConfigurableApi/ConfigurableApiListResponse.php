@@ -2,6 +2,8 @@
 
 namespace App\Api\ConfigurableApi;
 
+use Illuminate\Support\Arr;
+use Newms87\Danx\Exceptions\ApiException;
 use Newms87\Danx\Input\Input;
 
 class ConfigurableApiListResponse extends Input
@@ -9,14 +11,30 @@ class ConfigurableApiListResponse extends Input
     protected ConfigurableApiConfig $apiConfig;
     protected int                   $page;
     protected int                   $total;
+    protected array                 $response;
 
-    public function __construct(ConfigurableApiConfig $apiConfig, array $items, int $page, int $total)
+    public function __construct(ConfigurableApiConfig $apiConfig, array $response, int $page)
     {
+        $itemsField = $apiConfig->getItemsField();
+        $totalField = $apiConfig->getTotalField();
+
+        if (!Arr::has($response, $itemsField)) {
+            throw new ApiException("The response from the API did not contain the expected items field: " . $itemsField);
+        }
+
+        $items = Arr::get($response, $itemsField) ?? [];
+        $total = Arr::get($response, $totalField) ?? 0;
         parent::__construct($items);
 
         $this->apiConfig = $apiConfig;
+        $this->response  = $response;
         $this->page      = $page;
         $this->total     = $total;
+    }
+
+    public function getResponse(): array
+    {
+        return $this->response;
     }
 
     public function getItems(): array
@@ -63,6 +81,5 @@ class ConfigurableApiListResponse extends Input
         }
 
         return $checkpoint;
-
     }
 }

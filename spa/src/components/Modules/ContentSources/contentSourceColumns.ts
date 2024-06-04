@@ -34,6 +34,12 @@ export const columns: TableColumn[] = [
 		format: fNumber
 	},
 	{
+		name: "last_checkpoint",
+		label: "Checkpoint",
+		align: "left",
+		sortable: true
+	},
+	{
 		name: "fetched_at",
 		label: "Last Fetched",
 		sortable: true,

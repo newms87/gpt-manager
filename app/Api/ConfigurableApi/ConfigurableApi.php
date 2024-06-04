@@ -2,9 +2,10 @@
 
 namespace App\Api\ConfigurableApi;
 
-use Illuminate\Support\Arr;
+use GuzzleHttp\Exception\GuzzleException;
 use Newms87\Danx\Api\Api;
 use Newms87\Danx\Exceptions\ApiException;
+use Newms87\Danx\Exceptions\ApiRequestException;
 
 class ConfigurableApi extends Api
 {
@@ -25,7 +26,19 @@ class ConfigurableApi extends Api
         return $this->config->getHeaders() + parent::getRequestHeaders();
     }
 
-    public function getItems($uri, $params = [], $page = 1, $perPage = null): ConfigurableApiListResponse
+    /**
+     * Fetches a list of items from the API
+     *
+     * @param string   $uri
+     * @param array    $params
+     * @param int      $page
+     * @param int|null $perPage
+     * @return ConfigurableApiListResponse
+     * @throws ApiException
+     * @throws ApiRequestException
+     * @throws GuzzleException
+     */
+    public function getItems(string $uri, array $params = [], int $page = 1, int $perPage = null): ConfigurableApiListResponse
     {
         $perPage = $perPage ?: $this->config->getPerPage();
 
@@ -47,16 +60,6 @@ class ConfigurableApi extends Api
             throw new ApiException("The response from the API was empty");
         }
 
-        $itemsField = $this->config->getItemsField();
-        $totalField = $this->config->getTotalField();
-
-        if (!Arr::has($response, $itemsField)) {
-            throw new ApiException("The response from the API did not contain the expected items field: " . $itemsField);
-        }
-
-        $items = Arr::get($response, $itemsField) ?? [];
-        $total = Arr::get($response, $totalField) ?? 0;
-
-        return new ConfigurableApiListResponse($this->config, $items, $page, $total);
+        return new ConfigurableApiListResponse($this->config, $response, $page);
     }
 }

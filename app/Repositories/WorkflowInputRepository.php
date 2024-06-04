@@ -34,6 +34,17 @@ class WorkflowInputRepository extends ActionRepository
         };
     }
 
+    public function fieldOptions(?array $filter = []): array
+    {
+        $tags = $this->query()->distinct()->joinRelation('objectTags')->clearGroupBy()
+            ->whereHas('objectTags')
+            ->select(['objectTags.id as value', 'objectTags.name as label'])->get();
+
+        return [
+            'tags' => $tags,
+        ];
+    }
+
     /**
      * @param array $data
      * @return WorkflowInput

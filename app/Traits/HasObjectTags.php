@@ -3,7 +3,9 @@
 namespace App\Traits;
 
 use App\Models\Shared\ObjectTag;
+use App\Models\Shared\ObjectTagTaggable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
@@ -14,6 +16,11 @@ trait HasObjectTags
     public function objectTags(): ObjectTag|MorphToMany
     {
         return $this->morphToMany(ObjectTag::class, 'taggable', 'object_tag_taggables');
+    }
+
+    public function objectTagTaggables(): MorphMany
+    {
+        return $this->morphMany(ObjectTagTaggable::class, 'taggable');
     }
 
     public function createObjectTag($category, $tagName): ObjectTag
@@ -33,6 +40,15 @@ trait HasObjectTags
     {
         $tag = $this->createObjectTag($category, $tagName);
         $this->objectTags()->syncWithoutDetaching($tag);
+
+        return $this;
+    }
+
+    public function addObjectTags($category, $tagNames): static
+    {
+        foreach($tagNames as $tagName) {
+            $this->addObjectTag($category, $tagName);
+        }
 
         return $this;
     }

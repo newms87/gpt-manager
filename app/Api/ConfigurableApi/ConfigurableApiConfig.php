@@ -53,6 +53,17 @@ class ConfigurableApiConfig
         return $this->config['timestamp_format'] ?? 'Y-m-d H:i:s';
     }
 
+    public function parseTimestamp($timestamp): Carbon
+    {
+        return Carbon::createFromFormat($this->getTimestampFormat(), $timestamp);
+    }
+
+    public function formatTimestamp(Carbon $timestamp): string
+    {
+        return $timestamp->format($this->getTimestampFormat());
+    }
+
+
     public function getMinimumTimestamp(): Carbon
     {
         return carbon($this->config['minimum_timestamp'] ?? '1979-01-01 00:00:00');
@@ -98,16 +109,16 @@ class ConfigurableApiConfig
 
     public function getItemIdField()
     {
-        return $this->config['fields']['id'] ?? 'id';
+        return $this->config['fields']['item_id'] ?? 'id';
     }
 
     public function getItemDateField()
     {
-        return $this->config['fields']['date'] ?? 'date';
+        return $this->config['fields']['item_date'] ?? 'date';
     }
 
     public function getItemNameField()
     {
-        return $this->config['fields']['name'] ?? 'name';
+        return $this->config['fields']['item_name'] ?? 'name';
     }
 }
