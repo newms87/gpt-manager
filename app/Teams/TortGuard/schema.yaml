@@ -1,0 +1,207 @@
+tables:
+  companies:
+    fields:
+      id: true
+      name:
+        type: string
+        length: 255
+        nullable: false
+        unique: true
+      annual_revenue:
+        type: decimal
+        precision: 15
+        scale: 2
+        nullable: true
+      operating_income:
+        type: decimal
+        precision: 15
+        scale: 2
+        nullable: true
+      net_income:
+        type: decimal
+        precision: 15
+        scale: 2
+        nullable: true
+      total_assets:
+        type: decimal
+        precision: 15
+        scale: 2
+        nullable: true
+      total_equity:
+        type: decimal
+        precision: 15
+        scale: 2
+        nullable: true
+      timestamps: true
+
+  drugs:
+    fields:
+      id: true
+      company_id:
+        type: foreignId
+        foreign_key: companies.id
+      name:
+        type: string
+        length: 255
+        nullable: false
+        unique: true
+      patient_usage:
+        type: integer
+        nullable: true
+      patent:
+        type: boolean
+        nullable: true
+      market_share:
+        type: decimal
+        precision: 5
+        scale: 2
+        nullable: true
+      generics:
+        type: string
+        length: 255
+        nullable: true
+      statute_of_limitations_tolling:
+        type: text
+        nullable: true
+      timestamps: true
+
+  issue_issueable:
+    fields:
+      id: true
+      issue_id:
+        type: integer
+        foreign: issues.id
+        nullable: false
+      issueable_id:
+        type: integer
+        nullable: false
+      issueable_type:
+        type: string
+        length: 255
+        nullable: false
+      timestamps: true
+    indexes:
+      - name: unique_issue_issueable
+        columns: [ issue_id, issueable_id, issueable_type ]
+        unique: true
+
+  issues:
+    fields:
+      id: true
+      name:
+        type: string
+        length: 255
+        nullable: false
+        unique: true
+      description:
+        type: text
+        nullable: true
+      evaluation_score:
+        type: integer
+        nullable: true
+      severity_level:
+        type: string
+        length: 50
+        nullable: true
+      hospitalization:
+        type: boolean
+        nullable: true
+      surgical_procedure:
+        type: boolean
+        nullable: true
+      permanent_disability:
+        type: boolean
+        nullable: true
+      death:
+        type: boolean
+        nullable: true
+      ongoing_care:
+        type: boolean
+        nullable: true
+      economic_damage_min:
+        type: decimal
+        precision: 10
+        scale: 2
+        nullable: true
+      economic_damage_max:
+        type: decimal
+        precision: 10
+        scale: 2
+        nullable: true
+      timestamps: true
+
+  scientific_studies:
+    fields:
+      id: true
+      drug_id:
+        type: foreignId
+        foreign_key: drugs.id
+      name:
+        type: string
+        length: 255
+        nullable: false
+        unique: true
+      description:
+        type: text
+        nullable: true
+      quality_grade:
+        type: string
+        length: 5
+        nullable: true
+      injury:
+        type: string
+        length: 255
+        nullable: true
+      group_size:
+        type: integer
+        nullable: true
+      timestamps: true
+
+  fda_warnings:
+    fields:
+      id: true
+      drug_id:
+        type: foreignId
+        foreign_key: drugs.id
+      name:
+        type: string
+        length: 255
+        nullable: false
+        unique: true
+      description:
+        type: text
+        nullable: true
+      issued_at:
+        type: datetime
+        nullable: false
+
+  data_sources:
+    fields:
+      id: true
+      data_source_type_id:
+        type: integer
+        nullable: false
+      data_source_type:
+        type: string
+        length: 255
+        nullable: false
+      url:
+        type: string
+        length: 255
+        nullable: true
+      table:
+        type: string
+        length: 255
+        nullable: true
+      field:
+        type: string
+        length: 255
+        nullable: true
+      explanation:
+        type: text
+        nullable: true
+      timestamps: true
+    indexes:
+      - name: unique_data_source_type_field
+        columns: [ data_source_type_id, data_source_type, table, field ]
+        unique: true
