@@ -8,6 +8,39 @@
 				</div>
 				<div class="text-lg"> {{ drugIssue.issue.name }}</div>
 				<div class="my-2">{{ drugIssue.issue.description }}</div>
+				<div>
+					<div class="grid grid-cols-3 gap-4 mt-4">
+						<LabelValueBlock
+							label="Severity Level"
+							:value="drugIssue.issue.severity_level"
+						/>
+						<LabelValueBlock
+							label="Hospitalization"
+							:value="drugIssue.issue.hospitalization"
+						/>
+						<LabelValueBlock
+							label="Surgical Procedure"
+							:value="drugIssue.issue.surgical_procedure"
+						/>
+						<LabelValueBlock
+							label="Permanent Disability"
+							:value="drugIssue.issue.permanent_disability"
+						/>
+						<LabelValueBlock
+							label="Death"
+							:value="drugIssue.issue.death"
+						/>
+						<LabelValueBlock
+							label="Ongoing Care"
+							:value="drugIssue.issue.ongoing_care"
+						/>
+						<LabelValueBlock
+							class="col-span-2 !max-w-64"
+							label="Economic Damage"
+							:value="fCurrencyNoCents(drugIssue.issue.economic_damage_min) + ' - ' + fCurrencyNoCents(drugIssue.issue.economic_damage_max)"
+						/>
+					</div>
+				</div>
 			</div>
 			<div class="ml-6">
 				<div class="flex justify-end">
@@ -26,27 +59,27 @@
 							<LabelValueBlock label="Company" :value="drugIssue.company.name" :url="drugIssue.company.url" />
 							<LabelValueBlock
 								label="Annual Revenue"
-								:value="fCurrency(drugIssue.company.annual_revenue)"
+								:value="fShortCurrency(drugIssue.company.annual_revenue)"
 								:url="getSourceUrl('companies', 'annual_revenue')"
 							/>
 							<LabelValueBlock
 								label="Operating Income"
-								:value="fCurrency(drugIssue.company.operating_income)"
+								:value="fShortCurrency(drugIssue.company.operating_income)"
 								:url="getSourceUrl('companies', 'operating_income')"
 							/>
 							<LabelValueBlock
 								label="Net Income"
-								:value="fCurrency(drugIssue.company.net_income)"
+								:value="fShortCurrency(drugIssue.company.net_income)"
 								:url="getSourceUrl('companies', 'net_income')"
 							/>
 							<LabelValueBlock
 								label="Total Assets"
-								:value="fCurrency(drugIssue.company.total_assets)"
+								:value="fShortCurrency(drugIssue.company.total_assets)"
 								:url="getSourceUrl('companies', 'total_assets')"
 							/>
 							<LabelValueBlock
 								label="Total Equity"
-								:value="fCurrency(drugIssue.company.total_equity)"
+								:value="fShortCurrency(drugIssue.company.total_equity)"
 								:url="getSourceUrl('companies', 'total_equity')"
 							/>
 						</div>
@@ -141,7 +174,15 @@ import DataSourceList from "@/components/Modules/Tortguard/DataSourceList";
 import { DrugIssue } from "@/components/Modules/Tortguard/drugs";
 import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import LogoImage from "@/components/Shared/Images/LogoImage";
-import { fCurrency, fDate, fNumber, fPercent, fShortNumber, LabelValueBlock } from "quasar-ui-danx";
+import {
+	fCurrencyNoCents,
+	fDate,
+	fNumber,
+	fPercent,
+	fShortCurrency,
+	fShortNumber,
+	LabelValueBlock
+} from "quasar-ui-danx";
 import { reactive } from "vue";
 
 const props = defineProps<{ drugIssue: DrugIssue }>();

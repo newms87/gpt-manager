@@ -47,8 +47,8 @@ const drugIssue = {
 		},
 		"issue": {
 			"id": 1,
-			"name": "Erection over 4+ hours",
-			"description": "A condition where an erection lasts more than 4 hours, requiring medical attention.",
+			"name": "Erection over 24+ hours",
+			"description": "A condition where an erection lasts more than 24 hours, requiring medical attention.",
 			"evaluation_score": 87,
 			"severity_level": "High",
 			"hospitalization": true,
@@ -56,7 +56,7 @@ const drugIssue = {
 			"permanent_disability": false,
 			"death": false,
 			"ongoing_care": true,
-			"economic_damage_min": 1000,
+			"economic_damage_min": 1500,
 			"economic_damage_max": 10000
 		},
 		"scientific_studies": [
