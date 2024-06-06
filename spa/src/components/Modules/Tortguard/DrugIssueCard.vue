@@ -1,188 +1,166 @@
 <template>
-	<div class="drug-issue-card">
-		<div class="text-xl font-bold">{{ drugIssue.drug.name }}: {{ drugIssue.issue.name }}</div>
-		<div class="">{{ drugIssue.issue.description }}</div>
-		<QBtn @click="toggleSection('company')">Company Info</QBtn>
-		<div v-if="showSection.company">
-			<h3>Company</h3>
-			<p><strong>Name:</strong> {{ drugIssue.company.name }}</p>
-			<p><strong>Annual Revenue:</strong> {{ drugIssue.company.annual_revenue }}</p>
-			<!-- Add more company fields here -->
-		</div>
+	<div class="drug-issue-card bg-sky-900 p-6 rounded-lg outline-2 outline-slate-500 outline shadow-md shadow-slate-500">
+		<div class="flex items-stretch">
+			<div>
+				<LogoImage :src="drugIssue.drug.logo" :url="drugIssue.drug.url" />
+				<div class="text-xl font-bold my-2">
+					<a target="_blank" :href="drugIssue.drug.url">{{ drugIssue.drug.name }}</a>
+				</div>
+				<div class="text-lg"> {{ drugIssue.issue.name }}</div>
+				<div class="my-2">{{ drugIssue.issue.description }}</div>
+			</div>
+			<div class="ml-6">
+				<div class="flex justify-end">
+					<div class="bg-green-800 px-4 py-2 rounded-xl flex items-center">
+						<div class="text-2xl font-bold">{{ drugIssue.issue.evaluation_score }}</div>
+						<div class="text-lg">&nbsp;/ 100</div>
+					</div>
+				</div>
 
-		<button @click="toggleSection('drug')">Drug Info</button>
-		<div v-if="showSection.drug">
-			<h3>Drug</h3>
-			<p><strong>Patient Usage:</strong> {{ drugIssue.drug.patient_usage }}</p>
-			<!-- Add more drug fields here -->
-		</div>
+				<div class="text-right">
+					<div class="drug-issue-company mt-6">
+						<div class="flex justify-end">
+							<LogoImage :src="drugIssue.company.logo" class="max-w-24 max-h-10" :url="drugIssue.company.url" />
+						</div>
+						<div class="grid grid-cols-2 gap-4 mt-4">
+							<LabelValueBlock label="Company" :value="drugIssue.company.name" :url="drugIssue.company.url" />
+							<LabelValueBlock
+								label="Annual Revenue"
+								:value="fCurrency(drugIssue.company.annual_revenue)"
+								:url="getSourceUrl('companies', 'annual_revenue')"
+							/>
+							<LabelValueBlock
+								label="Operating Income"
+								:value="fCurrency(drugIssue.company.operating_income)"
+								:url="getSourceUrl('companies', 'operating_income')"
+							/>
+							<LabelValueBlock
+								label="Net Income"
+								:value="fCurrency(drugIssue.company.net_income)"
+								:url="getSourceUrl('companies', 'net_income')"
+							/>
+							<LabelValueBlock
+								label="Total Assets"
+								:value="fCurrency(drugIssue.company.total_assets)"
+								:url="getSourceUrl('companies', 'total_assets')"
+							/>
+							<LabelValueBlock
+								label="Total Equity"
+								:value="fCurrency(drugIssue.company.total_equity)"
+								:url="getSourceUrl('companies', 'total_equity')"
+							/>
+						</div>
+					</div>
+					<div class="drug-issue-patent mt-6">
+						<ShowHideButton
+							v-if="drugIssue.drug.patent_number"
+							:label="'Patent ' + drugIssue.drug.patent_number"
+							class="bg-sky-950"
+							@click="showSection.patent = !showSection.patent"
+						/>
+						<div v-else>No Patent</div>
 
-		<button @click="toggleSection('issue')">Issue Info</button>
-		<div v-if="showSection.issue">
-			<h3>Issue</h3>
-			<p><strong>Evaluation Score:</strong> {{ drugIssue.issue.evaluation_score }}</p>
-			<!-- Add more issue fields here -->
-		</div>
+						<template v-if="showSection.patent">
+							<div class="grid grid-cols-2 gap-4 mt-4">
+								<LabelValueBlock
+									label="Patent Number"
+									:value="drugIssue.drug.patent_number"
+									:url="getSourceUrl('drugs', 'patent_number')"
+								/>
+								<LabelValueBlock
+									label="Filed"
+									:value="fDate(drugIssue.drug.patent_filed_date)"
+									:url="getSourceUrl('drugs', 'patent_filed_date')"
+								/>
+								<LabelValueBlock
+									label="Expiration"
+									:value="fDate(drugIssue.drug.patent_expiration_date)"
+									:url="getSourceUrl('drugs', 'patent_expiration_date')"
+								/>
+								<LabelValueBlock
+									label="Issued"
+									:value="fDate(drugIssue.drug.patent_issued_date)"
+									:url="getSourceUrl('drugs', 'patent_issued_date')"
+								/>
+							</div>
+							<div class="max-w-[17rem] mt-5 text-justify">
+								{{ drugIssue.drug.patent_details }}
+								<DataSourceList :sources="getSources('drugs', 'patent_details')" />
+							</div>
+						</template>
+					</div>
+					<div class="drug-issue-generics mt-6">
+						<ShowHideButton
+							v-if="drugIssue.drug.generics.length > 0"
+							:label="'Generic ' + drugIssue.drug.generic_name + ': ' + drugIssue.drug.generics.length"
+							class="bg-sky-950"
+							@click="showSection.generics = !showSection.generics"
+						/>
+						<div v-else>No Generics (100% market share)</div>
 
-		<button @click="toggleSection('studies')">Scientific Studies</button>
-		<div v-if="showSection.studies">
-			<h3>Scientific Studies</h3>
-			<ul>
-				<li v-for="study in drugIssue.scientific_studies" :key="study.id">
-					<p><strong>Name:</strong> {{ study.name }}</p>
-					<!-- Add more study fields here -->
-				</li>
-			</ul>
+						<template v-if="showSection.generics">
+							<div class="grid grid-cols-2 gap-4 mt-4">
+								<LabelValueBlock
+									label="Generic Name"
+									:value="drugIssue.drug.generic_name"
+									:url="getSourceUrl('drugs', 'generic_name')"
+								/>
+								<LabelValueBlock
+									label="Market Share"
+									:value="fPercent(drugIssue.drug.market_share)"
+									:url="getSourceUrl('drugs', 'market_share')"
+								/>
+							</div>
+							<div class="max-w-[17rem] mt-5 text-justify">
+								{{ drugIssue.drug.generics.join(", ") }}
+								<DataSourceList :sources="getSources('drugs', 'generics')" />
+							</div>
+						</template>
+					</div>
+				</div>
+			</div>
 		</div>
+		<div>
 
-		<button @click="toggleSection('warnings')">FDA Warnings</button>
-		<div v-if="showSection.warnings">
-			<h3>FDA Warnings</h3>
-			<ul>
-				<li v-for="warning in drugIssue.fda_warnings" :key="warning.id">
-					<p><strong>Name:</strong> {{ warning.name }}</p>
-					<!-- Add more warning fields here -->
-				</li>
-			</ul>
-		</div>
-
-		<button @click="toggleSection('sources')">Data Sources</button>
-		<div v-if="showSection.sources">
-			<h3>Data Sources</h3>
-			<ul>
-				<li v-for="source in drugIssue.data_sources" :key="source.id">
-					<p><strong>Name:</strong> {{ source.name }}</p>
-					<!-- Add more source fields here -->
-				</li>
-			</ul>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-
-export interface Company {
-	id: number;
-	name: string;
-	annual_revenue: number;
-	operating_income: number;
-	net_income: number;
-	total_assets: number;
-	total_equity: number;
-}
-
-export interface Drug {
-	id: number;
-	name: string;
-	patient_usage: string;
-	patent: string;
-	market_share: number;
-	generics: boolean;
-	statute_of_limitations_tolling: string;
-}
-
-export interface Issue {
-	id: number;
-	name: string;
-	description: string;
-	evaluation_score: number;
-	severity_level: string;
-	hospitalization: boolean;
-	surgical_procedure: boolean;
-	permanent_disability: boolean;
-	death: boolean;
-	ongoing_care: boolean;
-	economic_damage_min: number;
-	economic_damage_max: number;
-}
-
-export interface ScientificStudy {
-	id: number;
-	name: string;
-	description: string;
-	quality_grade: string;
-	injury: string;
-	group_size: number;
-}
-
-export interface FDAWarning {
-	id: number;
-	name: string;
-	description: string;
-}
-
-export interface DataSource {
-	id: number;
-	name: string;
-	url: string;
-	table: string;
-	field: string;
-	explanation: string;
-}
-
-export interface DrugIssue {
-	company: Company;
-	drug: Drug;
-	issue: Issue;
-	scientific_studies: ScientificStudy[];
-	fda_warnings: FDAWarning[];
-	data_sources: DataSource[];
-}
+import DataSourceList from "@/components/Modules/Tortguard/DataSourceList";
+import { DrugIssue } from "@/components/Modules/Tortguard/drugs";
+import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
+import LogoImage from "@/components/Shared/Images/LogoImage";
+import { fCurrency, fDate, fPercent, LabelValueBlock } from "quasar-ui-danx";
+import { reactive } from "vue";
 
 const props = defineProps<{ drugIssue: DrugIssue }>();
 
-const showSection = ref({
+const showSection = reactive({
 	company: false,
-	drug: false,
-	issue: false,
+	patent: false,
+	generics: false,
 	studies: false,
-	warnings: false,
-	sources: false
+	warnings: false
 });
 
-function toggleSection(section: keyof typeof showSection) {
-	showSection.value[section] = !showSection.value[section];
+function getSources(table: string, field: string) {
+	return props.drugIssue.data_sources.filter((source) => source.table === table && source.field === field);
+}
+
+function getSource(table: string, field: string) {
+	return props.drugIssue.data_sources.find((source) => source.table === table && source.field === field);
+}
+
+function getSourceUrl(table: string, field: string) {
+	return getSource(table, field)?.url;
 }
 </script>
 
-<style scoped>
-.drug-issue-card {
-	border: 1px solid #DDD;
-	padding: 16px;
-	border-radius: 8px;
-	margin-bottom: 16px;
-	transition: box-shadow 0.3s;
-}
-
-.drug-issue-card:hover {
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.drug-issue-card h2 {
-	font-size: 1.5em;
-	margin-bottom: 0.5em;
-}
-
-.drug-issue-card button {
-	background-color: #007BFF;
-	color: white;
-	border: none;
-	padding: 8px 16px;
-	border-radius: 4px;
-	cursor: pointer;
-	margin-bottom: 8px;
-}
-
-.drug-issue-card button:hover {
-	background-color: #0056B3;
-}
-
-.drug-issue-card div {
-	margin-bottom: 16px;
-}
-
-.drug-issue-card h3 {
-	margin-bottom: 0.5em;
+<style scoped lang="scss">
+.grid {
+	& > * {
+		@apply max-w-32;
+	}
 }
 </style>

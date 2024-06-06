@@ -157,7 +157,7 @@ tables:
         nullable: true
       timestamps: true
 
-  fda_warnings:
+  warnings:
     fields:
       id: true
       drug_id:
