@@ -15,12 +15,12 @@ export interface Drug {
 	name: string;
 	url: string;
 	logo: string;
-	patient_usage: string;
 	patent_number: string;
 	patent_filed_date: string;
 	patent_expiration_date: string;
 	patent_issued_date: string;
 	patent_details: string;
+	number_of_users: number;
 	market_share: number;
 	generic_name: string;
 	generics: string[];

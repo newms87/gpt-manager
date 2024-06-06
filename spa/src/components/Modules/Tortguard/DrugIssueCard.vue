@@ -92,7 +92,7 @@
 					<div class="drug-issue-generics mt-6">
 						<ShowHideButton
 							v-if="drugIssue.drug.generics.length > 0"
-							:label="'Generic ' + drugIssue.drug.generic_name + ': ' + drugIssue.drug.generics.length"
+							:label="'Market ' + drugIssue.drug.generic_name + ': ' + fShortNumber(drugIssue.drug.number_of_users) + ' patients'"
 							class="bg-sky-950"
 							@click="showSection.generics = !showSection.generics"
 						/>
@@ -106,9 +106,19 @@
 									:url="getSourceUrl('drugs', 'generic_name')"
 								/>
 								<LabelValueBlock
+									label="Generics"
+									:value="drugIssue.drug.generics.length"
+									:url="getSourceUrl('drugs', 'generics')"
+								/>
+								<LabelValueBlock
 									label="Market Share"
 									:value="fPercent(drugIssue.drug.market_share)"
 									:url="getSourceUrl('drugs', 'market_share')"
+								/>
+								<LabelValueBlock
+									label="Patients"
+									:value="fNumber(drugIssue.drug.number_of_users)"
+									:url="getSourceUrl('drugs', 'number_of_users')"
 								/>
 							</div>
 							<div class="max-w-[17rem] mt-5 text-justify">
@@ -131,7 +141,7 @@ import DataSourceList from "@/components/Modules/Tortguard/DataSourceList";
 import { DrugIssue } from "@/components/Modules/Tortguard/drugs";
 import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import LogoImage from "@/components/Shared/Images/LogoImage";
-import { fCurrency, fDate, fPercent, LabelValueBlock } from "quasar-ui-danx";
+import { fCurrency, fDate, fNumber, fPercent, fShortNumber, LabelValueBlock } from "quasar-ui-danx";
 import { reactive } from "vue";
 
 const props = defineProps<{ drugIssue: DrugIssue }>();

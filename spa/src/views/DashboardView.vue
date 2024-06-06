@@ -23,12 +23,12 @@ const drugIssue = {
 			"name": "Viagra",
 			"url": "https://viagra.com",
 			"logo": "https://www.viagra.com/-/media/Project/Common/ViagraCom/Home-media/logo_0_2.png?h=51&iar=0&w=204&hash=D20862FA5CC15A085ADB9B874AE3F6DF",
-			"number_of_users": 30000000,
 			"patent_number": "US5250534",
 			"patent_filed_date": "1999-06-20",
 			"patent_issued_date": "1993-10-05",
 			"patent_expiration_date": "2012-03-27",
 			"patent_details": "The primary patent for Viagra (sildenafil citrate) is U.S. Patent No. 5,250,534, filed on June 20, 1990, and issued on October 5, 1993, which expired on March 27, 2012, after a 283-day extension. Additionally, Pfizer secured a secondary patent, U.S. Patent No. 6,469,012, granted on October 22, 2002, which extended protection until April 22, 2020, including a pediatric exclusivity.",
+			"number_of_users": 30000000,
 			"market_share": .15,
 			"generic_name": "Sildenafil",
 			"generics": [
