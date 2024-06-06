@@ -1,6 +1,6 @@
 <template>
 	<div class="drug-issue-card bg-sky-900 p-6 rounded-lg outline-2 outline-slate-500 outline shadow-md shadow-slate-500 max-h-[80vh] overflow-auto w-full">
-		<div class="flex items-stretch">
+		<div class="flex items-stretch flex-nowrap">
 			<div class="flex-grow">
 				<LogoImage :src="drugIssue.drug.logo" :url="drugIssue.drug.url" />
 				<div class="text-xl font-bold my-2">
@@ -10,6 +10,7 @@
 				<div class="my-2">{{ drugIssue.issue.description }}</div>
 				<DrugIssueSeveritySection :issue="drugIssue.issue" />
 				<DrugIssueScientificStudiesSection :studies="drugIssue.scientific_studies" class="mt-6" />
+				<DrugIssueWarningsSection :warnings="drugIssue.warnings" class="mt-6" />
 			</div>
 			<div class="ml-6">
 				<div class="flex justify-end">
@@ -35,6 +36,7 @@ import DrugIssueMarketSection from "@/components/Modules/Tortguard/DrugIssueMark
 import DrugIssuePatentSection from "@/components/Modules/Tortguard/DrugIssuePatentSection";
 import DrugIssueScientificStudiesSection from "@/components/Modules/Tortguard/DrugIssueScientificStudiesSection";
 import DrugIssueSeveritySection from "@/components/Modules/Tortguard/DrugIssueSeveritySection";
+import DrugIssueWarningsSection from "@/components/Modules/Tortguard/DrugIssueWarningsSection";
 import { DrugIssue } from "@/components/Modules/Tortguard/drugs";
 import LogoImage from "@/components/Shared/Images/LogoImage";
 

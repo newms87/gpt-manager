@@ -58,10 +58,13 @@ export interface ScientificStudy {
 	url: string;
 }
 
-export interface FDAWarning {
+export interface DrugWarning {
 	id: number;
 	name: string;
+	url: string;
 	description: string;
+	issued_date: string;
+	injury_risks: string[];
 }
 
 export interface DataSource {
@@ -78,6 +81,6 @@ export interface DrugIssue {
 	drug: Drug;
 	issue: Issue;
 	scientific_studies: ScientificStudy[];
-	fda_warnings: FDAWarning[];
+	warnings: DrugWarning[];
 	data_sources: DataSource[];
 }
