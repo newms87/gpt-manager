@@ -112,7 +112,7 @@ const drugIssue = {
 				"name": "FDA warns consumers not to use unapproved erectile dysfunction products advertised on the radio",
 				"url": "https://www.fda.gov/drugs/drug-safety-and-availability/fda-warns-consumers-not-use-unapproved-erectile-dysfunction-products-advertised-radio",
 				"description": "Warning against unapproved erectile dysfunction products advertised on radio platforms like iHeart Radio containing dangerous dosages of sildenafil.",
-				"issued_date": "2018-03-16",
+				"issued_at": "2018-03-16",
 				"injury_risks": [
 					"Dangerously low blood pressure",
 					"Interaction with nitrates",
@@ -124,7 +124,7 @@ const drugIssue = {
 				"name": "Sildenafil (marketed as Viagra and Revatio) Information",
 				"url": "https://www.fda.gov/drugs/postmarket-drug-safety-information-patients-and-providers/sildenafil-marketed-viagra-and-revatio-information",
 				"description": "Postmarket drug safety information for patients and providers regarding the use of sildenafil, including associated risks and adverse events.",
-				"issued_date": "2014-12-11",
+				"issued_at": "2014-12-11",
 				"injury_risks": [
 					"Priapism (prolonged erections)",
 					"Sudden vision loss",
@@ -137,7 +137,7 @@ const drugIssue = {
 				"name": "FDA Warns Consumers to Avoid Certain Male Enhancement and Weight Loss Products Sold Through Amazon, eBay and Other Retailers",
 				"url": "https://www.fda.gov/news-events/press-announcements/fda-warns-consumers-avoid-certain-male-enhancement-and-weight-loss-products-sold-through-amazon-ebay-and",
 				"description": "Warning about male enhancement products containing hidden, potentially dangerous ingredients, often purchased from online retailers like Amazon and eBay.",
-				"issued_date": "2020-12-17",
+				"issued_at": "2020-12-17",
 				"injury_risks": [
 					"Undeclared active pharmaceutical ingredients",
 					"Potentially serious side effects",
@@ -149,7 +149,7 @@ const drugIssue = {
 				"name": "Internet Pharmacy Warning Letters",
 				"url": "https://www.fda.gov/drugs/information-consumers-and-patients-drugs/internet-pharmacy-warning-letters",
 				"description": "Warnings issued to various internet pharmacies for illegally operating and selling unapproved or counterfeit medications, including sildenafil.",
-				"issued_date": "2024-04-24",
+				"issued_at": "2024-04-24",
 				"injury_risks": [
 					"Receiving counterfeit drugs",
 					"Use of unsafe medications",

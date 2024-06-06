@@ -45,6 +45,7 @@ export interface Issue {
 export interface ScientificStudy {
 	id: number;
 	name: string;
+	url: string;
 	description: string;
 	quality_grade: string;
 	injury: string;
@@ -55,7 +56,6 @@ export interface ScientificStudy {
 	treatment_method: string;
 	treatment_efficacy: string;
 	complications: string;
-	url: string;
 }
 
 export interface DrugWarning {
@@ -63,7 +63,7 @@ export interface DrugWarning {
 	name: string;
 	url: string;
 	description: string;
-	issued_date: string;
+	issued_at: string;
 	injury_risks: string[];
 }
 

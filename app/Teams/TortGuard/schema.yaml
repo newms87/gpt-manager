@@ -5,8 +5,13 @@ tables:
       name:
         type: string
         length: 255
-        nullable: false
         unique: true
+      url:
+        type: string
+        length: 2048
+      logo:
+        type: text
+        nullable: true
       annual_revenue:
         type: decimal
         precision: 15
@@ -43,55 +48,74 @@ tables:
       name:
         type: string
         length: 255
-        nullable: false
         unique: true
-      patient_usage:
-        type: integer
+      url:
+        type: string
+        length: 2048
+      logo:
+        type: text
         nullable: true
-      patent:
-        type: boolean
+      patent_number:
+        type: string
+        nullable: true
+      patent_filed_date:
+        type: date
+        nullable: true
+      patent_expiration_date:
+        type: date
+        nullable: true
+      patent_issued_date:
+        type: date
+        nullable: true
+      patent_details:
+        type: text
+        nullable: true
+      number_of_users:
+        type: integer
         nullable: true
       market_share:
         type: decimal
         precision: 5
         scale: 2
         nullable: true
-      generics:
+      generic_name:
         type: string
         length: 255
+        nullable: true
+      generics:
+        type: json
         nullable: true
       statute_of_limitations_tolling:
         type: text
         nullable: true
       timestamps: true
 
-  issue_issueable:
+  issue_subject:
     fields:
       id: true
       issue_id:
         type: integer
         foreign: issues.id
-        nullable: false
-      issueable_id:
+      subject_id:
         type: integer
-        nullable: false
-      issueable_type:
+      subject_type:
         type: string
         length: 255
-        nullable: false
       timestamps: true
     indexes:
-      - name: unique_issue_issueable
-        columns: [ issue_id, issueable_id, issueable_type ]
+      - name: unique_issue_subject
+        columns: [ issue_id, subject_id, subject_type ]
         unique: true
 
   issues:
     fields:
       id: true
+      is_dashboard_approved:
+        type: boolean
+        default: false
       name:
         type: string
         length: 255
-        nullable: false
         unique: true
       description:
         type: text
@@ -139,8 +163,10 @@ tables:
       name:
         type: string
         length: 255
-        nullable: false
         unique: true
+      url:
+        type: string
+        length: 2048
       description:
         type: text
         nullable: true
@@ -152,8 +178,26 @@ tables:
         type: string
         length: 255
         nullable: true
+      injury_description:
+        type: text
+        nullable: true
       group_size:
         type: integer
+        nullable: true
+      age_range:
+        type: string
+        nullable: true
+      median_age:
+        type: string
+        nullable: true
+      treatment_method:
+        type: text
+        nullable: true
+      treatment_efficacy:
+        type: text
+        nullable: true
+      complications:
+        type: text
         nullable: true
       timestamps: true
 
@@ -166,37 +210,41 @@ tables:
       name:
         type: string
         length: 255
-        nullable: false
         unique: true
+      url:
+        type: string
+        length: 2048
+        nullable: true
       description:
         type: text
         nullable: true
       issued_at:
         type: datetime
-        nullable: false
+        nullable: true
+      injury_risks:
+        type: json
+        nullable: true
 
   data_sources:
     fields:
       id: true
       data_source_type_id:
         type: integer
-        nullable: false
       data_source_type:
         type: string
         length: 255
-        nullable: false
-      url:
+      name:
         type: string
         length: 255
-        nullable: true
+      url:
+        type: string
+        length: 2048
       table:
         type: string
         length: 255
-        nullable: true
       field:
         type: string
         length: 255
-        nullable: true
       explanation:
         type: text
         nullable: true

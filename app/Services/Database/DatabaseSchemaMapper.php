@@ -89,6 +89,12 @@ class DatabaseSchemaMapper
     {
         $column = $table->{$definition['type']}($name);
 
+        if (!empty($definition['precision'])) {
+            $column->total($definition['precision']);
+        }
+        if (!empty($definition['scale'])) {
+            $column->places($definition['scale']);
+        }
         if (!empty($definition['length'])) {
             $column->length($definition['length']);
         }

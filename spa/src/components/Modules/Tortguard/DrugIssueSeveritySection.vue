@@ -1,5 +1,5 @@
 <template>
-	<div class="grid grid-cols-3 gap-4 mt-4">
+	<div class="grid grid-cols-4 gap-4 mt-4">
 		<LabelValueBlock
 			label="Severity Level"
 			:value="issue.severity_level"

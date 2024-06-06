@@ -8,7 +8,7 @@
 					<div class="flex-grow">
 						<a :href="warning.url" target="_blank">{{ warning.name }}</a>
 					</div>
-					<div class="bg-slate-900 text-slate-400 px-2 py-1 rounded-lg">{{ fDate(warning.issued_date) }}</div>
+					<div class="bg-slate-900 text-slate-400 px-2 py-1 rounded-lg">{{ fDate(warning.issued_at) }}</div>
 				</div>
 				<div class="text-sm mt-2">{{ warning.description }}</div>
 				<div class="mt-4">
