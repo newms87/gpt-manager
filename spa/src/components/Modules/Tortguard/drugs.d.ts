@@ -48,7 +48,14 @@ export interface ScientificStudy {
 	description: string;
 	quality_grade: string;
 	injury: string;
+	injury_description: string;
 	group_size: number;
+	age_range: string;
+	median_age: string;
+	treatment_method: string;
+	treatment_efficacy: string;
+	complications: string;
+	url: string;
 }
 
 export interface FDAWarning {

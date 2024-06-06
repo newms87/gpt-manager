@@ -1,7 +1,7 @@
 <template>
-	<div class="drug-issue-card bg-sky-900 p-6 rounded-lg outline-2 outline-slate-500 outline shadow-md shadow-slate-500">
+	<div class="drug-issue-card bg-sky-900 p-6 rounded-lg outline-2 outline-slate-500 outline shadow-md shadow-slate-500 max-h-[80vh] overflow-auto w-full">
 		<div class="flex items-stretch">
-			<div>
+			<div class="flex-grow">
 				<LogoImage :src="drugIssue.drug.logo" :url="drugIssue.drug.url" />
 				<div class="text-xl font-bold my-2">
 					<a target="_blank" :href="drugIssue.drug.url">{{ drugIssue.drug.name }}</a>
@@ -9,6 +9,7 @@
 				<div class="text-lg"> {{ drugIssue.issue.name }}</div>
 				<div class="my-2">{{ drugIssue.issue.description }}</div>
 				<DrugIssueSeveritySection :issue="drugIssue.issue" />
+				<DrugIssueScientificStudiesSection :studies="drugIssue.scientific_studies" class="mt-6" />
 			</div>
 			<div class="ml-6">
 				<div class="flex justify-end">
@@ -18,7 +19,7 @@
 					</div>
 				</div>
 
-				<div class="text-right">
+				<div class="text-right w-72">
 					<DrugIssueCompanySection :company="drugIssue.company" :get-source-url="getSourceUrl" />
 					<DrugIssuePatentSection :get-sources="getSources" :drug="drugIssue.drug" :get-source-url="getSourceUrl" />
 					<DrugIssueMarketSection :get-sources="getSources" :drug="drugIssue.drug" :get-source-url="getSourceUrl" />
@@ -32,6 +33,7 @@
 import DrugIssueCompanySection from "@/components/Modules/Tortguard/DrugIssueCompanySection";
 import DrugIssueMarketSection from "@/components/Modules/Tortguard/DrugIssueMarketSection";
 import DrugIssuePatentSection from "@/components/Modules/Tortguard/DrugIssuePatentSection";
+import DrugIssueScientificStudiesSection from "@/components/Modules/Tortguard/DrugIssueScientificStudiesSection";
 import DrugIssueSeveritySection from "@/components/Modules/Tortguard/DrugIssueSeveritySection";
 import { DrugIssue } from "@/components/Modules/Tortguard/drugs";
 import LogoImage from "@/components/Shared/Images/LogoImage";

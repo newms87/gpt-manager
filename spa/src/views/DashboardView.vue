@@ -1,5 +1,5 @@
 <template>
-	<div class="flex items-center justify-center h-full">
+	<div class="h-full p-8">
 		<DrugIssueCard :drug-issue="drugIssue" />
 	</div>
 </template>
@@ -62,11 +62,48 @@ const drugIssue = {
 		"scientific_studies": [
 			{
 				"id": 1,
-				"name": "Study on long-term effects of Viagra",
-				"description": "A study investigating the long-term effects of Viagra usage.",
+				"name": "Emergent Treatment of Ischemic Priapism to Avoid Sexual Dysfunction",
+				"description": "Study on the treatment of ischemic priapism, including cases related to Viagra, where erections lasted longer than 24 hours.",
 				"quality_grade": "A",
-				"injury": "None",
-				"group_size": 500
+				"injury": "Priapism",
+				"injury_description": "Ischemic priapism resulting in painful, prolonged erections, with potential for permanent damage if not treated promptly.",
+				"group_size": 39,
+				"age_range": "8-33 years",
+				"median_age": "12.5 years",
+				"treatment_method": "Intracavernous drug therapy, aspiration, and potential surgical intervention.",
+				"treatment_efficacy": "81% resolution with epinephrine; 65% efficacy with phenylephrine.",
+				"complications": "Potential for permanent erectile dysfunction and tissue damage if untreated.",
+				"url": "https://www.uspharmacist.com/article/emergent-treatment-of-ischemic-priapism-to-avoid-sexual-dysfunction"
+			},
+			{
+				"id": 2,
+				"name": "FDA Drug Safety Communication on Priapism",
+				"description": "FDA review of priapism cases associated with medications, including Viagra.",
+				"quality_grade": "B",
+				"injury": "Priapism",
+				"injury_description": "Priapism, defined as an erection lasting more than four hours, which can cause permanent damage if not treated.",
+				"group_size": 15,
+				"age_range": "8-33 years",
+				"median_age": "12.5 years",
+				"treatment_method": "Hospitalization, surgical intervention including shunt placement and needle aspiration.",
+				"treatment_efficacy": "Cases requiring surgical intervention were successfully treated.",
+				"complications": "Risk of permanent erectile dysfunction and penile damage.",
+				"url": "https://www.fda.gov/drugs/drug-safety-and-availability/fda-drug-safety-communication-fda-warns-rare-risk-long-lasting-erections-males-taking-methylphenidate"
+			},
+			{
+				"id": 3,
+				"name": "When Your Prolonged Erection Turns into an Emergency",
+				"description": "Article discussing the emergency treatment of priapism caused by medications like Viagra.",
+				"quality_grade": "C",
+				"injury": "Priapism",
+				"injury_description": "Prolonged erections leading to potential for erectile dysfunction and penile disfigurement.",
+				"group_size": "",
+				"age_range": "Not specified",
+				"median_age": "Not specified",
+				"treatment_method": "Draining excess blood from the penis, medications to limit blood flow, possible surgery.",
+				"treatment_efficacy": "Effective in preventing long-term damage if treated promptly.",
+				"complications": "Erectile dysfunction, penile disfigurement, tissue damage.",
+				"url": "https://www.urologists.org/when-your-prolonged-erection-turns-into-an-emergency"
 			}
 		],
 		"warnings": [
