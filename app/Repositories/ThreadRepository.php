@@ -7,6 +7,7 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
+use App\Services\Database\DatabaseRecordMapper;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
@@ -126,7 +127,7 @@ class ThreadRepository extends ActionRepository
     {
         if ($response->isToolCall()) {
             $thread->messages()->create([
-                'role'    => Message::ROLE_TOOL,
+                'role'    => Message::ROLE_ASSISTANT,
                 'content' => $response->getContent(),
                 'data'    => $response->getDataFields(),
             ]);
@@ -134,7 +135,7 @@ class ThreadRepository extends ActionRepository
             foreach($response->getToolCallerFunctions() as $toolCallerFunction) {
                 $content = $toolCallerFunction->call();
                 $thread->messages()->create([
-                    'role'    => Message::ROLE_USER,
+                    'role'    => Message::ROLE_TOOL,
                     'content' => is_string($content) ? $content : json_encode($content),
                     'data'    => [
                         'tool_call_id' => $toolCallerFunction->getId(),
@@ -156,8 +157,32 @@ class ThreadRepository extends ActionRepository
                 'output_tokens'   => $response->outputTokens(),
                 'last_message_id' => $lastMessage->id,
             ]);
+
+            if ($lastMessage->content) {
+                $jsonData       = json_decode($this->cleanContent($lastMessage->content), true);
+                $databaseWrites = $jsonData['write_database'] ?? [];
+                if ($databaseWrites) {
+                    if (team()->schema_file) {
+                        $file = app_path(team()->schema_file);
+
+                        try {
+                            (new DatabaseRecordMapper)
+                                ->setSchema(team()->namespace, $file)
+                                ->map($databaseWrites);
+                        } catch(Exception $exception) {
+                            Log::error("Error writing to database: " . $exception->getMessage());
+                        }
+                    }
+                }
+            }
         } else {
             throw new Exception('Unexpected response from AI model');
         }
+    }
+
+    public function cleanContent($content): string
+    {
+        // Remove any ```json and trailing ``` from content if they are present
+        return preg_replace('/^```json\n(.*)\n```$/s', '$1', trim($content));
     }
 }
