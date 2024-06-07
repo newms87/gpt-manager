@@ -1,0 +1,13 @@
+.dx-collapsable-sidebar {
+	& > .flex.w-full.p-4 {
+		@apply p-2;
+
+		&.justify-end {
+			padding: 1em !important;
+		}
+	}
+
+	.is-collapsed {
+		@apply px-2 py-4;
+	}
+}

@@ -1,7 +1,10 @@
 <template>
 	<QToolbar>
-		<QToolbarTitle class="bg-sky-800 py-2 flex items-center">
-			<div class="pl-3 flex-grow">{{ siteSettings.name }}</div>
+		<QToolbarTitle class="bg-sky-800 flex items-center">
+			<div v-if="siteSettings.logo">
+				<LogoImage :src="siteSettings.logo" class="w-16 h-16" />
+			</div>
+			<div class="pl-3 py-4 flex-grow">{{ siteSettings.name }}</div>
 			<div class="px-3 flex items-center flex-nowrap">
 				<div class="mr-4">
 					<div v-if="authUser" class="text-sm">{{ authUser.email }}</div>
@@ -25,6 +28,7 @@
 	</QToolbar>
 </template>
 <script setup lang="ts">
+import LogoImage from "@/components/Shared/Images/LogoImage";
 import { siteSettings } from "@/config";
 import { authTeam, authUser } from "@/helpers";
 import router from "@/router";

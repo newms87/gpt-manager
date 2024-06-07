@@ -5,7 +5,7 @@
 		</template>
 
 		<template #sidebar>
-			<CollapsableSidebar v-model:collapse="isCollapsed" min-width="5rem" name="primary-nav" class="primary-nav">
+			<CollapsableSidebar v-model:collapse="isCollapsed" min-width="4rem" name="primary-nav" class="primary-nav">
 				<NavigationMenu
 					:items="adminNavigation"
 					:collapsed="isCollapsed"

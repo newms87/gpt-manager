@@ -1,5 +1,5 @@
 <template>
-	<a class="logo-image w-full overflow-hidden" target="_blank" :href="url">
+	<a class="logo-image block overflow-hidden" target="_blank" :href="url">
 		<div v-if="isSvg" class="w-full h-full" v-html="src" />
 		<img v-if="isImage" :alt="alt" :src="src" />
 	</a>
