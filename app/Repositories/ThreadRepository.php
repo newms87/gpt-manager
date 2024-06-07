@@ -110,7 +110,6 @@ class ThreadRepository extends ActionRepository
             $messages     = $thread->getMessagesForApi();
             $messageCount = count($messages);
             Log::debug("$thread running with $messageCount messages for $agent");
-
             $response = $agent->getModelApi()->complete(
                 $agent->model,
                 $messages,
@@ -127,7 +126,7 @@ class ThreadRepository extends ActionRepository
     {
         if ($response->isToolCall()) {
             $thread->messages()->create([
-                'role'    => Message::ROLE_ASSISTANT,
+                'role'    => Message::ROLE_TOOL,
                 'content' => $response->getContent(),
                 'data'    => $response->getDataFields(),
             ]);
@@ -135,7 +134,7 @@ class ThreadRepository extends ActionRepository
             foreach($response->getToolCallerFunctions() as $toolCallerFunction) {
                 $content = $toolCallerFunction->call();
                 $thread->messages()->create([
-                    'role'    => Message::ROLE_TOOL,
+                    'role'    => Message::ROLE_USER,
                     'content' => is_string($content) ? $content : json_encode($content),
                     'data'    => [
                         'tool_call_id' => $toolCallerFunction->getId(),

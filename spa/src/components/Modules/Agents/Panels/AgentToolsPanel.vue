@@ -11,7 +11,7 @@
 					:val="tool.name"
 					:label="tool.name"
 					class="font-bold text-xl"
-					@update:model-value="updateAction.trigger(agent, { tools: selectedTools })"
+					@update:model-value="onUpdate"
 				/>
 				<div class="ml-10">{{ tool.description }}</div>
 			</div>
@@ -26,7 +26,7 @@
 import { getAction } from "@/components/Modules/Agents/agentActions";
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { Agent } from "@/types/agents";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
 	agent: Agent,
@@ -38,7 +38,18 @@ interface AiTool {
 	parameters: object;
 }
 
-const selectedTools = ref(props.agent.tools);
+const selectedTools = ref(Array.isArray(props.agent.tools) ? props.agent.tools : []);
+watch(() => props.agent, (agent) => {
+	selectedTools.value = Array.isArray(agent.tools) ? agent.tools : [];
+});
+
 const availableTools = computed<AiTool[]>(() => AgentController.getFieldOptions("aiTools"));
 const updateAction = getAction("update");
+function onUpdate(value) {
+	if (Array.isArray(value)) {
+		updateAction.trigger(props.agent, { tools: selectedTools.value });
+	} else {
+		selectedTools.value = [];
+	}
+}
 </script>

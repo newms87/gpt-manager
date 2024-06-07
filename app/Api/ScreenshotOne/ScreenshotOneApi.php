@@ -6,8 +6,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use Newms87\Danx\Api\Api;
 use Newms87\Danx\Exceptions\ApiException;
 use Newms87\Danx\Exceptions\ApiRequestException;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 class ScreenshotOneApi extends Api
 {
@@ -34,9 +32,7 @@ class ScreenshotOneApi extends Api
      * @return string The URL of the stored screenshot
      * @throws ApiException
      * @throws ApiRequestException
-     * @throws ContainerExceptionInterface
      * @throws GuzzleException
-     * @throws NotFoundExceptionInterface
      */
     public function take(string $url, string $path): string
     {

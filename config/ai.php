@@ -1,5 +1,6 @@
 <?php
 
+use App\AiTools\GoogleSerpAiTool;
 use App\AiTools\UrlToScreenshotAiTool;
 use App\Api\OpenAi\OpenAiApi;
 
@@ -60,6 +61,12 @@ return [
             'name'        => UrlToScreenshotAiTool::NAME,
             'description' => UrlToScreenshotAiTool::DESCRIPTION,
             'parameters'  => UrlToScreenshotAiTool::PARAMETERS,
+        ],
+        [
+            'class'       => GoogleSerpAiTool::class,
+            'name'        => GoogleSerpAiTool::NAME,
+            'description' => GoogleSerpAiTool::DESCRIPTION,
+            'parameters'  => GoogleSerpAiTool::PARAMETERS,
         ],
     ],
 ];
