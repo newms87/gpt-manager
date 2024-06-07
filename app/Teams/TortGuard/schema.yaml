@@ -39,7 +39,7 @@ tables:
         nullable: true
       timestamps: true
 
-  drugs:
+  subjects:
     fields:
       id: true
       company_id:
@@ -90,26 +90,12 @@ tables:
         nullable: true
       timestamps: true
 
-  issue_subject:
-    fields:
-      id: true
-      issue_id:
-        type: integer
-        foreign: issues.id
-      subject_id:
-        type: integer
-      subject_type:
-        type: string
-        length: 255
-      timestamps: true
-    indexes:
-      - name: unique_issue_subject
-        columns: [ issue_id, subject_id, subject_type ]
-        unique: true
-
   issues:
     fields:
       id: true
+      subject_id:
+        type: foreignId
+        foreign_key: subjects.id
       is_dashboard_approved:
         type: boolean
         default: false
@@ -157,9 +143,12 @@ tables:
   scientific_studies:
     fields:
       id: true
-      drug_id:
+      subject_id:
         type: foreignId
-        foreign_key: drugs.id
+        foreign_key: subjects.id
+      issue_id:
+        type: foreignId
+        foreign_key: issues.id
       name:
         type: string
         length: 255
@@ -204,9 +193,12 @@ tables:
   warnings:
     fields:
       id: true
-      drug_id:
+      subject_id:
         type: foreignId
-        foreign_key: drugs.id
+        foreign_key: subjects.id
+      issue_id:
+        type: foreignId
+        foreign_key: issues.id
       name:
         type: string
         length: 255
@@ -226,13 +218,9 @@ tables:
         nullable: true
 
   data_sources:
+    auto_ref: [ "table", "record_id", "field" ]
     fields:
       id: true
-      data_source_type_id:
-        type: integer
-      data_source_type:
-        type: string
-        length: 255
       name:
         type: string
         length: 255
@@ -242,6 +230,8 @@ tables:
       table:
         type: string
         length: 255
+      record_id:
+        type: integer
       field:
         type: string
         length: 255
@@ -250,6 +240,6 @@ tables:
         nullable: true
       timestamps: true
     indexes:
-      - name: unique_data_source_type_field
-        columns: [ data_source_type_id, data_source_type, table, field ]
+      - name: unique_data_table_record_field
+        columns: [ table, record_id, field ]
         unique: true

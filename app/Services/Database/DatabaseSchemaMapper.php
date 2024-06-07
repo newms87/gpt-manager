@@ -10,7 +10,7 @@ class DatabaseSchemaMapper
 {
     protected string $prefix = '';
 
-    public function map($schemaFile, $prefix = '')
+    public function map($prefix, $schemaFile)
     {
         $this->prefix = $prefix;
         $schema       = Yaml::parseFile($schemaFile);
@@ -29,6 +29,11 @@ class DatabaseSchemaMapper
     {
         $fields  = $definition['fields'] ?? [];
         $indexes = $definition['indexes'] ?? [];
+
+        // All tables have to have a ref field set per the design of the relationships
+        // This field is used by the AI models to uniquely reference records (existing and non-existing) in a more readable and manageable format
+        $fields = $this->injectRefField($fields);
+
         Schema::create($tableName, function (Blueprint $table) use ($fields, $indexes) {
             $this->addColumns($table, $fields);
             $this->addIndexes($table, $indexes);
@@ -45,11 +50,30 @@ class DatabaseSchemaMapper
         });
     }
 
+    /**
+     * Inject the 'ref' field into the fields array after the 'id' field
+     */
+    protected function injectRefField($fields): array
+    {
+        // Insert ref after the id field
+        $idIndex = array_search('id', array_keys($fields));
+
+        return array_merge(
+            array_slice($fields, 0, $idIndex + 1),
+            ['ref' => true],
+            array_slice($fields, $idIndex + 1)
+        );
+    }
+
     protected function addColumns(Blueprint $table, array $fields)
     {
         foreach($fields as $fieldName => $fieldDefinition) {
             if ($fieldName === 'id' && $fieldDefinition === true) {
                 $table->id();
+                continue;
+            }
+            if ($fieldName === 'ref' && $fieldDefinition === true) {
+                $table->string('ref')->unique();
                 continue;
             }
             if ($fieldName === 'timestamps' && $fieldDefinition === true) {
