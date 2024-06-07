@@ -178,7 +178,6 @@ class DatabaseSchemaMapper
     {
         $name = $index['name'] ?? null;
 
-        dump('updating index', Schema::getIndexes($table->getTable()), $index);
         $existingIndex = Schema::getIndexes($table->getTable())[$name] ?? null;
 
         if ($existingIndex) {

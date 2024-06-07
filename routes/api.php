@@ -11,6 +11,7 @@ use App\Http\Controllers\Ai\WorkflowRunsController;
 use App\Http\Controllers\Ai\WorkflowsController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
+use App\Teams\TortGuard\TortguardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Newms87\Danx\Http\Routes\ActionRoute;
@@ -50,3 +51,6 @@ ActionRoute::routes('messages', new MessagesController);
 
 // Audits
 ActionRoute::routes('audit-requests', new AuditRequestsController);
+
+// Tortguard
+Route::get('/tortguard/dashboard', [TortguardController::class, 'getDashboardData'])->name('api.tortguard');

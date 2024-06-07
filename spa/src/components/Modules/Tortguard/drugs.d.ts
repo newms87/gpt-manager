@@ -50,12 +50,12 @@ export interface ScientificStudy {
 	quality_grade: string;
 	injury: string;
 	injury_description: string;
-	group_size: number;
-	age_range: string;
-	median_age: string;
-	treatment_method: string;
-	treatment_efficacy: string;
-	complications: string;
+	group_size?: number | string;
+	age_range?: string;
+	median_age?: string;
+	treatment_method?: string;
+	treatment_efficacy?: string;
+	complications?: string;
 }
 
 export interface DrugWarning {

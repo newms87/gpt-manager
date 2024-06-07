@@ -13,29 +13,29 @@
 				<LabelValueBlock
 					label="Generic Name"
 					:value="drug.generic_name"
-					:url="getSourceUrl('drugs', 'generic_name')"
+					:url="getSourceUrl('subjects', 'generic_name')"
 				/>
 				<LabelValueBlock
 					label="Generics"
 					:value="drug.generics.length"
-					:url="getSourceUrl('drugs', 'generics')"
+					:url="getSourceUrl('subjects', 'generics')"
 				/>
 				<LabelValueBlock
 					label="Market Share"
 					:value="fPercent(drug.market_share)"
-					:url="getSourceUrl('drugs', 'market_share')"
+					:url="getSourceUrl('subjects', 'market_share')"
 				/>
 				<LabelValueBlock
 					label="Patients"
 					:value="fNumber(drug.number_of_users)"
-					:url="getSourceUrl('drugs', 'number_of_users')"
+					:url="getSourceUrl('subjects', 'number_of_users')"
 				/>
 			</div>
 			<div class="max-w-[17rem] mt-5 text-justify">
 				<div>
 					{{ drug.generics.join(", ") }}
 				</div>
-				<DataSourceList :sources="getSources('drugs', 'generics')" class="mt-3" />
+				<DataSourceList :sources="getSources('subjects', 'generics')" class="mt-3" />
 			</div>
 		</template>
 	</div>

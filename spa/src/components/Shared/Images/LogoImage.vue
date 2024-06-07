@@ -1,6 +1,6 @@
 <template>
-	<a class="w-full max-w-full overflow-hidden" target="_blank" :href="url">
-		<div v-if="isSvg" class="max-w-full" v-html="src" />
+	<a class="logo-image w-full overflow-hidden" target="_blank" :href="url">
+		<div v-if="isSvg" class="w-full h-full" v-html="src" />
 		<img v-if="isImage" :alt="alt" :src="src" />
 	</a>
 </template>
@@ -17,3 +17,12 @@ const props = defineProps<{
 const isSvg = computed(() => props.src.startsWith("<svg"));
 const isImage = computed(() => !isSvg.value);
 </script>
+
+<style scoped lang="scss">
+.logo-image {
+	&:deep(svg) {
+		width: 100%;
+		height: 100%;
+	}
+}
+</style>

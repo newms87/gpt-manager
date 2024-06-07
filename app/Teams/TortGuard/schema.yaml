@@ -218,7 +218,7 @@ tables:
         nullable: true
 
   data_sources:
-    auto_ref: [ "table", "record_id", "field" ]
+    auto_ref: [ "table", "record_id", "field", "name" ]
     fields:
       id: true
       name:
@@ -241,5 +241,5 @@ tables:
       timestamps: true
     indexes:
       - name: unique_data_table_record_field
-        columns: [ table, record_id, field ]
+        columns: [ table, record_id, field, name ]
         unique: true

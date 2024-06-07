@@ -6,23 +6,23 @@
 		/>
 		<LabelValueBlock
 			label="Hospitalization"
-			:value="issue.hospitalization"
+			:value="fBoolean(issue.hospitalization)"
 		/>
 		<LabelValueBlock
 			label="Surgical Procedure"
-			:value="issue.surgical_procedure"
+			:value="fBoolean(issue.surgical_procedure)"
 		/>
 		<LabelValueBlock
 			label="Permanent Disability"
-			:value="issue.permanent_disability"
+			:value="fBoolean(issue.permanent_disability)"
 		/>
 		<LabelValueBlock
 			label="Death"
-			:value="issue.death"
+			:value="fBoolean(issue.death)"
 		/>
 		<LabelValueBlock
 			label="Ongoing Care"
-			:value="issue.ongoing_care"
+			:value="fBoolean(issue.ongoing_care)"
 		/>
 		<LabelValueBlock
 			class="col-span-2 !max-w-64"
@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { Issue } from "@/components/Modules/Tortguard/drugs";
-import { fCurrencyNoCents, LabelValueBlock } from "quasar-ui-danx";
+import { fBoolean, fCurrencyNoCents, LabelValueBlock } from "quasar-ui-danx";
 
 defineProps<{ issue: Issue }>();
 </script>

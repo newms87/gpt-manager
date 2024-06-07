@@ -61,7 +61,6 @@ class DatabaseRecordMapper
             $record = $this->schema->findRecord($relation['table'], $relation['ref']);
 
             if (!$record) {
-                dump('Record should be created first', $relation);
                 throw new Exception("Record should be created for relation: " . json_encode($relation));
             }
 

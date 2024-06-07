@@ -29,13 +29,18 @@ class SchemaManager
         return $this->schema['tables'][$tableName] ?? [];
     }
 
+    public function query(string $tableName)
+    {
+        return DB::table($this->prefix . '__' . $tableName);
+    }
+
     /**
      * Find a record by one or more unique fields
      */
     public function findRecord(string $tableName, string $ref): array
     {
         if (!isset($this->loadedRecords[$tableName][$ref])) {
-            $result = DB::table($this->prefix . '__' . $tableName)->where('ref', $ref)->first() ?? [];
+            $result = $this->query($tableName)->where('ref', $ref)->orWhere('id', $ref)->first() ?? [];
 
             $this->loadedRecords[$tableName][$ref] = (array)$result;
         }
@@ -75,6 +80,6 @@ class SchemaManager
             }
         }
 
-        DB::table($this->prefix . '__' . $tableName)->updateOrInsert(['ref' => $record['ref']], $record);
+        $this->query($tableName)->updateOrInsert(['ref' => $record['ref']], $record);
     }
 }

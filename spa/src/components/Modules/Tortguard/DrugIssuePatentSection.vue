@@ -13,27 +13,27 @@
 				<LabelValueBlock
 					label="Patent Number"
 					:value="drug.patent_number"
-					:url="getSourceUrl('drugs', 'patent_number')"
+					:url="getSourceUrl('subjects', 'patent_number')"
 				/>
 				<LabelValueBlock
 					label="Filed"
 					:value="fDate(drug.patent_filed_date)"
-					:url="getSourceUrl('drugs', 'patent_filed_date')"
+					:url="getSourceUrl('subjects', 'patent_filed_date')"
 				/>
 				<LabelValueBlock
 					label="Expiration"
 					:value="fDate(drug.patent_expiration_date)"
-					:url="getSourceUrl('drugs', 'patent_expiration_date')"
+					:url="getSourceUrl('subjects', 'patent_expiration_date')"
 				/>
 				<LabelValueBlock
 					label="Issued"
 					:value="fDate(drug.patent_issued_date)"
-					:url="getSourceUrl('drugs', 'patent_issued_date')"
+					:url="getSourceUrl('subjects', 'patent_issued_date')"
 				/>
 			</div>
 			<div class="max-w-[17rem] mt-5 text-justify">
 				<div>{{ drug.patent_details }}</div>
-				<DataSourceList :sources="getSources('drugs', 'patent_details')" class="mt-3" />
+				<DataSourceList :sources="getSources('subjects', 'patent_details')" class="mt-3" />
 			</div>
 		</template>
 	</div>
