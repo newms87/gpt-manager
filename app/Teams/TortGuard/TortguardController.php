@@ -12,7 +12,7 @@ class TortguardController extends Controller
     {
         $schemaFile = app_path('Teams/TortGuard/schema.yaml');
         $schema     = new SchemaManager('tortguard', $schemaFile);
-        $issues     = $schema->query('issues')->get()->toArray();
+        $issues     = $schema->query('issues')->where('is_dashboard_approved', 1)->get()->toArray();
 
         $subjectIssues = [];
 
