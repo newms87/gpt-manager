@@ -2,7 +2,7 @@
 	<div class="drug-issue-card bg-sky-900 p-6 rounded-lg outline-2 outline-slate-500 outline shadow-md shadow-slate-500 w-full">
 		<div class="flex items-stretch flex-nowrap">
 			<div class="flex-grow">
-				<LogoImage :src="drugIssue.drug.logo" :url="drugIssue.drug.url" />
+				<LogoImage :src="drugIssue.drug.logo" :url="drugIssue.drug.url" class="w-32" />
 				<div class="text-xl font-bold my-2">
 					<a target="_blank" :href="drugIssue.drug.url">{{ drugIssue.drug.name }}</a>
 				</div>

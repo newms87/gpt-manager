@@ -3,15 +3,12 @@
 namespace App\Services\Database;
 
 use Exception;
-use Illuminate\Support\Facades\DB;
 use Symfony\Component\Yaml\Yaml;
 
 class SchemaManager
 {
     protected string $prefix;
     protected array  $schema;
-
-    protected array $loadedRecords = [];
 
     public function __construct(string $prefix, string $schemaFile)
     {
@@ -29,23 +26,14 @@ class SchemaManager
         return $this->schema['tables'][$tableName] ?? [];
     }
 
-    public function query(string $tableName)
+    public function query(string $tableName): DatabaseTableQuery
     {
-        return DB::table($this->prefix . '__' . $tableName);
-    }
-
-    /**
-     * Find a record by one or more unique fields
-     */
-    public function findRecord(string $tableName, string $ref): array
-    {
-        if (!isset($this->loadedRecords[$tableName][$ref])) {
-            $result = $this->query($tableName)->where('ref', $ref)->orWhere('id', $ref)->first() ?? [];
-
-            $this->loadedRecords[$tableName][$ref] = (array)$result;
+        $tableSchema = $this->getTable($tableName);
+        if (!$tableSchema) {
+            throw new Exception("Table not found: " . $tableName);
         }
 
-        return $this->loadedRecords[$tableName][$ref];
+        return app(DatabaseTableQuery::class)->setTable($this->prefix . '__', $tableName, $tableSchema);
     }
 
     public function createRecord(string $tableName, array $record)
