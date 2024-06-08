@@ -33,7 +33,7 @@ class DatabaseRecordMapper
 
             foreach($records as $record) {
                 $record += $relationFieldValues;
-                $this->schema->createRecord($tableName, $record);
+                $this->schema->query($tableName)->create($record);
             }
         }
     }
@@ -58,13 +58,13 @@ class DatabaseRecordMapper
                 continue;
             }
 
-            $record = $this->schema->findRecord($relation['table'], $relation['ref']);
+            $record = $this->schema->query($relation['table'])->find($relation['ref']);
 
             if (!$record) {
                 throw new Exception("Record should be created for relation: " . json_encode($relation));
             }
 
-            $fieldValues[$fieldName] = $record['id'];
+            $fieldValues[$fieldName] = $record->id;
         }
 
         return $fieldValues;

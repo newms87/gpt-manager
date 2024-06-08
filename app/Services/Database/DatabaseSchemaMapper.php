@@ -2,89 +2,64 @@
 
 namespace App\Services\Database;
 
+use Exception;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Symfony\Component\Yaml\Yaml;
 
 class DatabaseSchemaMapper
 {
-    protected string $prefix = '';
+    protected SchemaManager $schema;
 
     public function map($prefix, $schemaFile)
     {
-        $this->prefix = $prefix;
-        $schema       = Yaml::parseFile($schemaFile);
+        $this->schema = new SchemaManager($prefix, $schemaFile);
 
-        foreach($schema['tables'] as $tableName => $tableDefinition) {
-            $tableName = $prefix . '__' . $tableName;
-            if (!Schema::hasTable($tableName)) {
-                $this->createTable($tableName, $tableDefinition);
+        foreach($this->schema->getTables() as $tableName => $tableSchema) {
+            if (Schema::hasTable($this->schema->realTableName($tableName))) {
+                $this->updateTable($tableName, $tableSchema);
             } else {
-                $this->updateTable($tableName, $tableDefinition);
+                $this->createTable($tableName, $tableSchema);
             }
         }
     }
 
-    protected function createTable($tableName, $definition)
+    protected function createTable($tableName, $tableSchema)
     {
-        $fields  = $definition['fields'] ?? [];
-        $indexes = $definition['indexes'] ?? [];
+        Schema::create($this->schema->realTableName($tableName), function (Blueprint $table) use ($tableSchema) {
+            $fields  = $tableSchema['fields'] ?? [];
+            $indexes = $tableSchema['indexes'] ?? [];
 
-        // All tables have to have a ref field set per the design of the relationships
-        // This field is used by the AI models to uniquely reference records (existing and non-existing) in a more readable and manageable format
-        $fields = $this->injectRefField($fields);
-
-        Schema::create($tableName, function (Blueprint $table) use ($fields, $indexes) {
             $this->addColumns($table, $fields);
             $this->addIndexes($table, $indexes);
         });
     }
 
-    protected function updateTable($tableName, $definition)
+    protected function updateTable($tableName, $tableSchema)
     {
-        $fields  = $definition['fields'] ?? [];
-        $indexes = $definition['indexes'] ?? [];
-        Schema::table($tableName, function (Blueprint $table) use ($fields, $indexes) {
+        Schema::table($this->schema->realTableName($tableName), function (Blueprint $table) use ($tableSchema) {
+            $fields  = $tableSchema['fields'] ?? [];
+            $indexes = $tableSchema['indexes'] ?? [];
+
             $this->updateColumns($table, $fields);
             $this->updateIndexes($table, $indexes);
         });
     }
 
-    /**
-     * Inject the 'ref' field into the fields array after the 'id' field
-     */
-    protected function injectRefField($fields): array
+    protected function getColumn(Blueprint $table, $name): ?array
     {
-        // Insert ref after the id field
-        $idIndex = array_search('id', array_keys($fields));
+        $columns = Schema::getColumns($table->getTable());
+        foreach($columns as $column) {
+            if (strtolower($column['name']) === strtolower($name)) {
+                return $column;
+            }
+        }
 
-        return array_merge(
-            array_slice($fields, 0, $idIndex + 1),
-            ['ref' => true],
-            array_slice($fields, $idIndex + 1)
-        );
+        return null;
     }
 
     protected function addColumns(Blueprint $table, array $fields)
     {
         foreach($fields as $fieldName => $fieldDefinition) {
-            if ($fieldName === 'id' && $fieldDefinition === true) {
-                $table->id();
-                continue;
-            }
-            if ($fieldName === 'ref' && $fieldDefinition === true) {
-                $table->string('ref')->unique();
-                continue;
-            }
-            if ($fieldName === 'timestamps' && $fieldDefinition === true) {
-                $table->timestamps();
-                continue;
-            }
-            if ($fieldName === 'softDeletes' && $fieldDefinition === true) {
-                $table->softDeletes();
-                continue;
-            }
-
             $this->addColumn($table, $fieldName, $fieldDefinition);
         }
     }
@@ -94,12 +69,39 @@ class DatabaseSchemaMapper
         $existingColumns = Schema::getColumnListing($table->getTable());
         $definedColumns  = array_keys($fields);
 
+        if (!empty($fields['timestamps'])) {
+            $definedColumns[] = 'created_at';
+            $definedColumns[] = 'updated_at';
+        }
+
+        $previousFieldName = null;
+
         foreach($fields as $fieldName => $fieldDefinition) {
-            if (!in_array($fieldName, $existingColumns)) {
-                $this->addColumn($table, $fieldName, $fieldDefinition);
+            $column = null;
+
+            // Special case for Timestamps
+            if (is_bool($fieldDefinition)) {
+                $hasColumn = $fieldName === 'timestamps' ? in_array('created_at', $existingColumns) : in_array($fieldName, $existingColumns);
+                if (!$hasColumn) {
+                    $column = $this->addColumn($table, $fieldName, $fieldDefinition);
+                }
             } else {
-                $this->updateColumn($table, $fieldName, $fieldDefinition);
+                if (in_array($fieldName, $existingColumns)) {
+                    $this->updateColumn($table, $fieldName, $fieldDefinition);
+                } else {
+                    $column = $this->addColumn($table, $fieldName, $fieldDefinition);
+                }
             }
+
+            if ($column) {
+                if ($previousFieldName) {
+                    $column->after($previousFieldName);
+                } else {
+                    $column->first();
+                }
+            }
+            
+            $previousFieldName = $fieldName;
         }
 
         foreach($existingColumns as $existingColumn) {
@@ -109,8 +111,17 @@ class DatabaseSchemaMapper
         }
     }
 
-    protected function addColumn(Blueprint $table, string $name, array $definition)
+    protected function addColumn(Blueprint $table, string $name, array|bool $definition)
     {
+        // When the field is a boolean, it means it's a simple field without any additional definition
+        if (is_bool($definition)) {
+            if ($name === 'ref') {
+                return $table->string('ref')->unique();
+            } else {
+                return $table->{$name}();
+            }
+        }
+
         $column = $table->{$definition['type']}($name);
 
         if (!empty($definition['precision'])) {
@@ -129,7 +140,10 @@ class DatabaseSchemaMapper
             $column->primary();
         }
         if (!empty($definition['unique'])) {
-            $column->unique();
+            $name = is_string($definition['unique']) ? $definition['unique'] : 'unique_' . $name;
+            if (!Schema::hasIndex($table->getTable(), $name)) {
+                $column->unique($name);
+            }
         }
         if (!empty($definition['auto_increment'])) {
             $column->autoIncrement();
@@ -140,12 +154,17 @@ class DatabaseSchemaMapper
         if ($definition['type'] === 'foreignId') {
             $foreignKey = $definition['foreign_key'] ?? null;
             if (!$foreignKey) {
-                throw new \Exception("foreign_key is required when setting foreignId type");
+                throw new Exception("foreign_key is required when setting foreignId type");
             }
 
             [$foreignTable, $foreignColumn] = explode('.', $foreignKey);
-            $foreignTable = $this->prefix . '__' . $foreignTable;
-            $column->constrained($foreignTable, $foreignColumn);
+            $foreignTable = $this->schema->realTableName($foreignTable);
+
+            $indexName = 'fk_' . $table->getTable() . '_' . $name;
+
+            if (!$this->hasForeignKey($table, $indexName)) {
+                $column->constrained($foreignTable, $foreignColumn, $indexName);
+            }
         }
 
         return $column;
@@ -153,11 +172,7 @@ class DatabaseSchemaMapper
 
     protected function updateColumn(Blueprint $table, string $name, array $definition)
     {
-        $currentColumnType = Schema::getColumnType($table->getTable(), $name);
-
-        if ($currentColumnType !== $definition['type']) {
-            $this->addColumn($table, $name, $definition)->change();
-        }
+        $this->addColumn($table, $name, $definition)->change();
     }
 
     protected function addIndexes(Blueprint $table, $indexes)
@@ -174,16 +189,37 @@ class DatabaseSchemaMapper
         }
     }
 
+    protected function addIndex(Blueprint $table, $index)
+    {
+        $columns = $index['columns'] ?? null;
+        if (!$columns) {
+            throw new Exception("Columns are required for index: " . json_encode($index));
+        }
+
+        $name = $index['name'] ?? 'index_' . implode('_', $columns);
+
+        if ($index['unique']) {
+            $table->unique($columns, $name);
+        } else {
+            $table->index($columns, $name);
+        }
+    }
+
     protected function updateIndex(Blueprint $table, $index)
     {
-        $name = $index['name'] ?? null;
+        $columns = $index['columns'] ?? null;
+        if (!$columns) {
+            throw new Exception("Columns are required for index: " . json_encode($index));
+        }
 
-        $existingIndex = Schema::getIndexes($table->getTable())[$name] ?? null;
+        $name = $index['name'] ?? 'index_' . implode('_', $columns);
+
+        $existingIndex = $this->getIndex($table, $name);
 
         if ($existingIndex) {
             // If the index with the same name exists, but has changed, drop it and recreate it
-            if ($existingIndex->getColumns() !== implode(',', $index['columns'] ?? [])) {
-                $table->dropIndex($name);
+            if (implode(',', $existingIndex['columns']) !== implode(',', $columns)) {
+                Schema::table($table->getTable(), fn(Blueprint $t) => $t->dropIndex($name));
                 $this->addIndex($table, $index);
             }
         } else {
@@ -191,15 +227,29 @@ class DatabaseSchemaMapper
         }
     }
 
-    protected function addIndex(Blueprint $table, $index)
+    protected function getIndex($table, $name)
     {
-        $name    = $index['name'] ?? null;
-        $columns = $index['columns'] ?? [];
+        $indexes = Schema::getIndexes($table->getTable());
 
-        if ($index['unique']) {
-            $table->unique($columns, $name);
-        } else {
-            $table->index($columns, $name);
+        foreach($indexes as $index) {
+            if ($index['name'] === $name) {
+                return $index;
+            }
         }
+
+        return null;
+    }
+
+    protected function hasForeignKey($table, $name)
+    {
+        $fks = Schema::getForeignKeys($table->getTable());
+
+        foreach($fks as $fk) {
+            if ($fk['name'] === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

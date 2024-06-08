@@ -16,6 +16,11 @@ class SchemaManager
         $this->schema = Yaml::parseFile($schemaFile);
     }
 
+    public function realTableName($tableName): string
+    {
+        return $this->prefix . '__' . $tableName;
+    }
+
     public function hasTable($tableName)
     {
         return $this->schema['tables'][$tableName] ?? false;
@@ -23,7 +28,17 @@ class SchemaManager
 
     public function getTable($tableName)
     {
-        return $this->schema['tables'][$tableName] ?? [];
+        return $this->schema['tables'][$tableName] ?? null;
+    }
+
+    public function getTables()
+    {
+        return $this->schema['tables'] ?? [];
+    }
+
+    public function getColumn($tableName, $columnName)
+    {
+        return $this->schema['tables'][$tableName]['fields'][$columnName] ?? null;
     }
 
     public function query(string $tableName): DatabaseTableQuery
@@ -34,40 +49,5 @@ class SchemaManager
         }
 
         return app(DatabaseTableQuery::class)->setTable($this->prefix . '__', $tableName, $tableSchema);
-    }
-
-    public function createRecord(string $tableName, array $record)
-    {
-        $table = $this->getTable($tableName);
-        if (!$table) {
-            throw new Exception("Table not found: " . $tableName);
-        }
-
-        $fields  = $table['fields'];
-        $autoRef = $table['auto_ref'] ?? null;
-
-        // Assign auto ref fields
-        if ($autoRef) {
-            $record['ref'] = implode(':', array_map(fn($field) => $record[$field] ?? '', $autoRef));
-        }
-
-        if (empty($record['ref'])) {
-            throw new Exception("Missing ref field in record: " . json_encode($record));
-        }
-
-        foreach($fields as $fieldName => $fieldDefinition) {
-            if ($fieldName === 'timestamps' && $fieldDefinition === true) {
-                $record['created_at'] = $record['created_at'] ?? now()->toDateTimeString();
-                $record['updated_at'] = $record['updated_at'] ?? now()->toDateTimeString();
-            }
-        }
-
-        foreach($record as $field => $value) {
-            if (is_array($value) || is_object($value)) {
-                $record[$field] = json_encode($value);
-            }
-        }
-
-        $this->query($tableName)->updateOrInsert(['ref' => $record['ref']], $record);
     }
 }

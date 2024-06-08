@@ -2,6 +2,7 @@ tables:
   companies:
     fields:
       id: true
+      ref: true
       name:
         type: string
         length: 255
@@ -42,6 +43,7 @@ tables:
   subjects:
     fields:
       id: true
+      ref: true
       company_id:
         type: foreignId
         foreign_key: companies.id
@@ -93,6 +95,7 @@ tables:
   issues:
     fields:
       id: true
+      ref: true
       subject_id:
         type: foreignId
         foreign_key: subjects.id
@@ -143,6 +146,7 @@ tables:
   scientific_studies:
     fields:
       id: true
+      ref: true
       subject_id:
         type: foreignId
         foreign_key: subjects.id
@@ -193,6 +197,7 @@ tables:
   warnings:
     fields:
       id: true
+      ref: true
       subject_id:
         type: foreignId
         foreign_key: subjects.id
@@ -221,6 +226,7 @@ tables:
     auto_ref: [ "table", "record_id", "field", "name" ]
     fields:
       id: true
+      ref: true
       name:
         type: string
         length: 255
