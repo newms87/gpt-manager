@@ -40,8 +40,8 @@ class ScreenshotOneApi extends Api
             'url'                       => $url,
 
             // Image Options
-            // 768 is the max width for OpenAI Vision API. All images will be scaled to this size (on one side)
-            'viewport_width'            => 768,
+            // 768 is the max width for OpenAI Vision API. 760 due to additional padding added by Screenshot One. All images will be scaled to this size (on one side)
+            'viewport_width'            => 760,
             'full_page'                 => true,
             'reduced_motion'            => true,
             'block_cookie_banners'      => true,

@@ -1,7 +1,7 @@
 <?php
 
 use App\AiTools\GoogleSerpAiTool;
-use App\AiTools\UrlToScreenshotAiTool;
+use App\AiTools\UrlToImageAiTool;
 use App\Api\OpenAi\OpenAiApi;
 
 return [
@@ -53,14 +53,10 @@ return [
     ],
     'tools'         => [
         [
-            'name'        => 'code-interpreter',
-            'description' => 'Run code in a variety of languages and return the output',
-        ],
-        [
-            'class'       => UrlToScreenshotAiTool::class,
-            'name'        => UrlToScreenshotAiTool::NAME,
-            'description' => UrlToScreenshotAiTool::DESCRIPTION,
-            'parameters'  => UrlToScreenshotAiTool::PARAMETERS,
+            'class'       => UrlToImageAiTool::class,
+            'name'        => UrlToImageAiTool::NAME,
+            'description' => UrlToImageAiTool::DESCRIPTION,
+            'parameters'  => UrlToImageAiTool::PARAMETERS,
         ],
         [
             'class'       => GoogleSerpAiTool::class,
