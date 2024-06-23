@@ -5,6 +5,7 @@
 			:key="message.id"
 			:readonly="readonly"
 			:message="message"
+			:thread="thread"
 			class="mb-5"
 		/>
 		<div v-if="!readonly" class="flex items-stretch">

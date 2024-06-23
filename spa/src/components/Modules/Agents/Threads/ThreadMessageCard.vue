@@ -29,6 +29,14 @@
 					class="mr-2"
 					@click.stop="deleteAction.trigger(message)"
 				/>
+				<QBtn
+					v-if="!readonly"
+					:saving="resetToMessageAction.isApplying"
+					class="mr-2 text-red-900"
+					@click.stop="resetToMessageAction.trigger(thread, { message_id: message.id })"
+				>
+					<ResetToHereIcon class="w-4" />
+				</QBtn>
 			</div>
 		</div>
 
@@ -59,11 +67,13 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import { getAction as getThreadAction } from "@/components/Modules/Agents/Threads/threadActions";
 import { getAction } from "@/components/Modules/Agents/Threads/threadMessageActions";
 import TrashButton from "@/components/Shared/Buttons/TrashButton";
-import { ThreadMessage } from "@/types/agents";
+import { AgentThread, ThreadMessage } from "@/types/agents";
 import {
 	FaRegularUser as UserIcon,
+	FaSolidArrowsRotate as ResetToHereIcon,
 	FaSolidImage as AddImageIcon,
 	FaSolidRobot as AssistantIcon,
 	FaSolidToolbox as ToolIcon
@@ -74,6 +84,7 @@ import { computed, ref } from "vue";
 
 const props = defineProps<{
 	message: ThreadMessage;
+	thread: AgentThread,
 	readonly?: boolean;
 }>();
 
@@ -107,6 +118,7 @@ const avatar = computed<{
 });
 
 const deleteAction = getAction("delete");
+const resetToMessageAction = getThreadAction("reset-to-message");
 const updateAction = getAction("update");
 const saveFilesAction = getAction("save-files");
 const updateDebouncedAction = getAction("updateDebounced");

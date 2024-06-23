@@ -61,6 +61,7 @@ class ThreadRepository extends ActionRepository
     {
         return match ($action) {
             'create-message' => app(MessageRepository::class)->create($model, $data['role'] ?? Message::ROLE_USER),
+            'reset-to-message' => $this->resetToMessage($model, $data['message_id']),
             'run' => $this->run($model),
             default => parent::applyAction($action, $model, $data)
         };
@@ -178,6 +179,13 @@ class ThreadRepository extends ActionRepository
         } else {
             throw new Exception('Unexpected response from AI model');
         }
+    }
+
+    public function resetToMessage(Thread $thread, $messageId)
+    {
+        $thread->messages()->where('id', '>', $messageId)->each(fn(Message $m) => $m->delete());
+
+        return $thread;
     }
 
     public function cleanContent($content): string

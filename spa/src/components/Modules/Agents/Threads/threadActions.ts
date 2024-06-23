@@ -1,5 +1,6 @@
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { ThreadRoutes } from "@/routes/agentRoutes";
+import { ThreadMessage } from "@/types";
 import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { ActionOptions } from "quasar-ui-danx/types";
 import { h } from "vue";
@@ -34,6 +35,19 @@ const items: ActionOptions[] = [
 			});
 		},
 		onFinish: AgentController.refreshAll
+	},
+	{
+		name: "reset-to-message",
+		label: "Reset To Message",
+		class: "text-red-500",
+		onFinish: AgentController.getActiveItemDetails,
+		vnode: (target: ThreadMessage) => h(ConfirmActionDialog, {
+			action: "Reset To Message",
+			label: "Delete all following messages",
+			content: "Are you sure you want to delete all messages following this one?",
+			target,
+			confirmClass: "bg-red-900"
+		})
 	}
 ];
 

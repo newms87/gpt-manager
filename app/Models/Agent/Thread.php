@@ -58,10 +58,12 @@ class Thread extends Model implements AuditableContract
      */
     public function getMessagesForApi(): array
     {
+        $corePrompt = "The current date and time is " . now()->toDateTimeString() . "\n\n";
+
         $messages = collect([
             [
                 'role'    => Message::ROLE_USER,
-                'content' => $this->agent->prompt,
+                'content' => $corePrompt . $this->agent->prompt,
             ],
         ]);
 
