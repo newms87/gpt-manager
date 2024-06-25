@@ -15,6 +15,7 @@ export interface AgentThread extends ActionTargetItem {
 	name: string;
 	summary: string;
 	messages: ThreadMessage[];
+	is_running: boolean;
 }
 
 export interface ThreadMessage extends ActionTargetItem {

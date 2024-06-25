@@ -16,10 +16,11 @@ class ThreadResource extends ActionResource
     public function data(): array
     {
         return [
-            'id'       => $this->id,
-            'name'     => $this->name,
-            'summary'  => $this->summary,
-            'messages' => MessageResource::collection($this->messages()->orderBy('id')->get()),
+            'id'         => $this->id,
+            'name'       => $this->name,
+            'summary'    => $this->summary,
+            'messages'   => MessageResource::collection($this->messages()->orderBy('id')->get()),
+            'is_running' => $this->isRunning(),
         ];
     }
 }

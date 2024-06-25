@@ -12,7 +12,6 @@
 			<QBtn
 				class="bg-sky-700 text-slate-200 text-lg flex-grow"
 				:loading="createMessageAction.isApplying"
-				:disable="createMessageAction.isApplying"
 				@click="createMessageAction.trigger(thread)"
 			>
 				<CreateIcon class="w-4 mr-3" />
@@ -20,8 +19,8 @@
 			</QBtn>
 			<QBtn
 				class="bg-lime-800 text-slate-300 text-lg ml-6 p-3"
-				:disable="runAction.isApplying || thread.messages.length === 0"
-				:loading="runAction.isApplying"
+				:disable="thread.messages.length === 0"
+				:loading="runAction.isApplying || thread.is_running"
 				@click="runAction.trigger(thread)"
 			>
 				<RunIcon class="w-4" />

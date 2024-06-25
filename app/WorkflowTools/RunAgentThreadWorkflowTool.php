@@ -7,6 +7,7 @@ use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowTask;
 use App\Repositories\ThreadRepository;
+use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -23,13 +24,13 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
         $thread = $this->setupTaskThread($workflowTask);
 
         // Run the thread
-        $threadRun = app(ThreadRepository::class)->run($thread);
+        $threadRun = app(AgentThreadService::class)->run($thread);
 
         // Produce the artifact
         $lastMessage = $threadRun->lastMessage;
         $assignment  = $workflowTask->workflowAssignment;
 
-        $content = $this->cleanContent($lastMessage->content);
+        $content = AgentThreadService::cleanContent($lastMessage->content);
 
         $artifact = $workflowTask->artifact()->create([
             'name'    => $thread->name,
@@ -122,16 +123,5 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
         $fileIds = $workflowInput->storedFiles->pluck('id')->toArray();
         app(ThreadRepository::class)->addMessageToThread($thread, $content, $fileIds);
         Log::debug("$thread added $workflowInput");
-    }
-
-    /**
-     * Cleans the AI Model responses to make sure we have valid JSON, if the response is JSON
-     * @param $content
-     * @return string
-     */
-    public function cleanContent($content): string
-    {
-        // Remove any ```json and trailing ``` from content if they are present
-        return preg_replace('/^```json\n(.*)\n```$/s', '$1', trim($content));
     }
 }

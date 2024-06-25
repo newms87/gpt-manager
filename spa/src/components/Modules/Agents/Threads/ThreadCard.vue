@@ -12,8 +12,7 @@
 				</h5>
 				<QBtn
 					class="text-lime-800 bg-green-200 hover:bg-lime-800 hover:text-green-200 mr-6 px-3"
-					:disable="runAction.isApplying"
-					:loading="runAction.isApplying"
+					:loading="runAction.isApplying || thread.is_running"
 					@click.stop="runAction.trigger(thread)"
 				>
 					<div class="flex flex-nowrap items-center">
@@ -25,7 +24,6 @@
 				</QBtn>
 				<QBtn
 					class="text-red-900 hover:bg-red-300 shadow-none"
-					:disable="deleteAction.isApplying"
 					:loading="deleteAction.isApplying"
 					@click.stop="onDelete"
 				>
