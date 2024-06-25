@@ -6,6 +6,8 @@ use App\Models\Team\Team;
 use App\Repositories\AgentRepository;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -33,9 +35,14 @@ class Thread extends Model implements AuditableContract
         return $this->belongsTo(Team::class);
     }
 
-    public function runs()
+    public function runs(): HasMany|ThreadRun
     {
         return $this->hasMany(ThreadRun::class);
+    }
+
+    public function currentRun(): HasOne|ThreadRun
+    {
+        return $this->hasOne(ThreadRun::class)->where('status', ThreadRun::STATUS_RUNNING);
     }
 
     public function messages()
@@ -50,7 +57,7 @@ class Thread extends Model implements AuditableContract
 
     public function isRunning(): bool
     {
-        return $this->runs()->where('status', ThreadRun::STATUS_RUNNING)->exists();
+        return $this->currentRun()->exists();
     }
 
     public function getTotalInputTokens()

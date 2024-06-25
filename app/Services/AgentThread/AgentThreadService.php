@@ -45,8 +45,44 @@ class AgentThreadService
         ]);
 
         // Execute the thread run in a job
-        (new ExecuteThreadRunJob($threadRun))->dispatch();
+        $job                        = (new ExecuteThreadRunJob($threadRun))->dispatch();
+        $threadRun->job_dispatch_id = $job->getJobDispatch()?->id;
+        $threadRun->save();
 
+        LockHelper::release($thread);
+
+        return $threadRun;
+    }
+
+    /**
+     * Stop the currently running thread (if it is running)
+     */
+    public function stop(Thread $thread): ThreadRun|null
+    {
+        LockHelper::acquire($thread);
+        $threadRun = $thread->currentRun;
+        if ($threadRun) {
+            $threadRun->status = ThreadRun::STATUS_STOPPED;
+            $threadRun->save();
+        }
+        LockHelper::release($thread);
+
+        return $threadRun;
+    }
+
+    /**
+     * Resume the previously stopped thread (if there was a stopped thread run)
+     */
+    public function resume(Thread $thread): ThreadRun|null
+    {
+        LockHelper::acquire($thread);
+        $threadRun = $thread->runs()->where('status', ThreadRun::STATUS_STOPPED)->latest()->first();
+
+        if ($threadRun) {
+            $threadRun->status          = ThreadRun::STATUS_RUNNING;
+            $threadRun->job_dispatch_id = (new ExecuteThreadRunJob($threadRun))->dispatch()->getJobDispatch()?->id;
+            $threadRun->save();
+        }
         LockHelper::release($thread);
 
         return $threadRun;
@@ -66,7 +102,9 @@ class AgentThreadService
             $options = [
                 'temperature'     => $threadRun->temperature,
                 'tool_choice'     => $threadRun->tool_choice,
-                'response_format' => $threadRun->response_format,
+                'response_format' => [
+                    'type' => $threadRun->response_format,
+                ],
                 'seed'            => $threadRun->seed,
             ];
 
@@ -77,6 +115,12 @@ class AgentThreadService
             }
 
             do {
+                $threadRun->refresh();
+                if ($threadRun->status !== ThreadRun::STATUS_RUNNING) {
+                    Log::debug("$threadRun is no longer running: " . $threadRun->status);
+                    break;
+                }
+
                 // Get the messages for the next iteration
                 $messages     = $this->getMessagesForApi($thread);
                 $messageCount = count($messages);

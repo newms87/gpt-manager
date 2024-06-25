@@ -4,17 +4,20 @@ namespace App\Models\Agent;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\AuditableTrait;
 
 class ThreadRun extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
-    const
+    const string
         STATUS_RUNNING = 'Running',
         STATUS_COMPLETED = 'Completed',
+        STATUS_STOPPED = 'Stopped',
         STATUS_FAILED = 'Failed';
 
     protected $fillable = [
@@ -28,7 +31,7 @@ class ThreadRun extends Model implements AuditableContract
         'status',
     ];
 
-    public function casts()
+    public function casts(): array
     {
         return [
             'started_at'   => 'datetime',
@@ -38,14 +41,19 @@ class ThreadRun extends Model implements AuditableContract
         ];
     }
 
-    public function thread()
+    public function thread(): Thread|BelongsTo
     {
         return $this->belongsTo(Thread::class);
     }
 
-    public function lastMessage()
+    public function lastMessage(): BelongsTo|Message
     {
         return $this->belongsTo(Message::class, 'last_message_id');
+    }
+
+    public function jobDispatch(): BelongsTo|JobDispatch
+    {
+        return $this->belongsTo(JobDispatch::class);
     }
 
     public function __toString(): string

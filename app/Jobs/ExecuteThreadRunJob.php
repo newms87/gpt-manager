@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Agent\ThreadRun;
 use App\Services\AgentThread\AgentThreadService;
+use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Jobs\Job;
 
 class ExecuteThreadRunJob extends Job
@@ -13,6 +14,7 @@ class ExecuteThreadRunJob extends Job
     public function __construct(ThreadRun $threadRun)
     {
         $this->threadRun = $threadRun;
+        Log::debug("ExecuteThreadRunJob created for thread run $threadRun->id");
         parent::__construct();
     }
 

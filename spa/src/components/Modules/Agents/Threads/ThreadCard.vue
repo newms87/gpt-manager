@@ -23,6 +23,15 @@
 					</div>
 				</QBtn>
 				<QBtn
+					v-if="thread.is_running"
+					class="text-red-900 hover:bg-red-300 shadow-none"
+					:loading="stopAction.isApplying"
+					@click.stop="stopAction.trigger(thread)"
+				>
+					<StopIcon class="w-4" />
+				</QBtn>
+				<QBtn
+					v-else
 					class="text-red-900 hover:bg-red-300 shadow-none"
 					:loading="deleteAction.isApplying"
 					@click.stop="onDelete"
@@ -42,7 +51,7 @@
 import { getAction } from "@/components/Modules/Agents/Threads/threadActions";
 import ThreadMessageList from "@/components/Modules/Agents/Threads/ThreadMessageList";
 import { AgentThread } from "@/types/agents";
-import { FaRegularTrashCan as DeleteIcon, FaSolidPlay as RunIcon } from "danx-icon";
+import { FaRegularTrashCan as DeleteIcon, FaSolidPlay as RunIcon, FaSolidStop as StopIcon } from "danx-icon";
 import { EditOnClickTextField } from "quasar-ui-danx";
 
 const emit = defineEmits(["open", "close"]);
@@ -52,6 +61,7 @@ const props = defineProps<{
 }>();
 
 const runAction = getAction("run");
+const stopAction = getAction("stop");
 const updateAction = getAction("update");
 const deleteAction = getAction("delete");
 

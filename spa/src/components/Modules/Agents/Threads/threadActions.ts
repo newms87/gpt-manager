@@ -1,7 +1,7 @@
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { ThreadRoutes } from "@/routes/agentRoutes";
 import { ThreadMessage } from "@/types";
-import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
+import { ConfirmActionDialog, pollUntil, storeObject, useActions } from "quasar-ui-danx";
 import { ActionOptions } from "quasar-ui-danx/types";
 import { h } from "vue";
 
@@ -14,6 +14,22 @@ const items: ActionOptions[] = [
 	{
 		name: "update",
 		debounce: 500
+	},
+	{
+		name: "run",
+		onAction: async (action, target) => {
+			const response = await ThreadRoutes.applyAction(action, target);
+
+			if (response.success) {
+				pollUntil(async () => {
+					const thread = await ThreadRoutes.details(target);
+					storeObject(thread);
+					return !thread.is_running;
+				}, 1000);
+			}
+
+			return response;
+		}
 	},
 	{
 		name: "delete",
