@@ -134,7 +134,8 @@ class AgentThreadService
                 $this->handleResponse($thread, $threadRun, $response);
             } while(!$response->isFinished());
         } catch(Throwable $throwable) {
-            $threadRun->status = ThreadRun::STATUS_FAILED;
+            $threadRun->status    = ThreadRun::STATUS_FAILED;
+            $threadRun->failed_at = now();
             $threadRun->save();
             throw $throwable;
         }
@@ -211,24 +212,43 @@ class AgentThreadService
     public function handleResponse(Thread $thread, ThreadRun $threadRun, AgentCompletionResponseContract $response): void
     {
         if ($response->isToolCall()) {
+            Log::debug("Completion Response: Handling " . count($response->getToolCallerFunctions()) . " tool calls");
+
             $thread->messages()->create([
                 'role'    => Message::ROLE_ASSISTANT,
                 'content' => $response->getContent(),
                 'data'    => $response->getDataFields(),
             ]);
 
+            // Additional messages that support the tool response, such as images
+            // These messages must appear after all tool responses,
+            // otherwise ChatGPT will throw an error thinking it is missing tool response messages
+            $additionalMessages = [];
+
+            // Call the tool functions
             foreach($response->getToolCallerFunctions() as $toolCallerFunction) {
-                $content = $toolCallerFunction->call();
-                $thread->messages()->create([
-                    'role'    => Message::ROLE_TOOL,
-                    'content' => is_string($content) ? $content : json_encode($content),
-                    'data'    => [
-                        'tool_call_id' => $toolCallerFunction->getId(),
-                        'name'         => $toolCallerFunction->getName(),
-                    ],
-                ]);
+                Log::debug("Handling tool call: " . $toolCallerFunction->getName());
+                
+                $messages = $toolCallerFunction->call();
+
+                // Add the tool message
+                $toolMessage = array_shift($messages);
+                $thread->messages()->create($toolMessage);
+
+                // Append the additional messages to the list to appear after all tool responses
+                $additionalMessages = array_merge($additionalMessages, $messages);
             }
-            $threadRun->update(['refreshed_at' => now()]);
+
+            // Save all the tool response messages
+            foreach($additionalMessages as $message) {
+                $thread->messages()->create($message);
+            }
+
+            $threadRun->update([
+                'refreshed_at'  => now(),
+                'input_tokens'  => $threadRun->input_tokens + $response->inputTokens(),
+                'output_tokens' => $threadRun->output_tokens + $response->outputTokens(),
+            ]);
         } elseif ($response->isFinished()) {
             $lastMessage = $thread->messages()->create([
                 'role'    => Message::ROLE_ASSISTANT,
@@ -238,8 +258,8 @@ class AgentThreadService
             $threadRun->update([
                 'status'          => ThreadRun::STATUS_COMPLETED,
                 'completed_at'    => now(),
-                'input_tokens'    => $response->inputTokens(),
-                'output_tokens'   => $response->outputTokens(),
+                'input_tokens'    => $threadRun->input_tokens + $response->inputTokens(),
+                'output_tokens'   => $threadRun->output_tokens + $response->outputTokens(),
                 'last_message_id' => $lastMessage->id,
             ]);
 

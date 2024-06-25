@@ -3,7 +3,6 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\Thread;
-use App\Models\Agent\ThreadRun;
 use Newms87\Danx\Resources\ActionResource;
 
 /**
@@ -16,16 +15,15 @@ class ThreadResource extends ActionResource
 
     public function data(): array
     {
-        /** @var ThreadRun $currentRun */
-        $currentRun = $this->currentRun()->first();
-
         return [
-            'id'         => $this->id,
-            'name'       => $this->name,
-            'summary'    => $this->summary,
-            'messages'   => MessageResource::collection($this->messages()->orderBy('id')->get()),
-            'is_running' => (bool)$currentRun,
-            'logs'       => $currentRun?->jobDispatch?->runningAuditRequest?->logs ?? '',
+            'id'               => $this->id,
+            'name'             => $this->name,
+            'summary'          => $this->summary,
+            'messages'         => MessageResource::collection($this->messages()->orderBy('id')->get()),
+            'is_running'       => $this->isRunning(),
+            'logs'             => $this->lastRun?->jobDispatch?->runningAuditRequest?->logs ?? '',
+            'usage'            => $this->getUsage(),
+            'audit_request_id' => $this->lastRun?->jobDispatch?->running_audit_request_id,
         ];
     }
 }

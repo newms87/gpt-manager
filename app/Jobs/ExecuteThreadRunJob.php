@@ -9,6 +9,10 @@ use Newms87\Danx\Jobs\Job;
 
 class ExecuteThreadRunJob extends Job
 {
+    public int  $timeout       = 600;
+    public bool $failOnTimeout = true;
+    public int  $tries         = 1;
+
     public ThreadRun $threadRun;
 
     public function __construct(ThreadRun $threadRun)

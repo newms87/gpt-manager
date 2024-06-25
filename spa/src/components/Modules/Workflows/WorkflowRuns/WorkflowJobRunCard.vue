@@ -19,7 +19,7 @@
 				/>
 			</div>
 			<div class="ml-2">
-				<WorkflowCostsButton :usage="jobRun.usage" />
+				<AiTokenUsageButton :usage="jobRun.usage" />
 			</div>
 		</div>
 		<div class="mt-4 w-full">
@@ -35,8 +35,8 @@
 <script setup lang="ts">
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
-import WorkflowCostsButton from "@/components/Modules/Workflows/WorkflowRuns/WorkflowCostsButton";
 import WorkflowTaskCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowTaskCard";
+import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import { WorkflowJobRun, WorkflowRun } from "@/types/workflows";
 import { FaSolidArrowsRotate as RestartIcon } from "danx-icon";
 import { SelectField } from "quasar-ui-danx";

@@ -9,7 +9,7 @@
 				<ShowHideButton v-model="showRequest" label="Request" class="bg-slate-800 mr-2" />
 				<ShowHideButton v-model="showResponse" label="Response" class="bg-slate-800 mr-2" />
 				<div class="bg-slate-900 px-4 py-1 rounded-2xl text-no-wrap">
-					{{ fDateTime(apiLog.created_at) }}
+					{{ dbDateTime(apiLog.created_at) }}
 				</div>
 			</div>
 		</div>
@@ -37,7 +37,7 @@
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { ApiLog } from "@/components/Modules/Audits/audit-requests";
 import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
-import { fDateTime, fMarkdownJSON } from "quasar-ui-danx";
+import { dbDateTime, fMarkdownJSON } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{

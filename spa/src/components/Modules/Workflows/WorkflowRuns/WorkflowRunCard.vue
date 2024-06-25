@@ -20,7 +20,7 @@
 				Workflow {{ workflowRun.status }}
 			</div>
 			<div class="mx-2">
-				<WorkflowCostsButton :usage="workflowRun.usage" />
+				<AiTokenUsageButton :usage="workflowRun.usage" />
 			</div>
 			<div class="mr-1">
 				<TrashButton :saving="removeWorkflowRunAction.isApplying" class="p-4" @click="onRemove" />
@@ -44,8 +44,8 @@ import ArtifactCard from "@/components/Modules/Artifacts/ArtifactCard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
 import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
-import WorkflowCostsButton from "@/components/Modules/Workflows/WorkflowRuns/WorkflowCostsButton";
 import WorkflowJobRunFlow from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunFlow";
+import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import TrashButton from "@/components/Shared/Buttons/TrashButton";
 import { WorkflowRun } from "@/types/workflows";

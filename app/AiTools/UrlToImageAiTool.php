@@ -2,14 +2,18 @@
 
 namespace App\AiTools;
 
+use App\AiTools\Traits\HasOutputImagesTrait;
 use App\Api\ScreenshotOne\ScreenshotOneApi;
 use BadFunctionCallException;
+use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Services\TranscodeFileService;
 
 class UrlToImageAiTool implements AiToolContract
 {
+    use HasOutputImagesTrait;
+    
     const string NAME        = 'url-to-image';
     const string DESCRIPTION = 'Convert a URL into a list of images that shows the full web page or PDF. Use the images to answer questions about a URL';
     const array  PARAMETERS  = [
@@ -39,21 +43,11 @@ class UrlToImageAiTool implements AiToolContract
 
         $transcodes = $storedFile->transcodes()->get();
 
-        $response = [
-            [
-                'type' => 'text',
-                'text' => 'Analyze the screenshot to answer the question.',
-            ],
-        ];
+        $response = 'The screenshot has been chunked vertically into the following images:';
 
         foreach($transcodes as $transcode) {
-            $response[] = [
-                'type'      => 'image_url',
-                'image_url' => [
-                    'url'    => $transcode->url,
-                    'detail' => 'high',
-                ],
-            ];
+            $response             .= "\n$transcode->url";
+            $this->outputImages[] = $transcode->url;
         }
 
         return $response;
@@ -61,6 +55,8 @@ class UrlToImageAiTool implements AiToolContract
 
     public function convertPdfToImages($pdfUrl)
     {
+        Log::debug("Converting PDF to images: $pdfUrl");
+
         $storedFile = StoredFile::firstWhere('url', $pdfUrl);
 
         if (!$storedFile) {
@@ -81,6 +77,8 @@ class UrlToImageAiTool implements AiToolContract
 
     public function takeScreenshot($url)
     {
+        Log::debug("Taking screenshot: $url");
+
         $filepath   = "url-to-screenshot/" . md5($url) . ".jpg";
         $storedFile = StoredFile::firstWhere('filepath', $filepath);
 

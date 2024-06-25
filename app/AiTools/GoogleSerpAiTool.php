@@ -4,6 +4,7 @@ namespace App\AiTools;
 
 use App\Api\GoogleSerpApi\GoogleSerpApi;
 use BadFunctionCallException;
+use Illuminate\Support\Facades\Log;
 
 class GoogleSerpAiTool implements AiToolContract
 {
@@ -22,6 +23,7 @@ class GoogleSerpAiTool implements AiToolContract
     public function execute($params): array
     {
         $query = $params['q'] ?? null;
+        Log::debug("Performing Google SERP search: $query");
 
         if (!$query) {
             throw new BadFunctionCallException("Google SERP Api Tool requires a URL");

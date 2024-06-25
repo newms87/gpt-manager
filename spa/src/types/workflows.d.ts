@@ -79,6 +79,7 @@ export interface WorkflowRun extends ActionTargetItem {
 }
 
 export interface WorkflowUsage {
+	count?: number;
 	input_tokens: number;
 	output_tokens: number;
 	cost: number;
