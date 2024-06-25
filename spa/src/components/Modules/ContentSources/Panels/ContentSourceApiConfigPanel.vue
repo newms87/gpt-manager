@@ -19,7 +19,6 @@
 		<QBtn
 			v-if="dirtyConfig"
 			:loading="updateAction.isApplying"
-			:disable="updateAction.isApplying"
 			class="w-full bg-sky-800"
 			@click="saveConfig"
 		>Save Config

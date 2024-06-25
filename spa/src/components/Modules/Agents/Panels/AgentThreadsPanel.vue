@@ -4,7 +4,6 @@
 			class="text-lg w-full mb-5 transition-all"
 			:class="{'bg-lime-800 text-slate-300': !activeThread, 'bg-sky-800 text-slate-200': !!activeThread}"
 			:loading="createThreadAction.isApplying"
-			:disable="createThreadAction.isApplying"
 			@click="activeThread ? (activeThread = null) : createThreadAction.trigger(props.agent)"
 		>
 			<template v-if="activeThread">

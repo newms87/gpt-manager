@@ -1,7 +1,6 @@
 <template>
 	<QBtn
 		:loading="saving"
-		:disable="saving"
 		class="shadow-none"
 		:class="$props.class"
 	>

@@ -18,7 +18,6 @@
 			<QBtn
 				class="text-lg w-full mb-5 bg-lime-800 text-slate-300"
 				:loading="createJobAction.isApplying"
-				:disable="createJobAction.isApplying"
 				@click="createJobAction.trigger(workflow)"
 			>
 				<CreateIcon class="w-4 mr-3" />

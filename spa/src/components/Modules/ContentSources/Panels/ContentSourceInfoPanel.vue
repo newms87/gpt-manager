@@ -33,7 +33,6 @@
 			<div class="bg-slate-700 p-3 rounded flex-grow">Last Fetch: {{ fDateTime(contentSource.fetched_at) }}</div>
 			<QBtn
 				class="bg-sky-800 text-slate-300 w-48 py-2.5"
-				:disable="fetchAction.isApplying"
 				:loading="fetchAction.isApplying"
 				@click="fetchAction.trigger(contentSource)"
 			>

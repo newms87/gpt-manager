@@ -23,7 +23,6 @@
 						<QBtn
 							class="bg-sky-800 text-sky-200 w-full"
 							:loading="isLoggingIn"
-							:disable="isLoggingIn"
 							@click="onLogin"
 						>Log In
 						</QBtn>
