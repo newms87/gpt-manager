@@ -3,7 +3,7 @@
 namespace App\Services\Database;
 
 use Exception;
-use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Connectors\ConnectionFactory;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 
@@ -12,8 +12,11 @@ class DatabaseTableQuery extends Builder
     protected array $tableSchema;
     protected array $loadedRecords = [];
 
-    public function __construct(ConnectionInterface $connection)
+    public function __construct()
     {
+        $factory    = new ConnectionFactory(app());
+        $connection = $factory->make(config('database.connections.mysql'));
+
         parent::__construct($connection);
     }
 
@@ -80,6 +83,9 @@ class DatabaseTableQuery extends Builder
         return $this->loadedRecords[$id];
     }
 
+    /**
+     * Create a new record
+     */
     public function create(array $record)
     {
         // Assign auto ref fields
@@ -91,13 +97,19 @@ class DatabaseTableQuery extends Builder
             throw new Exception("Missing ref field in record: " . json_encode($record));
         }
 
+        // Fill in previously created record data
+        $record += $this->where('ref', $record['ref'])->first() ?: [];
+
         foreach($this->getFields() as $fieldName => $fieldDefinition) {
             if ($fieldName === 'timestamps' && $fieldDefinition === true) {
-                $record['created_at'] = $record['created_at'] ?? now()->toDateTimeString();
+                if (empty($record['created_at'])) {
+                    $record['created_at'] = $record['created_at'] ?? now()->toDateTimeString();
+                }
+
                 $record['updated_at'] = $record['updated_at'] ?? now()->toDateTimeString();
             }
 
-            if (($fieldDefinition['type'] ?? '') == 'json') {
+            if (($fieldDefinition['type'] ?? '') === 'json') {
                 $record[$fieldName] = json_encode($record[$fieldName]);
             }
         }
