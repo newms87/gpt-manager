@@ -9,30 +9,30 @@
 			class="mb-5"
 		/>
 		<div v-if="!readonly" class="flex items-stretch">
-			<QBtn
+			<ActionButton
+				:saving="thread.is_running"
+				:icon="CreateIcon"
+				:action="createMessageAction"
+				:target="thread"
 				class="bg-sky-700 text-slate-200 text-lg flex-grow"
-				:loading="createMessageAction.isApplying"
-				@click="createMessageAction.trigger(thread)"
-			>
-				<CreateIcon class="w-4 mr-3" />
-				Create Message
-			</QBtn>
-			<QBtn
-				class="bg-lime-800 text-slate-300 text-lg ml-6 p-3"
-				:disable="thread.messages.length === 0"
-				:loading="runAction.isApplying || thread.is_running"
-				@click="runAction.trigger(thread)"
-			>
-				<RunIcon class="w-4" />
-			</QBtn>
+				label="Create Message"
+			/>
+			<ActionButton
+				:action="thread.is_running ? stopAction : runAction"
+				:target="thread"
+				:type="thread.is_running ? 'pause' : 'play'"
+				:color="thread.is_running ? 'sky' : 'green-invert'"
+				class="text-lg ml-3 p-3"
+			/>
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Agents/Threads/threadActions";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
+import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { AgentThread } from "@/types/agents";
-import { FaRegularMessage as CreateIcon, FaSolidPlay as RunIcon } from "danx-icon";
+import { FaRegularMessage as CreateIcon } from "danx-icon";
 
 defineProps<{
 	thread: AgentThread;
@@ -41,4 +41,5 @@ defineProps<{
 
 const createMessageAction = getAction("create-message");
 const runAction = getAction("run");
+const stopAction = getAction("stop");
 </script>

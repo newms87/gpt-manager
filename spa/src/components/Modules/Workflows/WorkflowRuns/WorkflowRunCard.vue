@@ -23,7 +23,13 @@
 				<AiTokenUsageButton :usage="workflowRun.usage" />
 			</div>
 			<div class="mr-1">
-				<TrashButton :saving="removeWorkflowRunAction.isApplying" class="p-4" @click="onRemove" />
+				<ActionButton
+					type="trash"
+					:action="removeWorkflowRunAction"
+					:target="workflowRun"
+					class="p-4"
+					@success="$emit('remove')"
+				/>
 			</div>
 		</div>
 		<WorkflowJobRunFlow v-model="showJobsWithStatus" :workflow-run="workflowRun" />
@@ -45,9 +51,9 @@ import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
 import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import WorkflowJobRunFlow from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunFlow";
+import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
-import TrashButton from "@/components/Shared/Buttons/TrashButton";
 import { WorkflowRun } from "@/types/workflows";
 import { computed, ref } from "vue";
 
@@ -61,8 +67,4 @@ const showArtifacts = ref(false);
 const showJobsWithStatus = ref("");
 
 const removeWorkflowRunAction = getAction("delete");
-async function onRemove() {
-	await removeWorkflowRunAction.trigger(props.workflowRun);
-	emit("remove");
-}
 </script>

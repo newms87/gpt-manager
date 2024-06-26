@@ -25,23 +25,23 @@
 					<AddImageIcon class="w-4" />
 					<QTooltip>Show / Hide Images</QTooltip>
 				</QBtn>
-				<TrashButton
-					v-if="!readonly"
-					:saving="deleteAction.isApplying"
-					class="mr-2"
-					@click.stop="deleteAction.trigger(message)"
-				>
-					<QTooltip>Delete message</QTooltip>
-				</TrashButton>
-				<QBtn
-					v-if="!readonly"
-					:saving="resetToMessageAction.isApplying"
-					class="mr-2"
-					@click.stop="resetToMessageAction.trigger(thread, { message_id: message.id })"
-				>
-					<ResetToHereIcon class="w-4" />
-					<QTooltip class="whitespace-nowrap">Reset messages to here</QTooltip>
-				</QBtn>
+				<template v-if="!readonly">
+					<ActionButton
+						:action="deleteAction"
+						:target="message"
+						type="trash"
+						class="mr-2"
+						tooltip="Delete message"
+					/>
+					<ActionButton
+						:action="resetToMessageAction"
+						:target="thread"
+						:input="{ message_id: message.id }"
+						type="refresh"
+						class="mr-2"
+						tooltip="Reset messages to here"
+					/>
+				</template>
 			</div>
 		</div>
 
@@ -74,11 +74,10 @@
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction as getThreadAction } from "@/components/Modules/Agents/Threads/threadActions";
 import { getAction } from "@/components/Modules/Agents/Threads/threadMessageActions";
-import TrashButton from "@/components/Shared/Buttons/TrashButton";
+import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { AgentThread, ThreadMessage } from "@/types/agents";
 import {
 	FaRegularUser as UserIcon,
-	FaSolidArrowsRotate as ResetToHereIcon,
 	FaSolidImage as AddImageIcon,
 	FaSolidRobot as AssistantIcon,
 	FaSolidToolbox as ToolIcon

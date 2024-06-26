@@ -1,6 +1,6 @@
 <template>
 	<QBtn class="py-1 px-2" @click="isShowing = !isShowing">
-		<div class="flex items-center flex-nowrap">
+		<div class="flex items-center flex-nowrap whitespace-nowrap">
 			<slot :is-showing="isShowing">
 				<template v-if="isShowing">
 					<HideIcon class="w-4 mr-2" />

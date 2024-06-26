@@ -7,24 +7,26 @@
 		>
 			<div class="font-bold">{{ assignment.agent.name }}</div>
 			<div class="flex-grow ml-2 text-xs">{{ assignment.agent.model }}</div>
-			<TrashButton
-				:saving="unassignAgentAction.isApplying"
+			<ActionButton
+				:action="unassignAgentAction"
+				:target="assignment"
+				type="trash"
 				class="p-2 hover:bg-indigo-400"
-				@click="unassignAgentAction.trigger(assignment)"
 			/>
 		</div>
-		<QBtn
+		<ActionButton
+			:action="assignAgentAction"
+			:target="job"
+			:icon="AssignIcon"
+			label="Assign Agent"
 			class="bg-indigo-700 text-indigo-300 px-4 w-full mt-2"
-			@click="assignAgentAction.trigger(job)"
-		>
-			<AssignIcon class="w-4 mr-3" />
-			Assign Agent
-		</QBtn>
+			icon-class="w-4"
+		/>
 	</div>
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
-import TrashButton from "@/components/Shared/Buttons/TrashButton";
+import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { WorkflowJob } from "@/types/workflows";
 import { FaSolidPlugCircleCheck as AssignIcon } from "danx-icon";
 

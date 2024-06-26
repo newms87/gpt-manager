@@ -18,7 +18,12 @@
 							class="bg-indigo-300 text-indigo-900 rounded"
 						/>
 					</div>
-					<TrashButton :saving="deleteJobAction.isApplying" class="p-4" @click="deleteJobAction.trigger(job)" />
+					<ActionButton
+						:action="deleteJobAction"
+						:target="job"
+						class="p-4"
+						type="trash"
+					/>
 				</template>
 			</div>
 			<template v-if="!readonly">
@@ -45,8 +50,8 @@
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
+import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
-import TrashButton from "@/components/Shared/Buttons/TrashButton";
 import { Workflow, WorkflowJob } from "@/types/workflows";
 import { EditOnClickTextField, MaxHeightTransition } from "quasar-ui-danx";
 import { ref } from "vue";

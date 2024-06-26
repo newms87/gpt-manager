@@ -12,11 +12,11 @@
 				@update:model-value="$emit('update', {...dependency, group_by: groupBy})"
 			/>
 		</div>
-		<TrashButton :saving="saving" class="p-4" @click="$emit('remove')" />
+		<ActionButton :saving="saving" type="trash" class="p-4" @click="$emit('remove')" />
 	</div>
 </template>
 <script setup lang="ts">
-import TrashButton from "@/components/Shared/Buttons/TrashButton";
+import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { WorkflowJob, WorkflowJobDependency } from "@/types/workflows";
 import { TextField } from "quasar-ui-danx";
 import { ref } from "vue";

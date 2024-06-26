@@ -19,7 +19,7 @@
 				:clearable="false"
 				:loading="setDependenciesAction.isApplying"
 				:readonly="setDependenciesAction.isApplying"
-				@update:model-value="onSelectDependency"
+				@update="onSelectDependency"
 			/>
 		</div>
 	</div>
@@ -55,9 +55,11 @@ const dependencyOptions = computed(() => props.workflow.jobs.filter(job => !hasD
 	})));
 
 function onSelectDependency(depends_on_id) {
-	setDependenciesAction.trigger(props.job, [...(props.job.dependencies || []), {
-		depends_on_id,
-		group_by: ""
-	}]);
+	if (depends_on_id) {
+		setDependenciesAction.trigger(props.job, [...(props.job.dependencies || []), {
+			depends_on_id,
+			group_by: ""
+		}]);
+	}
 }
 </script>
