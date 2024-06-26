@@ -23,7 +23,7 @@ class WorkflowInputResource extends ActionResource
             'name'                    => $this->name,
             'description'             => $this->description,
             'workflow_runs_count'     => $this->workflow_runs_count,
-            'thumb'                   => $thumbFile ? StoredFileResource::make($thumbFile) : null,
+            'thumb'                   => StoredFileResource::make($thumbFile),
             'has_active_workflow_run' => $this->activeWorkflowRuns()->exists(),
             'tags'                    => $this->objectTags()->pluck('name'),
             'created_at'              => $this->created_at,

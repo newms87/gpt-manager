@@ -19,7 +19,6 @@ class WorkflowAssignmentResource extends ActionResource
         return [
             'id'           => $this->id,
             'agent'        => AgentResource::make($this->agent),
-            'group'        => $this->group,
             'is_required'  => $this->is_required,
             'max_attempts' => $this->max_attempts,
             'created_at'   => $this->created_at,

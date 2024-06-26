@@ -101,7 +101,6 @@ class AgentThreadService
 
             $options = [
                 'temperature'     => $threadRun->temperature,
-                'tool_choice'     => $threadRun->tool_choice,
                 'response_format' => [
                     'type' => $threadRun->response_format,
                 ],
@@ -111,7 +110,8 @@ class AgentThreadService
             $tools = $agent->formatTools();
 
             if ($tools) {
-                $options['tools'] = $tools;
+                $options['tool_choice'] = $threadRun->tool_choice;
+                $options['tools']       = $tools;
             }
 
             do {
@@ -228,7 +228,7 @@ class AgentThreadService
             // Call the tool functions
             foreach($response->getToolCallerFunctions() as $toolCallerFunction) {
                 Log::debug("Handling tool call: " . $toolCallerFunction->getName());
-                
+
                 $messages = $toolCallerFunction->call();
 
                 // Add the tool message
