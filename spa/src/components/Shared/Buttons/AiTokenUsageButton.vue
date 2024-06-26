@@ -3,7 +3,7 @@
 		{{ fCurrency(usage.cost) }}
 		<QMenu>
 			<div class="grid grid-cols-2 p-6 gap-y-4 gap-x-4">
-				<LabelValueFormat label="Usage" :value="usage.count" />
+				<LabelValueFormat label="Runs" :value="usage.count" />
 				<LabelValueFormat
 					label="Cost" :value="fCurrency(usage.cost, {
 						minimumFractionDigits: 4,

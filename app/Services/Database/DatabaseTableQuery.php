@@ -98,7 +98,7 @@ class DatabaseTableQuery extends Builder
         }
 
         // Fill in previously created record data
-        $record += $this->where('ref', $record['ref'])->first() ?: [];
+        $record += (array)$this->where('ref', $record['ref'])->first() ?: [];
 
         foreach($this->getFields() as $fieldName => $fieldDefinition) {
             if ($fieldName === 'timestamps' && $fieldDefinition === true) {

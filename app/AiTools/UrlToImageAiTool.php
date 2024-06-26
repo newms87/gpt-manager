@@ -13,7 +13,7 @@ use Newms87\Danx\Services\TranscodeFileService;
 class UrlToImageAiTool implements AiToolContract
 {
     use HasOutputImagesTrait;
-    
+
     const string NAME        = 'url-to-image';
     const string DESCRIPTION = 'Convert a URL into a list of images that shows the full web page or PDF. Use the images to answer questions about a URL';
     const array  PARAMETERS  = [
@@ -31,6 +31,8 @@ class UrlToImageAiTool implements AiToolContract
     {
         $url = $params['url'] ?? null;
 
+        Log::debug("Executing URL to Screenshot AI Tool: $url");
+
         if (!$url) {
             throw new BadFunctionCallException("URL to Screenshot requires a URL");
         }
@@ -43,11 +45,16 @@ class UrlToImageAiTool implements AiToolContract
 
         $transcodes = $storedFile->transcodes()->get();
 
-        $response = 'The screenshot has been chunked vertically into the following images:';
+        $chunkCount = $transcodes->count();
+        $response   = "Screenshot for file ID $storedFile->id is provided below.";
 
-        foreach($transcodes as $transcode) {
-            $response             .= "\n$transcode->url";
-            $this->outputImages[] = $transcode->url;
+        if ($chunkCount > 1) {
+            $response .= "\nThere are $chunkCount separate images w/ the file ID in the path.";
+            foreach($transcodes as $transcode) {
+                $this->outputImages[] = $transcode->url;
+            }
+        } else {
+            $this->outputImages[] = $storedFile->url;
         }
 
         return $response;

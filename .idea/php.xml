@@ -148,9 +148,9 @@
       <path value="$PROJECT_DIR$/vendor/nyholm/psr7" />
       <path value="$PROJECT_DIR$/vendor/riverline/multipart-parser" />
       <path value="$PROJECT_DIR$/vendor/hollodotme/fast-cgi-client" />
-      <path value="$PROJECT_DIR$/vendor/newms87/danx" />
       <path value="$PROJECT_DIR$/vendor/intervention/image" />
       <path value="$PROJECT_DIR$/vendor/intervention/gif" />
+      <path value="$PROJECT_DIR$/vendor/newms87/danx" />
     </include_path>
   </component>
   <component name="PhpInterpreters">

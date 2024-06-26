@@ -5,6 +5,7 @@
 		:class="$props.class"
 	>
 		<TrashIcon class="w-3" />
+		<slot />
 	</QBtn>
 </template>
 <script setup lang="ts">

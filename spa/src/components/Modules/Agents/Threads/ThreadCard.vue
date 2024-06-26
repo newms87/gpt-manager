@@ -1,76 +1,75 @@
 <template>
-	<QCard class="bg-slate-400 text-slate-700">
-		<QCardSection>
-			<div class="flex items-center flex-nowrap cursor-pointer">
-				<h5 class="flex-grow overflow-hidden overflow-ellipsis text-no-wrap mr-3">
+	<div class="bg-transparent text-slate-300 py-4">
+		<div class="flex items-center flex-nowrap cursor-pointer">
+			<h5 class="flex-grow overflow-hidden overflow-ellipsis text-no-wrap mr-3">
 
-					<EditOnClickTextField
-						:model-value="thread.name"
-						class="hover:bg-slate-300"
-						@update:model-value="updateAction.trigger(thread, { name: $event })"
-					/>
-				</h5>
-				<ShowHideButton
-					:label="thread.messages.length + ' messages'"
-					:model-value="active"
-					class="bg-slate-800 text-slate-300 py-2 mr-3"
-					@click="$emit('toggle')"
+				<EditOnClickTextField
+					:model-value="thread.name"
+					class="hover:bg-slate-700"
+					editing-class="bg-slate-600"
+					@update:model-value="updateAction.trigger(thread, { name: $event })"
 				/>
-				<ShowHideButton
-					v-model="showLogs"
-					class="bg-slate-800 text-slate-300 !p-[.7rem] mr-3"
-				>
-					<template #default="{isShowing}">
-						<HideLogsIcon v-if="isShowing" class="w-5" />
-						<ShowLogsIcon v-else class="w-5" />
-					</template>
-				</ShowHideButton>
-				<AiTokenUsageButton :usage="thread.usage" class="py-3 mr-3" />
-				<QBtn
-					class="text-lime-800 bg-green-200 hover:bg-lime-800 hover:text-green-200 mr-3 px-3"
-					:loading="runAction.isApplying || thread.is_running"
-					@click.stop="runAction.trigger(thread)"
-				>
-					<div class="flex flex-nowrap items-center">
-						<RunIcon class="w-3 mr-2" />
-						Run
-					</div>
-				</QBtn>
-				<QBtn
-					v-if="thread.is_running"
-					class="text-red-900 hover:bg-red-300 shadow-none"
-					:loading="stopAction.isApplying"
-					@click.stop="stopAction.trigger(thread)"
-				>
-					<StopIcon class="w-4" />
-				</QBtn>
-				<QBtn
-					v-else
-					class="text-red-900 hover:bg-red-300 shadow-none p-3"
-					:loading="deleteAction.isApplying"
-					@click.stop="onDelete"
-				>
-					<DeleteIcon class="w-3.5" />
-				</QBtn>
-			</div>
-			<div v-if="!active && thread.summary" class="mt-2">{{ thread.summary }}</div>
-			<div v-if="showLogs" class="bg-slate-900 text-slate-400 rounded my-6 p-2">
-				<div class="mb-3">
-					<a
-						v-if="thread.audit_request_id"
-						target="_blank"
-						:href="$router.resolve({path: `/audit-requests/${thread.audit_request_id}/errors`}).href"
-					>
-						View Errors
-					</a>
+			</h5>
+			<ShowHideButton
+				:label="thread.messages.length + ' messages'"
+				:model-value="active"
+				class="bg-slate-700 text-slate-300 py-2 mr-3"
+				@click="$emit('toggle')"
+			/>
+			<ShowHideButton
+				v-model="showLogs"
+				class="bg-slate-700 text-slate-300 !p-[.7rem] mr-3"
+			>
+				<template #default="{isShowing}">
+					<HideLogsIcon v-if="isShowing" class="w-5" />
+					<ShowLogsIcon v-else class="w-5" />
+				</template>
+			</ShowHideButton>
+			<AiTokenUsageButton :usage="thread.usage" class="py-3 mr-3" />
+			<QBtn
+				class="text-lime-800 bg-green-200 hover:bg-lime-800 hover:text-green-200 mr-3 px-3"
+				:loading="runAction.isApplying || thread.is_running"
+				@click.stop="runAction.trigger(thread)"
+			>
+				<div class="flex flex-nowrap items-center">
+					<RunIcon class="w-3 mr-2" />
+					Run
 				</div>
-				<div v-for="(log, index) in thread.logs.split('\n') || ['(Logs Empty)']" :key="index">{{ log }}</div>
+			</QBtn>
+			<QBtn
+				v-if="thread.is_running"
+				class="text-red-900 hover:bg-red-300 shadow-none"
+				:loading="stopAction.isApplying"
+				@click.stop="stopAction.trigger(thread)"
+			>
+				<StopIcon class="w-4" />
+			</QBtn>
+			<QBtn
+				v-else
+				class="text-red-900 bg-red-300 hover:bg-red-400 shadow-none p-3"
+				:loading="deleteAction.isApplying"
+				@click.stop="onDelete"
+			>
+				<DeleteIcon class="w-3.5" />
+			</QBtn>
+		</div>
+		<div v-if="!active && thread.summary" class="mt-2">{{ thread.summary }}</div>
+		<div v-if="showLogs" class="bg-slate-900 text-slate-400 rounded my-6 p-2">
+			<div class="mb-3">
+				<a
+					v-if="thread.audit_request_id"
+					target="_blank"
+					:href="$router.resolve({path: `/audit-requests/${thread.audit_request_id}/errors`}).href"
+				>
+					View Errors
+				</a>
 			</div>
-			<div v-if="active" class="mt-4">
-				<ThreadMessageList :thread="thread" />
-			</div>
-		</QCardSection>
-	</QCard>
+			<div v-for="(log, index) in thread.logs.split('\n') || ['(Logs Empty)']" :key="index">{{ log }}</div>
+		</div>
+		<div v-if="active" class="mt-4">
+			<ThreadMessageList :thread="thread" />
+		</div>
+	</div>
 </template>
 
 <script setup lang="ts">

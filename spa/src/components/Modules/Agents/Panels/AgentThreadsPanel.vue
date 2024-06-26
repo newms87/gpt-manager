@@ -10,15 +10,15 @@
 		</QBtn>
 
 		<ListTransition>
-			<ThreadCard
-				v-for="thread in visibleThreads"
-				:key="thread.id"
-				:thread="thread"
-				class="mb-4"
-				:active="activeThread?.id === thread.id"
-				@toggle="activeThread = (activeThread?.id === thread.id ? null : thread)"
-				@close="activeThread = null"
-			/>
+			<template v-for="thread in visibleThreads" :key="thread.id">
+				<QSeparator class="bg-slate-200" />
+				<ThreadCard
+					:thread="thread"
+					:active="activeThread?.id === thread.id"
+					@toggle="activeThread = (activeThread?.id === thread.id ? null : thread)"
+					@close="activeThread = null"
+				/>
+			</template>
 		</ListTransition>
 	</div>
 </template>

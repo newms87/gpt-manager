@@ -1,14 +1,15 @@
 <template>
-	<div class="overflow-hidden">
-		<div class="bg-slate-500 rounded flex items-center">
+	<div class="overflow-hidden rounded" :class="avatar.messageClass">
+		<div class="flex items-center">
 			<div>
 				<QBtn
 					:disable="readonly"
-					@click="updateAction.trigger(message, {role: message.role === 'user' ? 'assistant' : 'user'})"
+					@click="updateAction.trigger(message, {role: nextRole[message.role] ?? 'user'})"
 				>
 					<div class="rounded-full p-1" :class="avatar.class">
 						<component :is="avatar.icon" class="w-3 text-slate-300" :class="avatar.iconClass" />
 					</div>
+					<QTooltip>Toggle message role</QTooltip>
 				</QBtn>
 			</div>
 			<div class="font-bold text-slate-400 ml-1 flex-grow">
@@ -22,25 +23,30 @@
 			<div class="text-slate-300">
 				<QBtn class="mr-2" @click="showFiles = !showFiles">
 					<AddImageIcon class="w-4" />
+					<QTooltip>Show / Hide Images</QTooltip>
 				</QBtn>
 				<TrashButton
 					v-if="!readonly"
 					:saving="deleteAction.isApplying"
 					class="mr-2"
 					@click.stop="deleteAction.trigger(message)"
-				/>
+				>
+					<QTooltip>Delete message</QTooltip>
+				</TrashButton>
 				<QBtn
 					v-if="!readonly"
 					:saving="resetToMessageAction.isApplying"
-					class="mr-2 text-red-900"
+					class="mr-2"
 					@click.stop="resetToMessageAction.trigger(thread, { message_id: message.id })"
 				>
 					<ResetToHereIcon class="w-4" />
+					<QTooltip class="whitespace-nowrap">Reset messages to here</QTooltip>
 				</QBtn>
 			</div>
 		</div>
 
-		<div class="text-sm flex-grow mt-3">
+		<QSeparator class="bg-slate-500 mx-3" />
+		<div class="text-sm flex-grow m-3">
 			<MarkdownEditor
 				v-model="markdownContent"
 				:readonly="readonly"
@@ -48,10 +54,9 @@
 				@update:model-value="updateDebouncedAction.trigger(message, {content})"
 			/>
 			<template v-if="dataContent">
-				<div class="text-amber-800 text-sm font-bold mt-3 mb-2">Data Content (read only)</div>
+				<div class="text-sm font-bold mt-3 mb-2">Data Content (read only)</div>
 				<MarkdownEditor
 					readonly
-					class="pb-3"
 					:model-value="dataContent"
 				/>
 			</template>
@@ -100,20 +105,26 @@ const dataContent = computed<string>(() => fMarkdownJSON(props.message.data) || 
 
 const showFiles = ref(files.value.length > 0);
 
+const nextRole = {
+	user: "assistant",
+	assistant: "tool",
+	tool: "user"
+};
 const avatar = computed<{
 	icon: any;
 	class: string;
 	iconClass?: string;
+	messageClass?: string;
 }>(() => {
 	switch (props.message.role) {
 		case "user":
-			return { icon: UserIcon, class: "bg-lime-800" };
+			return { icon: UserIcon, class: "bg-lime-700", messageClass: "bg-lime-900" };
 		case "assistant":
-			return { icon: AssistantIcon, class: "bg-sky-800", iconClass: "w-4" };
+			return { icon: AssistantIcon, class: "bg-sky-600", iconClass: "w-4", messageClass: "bg-sky-800" };
 		case "tool":
-			return { icon: ToolIcon, class: "bg-indigo-800", iconClass: "text-amber-700" };
+			return { icon: ToolIcon, class: "bg-indigo-500", messageClass: "bg-indigo-800" };
 		default:
-			return { icon: UserIcon, class: "bg-red-800" };
+			return { icon: UserIcon, class: "bg-red-700", messageClass: "bg-red-900" };
 	}
 });
 
