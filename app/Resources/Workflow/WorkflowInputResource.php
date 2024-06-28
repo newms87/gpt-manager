@@ -5,6 +5,7 @@ namespace App\Resources\Workflow;
 use App\Models\Workflow\WorkflowInput;
 use Newms87\Danx\Resources\ActionResource;
 use Newms87\Danx\Resources\StoredFileResource;
+use Newms87\Danx\Resources\StoredFileWithTranscodesResource;
 
 /**
  * @mixin WorkflowInput
@@ -18,6 +19,9 @@ class WorkflowInputResource extends ActionResource
     {
         $thumbFile = $this->storedFiles()->first();
 
+        $storedFiles  = $this->resolveFieldRelation('storedFiles');
+        $workflowRuns = $this->resolveFieldRelation('workflowRuns', null, fn() => $this->workflowRuns()->orderByDesc('id')->get());
+
         return [
             'id'                      => $this->id,
             'name'                    => $this->name,
@@ -28,6 +32,11 @@ class WorkflowInputResource extends ActionResource
             'tags'                    => $this->objectTags()->pluck('name'),
             'created_at'              => $this->created_at,
             'updated_at'              => $this->updated_at,
+
+            // Conditional fields
+            'files'                   => StoredFileWithTranscodesResource::collection($storedFiles),
+            'content'                 => $this->resolveField('content'),
+            'workflowRuns'            => WorkflowRunResource::collection($workflowRuns, ['workflowJobRuns']),
         ];
     }
 }

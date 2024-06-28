@@ -42,7 +42,15 @@
 		<MaxHeightTransition max-height="20em">
 			<QCardSection v-if="showAssignments" class="pt-0 max-h-[20em] overflow-y-auto">
 				<QSeparator class="bg-indigo-900" />
-				<WorkflowAssignmentsList :job="job" />
+				<WorkflowAssignmentsList :assignments="job.assignments" />
+				<ActionButton
+					:action="assignAgentAction"
+					:target="job"
+					:icon="AssignIcon"
+					label="Assign Agent"
+					class="bg-indigo-700 text-indigo-300 px-4 w-full mt-2"
+					icon-class="w-4"
+				/>
 			</QCardSection>
 		</MaxHeightTransition>
 	</QCard>
@@ -53,6 +61,7 @@ import WorkflowJobDependenciesList from "@/components/Modules/Workflows/Workflow
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import { Workflow, WorkflowJob } from "@/types/workflows";
+import { FaSolidPlugCircleCheck as AssignIcon } from "danx-icon";
 import { EditOnClickTextField, MaxHeightTransition } from "quasar-ui-danx";
 import { ref } from "vue";
 import WorkflowAssignmentsList from "./WorkflowAssignmentsList";
@@ -67,4 +76,5 @@ const showAssignments = ref(false);
 const updateJobDebouncedAction = getAction("update-job-debounced");
 const updateJobAction = getAction("update-job");
 const deleteJobAction = getAction("delete-job");
+const assignAgentAction = getAction("assign-agent");
 </script>

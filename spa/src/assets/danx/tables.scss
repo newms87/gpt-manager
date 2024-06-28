@@ -2,6 +2,15 @@
 	&.dx-is-loading-list {
 		@apply opacity-80;
 	}
+
+	thead > tr > th, tbody > tr > td {
+		@apply px-2;
+	}
+
+	// Make sure the checkbox column is left aligned and always the same size
+	thead > tr:first-child > th:first-child, tbody > tr:not(.dx-table-summary-tr) > td:first-child {
+		@apply text-left w-[1px] pl-4;
+	}
 }
 
 .dx-table-summary-tr {
@@ -26,6 +35,10 @@
 
 .dx-column-link {
 	@apply p-3 inline-block;
+}
+
+.dx-summary-column-link {
+	@apply px-3;
 }
 
 .dx-action-table-filters {

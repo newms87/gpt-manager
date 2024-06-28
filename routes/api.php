@@ -44,9 +44,7 @@ ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);
 
 // Agents
 ActionRoute::routes('agents', new AgentsController);
-ActionRoute::routes('threads', new ThreadsController)->group(function () {
-    Route::post('/{thread}/run', [ThreadsController::class, 'run'])->name('threads.run');
-});
+ActionRoute::routes('threads', new ThreadsController);
 ActionRoute::routes('messages', new MessagesController);
 
 // Audits

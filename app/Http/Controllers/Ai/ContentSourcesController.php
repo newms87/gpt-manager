@@ -8,7 +8,6 @@ use Newms87\Danx\Http\Controllers\ActionController;
 
 class ContentSourcesController extends ActionController
 {
-    public static string  $repo            = ContentSourceRepository::class;
-    public static ?string $resource        = ContentSourceResource::class;
-    public static ?string $detailsResource = ContentSourceResource::class;
+    public static string  $repo     = ContentSourceRepository::class;
+    public static ?string $resource = ContentSourceResource::class;
 }

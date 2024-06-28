@@ -8,7 +8,7 @@ export const columns: TableColumn[] = [
 		label: "ID",
 		align: "left",
 		sortable: true,
-		required: true,
+		shrink: true,
 		onClick: (target) => AuditRequestController.activatePanel(target, "request")
 	},
 	{

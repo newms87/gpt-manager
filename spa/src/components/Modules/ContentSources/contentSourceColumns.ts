@@ -6,12 +6,26 @@ import { TableColumn } from "quasar-ui-danx/types";
 
 export const columns: TableColumn[] = [
 	{
+		name: "menu",
+		label: "",
+		required: true,
+		hideContent: true,
+		shrink: true,
+		actionMenu: getActions({ menu: true })
+	},
+	{
+		name: "id",
+		label: "ID",
+		sortable: true,
+		align: "left",
+		shrink: true,
+		onClick: (agent) => ContentSourceController.activatePanel(agent, "edit")
+	},
+	{
 		name: "name",
 		label: "Name",
 		align: "left",
 		sortable: true,
-		required: true,
-		actionMenu: getActions({ menu: true }),
 		onClick: (workflowInput) => ContentSourceController.activatePanel(workflowInput, "edit")
 	},
 	{

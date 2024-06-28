@@ -27,6 +27,7 @@ export interface WorkflowJob extends ActionTargetItem {
 	assignments: WorkflowAssignment[];
 	use_input: boolean;
 	workflow_tool: string;
+	workflow?: Workflow;
 }
 
 export interface WorkflowJobRun {
@@ -58,10 +59,11 @@ export interface WorkflowTask {
 
 export interface WorkflowAssignment extends ActionTargetItem {
 	id: number;
-	agent: Agent;
 	is_required: boolean;
 	max_attempts: number;
 	group_by: string;
+	workflowJob?: WorkflowJob;
+	agent?: Agent;
 }
 
 export interface WorkflowRun extends ActionTargetItem {

@@ -8,7 +8,6 @@ use Newms87\Danx\Http\Controllers\ActionController;
 
 class WorkflowAssignmentsController extends ActionController
 {
-    public static string  $repo            = WorkflowAssignmentRepository::class;
-    public static ?string $resource        = WorkflowAssignmentResource::class;
-    public static ?string $detailsResource = WorkflowAssignmentResource::class;
+    public static string  $repo     = WorkflowAssignmentRepository::class;
+    public static ?string $resource = WorkflowAssignmentResource::class;
 }

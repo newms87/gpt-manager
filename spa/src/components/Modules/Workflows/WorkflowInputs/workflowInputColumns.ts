@@ -5,19 +5,28 @@ import { TableColumn } from "quasar-ui-danx/types";
 
 export const columns: TableColumn[] = [
 	{
+		name: "menu",
+		label: "",
+		required: true,
+		hideContent: true,
+		shrink: true,
+		actionMenu: getActions({ menu: true })
+	},
+	{
 		name: "id",
 		label: "ID",
 		align: "left",
 		sortable: true,
 		required: true,
-		actionMenu: getActions({ menu: true }),
+		shrink: true,
 		onClick: (workflowInput) => WorkflowInputController.activatePanel(workflowInput, "edit")
 	},
 	{
 		name: "name",
 		label: "Name",
 		align: "left",
-		sortable: true
+		sortable: true,
+		onClick: (workflowInput) => WorkflowInputController.activatePanel(workflowInput, "edit")
 	},
 	{
 		name: "description",

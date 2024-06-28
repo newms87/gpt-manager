@@ -6,6 +6,8 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\Thread;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -18,10 +20,14 @@ class AgentRepository extends ActionRepository
         return parent::query()->where('team_id', team()->id);
     }
 
-    /**
-     * @param array $data
-     * @return Agent
-     */
+    public function summaryQuery(array $filter = []): Builder|QueryBuilder
+    {
+        return parent::summaryQuery($filter)->addSelect([
+            DB::raw("SUM(threads_count) as threads_count"),
+            DB::raw("SUM(assignments_count) as assignments_count"),
+        ]);
+    }
+
     public function createAgent(array $data): Agent
     {
         $agent = Agent::make()->forceFill([

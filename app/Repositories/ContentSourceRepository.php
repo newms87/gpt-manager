@@ -5,10 +5,8 @@ namespace App\Repositories;
 use App\Models\ContentSource\ContentSource;
 use App\Services\ContentSource\ContentSourceFetchService;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Newms87\Danx\Exceptions\ValidationError;
+use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Repositories\ActionRepository;
-use Throwable;
 
 class ContentSourceRepository extends ActionRepository
 {
@@ -19,13 +17,13 @@ class ContentSourceRepository extends ActionRepository
         return parent::query()->where('team_id', team()->id);
     }
 
-    /**
-     * @param string                   $action
-     * @param Model|ContentSource|null $model
-     * @param array|null               $data
-     * @return ContentSource|bool|Model|mixed|null
-     * @throws ValidationError|Throwable
-     */
+    public function summaryQuery(array $filter = []): Builder
+    {
+        return parent::summaryQuery($filter)->addSelect([
+            DB::raw('SUM(workflow_inputs_count) as workflow_inputs_count'),
+        ]);
+    }
+
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {

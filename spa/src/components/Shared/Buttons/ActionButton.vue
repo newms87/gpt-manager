@@ -67,9 +67,9 @@ const colorClass = computed(() => {
 		case "sky":
 			return "text-sky-900 bg-sky-300 hover:bg-sky-400";
 		case "white":
-			return "text-white bg-white hover:bg-gray-200";
+			return "text-white bg-gray-800 hover:bg-gray-200";
 		default:
-			return "";
+			return "text-slate-200 hover:bg-slate-800";
 	}
 });
 const typeOptions = computed(() => {

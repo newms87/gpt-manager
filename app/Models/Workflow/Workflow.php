@@ -3,11 +3,13 @@
 namespace App\Models\Workflow;
 
 use App\Models\Team\Team;
-use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\AuditableTrait;
 
 class Workflow extends Model implements AuditableContract
 {
@@ -20,24 +22,24 @@ class Workflow extends Model implements AuditableContract
         'deleted_at',
     ];
 
-    public function team()
+    public function team(): BelongsTo|Team
     {
         return $this->belongsTo(Team::class);
     }
 
-    public function workflowJobs()
+    public function workflowJobs(): HasMany|WorkflowJob
     {
         return $this->hasMany(WorkflowJob::class);
     }
 
-    public function workflowRuns()
-    {
-        return $this->hasMany(WorkflowRun::class);
-    }
-
-    public function sortedAgentWorkflowJobs()
+    public function sortedAgentWorkflowJobs(): HasMany|WorkflowJob
     {
         return $this->workflowJobs()->orderBy('dependency_level')->orderBy('name');
+    }
+    
+    public function workflowRuns(): HasMany|WorkflowRun
+    {
+        return $this->hasMany(WorkflowRun::class);
     }
 
     public function __toString()

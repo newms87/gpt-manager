@@ -5,12 +5,26 @@ import { TableColumn } from "quasar-ui-danx/types";
 
 export const columns: TableColumn[] = [
 	{
+		name: "menu",
+		label: "",
+		required: true,
+		hideContent: true,
+		shrink: true,
+		actionMenu: getActions({ menu: true })
+	},
+	{
+		name: "id",
+		label: "ID",
+		align: "left",
+		sortable: true,
+		shrink: true,
+		onClick: (agent) => AgentController.activatePanel(agent, "edit")
+	},
+	{
 		name: "name",
 		label: "Name",
 		align: "left",
 		sortable: true,
-		required: true,
-		actionMenu: getActions({ menu: true }),
 		onClick: (agent) => AgentController.activatePanel(agent, "edit")
 	},
 	{
@@ -45,6 +59,14 @@ export const columns: TableColumn[] = [
 		format: fNumber,
 		sortable: true,
 		onClick: (agent) => AgentController.activatePanel(agent, "threads")
+	},
+	{
+		name: "assignments_count",
+		label: "Assignments",
+		align: "left",
+		format: fNumber,
+		sortable: true,
+		onClick: (agent) => AgentController.activatePanel(agent, "assignments")
 	},
 	{
 		name: "created_at",

@@ -16,12 +16,21 @@ class WorkflowAssignmentResource extends ActionResource
 
     public function data(): array
     {
-        return [
+        $data = [
             'id'           => $this->id,
-            'agent'        => AgentResource::make($this->agent),
             'is_required'  => $this->is_required,
             'max_attempts' => $this->max_attempts,
             'created_at'   => $this->created_at,
         ];
+
+        if ($this->relationLoaded('agent')) {
+            $data['agent'] = AgentResource::make($this->agent);
+        }
+
+        if ($this->relationLoaded('workflowJob')) {
+            $data['workflowJob'] = WorkflowJobResource::make($this->workflowJob);
+        }
+
+        return $data;
     }
 }

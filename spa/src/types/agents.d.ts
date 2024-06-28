@@ -1,3 +1,4 @@
+import { WorkflowAssignment } from "@/types/workflows";
 import { ActionTargetItem, AnyObject } from "quasar-ui-danx/types";
 
 export interface Agent extends ActionTargetItem {
@@ -7,7 +8,10 @@ export interface Agent extends ActionTargetItem {
 	temperature: string;
 	description: string;
 	prompt: string;
+	threads_count: number;
+	assignments_count: number;
 	threads: AgentThread[];
+	assignments?: WorkflowAssignment[];
 }
 
 export interface AgentThread extends ActionTargetItem {

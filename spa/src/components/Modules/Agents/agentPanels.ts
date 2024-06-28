@@ -1,6 +1,7 @@
 import { getAction } from "@/components/Modules/Agents/agentActions";
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import {
+	AgentAssignmentsPanel,
 	AgentInfoPanel,
 	AgentPromptPanel,
 	AgentThreadsPanel,
@@ -45,6 +46,16 @@ export const panels = computed<ActionPanel[]>(() => [
 		enabled: !!activeItem.value,
 		tabVnode: () => h(BadgeTab, { count: activeItem.value?.threads_count }),
 		vnode: () => h(AgentThreadsPanel, {
+			agent: activeItem.value
+		})
+	},
+	{
+		name: "assignments",
+		label: "Assignments",
+		class: "w-[60rem]",
+		enabled: !!activeItem.value,
+		tabVnode: () => h(BadgeTab, { count: activeItem.value?.assignments_count }),
+		vnode: () => h(AgentAssignmentsPanel, {
 			agent: activeItem.value
 		})
 	}

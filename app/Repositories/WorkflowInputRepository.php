@@ -4,8 +4,8 @@ namespace App\Repositories;
 
 use App\Models\Workflow\WorkflowInput;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Newms87\Danx\Exceptions\ValidationError;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -18,13 +18,13 @@ class WorkflowInputRepository extends ActionRepository
         return parent::query()->where('team_id', team()->id);
     }
 
-    /**
-     * @param string                   $action
-     * @param Model|WorkflowInput|null $model
-     * @param array|null               $data
-     * @return WorkflowInput|bool|mixed|null
-     * @throws ValidationError
-     */
+    public function summaryQuery(array $filter = []): Builder|QueryBuilder
+    {
+        return parent::summaryQuery($filter)->addSelect([
+            DB::raw("SUM(workflow_runs_count) as workflow_runs_count"),
+        ]);
+    }
+
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
@@ -45,10 +45,6 @@ class WorkflowInputRepository extends ActionRepository
         ];
     }
 
-    /**
-     * @param array $data
-     * @return WorkflowInput
-     */
     public function createWorkflowInput(array $data): WorkflowInput
     {
         $data['team_id'] = team()->id;
@@ -62,11 +58,6 @@ class WorkflowInputRepository extends ActionRepository
         return $workflowInput;
     }
 
-    /**
-     * @param WorkflowInput $workflowInput
-     * @param array         $data
-     * @return WorkflowInput
-     */
     public function updateWorkflowInput(WorkflowInput $workflowInput, array $data): WorkflowInput
     {
         $workflowInput->update($data);
@@ -77,10 +68,6 @@ class WorkflowInputRepository extends ActionRepository
 
     /**
      * Sync the stored files for the workflow input and set them to be transcoded
-     *
-     * @param WorkflowInput $workflowInput
-     * @param array         $data
-     * @return void
      */
     public function syncStoredFiles(WorkflowInput $workflowInput, array $data): void
     {
