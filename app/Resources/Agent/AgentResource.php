@@ -48,7 +48,7 @@ class AgentResource extends ActionResource
         return static::data($model, [
             'threads'     => ThreadResource::collection($threads, fn(Thread $thread) => [
                 'messages' => MessageResource::collection($thread->messages, fn(Message $message) => [
-                    'stored_files' => StoredFileResource::collection($message->storedFiles, fn(StoredFile $storedFile) => [
+                    'files' => StoredFileResource::collection($message->storedFiles, fn(StoredFile $storedFile) => [
                         'transcodes' => StoredFileResource::collection($storedFile->transcodes),
                     ]),
                 ]),

@@ -27,7 +27,7 @@ class UrlToImageAiTool implements AiToolContract
         'required'   => ['url'],
     ];
 
-    public function execute($params)
+    public function execute($params): string
     {
         $url = $params['url'] ?? null;
 
@@ -60,7 +60,7 @@ class UrlToImageAiTool implements AiToolContract
         return $response;
     }
 
-    public function convertPdfToImages($pdfUrl)
+    public function convertPdfToImages($pdfUrl): StoredFile
     {
         Log::debug("Converting PDF to images: $pdfUrl");
 
@@ -77,12 +77,12 @@ class UrlToImageAiTool implements AiToolContract
             ]);
         }
 
-        app(TranscodeFileService::class)->pdfToImages($storedFile);
+        app(TranscodeFileService::class)->transcode(TranscodeFileService::TRANSCODE_PDF_TO_IMAGES, $storedFile);
 
         return $storedFile;
     }
 
-    public function takeScreenshot($url)
+    public function takeScreenshot($url): StoredFile
     {
         Log::debug("Taking screenshot: $url");
 
@@ -102,7 +102,7 @@ class UrlToImageAiTool implements AiToolContract
             ]);
         }
 
-        app(TranscodeFileService::class)->imageToVerticalChunks($storedFile);
+        app(TranscodeFileService::class)->transcode(TranscodeFileService::TRANSCODE_IMAGE_TO_VERTICAL_CHUNKS, $storedFile);
 
         return $storedFile;
     }

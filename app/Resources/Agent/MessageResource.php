@@ -34,7 +34,7 @@ class MessageResource extends ActionResource
     {
         return static::data($model, [
             'files' => StoredFileResource::collection($model->storedFiles()->with('transcodes')->get(), fn(StoredFile $storedFile) => [
-                'transcodes' => StoredFileResource::data($storedFile->transcodes),
+                'transcodes' => StoredFileResource::collection($storedFile->transcodes),
             ]),
         ]);
     }

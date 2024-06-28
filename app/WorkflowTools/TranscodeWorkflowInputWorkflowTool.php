@@ -33,7 +33,7 @@ class TranscodeWorkflowInputWorkflowTool extends WorkflowTool
 
         if (!$workflowInput->is_transcoded) {
             foreach($workflowInput->storedFiles as $storedFile) {
-                app(TranscodeFileService::class)->pdfToImages($storedFile);
+                app(TranscodeFileService::class)->transcode(TranscodeFileService::TRANSCODE_PDF_TO_IMAGES, $storedFile);
             }
 
             $workflowInput->is_transcoded = true;
