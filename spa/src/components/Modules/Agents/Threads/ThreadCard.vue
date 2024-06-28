@@ -18,12 +18,10 @@
 			<ShowHideButton
 				v-model="showLogs"
 				class="bg-slate-700 text-slate-300 !p-[.7rem] mr-3"
-			>
-				<template #default="{isShowing}">
-					<HideLogsIcon v-if="isShowing" class="w-5" />
-					<ShowLogsIcon v-else class="w-5" />
-				</template>
-			</ShowHideButton>
+				:show-icon="ShowLogsIcon"
+				:hide-icon="HideLogsIcon"
+				icon-class="w-5"
+			/>
 			<AiTokenUsageButton :usage="thread.usage" class="py-3 mr-3" />
 			<ActionButton
 				:action="runAction"

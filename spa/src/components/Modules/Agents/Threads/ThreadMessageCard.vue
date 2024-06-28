@@ -12,7 +12,7 @@
 					<QTooltip>Toggle message role</QTooltip>
 				</QBtn>
 			</div>
-			<div class="font-bold text-slate-400 ml-1 flex-grow">
+			<div class="font-bold text-slate-400 ml-1 mr-2 flex-grow">
 				<EditOnClickTextField
 					:readonly="readonly"
 					editing-class="bg-slate-600"
@@ -21,10 +21,15 @@
 				/>
 			</div>
 			<div class="text-slate-300">
-				<QBtn class="mr-2" @click="showFiles = !showFiles">
-					<AddImageIcon class="w-4" />
-					<QTooltip>Show / Hide Images</QTooltip>
-				</QBtn>
+				<ShowHideButton v-model="showMessage" :name="'thread-message-' + message.id" class="mr-2" />
+				<ShowHideButton
+					v-model="showFiles"
+					:name="'thread-files-' + message.id"
+					class="mr-2"
+					:show-icon="AddImageIcon"
+					:hide-icon="AddImageIcon"
+					tooltip="Show / Hide Images"
+				/>
 				<template v-if="!readonly">
 					<ActionButton
 						:action="deleteAction"
@@ -45,29 +50,31 @@
 			</div>
 		</div>
 
-		<QSeparator class="bg-slate-500 mx-3" />
-		<div class="text-sm flex-grow m-3">
-			<MarkdownEditor
-				v-model="markdownContent"
-				:readonly="readonly"
-				editor-class="text-slate-200"
-				@update:model-value="updateDebouncedAction.trigger(message, {content})"
-			/>
-			<template v-if="dataContent">
-				<div class="text-sm font-bold mt-3 mb-2">Data Content (read only)</div>
+		<template v-if="showMessage">
+			<QSeparator class="bg-slate-500 mx-3" />
+			<div class="text-sm flex-grow m-3">
 				<MarkdownEditor
-					readonly
-					:model-value="dataContent"
-				/>
-			</template>
-			<template v-if="showFiles">
-				<MultiFileField
-					v-model="files"
+					v-model="markdownContent"
 					:readonly="readonly"
-					@update:model-value="saveFilesAction.trigger(message, { ids: files.map(f => f.id) })"
+					editor-class="text-slate-200"
+					@update:model-value="updateDebouncedAction.trigger(message, {content})"
 				/>
-			</template>
-		</div>
+				<template v-if="dataContent">
+					<div class="text-sm font-bold mt-3 mb-2">Data Content (read only)</div>
+					<MarkdownEditor
+						readonly
+						:model-value="dataContent"
+					/>
+				</template>
+			</div>
+		</template>
+		<template v-if="showFiles">
+			<MultiFileField
+				v-model="files"
+				:readonly="readonly"
+				@update:model-value="saveFilesAction.trigger(message, { ids: files.map(f => f.id) })"
+			/>
+		</template>
 	</div>
 </template>
 <script setup lang="ts">
@@ -75,6 +82,7 @@ import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction as getThreadAction } from "@/components/Modules/Agents/Threads/threadActions";
 import { getAction } from "@/components/Modules/Agents/Threads/threadMessageActions";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
+import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import { AgentThread, ThreadMessage } from "@/types/agents";
 import {
 	FaRegularUser as UserIcon,
@@ -102,6 +110,7 @@ const markdownContent = computed({
 });
 const dataContent = computed<string>(() => fMarkdownJSON(props.message.data) || "");
 
+const showMessage = ref(true);
 const showFiles = ref(files.value.length > 0);
 
 const nextRole = {
