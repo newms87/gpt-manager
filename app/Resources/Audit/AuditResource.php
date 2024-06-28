@@ -2,26 +2,24 @@
 
 namespace App\Resources\Audit;
 
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Models\Audit\Audit;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin Audit
- * @property Audit $resource
- */
 class AuditResource extends ActionResource
 {
-    protected static string $type = 'Audit';
-
-    public function data(): array
+    /**
+     * @param Audit $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
         return [
-            'id'              => $this->id,
-            'event'           => $this->event,
-            'auditable_title' => $this->auditable_type . ' (' . $this->auditable_id . ')',
-            'old_values'      => $this->old_values,
-            'new_values'      => $this->new_values,
-            'created_at'      => $this->created_at,
+            'id'              => $model->id,
+            'event'           => $model->event,
+            'auditable_title' => $model->auditable_type . ' (' . $model->auditable_id . ')',
+            'old_values'      => $model->old_values,
+            'new_values'      => $model->new_values,
+            'created_at'      => $model->created_at,
         ];
     }
 }

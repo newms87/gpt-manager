@@ -3,40 +3,36 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowJob;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin WorkflowJob
- * @property WorkflowJob $resource
- */
 class WorkflowJobResource extends ActionResource
 {
-    protected static string $type = 'WorkflowJob';
-
-    public function data(): array
+    /**
+     * @param WorkflowJob $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
-        $data = [
-            'id'            => $this->id,
-            'name'          => $this->name,
-            'description'   => $this->description,
-            'runs_count'    => $this->workflowJobRuns()->count(),
-            'use_input'     => $this->use_input,
-            'workflow_tool' => $this->workflow_tool,
-            'created_at'    => $this->created_at,
-        ];
+        return static::make($model, [
+                'id'            => $model->id,
+                'name'          => $model->name,
+                'description'   => $model->description,
+                'runs_count'    => $model->workflowJobRuns()->count(),
+                'use_input'     => $model->use_input,
+                'workflow_tool' => $model->workflow_tool,
+                'created_at'    => $model->created_at,
+            ] + $attributes);
+    }
 
-        if ($this->relationLoaded('workflow')) {
-            $data['workflow'] = WorkflowResource::make($this->workflow);
-        }
-
-        if ($this->relationLoaded('assignments')) {
-            $data['assignments'] = WorkflowAssignmentResource::collection($this->workflowAssignments);
-        }
-
-        if ($this->relationLoaded('dependencies')) {
-            $data['dependencies'] = WorkflowJobDependencyResource::collection($this->dependencies);
-        }
-
-        return $data;
+    /**
+     * @param WorkflowJob $model
+     */
+    public static function details(Model $model): array
+    {
+        return static::data($model, [
+            'workflow'     => WorkflowResource::data($model->workflow),
+            'dependencies' => WorkflowJobDependencyResource::collection($model->dependencies),
+            'assignments'  => WorkflowAssignmentResource::collection($model->workflowAssignments),
+        ]);
     }
 }

@@ -7,8 +7,8 @@
 				<div class="py-3 flex items-center">
 					<div class="flex-grow">
 						<template v-if="assignment.workflowJob">
-							<div class="font-bold">{{ assignment.workflowJob.workflow.name }}</div>
-							<div class="ml-2">{{ assignment.workflowJob.name }}</div>
+							<div>{{ assignment.workflowJob.workflow.name }}</div>
+							<div class="font-bold ml-2">{{ assignment.workflowJob.name }}</div>
 						</template>
 						<template v-if="assignment.agent">
 							<div class="font-bold">{{ assignment.agent.name }}</div>

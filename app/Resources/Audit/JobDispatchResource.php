@@ -2,33 +2,31 @@
 
 namespace App\Resources\Audit;
 
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin JobDispatch
- * @property JobDispatch $resource
- */
 class JobDispatchResource extends ActionResource
 {
-    protected static string $type = 'JobDispatch';
-
-    public function data(): array
+    /**
+     * @param JobDispatch $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
-        return [
-            'id'                        => $this->id,
-            'name'                      => $this->name,
-            'ref'                       => $this->ref,
-            'job_batch_id'              => $this->job_batch_id,
-            'running_audit_request_id'  => $this->running_audit_request_id,
-            'dispatch_audit_request_id' => $this->dispatch_audit_request_id,
-            'status'                    => $this->status,
-            'ran_at'                    => $this->ran_at,
-            'completed_at'              => $this->completed_at,
-            'timeout_at'                => $this->timeout_at,
-            'run_time'                  => $this->run_time,
-            'count'                     => $this->count,
-            'created_at'                => $this->created_at,
-        ];
+        return static::make($model, [
+                'id'                        => $model->id,
+                'name'                      => $model->name,
+                'ref'                       => $model->ref,
+                'job_batch_id'              => $model->job_batch_id,
+                'running_audit_request_id'  => $model->running_audit_request_id,
+                'dispatch_audit_request_id' => $model->dispatch_audit_request_id,
+                'status'                    => $model->status,
+                'ran_at'                    => $model->ran_at,
+                'completed_at'              => $model->completed_at,
+                'timeout_at'                => $model->timeout_at,
+                'run_time'                  => $model->run_time,
+                'count'                     => $model->count,
+                'created_at'                => $model->created_at,
+            ] + $attributes);
     }
 }

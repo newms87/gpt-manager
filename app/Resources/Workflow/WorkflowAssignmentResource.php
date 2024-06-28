@@ -4,33 +4,32 @@ namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowAssignment;
 use App\Resources\Agent\AgentResource;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin WorkflowAssignment
- * @property WorkflowAssignment $resource
- */
 class WorkflowAssignmentResource extends ActionResource
 {
-    protected static string $type = 'WorkflowAssignment';
-
-    public function data(): array
+    /**
+     * @param WorkflowAssignment $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
-        $data = [
-            'id'           => $this->id,
-            'is_required'  => $this->is_required,
-            'max_attempts' => $this->max_attempts,
-            'created_at'   => $this->created_at,
-        ];
+        return static::make($model, [
+                'id'           => $model->id,
+                'is_required'  => $model->is_required,
+                'max_attempts' => $model->max_attempts,
+                'created_at'   => $model->created_at,
+            ] + $attributes);
+    }
 
-        if ($this->relationLoaded('agent')) {
-            $data['agent'] = AgentResource::make($this->agent);
-        }
-
-        if ($this->relationLoaded('workflowJob')) {
-            $data['workflowJob'] = WorkflowJobResource::make($this->workflowJob);
-        }
-
-        return $data;
+    /**
+     * @param WorkflowAssignment $model
+     */
+    public static function details(Model $model): array
+    {
+        return static::data($model, [
+            'agent'       => AgentResource::data($model->agent),
+            'workflowJob' => WorkflowJobResource::data($model->workflowJob),
+        ]);
     }
 }

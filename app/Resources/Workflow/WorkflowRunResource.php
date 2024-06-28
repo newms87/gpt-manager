@@ -3,39 +3,42 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowRun;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin WorkflowRun
- * @property WorkflowRun $resource
- */
 class WorkflowRunResource extends ActionResource
 {
-    protected static string $type = 'WorkflowRun';
-
-    public function data(): array
+    /**
+     * @param WorkflowRun $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
-        $workflowJobRuns = $this->resolveFieldRelation('workflowJobRuns', ['workflowJobRuns', 'sortedWorkflowJobRuns'], fn() => $this->sortedWorkflowJobRuns()->with(['workflowJob'])->get());
+        return static::make($model, [
+                'id'            => $model->id,
+                'workflow_id'   => $model->workflow_id,
+                'workflow_name' => $model->workflow->name,
+                'status'        => $model->status,
+                'started_at'    => $model->started_at,
+                'completed_at'  => $model->completed_at,
+                'failed_at'     => $model->failed_at,
+                'created_at'    => $model->created_at,
+                'usage'         => [
+                    'input_tokens'  => $model->getTotalInputTokens(),
+                    'output_tokens' => $model->getTotalOutputTokens(),
+                    'cost'          => $model->getTotalCost(),
+                ],
+            ] + $attributes);
+    }
 
-        return [
-            'id'              => $this->id,
-            'workflow_id'     => $this->workflow_id,
-            'workflow_name'   => $this->workflow->name,
-            'status'          => $this->status,
-            'started_at'      => $this->started_at,
-            'completed_at'    => $this->completed_at,
-            'failed_at'       => $this->failed_at,
-            'created_at'      => $this->created_at,
-            'usage'           => [
-                'input_tokens'  => $this->getTotalInputTokens(),
-                'output_tokens' => $this->getTotalOutputTokens(),
-                'cost'          => $this->getTotalCost(),
-            ],
-
-            // Conditional Fields
-            'artifacts'       => ArtifactResource::collection($this->resolveFieldRelation('artifacts')),
-            'workflowInput'   => WorkflowInputResource::make($this->resolveFieldRelation('workflowInput')),
-            'workflowJobRuns' => WorkflowJobRunResource::collection($workflowJobRuns),
-        ];
+    /**
+     * @param WorkflowRun $model
+     */
+    public static function details(Model $model): array
+    {
+        return static::data($model, [
+            'artifacts'       => ArtifactResource::collection($model->artifacts),
+            'workflowInput'   => WorkflowInputResource::data($model->workflowInput),
+            'workflowJobRuns' => WorkflowJobRunResource::collection($model->sortedWorkflowJobRuns()->with(['workflowJob'])->get()),
+        ]);
     }
 }

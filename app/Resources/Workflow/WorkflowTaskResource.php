@@ -4,36 +4,43 @@ namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowTask;
 use App\Resources\Agent\ThreadResource;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin WorkflowTask
- * @property WorkflowTask $resource
- */
 class WorkflowTaskResource extends ActionResource
 {
-    protected static string $type = 'WorkflowTask';
-
-    public function data(): array
+    /**
+     * @param WorkflowTask $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
-        return [
-            'id'           => $this->id,
-            'job_name'     => $this->workflowJob?->name,
-            'group'        => $this->group,
-            'agent_name'   => $this->workflowAssignment?->agent->name,
-            'model'        => $this->workflowAssignment?->agent->model,
-            'status'       => $this->status,
-            'started_at'   => $this->started_at,
-            'completed_at' => $this->completed_at,
-            'failed_at'    => $this->failed_at,
-            'job_logs'     => $this->jobDispatch?->runningAuditRequest?->logs,
-            'thread'       => $this->thread ? ThreadResource::make($this->thread) : null,
-            'usage'        => [
-                'input_tokens'  => $this->getTotalInputTokens(),
-                'output_tokens' => $this->getTotalOutputTokens(),
-                'cost'          => $this->getTotalCost(),
-            ],
-            'created_at'   => $this->created_at,
-        ];
+        return static::make($model, [
+                'id'           => $model->id,
+                'job_name'     => $model->workflowJob?->name,
+                'group'        => $model->group,
+                'agent_name'   => $model->workflowAssignment?->agent->name,
+                'model'        => $model->workflowAssignment?->agent->model,
+                'status'       => $model->status,
+                'started_at'   => $model->started_at,
+                'completed_at' => $model->completed_at,
+                'failed_at'    => $model->failed_at,
+                'created_at'   => $model->created_at,
+                'usage'        => [
+                    'input_tokens'  => $model->getTotalInputTokens(),
+                    'output_tokens' => $model->getTotalOutputTokens(),
+                    'cost'          => $model->getTotalCost(),
+                ],
+            ] + $attributes);
+    }
+
+    /**
+     * @param WorkflowTask $model
+     */
+    public static function details(Model $model): array
+    {
+        return static::data($model, [
+            'job_logs' => $model->jobDispatch?->runningAuditRequest?->logs,
+            'thread'   => ThreadResource::data($model->thread),
+        ]);
     }
 }

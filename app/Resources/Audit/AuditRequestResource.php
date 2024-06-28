@@ -2,40 +2,52 @@
 
 namespace App\Resources\Audit;
 
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Models\Audit\AuditRequest;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin AuditRequest
- * @property AuditRequest $resource
- */
 class AuditRequestResource extends ActionResource
 {
-    protected static string $type = 'AuditRequest';
-
-    public function data(): array
+    /**
+     * @param AuditRequest $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
         return [
-            'id'                    => $this->id,
-            'session_id'            => $this->session_id,
-            'user_name'             => $this->user ? $this->user->email . ' (' . $this->user_id . ')' : 'N/A',
-            'environment'           => $this->environment,
-            'http_method'           => $this->requestMethod(),
-            'http_status_code'      => $this->statusCode(),
-            'url'                   => $this->url,
-            'request'               => $this->request,
-            'response'              => $this->response,
-            'response_length'       => $this->response ? $this->response['length'] : 0,
-            'max_memory'            => $this->response ? $this->response['max_memory_used'] : 0,
-            'logs'                  => $this->logs,
-            'time'                  => $this->time,
-            'audits_count'          => $this->audits()->count(),
-            'api_logs_count'        => $this->apiLogs()->count(),
-            'ran_jobs_count'        => $this->ranJobs()->count(),
-            'dispatched_jobs_count' => $this->dispatchedJobs()->count(),
-            'errors_count'          => $this->errorLogEntries()->count(),
-            'created_at'            => $this->created_at,
-            'updated_at'            => $this->updated_at,
+            'id'                    => $model->id,
+            'session_id'            => $model->session_id,
+            'user_name'             => $model->user ? $model->user->email . ' (' . $model->user_id . ')' : 'N/A',
+            'environment'           => $model->environment,
+            'http_method'           => $model->requestMethod(),
+            'http_status_code'      => $model->statusCode(),
+            'url'                   => $model->url,
+            'request'               => $model->request,
+            'response'              => $model->response,
+            'response_length'       => $model->response ? $model->response['length'] : 0,
+            'max_memory'            => $model->response ? $model->response['max_memory_used'] : 0,
+            'logs'                  => $model->logs,
+            'time'                  => $model->time,
+            'audits_count'          => $model->audits()->count(),
+            'api_logs_count'        => $model->apiLogs()->count(),
+            'ran_jobs_count'        => $model->ranJobs()->count(),
+            'dispatched_jobs_count' => $model->dispatchedJobs()->count(),
+            'errors_count'          => $model->errorLogEntries()->count(),
+            'created_at'            => $model->created_at,
+            'updated_at'            => $model->updated_at,
         ];
+    }
+
+    /**
+     * @param AuditRequest $model
+     */
+    public static function details(Model $model): array
+    {
+        return static::make($model, [
+            'audits'          => AuditResource::collection($model->audits),
+            'api_logs'        => ApiLogResource::collection($model->apiLogs),
+            'ran_jobs'        => JobDispatchResource::collection($model->ranJobs),
+            'dispatched_jobs' => JobDispatchResource::collection($model->dispatchedJobs),
+            'errors'          => ErrorLogEntryResource::collection($model->errorLogEntries),
+        ]);
     }
 }

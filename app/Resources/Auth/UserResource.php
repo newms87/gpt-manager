@@ -3,22 +3,20 @@
 namespace App\Resources\Auth;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin User
- * @property User $resource
- */
 class UserResource extends ActionResource
 {
-    protected static string $type = 'User';
-
-    public function data(): array
+    /**
+     * @param User $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
-        return [
-            'id'    => $this->id,
-            'name'  => $this->name,
-            'email' => $this->email,
-        ];
+        return static::make($model, [
+                'id'    => $model->id,
+                'name'  => $model->name,
+                'email' => $model->email,
+            ] + $attributes);
     }
 }

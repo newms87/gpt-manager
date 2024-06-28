@@ -3,26 +3,33 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\Artifact;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin Artifact
- * @property Artifact $resource
- */
 class ArtifactResource extends ActionResource
 {
-    protected static string $type = 'Artifact';
-
-    public function data(): array
+    /**
+     * @param Artifact $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
-        return [
-            'id'         => $this->id,
-            'name'       => $this->name,
-            'group'      => $this->group,
-            'model'      => $this->model,
-            'content'    => $this->content,
-            'data'       => $this->data,
-            'created_at' => $this->created_at,
-        ];
+        return static::make($model, [
+                'id'         => $model->id,
+                'name'       => $model->name,
+                'group'      => $model->group,
+                'model'      => $model->model,
+                'created_at' => $model->created_at,
+            ] + $attributes);
+    }
+
+    /**
+     * @param Artifact $model
+     */
+    public static function details(Model $model): array
+    {
+        return static::data($model, [
+            'content' => $model->content,
+            'data'    => $model->data,
+        ]);
     }
 }

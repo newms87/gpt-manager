@@ -3,12 +3,9 @@
 namespace App\Repositories;
 
 use App\Models\Agent\Agent;
-use App\Models\Agent\Thread;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
-use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class AgentRepository extends ActionRepository
@@ -28,57 +25,6 @@ class AgentRepository extends ActionRepository
         ]);
     }
 
-    public function createAgent(array $data): Agent
-    {
-        $agent = Agent::make()->forceFill([
-            'team_id' => team()->id,
-        ]);
-
-        $data += [
-            'model'       => config('ai.default_model'),
-            'temperature' => 0,
-            'tools'       => [],
-        ];
-
-        return $this->updateAgent($agent, $data);
-    }
-
-    /**
-     * @param Agent $agent
-     * @param array $data
-     * @return Agent
-     */
-    public function updateAgent(Agent $agent, array $data): Agent
-    {
-        $agent->fill($data);
-        $agent->api = AgentRepository::getApiForModel($agent->model);
-
-        $agent->validate()->save($data);
-
-        return $agent;
-    }
-
-    /**
-     * @param string     $action
-     * @param Agent      $model
-     * @param array|null $data
-     * @return Thread|bool|Model|mixed|null
-     * @throws ValidationError
-     */
-    public function applyAction(string $action, $model = null, ?array $data = null)
-    {
-        return match ($action) {
-            'create' => $this->createAgent($data),
-            'update' => $this->updateAgent($model, $data),
-            'create-thread' => app(ThreadRepository::class)->create($model),
-            default => parent::applyAction($action, $model, $data)
-        };
-    }
-
-    /**
-     * @param array|null $filter
-     * @return array
-     */
     public function fieldOptions(?array $filter = []): array
     {
         $aiModels = collect(static::getAiModels())->sortKeys()->map(function ($aiModel) {
@@ -101,10 +47,45 @@ class AgentRepository extends ActionRepository
     }
 
     /**
+     * @inheritDoc
+     */
+    public function applyAction(string $action, $model = null, ?array $data = null)
+    {
+        return match ($action) {
+            'create' => $this->createAgent($data),
+            'update' => $this->updateAgent($model, $data),
+            'create-thread' => app(ThreadRepository::class)->create($model),
+            default => parent::applyAction($action, $model, $data)
+        };
+    }
+
+    public function createAgent(array $data): Agent
+    {
+        $agent = Agent::make()->forceFill([
+            'team_id' => team()->id,
+        ]);
+
+        $data += [
+            'model'       => config('ai.default_model'),
+            'temperature' => 0,
+            'tools'       => [],
+        ];
+
+        return $this->updateAgent($agent, $data);
+    }
+
+    public function updateAgent(Agent $agent, array $data): Agent
+    {
+        $agent->fill($data);
+        $agent->api = AgentRepository::getApiForModel($agent->model);
+
+        $agent->validate()->save($data);
+
+        return $agent;
+    }
+
+    /**
      * Reverse lookup API from model
-     *
-     * @param string $model
-     * @return string|null
      */
     public static function getApiForModel(string $model): ?string
     {
@@ -119,8 +100,6 @@ class AgentRepository extends ActionRepository
 
     /**
      * Get all available AI models
-     *
-     * @return array
      */
     public static function getAiModels(): array
     {
@@ -141,7 +120,10 @@ class AgentRepository extends ActionRepository
         return $aiModels;
     }
 
-    public function calcTotalCost(Agent $agent, $inputTokens, $outputToken)
+    /**
+     * Calculate the total cost of using the agent based in input and output tokens accumulated over all thread runs
+     */
+    public function calcTotalCost(Agent $agent, $inputTokens, $outputToken): ?float
     {
         $inputTokens = $inputTokens ?? 0;
         $outputToken = $outputToken ?? 0;

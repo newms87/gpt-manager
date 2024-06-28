@@ -3,30 +3,34 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\Workflow;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin Workflow
- * @property Workflow $resource
- */
 class WorkflowResource extends ActionResource
 {
-    protected static string $type = 'Workflow';
-
-    public function data(): array
+    /**
+     * @param Workflow $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
-        $jobs = $this->resolveFieldRelation('jobs', ['workflowJobs', 'sortedAgentWorkflowJobs'], fn() => $this->sortedAgentWorkflowJobs()->with(['dependencies', 'assignments'])->get());
-        $runs = $this->resolveFieldRelation('runs', ['workflowRuns'], fn() => $this->workflowRuns()->with(['artifacts', 'workflowInput', 'sortedWorkflowJobRuns' => ['workflowJob', 'workflowRun']])->orderByDesc('id')->get());
+        return static::make($model, [
+            'id'          => $model->id,
+            'name'        => $model->name,
+            'description' => $model->description,
+            'runs_count'  => $model->runs_count,
+            'jobs_count'  => $model->jobs_count,
+            'created_at'  => $model->created_at,
+        ]);
+    }
 
-        return [
-            'id'          => $this->id,
-            'name'        => $this->name,
-            'description' => $this->description,
-            'runs_count'  => $this->runs_count,
-            'jobs_count'  => $this->jobs_count,
-            'created_at'  => $this->created_at,
-            'jobs'        => WorkflowJobResource::collection($jobs),
-            'runs'        => WorkflowRunResource::collection($runs),
-        ];
+    /**
+     * @param Workflow $model
+     */
+    public static function details(Model $model): array
+    {
+        return static::data($model, [
+            'jobs' => WorkflowJobResource::collection($model->sortedAgentWorkflowJobs()->with(['dependencies', 'assignments'])->get()),
+            'runs' => WorkflowRunResource::collection($model->workflowRuns()->with(['artifacts', 'workflowInput', 'sortedWorkflowJobRuns' => ['workflowJob', 'workflowRun']])->orderByDesc('id')->get()),
+        ]);
     }
 }

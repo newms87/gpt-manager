@@ -3,40 +3,47 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowInput;
+use Illuminate\Database\Eloquent\Model;
+use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Resources\ActionResource;
 use Newms87\Danx\Resources\StoredFileResource;
-use Newms87\Danx\Resources\StoredFileWithTranscodesResource;
 
-/**
- * @mixin WorkflowInput
- * @property WorkflowInput $resource
- */
 class WorkflowInputResource extends ActionResource
 {
-    protected static string $type = 'WorkflowInput';
-
-    public function data(): array
+    /**
+     * @param WorkflowInput $model
+     */
+    public static function data(Model $model, array $attributes = []): array
     {
-        $thumbFile = $this->storedFiles()->first();
+        $thumbFile = $model->storedFiles()->first();
 
-        $storedFiles  = $this->resolveFieldRelation('storedFiles');
-        $workflowRuns = $this->resolveFieldRelation('workflowRuns', null, fn() => $this->workflowRuns()->orderByDesc('id')->get());
+        return static::make($model, [
+                'id'                      => $model->id,
+                'name'                    => $model->name,
+                'description'             => $model->description,
+                'workflow_runs_count'     => $model->workflow_runs_count,
+                'thumb'                   => StoredFileResource::data($thumbFile),
+                'has_active_workflow_run' => $model->activeWorkflowRuns()->exists(),
+                'tags'                    => $model->objectTags()->pluck('name'),
+                'created_at'              => $model->created_at,
+                'updated_at'              => $model->updated_at,
+            ] + $attributes);
+    }
 
-        return [
-            'id'                      => $this->id,
-            'name'                    => $this->name,
-            'description'             => $this->description,
-            'workflow_runs_count'     => $this->workflow_runs_count,
-            'thumb'                   => StoredFileResource::make($thumbFile),
-            'has_active_workflow_run' => $this->activeWorkflowRuns()->exists(),
-            'tags'                    => $this->objectTags()->pluck('name'),
-            'created_at'              => $this->created_at,
-            'updated_at'              => $this->updated_at,
+    /**
+     * @param WorkflowInput $model
+     */
+    public static function details(Model $model): array
+    {
+        $storedFiles  = $model->storedFiles()->with('transcodes');
+        $workflowRuns = $model->workflowRuns()->orderByDesc('id')->get();
 
-            // Conditional fields
-            'files'                   => StoredFileWithTranscodesResource::collection($storedFiles),
-            'content'                 => $this->resolveField('content'),
-            'workflowRuns'            => WorkflowRunResource::collection($workflowRuns, ['workflowJobRuns']),
-        ];
+        return static::data($model, [
+            'files'        => StoredFileResource::collection($storedFiles, fn(StoredFile $storedFile) => [
+                'transcodes' => StoredFileResource::collection($storedFile->transcodes),
+            ]),
+            'content'      => $model->content,
+            'workflowRuns' => WorkflowRunResource::collection($workflowRuns),
+        ]);
     }
 }
