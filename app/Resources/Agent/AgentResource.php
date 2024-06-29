@@ -19,22 +19,22 @@ class AgentResource extends ActionResource
     /**
      * @param Agent $model
      */
-    public static function data(Model $model, $attributes = []): array
+    public static function data(Model $model): array
     {
-        return static::make($model, [
-                'id'                => $model->id,
-                'knowledge_name'    => $model->knowledge?->name,
-                'name'              => $model->name,
-                'description'       => $model->description,
-                'api'               => $model->api,
-                'model'             => $model->model,
-                'temperature'       => $model->temperature,
-                'tools'             => $model->tools ?: [],
-                'prompt'            => $model->prompt,
-                'threads_count'     => $model->threads_count,
-                'assignments_count' => $model->assignments_count,
-                'created_at'        => $model->created_at,
-            ] + $attributes);
+        return [
+            'id'                => $model->id,
+            'knowledge_name'    => $model->knowledge?->name,
+            'name'              => $model->name,
+            'description'       => $model->description,
+            'api'               => $model->api,
+            'model'             => $model->model,
+            'temperature'       => $model->temperature,
+            'tools'             => $model->tools ?: [],
+            'prompt'            => $model->prompt,
+            'threads_count'     => $model->threads_count,
+            'assignments_count' => $model->assignments_count,
+            'created_at'        => $model->created_at,
+        ];
     }
 
     /**
@@ -45,7 +45,7 @@ class AgentResource extends ActionResource
         $threads     = $model->threads()->with('messages.storedFiles.transcodes')->get();
         $assignments = $model->assignments()->with('workflowJob.workflow')->get();
 
-        return static::data($model, [
+        return static::make($model, [
             'threads'     => ThreadResource::collection($threads, fn(Thread $thread) => [
                 'messages' => MessageResource::collection($thread->messages, fn(Message $message) => [
                     'files' => StoredFileResource::collection($message->storedFiles, fn(StoredFile $storedFile) => [
@@ -54,8 +54,8 @@ class AgentResource extends ActionResource
                 ]),
             ]),
             'assignments' => WorkflowAssignmentResource::collection($assignments, fn(WorkflowAssignment $assignment) => [
-                'workflowJob' => WorkflowJobResource::data($assignment->workflowJob, [
-                    'workflow' => WorkflowResource::data($assignment->workflowJob->workflow),
+                'workflowJob' => WorkflowJobResource::make($assignment->workflowJob, [
+                    'workflow' => WorkflowResource::make($assignment->workflowJob->workflow),
                 ]),
             ]),
         ]);

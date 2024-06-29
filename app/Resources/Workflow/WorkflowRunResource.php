@@ -11,23 +11,23 @@ class WorkflowRunResource extends ActionResource
     /**
      * @param WorkflowRun $model
      */
-    public static function data(Model $model, array $attributes = []): array
+    public static function data(Model $model): array
     {
-        return static::make($model, [
-                'id'            => $model->id,
-                'workflow_id'   => $model->workflow_id,
-                'workflow_name' => $model->workflow->name,
-                'status'        => $model->status,
-                'started_at'    => $model->started_at,
-                'completed_at'  => $model->completed_at,
-                'failed_at'     => $model->failed_at,
-                'created_at'    => $model->created_at,
-                'usage'         => [
-                    'input_tokens'  => $model->getTotalInputTokens(),
-                    'output_tokens' => $model->getTotalOutputTokens(),
-                    'cost'          => $model->getTotalCost(),
-                ],
-            ] + $attributes);
+        return [
+            'id'            => $model->id,
+            'workflow_id'   => $model->workflow_id,
+            'workflow_name' => $model->workflow->name,
+            'status'        => $model->status,
+            'started_at'    => $model->started_at,
+            'completed_at'  => $model->completed_at,
+            'failed_at'     => $model->failed_at,
+            'created_at'    => $model->created_at,
+            'usage'         => [
+                'input_tokens'  => $model->getTotalInputTokens(),
+                'output_tokens' => $model->getTotalOutputTokens(),
+                'cost'          => $model->getTotalCost(),
+            ],
+        ];
     }
 
     /**
@@ -35,9 +35,9 @@ class WorkflowRunResource extends ActionResource
      */
     public static function details(Model $model): array
     {
-        return static::data($model, [
+        return static::make($model, [
             'artifacts'       => ArtifactResource::collection($model->artifacts),
-            'workflowInput'   => WorkflowInputResource::data($model->workflowInput),
+            'workflowInput'   => WorkflowInputResource::make($model->workflowInput),
             'workflowJobRuns' => WorkflowJobRunResource::collection($model->sortedWorkflowJobRuns()->with(['workflowJob'])->get()),
         ]);
     }

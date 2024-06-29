@@ -13,17 +13,19 @@ class WorkflowJobResource extends ActionResource
     /**
      * @param WorkflowJob $model
      */
-    public static function data(Model $model, array $attributes = []): array
+    public static function data(Model $model): array
     {
-        return static::make($model, [
-                'id'            => $model->id,
-                'name'          => $model->name,
-                'description'   => $model->description,
-                'runs_count'    => $model->workflowJobRuns()->count(),
-                'use_input'     => $model->use_input,
-                'workflow_tool' => $model->workflow_tool,
-                'created_at'    => $model->created_at,
-            ] + $attributes);
+        return [
+            'id'            => $model->id,
+            'name'          => $model->name,
+            'description'   => $model->description,
+
+            // TODO: refactor to countable
+            'runs_count'    => $model->workflowJobRuns()->count(),
+            'use_input'     => $model->use_input,
+            'workflow_tool' => $model->workflow_tool,
+            'created_at'    => $model->created_at,
+        ];
     }
 
     /**
@@ -33,11 +35,11 @@ class WorkflowJobResource extends ActionResource
     {
         $assignments = $model->workflowAssignments()->with(['agent'])->get();
 
-        return static::data($model, [
-            'workflow'     => WorkflowResource::data($model->workflow),
+        return static::make($model, [
+            'workflow'     => WorkflowResource::make($model->workflow),
             'dependencies' => WorkflowJobDependencyResource::collection($model->dependencies),
             'assignments'  => WorkflowAssignmentResource::collection($assignments, fn(WorkflowAssignment $workflowAssignment) => [
-                'agent' => AgentResource::data($workflowAssignment->agent),
+                'agent' => AgentResource::make($workflowAssignment->agent),
             ]),
         ]);
     }

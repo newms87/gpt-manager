@@ -11,7 +11,7 @@ class AuditResource extends ActionResource
     /**
      * @param Audit $model
      */
-    public static function data(Model $model, array $attributes = []): array
+    public static function data(Model $model): array
     {
         return [
             'id'              => $model->id,

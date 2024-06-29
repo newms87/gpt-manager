@@ -11,17 +11,17 @@ class ThreadResource extends ActionResource
     /**
      * @param Thread $model
      */
-    public static function data(Model $model, $attributes = []): array
+    public static function data(Model $model): array
     {
-        return static::make($model, [
-                'id'               => $model->id,
-                'name'             => $model->name,
-                'summary'          => $model->summary,
-                'is_running'       => $model->isRunning(),
-                'logs'             => $model->lastRun?->jobDispatch?->runningAuditRequest?->logs ?? '',
-                'usage'            => $model->getUsage(),
-                'audit_request_id' => $model->lastRun?->jobDispatch?->running_audit_request_id,
-            ] + $attributes);
+        return [
+            'id'               => $model->id,
+            'name'             => $model->name,
+            'summary'          => $model->summary,
+            'is_running'       => $model->isRunning(),
+            'logs'             => $model->lastRun?->jobDispatch?->runningAuditRequest?->logs ?? '',
+            'usage'            => $model->getUsage(),
+            'audit_request_id' => $model->lastRun?->jobDispatch?->running_audit_request_id,
+        ];
     }
 
     /**
@@ -29,7 +29,7 @@ class ThreadResource extends ActionResource
      */
     public static function details(Model $model): array
     {
-        return static::data($model, [
+        return static::make($model, [
             'messages' => MessageResource::collection($model->messages()->orderBy('id')->get()),
         ]);
     }

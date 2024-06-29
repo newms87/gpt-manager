@@ -11,12 +11,12 @@ class UserResource extends ActionResource
     /**
      * @param User $model
      */
-    public static function data(Model $model, array $attributes = []): array
+    public static function data(Model $model): array
     {
-        return static::make($model, [
-                'id'    => $model->id,
-                'name'  => $model->name,
-                'email' => $model->email,
-            ] + $attributes);
+        return [
+            'id'    => $model->id,
+            'name'  => $model->name,
+            'email' => $model->email,
+        ];
     }
 }

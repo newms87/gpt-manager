@@ -6,16 +6,12 @@ use App\Models\Agent\ThreadRun;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
-/**
- * @mixin ThreadRun
- * @property ThreadRun $resource
- */
 class ThreadRunResource extends ActionResource
 {
     /**
      * @param ThreadRun $model
      */
-    public static function data(Model $model, array $attributes = []): array
+    public static function data(Model $model): array
     {
         return [
             'id'            => $model->id,
@@ -34,8 +30,8 @@ class ThreadRunResource extends ActionResource
      */
     public static function details(Model $model): array
     {
-        return static::data($model, [
-            'thread' => ThreadResource::data($model->thread),
+        return static::make($model, [
+            'thread' => ThreadResource::make($model->thread),
         ]);
     }
 }

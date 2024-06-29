@@ -11,21 +11,21 @@ class WorkflowJobRunResource extends ActionResource
     /**
      * @param WorkflowJobRun $model
      */
-    public static function data(Model $model, array $attributes = []): array
+    public static function data(Model $model): array
     {
-        return static::make($model, [
-                'id'           => $model->id,
-                'status'       => $model->status,
-                'started_at'   => $model->started_at,
-                'completed_at' => $model->completed_at,
-                'failed_at'    => $model->failed_at,
-                'created_at'   => $model->created_at,
-                'usage'        => [
-                    'input_tokens'  => $model->getTotalInputTokens(),
-                    'output_tokens' => $model->getTotalOutputTokens(),
-                    'cost'          => $model->getTotalCost(),
-                ],
-            ] + $attributes);
+        return [
+            'id'           => $model->id,
+            'status'       => $model->status,
+            'started_at'   => $model->started_at,
+            'completed_at' => $model->completed_at,
+            'failed_at'    => $model->failed_at,
+            'created_at'   => $model->created_at,
+            'usage'        => [
+                'input_tokens'  => $model->getTotalInputTokens(),
+                'output_tokens' => $model->getTotalOutputTokens(),
+                'cost'          => $model->getTotalCost(),
+            ],
+        ];
     }
 
     /**
@@ -33,8 +33,8 @@ class WorkflowJobRunResource extends ActionResource
      */
     public static function details(Model $model): array
     {
-        return static::data($model, [
-            'workflowJob' => WorkflowJobResource::data($model->workflowJob),
+        return static::make($model, [
+            'workflowJob' => WorkflowJobResource::make($model->workflowJob),
             'tasks'       => WorkflowTaskResource::collection($model->tasks),
         ]);
     }
