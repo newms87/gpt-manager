@@ -48,14 +48,11 @@ export const columns: TableColumn[] = [
 	{
 		name: "temperature",
 		label: "Temperature",
-		align: "left",
-		sortable: true,
-		required: true
+		sortable: true
 	},
 	{
 		name: "threads_count",
 		label: "Threads",
-		align: "left",
 		format: fNumber,
 		sortable: true,
 		onClick: (agent) => AgentController.activatePanel(agent, "threads")
@@ -63,7 +60,6 @@ export const columns: TableColumn[] = [
 	{
 		name: "assignments_count",
 		label: "Assignments",
-		align: "left",
 		format: fNumber,
 		sortable: true,
 		onClick: (agent) => AgentController.activatePanel(agent, "assignments")
@@ -72,7 +68,6 @@ export const columns: TableColumn[] = [
 		name: "created_at",
 		label: "Created Date",
 		sortable: true,
-		align: "left",
 		format: fDate
 	}
 ];

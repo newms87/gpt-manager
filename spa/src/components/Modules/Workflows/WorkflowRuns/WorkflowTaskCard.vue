@@ -29,12 +29,18 @@
 			</div>
 		</div>
 		<div v-if="showThread" class="p-2">
-			<ThreadMessageList readonly :thread="task.thread" />
+			<ThreadMessageCard
+				v-for="message in task.thread.messages"
+				:key="message.id"
+				readonly
+				:message="message"
+				:thread="task.thread"
+			/>
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
-import ThreadMessageList from "@/components/Modules/Agents/Threads/ThreadMessageList";
+import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";

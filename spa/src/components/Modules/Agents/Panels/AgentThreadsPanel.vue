@@ -1,21 +1,23 @@
 <template>
-	<div class="p-6">
-		<QBtn
-			class="text-lg w-full mb-5 bg-lime-800 text-slate-300"
-			:loading="createThreadAction.isApplying"
-			@click="createThreadAction.trigger(props.agent)"
-		>
-			<CreateIcon class="w-4 mr-3" />
-			Create Thread
-		</QBtn>
+	<div class="p-6 h-full overflow-hidden">
+		<ListTransition class="h-full">
+			<QBtn
+				v-if="!activeThread"
+				class="text-lg w-full mb-5 bg-lime-800 text-slate-300"
+				:loading="createThreadAction.isApplying"
+				@click="createThreadAction.trigger(props.agent)"
+			>
+				<CreateIcon class="w-4 mr-3" />
+				Create Thread
+			</QBtn>
 
-		<ListTransition>
 			<template v-for="thread in visibleThreads" :key="thread.id">
-				<QSeparator class="bg-slate-200" />
+				<QSeparator v-if="!activeThread" class="bg-slate-200" />
 				<ThreadCard
+					:class="{'my-4': !activeThread }"
 					:thread="thread"
 					:active="activeThread?.id === thread.id"
-					@toggle="activeThread = (activeThread?.id === thread.id ? null : thread)"
+					@update:active="activeThread = (activeThread?.id === thread.id ? null : thread)"
 					@close="activeThread = null"
 				/>
 			</template>
