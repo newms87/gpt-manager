@@ -1,6 +1,7 @@
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { AgentRoutes } from "@/routes/agentRoutes";
+import { WorkflowAssignmentRoutes } from "@/routes/workflowRoutes";
 import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { ActionOptions } from "quasar-ui-danx/types";
 import { h } from "vue";
@@ -50,6 +51,12 @@ const items: ActionOptions[] = [
 	},
 	{
 		name: "create-thread"
+	},
+	{
+		name: "unassign-agent",
+		alias: "delete",
+		onAction: WorkflowAssignmentRoutes.applyAction,
+		onFinish: AgentController.getActiveItemDetails
 	}
 ];
 

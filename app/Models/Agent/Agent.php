@@ -116,6 +116,17 @@ class Agent extends Model implements AuditableContract
         return $this;
     }
 
+    public function delete(): bool
+    {
+        $assignmentCount = $this->assignments()->count();
+
+        if ($assignmentCount) {
+            throw new Exception("Cannot delete Agent $this->name: there are $assignmentCount active assignments");
+        }
+
+        return parent::delete();
+    }
+
     public static function booted(): void
     {
         static::creating(function (Agent $agent) {

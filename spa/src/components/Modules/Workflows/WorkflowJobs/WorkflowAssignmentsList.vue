@@ -16,7 +16,7 @@
 						</template>
 					</div>
 					<ActionButton
-						:action="unassignAgentAction"
+						:action="unassignAction"
 						:target="assignment"
 						type="trash"
 					/>
@@ -26,14 +26,13 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { WorkflowAssignment } from "@/types/workflows";
 import { ListTransition } from "quasar-ui-danx";
+import { ActionOptions } from "quasar-ui-danx/types";
 
 defineProps<{
 	assignments: WorkflowAssignment[];
+	unassignAction: ActionOptions
 }>();
-
-const unassignAgentAction = getAction("unassign-agent");
 </script>

@@ -27,7 +27,7 @@
 					:name="'thread-files-' + message.id"
 					class="mr-2"
 					:show-icon="AddImageIcon"
-					:hide-icon="AddImageIcon"
+					:hide-icon="HideImageIcon"
 					tooltip="Show / Hide Images"
 				/>
 				<template v-if="!readonly">
@@ -85,6 +85,7 @@ import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import { AgentThread, ThreadMessage } from "@/types/agents";
 import {
+	FaRegularImage as HideImageIcon,
 	FaRegularUser as UserIcon,
 	FaSolidImage as AddImageIcon,
 	FaSolidRobot as AssistantIcon,

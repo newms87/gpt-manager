@@ -42,7 +42,7 @@
 		<MaxHeightTransition max-height="20em">
 			<QCardSection v-if="showAssignments" class="pt-0 max-h-[20em] overflow-y-auto">
 				<QSeparator class="bg-indigo-900" />
-				<WorkflowAssignmentsList :assignments="job.assignments" />
+				<WorkflowAssignmentsList :assignments="job.assignments" :unassign-action="unassignAgentAction" />
 				<ActionButton
 					:action="assignAgentAction"
 					:target="job"
@@ -77,4 +77,5 @@ const updateJobDebouncedAction = getAction("update-job-debounced");
 const updateJobAction = getAction("update-job");
 const deleteJobAction = getAction("delete-job");
 const assignAgentAction = getAction("assign-agent");
+const unassignAgentAction = getAction("unassign-agent");
 </script>
