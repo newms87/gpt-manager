@@ -1,5 +1,5 @@
 import { WorkflowRun } from "@/types";
-import { ActionTargetItem, AnyObject, UploadedFile } from "quasar-ui-danx/types";
+import { ActionTargetItem, AnyObject, UploadedFile } from "quasar-ui-danx";
 
 export interface WorkflowInput extends ActionTargetItem {
 	id: string;

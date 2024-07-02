@@ -16,7 +16,7 @@ import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputActions";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { MultiFileField, RenderedForm } from "quasar-ui-danx";
-import { Form } from "quasar-ui-danx/types";
+import { Form } from "quasar-ui-danx";
 import { h, ref, watch } from "vue";
 
 const props = defineProps<{

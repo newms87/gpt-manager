@@ -13,7 +13,7 @@ import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Agents/agentActions";
 import { Agent } from "@/types/agents";
 import { RenderedForm } from "quasar-ui-danx";
-import { Form } from "quasar-ui-danx/types";
+import { Form } from "quasar-ui-danx";
 import { h, ref } from "vue";
 
 const props = defineProps<{

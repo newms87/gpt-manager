@@ -10,7 +10,7 @@ export default ({ command }: ConfigEnv) => {
 	// For development w/ HMR, load the danx library + styles directly from the directory
 
 	const danx = (command === "serve" ? {
-		"quasar-ui-danx": "quasar-ui-danx/src",
+		"quasar-ui-danx": "quasar-ui-danx/index.ts",
 		"quasar-ui-danx-styles": "quasar-ui-danx/src/styles/index.scss"
 	} : {
 		// Import from quasar-ui-danx module for production

@@ -1,6 +1,6 @@
 import { AuditRequestController } from "@/components/Modules/Audits/auditRequestControls";
 import { dbDateTime, fNumber } from "quasar-ui-danx";
-import { TableColumn } from "quasar-ui-danx/types";
+import { TableColumn } from "quasar-ui-danx";
 
 export const columns: TableColumn[] = [
 	{

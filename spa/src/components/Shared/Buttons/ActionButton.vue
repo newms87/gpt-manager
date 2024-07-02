@@ -23,7 +23,7 @@ import {
 	FaSolidStop as StopIcon,
 	FaSolidTrash as TrashIcon
 } from "danx-icon";
-import { ActionTarget, ResourceAction } from "quasar-ui-danx/types";
+import { ActionTarget, ResourceAction } from "quasar-ui-danx";
 import { computed } from "vue";
 
 export interface ActionButtonProps {

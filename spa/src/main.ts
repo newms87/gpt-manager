@@ -1,4 +1,3 @@
-import "./assets/main.scss";
 import { getAuthToken, isAuthenticated, setAuthToken } from "@/helpers/auth";
 import { LocalStorage, Notify, Quasar } from "quasar";
 

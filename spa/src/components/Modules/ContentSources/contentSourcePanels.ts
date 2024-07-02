@@ -1,7 +1,7 @@
 import { ContentSourceController } from "@/components/Modules/ContentSources/contentSourceControls";
 import { ContentSourceApiConfigPanel, ContentSourceInfoPanel } from "@/components/Modules/ContentSources/Panels";
 import { ContentSource } from "@/types/content-sources";
-import { ActionPanel } from "quasar-ui-danx/types";
+import { ActionPanel } from "quasar-ui-danx";
 import { computed, h } from "vue";
 
 const activeItem = computed<ContentSource>(() => ContentSourceController.activeItem.value);

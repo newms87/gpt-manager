@@ -1,7 +1,7 @@
 import { WorkflowInfoPanel, WorkflowJobsPanel, WorkflowRunsPanel } from "@/components/Modules/Workflows/Panels";
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
 import { BadgeTab } from "quasar-ui-danx";
-import { ActionPanel } from "quasar-ui-danx/types";
+import { ActionPanel } from "quasar-ui-danx";
 import { computed, h } from "vue";
 
 const activeItem = computed(() => WorkflowController.activeItem.value);

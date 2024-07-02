@@ -92,7 +92,7 @@ import {
 	FaSolidToolbox as ToolIcon
 } from "danx-icon";
 import { EditOnClickTextField, fDateTime, fMarkdownJSON, MultiFileField } from "quasar-ui-danx";
-import { UploadedFile } from "quasar-ui-danx/types";
+import { UploadedFile } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{

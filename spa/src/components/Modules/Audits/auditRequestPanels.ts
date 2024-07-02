@@ -10,7 +10,7 @@ import {
 	AuditRequestResponsePanel
 } from "@/components/Modules/Audits/Panels";
 import { BadgeTab } from "quasar-ui-danx";
-import { ActionPanel } from "quasar-ui-danx/types";
+import { ActionPanel } from "quasar-ui-danx";
 import { computed, h } from "vue";
 
 const activeItem = computed<AuditRequest>(() => AuditRequestController.activeItem.value);

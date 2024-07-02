@@ -1,4 +1,4 @@
-import { AnyObject } from "quasar-ui-danx/types";
+import { AnyObject } from "quasar-ui-danx";
 
 export interface Artifact {
 	id: number;

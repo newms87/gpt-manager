@@ -1,6 +1,6 @@
 import { WorkflowRunRoutes } from "@/routes/workflowRoutes";
 import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
-import { ActionOptions } from "quasar-ui-danx/types";
+import { ActionOptions } from "quasar-ui-danx";
 import { h } from "vue";
 
 // This is the default action options for all items

@@ -1,4 +1,4 @@
-import { ActionTargetItem } from "quasar-ui-danx/types";
+import { ActionTargetItem } from "quasar-ui-danx";
 
 export interface ContentSource extends ActionTargetItem {
 	id: string;

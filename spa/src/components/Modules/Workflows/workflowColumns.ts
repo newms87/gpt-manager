@@ -1,7 +1,7 @@
 import { getActions } from "@/components/Modules/Workflows/workflowActions";
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
 import { fDate, fNumber } from "quasar-ui-danx";
-import { TableColumn } from "quasar-ui-danx/types";
+import { TableColumn } from "quasar-ui-danx";
 
 export const columns: TableColumn[] = [
 	{

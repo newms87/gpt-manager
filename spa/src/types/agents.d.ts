@@ -1,5 +1,5 @@
 import { WorkflowAssignment } from "@/types/workflows";
-import { ActionTargetItem, AnyObject } from "quasar-ui-danx/types";
+import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
 
 export interface Agent extends ActionTargetItem {
 	id: string;

@@ -6,7 +6,7 @@ import {
 import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { BadgeTab } from "quasar-ui-danx";
-import { ActionPanel } from "quasar-ui-danx/types";
+import { ActionPanel } from "quasar-ui-danx";
 import { computed, h } from "vue";
 
 const activeItem = computed<WorkflowInput>(() => WorkflowInputController.activeItem.value);

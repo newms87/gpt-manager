@@ -13,7 +13,7 @@
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import { Workflow } from "@/types/workflows";
 import { RenderedForm, TextField } from "quasar-ui-danx";
-import { Form } from "quasar-ui-danx/types";
+import { Form } from "quasar-ui-danx";
 import { h, ref } from "vue";
 
 const props = defineProps<{

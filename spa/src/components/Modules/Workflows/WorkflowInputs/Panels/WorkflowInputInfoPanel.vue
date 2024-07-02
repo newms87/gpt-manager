@@ -14,7 +14,7 @@
 import { getAction } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputActions";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { RenderedForm, TextField } from "quasar-ui-danx";
-import { Form } from "quasar-ui-danx/types";
+import { Form } from "quasar-ui-danx";
 import { h, ref } from "vue";
 
 const props = defineProps<{

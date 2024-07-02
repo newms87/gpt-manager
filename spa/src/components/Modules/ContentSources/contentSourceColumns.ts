@@ -2,7 +2,7 @@ import { getActions } from "@/components/Modules/ContentSources/contentSourceAct
 import { ContentSourceController } from "@/components/Modules/ContentSources/contentSourceControls";
 import router from "@/router";
 import { fDate, fNumber } from "quasar-ui-danx";
-import { TableColumn } from "quasar-ui-danx/types";
+import { TableColumn } from "quasar-ui-danx";
 
 export const columns: TableColumn[] = [
 	{

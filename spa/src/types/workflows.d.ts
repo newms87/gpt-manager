@@ -1,7 +1,7 @@
 import { Agent, AgentThread } from "@/types/agents";
 import { Artifact } from "@/types/artifacts";
 import { WorkflowInput } from "@/types/workflow-inputs";
-import { ActionTargetItem } from "quasar-ui-danx/types";
+import { ActionTargetItem } from "quasar-ui-danx";
 
 export interface Workflow extends ActionTargetItem {
 	id: string;

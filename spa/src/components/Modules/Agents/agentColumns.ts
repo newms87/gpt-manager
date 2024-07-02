@@ -1,7 +1,7 @@
 import { getActions } from "@/components/Modules/Agents/agentActions";
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { fDate, fNumber } from "quasar-ui-danx";
-import { TableColumn } from "quasar-ui-danx/types";
+import { TableColumn } from "quasar-ui-danx";
 
 export const columns: TableColumn[] = [
 	{

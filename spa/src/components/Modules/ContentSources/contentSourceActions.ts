@@ -2,7 +2,7 @@ import { ContentSourceController } from "@/components/Modules/ContentSources/con
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { ContentSourceRoutes } from "@/routes/contentSourceRoutes";
 import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
-import { ActionOptions } from "quasar-ui-danx/types";
+import { ActionOptions } from "quasar-ui-danx";
 import { h } from "vue";
 
 // This is the default action options for all items
