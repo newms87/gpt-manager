@@ -18,8 +18,8 @@ export interface Props {
 	name?: string;
 	showLabel?: string;
 	hideLabel?: string;
-	showIcon?: object;
-	hideIcon?: object;
+	showIcon?: object | string;
+	hideIcon?: object | string;
 	iconClass?: string;
 	labelClass?: string;
 	label?: string;

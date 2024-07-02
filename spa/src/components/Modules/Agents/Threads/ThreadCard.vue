@@ -40,7 +40,7 @@
 import { getAction } from "@/components/Modules/Agents/Threads/threadActions";
 import ThreadCardHeader from "@/components/Modules/Agents/Threads/ThreadCardHeader";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
-import ActionButton from "@/components/Shared/Buttons/ActionButton";
+import { ActionButton } from "@/components/Shared";
 import { AgentThread } from "@/types/agents";
 import { FaRegularMessage as CreateIcon } from "danx-icon";
 import { ref } from "vue";

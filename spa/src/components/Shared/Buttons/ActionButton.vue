@@ -23,18 +23,18 @@ import {
 	FaSolidStop as StopIcon,
 	FaSolidTrash as TrashIcon
 } from "danx-icon";
-import { ActionOptions, ActionTarget } from "quasar-ui-danx/types";
+import { ActionTarget, ResourceAction } from "quasar-ui-danx/types";
 import { computed } from "vue";
 
 export interface ActionButtonProps {
 	type?: "trash" | "trash-red" | "edit" | "play" | "stop" | "pause" | "refresh";
 	color?: "red" | "blue" | "sky" | "green" | "green-invert" | "lime" | "white";
-	icon?: object;
+	icon?: object | string;
 	iconClass?: string;
 	label?: string;
 	tooltip?: string;
 	saving?: boolean;
-	action?: ActionOptions;
+	action?: ResourceAction;
 	target?: ActionTarget;
 	input?: object;
 }

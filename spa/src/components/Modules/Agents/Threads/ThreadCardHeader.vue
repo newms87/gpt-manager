@@ -52,9 +52,7 @@
 
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Agents/Threads/threadActions";
-import ActionButton from "@/components/Shared/Buttons/ActionButton";
-import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
-import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
+import { ActionButton, AiTokenUsageButton, ShowHideButton } from "@/components/Shared";
 import { AgentThread } from "@/types/agents";
 import { FaSolidFileCircleCheck as ShowLogsIcon, FaSolidFileCircleXmark as HideLogsIcon } from "danx-icon";
 import { EditOnClickTextField } from "quasar-ui-danx";
