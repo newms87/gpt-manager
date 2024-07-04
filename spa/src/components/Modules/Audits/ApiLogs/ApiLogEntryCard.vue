@@ -25,11 +25,11 @@
 		</div>
 		<div v-if="showRequest" class="my-4">
 			<div class="font-bold mb-2">Request</div>
-			<MarkdownEditor :model-value="fMarkdownJSON(apiLog.request)" readonly />
+			<MarkdownEditor :model-value="apiLog.request" force-json readonly />
 		</div>
 		<div v-if="showResponse" class="my-4">
 			<div class="font-bold mb-2">Response</div>
-			<MarkdownEditor :model-value="fMarkdownJSON(apiLog.response)" readonly />
+			<MarkdownEditor :model-value="apiLog.response" force-json readonly />
 		</div>
 	</QCard>
 </template>
@@ -37,7 +37,7 @@
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { ApiLog } from "@/components/Modules/Audits/audit-requests";
 import { ShowHideButton } from "@/components/Shared";
-import { dbDateTime, fMarkdownJSON } from "quasar-ui-danx";
+import { dbDateTime } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{

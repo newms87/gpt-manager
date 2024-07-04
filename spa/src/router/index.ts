@@ -35,31 +35,31 @@ const router = createRouter({
 					path: "/content-sources/:id?/:panel?",
 					name: "content-sources",
 					component: ContentSourcesView,
-					meta: { title: "Content Sources", type: "ContentSource" }
+					meta: { title: "Content Sources", type: "ContentSourceResource" }
 				},
 				{
 					path: "/workflow-inputs/:id?/:panel?",
 					name: "workflow-inputs",
 					component: WorkflowInputsView,
-					meta: { title: "Workflow Inputs", type: "WorkflowInput" }
+					meta: { title: "Workflow Inputs", type: "WorkflowInputResource" }
 				},
 				{
 					path: "/workflows/:id?/:panel?",
 					name: "workflows",
 					component: WorkflowsView,
-					meta: { title: "Workflows", type: "Workflow" }
+					meta: { title: "Workflows", type: "WorkflowResource" }
 				},
 				{
 					path: "/agents/:id?/:panel?",
 					name: "agents",
 					component: AgentsView,
-					meta: { title: "Agents", type: "Agent" }
+					meta: { title: "Agents", type: "AgentResource" }
 				},
 				{
 					path: "/audit-requests/:id?/:panel?",
 					name: "audit-requests",
 					component: AuditRequestsView,
-					meta: { title: "Auditing", type: "AuditRequest" }
+					meta: { title: "Auditing", type: "AuditRequestResource" }
 				}
 			]
 		},

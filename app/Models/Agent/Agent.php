@@ -30,14 +30,18 @@ class Agent extends Model implements AuditableContract
         'model',
         'temperature',
         'prompt',
+        'response_format',
+        'response_notes',
+        'response_schema',
         'tools',
     ];
 
     public function casts(): array
     {
         return [
-            'tools'       => 'json',
-            'temperature' => 'float',
+            'tools'           => 'json',
+            'response_schema' => 'json',
+            'temperature'     => 'float',
         ];
     }
 

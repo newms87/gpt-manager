@@ -3,7 +3,8 @@
 		<MarkdownEditor
 			v-if="auditRequest.response"
 			class="markdown-code-only"
-			:model-value="fMarkdownJSON(auditRequest.response)"
+			:model-value="auditRequest.response"
+			force-json
 			readonly
 		/>
 		<div v-else-if="auditRequest.response === null" class="text-xl text-center text-gray-500">No response</div>
@@ -13,7 +14,6 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { AuditRequest } from "@/components/Modules/Audits/audit-requests";
-import { fMarkdownJSON } from "quasar-ui-danx";
 
 defineProps<{
 	auditRequest: AuditRequest,

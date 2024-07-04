@@ -74,7 +74,7 @@
 }
 
 .dx-markdown-editor {
-	&.markdown-code-only {
+	&.markdown-code-only, &.dx-markdown-json {
 		[contenteditable] {
 			@apply p-0 bg-inherit;
 		}
@@ -92,6 +92,14 @@
 		[contenteditable] {
 			&, pre {
 				@apply bg-red-950 text-red-800;
+			}
+		}
+	}
+
+	&.dx-markdown-json-invalid {
+		.milkdown {
+			[contenteditable], .ProseMirror-focused > pre, .editor > pre {
+				@apply bg-red-950;
 			}
 		}
 	}

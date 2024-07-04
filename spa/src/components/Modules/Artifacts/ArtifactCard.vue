@@ -7,14 +7,14 @@
 			<div>{{ fDateTime(artifact.created_at) }}</div>
 		</div>
 		<div>
-			<MarkdownEditor :model-value="fMarkdownJSON(artifact.content)" readonly />
+			<MarkdownEditor :model-value="artifact.content" force-json readonly />
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { Artifact } from "@/types";
-import { fDateTime, fMarkdownJSON } from "quasar-ui-danx";
+import { fDateTime } from "quasar-ui-danx";
 
 defineProps<{
 	artifact: Artifact

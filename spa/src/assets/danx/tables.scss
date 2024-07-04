@@ -1,4 +1,13 @@
 .dx-action-table {
+	.q-table__container {
+		@apply shadow-none;
+		tr {
+			th:last-child, td:last-child {
+				@apply pr-4;
+			}
+		}
+	}
+
 	&.dx-is-loading-list {
 		@apply opacity-80;
 	}

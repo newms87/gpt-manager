@@ -11,12 +11,14 @@
 				</div>
 				<MarkdownEditor
 					class="markdown-code-only md-bg-red"
-					:model-value="fMarkdownJSON(audit.old_values)"
+					:model-value="audit.old_values"
+					force-json
 					readonly
 				/>
 				<MarkdownEditor
 					class="markdown-code-only md-bg-green"
-					:model-value="fMarkdownJSON(audit.new_values)"
+					:model-value="audit.new_values"
+					force-json
 					readonly
 				/>
 			</div>
@@ -26,7 +28,6 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { AuditRequest } from "@/components/Modules/Audits/audit-requests";
-import { fMarkdownJSON } from "quasar-ui-danx";
 
 defineProps<{
 	auditRequest: AuditRequest,

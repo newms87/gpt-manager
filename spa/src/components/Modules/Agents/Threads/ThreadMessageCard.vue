@@ -58,16 +58,16 @@
 			<QSeparator class="bg-slate-500 mx-3" />
 			<div class="text-sm flex-grow m-3">
 				<MarkdownEditor
-					v-model="markdownContent"
+					v-model="content"
 					:readonly="readonly"
 					editor-class="text-slate-200"
 					@update:model-value="updateDebouncedAction.trigger(message, {content})"
 				/>
-				<template v-if="dataContent">
+				<template v-if="message.data">
 					<div class="text-sm font-bold mt-3 mb-2">Data Content (read only)</div>
 					<MarkdownEditor
 						readonly
-						:model-value="dataContent"
+						:model-value="message.data"
 					/>
 				</template>
 			</div>
@@ -94,14 +94,7 @@ import {
 	FaSolidRobot as AssistantIcon,
 	FaSolidToolbox as ToolIcon
 } from "danx-icon";
-import {
-	EditOnClickTextField,
-	fDateTime,
-	fMarkdownJSON,
-	ListTransition,
-	MultiFileField,
-	UploadedFile
-} from "quasar-ui-danx";
+import { EditOnClickTextField, fDateTime, ListTransition, MultiFileField, UploadedFile } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
@@ -112,13 +105,6 @@ const props = defineProps<{
 
 const content = ref(props.message.content);
 const files = ref<UploadedFile[]>(props.message.files || []);
-const markdownContent = computed({
-	get: () => fMarkdownJSON(content.value),
-	set: (value: string) => {
-		content.value = value;
-	}
-});
-const dataContent = computed<string>(() => fMarkdownJSON(props.message.data) || "");
 
 const showMessage = ref(true);
 const showFiles = ref(files.value.length > 0);

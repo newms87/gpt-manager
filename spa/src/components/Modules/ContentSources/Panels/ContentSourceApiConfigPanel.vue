@@ -13,7 +13,8 @@
 		<MarkdownEditor
 			class="mt-4"
 			sync-model-changes
-			:model-value="fMarkdownJSON(input.config)"
+			:model-value="input.config"
+			force-json
 			@update:model-value="onUpdateConfig"
 		/>
 		<QBtn
@@ -29,7 +30,7 @@
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/ContentSources/contentSourceActions";
 import { ContentSource } from "@/types";
-import { fMarkdownJSON, NumberField, SelectField } from "quasar-ui-danx";
+import { NumberField, SelectField } from "quasar-ui-danx";
 import { ref, watch } from "vue";
 
 const props = defineProps<{
@@ -85,16 +86,9 @@ function onUpdate() {
 }
 
 async function onUpdateConfig(value) {
-	try {
-		value = JSON.parse(value.replace("```json\n", "").replace("\n```", ""));
-
-		// Only set the input value if it is valid JSON, ignore non-recognized fields
-		if (value) {
-			dirtyConfig.value = mapConfig(value);
-		}
-	} catch (e) {
-		console.log("invalid JSON", e);
-		// Fail silently
+	// Only set the input value if it is valid JSON, ignore non-recognized fields
+	if (value) {
+		dirtyConfig.value = mapConfig(value);
 	}
 }
 

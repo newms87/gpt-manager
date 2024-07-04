@@ -1,8 +1,10 @@
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 import { ConfigEnv, defineConfig } from "vite";
-// import VueDevTools from "vite-plugin-vue-devtools";
+import VueDevTools from "vite-plugin-vue-devtools";
 import svgLoader from "vite-svg-loader";
+
+const DEV_MODE = false;
 
 // https://vitejs.dev/config/
 export default ({ command }: ConfigEnv) => {
@@ -21,7 +23,7 @@ export default ({ command }: ConfigEnv) => {
 	return defineConfig({
 		plugins: [
 			vue(),
-			// VueDevTools(),
+			DEV_MODE && VueDevTools(),
 			svgLoader()
 		],
 		build: {
