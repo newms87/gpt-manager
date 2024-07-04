@@ -41,6 +41,7 @@ class ThreadRepository extends ActionRepository
         return match ($action) {
             'create-message' => app(MessageRepository::class)->create($model, $data['role'] ?? Message::ROLE_USER),
             'reset-to-message' => $this->resetToMessage($model, $data['message_id']),
+            'copy' => $this->copyThread($model),
             'run' => app(AgentThreadService::class)->run($model),
             'stop' => app(AgentThreadService::class)->stop($model),
             'resume' => app(AgentThreadService::class)->resume($model),
@@ -75,5 +76,27 @@ class ThreadRepository extends ActionRepository
         $thread->messages()->where('id', '>', $messageId)->each(fn(Message $m) => $m->delete());
 
         return $thread;
+    }
+
+    /**
+     * Copy a thread and its messages / files
+     */
+    public function copyThread(Thread $thread)
+    {
+        $newThread       = $thread->replicate();
+        $newThread->name .= " (Copy)";
+        $newThread->save();
+
+        foreach($thread->messages as $message) {
+            $messageCopy            = $message->replicate();
+            $messageCopy->thread_id = $newThread->id;
+            $messageCopy->save();
+
+            foreach($message->storedFiles as $storedFile) {
+                $messageCopy->storedFiles()->attach($storedFile);
+            }
+        }
+
+        return $newThread;
     }
 }

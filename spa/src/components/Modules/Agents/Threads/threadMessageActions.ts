@@ -1,10 +1,10 @@
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { MessageRoutes } from "@/routes/agentRoutes";
 import { ThreadMessage } from "@/types/agents";
-import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
+import { ActionOptions, ActionOptionsPartial, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
-const forAllItems: ActionOptions = {
+const forAllItems: ActionOptionsPartial = {
 	onAction: MessageRoutes.applyAction,
 	onBatchAction: MessageRoutes.batchAction
 };

@@ -41,24 +41,21 @@
 			color="sky"
 			class="p-3"
 		/>
-		<ActionButton
+		<ActionMenu
 			v-else
-			type="trash"
-			color="red"
-			:action="deleteAction"
+			:actions="getActions({menu: true})"
 			:target="thread"
-			class="p-3"
-			@success="$emit('close')"
+			@success="$event.name === 'delete' ? $emit('close') : null"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/Threads/threadActions";
+import { getAction, getActions } from "@/components/Modules/Agents/Threads/threadActions";
 import { ActionButton, AiTokenUsageButton, ShowHideButton } from "@/components/Shared";
 import { AgentThread } from "@/types/agents";
 import { FaSolidFileCircleCheck as ShowLogsIcon, FaSolidFileCircleXmark as HideLogsIcon } from "danx-icon";
-import { EditOnClickTextField, fDateTime } from "quasar-ui-danx";
+import { ActionMenu, EditOnClickTextField, fDateTime } from "quasar-ui-danx";
 
 defineEmits(["toggle", "close"]);
 defineProps<{

@@ -1,10 +1,18 @@
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { ThreadRoutes } from "@/routes/agentRoutes";
 import { ThreadMessage } from "@/types";
-import { ActionOptions, ConfirmActionDialog, pollUntil, storeObject, useActions } from "quasar-ui-danx";
+import { FaSolidCopy as CopyIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
+import {
+	ActionOptions,
+	ActionOptionsPartial,
+	ConfirmActionDialog,
+	pollUntil,
+	storeObject,
+	useActions
+} from "quasar-ui-danx";
 import { h } from "vue";
 
-const forAllItems: ActionOptions = {
+const forAllItems: ActionOptionsPartial = {
 	onAction: ThreadRoutes.applyAction,
 	onBatchAction: ThreadRoutes.batchAction
 };
@@ -31,12 +39,20 @@ const items: ActionOptions[] = [
 		}
 	},
 	{
+		name: "copy",
+		label: "Copy",
+		icon: CopyIcon,
+		menu: true,
+		onSuccess: AgentController.getActiveItemDetails
+	},
+	{
 		name: "delete",
 		label: "Delete",
-		class: "text-red-500",
+		iconClass: "text-red-500",
+		icon: DeleteIcon,
 		menu: true,
 		batch: true,
-		onFinish: AgentController.refreshAll,
+		onFinish: AgentController.getActiveItemDetails,
 		vnode: target => h(ConfirmActionDialog, { action: "Delete", label: "Threads", target, confirmClass: "bg-red-900" })
 	},
 	{
@@ -49,7 +65,7 @@ const items: ActionOptions[] = [
 				role: "user"
 			});
 		},
-		onFinish: AgentController.refreshAll
+		onFinish: AgentController.getActiveItemDetails
 	},
 	{
 		name: "reset-to-message",
