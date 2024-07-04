@@ -58,8 +58,7 @@
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
-import ActionButton from "@/components/Shared/Buttons/ActionButton";
-import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
+import { ActionButton, ShowHideButton } from "@/components/Shared";
 import { Workflow, WorkflowJob } from "@/types/workflows";
 import { FaSolidPlugCircleCheck as AssignIcon } from "danx-icon";
 import { EditOnClickTextField, MaxHeightTransition } from "quasar-ui-danx";

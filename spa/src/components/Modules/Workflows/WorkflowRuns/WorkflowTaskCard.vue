@@ -41,8 +41,7 @@ import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessage
 import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
-import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
-import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
+import { AiTokenUsageButton, ShowHideButton } from "@/components/Shared";
 import { WorkflowTask } from "@/types/workflows";
 import { computed, ref } from "vue";
 

@@ -1,5 +1,4 @@
-import ThePageLayout from "@/components/Layouts/ThePageLayout";
-import ThePrimaryLayout from "@/components/Layouts/ThePrimaryLayout";
+import { ThePageLayout, ThePrimaryLayout } from "@/components/Layouts";
 import { siteSettings } from "@/config";
 import { isAuthenticated, setAuthToken } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";

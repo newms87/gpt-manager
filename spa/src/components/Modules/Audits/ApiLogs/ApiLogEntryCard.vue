@@ -36,7 +36,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { ApiLog } from "@/components/Modules/Audits/audit-requests";
-import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
+import { ShowHideButton } from "@/components/Shared";
 import { dbDateTime, fMarkdownJSON } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 

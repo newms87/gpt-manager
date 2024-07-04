@@ -81,8 +81,7 @@
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction as getThreadAction } from "@/components/Modules/Agents/Threads/threadActions";
 import { getAction } from "@/components/Modules/Agents/Threads/threadMessageActions";
-import ActionButton from "@/components/Shared/Buttons/ActionButton";
-import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
+import { ActionButton, ShowHideButton } from "@/components/Shared";
 import { AgentThread, ThreadMessage } from "@/types/agents";
 import {
 	FaRegularImage as HideImageIcon,
@@ -91,8 +90,7 @@ import {
 	FaSolidRobot as AssistantIcon,
 	FaSolidToolbox as ToolIcon
 } from "danx-icon";
-import { EditOnClickTextField, fDateTime, fMarkdownJSON, MultiFileField } from "quasar-ui-danx";
-import { UploadedFile } from "quasar-ui-danx";
+import { EditOnClickTextField, fDateTime, fMarkdownJSON, MultiFileField, UploadedFile } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{

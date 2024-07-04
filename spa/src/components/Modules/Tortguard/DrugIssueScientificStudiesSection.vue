@@ -37,7 +37,7 @@
 </template>
 <script setup lang="ts">
 import { ScientificStudy } from "@/components/Modules/Tortguard/drugs";
-import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
+import { ShowHideButton } from "@/components/Shared";
 import { fNumber, LabelValueBlock } from "quasar-ui-danx";
 import { ref } from "vue";
 

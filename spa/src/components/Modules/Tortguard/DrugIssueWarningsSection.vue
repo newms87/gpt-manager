@@ -22,7 +22,7 @@
 </template>
 <script setup lang="ts">
 import { DrugWarning } from "@/components/Modules/Tortguard/drugs";
-import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
+import { ShowHideButton } from "@/components/Shared";
 import { fDate } from "quasar-ui-danx";
 import { ref } from "vue";
 

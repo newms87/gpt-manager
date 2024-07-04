@@ -67,9 +67,9 @@ import { WorkflowInputController } from "@/components/Modules/Workflows/Workflow
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
 import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import WorkflowJobRunCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunCard";
+import { ShowHideButton } from "@/components/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
-import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import { WorkflowRun } from "@/types/workflows";
 import { computed, ref } from "vue";
 

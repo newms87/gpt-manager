@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import DataSourceList from "@/components/Modules/Tortguard/DataSourceList";
 import { DataSource, Drug } from "@/components/Modules/Tortguard/drugs";
-import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
+import { ShowHideButton } from "@/components/Shared";
 import { fDate, LabelValueBlock } from "quasar-ui-danx";
 import { ref } from "vue";
 
