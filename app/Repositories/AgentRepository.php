@@ -54,6 +54,7 @@ class AgentRepository extends ActionRepository
         return match ($action) {
             'create' => $this->createAgent($data),
             'update' => $this->updateAgent($model, $data),
+            'copy' => $this->copyAgent($model),
             'create-thread' => app(ThreadRepository::class)->create($model),
             default => parent::applyAction($action, $model, $data)
         };
@@ -82,6 +83,23 @@ class AgentRepository extends ActionRepository
         $agent->validate()->save($data);
 
         return $agent;
+    }
+
+    /**
+     * Copy an agent
+     */
+    public function copyAgent(Agent $agent)
+    {
+        $newAgent = $agent->replicate(['threads_count', 'assignments_count']);
+        $count    = 1;
+        do {
+            $newAgent->name = $agent->name . " ($count)";
+            $count++;
+        } while(Agent::where('name', $newAgent->name)->exists());
+
+        $newAgent->save();
+
+        return $newAgent;
     }
 
     /**

@@ -2,12 +2,13 @@ import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { AgentRoutes } from "@/routes/agentRoutes";
 import { WorkflowAssignmentRoutes } from "@/routes/workflowRoutes";
-import { ActionOptions, ActionTarget, ConfirmActionDialog, useActions } from "quasar-ui-danx";
+import { FaSolidCopy as CopyIcon, FaSolidPencil as EditIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
+import { ActionOptions, ActionOptionsPartial, ActionTarget, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
 
 // This is the default action options for all items
-const forAllItems: ActionOptions = {
+const forAllItems: ActionOptionsPartial = {
 	onAction: AgentRoutes.applyAction,
 	onBatchAction: AgentRoutes.batchAction,
 	onBatchSuccess: AgentController.clearSelectedRows
@@ -34,8 +35,16 @@ const items: ActionOptions[] = [
 		debounce: 1000
 	},
 	{
+		name: "copy",
+		label: "Copy",
+		icon: CopyIcon,
+		menu: true,
+		onSuccess: AgentController.loadListAndSummary
+	},
+	{
 		label: "Edit",
 		name: "edit",
+		icon: EditIcon,
 		menu: true,
 		onAction: (action, target) => AgentController.activatePanel(target, "edit")
 	},
@@ -43,6 +52,8 @@ const items: ActionOptions[] = [
 		name: "delete",
 		label: "Delete",
 		class: "text-red-500",
+		iconClass: "text-red-500",
+		icon: DeleteIcon,
 		menu: true,
 		batch: true,
 		onFinish: AgentController.loadListAndSummary,
