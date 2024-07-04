@@ -53,7 +53,8 @@ export interface WorkflowTask {
 	failed_at: string;
 	artifact?: Artifact;
 	thread: AgentThread;
-	job_logs: string;
+	audit_request_id: string;
+	logs?: string;
 	usage: WorkflowUsage;
 }
 

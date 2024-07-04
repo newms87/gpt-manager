@@ -13,7 +13,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="my-4 text-lg">
+		<div class="whitespace-pre-wrap my-4">
 			{{ error.message }}
 		</div>
 		<div class="flex items-center space-x-2 text-base bg-slate-900 px-3 py-1">

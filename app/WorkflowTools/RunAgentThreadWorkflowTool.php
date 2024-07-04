@@ -14,6 +14,8 @@ use Newms87\Danx\Exceptions\ValidationError;
 
 class RunAgentThreadWorkflowTool extends WorkflowTool
 {
+    public static string $toolName = 'Run Agent Thread';
+
     /**
      * @param WorkflowTask $workflowTask
      * @return void
@@ -23,8 +25,8 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
     {
         $thread = $this->setupTaskThread($workflowTask);
 
-        // Run the thread
-        $threadRun = app(AgentThreadService::class)->run($thread);
+        // Run the thread synchronously
+        $threadRun = app(AgentThreadService::class)->run($thread, dispatch: false);
 
         // Produce the artifact
         $lastMessage = $threadRun->lastMessage;

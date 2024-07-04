@@ -39,8 +39,9 @@ class WorkflowTaskResource extends ActionResource
     public static function details(Model $model): array
     {
         return static::make($model, [
-            'job_logs' => $model->jobDispatch?->runningAuditRequest?->logs,
-            'thread'   => ThreadResource::make($model->thread),
+            'audit_request_id' => $model->jobDispatch?->runningAuditRequest?->id,
+            'logs'             => $model->jobDispatch?->runningAuditRequest?->logs,
+            'thread'           => ThreadResource::make($model->thread),
         ]);
     }
 }

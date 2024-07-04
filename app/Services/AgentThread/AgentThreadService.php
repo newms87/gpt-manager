@@ -20,7 +20,7 @@ class AgentThreadService
     /**
      * Run the thread with the agent by calling the AI model API
      */
-    public function run(Thread $thread): ThreadRun
+    public function run(Thread $thread, $dispatch = true): ThreadRun
     {
         LockHelper::acquire($thread);
 
@@ -45,9 +45,13 @@ class AgentThreadService
         ]);
 
         // Execute the thread run in a job
-        $job                        = (new ExecuteThreadRunJob($threadRun))->dispatch();
-        $threadRun->job_dispatch_id = $job->getJobDispatch()?->id;
-        $threadRun->save();
+        if ($dispatch) {
+            $job                        = (new ExecuteThreadRunJob($threadRun))->dispatch();
+            $threadRun->job_dispatch_id = $job->getJobDispatch()?->id;
+            $threadRun->save();
+        } else {
+            $this->executeThreadRun($threadRun);
+        }
 
         LockHelper::release($thread);
 
@@ -102,7 +106,7 @@ class AgentThreadService
             $options = [
                 'temperature'     => $threadRun->temperature,
                 'response_format' => [
-                    'type' => $threadRun->response_format,
+                    'type' => $threadRun->response_format ?: 'text',
                 ],
                 'seed'            => $threadRun->seed,
             ];

@@ -36,7 +36,9 @@ class WorkflowTaskService
 
         try {
             // Run the workflow tool for the task
-            $workflowTask->workflowJob->getWorkflowTool()->runTask($workflowTask);
+            $tool = $workflowTask->workflowJob->getWorkflowTool();
+            Log::debug("Running $tool");
+            $tool->runTask($workflowTask);
 
             $workflowTask->completed_at = now();
             $workflowTask->save();

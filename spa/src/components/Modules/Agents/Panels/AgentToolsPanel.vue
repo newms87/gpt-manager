@@ -3,7 +3,7 @@
 		<div v-if="availableTools" class="flex flex-wrap">
 			<div
 				v-for="tool in availableTools"
-				:key="tool"
+				:key="tool.name"
 				class="flex items-center mb-4"
 			>
 				<QCheckbox

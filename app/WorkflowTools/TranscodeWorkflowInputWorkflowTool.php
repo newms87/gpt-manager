@@ -4,12 +4,11 @@ namespace App\WorkflowTools;
 
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowTask;
-use Newms87\Danx\Exceptions\ApiException;
 use Newms87\Danx\Services\TranscodeFileService;
 
 class TranscodeWorkflowInputWorkflowTool extends WorkflowTool
 {
-    public static $toolName = 'Prepare Workflow Input';
+    public static string $toolName = 'Prepare Workflow Input';
 
     public function assignTasks(WorkflowJobRun $workflowJobRun, array $dependsOnJobs): void
     {
@@ -23,9 +22,7 @@ class TranscodeWorkflowInputWorkflowTool extends WorkflowTool
     }
 
     /**
-     * @param WorkflowTask $workflowTask
-     * @return void
-     * @throws ApiException
+     * Run the tool on the workflow task to transcode any PDF files to images
      */
     public function runTask(WorkflowTask $workflowTask): void
     {
@@ -33,7 +30,9 @@ class TranscodeWorkflowInputWorkflowTool extends WorkflowTool
 
         if (!$workflowInput->is_transcoded) {
             foreach($workflowInput->storedFiles as $storedFile) {
-                app(TranscodeFileService::class)->transcode(TranscodeFileService::TRANSCODE_PDF_TO_IMAGES, $storedFile);
+                if ($storedFile->isPdf()) {
+                    app(TranscodeFileService::class)->transcode(TranscodeFileService::TRANSCODE_PDF_TO_IMAGES, $storedFile);
+                }
             }
 
             $workflowInput->is_transcoded = true;

@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Log;
 
 abstract class WorkflowTool
 {
+    /* Should be initialized by the child WorkflowTool */
+    public static string $toolName;
+
     abstract public function runTask(WorkflowTask $workflowTask): void;
 
     public function assignTasks(WorkflowJobRun $workflowJobRun, array $dependsOnJobs): void
@@ -69,5 +72,10 @@ abstract class WorkflowTool
         }
 
         return $taskGroups;
+    }
+
+    public function __toString()
+    {
+        return "Workflow Tool: " . static::$toolName;
     }
 }

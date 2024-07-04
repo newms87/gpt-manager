@@ -1,14 +1,21 @@
 <template>
 	<QCard class="bg-slate-800 text-slate-300 rounded overflow-hidden">
 		<div class="flex items-center justify-between">
-			<div class="flex-grow cursor-pointer py-4 px-3" @click="showJobsWithStatus = showJobsWithStatus ? '' : 'all'">
+			<div class="flex-grow cursor-pointer py-4 px-3">
 				<a @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
 					{{ workflowRun.workflow_name }} ({{ workflowRun.id }})
 				</a>
 			</div>
-			<div class="mx-2">
-				<ShowHideButton v-model="showArtifacts" :label="artifactCount + ' Artifacts'" class="bg-sky-800 text-sky-200" />
-			</div>
+			<ShowHideButton
+				v-model="showArtifacts"
+				:label="artifactCount + ' Artifacts'"
+				class="bg-sky-800 text-sky-200 mx-2"
+			/>
+			<ShowHideButton
+				v-model="showJobs"
+				:label="jobCount + ' Jobs'"
+				class="bg-slate-600 text-slate-200 mx-2"
+			/>
 			<div class="mx-2">
 				<ElapsedTimePill
 					timer-class="bg-slate-900 font-bold rounded-lg text-xs w-32 text-center py-2"
@@ -32,7 +39,6 @@
 				/>
 			</div>
 		</div>
-		<WorkflowJobRunFlow v-model="showJobsWithStatus" :workflow-run="workflowRun" />
 		<div class="flex items-stretch">
 			<div v-if="showArtifacts" class="p-3">
 				<ArtifactCard
@@ -43,28 +49,40 @@
 				/>
 			</div>
 		</div>
+		<div v-if="showJobs" class="p-3">
+			<WorkflowJobRunCard
+				v-for="job in workflowRun.workflowJobRuns"
+				:key="job.id"
+				:job-run="job"
+				class="mt-3"
+				:workflow-run="workflowRun"
+			/>
+		</div>
 	</QCard>
 </template>
 <script setup lang="ts">
 import ArtifactCard from "@/components/Modules/Artifacts/ArtifactCard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
 import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
-import WorkflowJobRunFlow from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunFlow";
+import WorkflowJobRunCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunCard";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import ShowHideButton from "@/components/Shared/Buttons/ShowHideButton";
 import { WorkflowRun } from "@/types/workflows";
 import { computed, ref } from "vue";
 
-const emit = defineEmits(["remove"]);
+defineEmits(["remove"]);
 const props = defineProps<{
 	workflowRun: WorkflowRun;
 }>();
 
 const artifactCount = computed(() => props.workflowRun.artifacts?.length);
+const jobCount = computed(() => props.workflowRun.workflowJobRuns?.length);
 const showArtifacts = ref(false);
-const showJobsWithStatus = ref("");
+const showJobs = ref(false);
 
 const removeWorkflowRunAction = getAction("delete");
+removeWorkflowRunAction.onFinish = WorkflowInputController.getActiveItemDetails;
 </script>

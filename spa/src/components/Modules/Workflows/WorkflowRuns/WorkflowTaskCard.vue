@@ -23,24 +23,22 @@
 				<AiTokenUsageButton :usage="task.usage" />
 			</div>
 		</div>
-		<div v-if="showLogs" class="p-2">
-			<div v-for="(logItem, index) in logItems" :key="task.id + '-' + index" class="p-2">
-				{{ logItem }}
-			</div>
-		</div>
-		<div v-if="showThread" class="p-2">
+		<AuditRequestLogsCard v-if="showLogs" :audit-request-id="task.audit_request_id" :logs="task.logs" />
+		<div v-if="showThread" class="px-2">
 			<ThreadMessageCard
 				v-for="message in task.thread.messages"
 				:key="message.id"
 				readonly
 				:message="message"
 				:thread="task.thread"
+				class="my-3"
 			/>
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
+import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
@@ -55,6 +53,4 @@ const props = defineProps<{
 const workflowTaskStatus = computed(() => WORKFLOW_STATUS.resolve(props.task.status));
 const showLogs = ref(false);
 const showThread = ref(false);
-
-const logItems = computed(() => props.task.job_logs?.split("\n") || []);
 </script>
