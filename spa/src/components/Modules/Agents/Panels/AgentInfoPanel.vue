@@ -1,11 +1,9 @@
 <template>
 	<div class="p-6">
-		<RenderedForm
-			v-model:values="input"
-			empty-value=""
+		<ActionForm
+			:action="updateAction"
+			:target="agent"
 			:form="agentForm"
-			:saving="updateAction.isApplying"
-			@update:values="updateAction.trigger(agent, input)"
 		/>
 	</div>
 </template>
@@ -13,21 +11,15 @@
 import { getAction } from "@/components/Modules/Agents/agentActions";
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { Agent } from "@/types/agents";
-import { RenderedForm, SelectField, SliderNumberField, TextField } from "quasar-ui-danx";
-import { Form } from "quasar-ui-danx/types";
-import { h, ref } from "vue";
+import { ActionForm, Form, SelectField, SliderNumberField, TextField } from "quasar-ui-danx";
 
-const props = defineProps<{
+import { h } from "vue";
+
+defineProps<{
 	agent: Agent,
 }>();
 
 const updateAction = getAction("update-debounced");
-const input = ref({
-	name: props.agent.name,
-	temperature: props.agent.temperature,
-	model: props.agent.model,
-	description: props.agent.description
-});
 
 const agentForm: Form = {
 	fields: [

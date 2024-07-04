@@ -2,9 +2,9 @@ import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { AgentRoutes } from "@/routes/agentRoutes";
 import { WorkflowAssignmentRoutes } from "@/routes/workflowRoutes";
-import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
-import { ActionOptions } from "quasar-ui-danx/types";
+import { ActionOptions, ActionTarget, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
+
 
 // This is the default action options for all items
 const forAllItems: ActionOptions = {
@@ -26,13 +26,12 @@ const items: ActionOptions[] = [
 	},
 	{
 		name: "update",
-		onFinish: AgentController.loadList
+		optimistic: true
 	},
 	{
 		name: "update-debounced",
 		alias: "update",
-		debounce: 1000,
-		onFinish: AgentController.loadList
+		debounce: 1000
 	},
 	{
 		label: "Edit",
@@ -47,7 +46,12 @@ const items: ActionOptions[] = [
 		menu: true,
 		batch: true,
 		onFinish: AgentController.loadListAndSummary,
-		vnode: target => h(ConfirmActionDialog, { action: "Delete", label: "Agents", target, confirmClass: "bg-red-900" })
+		vnode: (target: ActionTarget) => h(ConfirmActionDialog, {
+			action: "Delete",
+			label: "Agents",
+			target,
+			confirmClass: "bg-red-900"
+		})
 	},
 	{
 		name: "create-thread"

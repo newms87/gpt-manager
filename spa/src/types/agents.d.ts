@@ -10,6 +10,7 @@ export interface Agent extends ActionTargetItem {
 	prompt: string;
 	threads_count: number;
 	assignments_count: number;
+	tools: string[];
 	threads: AgentThread[];
 	assignments?: WorkflowAssignment[];
 }

@@ -1,7 +1,7 @@
 <template>
 	<div class="bg-transparent text-slate-300 flex flex-col flex-nowrap" :class="{'h-full': active}">
 		<ThreadCardHeader v-model:active="active" v-model:logs="showLogs" :thread="thread" @close="$emit('close')" />
-		<div v-if="showLogs" class="bg-slate-900 text-slate-400 rounded my-6 p-2">
+		<div v-if="showLogs" class="bg-gray-950 text-slate-400 rounded my-6 p-2">
 			<div class="mb-3">
 				<a
 					v-if="thread.audit_request_id"

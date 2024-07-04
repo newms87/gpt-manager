@@ -1,8 +1,7 @@
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { ThreadRoutes } from "@/routes/agentRoutes";
 import { ThreadMessage } from "@/types";
-import { ConfirmActionDialog, pollUntil, storeObject, useActions } from "quasar-ui-danx";
-import { ActionOptions } from "quasar-ui-danx";
+import { ActionOptions, ConfirmActionDialog, pollUntil, storeObject, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
 const forAllItems: ActionOptions = {
