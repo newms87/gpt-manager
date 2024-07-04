@@ -23,8 +23,11 @@
 					:end="workflowRun.failed_at || workflowRun.completed_at"
 				/>
 			</div>
-			<div class="px-4 py-1.5 rounded-lg mx-2" :class="WORKFLOW_STATUS.resolve(workflowRun.status).classPrimary">
-				Workflow {{ workflowRun.status }}
+			<div
+				class="px-4 py-1.5 rounded-lg mx-2 w-28 text-center"
+				:class="WORKFLOW_STATUS.resolve(workflowRun.status).classPrimary"
+			>
+				{{ workflowRun.status }}
 			</div>
 			<div class="mx-2">
 				<AiTokenUsageButton :usage="workflowRun.usage" />

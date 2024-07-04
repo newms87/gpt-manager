@@ -50,6 +50,8 @@ class WorkflowInputResource extends ActionResource
                 'transcodes' => StoredFileResource::collection($storedFile->transcodes),
             ]),
             'content'      => $model->content,
+
+            // TODO: Refactor this to query only a single Workflow Run when needed (see WorkflowResource)
             'workflowRuns' => WorkflowRunResource::collection($workflowRuns, fn(WorkflowRun $workflowRun) => [
                 'artifacts'       => ArtifactResource::collection($workflowRun->artifacts, fn(Artifact $artifact) => [
                     'content' => $artifact->content,
