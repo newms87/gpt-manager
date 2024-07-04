@@ -6,7 +6,7 @@
 					:disable="readonly"
 					@click="updateAction.trigger(message, {role: nextRole[message.role] ?? 'user'})"
 				>
-					<div class="rounded-full p-1" :class="avatar.class">
+					<div class="rounded-full p-1 w-6 h-6 flex items-center justify-center" :class="avatar.class">
 						<component :is="avatar.icon" class="w-3 text-slate-300" :class="avatar.iconClass" />
 					</div>
 					<QTooltip>Toggle message role</QTooltip>
@@ -20,9 +20,13 @@
 					@update:model-value="updateDebouncedAction.trigger(message, {title: $event})"
 				/>
 			</div>
-			<div class="text-slate-300">
+			<div class="text-xs text-slate-400 mr-2 whitespace-nowrap">
+				{{ fDateTime(message.timestamp) }}
+			</div>
+			<ListTransition class="text-slate-300">
 				<ShowHideButton v-model="showMessage" :name="'thread-message-' + message.id" class="mr-2" />
 				<ShowHideButton
+					v-if="isUserMessage"
 					v-model="showFiles"
 					:name="'thread-files-' + message.id"
 					class="mr-2"
@@ -47,7 +51,7 @@
 						tooltip="Reset messages to here"
 					/>
 				</template>
-			</div>
+			</ListTransition>
 		</div>
 
 		<template v-if="showMessage">
@@ -68,7 +72,7 @@
 				</template>
 			</div>
 		</template>
-		<template v-if="showFiles">
+		<template v-if="showFiles && isUserMessage">
 			<MultiFileField
 				v-model="files"
 				:readonly="readonly"
@@ -90,7 +94,14 @@ import {
 	FaSolidRobot as AssistantIcon,
 	FaSolidToolbox as ToolIcon
 } from "danx-icon";
-import { EditOnClickTextField, fDateTime, fMarkdownJSON, MultiFileField, UploadedFile } from "quasar-ui-danx";
+import {
+	EditOnClickTextField,
+	fDateTime,
+	fMarkdownJSON,
+	ListTransition,
+	MultiFileField,
+	UploadedFile
+} from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
@@ -111,14 +122,14 @@ const dataContent = computed<string>(() => fMarkdownJSON(props.message.data) || 
 
 const showMessage = ref(true);
 const showFiles = ref(files.value.length > 0);
-
+const isUserMessage = computed(() => props.message.role === "user");
 const nextRole = {
 	user: "assistant",
 	assistant: "tool",
 	tool: "user"
 };
 const avatar = computed<{
-	icon: any;
+	icon: object;
 	class: string;
 	iconClass?: string;
 	messageClass?: string;

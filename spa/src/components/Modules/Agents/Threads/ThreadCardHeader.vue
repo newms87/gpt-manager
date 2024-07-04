@@ -8,6 +8,9 @@
 				@update:model-value="updateAction.trigger(thread, { name: $event })"
 			/>
 		</h5>
+		<div class="text-xs text-slate-400 mr-2 whitespace-nowrap">
+			{{ fDateTime(thread.timestamp) }}
+		</div>
 		<ShowHideButton
 			v-model="active"
 			:label="thread.messages.length + ' messages'"
@@ -55,7 +58,7 @@ import { getAction } from "@/components/Modules/Agents/Threads/threadActions";
 import { ActionButton, AiTokenUsageButton, ShowHideButton } from "@/components/Shared";
 import { AgentThread } from "@/types/agents";
 import { FaSolidFileCircleCheck as ShowLogsIcon, FaSolidFileCircleXmark as HideLogsIcon } from "danx-icon";
-import { EditOnClickTextField } from "quasar-ui-danx";
+import { EditOnClickTextField, fDateTime } from "quasar-ui-danx";
 
 defineEmits(["toggle", "close"]);
 defineProps<{

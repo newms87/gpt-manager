@@ -21,6 +21,7 @@ class ThreadResource extends ActionResource
             'logs'             => $model->lastRun?->jobDispatch?->runningAuditRequest?->logs ?? '',
             'usage'            => $model->getUsage(),
             'audit_request_id' => $model->lastRun?->jobDispatch?->running_audit_request_id,
+            'timestamp'        => $model->updated_at,
         ];
     }
 

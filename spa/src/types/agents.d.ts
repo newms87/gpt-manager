@@ -1,5 +1,5 @@
 import { WorkflowAssignment } from "@/types/workflows";
-import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
+import { ActionTargetItem, AnyObject, UploadedFile } from "quasar-ui-danx";
 
 export interface Agent extends ActionTargetItem {
 	id: string;
@@ -21,6 +21,7 @@ export interface AgentThread extends ActionTargetItem {
 	summary: string;
 	messages: ThreadMessage[];
 	is_running: boolean;
+	timestamp: string;
 }
 
 export interface ThreadMessage extends ActionTargetItem {
@@ -29,4 +30,6 @@ export interface ThreadMessage extends ActionTargetItem {
 	title: string;
 	content?: string;
 	data?: AnyObject;
+	files?: UploadedFile[];
+	timestamp: string;
 }
