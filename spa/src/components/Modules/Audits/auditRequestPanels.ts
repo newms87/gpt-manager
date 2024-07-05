@@ -1,5 +1,4 @@
 import { AuditRequest } from "@/components/Modules/Audits/audit-requests";
-import { AuditRequestController } from "@/components/Modules/Audits/auditRequestControls";
 import {
 	AuditRequestApiLogsPanel,
 	AuditRequestAuditsPanel,
@@ -9,82 +8,67 @@ import {
 	AuditRequestRequestPanel,
 	AuditRequestResponsePanel
 } from "@/components/Modules/Audits/Panels";
-import { BadgeTab } from "quasar-ui-danx";
-import { ActionPanel } from "quasar-ui-danx";
+import { ActionPanel, BadgeTab } from "quasar-ui-danx";
 import { computed, h } from "vue";
-
-const activeItem = computed<AuditRequest>(() => AuditRequestController.activeItem.value);
 
 export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "request",
 		label: "Request",
 		class: "w-[80em]",
-		vnode: () => h(AuditRequestRequestPanel, {
-			auditRequest: activeItem.value
-		})
+		vnode: (auditRequest: AuditRequest) => h(AuditRequestRequestPanel, { auditRequest })
 	},
 	{
 		name: "response",
 		label: "Response",
 		class: "w-[80em]",
-		vnode: () => h(AuditRequestResponsePanel, {
-			auditRequest: activeItem.value
-		})
+		vnode: (auditRequest: AuditRequest) => h(AuditRequestResponsePanel, { auditRequest })
 	},
 	{
 		name: "logs",
 		label: "Logs",
 		class: "w-[80em]",
-		vnode: () => h(AuditRequestLogsPanel, {
-			auditRequest: activeItem.value
-		})
+		vnode: (auditRequest: AuditRequest) => h(AuditRequestLogsPanel, { auditRequest })
 	},
 	{
 		name: "audits",
 		label: "Audits",
 		class: "w-[80em]",
-		tabVnode: () => h(BadgeTab, { count: activeItem.value.audits_count }),
-		vnode: () => h(AuditRequestAuditsPanel, {
-			auditRequest: activeItem.value
-		})
+		tabVnode: (auditRequest: AuditRequest) => h(BadgeTab, { count: auditRequest.audits_count }),
+		vnode: (auditRequest: AuditRequest) => h(AuditRequestAuditsPanel, { auditRequest })
 	},
 	{
 		name: "api-logs",
 		label: "API Logs",
 		class: "w-[80em]",
-		tabVnode: () => h(BadgeTab, { count: activeItem.value.api_logs_count }),
-		vnode: () => h(AuditRequestApiLogsPanel, {
-			auditRequest: activeItem.value
-		})
+		tabVnode: (auditRequest: AuditRequest) => h(BadgeTab, { count: auditRequest.api_logs_count }),
+		vnode: (auditRequest: AuditRequest) => h(AuditRequestApiLogsPanel, { auditRequest })
 	},
 	{
 		name: "ran-jobs",
 		label: "Ran Jobs",
 		class: "w-[80em]",
-		tabVnode: () => h(BadgeTab, { count: activeItem.value.ran_jobs_count }),
-		vnode: () => h(AuditRequestJobsPanel, {
-			auditRequest: activeItem.value,
-			jobs: activeItem.value.ran_jobs || []
+		tabVnode: (auditRequest: AuditRequest) => h(BadgeTab, { count: auditRequest.ran_jobs_count }),
+		vnode: (auditRequest: AuditRequest) => h(AuditRequestJobsPanel, {
+			auditRequest,
+			jobs: auditRequest.ran_jobs || []
 		})
 	},
 	{
 		name: "dispatched-jobs",
 		label: "Dispatched Jobs",
 		class: "w-[80em]",
-		tabVnode: () => h(BadgeTab, { count: activeItem.value.dispatched_jobs_count }),
-		vnode: () => h(AuditRequestJobsPanel, {
-			auditRequest: activeItem.value,
-			jobs: activeItem.value.dispatched_jobs || []
+		tabVnode: (auditRequest: AuditRequest) => h(BadgeTab, { count: auditRequest.dispatched_jobs_count }),
+		vnode: (auditRequest: AuditRequest) => h(AuditRequestJobsPanel, {
+			auditRequest,
+			jobs: auditRequest.dispatched_jobs || []
 		})
 	},
 	{
 		name: "errors",
 		label: "Errors",
 		class: "w-[80em]",
-		tabVnode: () => h(BadgeTab, { count: activeItem.value.errors_count }),
-		vnode: () => h(AuditRequestErrorsPanel, {
-			auditRequest: activeItem.value
-		})
+		tabVnode: (auditRequest: AuditRequest) => h(BadgeTab, { count: auditRequest.errors_count }),
+		vnode: (auditRequest: AuditRequest) => h(AuditRequestErrorsPanel, { auditRequest })
 	}
 ]);

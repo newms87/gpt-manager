@@ -3,32 +3,26 @@ import {
 	WorkflowInputInputPanel,
 	WorkflowInputWorkflowRunsPanel
 } from "@/components/Modules/Workflows/WorkflowInputs/Panels";
-import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { WorkflowInput } from "@/types/workflow-inputs";
-import { BadgeTab } from "quasar-ui-danx";
-import { ActionPanel } from "quasar-ui-danx";
+import { ActionPanel, BadgeTab } from "quasar-ui-danx";
 import { computed, h } from "vue";
-
-const activeItem = computed<WorkflowInput>(() => WorkflowInputController.activeItem.value);
 
 export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "edit",
 		label: "Info",
-		vnode: () => h(WorkflowInputInfoPanel, { workflowInput: activeItem.value })
+		vnode: (workflowInput: WorkflowInput) => h(WorkflowInputInfoPanel, { workflowInput })
 	},
 	{
 		name: "input",
 		label: "Input",
-		vnode: () => h(WorkflowInputInputPanel, { workflowInput: activeItem.value })
+		vnode: (workflowInput: WorkflowInput) => h(WorkflowInputInputPanel, { workflowInput })
 	},
 	{
 		name: "runs",
 		label: "Workflow Runs",
 		class: "w-[80rem] max-w-full",
-		tabVnode: () => h(BadgeTab, { count: activeItem.value.workflow_runs_count }),
-		vnode: () => h(WorkflowInputWorkflowRunsPanel, {
-			workflowInput: activeItem.value
-		})
+		tabVnode: (workflowInput: WorkflowInput) => h(BadgeTab, { count: workflowInput.workflow_runs_count }),
+		vnode: (workflowInput: WorkflowInput) => h(WorkflowInputWorkflowRunsPanel, { workflowInput })
 	}
 ]);
