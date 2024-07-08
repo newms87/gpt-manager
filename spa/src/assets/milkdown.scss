@@ -44,7 +44,7 @@
 	}
 
 	[contenteditable] {
-		@apply outline-none min-h-4 bg-slate-450 text-slate-800 rounded transition-all p-2;
+		@apply outline-none min-h-4 rounded transition-all bg-slate-450 text-slate-800 p-2;
 
 		p {
 			@apply py-1.5;
@@ -74,9 +74,9 @@
 }
 
 .dx-markdown-editor {
-	&.markdown-code-only, &.dx-markdown-json {
+	&.dx-markdown-code-only {
 		[contenteditable] {
-			@apply p-0 bg-inherit;
+			@apply bg-inherit p-0;
 		}
 	}
 
@@ -96,7 +96,7 @@
 		}
 	}
 
-	&.dx-markdown-json-invalid {
+	&.dx-markdown-invalid {
 		.milkdown {
 			[contenteditable], .ProseMirror-focused > pre, .editor > pre {
 				@apply bg-red-950;

@@ -10,15 +10,15 @@
 					}}
 				</div>
 				<MarkdownEditor
-					class="markdown-code-only md-bg-red"
+					class="md-bg-red"
 					:model-value="audit.old_values"
-					force-json
+					format="json"
 					readonly
 				/>
 				<MarkdownEditor
-					class="markdown-code-only md-bg-green"
+					class="md-bg-green"
 					:model-value="audit.new_values"
-					force-json
+					format="json"
 					readonly
 				/>
 			</div>

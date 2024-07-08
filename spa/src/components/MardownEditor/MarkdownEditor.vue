@@ -1,5 +1,8 @@
 <template>
-	<div class="dx-markdown-editor" :class="{'dx-markdown-json': forceJson, 'dx-markdown-json-invalid': isInvalidJson}">
+	<div
+		class="dx-markdown-editor"
+		:class="{'dx-markdown-code-only': format !== 'text', 'dx-markdown-invalid': rawContent && !validContent}"
+	>
 		<FieldLabel v-if="label" class="mb-2 text-sm" :label="label">
 			{{ label }}
 		</FieldLabel>
@@ -33,44 +36,69 @@
 <script setup lang="ts">
 import MilkdownEditor from "@/components/MardownEditor/MilkdownEditor";
 import { MilkdownProvider } from "@milkdown/vue";
-import { FieldLabel, fMarkdownJSON, MaxLengthCounter, parseMarkdownJSON, TextField } from "quasar-ui-danx";
+import {
+	FieldLabel,
+	fMarkdownCode,
+	MaxLengthCounter,
+	parseMarkdownJSON,
+	parseMarkdownYAML,
+	TextField
+} from "quasar-ui-danx";
 import { computed, nextTick, onBeforeMount, ref, watch } from "vue";
 
-const content = defineModel<string | object>();
-const rawContent = ref<string | object>();
-
-onBeforeMount(() => {
-	rawContent.value = formatContent(content.value);
-});
-function updateContent(value: string) {
-	value = value.trim();
-	if (!props.forceJson) {
-		return content.value = value;
-	}
-
-	const validJson = parseMarkdownJSON(value);
-	if (validJson !== undefined) {
-		content.value = validJson;
-	}
-}
-function formatContent(value) {
-	return (props.forceJson || typeof value === "object") ? fMarkdownJSON(value) : value + "";
-}
-
-const isRaw = defineModel("isRaw", { type: Boolean, default: false });
-const isInvalidJson = computed(() => props.forceJson && rawContent.value && !parseMarkdownJSON(rawContent.value));
-const props = defineProps<{
+export interface MarkdownEditorProps {
 	editorClass?: string | object;
 	maxLength?: number;
 	readonly?: boolean;
 	label?: string;
-	forceJson?: boolean;
+	format?: "text" | "yaml" | "json" | "ts";
 	syncModelChanges?: boolean;
-}>();
+}
 
+const props = withDefaults(defineProps<MarkdownEditorProps>(), {
+	editorClass: "w-full",
+	format: "text",
+	maxLength: null,
+	label: null
+});
+
+const content = defineModel<string | object>();
+const rawContent = ref<string>();
+const isRaw = defineModel("isRaw", { type: Boolean, default: false });
+const validContent = computed(() => {
+	if (!rawContent.value) return "";
+	switch (props.format) {
+		case "json":
+			return parseMarkdownJSON(rawContent.value);
+		case"yaml":
+			return parseMarkdownYAML(rawContent.value);
+		case "ts":
+			return parseMarkdownJSON(rawContent.value);
+		case "text":
+		default:
+			return rawContent.value;
+	}
+});
 const contentLength = computed(() => typeof content.value === "string" ? content.value.length : JSON.stringify(content.value).length);
+
+function updateContent(value: string) {
+	value = value.trim();
+	if (props.format === "text" || !value) {
+		return content.value = value;
+	}
+
+	if (validContent.value) {
+		content.value = validContent.value;
+	}
+}
+
+function formatContent(value) {
+	const format = props.format === "text" && typeof value === "object" ? "json" : props.format;
+	return (format !== "text") ? fMarkdownCode(props.format, value) : value + "";
+}
+
 function refreshEditor() {
-	if (props.forceJson && !isInvalidJson.value) {
+	if (!validContent.value) {
 		rawContent.value = formatContent(content.value);
 	}
 
@@ -84,6 +112,10 @@ function refreshEditor() {
 	}
 }
 
+onBeforeMount(() => {
+	rawContent.value = formatContent(content.value);
+});
+
 // Watch for changes in the content and update the model if the syncModelChanges prop is set
 if (props.syncModelChanges) {
 	watch(() => content.value, () => {
@@ -91,4 +123,9 @@ if (props.syncModelChanges) {
 		refreshEditor();
 	});
 }
+
+watch(() => props.format, () => {
+	rawContent.value = formatContent(content.value);
+	refreshEditor();
+});
 </script>

@@ -4910,10 +4910,10 @@ punycode@^2.1.0:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.1.tgz#027422e2faec0b25e1549c3e1bd8309b9133b6e5"
   integrity sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==
 
-quasar-ui-danx@^0.4.12:
-  version "0.4.12"
-  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.4.12.tgz#f5422f8237c92f68257105f9ca0b5bfb54db4e42"
-  integrity sha512-tZ5ujPvUBXz/ZRv6Mh3AWMyFQj+KaNBQkcXS11JUS+a8XS9pTbqBVBvU49go+WdMcpbIzynsJ5MUKZU936at+w==
+quasar-ui-danx@^0.4.13:
+  version "0.4.13"
+  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.4.13.tgz#9dbfdc89c8de275d2e1dedf71dd43ce4f96df1f9"
+  integrity sha512-VfRqHyzDoaDI2YtGNpdkwZiEXonu/KllfAhxIUzBtjUc3bP6c/1XcX9ekBP/vhqXtvfxKOm/e81151dZawkshQ==
   dependencies:
     "@heroicons/vue" v1
     "@tinymce/tinymce-vue" "^5.1.1"
@@ -4922,6 +4922,7 @@ quasar-ui-danx@^0.4.12:
     exifreader "^4.21.1"
     gsap "^3.12.5"
     luxon "^3.4.4"
+    yaml "^2.4.5"
 
 quasar@^2.15.2:
   version "2.15.2"
@@ -5997,6 +5998,11 @@ yaml@^2.3.4:
   version "2.4.1"
   resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.4.1.tgz#2e57e0b5e995292c25c75d2658f0664765210eed"
   integrity sha512-pIXzoImaqmfOrL7teGUBt/T7ZDnyeGBWyXQBvOVhLkWLN37GXv8NMLK406UY6dS51JfcQHsmcW5cJ441bHg6Lg==
+
+yaml@^2.4.5:
+  version "2.4.5"
+  resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.4.5.tgz#60630b206dd6d84df97003d33fc1ddf6296cca5e"
+  integrity sha512-aBx2bnqDzVOyNKfsysjA2ms5ZlnjSAW2eG3/L5G/CSujfjLJTJsEw1bGw8kCf04KodQWk1pxlGnZ56CRxiawmg==
 
 yn@3.1.1:
   version "3.1.1"

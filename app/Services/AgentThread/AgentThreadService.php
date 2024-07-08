@@ -39,7 +39,7 @@ class AgentThreadService
             'temperature'     => $agent->temperature,
             'tools'           => $agent->tools,
             'tool_choice'     => 'auto',
-            'response_format' => 'text',
+            'response_format' => $agent->response_format === 'text' ? 'text' : 'json_object',
             'seed'            => config('ai.seed'),
             'started_at'      => now(),
         ]);
@@ -150,12 +150,13 @@ class AgentThreadService
      */
     public function getMessagesForApi(Thread $thread): array
     {
+        $agent      = $thread->agent;
         $corePrompt = "The current date and time is " . now()->toDateTimeString() . "\n\n";
 
         $messages = collect([
             [
                 'role'    => Message::ROLE_USER,
-                'content' => $corePrompt . $thread->agent->prompt,
+                'content' => $corePrompt . $agent->prompt,
             ],
         ]);
 
@@ -204,6 +205,14 @@ class AgentThreadService
                     'role'    => $message->role,
                     'content' => $content,
                 ] + ($message->data ?? []));
+        }
+
+        if ($agent->response_notes || $agent->response_schema) {
+            $schema = json_encode($agent->response_schema);
+            $messages->push([
+                'role'    => Message::ROLE_USER,
+                'content' => "RESPONSE FORMAT:\n$agent->response_notes\n\n$schema",
+            ]);
         }
 
         return $messages->toArray();

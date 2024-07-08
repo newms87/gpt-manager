@@ -2,9 +2,8 @@
 	<div class="p-6">
 		<MarkdownEditor
 			v-if="auditRequest.response"
-			class="markdown-code-only"
 			:model-value="auditRequest.response"
-			force-json
+			format="json"
 			readonly
 		/>
 		<div v-else-if="auditRequest.response === null" class="text-xl text-center text-gray-500">No response</div>

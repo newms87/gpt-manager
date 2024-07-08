@@ -7,7 +7,7 @@
 			<div>{{ fDateTime(artifact.created_at) }}</div>
 		</div>
 		<div>
-			<MarkdownEditor :model-value="artifact.content" force-json readonly />
+			<MarkdownEditor :model-value="artifact.content" format="json" readonly />
 		</div>
 	</div>
 </template>

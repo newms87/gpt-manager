@@ -2,9 +2,8 @@
 	<div class="p-6">
 		<MarkdownEditor
 			v-if="auditRequest.request"
-			class="markdown-code-only"
 			:model-value="auditRequest.request"
-			force-json
+			format="json"
 			readonly
 		/>
 		<QSkeleton v-else class="w-full rounded h-96" />

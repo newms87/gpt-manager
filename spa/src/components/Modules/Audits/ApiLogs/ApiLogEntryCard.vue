@@ -25,11 +25,11 @@
 		</div>
 		<div v-if="showRequest" class="my-4">
 			<div class="font-bold mb-2">Request</div>
-			<MarkdownEditor :model-value="apiLog.request" force-json readonly />
+			<MarkdownEditor :model-value="apiLog.request" format="json" readonly />
 		</div>
 		<div v-if="showResponse" class="my-4">
 			<div class="font-bold mb-2">Response</div>
-			<MarkdownEditor :model-value="apiLog.response" force-json readonly />
+			<MarkdownEditor :model-value="apiLog.response" format="json" readonly />
 		</div>
 	</QCard>
 </template>

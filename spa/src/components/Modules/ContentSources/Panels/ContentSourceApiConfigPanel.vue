@@ -14,7 +14,7 @@
 			class="mt-4"
 			sync-model-changes
 			:model-value="input.config"
-			force-json
+			format="json"
 			@update:model-value="onUpdateConfig"
 		/>
 		<QBtn

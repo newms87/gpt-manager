@@ -29,13 +29,15 @@ const agentForm: Form = {
 				...props,
 				options: [
 					{ label: "Text", value: "text" },
-					{ label: "JSON", value: "json_object" }
+					{ label: "JSON Schema", value: "json" },
+					{ label: "YAML Schema", value: "yaml" },
+					{ label: "Typescript Schema", value: "ts" }
 				]
 			})
 		},
 		{
 			name: "response_notes",
-			label: "Notes",
+			label: "Directive",
 			vnode: (props) => h(MarkdownEditor, {
 				...props,
 				maxLength: 10000
@@ -44,10 +46,10 @@ const agentForm: Form = {
 		{
 			name: "response_schema",
 			label: "Schema",
-			enabled: (input) => input.response_format === "json_object",
-			vnode: (props) => h(MarkdownEditor, {
-				...props,
-				forceJson: true,
+			enabled: (input) => input.response_format !== "text",
+			vnode: (field, input) => h(MarkdownEditor, {
+				...field,
+				format: input.response_format,
 				maxLength: 100000
 			})
 		}
