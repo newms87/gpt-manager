@@ -13,7 +13,10 @@ class TeamFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->company,
+            'name'        => fake()->unique()->company,
+            'namespace'   => '',
+            'logo'        => null,
+            'schema_file' => null,
         ];
     }
 }
