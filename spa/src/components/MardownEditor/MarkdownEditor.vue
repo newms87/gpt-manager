@@ -1,7 +1,7 @@
 <template>
 	<div
 		class="dx-markdown-editor"
-		:class="{'dx-markdown-code-only': format !== 'text', 'dx-markdown-invalid': rawContent && !validContent}"
+		:class="{'dx-markdown-code-only': format !== 'text', 'dx-markdown-invalid': validContent === false}"
 	>
 		<FieldLabel v-if="label" class="mb-2 text-sm" :label="label">
 			{{ label }}
@@ -87,18 +87,30 @@ function updateContent(value: string) {
 		return content.value = value;
 	}
 
-	if (validContent.value) {
+	if (validContent.value !== false) {
 		content.value = validContent.value;
 	}
 }
 
 function formatContent(value) {
-	const format = props.format === "text" && typeof value === "object" ? "json" : props.format;
-	return (format !== "text") ? fMarkdownCode(props.format, value) : value + "";
+	const format = (props.format === "text" && value && typeof value === "object") ? "json" : props.format;
+	console.log("format", format, value);
+	switch (format) {
+		case "json":
+			return fMarkdownCode(format, value || {});
+		case "yaml":
+			return fMarkdownCode(format, value || "");
+		case "ts":
+			return fMarkdownCode(format, value || "");
+		case "text":
+		default:
+			return value ? value + "" : "";
+
+	}
 }
 
 function refreshEditor() {
-	if (!validContent.value) {
+	if (validContent.value) {
 		rawContent.value = formatContent(content.value);
 	}
 
