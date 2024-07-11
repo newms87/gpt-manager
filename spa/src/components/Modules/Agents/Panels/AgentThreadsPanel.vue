@@ -1,5 +1,5 @@
 <template>
-	<div class="p-6 h-full overflow-hidden">
+	<div class="p-6 h-full overflow-y-auto">
 		<ListTransition class="h-full">
 			<QBtn
 				v-if="!activeThread"

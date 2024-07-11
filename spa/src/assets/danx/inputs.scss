@@ -26,7 +26,7 @@
 			@apply text-slate-300;
 		}
 	}
-	
+
 	&.q-input {
 		.q-field__native {
 			@apply py-3
@@ -107,4 +107,8 @@
 			}
 		}
 	}
+}
+
+.dx-slider-number-field {
+	@apply pb-6;
 }

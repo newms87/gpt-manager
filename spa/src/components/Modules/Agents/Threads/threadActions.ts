@@ -52,7 +52,7 @@ const items: ActionOptions[] = [
 		icon: DeleteIcon,
 		menu: true,
 		batch: true,
-		onFinish: AgentController.getActiveItemDetails,
+		onSuccess: AgentController.getActiveItemDetails,
 		vnode: target => h(ConfirmActionDialog, { action: "Delete", label: "Threads", target, confirmClass: "bg-red-900" })
 	},
 	{
@@ -65,13 +65,13 @@ const items: ActionOptions[] = [
 				role: "user"
 			});
 		},
-		onFinish: AgentController.getActiveItemDetails
+		onSuccess: AgentController.getActiveItemDetails
 	},
 	{
 		name: "reset-to-message",
 		label: "Reset To Message",
 		class: "text-red-500",
-		onFinish: AgentController.getActiveItemDetails,
+		onSuccess: AgentController.getActiveItemDetails,
 		vnode: (target: ThreadMessage) => h(ConfirmActionDialog, {
 			action: "Reset To Message",
 			label: "Delete all following messages",
