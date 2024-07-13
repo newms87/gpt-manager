@@ -4,6 +4,7 @@
 			v-if="agent.assignments"
 			:assignments="agent.assignments"
 			:unassign-action="unassignAgentAction"
+			context="agent"
 		/>
 	</div>
 </template>

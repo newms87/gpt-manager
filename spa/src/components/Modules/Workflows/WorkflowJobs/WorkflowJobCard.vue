@@ -1,80 +1,88 @@
 <template>
-	<QCard class="bg-indigo-300 text-indigo-600 rounded-lg overflow-hidden form-input-indigo border-indigo-400 border">
+	<QCard class="bg-slate-700 text-slate-300 rounded-lg overflow-hidden">
 		<div>
-			<div class="flex items-center flex-nowrap bg-indigo-950 text-indigo-300">
+			<div class="flex items-center flex-nowrap bg-sky-950 text-slate-300">
 				<div class="flex-grow">
 					<EditOnClickTextField
 						:readonly="readonly"
 						:model-value="job.name"
-						class="hover:bg-indigo-900 text-lg"
+						class="hover:bg-sky-900 text-lg"
 						@update:model-value="updateJobDebouncedAction.trigger(job, { name: $event})"
 					/>
+				</div>
+				<div v-if="!readonly" class="whitespace-nowrap">
+					<div v-if="job.assignments.length > 0">{{ job.assignments.length }} Assignments</div>
+					<div v-else class="text-red-600 flex items-center flex-nowrap">
+						<WarningIcon class="w-4 mr-2 -mt-1" />
+						No Assignments
+					</div>
 				</div>
 				<template v-if="!readonly">
 					<div class="pl-4">
 						<ShowHideButton
-							v-model="showAssignments"
-							:label="job.assignments.length + 'Assignments'"
-							class="bg-indigo-300 text-indigo-900 rounded"
+							v-model="isEditing"
+							label="Edit"
+							class="bg-slate-700 text-slate-300 rounded"
 						/>
 					</div>
 					<ActionButton
 						:action="deleteJobAction"
 						:target="job"
-						class="p-4"
+						class="p-4 ml-2"
 						type="trash"
 					/>
 				</template>
 			</div>
-			<template v-if="!readonly">
-				<div class="p-2">
-					<div class="py-1 px-2 bg-indigo-900 text-indigo-300 rounded-lg w-52">
-						<QCheckbox
-							:model-value="!!job.use_input"
-							label="Include Workflow Input?"
-							@update:model-value="updateJobAction.trigger(job, {use_input: $event})"
-						/>
-					</div>
-					<WorkflowJobDependenciesList :workflow="workflow" :job="job" />
-				</div>
-			</template>
 		</div>
-		<MaxHeightTransition max-height="20em">
-			<QCardSection v-if="showAssignments" class="pt-0 max-h-[20em] overflow-y-auto">
-				<QSeparator class="bg-indigo-900" />
-				<WorkflowAssignmentsList :assignments="job.assignments" :unassign-action="unassignAgentAction" />
-				<ActionButton
-					:action="assignAgentAction"
-					:target="job"
-					:icon="AssignIcon"
-					label="Assign Agent"
-					class="bg-indigo-700 text-indigo-300 px-4 w-full mt-2"
-					icon-class="w-4"
+		<QCardSection v-if="isEditing" class="max-h-[30em] overflow-y-auto flex items-stretch flex-nowrap">
+			<div class="w-1/2">
+				<h5 class="mb-4">Dependencies</h5>
+				<QCheckbox
+					:model-value="!!job.use_input"
+					label="Include Workflow Input?"
+					@update:model-value="updateJobAction.trigger(job, {use_input: $event})"
 				/>
-			</QCardSection>
-		</MaxHeightTransition>
+				<WorkflowJobDependenciesList :workflow="workflow" :job="job" />
+			</div>
+			<div class="w-1/2">
+				<h5 class="mb-4">Agent Assignments</h5>
+				<WorkflowAssignmentsList
+					:assignments="job.assignments"
+					:unassign-action="unassignAgentAction"
+					context="workflow"
+				/>
+				<SelectField
+					:options="availableAgents"
+					:disable="assignAgentAction.isApplying"
+					@update="assignAgentAction.trigger(job, {ids: [$event]})"
+				/>
+			</div>
+		</QCardSection>
 	</QCard>
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
+import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
 import { ActionButton, ShowHideButton } from "@/components/Shared";
 import { Workflow, WorkflowJob } from "@/types/workflows";
-import { FaSolidPlugCircleCheck as AssignIcon } from "danx-icon";
-import { EditOnClickTextField, MaxHeightTransition } from "quasar-ui-danx";
-import { ref } from "vue";
+import { FaSolidTriangleExclamation as WarningIcon } from "danx-icon";
+import { EditOnClickTextField, SelectField } from "quasar-ui-danx";
+import { computed, ref } from "vue";
 import WorkflowAssignmentsList from "./WorkflowAssignmentsList";
 
-defineProps<{
+const props = defineProps<{
 	job: WorkflowJob;
 	workflow: Workflow;
 	readonly?: boolean;
 }>();
 
-const showAssignments = ref(false);
+const isEditing = ref(false);
 const updateJobDebouncedAction = getAction("update-job-debounced");
 const updateJobAction = getAction("update-job");
 const deleteJobAction = getAction("delete-job");
 const assignAgentAction = getAction("assign-agent");
 const unassignAgentAction = getAction("unassign-agent");
+
+const availableAgents = computed(() => WorkflowController.getFieldOptions("agents").filter(a => !props.job.assignments.find(ja => ja.agent.id === a.value)));
 </script>

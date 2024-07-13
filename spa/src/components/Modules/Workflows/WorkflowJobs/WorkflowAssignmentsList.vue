@@ -6,11 +6,11 @@
 
 				<div class="py-3 flex items-center">
 					<div class="flex-grow">
-						<template v-if="assignment.workflowJob">
+						<template v-if="context === 'agent'">
 							<div>{{ assignment.workflowJob.workflow.name }}</div>
 							<div class="font-bold ml-2">{{ assignment.workflowJob.name }}</div>
 						</template>
-						<template v-if="assignment.agent">
+						<template v-if="context === 'workflow'">
 							<div class="font-bold">{{ assignment.agent.name }}</div>
 							<div class="ml-2 text-xs">{{ assignment.agent.model }}</div>
 						</template>
@@ -28,11 +28,11 @@
 <script setup lang="ts">
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { WorkflowAssignment } from "@/types/workflows";
-import { ListTransition } from "quasar-ui-danx";
-import { ActionOptions } from "quasar-ui-danx";
+import { ListTransition, ResourceAction } from "quasar-ui-danx";
 
 defineProps<{
 	assignments: WorkflowAssignment[];
-	unassignAction: ActionOptions
+	unassignAction: ResourceAction;
+	context: "workflow" | "agent";
 }>();
 </script>

@@ -1,9 +1,7 @@
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
-import { AssignAgentDialog } from "@/components/Modules/Workflows/WorkflowJobs";
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { WorkflowAssignmentRoutes, WorkflowJobRoutes, WorkflowRoutes } from "@/routes/workflowRoutes";
-import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
-import { ActionOptions } from "quasar-ui-danx";
+import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
 // This is the default action options for all items
@@ -86,7 +84,6 @@ const items: ActionOptions[] = [
 	},
 	{
 		name: "assign-agent",
-		vnode: (target) => h(AssignAgentDialog, { job: target }),
 		onAction: WorkflowJobRoutes.applyAction
 	},
 	{
