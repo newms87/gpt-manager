@@ -5,12 +5,30 @@
 			:target="agent"
 			:form="agentForm"
 		/>
+
+		<QSeparator class="bg-slate-500 my-8" />
+
+		<div>
+			<h3>Sample Response</h3>
+			<QBtn
+				class="my-4 bg-sky-800 text-base px-6"
+				@click="sampleAction.trigger(agent)"
+				:loading="sampleAction.isApplying"
+			>
+				<GenerateSampleIcon class="w-5 mr-2" />
+				Generate Sample
+			</QBtn>
+			<div v-if="agent.response_sample">
+				<MarkdownEditor readonly :model-value="agent.response_sample" sync-model-changes format="json" />
+			</div>
+		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Agents/agentActions";
 import { Agent } from "@/types/agents";
+import { FaSolidRobot as GenerateSampleIcon } from "danx-icon";
 import { ActionForm, Form, SelectField } from "quasar-ui-danx";
 import { h } from "vue";
 
@@ -19,6 +37,7 @@ defineProps<{
 }>();
 
 const updateDebouncedAction = getAction("update-debounced");
+const sampleAction = getAction("generate-sample");
 
 const agentForm: Form = {
 	fields: [

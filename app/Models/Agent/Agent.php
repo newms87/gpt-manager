@@ -41,6 +41,7 @@ class Agent extends Model implements AuditableContract
         return [
             'tools'           => 'json',
             'response_schema' => 'json',
+            'response_sample' => 'json',
             'temperature'     => 'float',
         ];
     }

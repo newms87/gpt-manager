@@ -1,20 +1,22 @@
 <template>
 	<div class="p-6">
 		<div v-if="availableTools" class="flex flex-wrap">
-			<div
-				v-for="tool in availableTools"
-				:key="tool.name"
-				class="flex items-center mb-4"
-			>
-				<QCheckbox
-					v-model="selectedTools"
-					:val="tool.name"
-					:label="tool.name"
-					class="font-bold text-xl"
-					@update:model-value="onUpdate"
-				/>
-				<div class="ml-10">{{ tool.description }}</div>
-			</div>
+			<ActionForm :action="updateAction" :target="agent" :form="{fields: []}">
+				<div
+					v-for="tool in availableTools"
+					:key="tool.name"
+					class="flex items-center mb-4"
+				>
+					<QCheckbox
+						v-model="selectedTools"
+						:val="tool.name"
+						:label="tool.name"
+						class="font-bold text-xl"
+						@update:model-value="onUpdate"
+					/>
+					<div class="ml-10">{{ tool.description }}</div>
+				</div>
+			</ActionForm>
 		</div>
 		<div v-else class="flex justify-center items-center">
 			<QInnerLoading class="mr-2" />
@@ -26,6 +28,7 @@
 import { getAction } from "@/components/Modules/Agents/agentActions";
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { Agent } from "@/types/agents";
+import { ActionForm } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps<{

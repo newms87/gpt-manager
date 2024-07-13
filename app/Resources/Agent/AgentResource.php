@@ -34,6 +34,7 @@ class AgentResource extends ActionResource
             'response_format'   => $model->response_format,
             'response_notes'    => $model->response_notes,
             'response_schema'   => $model->response_schema,
+            'response_sample'   => $model->response_sample,
             'threads_count'     => $model->threads_count,
             'assignments_count' => $model->assignments_count,
             'created_at'        => $model->created_at,

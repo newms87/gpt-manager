@@ -94,7 +94,6 @@ function updateContent(value: string) {
 
 function formatContent(value) {
 	const format = (props.format === "text" && value && typeof value === "object") ? "json" : props.format;
-	console.log("format", format, value);
 	switch (format) {
 		case "json":
 			return fMarkdownCode(format, value || {});

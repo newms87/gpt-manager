@@ -3,9 +3,11 @@
 namespace App\Repositories;
 
 use App\Models\Agent\Agent;
+use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
+use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class AgentRepository extends ActionRepository
@@ -56,10 +58,14 @@ class AgentRepository extends ActionRepository
             'update' => $this->updateAgent($model, $data),
             'copy' => $this->copyAgent($model),
             'create-thread' => app(ThreadRepository::class)->create($model),
+            'generate-sample' => $this->generateSample($model),
             default => parent::applyAction($action, $model, $data)
         };
     }
 
+    /**
+     * Create an agent applying business rules
+     */
     public function createAgent(array $data): Agent
     {
         $agent = Agent::make()->forceFill([
@@ -75,10 +81,17 @@ class AgentRepository extends ActionRepository
         return $this->updateAgent($agent, $data);
     }
 
+    /**
+     * Update an agent applying business rules
+     */
     public function updateAgent(Agent $agent, array $data): Agent
     {
         $agent->fill($data);
         $agent->api = AgentRepository::getApiForModel($agent->model);
+
+        if ($agent->isDirty('response_schema')) {
+            $agent->response_sample = null;
+        }
 
         $agent->validate()->save($data);
 
@@ -152,5 +165,28 @@ class AgentRepository extends ActionRepository
         }
 
         return ($modelCosts['input'] * $inputTokens / 1000) + ($modelCosts['output'] * $outputToken / 1000);
+    }
+
+    /**
+     * Generate a sample response based on the prompt and response schema.
+     *
+     * This is useful for feedback for the user to validate the response schema and also used to identify available
+     * fields for grouping in Agent Assignments.
+     */
+    public function generateSample(Agent $agent)
+    {
+        $threadRepo = app(ThreadRepository::class);
+        $thread     = $threadRepo->create($agent, 'Response Sample');
+        $threadRepo->addMessageToThread($thread, 'Create a response with example data. Provide a robust sample response so all fields have been resolved with all permutations of fields. The goal is to create a response with an example that shows all possible fields for a response (even if fields are mutually exclusive, include all fields). Respond with JSON only! NO OTHER TEXT.');
+
+        $threadRun = app(AgentThreadService::class)->run($thread, dispatch: false);
+
+        $agent->response_sample = StringHelper::safeJsonDecode($threadRun->lastMessage->content, 999999);
+        $agent->save();
+
+        // Clean up the thread so we don't clutter the UI
+        $thread->delete();
+
+        return true;
     }
 }
