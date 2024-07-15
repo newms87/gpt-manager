@@ -4,20 +4,23 @@
 			<div class="flex items-center flex-nowrap bg-sky-950 text-slate-300">
 				<div class="flex-grow">
 					<EditOnClickTextField
-						:readonly="readonly"
+						:readonly="isTool"
 						:model-value="job.name"
 						class="hover:bg-sky-900 text-lg"
 						@update:model-value="updateJobDebouncedAction.trigger(job, { name: $event})"
 					/>
 				</div>
-				<div v-if="!readonly" class="whitespace-nowrap">
-					<div v-if="job.assignments.length > 0">{{ job.assignments.length }} Assignments</div>
-					<div v-else class="text-red-600 flex items-center flex-nowrap">
-						<WarningIcon class="w-4 mr-2 -mt-1" />
-						No Assignments
+				<template v-if="!isTool">
+					<div v-if="job.dependencies.length > 0" class="whitespace-nowrap ml-4">
+						{{ job.dependencies.length }} Dependencies
 					</div>
-				</div>
-				<template v-if="!readonly">
+					<div class="whitespace-nowrap ml-4">
+						<div v-if="job.assignments.length > 0">{{ job.assignments.length }} Assignments</div>
+						<div v-else class="text-red-600 flex items-center flex-nowrap">
+							<WarningIcon class="w-4 mr-2 -mt-1" />
+							No Assignments
+						</div>
+					</div>
 					<div class="pl-4">
 						<ShowHideButton
 							v-model="isEditing"
@@ -34,9 +37,9 @@
 				</template>
 			</div>
 		</div>
-		<QCardSection v-if="isEditing" class="max-h-[30em] overflow-y-auto flex items-stretch flex-nowrap">
+		<QCardSection v-if="isEditing" class="flex items-stretch flex-nowrap">
 			<div class="w-1/2">
-				<h5 class="mb-4">Dependencies</h5>
+				<h5 class="mb-4">Job Dependencies</h5>
 				<QCheckbox
 					:model-value="!!job.use_input"
 					label="Include Workflow Input?"
@@ -44,7 +47,7 @@
 				/>
 				<WorkflowJobDependenciesList :workflow="workflow" :job="job" />
 			</div>
-			<div class="w-1/2">
+			<div class="w-1/2 pl-8">
 				<h5 class="mb-4">Agent Assignments</h5>
 				<WorkflowAssignmentsList
 					:assignments="job.assignments"
@@ -54,6 +57,7 @@
 				<SelectField
 					:options="availableAgents"
 					:disable="assignAgentAction.isApplying"
+					placeholder="+ Assign Agent"
 					@update="assignAgentAction.trigger(job, {ids: [$event]})"
 				/>
 			</div>
@@ -74,7 +78,7 @@ import WorkflowAssignmentsList from "./WorkflowAssignmentsList";
 const props = defineProps<{
 	job: WorkflowJob;
 	workflow: Workflow;
-	readonly?: boolean;
+	isTool?: boolean;
 }>();
 
 const isEditing = ref(false);

@@ -29,11 +29,17 @@ class ThreadRun extends Model implements AuditableContract
         'refreshed_at',
         'started_at',
         'status',
+        'response_format',
+        'seed',
+        'temperature',
+        'tools',
+        'tool_choice',
     ];
 
     public function casts(): array
     {
         return [
+            'tools'        => 'json',
             'started_at'   => 'datetime',
             'completed_at' => 'datetime',
             'failed_at'    => 'datetime',

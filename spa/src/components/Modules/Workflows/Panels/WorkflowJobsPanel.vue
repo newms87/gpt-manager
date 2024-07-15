@@ -11,7 +11,7 @@
 					class="mb-5"
 					:job="job"
 					:workflow="workflow"
-					:readonly="!!job.workflow_tool"
+					:is-tool="!!job.workflow_tool"
 				/>
 			</ListTransition>
 
