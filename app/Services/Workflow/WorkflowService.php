@@ -70,9 +70,10 @@ class WorkflowService
 
                     if ($completedJobRun) {
                         $dependsOnJobs[$dependency->depends_on_workflow_job_id] = [
-                            'id'      => $dependency->depends_on_workflow_job_id,
-                            'jobRun'  => $completedJobRun,
-                            'groupBy' => $dependency->group_by,
+                            'id'            => $dependency->depends_on_workflow_job_id,
+                            'jobRun'        => $completedJobRun,
+                            'includeFields' => $dependency->include_fields,
+                            'groupBy'       => $dependency->group_by,
                         ];
                     }
                 }
@@ -141,13 +142,16 @@ class WorkflowService
             Log::debug("$workflowRun dispatching next jobs..");
             // Dispatch the next set of Workflow Job Runs
             WorkflowService::dispatchPendingWorkflowJobs($workflowRun);
-
-            // Release the lock here as its possible while we are dispatching the tasks, another task has completed and would like to proceed
-            LockHelper::release($workflowRun);
-            WorkflowTaskService::dispatchPendingWorkflowTasks($workflowRun);
         } else {
             Log::debug("$workflowRun done");
-            LockHelper::release($workflowRun);
+        }
+
+        // Release the lock here as its possible while we are dispatching the tasks, another task has completed and would like to proceed
+        LockHelper::release($workflowRun);
+
+        // Check to see if the workflow run is still running. If so, dispatch the next set of tasks
+        if ($workflowRun->refresh()->isRunning()) {
+            WorkflowTaskService::dispatchPendingWorkflowTasks($workflowRun);
         }
     }
 }

@@ -6,6 +6,7 @@
 				:key="'dependency-' + dependency.id"
 				:dependency="dependency"
 				:job="job"
+				:workflow="workflow"
 				class="mt-2"
 				@update="setDependenciesAction.trigger(job, job.dependencies.map(dep => dep.id === dependency.id ? $event : dep))"
 				@remove="setDependenciesAction.trigger(job, job.dependencies.filter(dep => dep.id !== dependency.id))"

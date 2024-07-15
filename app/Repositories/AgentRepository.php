@@ -177,7 +177,7 @@ class AgentRepository extends ActionRepository
     {
         $threadRepo = app(ThreadRepository::class);
         $thread     = $threadRepo->create($agent, 'Response Sample');
-        $threadRepo->addMessageToThread($thread, 'Create a response with example data. Provide a robust sample response so all fields have been resolved with all permutations of fields in the designed response object. The goal is to create a response with an example that shows all possible fields for a response (even if fields are mutually exclusive or seem unnecessary or wrong, include all fields if they are in the response format). Pay close attention to field type if implied or specified!! Respond with JSON only! NO OTHER TEXT.');
+        $threadRepo->addMessageToThread($thread, 'Create a response with example data. Provide a robust sample response so all fields have been resolved with all permutations of fields in the designed response object. The goal is to create a response with an example that shows all possible fields for a response (even if fields are mutually exclusive or seem unnecessary or wrong, include all fields if they are in the response format). Pay close attention to field type if implied or specified!! If type is array, always provide exactly 2 elements. Respond with JSON only! NO OTHER TEXT.');
 
         $threadRun = app(AgentThreadService::class)->run($thread, dispatch: false);
 

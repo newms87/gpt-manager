@@ -2,11 +2,11 @@
 
 namespace App\Models\Workflow;
 
-use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowJobDependency extends Model implements AuditableContract
 {
@@ -17,6 +17,14 @@ class WorkflowJobDependency extends Model implements AuditableContract
         'created_at',
         'updated_at',
     ];
+
+    public function casts(): array
+    {
+        return [
+            'include_fields' => 'json',
+            'group_by'       => 'json',
+        ];
+    }
 
     public function workflowJob(): BelongsTo|WorkflowJob
     {

@@ -1,32 +1,134 @@
 <template>
-	<div class="flex items-center flex-nowrap bg-indigo-800 text-indigo-200 rounded-lg overflow-hidden">
-		<div class="text-base font-bold flex-grow px-2 text-no-wrap text-ellipsis">{{ dependency.depends_on_name }}</div>
-		<div class="ml-4 flex items-center flex-nowrap">
-			<div class="mr-2">Group By</div>
-			<TextField
-				v-model="groupBy"
-				no-label
-				:debounce="1000"
-				class="p-0"
-				input-class="p-0"
-				@update:model-value="$emit('update', {...dependency, group_by: groupBy})"
+	<div class="rounded-lg bg-sky-950 text-slate-300 overflow-hidden">
+		<div class="flex items-center flex-nowrap">
+			<div class="text-base font-bold flex-grow px-2 text-no-wrap text-ellipsis">{{ dependency.depends_on_name }}</div>
+			<ShowHideButton
+				label="Configure"
+				:hide-icon="HideConfigureIcon"
+				:show-icon="ShowConfigureIcon"
+				v-model="isEditing"
 			/>
+			<ActionButton :saving="saving" type="trash" class="p-4" @click="$emit('remove')" />
 		</div>
-		<ActionButton :saving="saving" type="trash" class="p-4" @click="$emit('remove')" />
+		<div v-if="isEditing" class="mb-4">
+			<QSeparator class="bg-slate-500 mb-4" />
+			<div class="px-4">
+				<div class="flex items-center flex-nowrap">
+					<div class="mr-2 w-16">Include:</div>
+					<SelectField
+						class="flex-grow"
+						:options="dependentFields"
+						clearable
+						multiple
+						placeholder="(All Data)"
+						v-model="includeFields"
+						@update:model-value="$emit('update', {...dependency, include_fields: includeFields})"
+					/>
+				</div>
+				<div class="flex items-center flex-nowrap mt-4">
+					<div class="mr-2 w-16">Group By:</div>
+					<SelectField
+						class="flex-grow"
+						:options="includeFields.length > 0 ? includeFields : dependentFields"
+						clearable
+						multiple
+						placeholder="(No Grouping)"
+						v-model="groupBy"
+						@update:model-value="$emit('update', {...dependency, group_by: groupBy})"
+					/>
+				</div>
+				<div class="mt-4">
+					<h6 class="text-base">Example Task Grouping</h6>
+					<div>
+
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 </template>
 <script setup lang="ts">
+import { ShowHideButton } from "@/components/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
-import { WorkflowJob, WorkflowJobDependency } from "@/types/workflows";
-import { TextField } from "quasar-ui-danx";
-import { ref } from "vue";
+import { Workflow, WorkflowJob, WorkflowJobDependency } from "@/types/workflows";
+import { FaSolidScrewdriverWrench as HideConfigureIcon, FaSolidWrench as ShowConfigureIcon } from "danx-icon";
+import { SelectField } from "quasar-ui-danx";
+import { computed, ref } from "vue";
 
 defineEmits(["update", "remove"]);
 const props = defineProps<{
 	dependency: WorkflowJobDependency;
 	job: WorkflowJob;
+	workflow: Workflow;
 	saving?: boolean;
 }>();
 
-const groupBy = ref(props.dependency.group_by);
+const isEditing = ref(false);
+const includeFields = ref(props.dependency.include_fields || []);
+const groupBy = ref(props.dependency.group_by || []);
+
+const dependentJob = computed(() => props.workflow.jobs.find(job => job.id === props.dependency.depends_on_id));
+const dependentJobAgentsWithoutResponseSample = computed(() => dependentJob.value.assignments.filter(assignment => !assignment.agent.response_sample));
+
+const exampleTasks = computed(() => {
+	const tasks = [];
+	for (const assignment of dependentJob.value.assignments) {
+		if (assignment.agent.response_sample) {
+			const includedFields = includeFields.value.length > 0 ? includeFields.value : dependentFields.value;
+			const groupByFields = groupBy.value.length > 0 ? groupBy.value : includedFields;
+
+			for (const task of assignment.agent.response_sample) {
+				const taskGroup = {};
+				for (const field of groupByFields) {
+					const value = field.split(".").reduce((obj, key) => obj[key], task);
+					taskGroup[field] = value;
+				}
+				const taskFields = {};
+				for (const field of includedFields) {
+					const value = field.split(".").reduce((obj, key) => obj[key], task);
+					taskFields[field] = value;
+				}
+				tasks.push({ group: taskGroup, fields: taskFields });
+			}
+		}
+	}
+	return tasks;
+});
+
+/**
+ * The list of fields (including nested fields) available amongst all the sample responses for all assigned agents in the job dependencies.
+ */
+const dependentFields = computed<string[]>(() => {
+	const fields = [];
+	for (const assignment of dependentJob.value.assignments) {
+		if (assignment.agent.response_sample) {
+			fields.push(...getNestedFieldList(assignment.agent.response_sample));
+		}
+	}
+	// make fields a unique list
+	return [...new Set(fields)];
+});
+
+/**
+ * A flat list of all fields and nested fields expressed in dot notation
+ */
+function getNestedFieldList(object) {
+	const fields = [];
+	for (const fieldName of Object.keys(object)) {
+		const fieldValue = object[fieldName];
+		fields.push(fieldName);
+		if (Array.isArray(fieldValue)) {
+			for (const item of fieldValue) {
+				if (typeof item === "object") {
+					fields.push(...getNestedFieldList(item).map(nestedField => `${fieldName}.*.${nestedField}`));
+				}
+			}
+		} else if (typeof fieldValue === "object") {
+			for (const nestedField of getNestedFieldList(fieldValue)) {
+				fields.push(`${fieldName}.${nestedField}`);
+			}
+		}
+	}
+	return fields;
+}
 </script>
