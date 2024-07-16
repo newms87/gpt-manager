@@ -49,12 +49,18 @@
 			</div>
 			<div class="w-1/2 pl-8">
 				<h5 class="mb-4">Agent Assignments</h5>
-				<WorkflowAssignmentsList
-					:assignments="job.assignments"
-					:unassign-action="unassignAgentAction"
-					context="workflow"
-				/>
+				<ListTransition>
+					<template v-for="assignment in job.assignments" :key="assignment.id">
+						<QSeparator class="bg-slate-200" />
+						<WorkflowAssignmentItem
+							:assignment="assignment"
+							context="workflow"
+							:unassign-action="unassignAgentAction"
+						/>
+					</template>
+				</ListTransition>
 				<SelectField
+					class="mt-4"
 					:options="availableAgents"
 					:disable="assignAgentAction.isApplying"
 					placeholder="+ Assign Agent"
@@ -67,13 +73,13 @@
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
+import WorkflowAssignmentItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowAssignmentItem";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
 import { ActionButton, ShowHideButton } from "@/components/Shared";
 import { Workflow, WorkflowJob } from "@/types/workflows";
 import { FaSolidTriangleExclamation as WarningIcon } from "danx-icon";
-import { EditOnClickTextField, SelectField } from "quasar-ui-danx";
+import { EditOnClickTextField, ListTransition, SelectField } from "quasar-ui-danx";
 import { computed, ref } from "vue";
-import WorkflowAssignmentsList from "./WorkflowAssignmentsList";
 
 const props = defineProps<{
 	job: WorkflowJob;

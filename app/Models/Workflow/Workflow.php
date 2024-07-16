@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 
@@ -36,10 +37,24 @@ class Workflow extends Model implements AuditableContract
     {
         return $this->workflowJobs()->orderBy('dependency_level')->orderBy('name');
     }
-    
+
     public function workflowRuns(): HasMany|WorkflowRun
     {
         return $this->hasMany(WorkflowRun::class);
+    }
+
+    public function validate(): static
+    {
+        validator($this->toArray(), [
+            'name' => [
+                'required',
+                'max:80',
+                'string',
+                Rule::unique('workflows')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
+            ],
+        ])->validate();
+
+        return $this;
     }
 
     public function __toString()

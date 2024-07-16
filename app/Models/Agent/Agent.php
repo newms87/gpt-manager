@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -99,10 +98,6 @@ class Agent extends Model implements AuditableContract
         return app($apiClass);
     }
 
-    /**
-     * @return static
-     * @throws ValidationException
-     */
     public function validate(): static
     {
         validator($this->toArray(), [

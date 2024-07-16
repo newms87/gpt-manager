@@ -1,17 +1,22 @@
 <template>
 	<div class="p-6">
-		<WorkflowAssignmentsList
-			v-if="agent.assignments"
-			:assignments="agent.assignments"
-			:unassign-action="unassignAgentAction"
-			context="agent"
-		/>
+		<ListTransition>
+			<template v-for="assignment in agent.assignments" :key="assignment.id">
+				<QSeparator class="bg-slate-200" />
+				<WorkflowAssignmentItem
+					:assignment="assignment"
+					context="agent"
+					:unassign-action="unassignAgentAction"
+				/>
+			</template>
+		</ListTransition>
 	</div>
 </template>
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Agents/agentActions";
-import WorkflowAssignmentsList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowAssignmentsList";
+import WorkflowAssignmentItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowAssignmentItem";
 import { Agent } from "@/types/agents";
+import { ListTransition } from "quasar-ui-danx";
 
 defineProps<{
 	agent: Agent,

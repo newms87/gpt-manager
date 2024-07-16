@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -38,7 +37,7 @@ class WorkflowRepository extends ActionRepository
             'agents' => team()->agents->map(fn(Agent $agent) => ['value' => $agent->id, 'label' => $agent->name]),
         ];
     }
-    
+
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
@@ -51,13 +50,12 @@ class WorkflowRepository extends ActionRepository
 
     public function createWorkflow(array $data): Model
     {
-        $data['team_id'] = team()->id;
+        $workflow          = Workflow::make($data);
+        $workflow->team_id = team()->id;
 
-        Validator::make($data, [
-            'name' => 'required|string|max:80|unique:workflows',
-        ])->validate();
+        $workflow->validate()->save();
 
-        return Workflow::create($data);
+        return $workflow;
     }
 
     public function runWorkflow(Workflow $workflow, $data): WorkflowRun
