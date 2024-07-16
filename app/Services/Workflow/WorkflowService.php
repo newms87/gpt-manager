@@ -36,10 +36,6 @@ class WorkflowService
 
     /**
      * Dispatch any pending workflow run jobs that have their dependencies met
-     *
-     * @param WorkflowRun $workflowRun
-     * @return void
-     * @throws Throwable
      */
     public static function dispatchPendingWorkflowJobs(WorkflowRun $workflowRun): void
     {
@@ -58,30 +54,13 @@ class WorkflowService
         $pendingJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_PENDING) ?? [];
 
         foreach($pendingJobRuns as $pendingJobRun) {
-            $workflowJob   = $pendingJobRun->workflowJob;
-            $dependencies  = $workflowJob->dependencies()->get();
-            $dependsOnJobs = [];
-
-            // Resolve the dependencies from the completed job runs.
-            // Associate the completed job run with the dependency configuration, so we can group the output data of the artifacts to pass to the next job.
-            if ($completedJobRuns) {
-                foreach($dependencies as $dependency) {
-                    $completedJobRun = $completedJobRuns->where('workflow_job_id', $dependency->depends_on_workflow_job_id)->first();
-
-                    if ($completedJobRun) {
-                        $dependsOnJobs[$dependency->depends_on_workflow_job_id] = [
-                            'id'            => $dependency->depends_on_workflow_job_id,
-                            'jobRun'        => $completedJobRun,
-                            'includeFields' => $dependency->include_fields,
-                            'groupBy'       => $dependency->group_by,
-                        ];
-                    }
-                }
-            }
+            $workflowJob = $pendingJobRun->workflowJob;
+            $workflowJob->load('dependencies');
+            $prerequisiteJobRuns = static::getPrerequisiteJobRuns($pendingJobRun, $completedJobRuns);
 
             // If the job has dependencies that have not yet completed, then skip this job
-            if (count($dependsOnJobs) < $dependencies->count()) {
-                Log::debug("Waiting for dependencies: " . $dependencies->reduce(fn($str, $d) => $str . $d . ', ', ''));
+            if (count($prerequisiteJobRuns) < $workflowJob->dependencies->count()) {
+                Log::debug("Waiting for dependencies: " . $workflowJob->dependencies->reduce(fn($str, $d) => $str . $d . ', ', ''));
                 continue;
             }
 
@@ -90,8 +69,31 @@ class WorkflowService
             $pendingJobRun->started_at = now();
             $pendingJobRun->save();
 
-            $workflowJob->getWorkflowTool()->assignTasks($pendingJobRun, $dependsOnJobs);
+            $workflowJob->getWorkflowTool()->assignTasks($pendingJobRun, $prerequisiteJobRuns);
         }
+    }
+
+    /**
+     * Get the prerequisite job runs for a given Workflow Job Run
+     */
+    public static function getPrerequisiteJobRuns(WorkflowJobRun $workflowJobRun, Collection $completedJobRuns = null): array
+    {
+        if (!$completedJobRuns) {
+            return [];
+        }
+
+        $prerequisiteJobRuns = [];
+
+        foreach($workflowJobRun->workflowJob->dependencies as $dependency) {
+            /** @var WorkflowJobRun $completedJobRun */
+            $completedJobRun = $completedJobRuns->where('workflow_job_id', $dependency->depends_on_workflow_job_id)->first();
+
+            if ($completedJobRun) {
+                $prerequisiteJobRuns[$dependency->depends_on_workflow_job_id] = $completedJobRun;
+            }
+        }
+
+        return $prerequisiteJobRuns;
     }
 
     /**

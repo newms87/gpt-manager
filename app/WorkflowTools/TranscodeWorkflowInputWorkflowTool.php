@@ -10,7 +10,7 @@ class TranscodeWorkflowInputWorkflowTool extends WorkflowTool
 {
     public static string $toolName = 'Prepare Workflow Input';
 
-    public function assignTasks(WorkflowJobRun $workflowJobRun, array $dependsOnJobs): void
+    public function assignTasks(WorkflowJobRun $workflowJobRun, array $prerequisiteJobs): void
     {
         // Always create 1 task to transcode the workflow input
         $workflowJobRun->tasks()->create([

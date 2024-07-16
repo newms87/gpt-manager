@@ -3,10 +3,10 @@
 		<div class="flex items-center flex-nowrap">
 			<div class="text-base font-bold flex-grow px-2 text-no-wrap text-ellipsis">{{ dependency.depends_on_name }}</div>
 			<ShowHideButton
+				v-model="isEditing"
 				label="Configure"
 				:hide-icon="HideConfigureIcon"
 				:show-icon="ShowConfigureIcon"
-				v-model="isEditing"
 			/>
 			<ActionButton :saving="saving" type="trash" class="p-4" @click="$emit('remove')" />
 		</div>
@@ -16,24 +16,24 @@
 				<div class="flex items-center flex-nowrap">
 					<div class="mr-2 w-16">Include:</div>
 					<SelectField
+						v-model="includeFields"
 						class="flex-grow"
 						:options="dependentFields"
 						clearable
 						multiple
 						placeholder="(All Data)"
-						v-model="includeFields"
 						@update:model-value="$emit('update', {...dependency, include_fields: includeFields})"
 					/>
 				</div>
 				<div class="flex items-center flex-nowrap mt-4">
 					<div class="mr-2 w-16">Group By:</div>
 					<SelectField
+						v-model="groupBy"
 						class="flex-grow"
 						:options="includeFields.length > 0 ? includeFields : dependentFields"
 						clearable
 						multiple
 						placeholder="(No Grouping)"
-						v-model="groupBy"
 						@update:model-value="$emit('update', {...dependency, group_by: groupBy})"
 					/>
 				</div>
@@ -69,31 +69,6 @@ const groupBy = ref(props.dependency.group_by || []);
 
 const dependentJob = computed(() => props.workflow.jobs.find(job => job.id === props.dependency.depends_on_id));
 const dependentJobAgentsWithoutResponseSample = computed(() => dependentJob.value.assignments.filter(assignment => !assignment.agent.response_sample));
-
-const exampleTasks = computed(() => {
-	const tasks = [];
-	for (const assignment of dependentJob.value.assignments) {
-		if (assignment.agent.response_sample) {
-			const includedFields = includeFields.value.length > 0 ? includeFields.value : dependentFields.value;
-			const groupByFields = groupBy.value.length > 0 ? groupBy.value : includedFields;
-
-			for (const task of assignment.agent.response_sample) {
-				const taskGroup = {};
-				for (const field of groupByFields) {
-					const value = field.split(".").reduce((obj, key) => obj[key], task);
-					taskGroup[field] = value;
-				}
-				const taskFields = {};
-				for (const field of includedFields) {
-					const value = field.split(".").reduce((obj, key) => obj[key], task);
-					taskFields[field] = value;
-				}
-				tasks.push({ group: taskGroup, fields: taskFields });
-			}
-		}
-	}
-	return tasks;
-});
 
 /**
  * The list of fields (including nested fields) available amongst all the sample responses for all assigned agents in the job dependencies.

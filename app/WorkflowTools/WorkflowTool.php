@@ -13,11 +13,35 @@ abstract class WorkflowTool
 
     abstract public function runTask(WorkflowTask $workflowTask): void;
 
-    public function assignTasks(WorkflowJobRun $workflowJobRun, array $dependsOnJobs): void
+    public function assignTasks(WorkflowJobRun $workflowJobRun, array $prerequisiteJobRuns = []): void
     {
+        foreach($workflowJobRun->workflowJob->dependencies as $dependency) {
+            $prerequisiteJob = $prerequisiteJobRuns[$dependency->depends_on_workflow_job_id] ?? null;
+            if (!$prerequisiteJob) {
+                Log::debug("$workflowJobRun is missing the dependency $dependency, skipping task creation");
+
+                return;
+            }
+
+            // TODO: 1. For each dependency, loop through all the prerequisite job artifacts to extract the included data
+            //       2. From the set of included artifact data, create the group by key for each artifact
+            //       3. Append the artifact to the list matching the group by key index (ie: $taskGroup[$groupKey][] = $artifact)
+            //       4. Take the cross product of all the group by keys to create the set of tasks to be created
+            //       5. The task group will be the concatenation of all the group by keys for each tuple in the cross product
+
+
+            $data = $this->resolveArtifactData($prerequisiteJob, $dependency->include_fields);
+
+            $tasksByDependency[$dependency->depends_on_workflow_job_id] = [
+                'jobRun'  => $prerequisiteJob,
+                'groupBy' => $dependency->group_by,
+            ];
+        }
+
         // Resolve the unique task groups to create a task for each group.
         // If there are no task groups, just setup a default task group
-        $taskGroups  = $this->getTaskGroups($dependsOnJobs) ?: [''];
+        $taskGroups = $this->getTaskGroups($dependsOnJobs) ?: [''];
+
         $assignments = $workflowJobRun->workflowJob->workflowAssignments()->get();
 
         if ($assignments->isEmpty()) {
@@ -39,6 +63,18 @@ abstract class WorkflowTool
                 Log::debug("$workflowJobRun created $task for $assignment with group $taskGroup");
             }
         }
+    }
+
+    public function resolveArtifactData(WorkflowJobRun $dependsOnJob, array $includeFields): array
+    {
+        $artifacts = $dependsOnJob->artifacts()->get();
+        $data      = [];
+
+        foreach($artifacts as $artifact) {
+            $data += $artifact->resolveFields($includeFields);
+        }
+
+        return $data;
     }
 
     /**
