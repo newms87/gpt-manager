@@ -22,7 +22,7 @@
 						clearable
 						multiple
 						placeholder="(All Data)"
-						@update:model-value="$emit('update', {...dependency, include_fields: includeFields})"
+						@update="$emit('update', {...dependency, include_fields: includeFields})"
 					/>
 				</div>
 				<div class="flex items-center flex-nowrap mt-4">
@@ -30,18 +30,12 @@
 					<SelectField
 						v-model="groupBy"
 						class="flex-grow"
-						:options="includeFields.length > 0 ? includeFields : dependentFields"
+						:options="dependentFields"
 						clearable
 						multiple
 						placeholder="(No Grouping)"
-						@update:model-value="$emit('update', {...dependency, group_by: groupBy})"
+						@update="$emit('update', {...dependency, group_by: groupBy})"
 					/>
-				</div>
-				<div class="mt-4">
-					<h6 class="text-base">Example Task Grouping</h6>
-					<div>
-
-					</div>
 				</div>
 			</div>
 		</div>

@@ -21,13 +21,16 @@
 							No Assignments
 						</div>
 					</div>
-					<div class="pl-4">
-						<ShowHideButton
-							v-model="isEditing"
-							label="Edit"
-							class="bg-slate-700 text-slate-300 rounded"
-						/>
-					</div>
+					<ShowHideButton
+						v-model="showTasksExample"
+						label="Tasks Preview"
+						class="ml-4 bg-sky-700 text-slate-300 rounded"
+					/>
+					<ShowHideButton
+						v-model="isEditing"
+						label="Edit"
+						class="ml-4 bg-slate-700 text-slate-300 rounded"
+					/>
 					<ActionButton
 						:action="deleteJobAction"
 						:target="job"
@@ -68,9 +71,16 @@
 				/>
 			</div>
 		</QCardSection>
+		<QCardSection v-if="showTasksExample">
+			<h6 class="text-base">Tasks Preview</h6>
+			<div>
+				<MarkdownEditor readonly format="json" />
+			</div>
+		</QCardSection>
 	</QCard>
 </template>
 <script setup lang="ts">
+import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
 import WorkflowAssignmentItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowAssignmentItem";
@@ -88,6 +98,7 @@ const props = defineProps<{
 }>();
 
 const isEditing = ref(false);
+const showTasksExample = ref(false);
 const updateJobDebouncedAction = getAction("update-job-debounced");
 const updateJobAction = getAction("update-job");
 const deleteJobAction = getAction("delete-job");

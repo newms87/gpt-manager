@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Workflow;
 
-use App\Services\Workflow\WorkflowTaskService;
+use App\Services\AgentThread\AgentThreadService;
 use Tests\AuthenticatedTestCase;
 
-class WorkflowTaskServiceTest extends AuthenticatedTestCase
+class AgentThreadServiceTest extends AuthenticatedTestCase
 {
     public function test_cleanContent_providesValidJsonWithExtraBackticksPresent(): void
     {
@@ -13,7 +13,7 @@ class WorkflowTaskServiceTest extends AuthenticatedTestCase
         $content = "```json\n{\"key\": \"value\"}\n```";
 
         // When
-        $cleanedContent = WorkflowTaskService::cleanContent($content);
+        $cleanedContent = AgentThreadService::cleanContent($content);
 
         // Then
         $this->assertEquals('{"key": "value"}', $cleanedContent);
@@ -25,7 +25,7 @@ class WorkflowTaskServiceTest extends AuthenticatedTestCase
         $content = "{\"key\": \"value\"}";
 
         // When
-        $cleanedContent = WorkflowTaskService::cleanContent($content);
+        $cleanedContent = AgentThreadService::cleanContent($content);
 
         // Then
         $this->assertEquals('{"key": "value"}', $cleanedContent);

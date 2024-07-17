@@ -10,14 +10,16 @@
 
 		<div>
 			<h3>Sample Response</h3>
-			<QBtn
+			<ActionButton
+				:action="sampleAction"
+				:target="agent"
 				class="my-4 bg-sky-800 text-base px-6"
-				@click="sampleAction.trigger(agent)"
+				:icon="GenerateSampleIcon"
+				icon-class="w-5"
+				label="Generate Sample"
 				:loading="sampleAction.isApplying"
-			>
-				<GenerateSampleIcon class="w-5 mr-2" />
-				Generate Sample
-			</QBtn>
+				@click="sampleAction.trigger(agent)"
+			/>
 			<div v-if="agent.response_sample">
 				<MarkdownEditor readonly :model-value="agent.response_sample" sync-model-changes format="json" />
 			</div>
@@ -27,6 +29,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Agents/agentActions";
+import { ActionButton } from "@/components/Shared";
 import { Agent } from "@/types/agents";
 import { FaSolidRobot as GenerateSampleIcon } from "danx-icon";
 import { ActionForm, Form, SelectField } from "quasar-ui-danx";
