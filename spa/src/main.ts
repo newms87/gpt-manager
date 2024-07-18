@@ -20,6 +20,7 @@ applyCssVars(colors, "tw-");
 
 const baseUrl = import.meta.env.VITE_API_URL;
 configure({
+	router,
 	request: {
 		baseUrl: baseUrl,
 		headers: {

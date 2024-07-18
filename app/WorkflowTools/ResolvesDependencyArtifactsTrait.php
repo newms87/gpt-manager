@@ -15,7 +15,7 @@ use Newms87\Danx\Helpers\StringHelper;
 trait ResolvesDependencyArtifactsTrait
 {
     const int MAX_KEY_LENGTH  = 30;
-    const int MAX_HASH_LENGTH = 10;
+    const int MAX_HASH_LENGTH = 6;
 
     /**
      * Resolve the artifacts for each dependency based on the prerequisite job run artifacts and the group by and
@@ -203,7 +203,7 @@ trait ResolvesDependencyArtifactsTrait
             $requiresHash = true;
         }
         if ($requiresHash) {
-            $hash       = substr(md5(json_encode($groupByValue)), 0, static::MAX_HASH_LENGTH);
+            $hash       = '#' . substr(md5(json_encode($groupByValue)), 0, static::MAX_HASH_LENGTH);
             $groupByKey = StringHelper::limitText(static::MAX_KEY_LENGTH, $groupByKey, $hash);
         }
 

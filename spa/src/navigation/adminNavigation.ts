@@ -1,4 +1,3 @@
-import router from "@/router";
 import {
 	FaSolidCloudBolt as DashboardIcon,
 	FaSolidDatabase as AuditsIcon,
@@ -12,31 +11,31 @@ export default [
 	{
 		label: "Dashboard",
 		icon: DashboardIcon,
-		onClick: () => router.push({ name: "home" })
+		route: { name: "home" }
 	},
 	{
 		label: "Content Sources",
 		icon: ContentSourcesIcon,
-		onClick: () => router.push({ name: "content-sources" })
+		route: { name: "content-sources" }
 	},
 	{
 		label: "Workflow Inputs",
 		icon: WorkflowInputsIcon,
-		onClick: () => router.push({ name: "workflow-inputs" })
+		route: { name: "workflow-inputs" }
 	},
 	{
 		label: "Workflows",
 		icon: WorkflowsIcon,
-		onClick: () => router.push({ name: "workflows" })
+		route: { name: "workflows" }
 	},
 	{
 		label: "Agents",
 		icon: AgentsIcon,
-		onClick: () => router.push({ name: "agents" })
+		route: { name: "agents" }
 	},
 	{
 		label: "Audits",
 		icon: AuditsIcon,
-		onClick: () => router.push({ name: "audit-requests" })
+		route: { name: "audit-requests" }
 	}
 ];
