@@ -2,24 +2,14 @@
 
 namespace App\WorkflowTools;
 
-use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowTask;
 use Newms87\Danx\Services\TranscodeFileService;
 
 class TranscodeWorkflowInputWorkflowTool extends WorkflowTool
 {
-    public static string $toolName = 'Prepare Workflow Input';
+    use AssignsWorkflowTasksTrait, ResolvesDependencyArtifactsTrait;
 
-    public function assignTasks(WorkflowJobRun $workflowJobRun, array $prerequisiteJobRuns = []): void
-    {
-        // Always create 1 task to transcode the workflow input
-        $workflowJobRun->tasks()->create([
-            'user_id'         => user()->id,
-            'workflow_job_id' => $workflowJobRun->workflow_job_id,
-            'group'           => '',
-            'status'          => WorkflowTask::STATUS_PENDING,
-        ]);
-    }
+    public static string $toolName = 'Transcode Workflow Input';
 
     /**
      * Run the tool on the workflow task to transcode any PDF files to images

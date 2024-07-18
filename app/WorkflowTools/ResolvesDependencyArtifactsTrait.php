@@ -8,6 +8,7 @@ use App\Models\Workflow\WorkflowJobRun;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Newms87\Danx\Helpers\ArrayHelper;
 
 trait ResolvesDependencyArtifactsTrait
@@ -19,15 +20,15 @@ trait ResolvesDependencyArtifactsTrait
     public function resolveDependencyArtifacts(WorkflowJob $workflowJob, array|Collection $prerequisiteJobRuns = []): array
     {
         try {
-            Log::debug(" $workflowJob resolving artifacts for each dependency");
+            Log::debug("$workflowJob resolving artifacts for each dependency");
             $dependencyArtifactGroups = $this->getArtifactGroupsByDependency($workflowJob->dependencies, $prerequisiteJobRuns);
+
+            return $this->generateArtifactGroupTuples($dependencyArtifactGroups);
         } catch(Exception $e) {
             Log::error("Failed to resolve dependency artifacts $workflowJob: " . $e->getMessage());
 
             return [];
         }
-
-        return $this->generateArtifactGroupTuples($dependencyArtifactGroups);
     }
 
     /**
@@ -63,39 +64,40 @@ trait ResolvesDependencyArtifactsTrait
         foreach($workflowJobRun->artifacts as $artifact) {
             $includedData = ArrayHelper::extractNestedData($artifact->data, $dependency->include_fields);
             if (!$dependency->group_by) {
-                $groups['default'][$artifact->id] = $includedData;
+                $groups['default'][] = $includedData;
                 continue;
             }
 
             $groupByData = ArrayHelper::extractNestedData($artifact->data, $dependency->group_by);
 
-            foreach($groupByData as $groupByValue) {
+            foreach($groupByData as $groupByIndex => $groupByValue) {
                 if ($groupByValue === null) {
                     continue;
                 }
 
-                if (is_scalar($groupByValue)) {
-                    $groupByKey = (string)$groupByValue;
+                $groupByKey = $this->generateGroupByKey($groupByValue);
+
+                // If groupByKey is set, add the included data to the group
+                if ($groupByKey) {
+                    $groups[$groupByKey][] = $includedData;
                 } else {
-                    ArrayHelper::recursiveKsort($groupByValue);
-                    $groupByKey   = '';
-                    $requiresHash = false;
-                    foreach($groupByValue as $key => $value) {
-                        if (is_array($value)) {
-                            $requiresHash = true;
-                            continue;
+                    // If group by key is still empty, that means this entry is an array of arrays. Groups should be made for each element in the array
+                    foreach($groupByValue as $group) {
+                        $groupByKey = $this->generateGroupByKey($group);
+                        if ($groupByKey) {
+                            $resolvedData = $includedData;
+
+                            // For the group index field, remove it in favor a singular version of the field
+                            // NOTE: $group is one of the elements in the array of arrays (ie: the singular version of the groupByIndex)
+                            unset($resolvedData[$groupByIndex]);
+                            $resolvedData[Str::singular($groupByIndex)] = $group;
+
+                            $groups[$groupByKey][] = $resolvedData;
+                        } else {
+                            throw new Exception("Failed to generate group key: Value too complex: " . json_encode($groupByValue));
                         }
-                        $groupByKey .= ($groupByKey ? '|' : '') . "$key:$value";
-                    }
-                    if (strlen($groupByKey) > 30) {
-                        $requiresHash = true;
-                        $groupByKey   = substr($groupByKey, 0, 20);
-                    }
-                    if ($requiresHash) {
-                        $groupByKey .= substr(md5(json_encode($groupByValue)), 0, 10);
                     }
                 }
-                $groups[$groupByKey][$artifact->id] = $includedData;
             }
         }
 
@@ -129,5 +131,56 @@ trait ResolvesDependencyArtifactsTrait
         }
 
         return $groupTuples;
+    }
+
+    /**
+     * Generates a unique key for grouping data based on the groupByValue.
+     * If the groupByValue is an array, it will be sorted and concatenated into a string.
+     * If the key is too long, a hash will be added to make the key unique.
+     * If the groupByValue is an array of arrays, returns false, as keys should be generated only for the children.
+     */
+    public function generateGroupByKey($groupByValue, $maxKeyLength = 30, $hashLength = 10)
+    {
+        // A flag to indicate there is data not defined in the key,
+        // so we need to add a hash to make the key unique to the data
+        $requiresHash = false;
+
+        if (is_scalar($groupByValue)) {
+            $groupByKey = (string)$groupByValue;
+        } else {
+            ArrayHelper::recursiveKsort($groupByValue);
+            $groupByKey = '';
+            foreach($groupByValue as $key => $value) {
+                if (is_array($value)) {
+                    // Can't make a readable unique key from an array value, so just make a hash of all the data
+                    $requiresHash = true;
+                    continue;
+                }
+                $thisKey = ($groupByKey ? '|' : '') . "$key:$value";
+
+                // If we've exceeded the key length, we need to add a hash to make the key unique
+                if ($groupByKey && strlen($groupByKey . $thisKey) > $maxKeyLength) {
+                    $requiresHash = true;
+                    break;
+                }
+
+                $groupByKey .= $thisKey;
+            }
+        }
+
+        // If groupByKey is set, we need to check if it's too long and add a hash to make it unique
+        if (!$groupByKey) {
+            return false;
+        }
+
+        if (strlen($groupByKey) > $maxKeyLength) {
+            $requiresHash = true;
+            $groupByKey   = substr($groupByKey, 0, $maxKeyLength - $hashLength);
+        }
+        if ($requiresHash) {
+            $groupByKey .= substr(md5(json_encode($groupByValue)), 0, $hashLength);
+        }
+
+        return $groupByKey;
     }
 }

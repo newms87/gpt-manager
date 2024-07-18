@@ -3,12 +3,15 @@
 namespace App\Models\Workflow;
 
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
+use App\WorkflowTools\TranscodeWorkflowInputWorkflowTool;
 use App\WorkflowTools\WorkflowTool;
+use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
@@ -68,6 +71,36 @@ class WorkflowJob extends Model implements AuditableContract
     public function getWorkflowTool(): WorkflowTool
     {
         return app($this->workflow_tool ?: RunAgentThreadWorkflowTool::class);
+    }
+
+    public function getTasksPreview(): array
+    {
+        try {
+            $prerequisiteJobRuns = [];
+
+            foreach($this->dependencies as $dependency) {
+                $artifacts = [];
+
+                if ($dependency->dependsOn->workflow_tool === TranscodeWorkflowInputWorkflowTool::class) {
+                    $artifacts[] = Artifact::make(['data' => 'Workflow Input']);
+                } else {
+                    foreach($dependency->dependsOn->workflowAssignments as $assignment) {
+                        $artifacts[] = Artifact::make(['data' => $assignment->agent->response_sample]);
+                    }
+                }
+
+                $workflowRun                  = WorkflowJobRun::make();
+                $workflowRun->workflow_job_id = $dependency->depends_on_workflow_job_id;
+                $workflowRun->setRelation('artifacts', $artifacts);
+                $prerequisiteJobRuns[$workflowRun->workflow_job_id] = $workflowRun;
+            }
+
+            return $this->getWorkflowTool()->resolveDependencyArtifacts($this, $prerequisiteJobRuns);
+        } catch(Exception $e) {
+            Log::warning("Error generating tasks preview for $this: $e");
+
+            return [];
+        }
     }
 
     public function delete()

@@ -31,13 +31,13 @@
 						label="Edit"
 						class="ml-4 bg-slate-700 text-slate-300 rounded"
 					/>
-					<ActionButton
-						:action="deleteJobAction"
-						:target="job"
-						class="p-4 ml-2"
-						type="trash"
-					/>
 				</template>
+				<ActionButton
+					:action="deleteJobAction"
+					:target="job"
+					class="p-4 ml-2"
+					type="trash"
+				/>
 			</div>
 		</div>
 		<QCardSection v-if="isEditing" class="flex items-stretch flex-nowrap">
@@ -73,8 +73,11 @@
 		</QCardSection>
 		<QCardSection v-if="showTasksExample">
 			<h6 class="text-base">Tasks Preview</h6>
-			<div>
-				<MarkdownEditor readonly format="json" />
+			<div class="mt-4">
+				<div v-for="(task, index) in job.tasks_preview" :key="index" class="bg-slate-800 p-4 mb-4 rounded-lg">
+					<div class="font-bold">{{ index }}</div>
+					<MarkdownEditor readonly format="yaml" :model-value="task" sync-model-changes />
+				</div>
 			</div>
 		</QCardSection>
 	</QCard>
