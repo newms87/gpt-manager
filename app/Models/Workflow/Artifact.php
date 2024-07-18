@@ -20,6 +20,17 @@ class Artifact extends Model implements AuditableContract
         'deleted_at',
     ];
 
+    public function casts(): array
+    {
+        return [
+            'data' => 'json',
+        ];
+    }
+
+    /**
+     * TODO: Deprecated and should probably remove this method
+     * @deprecated Deprecated and should probably remove this method
+     */
     public function groupContentBy($key): array
     {
         $data = json_decode($this->content, true);

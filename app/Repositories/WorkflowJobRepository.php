@@ -136,7 +136,8 @@ class WorkflowJobRepository extends ActionRepository
                     'depends_on_workflow_job_id' => $dependency['depends_on_id'],
                 ]);
             }
-            $dependsOnWorkflowJob->group_by = $dependency['group_by'] ?? '';
+            $dependsOnWorkflowJob->group_by       = $dependency['group_by'] ?? [];
+            $dependsOnWorkflowJob->include_fields = $dependency['include_fields'] ?? [];
             $dependsOnWorkflowJob->save();
         }
 

@@ -16,6 +16,7 @@ class WorkflowJobDependencyFactory extends Factory
             'workflow_job_id'            => WorkflowJob::factory(),
             'depends_on_workflow_job_id' => WorkflowJob::factory(),
             'group_by'                   => '',
+            'include_fields'             => '',
         ];
     }
 }

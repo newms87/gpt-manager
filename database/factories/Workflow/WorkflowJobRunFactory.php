@@ -2,7 +2,9 @@
 
 namespace Database\Factories\Workflow;
 
+use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowJob;
+use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -33,5 +35,16 @@ class WorkflowJobRunFactory extends Factory
     public function failed(): self
     {
         return $this->state(['started_at' => now(), 'failed_at' => now()]);
+    }
+
+    public function withArtifactData(array $artifactData): static
+    {
+        return $this->afterCreating(function (WorkflowJobRun $workflowJobRun) use ($artifactData) {
+            $artifacts = [];
+            foreach($artifactData as $data) {
+                $artifacts[] = Artifact::factory()->create(['data' => $data]);
+            }
+            $workflowJobRun->artifacts()->saveMany($artifacts);
+        });
     }
 }

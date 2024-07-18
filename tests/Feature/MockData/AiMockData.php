@@ -14,8 +14,11 @@ use Tests\TestCase;
  */
 trait AiMockData
 {
-    public function openAiWorkflowJob(Workflow $workflow, $attributes = [])
+    public function openAiWorkflowJob(Workflow $workflow = null, $attributes = [])
     {
+        if (!$workflow) {
+            $workflow = Workflow::factory()->create();
+        }
         $agent = $this->openAiAgent();
 
         return WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create($attributes);
