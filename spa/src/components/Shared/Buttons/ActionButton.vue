@@ -20,6 +20,7 @@ import {
 	FaSolidPause as PauseIcon,
 	FaSolidPencil as EditIcon,
 	FaSolidPlay as PlayIcon,
+	FaSolidPlus as CreateIcon,
 	FaSolidStop as StopIcon,
 	FaSolidTrash as TrashIcon
 } from "danx-icon";
@@ -27,7 +28,7 @@ import { ActionTarget, ResourceAction } from "quasar-ui-danx";
 import { computed } from "vue";
 
 export interface ActionButtonProps {
-	type?: "trash" | "trash-red" | "edit" | "play" | "stop" | "pause" | "refresh";
+	type?: "trash" | "trash-red" | "create" | "edit" | "play" | "stop" | "pause" | "refresh";
 	color?: "red" | "blue" | "sky" | "green" | "green-invert" | "lime" | "white";
 	icon?: object | string;
 	iconClass?: string;
@@ -77,6 +78,11 @@ const typeOptions = computed(() => {
 		case "trash":
 			return {
 				icon: TrashIcon,
+				iconClass: "w-3"
+			};
+		case "create":
+			return {
+				icon: CreateIcon,
 				iconClass: "w-3"
 			};
 		case "edit":

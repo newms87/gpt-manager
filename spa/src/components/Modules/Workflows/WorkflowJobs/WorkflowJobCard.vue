@@ -52,23 +52,7 @@
 			</div>
 			<div class="w-1/2 pl-8">
 				<h5 class="mb-4">Agent Assignments</h5>
-				<ListTransition>
-					<template v-for="assignment in job.assignments" :key="assignment.id">
-						<QSeparator class="bg-slate-200" />
-						<WorkflowAssignmentItem
-							:assignment="assignment"
-							context="workflow"
-							:unassign-action="unassignAgentAction"
-						/>
-					</template>
-				</ListTransition>
-				<SelectField
-					class="mt-4"
-					:options="availableAgents"
-					:disable="assignAgentAction.isApplying"
-					placeholder="+ Assign Agent"
-					@update="assignAgentAction.trigger(job, {ids: [$event]})"
-				/>
+				<WorkflowJobAssignmentsManager :job="job" />
 			</div>
 		</QCardSection>
 		<QCardSection v-if="showTasksExample">
@@ -85,16 +69,15 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
-import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
-import WorkflowAssignmentItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowAssignmentItem";
+import WorkflowJobAssignmentsManager from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobAssignmentsManager";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
 import { ActionButton, ShowHideButton } from "@/components/Shared";
 import { Workflow, WorkflowJob } from "@/types/workflows";
 import { FaSolidTriangleExclamation as WarningIcon } from "danx-icon";
-import { EditOnClickTextField, ListTransition, SelectField } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { EditOnClickTextField } from "quasar-ui-danx";
+import { ref } from "vue";
 
-const props = defineProps<{
+defineProps<{
 	job: WorkflowJob;
 	workflow: Workflow;
 	isTool?: boolean;
@@ -105,8 +88,4 @@ const showTasksExample = ref(false);
 const updateJobDebouncedAction = getAction("update-job-debounced");
 const updateJobAction = getAction("update-job");
 const deleteJobAction = getAction("delete-job");
-const assignAgentAction = getAction("assign-agent");
-const unassignAgentAction = getAction("unassign-agent");
-
-const availableAgents = computed(() => WorkflowController.getFieldOptions("agents").filter(a => !props.job.assignments.find(ja => ja.agent.id === a.value)));
 </script>
