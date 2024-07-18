@@ -101,15 +101,15 @@ trait ResolvesDependencyArtifactsTrait
                 throw new Exception("Failed to generate group key: Value format is not expected: " . json_encode($groupByData));
             }
 
-            // If groupByKey is set, add the included data to the group
-            if ($groupByKey) {
+            // If groupByKey is the only one set, add the included data to a single group
+            if (!$arrayOfArraysItems) {
                 $groups[$groupByKey][] = $includedData;
             } else {
                 // Groups should be made for each element in the array of arrays
                 foreach($arrayOfArraysItems as $groupByIndex => $arrayOfArrays) {
                     foreach($arrayOfArrays as $group) {
-                        $groupByKey = $this->generateGroupByKey($group);
-                        if ($groupByKey) {
+                        $nestedGroupByKey = $this->generateGroupByKey($group, $groupByKey);
+                        if ($nestedGroupByKey) {
                             $resolvedData = $includedData;
 
                             // For the group index field, remove it in favor a singular version of the field
@@ -117,9 +117,9 @@ trait ResolvesDependencyArtifactsTrait
                             unset($resolvedData[$groupByIndex]);
                             $resolvedData[Str::singular($groupByIndex)] = $group;
 
-                            $groups[$groupByKey][] = $resolvedData;
+                            $groups[$nestedGroupByKey][] = $resolvedData;
                         } else {
-                            throw new Exception("Failed to generate group key: Value too nested: " . json_encode($groupByValue));
+                            throw new Exception("Failed to generate group key: Value too nested: " . json_encode($arrayOfArrays));
                         }
                     }
                 }
@@ -164,7 +164,7 @@ trait ResolvesDependencyArtifactsTrait
      * If the key is too long, a hash will be added to make the key unique.
      * If the groupByValue is an array of arrays, returns false, as keys should be generated only for the children.
      */
-    public function generateGroupByKey($groupByValue)
+    public function generateGroupByKey($groupByValue, $currentKey = '')
     {
         // A flag to indicate there is data not defined in the key,
         // so we need to add a hash to make the key unique to the data
@@ -198,6 +198,7 @@ trait ResolvesDependencyArtifactsTrait
             return false;
         }
 
+        $groupByKey = $currentKey ? "$currentKey|$groupByKey" : $groupByKey;
         if (strlen($groupByKey) > static::MAX_KEY_LENGTH) {
             $requiresHash = true;
         }
