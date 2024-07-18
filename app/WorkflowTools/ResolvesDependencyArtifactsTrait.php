@@ -10,9 +10,13 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Newms87\Danx\Helpers\ArrayHelper;
+use Newms87\Danx\Helpers\StringHelper;
 
 trait ResolvesDependencyArtifactsTrait
 {
+    const int MAX_KEY_LENGTH  = 30;
+    const int MAX_HASH_LENGTH = 10;
+
     /**
      * Resolve the artifacts for each dependency based on the prerequisite job run artifacts and the group by and
      * include fields of the dependency
@@ -70,19 +74,40 @@ trait ResolvesDependencyArtifactsTrait
 
             $groupByData = ArrayHelper::extractNestedData($artifact->data, $dependency->group_by);
 
+            $groupByKey         = '';
+            $arrayOfArraysItems = [];
+
             foreach($groupByData as $groupByIndex => $groupByValue) {
                 if ($groupByValue === null) {
                     continue;
                 }
 
-                $groupByKey = $this->generateGroupByKey($groupByValue);
+                $groupByKeyPart = $this->generateGroupByKey($groupByValue);
 
-                // If groupByKey is set, add the included data to the group
-                if ($groupByKey) {
-                    $groups[$groupByKey][] = $includedData;
+                // If the key is set, that means the value was not an array of arrays and can group all elements together
+                if ($groupByKeyPart) {
+                    // Only add to the key if it will still be less than the max key length
+                    $tmpKey = $groupByKey . ($groupByKey ? ',' : '') . $groupByKeyPart;
+                    if (strlen($tmpKey) <= static::MAX_KEY_LENGTH) {
+                        $groupByKey = $tmpKey;
+                    }
                 } else {
-                    // If group by key is still empty, that means this entry is an array of arrays. Groups should be made for each element in the array
-                    foreach($groupByValue as $group) {
+                    // If the value in an array of arrays, we need to split each element into its own group
+                    $arrayOfArraysItems[$groupByIndex] = $groupByValue;
+                }
+            }
+
+            if (!$arrayOfArraysItems && !$groupByKey) {
+                throw new Exception("Failed to generate group key: Value format is not expected: " . json_encode($groupByData));
+            }
+
+            // If groupByKey is set, add the included data to the group
+            if ($groupByKey) {
+                $groups[$groupByKey][] = $includedData;
+            } else {
+                // Groups should be made for each element in the array of arrays
+                foreach($arrayOfArraysItems as $groupByIndex => $arrayOfArrays) {
+                    foreach($arrayOfArrays as $group) {
                         $groupByKey = $this->generateGroupByKey($group);
                         if ($groupByKey) {
                             $resolvedData = $includedData;
@@ -94,7 +119,7 @@ trait ResolvesDependencyArtifactsTrait
 
                             $groups[$groupByKey][] = $resolvedData;
                         } else {
-                            throw new Exception("Failed to generate group key: Value too complex: " . json_encode($groupByValue));
+                            throw new Exception("Failed to generate group key: Value too nested: " . json_encode($groupByValue));
                         }
                     }
                 }
@@ -139,7 +164,7 @@ trait ResolvesDependencyArtifactsTrait
      * If the key is too long, a hash will be added to make the key unique.
      * If the groupByValue is an array of arrays, returns false, as keys should be generated only for the children.
      */
-    public function generateGroupByKey($groupByValue, $maxKeyLength = 30, $hashLength = 10)
+    public function generateGroupByKey($groupByValue)
     {
         // A flag to indicate there is data not defined in the key,
         // so we need to add a hash to make the key unique to the data
@@ -156,15 +181,15 @@ trait ResolvesDependencyArtifactsTrait
                     $requiresHash = true;
                     continue;
                 }
-                $thisKey = ($groupByKey ? '|' : '') . "$key:$value";
+                $tmpKey = ($groupByKey ? "$groupByKey|" : '') . "$key:$value";
 
                 // If we've exceeded the key length, we need to add a hash to make the key unique
-                if ($groupByKey && strlen($groupByKey . $thisKey) > $maxKeyLength) {
+                if ($groupByKey && strlen($tmpKey) > static::MAX_KEY_LENGTH) {
                     $requiresHash = true;
                     break;
                 }
 
-                $groupByKey .= $thisKey;
+                $groupByKey = $tmpKey;
             }
         }
 
@@ -173,12 +198,12 @@ trait ResolvesDependencyArtifactsTrait
             return false;
         }
 
-        if (strlen($groupByKey) > $maxKeyLength) {
+        if (strlen($groupByKey) > static::MAX_KEY_LENGTH) {
             $requiresHash = true;
-            $groupByKey   = substr($groupByKey, 0, $maxKeyLength - $hashLength);
         }
         if ($requiresHash) {
-            $groupByKey .= substr(md5(json_encode($groupByValue)), 0, $hashLength);
+            $hash       = substr(md5(json_encode($groupByValue)), 0, static::MAX_HASH_LENGTH);
+            $groupByKey = StringHelper::limitText(static::MAX_KEY_LENGTH, $groupByKey, $hash);
         }
 
         return $groupByKey;

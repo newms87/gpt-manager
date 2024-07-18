@@ -20,6 +20,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
             [
                 'name'     => 'Dan Newman',
                 'dob'      => '1987-11-18',
+                'color'    => 'green',
                 'address'  => [
                     'city'  => 'Cordoba',
                     'state' => 'Cordoba',
@@ -37,8 +38,9 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
                 ],
             ],
             [
-                'name'     => 'Micky Mouse',
+                'name'     => 'Mickey Mouse',
                 'dob'      => '1987-11-18',
+                'color'    => 'red',
                 'address'  => [
                     'city'  => 'Orlando',
                     'state' => 'FL',
@@ -121,7 +123,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertCount(0, $defaultGroup, "Should not have produced any artifacts in the default group");
     }
 
-    public function test_getArtifactGroups_produces2ArtifactGroupsForGroupByScalar(): void
+    public function test_getArtifactGroups_producesMultipleArtifactGroupsForGroupByScalar(): void
     {
         // Given
         $artifacts             = $this->getArtifacts();
@@ -137,12 +139,12 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
 
         // Then
-        $danGroup   = $groups['Dan Newman'] ?? [];
-        $mickyGroup = $groups['Micky Mouse'] ?? [];
+        $danGroup    = $groups['Dan Newman'] ?? [];
+        $MickeyGroup = $groups['Mickey Mouse'] ?? [];
         $this->assertCount(1, $danGroup, "Should have produced exactly 1 artifact in the 'Dan Newman' group");
         $this->assertEquals($artifacts[0], array_pop($danGroup), "Should have produced the 1st artifact in the 'Dan Newman' group");
-        $this->assertCount(1, $mickyGroup, "Should have produced exactly 1 artifact in the 'Micky Mouse' group");
-        $this->assertEquals($artifacts[1], array_pop($mickyGroup), "Should have produced the 2nd artifact in the 'Micky Mouse' group");
+        $this->assertCount(1, $MickeyGroup, "Should have produced exactly 1 artifact in the 'Mickey Mouse' group");
+        $this->assertEquals($artifacts[1], array_pop($MickeyGroup), "Should have produced the 2nd artifact in the 'Mickey Mouse' group");
     }
 
     public function test_getArtifactGroups_producesSingleArtifactGroupForGroupByNonUniqueScalar(): void
@@ -165,6 +167,32 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertCount(2, $dobGroup, "Should have produced exactly 2 artifacts in the '1987-11-18' group");
         $this->assertEquals($artifacts[0], array_shift($dobGroup), "Should have produced the 1st artifact in the '1987-11-18' group");
         $this->assertEquals($artifacts[1], array_shift($dobGroup), "Should have produced the 2nd artifact in the '1987-11-18' group");
+    }
+
+    public function test_getArtifactGroups_producesMultipleArtifactGroupsForMultipleGroupByScalar(): void
+    {
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = [];
+        $groupBy               = ['name', 'color'];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'group_by'       => $groupBy,
+            'include_fields' => $includeFields,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertCount(2, $groups, "Should have produced exactly 2 groups");
+
+        $danGroup    = $groups['Dan Newman,green'] ?? [];
+        $MickeyGroup = $groups['Mickey Mouse,red'] ?? [];
+        $this->assertCount(1, $danGroup, "Should have produced exactly 1 artifact in the 'Dan Newman,green' group");
+        $this->assertEquals($artifacts[0], array_pop($danGroup), "Should have produced the 1st artifact in the 'Dan Newman' group");
+        $this->assertCount(1, $MickeyGroup, "Should have produced exactly 1 artifact in the 'Mickey Mouse' group");
+        $this->assertEquals($artifacts[1], array_pop($MickeyGroup), "Should have produced the 2nd artifact in the 'Mickey Mouse' group");
     }
 
     public function test_getArtifactGroups_producesMultipleArtifactGroupForGroupByArray(): void
