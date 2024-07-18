@@ -3,7 +3,7 @@
 		<div class="flex items-center flex-nowrap">
 			<div class="flex-grow">
 				<template v-if="context === 'agent'">
-					<div>{{ assignment.workflowJob.workflow.name }}</div>
+					<div>{{ assignment.workflowJob.workflow?.name }}</div>
 					<div class="font-bold ml-2">{{ assignment.workflowJob.name }}</div>
 				</template>
 				<template v-if="context === 'workflow'">
@@ -17,6 +17,7 @@
 				label="Response Preview"
 				class="bg-sky-800 mx-3"
 			/>
+			<ShowHideButton v-model="isEditingAgent" :show-icon="EditIcon" class="mx-2" />
 			<ActionButton
 				:action="unassignAction"
 				:target="assignment"
@@ -42,16 +43,18 @@
 				/>
 			</template>
 		</div>
+		<AgentPanelsDialog v-if="isEditingAgent" :agent="agent" @close="isEditingAgent = false" />
 	</div>
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Agents/agentActions";
+import AgentPanelsDialog from "@/components/Modules/Agents/AgentPanelsDialog";
 import { ShowHideButton } from "@/components/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { Agent } from "@/types";
 import { WorkflowAssignment } from "@/types/workflows";
-import { FaSolidRobot as GenerateIcon } from "danx-icon";
+import { FaSolidPencil as EditIcon, FaSolidRobot as GenerateIcon } from "danx-icon";
 import { ResourceAction } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
@@ -62,6 +65,7 @@ const props = defineProps<{
 }>();
 
 const showResponse = ref(false);
+const isEditingAgent = ref(false);
 const sampleAction = getAction("generate-sample");
 const agent = computed<Agent>(() => props.assignment.agent);
 </script>

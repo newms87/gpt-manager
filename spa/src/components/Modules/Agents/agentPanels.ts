@@ -25,26 +25,22 @@ export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "prompt",
 		label: "Prompt",
-		class: "w-[60rem]",
 		vnode: (agent: Agent) => h(AgentPromptPanel, { agent })
 	},
 	{
 		name: "response",
 		label: "Response",
-		class: "w-[60rem]",
 		vnode: (agent: Agent) => h(AgentResponsePanel, { agent })
 	},
 	{
 		name: "threads",
 		label: "Threads",
-		class: "w-[60rem]",
 		tabVnode: (agent: Agent) => h(BadgeTab, { count: agent.threads_count }),
 		vnode: (agent: Agent) => h(AgentThreadsPanel, { agent })
 	},
 	{
 		name: "assignments",
 		label: "Assignments",
-		class: "w-[60rem]",
 		tabVnode: (agent: Agent) => h(BadgeTab, { count: agent.assignments_count }),
 		vnode: (agent: Agent) => h(AgentAssignmentsPanel, { agent })
 	}

@@ -23,8 +23,7 @@ import { WorkflowController } from "@/components/Modules/Workflows/workflowContr
 import { filters } from "@/components/Modules/Workflows/workflowFilters";
 import { panels } from "@/components/Modules/Workflows/workflowPanels";
 import { ActionTableLayout } from "quasar-ui-danx";
-import { useRouter } from "vue-router";
 
-WorkflowController.initialize({ vueRouter: useRouter() });
+WorkflowController.initialize();
 const createAction = getAction("create");
 </script>

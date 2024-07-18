@@ -79,7 +79,7 @@ const validContent = computed(() => {
 			return rawContent.value;
 	}
 });
-const contentLength = computed(() => typeof content.value === "string" ? content.value.length : JSON.stringify(content.value).length);
+const contentLength = computed(() => typeof content.value === "string" ? content.value.length : JSON.stringify(content.value || "").length);
 
 function updateContent(value: string) {
 	value = value.trim();

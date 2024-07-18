@@ -17,7 +17,6 @@ import { AuditRequestController } from "@/components/Modules/Audits/auditRequest
 import { filters } from "@/components/Modules/Audits/auditRequestFilters";
 import { panels } from "@/components/Modules/Audits/auditRequestPanels";
 import { ActionTableLayout } from "quasar-ui-danx";
-import { useRouter } from "vue-router";
 
-AuditRequestController.initialize({ vueRouter: useRouter() });
+AuditRequestController.initialize();
 </script>

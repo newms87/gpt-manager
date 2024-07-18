@@ -23,8 +23,7 @@ import { ContentSourceController } from "@/components/Modules/ContentSources/con
 import { filters } from "@/components/Modules/ContentSources/contentSourceFilters";
 import { panels } from "@/components/Modules/ContentSources/contentSourcePanels";
 import { ActionTableLayout } from "quasar-ui-danx";
-import { useRouter } from "vue-router";
 
-ContentSourceController.initialize({ vueRouter: useRouter() });
+ContentSourceController.initialize();
 const createAction = getAction("create");
 </script>
