@@ -12,7 +12,6 @@ export const panels = computed<ActionPanel[]>(() => [
 	{
 		name: "api",
 		label: "API Config",
-		class: "w-[80em]",
 		vnode: (contentSource: ContentSource) => h(ContentSourceApiConfigPanel, { contentSource })
 	}
 ]);

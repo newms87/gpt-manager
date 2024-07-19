@@ -105,8 +105,9 @@ class WorkflowJob extends Model implements AuditableContract
 
     public function delete()
     {
-        $this->dependencies()->delete();
-        $this->dependents()->delete();
+        $this->dependencies()->each(fn(WorkflowJobDependency $dependency) => $dependency->delete());
+        $this->dependents()->each(fn(WorkflowJobDependency $dependent) => $dependent->delete());
+        $this->workflowAssignments()->each(fn(WorkflowAssignment $assignment) => $assignment->delete());
 
         return parent::delete();
     }

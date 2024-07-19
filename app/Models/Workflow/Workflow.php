@@ -57,6 +57,15 @@ class Workflow extends Model implements AuditableContract
         return $this;
     }
 
+    public function delete()
+    {
+        $this->workflowJobs()->each(function (WorkflowJob $workflowJob) {
+            $workflowJob->delete();
+        });
+        
+        return parent::delete();
+    }
+
     public function __toString()
     {
         return "<Workflow ($this->id) $this->name>";
