@@ -3,8 +3,6 @@
 namespace App\WorkflowTools;
 
 use App\Models\Agent\Thread;
-use App\Models\Workflow\Artifact;
-use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowTask;
 use App\Repositories\ThreadRepository;
@@ -46,7 +44,7 @@ trait AssignsWorkflowTasksTrait
                     'status'                 => WorkflowTask::STATUS_PENDING,
                 ]);
 
-                // TODO: Setup task thread based on artifact tuple
+                $this->setupTaskThread($task, $artifactTuple);
 
                 Log::debug("$workflowJobRun created $task for $assignment with group $groupName");
             }
@@ -55,84 +53,33 @@ trait AssignsWorkflowTasksTrait
 
     /**
      * Create a thread for the task and add messages from the workflow input or dependencies
-     *
-     * @param WorkflowTask $workflowTask
-     * @return Thread
      */
-    protected function setupTaskThread(WorkflowTask $workflowTask): Thread
+    protected function setupTaskThread(WorkflowTask $workflowTask, array $artifactTuple): Thread
     {
         $workflowJobRun = $workflowTask->workflowJobRun;
         $workflowRun    = $workflowJobRun->workflowRun;
         $assignment     = $workflowTask->workflowAssignment;
         $workflowJob    = $workflowTask->workflowJob;
 
-        $threadName = $workflowTask->workflowJob->name . " ($workflowTask->id) [group: " . ($workflowTask->group ?: 'default') . "] by {$assignment->agent->name}";
+        $threadName = $workflowJob->name . " ($workflowTask->id) [group: " . ($workflowTask->group ?: 'default') . "] by {$assignment->agent->name}";
         $thread     = app(ThreadRepository::class)->create($assignment->agent, $threadName);
 
         Log::debug("$workflowTask created $thread");
 
+        // First, we want to add the input content to the thread if the task uses input
         if ($workflowJob->use_input) {
-            // If we have no dependencies, then we want to use the workflow input
-            $this->addThreadMessageFromWorkflowInput($thread, $workflowRun->workflowInput);
+            Log::debug("\tAdding $workflowRun->workflowInput");
+            $fileIds = $workflowRun->workflowInput->storedFiles->pluck('id')->toArray();
+            app(ThreadRepository::class)->addMessageToThread($thread, $workflowRun->workflowInput->content, $fileIds);
         }
 
-        // If we have dependencies, we want to use the artifacts from the dependencies
-        if ($workflowJob->dependencies->isNotEmpty()) {
-            foreach($workflowJob->dependencies as $dependency) {
-                $dependsOnWorkflowJobRun = $workflowRun->workflowJobRuns->where('workflow_job_id', $dependency->depends_on_workflow_job_id)->first();
-                $this->addThreadMessagesFromArtifacts($thread, $dependsOnWorkflowJobRun->artifacts, $dependency->group_by, $workflowTask->group);
-            }
+        Log::debug("\tAdding " . count($artifactTuple) . " artifacts");
+        foreach($artifactTuple as $item) {
+            app(ThreadRepository::class)->addMessageToThread($thread, $item);
         }
 
         $workflowTask->thread()->associate($thread)->save();
 
         return $thread;
-    }
-
-    /**
-     * Add messages from artifacts to a thread
-     *
-     * @param Thread                $thread
-     * @param Artifact[]|Collection $artifacts
-     * @param                       $groupBy
-     * @param                       $group
-     * @return void
-     */
-    public function addThreadMessagesFromArtifacts(Thread $thread, $artifacts, $groupBy, $group): void
-    {
-        foreach($artifacts as $artifact) {
-            if ($groupBy) {
-                $groupedContent = $artifact->groupContentBy($groupBy);
-                if (!$groupedContent) {
-                    Log::debug("$thread skipped $artifact: missing group by field $groupBy");
-                    continue;
-                }
-                $content = $groupedContent[$group] ?? null;
-                if (!$content) {
-                    Log::debug("$thread skipped $artifact: grouped content does not have any content in group $group");
-                    continue;
-                }
-                app(ThreadRepository::class)->addMessageToThread($thread, $content);
-                Log::debug("$thread added message for group $group from $artifact (used group by $groupBy)");
-            } else {
-                app(ThreadRepository::class)->addMessageToThread($thread, $artifact->content);
-                Log::debug("$thread added message for $artifact");
-            }
-        }
-    }
-
-    /**
-     * Create a message and append it to the thread based on the Workflow Input content + files
-     *
-     * @param Thread        $thread
-     * @param WorkflowInput $workflowInput
-     * @return void
-     */
-    public function addThreadMessageFromWorkflowInput(Thread $thread, WorkflowInput $workflowInput): void
-    {
-        $content = $workflowInput->content;
-        $fileIds = $workflowInput->storedFiles->pluck('id')->toArray();
-        app(ThreadRepository::class)->addMessageToThread($thread, $content, $fileIds);
-        Log::debug("$thread added $workflowInput");
     }
 }

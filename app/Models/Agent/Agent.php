@@ -98,6 +98,14 @@ class Agent extends Model implements AuditableContract
         return app($apiClass);
     }
 
+    public function getFormattedSampleResponse(): string|array|null
+    {
+        return match ($this->response_format) {
+            'text' => $this->response_sample ? $this->response_sample['content'] : '',
+            default => $this->response_sample,
+        };
+    }
+
     public function validate(): static
     {
         validator($this->toArray(), [

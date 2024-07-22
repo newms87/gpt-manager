@@ -2,11 +2,14 @@
 
 namespace Tests\Feature\Workflow;
 
+use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowJobDependency;
 use App\Models\Workflow\WorkflowJobRun;
+use App\Models\Workflow\WorkflowRun;
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
 use Illuminate\Support\Str;
+use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 use Tests\Feature\MockData\AiMockData;
 
@@ -481,7 +484,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groupTuples = app(RunAgentThreadWorkflowTool::class)->generateArtifactGroupTuples($dependencyArtifactGroups);
 
         // Then
-        $this->assertEquals(['default' => ''], $groupTuples);
+        $this->assertEquals(['default' => []], $groupTuples);
     }
 
     public function test_generateArtifactGroupTuples_returnOriginalWhenOnlyOneGroup(): void
@@ -597,5 +600,66 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEquals(2, $tasks->count());
         $this->assertEquals($artifacts[0]['name'], $tasks->get(0)->group);
         $this->assertEquals($artifacts[1]['name'], $tasks->get(1)->group);
+    }
+
+    public function test_resolveAndAssignTasks_taskThreadHasWorkflowInput(): void
+    {
+        // Given
+        $inputContent  = 'Input Directive Test';
+        $storedFile    = StoredFile::create([
+            'disk'     => 'local',
+            'filepath' => 'test.jpg',
+            'filename' => 'test.jpg',
+            'mime'     => 'image/jpeg',
+        ]);
+        $workflowInput = WorkflowInput::factory()->create(['content' => $inputContent]);
+        $workflowInput->storedFiles()->save($storedFile);
+        $workflowRun    = WorkflowRun::factory()->recycle($workflowInput)->create();
+        $workflowJob    = WorkflowJob::factory()->hasWorkflowAssignments()->create([
+            'use_input' => true,
+        ]);
+        $workflowJobRun = WorkflowJobRun::factory()->recycle($workflowJob)->recycle($workflowRun)->create();
+
+        // When
+        app(RunAgentThreadWorkflowTool::class)->resolveAndAssignTasks($workflowJobRun);
+
+        // Then
+        $task   = $workflowJobRun->tasks()->first();
+        $thread = $task->thread()->first();
+        $this->assertEquals(1, $thread->messages()->count());
+
+        $message = $thread->messages()->first();
+        $this->assertEquals($inputContent, $message->content);
+        $this->assertEquals($storedFile->id, $message->storedFiles()->first()->id);
+    }
+
+    public function test_resolveAndAssignTasks_groupedTasksHaveThreadWithArtifact(): void
+    {
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = [];
+        $groupBy               = ['name'];
+        $prerequisiteJob       = WorkflowJob::factory()->create();
+        $prerequisiteJobRun    = WorkflowJobRun::factory()->withArtifactData($artifacts)->completed()->create(['workflow_job_id' => $prerequisiteJob]);
+        $workflowJob           = WorkflowJob::factory()->hasWorkflowAssignments()->create();
+        $workflowJobRun        = WorkflowJobRun::factory()->recycle($workflowJob)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'group_by'                   => $groupBy,
+            'include_fields'             => $includeFields,
+            'depends_on_workflow_job_id' => $prerequisiteJob,
+        ]);
+        $workflowJob->dependencies()->save($workflowJobDependency);
+        $prerequisiteJobRuns = [$prerequisiteJob->id => $prerequisiteJobRun];
+
+        // When
+        app(RunAgentThreadWorkflowTool::class)->resolveAndAssignTasks($workflowJobRun, $prerequisiteJobRuns);
+
+        // Then
+        $task1   = $workflowJobRun->tasks()->first();
+        $thread1 = $task1->thread()->first();
+        $this->assertEquals(1, $thread1->messages()->count());
+
+        $message = $thread1->messages()->first();
+        $this->assertEquals($artifacts[0], json_decode($message->content, true));
     }
 }

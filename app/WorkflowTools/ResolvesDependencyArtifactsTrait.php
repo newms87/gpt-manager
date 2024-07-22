@@ -139,7 +139,7 @@ trait ResolvesDependencyArtifactsTrait
     public function generateArtifactGroupTuples(array $dependencyArtifactGroups): array
     {
         if (!$dependencyArtifactGroups) {
-            return ['default' => ''];
+            return ['default' => []];
         }
 
         $groupTuples = [];

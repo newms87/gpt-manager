@@ -24,12 +24,12 @@
 				type="trash"
 			/>
 		</div>
-		<div v-if="showResponse" class="mt4">
+		<div v-if="showResponse" class="mt-4">
 			<MarkdownEditor
 				v-if="agent.response_sample"
 				:model-value="agent.response_sample"
 				sync-model-changes
-				format="yaml"
+				:format="agent.response_format"
 				readonly
 			/>
 			<template v-else>

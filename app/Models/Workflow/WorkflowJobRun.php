@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Contracts\ComputedStatusContract;
@@ -29,7 +30,7 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
         });
     }
 
-    public function casts()
+    public function casts(): array
     {
         return [
             'started_at'   => 'datetime',
@@ -68,7 +69,7 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
         return $this->tasks()->where('status', WorkflowTask::STATUS_COMPLETED);
     }
 
-    public function artifacts()
+    public function artifacts(): MorphToMany|Artifact
     {
         return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps();
     }
