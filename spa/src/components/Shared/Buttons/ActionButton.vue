@@ -6,7 +6,11 @@
 		@click="onAction"
 	>
 		<div class="flex items-center flex-nowrap">
-			<component :is="icon || typeOptions.icon" :class="iconClass + ' ' + typeOptions.iconClass" />
+			<component
+				:is="icon || typeOptions.icon"
+				class="transition-all"
+				:class="iconClass + ' ' + typeOptions.iconClass"
+			/>
 			<slot>
 				<div v-if="label" class="ml-2">{{ label }}</div>
 			</slot>
@@ -29,7 +33,7 @@ import { computed } from "vue";
 
 export interface ActionButtonProps {
 	type?: "trash" | "trash-red" | "create" | "edit" | "play" | "stop" | "pause" | "refresh";
-	color?: "red" | "blue" | "sky" | "green" | "green-invert" | "lime" | "white";
+	color?: "red" | "blue" | "sky" | "green" | "green-invert" | "lime" | "white" | "gray";
 	icon?: object | string;
 	iconClass?: string;
 	label?: string;
@@ -69,6 +73,8 @@ const colorClass = computed(() => {
 			return "text-sky-900 bg-sky-300 hover:bg-sky-400";
 		case "white":
 			return "text-white bg-gray-800 hover:bg-gray-200";
+		case "gray":
+			return "text-slate-200 bg-slate-800 hover:bg-slate-900";
 		default:
 			return "text-slate-200 hover:bg-slate-800";
 	}

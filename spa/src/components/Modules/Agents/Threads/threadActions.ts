@@ -2,17 +2,10 @@ import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { ThreadRoutes } from "@/routes/agentRoutes";
 import { ThreadMessage } from "@/types";
 import { FaSolidCopy as CopyIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
-import {
-	ActionOptions,
-	ActionOptionsPartial,
-	ConfirmActionDialog,
-	pollUntil,
-	storeObject,
-	useActions
-} from "quasar-ui-danx";
+import { ActionOptions, ConfirmActionDialog, pollUntil, storeObject, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
-const forAllItems: ActionOptionsPartial = {
+const forAllItems: Partial<ActionOptions> = {
 	onAction: ThreadRoutes.applyAction,
 	onBatchAction: ThreadRoutes.batchAction
 };

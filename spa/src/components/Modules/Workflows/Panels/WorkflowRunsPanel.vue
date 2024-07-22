@@ -1,5 +1,33 @@
 <template>
 	<div class="p-6">
+		<div class="flex items-start flex-nowrap">
+			<QBtn @click="showInputDialog = true" class="bg-sky-800 mt-5" :class="{'px-8': !selectedInput }">
+				<template v-if="selectedInput">
+					<ChangeIcon class="w-6" />
+				</template>
+				<template v-else>Choose Workflow Input</template>
+			</QBtn>
+			<div class="flex-grow flex items-center flex-nowrap">
+				<WorkflowInputCard v-if="selectedInput" class="ml-4 w-full" :workflow-input="selectedInput" />
+				<SelectWorkflowInputDialog
+					v-if="showInputDialog"
+					@close="showInputDialog = false"
+					@confirm="onConfirmSelection"
+				/>
+			</div>
+			<ActionButton
+				:action="runWorkflowAction"
+				:target="workflow"
+				:input="actionInput"
+				:disabled="!selectedInput"
+				type="play"
+				:color="selectedInput ? 'green' : 'gray'"
+				icon-class="w-4"
+				class="px-6 py-3 mt-4"
+			/>
+		</div>
+
+		<QSeparator class="bg-slate-400 my-6" />
 		<WorkflowRunCard
 			v-for="workflowRun in workflow.runs"
 			:key="workflowRun.id"
@@ -9,10 +37,30 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { getAction } from "@/components/Modules/Workflows/workflowActions";
+import SelectWorkflowInputDialog from "@/components/Modules/Workflows/WorkflowInputs/SelectWorkflowInputDialog";
+import WorkflowInputCard from "@/components/Modules/Workflows/WorkflowInputs/WorkflowInputCard";
 import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
-import { Workflow } from "@/types/workflows";
+import { ActionButton } from "@/components/Shared";
+import { WorkflowInputRoutes } from "@/routes/workflowInputRoutes";
+import { Workflow, WorkflowInput } from "@/types";
+import { FaSolidArrowsRotate as ChangeIcon } from "danx-icon";
+import { storeObject } from "quasar-ui-danx";
+import { computed, ref } from "vue";
 
 defineProps<{
 	workflow: Workflow,
 }>();
+
+const selectedInput = ref<WorkflowInput | null>(null);
+const actionInput = computed(() => ({ workflow_input_id: selectedInput.value?.id }));
+const showInputDialog = ref<boolean>(false);
+
+const runWorkflowAction = getAction("run-workflow");
+
+async function onConfirmSelection(input: WorkflowInput) {
+	selectedInput.value = input;
+	showInputDialog.value = false;
+	storeObject(await WorkflowInputRoutes.details(input));
+}
 </script>

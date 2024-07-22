@@ -3,12 +3,12 @@ import { CreateNewWithNameDialog } from "@/components/Shared";
 import { AgentRoutes } from "@/routes/agentRoutes";
 import { WorkflowAssignmentRoutes } from "@/routes/workflowRoutes";
 import { FaSolidCopy as CopyIcon, FaSolidPencil as EditIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
-import { ActionOptions, ActionOptionsPartial, ActionTarget, ConfirmActionDialog, useActions } from "quasar-ui-danx";
+import { ActionOptions, ActionTarget, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
 
 // This is the default action options for all items
-const forAllItems: ActionOptionsPartial = {
+const forAllItems: Partial<ActionOptions> = {
 	onAction: AgentRoutes.applyAction,
 	onBatchAction: AgentRoutes.batchAction,
 	onBatchSuccess: AgentController.clearSelectedRows

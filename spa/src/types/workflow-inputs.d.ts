@@ -6,6 +6,7 @@ export interface WorkflowInput extends ActionTargetItem {
 	name: string;
 	description: string;
 	content: string;
+	thumb?: UploadedFile;
 	files: UploadedFile[];
 	data: AnyObject;
 	tokens: number;

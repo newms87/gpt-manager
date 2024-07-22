@@ -1,12 +1,11 @@
 import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { WorkflowInputRoutes } from "@/routes/workflowInputRoutes";
-import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
-import { ActionOptions } from "quasar-ui-danx";
+import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
 // This is the default action options for all items
-const forAllItems: ActionOptions = {
+const forAllItems: Partial<ActionOptions> = {
 	onAction: WorkflowInputRoutes.applyAction,
 	onBatchAction: WorkflowInputRoutes.batchAction,
 	onBatchSuccess: WorkflowInputController.clearSelectedRows
