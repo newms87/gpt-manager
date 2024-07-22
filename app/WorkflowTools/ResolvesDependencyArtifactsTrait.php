@@ -107,15 +107,19 @@ trait ResolvesDependencyArtifactsTrait
             } else {
                 // Groups should be made for each element in the array of arrays
                 foreach($arrayOfArraysItems as $groupByIndex => $arrayOfArrays) {
-                    foreach($arrayOfArrays as $group) {
+                    // This represents the array of all the items that will be split out into groups
+                    // NOTE: This data includes the requested data, whereas the group by data might be different
+                    $includedDataForGroup = data_get($includedData, $groupByIndex);
+
+                    foreach($arrayOfArrays as $groupItemIndex => $group) {
                         $nestedGroupByKey = $this->generateGroupByKey($group, $groupByKey);
                         if ($nestedGroupByKey) {
                             $resolvedData = $includedData;
 
                             // For the group index field, remove it in favor a singular version of the field
                             // NOTE: $group is one of the elements in the array of arrays (ie: the singular version of the groupByIndex)
-                            unset($resolvedData[$groupByIndex]);
-                            $resolvedData[Str::singular($groupByIndex)] = $group;
+                            data_forget($resolvedData, $groupByIndex);
+                            $resolvedData[Str::singular($groupByIndex)] = $includedDataForGroup[$groupItemIndex];
 
                             $groups[$nestedGroupByKey][] = $resolvedData;
                         } else {
@@ -164,7 +168,7 @@ trait ResolvesDependencyArtifactsTrait
      * If the key is too long, a hash will be added to make the key unique.
      * If the groupByValue is an array of arrays, returns false, as keys should be generated only for the children.
      */
-    public function generateGroupByKey($groupByValue, $currentKey = '')
+    public function generateGroupByKey($groupByValue, $currentKey = ''): string|false
     {
         // A flag to indicate there is data not defined in the key,
         // so we need to add a hash to make the key unique to the data

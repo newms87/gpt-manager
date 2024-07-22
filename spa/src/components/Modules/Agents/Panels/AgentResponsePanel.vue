@@ -21,7 +21,10 @@
 				@click="sampleAction.trigger(agent)"
 			/>
 			<div v-if="agent.response_sample">
-				<MarkdownEditor readonly :model-value="agent.response_sample" sync-model-changes format="json" />
+				<div v-if="agent.response_format === 'text'" class="p-3 rounded bg-slate-800 text-slate-400">
+					{{ agent.response_sample?.content }}
+				</div>
+				<MarkdownEditor v-else readonly :model-value="agent.response_sample" sync-model-changes format="json" />
 			</div>
 		</div>
 	</div>

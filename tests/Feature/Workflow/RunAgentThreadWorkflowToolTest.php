@@ -28,12 +28,32 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
                 ],
                 'services' => [
                     [
-                        'name' => 'Write Code',
-                        'cost' => 500,
+                        'name'    => 'Write Code',
+                        'cost'    => 500,
+                        'options' => [
+                            [
+                                'name' => 'PHP',
+                                'cost' => 100,
+                            ],
+                            [
+                                'name' => 'Node',
+                                'cost' => 0,
+                            ],
+                        ],
                     ],
                     [
-                        'name' => 'Test Code',
-                        'cost' => 300,
+                        'name'    => 'Test Code',
+                        'cost'    => 300,
+                        'options' => [
+                            [
+                                'name' => 'Chrome',
+                                'cost' => 100,
+                            ],
+                            [
+                                'name' => 'IE',
+                                'cost' => 99950,
+                            ],
+                        ],
                     ],
                 ],
             ],
@@ -295,6 +315,58 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEquals($expectedArtifact, $danceArtifact, "Should have produced the 1st artifact in the 'Dance' group");
     }
 
+    public function test_getArtifactGroups_producesMultipleArtifactGroupsForGroupByIndexInArrayOfObjects(): void
+    {
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = [];
+        $groupBy               = ['services.*.name'];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'group_by'       => $groupBy,
+            'include_fields' => $includeFields,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertCount(4, $groups, 'Should have produced exactly 4 groups');
+        $singularKey = Str::singular('services');
+
+        $writeCodeGroup                 = array_shift($groups);
+        $writeCodeArtifact              = $writeCodeGroup[0];
+        $expectedArtifact               = $artifacts[0];
+        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
+        unset($expectedArtifact['services']);
+        $this->assertCount(1, $writeCodeGroup, "Should have produced exactly 1 artifact in the 'Write Code' group");
+        $this->assertEquals($expectedArtifact, $writeCodeArtifact, "Should have produced the 1st artifact in the 'Write Code' group");
+
+        $testCodeGroup                  = array_shift($groups);
+        $testCodeArtifact               = $testCodeGroup[0];
+        $expectedArtifact               = $artifacts[0];
+        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
+        unset($expectedArtifact['services']);
+        $this->assertCount(1, $testCodeGroup, "Should have produced exactly 1 artifact in the 'Test Code' group");
+        $this->assertEquals($expectedArtifact, $testCodeArtifact, "Should have produced the 1st artifact in the 'Test Code' group");
+
+        $entertainGroup                 = array_shift($groups);
+        $entertainArtifact              = $entertainGroup[0];
+        $expectedArtifact               = $artifacts[1];
+        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
+        unset($expectedArtifact['services']);
+        $this->assertCount(1, $entertainGroup, "Should have produced exactly 1 artifact in the 'Entertain' group");
+        $this->assertEquals($expectedArtifact, $entertainArtifact, "Should have produced the 1st artifact in the 'Entertain' group");
+
+        $danceGroup                     = array_shift($groups);
+        $danceArtifact                  = $danceGroup[0];
+        $expectedArtifact               = $artifacts[1];
+        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
+        unset($expectedArtifact['services']);
+        $this->assertCount(1, $danceGroup, "Should have produced exactly 1 artifact in the 'Dance' group");
+        $this->assertEquals($expectedArtifact, $danceArtifact, "Should have produced the 1st artifact in the 'Dance' group");
+    }
+
     public function test_getArtifactGroups_producesMultipleArtifactGroupsForGroupByArrayOfObjectsAndScalar(): void
     {
         // Given
@@ -311,6 +383,60 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
 
         // Then
+        $singularKey = Str::singular('services');
+
+        $writeCodeGroup                 = array_shift($groups);
+        $writeCodeArtifact              = $writeCodeGroup[0];
+        $expectedArtifact               = $artifacts[0];
+        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
+        unset($expectedArtifact['services']);
+        $this->assertCount(1, $writeCodeGroup, "Should have produced exactly 1 artifact in the 'Write Code' group");
+        $this->assertEquals($expectedArtifact, $writeCodeArtifact, "Should have produced the 1st artifact in the 'Write Code' group");
+
+        $testCodeGroup                  = array_shift($groups);
+        $testCodeArtifact               = $testCodeGroup[0];
+        $expectedArtifact               = $artifacts[0];
+        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
+        unset($expectedArtifact['services']);
+        $this->assertCount(1, $testCodeGroup, "Should have produced exactly 1 artifact in the 'Test Code' group");
+        $this->assertEquals($expectedArtifact, $testCodeArtifact, "Should have produced the 1st artifact in the 'Test Code' group");
+
+        $entertainGroup                 = array_shift($groups);
+        $entertainArtifact              = $entertainGroup[0];
+        $expectedArtifact               = $artifacts[1];
+        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
+        unset($expectedArtifact['services']);
+        $this->assertCount(1, $entertainGroup, "Should have produced exactly 1 artifact in the 'Entertain' group");
+        $this->assertEquals($expectedArtifact, $entertainArtifact, "Should have produced the 1st artifact in the 'Entertain' group");
+
+        $danceGroup                     = array_shift($groups);
+        $danceArtifact                  = $danceGroup[0];
+        $expectedArtifact               = $artifacts[1];
+        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
+        unset($expectedArtifact['services']);
+        $this->assertCount(1, $danceGroup, "Should have produced exactly 1 artifact in the 'Dance' group");
+        $this->assertEquals($expectedArtifact, $danceArtifact, "Should have produced the 1st artifact in the 'Dance' group");
+    }
+
+    public function test_getArtifactGroups_producesMultipleArtifactGroupsForGroupByIndexInNestedArrayOfObjects(): void
+    {
+        $this->markTestSkipped("This adds another layer of complexity, which will require a custom implementation of data_get() or a new approach");
+
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = [];
+        $groupBy               = ['services.*.options.*.name'];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'group_by'       => $groupBy,
+            'include_fields' => $includeFields,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertCount(4, $groups, 'Should have produced exactly 4 groups');
         $singularKey = Str::singular('services');
 
         $writeCodeGroup                 = array_shift($groups);

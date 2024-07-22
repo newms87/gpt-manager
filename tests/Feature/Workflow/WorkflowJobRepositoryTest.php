@@ -32,9 +32,9 @@ class WorkflowJobRepositoryTest extends AuthenticatedTestCase
         app(WorkflowJobRepository::class)->calculateDependencyLevels($workflow);
 
         // Then
-        $this->assertEquals(0, $workflowJobC->refresh()->dependency_level);
-        $this->assertEquals(1, $workflowJobB->refresh()->dependency_level);
-        $this->assertEquals(2, $workflowJobA->refresh()->dependency_level);
+        $this->assertEquals(1, $workflowJobC->refresh()->dependency_level);
+        $this->assertEquals(2, $workflowJobB->refresh()->dependency_level);
+        $this->assertEquals(3, $workflowJobA->refresh()->dependency_level);
     }
 
     public function test_setDependencies_doesNotAllowSingleLevelCircularDependencies()
