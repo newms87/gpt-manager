@@ -8,7 +8,6 @@ use App\Models\Workflow\WorkflowJobRun;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Helpers\StringHelper;
 
@@ -86,38 +85,14 @@ trait ResolvesDependencyArtifactsTrait
             $groupsOfItemSets = ArrayHelper::crossProductExtractData($artifactData, $dependency->group_by);
             $includedData     = ArrayHelper::extractNestedData($artifactData, $dependency->include_fields);
 
-            dump('groupsofItems', $groupsOfItemSets);
             foreach($groupsOfItemSets as $itemSet) {
                 $groupKey     = $this->generateGroupKey($itemSet);
                 $resolvedData = $includedData;
 
-                // For each itemSet index (ie: name, services.*.name, services.*.desc, etc.)
-                // Need to resolve the data from the includedData at each level of the itemIndex to a single record
-                // Each itemIndex will reduce the level it points (ie: services.*.name points to the services array level) to in the resolvedData to fewer records.
-                // If the array level is already at 1, then we can convert that array level to singular and replace the index key with the singular name
-                // We must start at the deepest level first and work our way up
-                // If there are multiple records left after performing the filtering, then just choose the first one as this is ambiguous data grouping
-
-
                 foreach($itemSet as $itemIndex => $itemValue) {
-                    if (preg_match("/\\.\\*.*$/", $itemIndex)) {
-                        // If the item index is a wildcard, remove it in favor of a singular version of the field
-                        $arrayIndex = preg_replace("/\\.\\*.*$/", '', $itemIndex);
-                        $arrayValue = data_get($resolvedData, $arrayIndex);
-                        foreach($arrayValue as $item) {
-                            if ($item) {
-                                $groups[$groupKey][] = $item;
-                            }
-                        }
-
-                        dump('got array', $arrayIndex, $arrayValue);
-                        // For the group index field, remove it in favor a singular version of the field
-                        data_forget($resolvedData, $arrayIndex);
-                        data_set($resolvedData, Str::singular($arrayIndex), $arrayValue);
-                    } else {
-                        // For the group index field, remove it in favor a singular version of the field
-                        data_forget($resolvedData, $itemIndex);
-                        data_set($resolvedData, Str::singular($itemIndex), $itemValue);
+                    $resolvedData = ArrayHelper::filterNestedData($resolvedData, $itemIndex, $itemValue);
+                    if (!$resolvedData) {
+                        throw new Exception("Failed to resolve data for $itemIndex:\n" . json_encode($itemValue) . "\n\nIncluded Data\n" . json_encode($includedData));
                     }
                 }
 

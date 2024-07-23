@@ -398,22 +398,22 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
 
         $hammerGroup = array_shift($groups);
         $this->assertCount(1, $hammerGroup, "Should have produced exactly 1 artifact");
-        $this->assertEquals('The Hammer', $hammerGroup[0]['alias'] ?? null, "The alias for hammer group should have been set to the first alias of the first artifact");
+        $this->assertEquals('The Hammer', $hammerGroup[0]['aliases'][0] ?? null, "The alias for hammer group should have been set to the first alias of the first artifact");
         $this->assertEquals('Dan Newman', $hammerGroup[0]['name'] ?? null, "The alias for hammer group should have been set to the name of the first artifact");
 
         $danielGroup = array_shift($groups);
         $this->assertCount(1, $danielGroup, "Should have produced exactly 1 artifact");
-        $this->assertEquals('Daniel', $danielGroup[0]['alias'] ?? null, "The alias for daniel group should have been set to the second alias of the first artifact");
+        $this->assertEquals('Daniel', $danielGroup[0]['aliases'][0] ?? null, "The alias for daniel group should have been set to the second alias of the first artifact");
         $this->assertEquals('Dan Newman', $danielGroup[0]['name'] ?? null, "The alias for daniel group should have been set to the name of the first artifact");
 
         $mouseGroup = array_shift($groups);
         $this->assertCount(1, $mouseGroup, "Should have produced exactly 1 artifact");
-        $this->assertEquals('The Mouse', $mouseGroup[0]['alias'] ?? null, "The alias for mouse group should have been set to the first alias of the second artifact");
+        $this->assertEquals('The Mouse', $mouseGroup[0]['aliases'][0] ?? null, "The alias for mouse group should have been set to the first alias of the second artifact");
         $this->assertEquals('Mickey Mouse', $mouseGroup[0]['name'] ?? null, "The alias for mouse group should have been set to the name of the second artifact");
 
         $mickeyGroup = array_shift($groups);
         $this->assertCount(1, $mickeyGroup, "Should have produced exactly 1 artifact");
-        $this->assertEquals('Mickey', $mickeyGroup[0]['alias'] ?? null, "The alias for mickey group should have been set to the second alias of the second artifact");
+        $this->assertEquals('Mickey', $mickeyGroup[0]['aliases'][0] ?? null, "The alias for mickey group should have been set to the second alias of the second artifact");
         $this->assertEquals('Mickey Mouse', $mickeyGroup[0]['name'] ?? null, "The alias for mickey group should have been set to the name of the second artifact");
     }
 
@@ -434,37 +434,32 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
 
         // Then
         $this->assertCount(4, $groups, 'Should have produced exactly 4 groups');
-        $singularKey = Str::singular('services');
 
-        $writeCodeGroup                 = array_shift($groups);
-        $writeCodeArtifact              = $writeCodeGroup[0];
-        $expectedArtifact               = $artifacts[0];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
-        unset($expectedArtifact['services']);
+        $writeCodeGroup               = array_shift($groups);
+        $writeCodeArtifact            = $writeCodeGroup[0];
+        $expectedArtifact             = $artifacts[0];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][0]];
         $this->assertCount(1, $writeCodeGroup, "Should have produced exactly 1 artifact in the 'Write Code' group");
         $this->assertEquals($expectedArtifact, $writeCodeArtifact, "Should have produced the 1st artifact in the 'Write Code' group");
 
-        $testCodeGroup                  = array_shift($groups);
-        $testCodeArtifact               = $testCodeGroup[0];
-        $expectedArtifact               = $artifacts[0];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
-        unset($expectedArtifact['services']);
+        $testCodeGroup                = array_shift($groups);
+        $testCodeArtifact             = $testCodeGroup[0];
+        $expectedArtifact             = $artifacts[0];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][1]];
         $this->assertCount(1, $testCodeGroup, "Should have produced exactly 1 artifact in the 'Test Code' group");
         $this->assertEquals($expectedArtifact, $testCodeArtifact, "Should have produced the 1st artifact in the 'Test Code' group");
 
-        $entertainGroup                 = array_shift($groups);
-        $entertainArtifact              = $entertainGroup[0];
-        $expectedArtifact               = $artifacts[1];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
-        unset($expectedArtifact['services']);
+        $entertainGroup               = array_shift($groups);
+        $entertainArtifact            = $entertainGroup[0];
+        $expectedArtifact             = $artifacts[1];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][0]];
         $this->assertCount(1, $entertainGroup, "Should have produced exactly 1 artifact in the 'Entertain' group");
         $this->assertEquals($expectedArtifact, $entertainArtifact, "Should have produced the 1st artifact in the 'Entertain' group");
 
-        $danceGroup                     = array_shift($groups);
-        $danceArtifact                  = $danceGroup[0];
-        $expectedArtifact               = $artifacts[1];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
-        unset($expectedArtifact['services']);
+        $danceGroup                   = array_shift($groups);
+        $danceArtifact                = $danceGroup[0];
+        $expectedArtifact             = $artifacts[1];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][1]];
         $this->assertCount(1, $danceGroup, "Should have produced exactly 1 artifact in the 'Dance' group");
         $this->assertEquals($expectedArtifact, $danceArtifact, "Should have produced the 1st artifact in the 'Dance' group");
     }
@@ -486,37 +481,32 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
 
         // Then
         $this->assertCount(4, $groups, 'Should have produced exactly 4 groups');
-        $singularKey = Str::singular('services');
 
-        $writeCodeGroup                 = array_shift($groups);
-        $writeCodeArtifact              = $writeCodeGroup[0];
-        $expectedArtifact               = $artifacts[0];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
-        unset($expectedArtifact['services']);
+        $writeCodeGroup               = array_shift($groups);
+        $writeCodeArtifact            = $writeCodeGroup[0];
+        $expectedArtifact             = $artifacts[0];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][0]];
         $this->assertCount(1, $writeCodeGroup, "Should have produced exactly 1 artifact in the 'Write Code' group");
         $this->assertEquals($expectedArtifact, $writeCodeArtifact, "Should have produced the 1st artifact in the 'Write Code' group");
 
-        $testCodeGroup                  = array_shift($groups);
-        $testCodeArtifact               = $testCodeGroup[0];
-        $expectedArtifact               = $artifacts[0];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
-        unset($expectedArtifact['services']);
+        $testCodeGroup                = array_shift($groups);
+        $testCodeArtifact             = $testCodeGroup[0];
+        $expectedArtifact             = $artifacts[0];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][1]];
         $this->assertCount(1, $testCodeGroup, "Should have produced exactly 1 artifact in the 'Test Code' group");
         $this->assertEquals($expectedArtifact, $testCodeArtifact, "Should have produced the 1st artifact in the 'Test Code' group");
 
-        $entertainGroup                 = array_shift($groups);
-        $entertainArtifact              = $entertainGroup[0];
-        $expectedArtifact               = $artifacts[1];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
-        unset($expectedArtifact['services']);
+        $entertainGroup               = array_shift($groups);
+        $entertainArtifact            = $entertainGroup[0];
+        $expectedArtifact             = $artifacts[1];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][0]];
         $this->assertCount(1, $entertainGroup, "Should have produced exactly 1 artifact in the 'Entertain' group");
         $this->assertEquals($expectedArtifact, $entertainArtifact, "Should have produced the 1st artifact in the 'Entertain' group");
 
-        $danceGroup                     = array_shift($groups);
-        $danceArtifact                  = $danceGroup[0];
-        $expectedArtifact               = $artifacts[1];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
-        unset($expectedArtifact['services']);
+        $danceGroup                   = array_shift($groups);
+        $danceArtifact                = $danceGroup[0];
+        $expectedArtifact             = $artifacts[1];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][1]];
         $this->assertCount(1, $danceGroup, "Should have produced exactly 1 artifact in the 'Dance' group");
         $this->assertEquals($expectedArtifact, $danceArtifact, "Should have produced the 1st artifact in the 'Dance' group");
     }
@@ -539,35 +529,31 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Then
         $singularKey = Str::singular('services');
 
-        $writeCodeGroup                 = array_shift($groups);
-        $writeCodeArtifact              = $writeCodeGroup[0];
-        $expectedArtifact               = $artifacts[0];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
-        unset($expectedArtifact['services']);
+        $writeCodeGroup               = array_shift($groups);
+        $writeCodeArtifact            = $writeCodeGroup[0];
+        $expectedArtifact             = $artifacts[0];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][0]];
         $this->assertCount(1, $writeCodeGroup, "Should have produced exactly 1 artifact in the 'Write Code' group");
         $this->assertEquals($expectedArtifact, $writeCodeArtifact, "Should have produced the 1st artifact in the 'Write Code' group");
 
-        $testCodeGroup                  = array_shift($groups);
-        $testCodeArtifact               = $testCodeGroup[0];
-        $expectedArtifact               = $artifacts[0];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
-        unset($expectedArtifact['services']);
+        $testCodeGroup                = array_shift($groups);
+        $testCodeArtifact             = $testCodeGroup[0];
+        $expectedArtifact             = $artifacts[0];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][1]];
         $this->assertCount(1, $testCodeGroup, "Should have produced exactly 1 artifact in the 'Test Code' group");
         $this->assertEquals($expectedArtifact, $testCodeArtifact, "Should have produced the 1st artifact in the 'Test Code' group");
 
-        $entertainGroup                 = array_shift($groups);
-        $entertainArtifact              = $entertainGroup[0];
-        $expectedArtifact               = $artifacts[1];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
-        unset($expectedArtifact['services']);
+        $entertainGroup               = array_shift($groups);
+        $entertainArtifact            = $entertainGroup[0];
+        $expectedArtifact             = $artifacts[1];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][0]];
         $this->assertCount(1, $entertainGroup, "Should have produced exactly 1 artifact in the 'Entertain' group");
         $this->assertEquals($expectedArtifact, $entertainArtifact, "Should have produced the 1st artifact in the 'Entertain' group");
 
-        $danceGroup                     = array_shift($groups);
-        $danceArtifact                  = $danceGroup[0];
-        $expectedArtifact               = $artifacts[1];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
-        unset($expectedArtifact['services']);
+        $danceGroup                   = array_shift($groups);
+        $danceArtifact                = $danceGroup[0];
+        $expectedArtifact             = $artifacts[1];
+        $expectedArtifact['services'] = [$expectedArtifact['services'][1]];
         $this->assertCount(1, $danceGroup, "Should have produced exactly 1 artifact in the 'Dance' group");
         $this->assertEquals($expectedArtifact, $danceArtifact, "Should have produced the 1st artifact in the 'Dance' group");
     }
@@ -749,8 +735,8 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Then
         $tasks = $workflowJobRun->tasks()->get();
         $this->assertEquals(2, $tasks->count());
-        $this->assertEquals($artifacts[0]['name'], $tasks->get(0)->group);
-        $this->assertEquals($artifacts[1]['name'], $tasks->get(1)->group);
+        $this->assertEquals('name:' . $artifacts[0]['name'], $tasks->get(0)->group);
+        $this->assertEquals('name:' . $artifacts[1]['name'], $tasks->get(1)->group);
     }
 
     public function test_resolveAndAssignTasks_taskThreadHasWorkflowInput(): void

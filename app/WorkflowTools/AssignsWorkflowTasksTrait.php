@@ -85,7 +85,6 @@ trait AssignsWorkflowTasksTrait
             app(ThreadRepository::class)->addMessageToThread($thread, $item);
         }
 
-        dump($thread->messages()->get()->toArray());
         $workflowTask->thread()->associate($thread)->save();
 
         return $thread;
