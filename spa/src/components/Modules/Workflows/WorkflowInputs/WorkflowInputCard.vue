@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="flex items-center flex-nowrap">
+		<div class="flex items-center flex-nowrap h-20">
 			<div>{{ workflowInput.name }}</div>
 			<div v-if="workflowInput.description" class="ml-4">
 				{{ workflowInput.description }}

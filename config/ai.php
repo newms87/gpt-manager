@@ -10,42 +10,36 @@ return [
     'default_model' => 'gpt-4o-2024-05-13',
     'models'        => [
         OpenAiApi::$serviceName => [
-            'gpt-4o-2024-05-13'      => [
-                'input'  => .005,
-                'output' => .015,
-                'image'  => [
+            'gpt-4o-mini' => [
+                'input'   => .00015,
+                'output'  => .0006,
+                'context' => 128000,
+                'image'   => [
+                    'tokens' => 5667,
+                    'base'   => 2833,
+                    'tile'   => '512x512',
+                ],
+            ],
+            'gpt-4o'      => [
+                'input'   => .005,
+                'output'  => .015,
+                'context' => 128000,
+                'image'   => [
                     'tokens' => 170,
                     'base'   => 85,
                     'tile'   => '512x512',
                 ],
             ],
-            'gpt-4-turbo-2024-04-09' => [
-                'input'  => .01,
-                'output' => .03,
-                'image'  => [
+            'gpt-4-turbo' => [
+                'input'   => .01,
+                'output'  => .03,
+                'context' => 128000,
+                'image'   => [
                     'tokens' => 170,
                     'base'   => 85,
                     'tile'   => '512x512',
                 ],
             ],
-            'gpt-3.5-turbo-0125'     => [
-                'input'  => .0005,
-                'output' => .0015,
-            ],
-
-            // These models are either too expensive / don't seem to work / limited capabilities
-            //            'gpt-4'                  => [
-            //                'input'  => .03,
-            //                'output' => .06,
-            //            ],
-            //            'gpt-4-32k'              => [
-            //                'input'  => .06,
-            //                'output' => .12,
-            //            ],
-            //            'gpt-3.5-turbo-instruct' => [
-            //                'input'  => .0015,
-            //                'output' => .0020,
-            //            ],
         ],
     ],
     'apis'          => [

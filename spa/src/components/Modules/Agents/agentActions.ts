@@ -1,4 +1,5 @@
 import { AgentController } from "@/components/Modules/Agents/agentControls";
+import { AgentsBatchUpdateDialog } from "@/components/Modules/Agents/Dialogs";
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { AgentRoutes } from "@/routes/agentRoutes";
 import { WorkflowAssignmentRoutes } from "@/routes/workflowRoutes";
@@ -47,6 +48,15 @@ const items: ActionOptions[] = [
 		icon: EditIcon,
 		menu: true,
 		onAction: (action, target) => AgentController.activatePanel(target, "edit")
+	},
+	{
+		name: "batch-update",
+		alias: "update",
+		label: "Batch Update",
+		batch: true,
+		icon: EditIcon,
+		onFinish: AgentController.loadListAndSummary,
+		vnode: ads => h(AgentsBatchUpdateDialog, { confirmText: "Apply to " + ads.length + " Agents" })
 	},
 	{
 		name: "delete",
