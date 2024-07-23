@@ -29,7 +29,7 @@ trait ResolvesDependencyArtifactsTrait
 
             return $this->generateArtifactGroupTuples($dependencyArtifactGroups);
         } catch(Exception $e) {
-            Log::error("Failed to resolve dependency artifacts $workflowJob: " . $e->getMessage());
+            Log::error("Failed to resolve dependency artifacts $workflowJob: " . $e->getMessage() . ' -- ' . $e->getFile() . '@' . $e->getLine());
 
             return [];
         }
@@ -66,67 +66,62 @@ trait ResolvesDependencyArtifactsTrait
     {
         $groups = [];
         foreach($workflowJobRun->artifacts as $artifact) {
-            $includedData = ArrayHelper::extractNestedData($artifact->data, $dependency->include_fields);
+            $artifactData = $artifact->data ?: [];
+
+            // Special case for string content artifacts, just treat all like JSON responses but with a {content: ...} entry
+            if ($artifact->content) {
+                $artifactData['content'] = $artifact->content;
+            }
+
             if (!$dependency->group_by) {
-                $groups['default'][] = $includedData;
+                // Special case for content - only artifacts, just return the content as plain text
+                if ($artifact->content && !$artifact->data) {
+                    $groups['default'][] = $artifact->content;
+                } else {
+                    $groups['default'][] = ArrayHelper::extractNestedData($artifactData, $dependency->include_fields);
+                }
                 continue;
             }
 
-            $groupByData = ArrayHelper::extractNestedData($artifact->data, $dependency->group_by);
+            $groupsOfItemSets = ArrayHelper::crossProductExtractData($artifactData, $dependency->group_by);
+            $includedData     = ArrayHelper::extractNestedData($artifactData, $dependency->include_fields);
 
-            $groupByKey         = '';
-            $arrayOfArraysItems = [];
+            dump('groupsofItems', $groupsOfItemSets);
+            foreach($groupsOfItemSets as $itemSet) {
+                $groupKey     = $this->generateGroupKey($itemSet);
+                $resolvedData = $includedData;
 
-            foreach($groupByData as $groupByIndex => $groupByValue) {
-                if ($groupByValue === null) {
-                    continue;
-                }
+                // For each itemSet index (ie: name, services.*.name, services.*.desc, etc.)
+                // Need to resolve the data from the includedData at each level of the itemIndex to a single record
+                // Each itemIndex will reduce the level it points (ie: services.*.name points to the services array level) to in the resolvedData to fewer records.
+                // If the array level is already at 1, then we can convert that array level to singular and replace the index key with the singular name
+                // We must start at the deepest level first and work our way up
+                // If there are multiple records left after performing the filtering, then just choose the first one as this is ambiguous data grouping
 
-                $groupByKeyPart = $this->generateGroupByKey($groupByValue);
 
-                // If the key is set, that means the value was not an array of arrays and can group all elements together
-                if ($groupByKeyPart) {
-                    // Only add to the key if it will still be less than the max key length
-                    $tmpKey = $groupByKey . ($groupByKey ? ',' : '') . $groupByKeyPart;
-                    if (strlen($tmpKey) <= static::MAX_KEY_LENGTH) {
-                        $groupByKey = $tmpKey;
-                    }
-                } else {
-                    // If the value in an array of arrays, we need to split each element into its own group
-                    $arrayOfArraysItems[$groupByIndex] = $groupByValue;
-                }
-            }
-
-            if (!$arrayOfArraysItems && !$groupByKey) {
-                throw new Exception("Failed to generate group key: Value format is not expected: " . json_encode($groupByData));
-            }
-
-            // If groupByKey is the only one set, add the included data to a single group
-            if (!$arrayOfArraysItems) {
-                $groups[$groupByKey][] = $includedData;
-            } else {
-                // Groups should be made for each element in the array of arrays
-                foreach($arrayOfArraysItems as $groupByIndex => $arrayOfArrays) {
-                    // This represents the array of all the items that will be split out into groups
-                    // NOTE: This data includes the requested data, whereas the group by data might be different
-                    $includedDataForGroup = data_get($includedData, $groupByIndex);
-
-                    foreach($arrayOfArrays as $groupItemIndex => $group) {
-                        $nestedGroupByKey = $this->generateGroupByKey($group, $groupByKey);
-                        if ($nestedGroupByKey) {
-                            $resolvedData = $includedData;
-
-                            // For the group index field, remove it in favor a singular version of the field
-                            // NOTE: $group is one of the elements in the array of arrays (ie: the singular version of the groupByIndex)
-                            data_forget($resolvedData, $groupByIndex);
-                            $resolvedData[Str::singular($groupByIndex)] = $includedDataForGroup[$groupItemIndex];
-
-                            $groups[$nestedGroupByKey][] = $resolvedData;
-                        } else {
-                            throw new Exception("Failed to generate group key: Value too nested: " . json_encode($arrayOfArrays));
+                foreach($itemSet as $itemIndex => $itemValue) {
+                    if (preg_match("/\\.\\*.*$/", $itemIndex)) {
+                        // If the item index is a wildcard, remove it in favor of a singular version of the field
+                        $arrayIndex = preg_replace("/\\.\\*.*$/", '', $itemIndex);
+                        $arrayValue = data_get($resolvedData, $arrayIndex);
+                        foreach($arrayValue as $item) {
+                            if ($item) {
+                                $groups[$groupKey][] = $item;
+                            }
                         }
+
+                        dump('got array', $arrayIndex, $arrayValue);
+                        // For the group index field, remove it in favor a singular version of the field
+                        data_forget($resolvedData, $arrayIndex);
+                        data_set($resolvedData, Str::singular($arrayIndex), $arrayValue);
+                    } else {
+                        // For the group index field, remove it in favor a singular version of the field
+                        data_forget($resolvedData, $itemIndex);
+                        data_set($resolvedData, Str::singular($itemIndex), $itemValue);
                     }
                 }
+
+                $groups[$groupKey][] = $resolvedData;
             }
         }
 
@@ -163,43 +158,34 @@ trait ResolvesDependencyArtifactsTrait
     }
 
     /**
-     * Generates a unique key for grouping data based on the groupByValue.
+     * Generates a unique key for grouping data based on the groupedItems.
      * If the groupByValue is an array, it will be sorted and concatenated into a string.
      * If the key is too long, a hash will be added to make the key unique.
      * If the groupByValue is an array of arrays, returns false, as keys should be generated only for the children.
      */
-    public function generateGroupByKey($groupByValue, $currentKey = ''): string|false
+    public function generateGroupKey(array $groupedItems, $currentKey = ''): string|false
     {
         // A flag to indicate there is data not defined in the key,
         // so we need to add a hash to make the key unique to the data
         $requiresHash = false;
 
-        if (is_scalar($groupByValue)) {
-            $groupByKey = (string)$groupByValue;
-        } else {
-            ArrayHelper::recursiveKsort($groupByValue);
-            $groupByKey = '';
-            foreach($groupByValue as $key => $value) {
-                if (is_array($value)) {
-                    // Can't make a readable unique key from an array value, so just make a hash of all the data
-                    $requiresHash = true;
-                    continue;
-                }
-                $tmpKey = ($groupByKey ? "$groupByKey|" : '') . "$key:$value";
 
-                // If we've exceeded the key length, we need to add a hash to make the key unique
-                if ($groupByKey && strlen($tmpKey) > static::MAX_KEY_LENGTH) {
-                    $requiresHash = true;
-                    break;
-                }
-
-                $groupByKey = $tmpKey;
+        ArrayHelper::recursiveKsort($groupedItems);
+        $groupByKey = '';
+        foreach($groupedItems as $key => $value) {
+            if (is_array($value)) {
+                // Can't make a readable unique key from an array value, so just make a hash of all the data
+                $requiresHash = true;
             }
-        }
+            $tmpKey = ($groupByKey ? "$groupByKey," : '') . (is_array($value) ? $key : "$key:$value");
 
-        // If groupByKey is set, we need to check if it's too long and add a hash to make it unique
-        if (!$groupByKey) {
-            return false;
+            // If we've exceeded the key length, we need to add a hash to make the key unique
+            if ($groupByKey && strlen($tmpKey) > static::MAX_KEY_LENGTH) {
+                $requiresHash = true;
+                break;
+            }
+
+            $groupByKey = $tmpKey;
         }
 
         $groupByKey = $currentKey ? "$currentKey|$groupByKey" : $groupByKey;
@@ -207,7 +193,7 @@ trait ResolvesDependencyArtifactsTrait
             $requiresHash = true;
         }
         if ($requiresHash) {
-            $hash       = '#' . substr(md5(json_encode($groupByValue)), 0, static::MAX_HASH_LENGTH);
+            $hash       = '#' . substr(md5(json_encode($groupedItems)), 0, static::MAX_HASH_LENGTH);
             $groupByKey = StringHelper::limitText(static::MAX_KEY_LENGTH, $groupByKey, $hash);
         }
 
