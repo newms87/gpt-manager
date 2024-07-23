@@ -13,7 +13,7 @@ use Newms87\Danx\Helpers\StringHelper;
 
 trait ResolvesDependencyArtifactsTrait
 {
-    const int MAX_KEY_LENGTH  = 30;
+    const int MAX_KEY_LENGTH  = 100;
     const int MAX_HASH_LENGTH = 6;
 
     /**
