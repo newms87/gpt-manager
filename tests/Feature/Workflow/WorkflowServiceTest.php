@@ -109,8 +109,8 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         RunWorkflowTaskJob::disable();
         $this->mocksOpenAiNotCalled();
         $workflow     = Workflow::factory()->create();
-        $workflowJobA = $this->openAiWorkflowJob($workflow);
-        $workflowJobB = $this->openAiWorkflowJob($workflow);
+        $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => "Job A"]);
+        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => "Job B"]);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id]);
         $workflowRun     = WorkflowRun::factory()->recycle($workflow)->started()->create();
         $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
@@ -123,7 +123,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         WorkflowService::workflowJobRunFinished($workflowJobRunA);
 
         // Then
-        $workflowJobRunB = $workflowRun->workflowJobRuns()->where('workflow_job_id', $workflowJobB->id)->first();
+        $workflowJobRunB->refresh();
         $this->assertNotNull($workflowJobRunB->started_at, 'Job B should have been dispatched');
         $this->assertNull($workflowJobRunB->completed_at, 'Job B should not have been completed yet as the task has not run');
         $this->assertNull($workflowJobRunB->failed_at, 'Job B should not have failed as the task has not run');
@@ -193,17 +193,17 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $workflow     = Workflow::factory()->create();
         $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
         $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B']);
-        $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id, 'group_by' => 'service_dates']);
+        $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id, 'group_by' => ['service_dates']]);
         $workflowRun     = WorkflowRun::factory()->recycle($workflow)->started()->create();
         $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
             'completed_at' => now(),
             'started_at'   => now(),
         ]);
         $serviceDates    = ['2022-01-01', '2022-02-01'];
-        $artifactContent = json_encode([
+        $artifactData    = [
             'service_dates' => $serviceDates,
-        ]);
-        $artifact        = Artifact::factory()->create(['content' => $artifactContent]);
+        ];
+        $artifact        = Artifact::factory()->create(['data' => $artifactData]);
         $workflowJobRunA->artifacts()->save($artifact);
         $workflowJobRunB = WorkflowJobRun::factory()->recycle($workflowJobB)->recycle($workflowRun)->create();
 

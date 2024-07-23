@@ -15,7 +15,7 @@ class ArtifactFactory extends Factory
         return [
             'name'    => fake()->word,
             'model'   => fake()->word,
-            'content' => fake()->sentence(),
+            'content' => null,
             'data'    => null,
         ];
     }

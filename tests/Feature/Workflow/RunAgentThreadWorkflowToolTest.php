@@ -9,6 +9,7 @@ use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
 use Illuminate\Support\Str;
+use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 use Tests\Feature\MockData\AiMockData;
@@ -22,6 +23,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         return [
             [
                 'name'     => 'Dan Newman',
+                'aliases'  => ['The Hammer', 'Daniel'],
                 'dob'      => '1987-11-18',
                 'color'    => 'green',
                 'address'  => [
@@ -62,6 +64,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
             ],
             [
                 'name'     => 'Mickey Mouse',
+                'aliases'  => ['The Mouse', 'Mickey'],
                 'dob'      => '1987-11-18',
                 'color'    => 'red',
                 'address'  => [
@@ -81,6 +84,113 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+    }
+
+    public function test_crossProductExtractData_producesEmptyArrayWhenNoFields(): void
+    {
+        // Given
+        $data   = [];
+        $fields = [];
+
+        // When
+        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
+
+        // Then
+        $this->assertEquals([], $crossProduct);
+    }
+
+    public function test_crossProductExtractData_producesSingleEntryForScalar(): void
+    {
+        // Given
+        $data   = [
+            'name' => 'Dan Newman',
+        ];
+        $fields = ['name'];
+
+        // When
+        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
+
+        // Then
+        $this->assertEquals([['name' => 'Dan Newman']], $crossProduct);
+    }
+
+    public function test_crossProductExtractData_producesMultipleEntriesForArray(): void
+    {
+        // Given
+        $data   = [
+            'name'    => 'Dan Newman',
+            'aliases' => ['The Hammer', 'Daniel'],
+        ];
+        $fields = ['aliases'];
+
+        // When
+        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
+
+        // Then
+        $this->assertEquals([['aliases' => 'The Hammer'], ['aliases' => 'Daniel']], $crossProduct);
+    }
+
+    public function test_crossProductExtractData_producesMultipleEntriesForArrayCrossScalar(): void
+    {
+        // Given
+        $data   = [
+            'name'    => 'Dan Newman',
+            'aliases' => ['The Hammer', 'Daniel'],
+        ];
+        $fields = ['aliases', 'name'];
+
+        // When
+        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
+
+        // Then
+        $this->assertEquals([
+            ['aliases' => 'The Hammer', 'name' => 'Dan Newman'],
+            ['aliases' => 'Daniel', 'name' => 'Dan Newman'],
+        ], $crossProduct);
+    }
+
+    public function test_crossProductExtractData_producesMultipleEntriesForArrayCrossArray(): void
+    {
+        // Given
+        $data   = [
+            'name'    => 'Dan Newman',
+            'aliases' => ['The Hammer', 'Daniel'],
+            'powers'  => ['Hammer', 'Code'],
+        ];
+        $fields = ['aliases', 'powers'];
+
+        // When
+        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
+
+        // Then
+        $this->assertEquals([
+            ['aliases' => 'The Hammer', 'powers' => 'Hammer'],
+            ['aliases' => 'Daniel', 'powers' => 'Hammer'],
+            ['aliases' => 'The Hammer', 'powers' => 'Code'],
+            ['aliases' => 'Daniel', 'powers' => 'Code'],
+        ], $crossProduct);
+    }
+
+    public function test_crossProductExtractData_producesMultipleEntriesForArrayOfObjectsCrossArray(): void
+    {
+        // Given
+        $data   = [
+            'name'    => 'Dan Newman',
+            'aliases' => ['The Hammer', 'Daniel'],
+            'powers'  => [['name' => 'Hammer', 'power' => 50], ['name' => 'Code', 'power' => 80]],
+        ];
+        $fields = ['aliases', 'powers.*.name'];
+
+        // When
+        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
+
+        // Then
+        $this->assertEquals([
+            ['aliases' => 'The Hammer', 'powers.*.name' => 'Hammer'],
+            ['aliases' => 'Daniel', 'powers.*.name' => 'Hammer'],
+            ['aliases' => 'The Hammer', 'powers.*.name' => 'Code'],
+            ['aliases' => 'Daniel', 'powers.*.name' => 'Code'],
+        ], $crossProduct);
     }
 
     public function test_getArtifactGroups_returnsDefaultArtifactGroupGivenEmptyGroupAndIncludes(): void
@@ -162,12 +272,13 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
 
         // Then
-        $danGroup    = $groups['Dan Newman'] ?? [];
-        $MickeyGroup = $groups['Mickey Mouse'] ?? [];
+        $danGroup = array_shift($groups);
         $this->assertCount(1, $danGroup, "Should have produced exactly 1 artifact in the 'Dan Newman' group");
-        $this->assertEquals($artifacts[0], array_pop($danGroup), "Should have produced the 1st artifact in the 'Dan Newman' group");
+        $this->assertEquals($artifacts[0], $danGroup[0], "Should have produced the 1st artifact in the 'Dan Newman' group");
+
+        $MickeyGroup = array_shift($groups);
         $this->assertCount(1, $MickeyGroup, "Should have produced exactly 1 artifact in the 'Mickey Mouse' group");
-        $this->assertEquals($artifacts[1], array_pop($MickeyGroup), "Should have produced the 2nd artifact in the 'Mickey Mouse' group");
+        $this->assertEquals($artifacts[1], $MickeyGroup[0], "Should have produced the 2nd artifact in the 'Mickey Mouse' group");
     }
 
     public function test_getArtifactGroups_producesSingleArtifactGroupForGroupByNonUniqueScalar(): void
@@ -186,10 +297,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
 
         // Then
-        $dobGroup = $groups['1987-11-18'] ?? [];
+        $dobGroup = $groups['dob:1987-11-18'] ?? [];
         $this->assertCount(2, $dobGroup, "Should have produced exactly 2 artifacts in the '1987-11-18' group");
-        $this->assertEquals($artifacts[0], array_shift($dobGroup), "Should have produced the 1st artifact in the '1987-11-18' group");
-        $this->assertEquals($artifacts[1], array_shift($dobGroup), "Should have produced the 2nd artifact in the '1987-11-18' group");
+        $this->assertEquals($artifacts[0], $dobGroup[0], "Should have produced the 1st artifact in the '1987-11-18' group");
+        $this->assertEquals($artifacts[1], $dobGroup[1], "Should have produced the 2nd artifact in the '1987-11-18' group");
     }
 
     public function test_getArtifactGroups_producesMultipleArtifactGroupsForMultipleGroupByScalar(): void
@@ -210,8 +321,8 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Then
         $this->assertCount(2, $groups, "Should have produced exactly 2 groups");
 
-        $danGroup    = $groups['Dan Newman,green'] ?? [];
-        $MickeyGroup = $groups['Mickey Mouse,red'] ?? [];
+        $danGroup    = $groups['color:green,name:Dan Newman'] ?? [];
+        $MickeyGroup = $groups['color:red,name:Mickey Mouse'] ?? [];
         $this->assertCount(1, $danGroup, "Should have produced exactly 1 artifact in the 'Dan Newman,green' group");
         $this->assertEquals($artifacts[0], array_pop($danGroup), "Should have produced the 1st artifact in the 'Dan Newman' group");
         $this->assertCount(1, $MickeyGroup, "Should have produced exactly 1 artifact in the 'Mickey Mouse' group");
@@ -235,11 +346,12 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
 
         // Then
         $cordobaGroup = array_shift($groups);
-        $orlandoGroup = array_shift($groups);
         $this->assertCount(1, $cordobaGroup, "Should have produced exactly 1 artifact in the Cordoba group");
-        $this->assertEquals($artifacts[0], array_pop($cordobaGroup), "Should have produced the 1st artifact in the Cordoba group");
+        $this->assertEquals($artifacts[0], $cordobaGroup[0], "Should have produced the 1st artifact in the Cordoba group");
+
+        $orlandoGroup = array_shift($groups);
         $this->assertCount(1, $orlandoGroup, "Should have produced exactly 1 artifact in the Orlando group");
-        $this->assertEquals($artifacts[1], array_pop($orlandoGroup), "Should have produced the 2nd artifact in the Orlando group");
+        $this->assertEquals($artifacts[1], $orlandoGroup[0], "Should have produced the 2nd artifact in the Orlando group");
     }
 
     public function test_getArtifactGroups_producesMultipleArtifactGroupsForGroupByKeyInArray(): void
@@ -264,6 +376,45 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEquals($artifacts[0], array_pop($cordobaGroup), "Should have produced the 1st artifact in the Cordoba group");
         $this->assertCount(1, $orlandoGroup, "Should have produced exactly 1 artifact in the Orlando group");
         $this->assertEquals($artifacts[1], array_pop($orlandoGroup), "Should have produced the 2nd artifact in the Orlando group");
+    }
+
+    public function test_getArtifactGroups_producesMultipleArtifactGroupsForGroupByArrayOfScalars(): void
+    {
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = [];
+        $groupBy               = ['aliases', 'name'];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'group_by'       => $groupBy,
+            'include_fields' => $includeFields,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertCount(4, $groups, 'Should have produced exactly 4 groups');
+
+        $hammerGroup = array_shift($groups);
+        $this->assertCount(1, $hammerGroup, "Should have produced exactly 1 artifact");
+        $this->assertEquals('The Hammer', $hammerGroup[0]['alias'] ?? null, "The alias for hammer group should have been set to the first alias of the first artifact");
+        $this->assertEquals('Dan Newman', $hammerGroup[0]['name'] ?? null, "The alias for hammer group should have been set to the name of the first artifact");
+
+        $danielGroup = array_shift($groups);
+        $this->assertCount(1, $danielGroup, "Should have produced exactly 1 artifact");
+        $this->assertEquals('Daniel', $danielGroup[0]['alias'] ?? null, "The alias for daniel group should have been set to the second alias of the first artifact");
+        $this->assertEquals('Dan Newman', $danielGroup[0]['name'] ?? null, "The alias for daniel group should have been set to the name of the first artifact");
+
+        $mouseGroup = array_shift($groups);
+        $this->assertCount(1, $mouseGroup, "Should have produced exactly 1 artifact");
+        $this->assertEquals('The Mouse', $mouseGroup[0]['alias'] ?? null, "The alias for mouse group should have been set to the first alias of the second artifact");
+        $this->assertEquals('Mickey Mouse', $mouseGroup[0]['name'] ?? null, "The alias for mouse group should have been set to the name of the second artifact");
+
+        $mickeyGroup = array_shift($groups);
+        $this->assertCount(1, $mickeyGroup, "Should have produced exactly 1 artifact");
+        $this->assertEquals('Mickey', $mickeyGroup[0]['alias'] ?? null, "The alias for mickey group should have been set to the second alias of the second artifact");
+        $this->assertEquals('Mickey Mouse', $mickeyGroup[0]['name'] ?? null, "The alias for mickey group should have been set to the name of the second artifact");
     }
 
     public function test_getArtifactGroups_producesMultipleArtifactGroupsForGroupByArrayOfObjects(): void

@@ -57,7 +57,7 @@ class WorkflowService
             $workflowJob = $pendingJobRun->workflowJob;
             $workflowJob->load('dependencies');
             $prerequisiteJobRuns = static::getPrerequisiteJobRuns($pendingJobRun, $completedJobRuns);
-
+            
             // If the job has dependencies that have not yet completed, then skip this job
             if (count($prerequisiteJobRuns) < $workflowJob->dependencies->count()) {
                 Log::debug("Waiting for dependencies: " . $workflowJob->dependencies->reduce(fn($str, $d) => $str . $d . ', ', ''));
@@ -69,7 +69,7 @@ class WorkflowService
             $pendingJobRun->started_at = now();
             $pendingJobRun->save();
 
-            $workflowJob->getWorkflowTool()->assignTasks($pendingJobRun, $prerequisiteJobRuns);
+            $workflowJob->getWorkflowTool()->resolveAndAssignTasks($pendingJobRun, $prerequisiteJobRuns);
         }
     }
 

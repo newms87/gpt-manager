@@ -25,6 +25,13 @@ trait AssignsWorkflowTasksTrait
             return;
         }
 
+        // Make sure we always assign at least 1 default task even if no artifacts were passed / no input required
+        if (!$dependencyArtifacts) {
+            $dependencyArtifacts = [
+                'default' => [],
+            ];
+        }
+
         $this->assignTasksByDependencyArtifacts($workflowJobRun, $assignments, $dependencyArtifacts);
     }
 
@@ -78,6 +85,7 @@ trait AssignsWorkflowTasksTrait
             app(ThreadRepository::class)->addMessageToThread($thread, $item);
         }
 
+        dump($thread->messages()->get()->toArray());
         $workflowTask->thread()->associate($thread)->save();
 
         return $thread;
