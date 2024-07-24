@@ -41,7 +41,7 @@ class WorkflowResource extends ActionResource
     public static function details(Model $model): array
     {
         $jobs = $model->sortedAgentWorkflowJobs()->with(['dependencies', 'workflowAssignments.agent'])->get();
-        $runs = $model->workflowRuns()->with(['artifacts', 'workflowJobRuns' => ['workflowJob', 'tasks' => ['jobDispatch.runningAuditRequest', 'thread.messages.storedFiles.transcodes']]])->orderByDesc('id')->get();
+        $runs = $model->workflowRuns()->with(['artifacts', 'sortedWorkflowJobRuns' => ['workflowJob', 'tasks' => ['jobDispatch.runningAuditRequest', 'thread.messages.storedFiles.transcodes']]])->orderByDesc('id')->get();
 
         return static::make($model, [
             'jobs' => WorkflowJobResource::collection($jobs, fn(WorkflowJob $workflowJob) => [
@@ -51,14 +51,15 @@ class WorkflowResource extends ActionResource
                     'agent' => AgentResource::make($workflowAssignment->agent),
                 ]),
             ]),
-
+            
             // TODO: Refactor this to query only a single Workflow Run when needed (see WorkflowInputResource)
             'runs' => WorkflowRunResource::collection($runs, fn(WorkflowRun $workflowRun) => [
                 'artifacts'       => ArtifactResource::collection($workflowRun->artifacts, fn(Artifact $artifact) => [
                     'content' => $artifact->content,
                     'data'    => $artifact->data,
                 ]),
-                'workflowJobRuns' => WorkflowJobRunResource::collection($workflowRun->workflowJobRuns, fn(WorkflowJobRun $workflowJobRun) => [
+                'workflowJobRuns' => WorkflowJobRunResource::collection($workflowRun->sortedWorkflowJobRuns, fn(WorkflowJobRun $workflowJobRun) => [
+                    'depth'       => $workflowJobRun->workflowJob->dependency_level,
                     'workflowJob' => WorkflowJobResource::make($workflowJobRun->workflowJob),
                     'tasks'       => WorkflowTaskResource::collection($workflowJobRun->tasks, fn(WorkflowTask $task) => [
                         'audit_request_id' => $task->jobDispatch?->runningAuditRequest?->id,

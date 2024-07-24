@@ -34,6 +34,7 @@ export interface WorkflowJob extends ActionTargetItem {
 
 export interface WorkflowJobRun {
 	id: number;
+	name: string;
 	status: string;
 	completed_at: string;
 	started_at: string;
@@ -72,7 +73,8 @@ export interface WorkflowAssignment extends ActionTargetItem {
 export interface WorkflowRun extends ActionTargetItem {
 	id: number;
 	workflow_id: number;
-	workflow_name: string;
+	workflow_run_name: string;
+	input_name: string;
 	status: string;
 	completed_at: string;
 	started_at: string;

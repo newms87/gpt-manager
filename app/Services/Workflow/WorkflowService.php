@@ -22,7 +22,7 @@ class WorkflowService
         $workflowRun->save();
 
         // Create all the jobs for the workflow run
-        $workflowJobs = $workflowRun->workflow->workflowJobs()->get();
+        $workflowJobs = $workflowRun->workflow->sortedAgentWorkflowJobs()->get();
         foreach($workflowJobs as $workflowJob) {
             $workflowJobRun = $workflowRun->workflowJobRuns()->create([
                 'workflow_job_id' => $workflowJob->id,
@@ -57,7 +57,7 @@ class WorkflowService
             $workflowJob = $pendingJobRun->workflowJob;
             $workflowJob->load('dependencies');
             $prerequisiteJobRuns = static::getPrerequisiteJobRuns($pendingJobRun, $completedJobRuns);
-            
+
             // If the job has dependencies that have not yet completed, then skip this job
             if (count($prerequisiteJobRuns) < $workflowJob->dependencies->count()) {
                 Log::debug("Waiting for dependencies: " . $workflowJob->dependencies->reduce(fn($str, $d) => $str . $d . ', ', ''));

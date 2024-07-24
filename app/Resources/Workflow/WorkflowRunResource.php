@@ -14,15 +14,16 @@ class WorkflowRunResource extends ActionResource
     public static function data(Model $model): array
     {
         return [
-            'id'            => $model->id,
-            'workflow_id'   => $model->workflow_id,
-            'workflow_name' => $model->workflow?->name,
-            'status'        => $model->status,
-            'started_at'    => $model->started_at,
-            'completed_at'  => $model->completed_at,
-            'failed_at'     => $model->failed_at,
-            'created_at'    => $model->created_at,
-            'usage'         => [
+            'id'                => $model->id,
+            'workflow_id'       => $model->workflow_id,
+            'workflow_run_name' => $model->workflow?->name . ' (' . $model->id . ')',
+            'input_name'        => $model->workflowInput?->name,
+            'status'            => $model->status,
+            'started_at'        => $model->started_at,
+            'completed_at'      => $model->completed_at,
+            'failed_at'         => $model->failed_at,
+            'created_at'        => $model->created_at,
+            'usage'             => [
                 'input_tokens'  => $model->getTotalInputTokens(),
                 'output_tokens' => $model->getTotalOutputTokens(),
                 'cost'          => $model->getTotalCost(),

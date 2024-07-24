@@ -33,7 +33,7 @@ import { ActionTableLayout, ConfirmDialog } from "quasar-ui-danx";
 import { computed, onMounted } from "vue";
 
 defineEmits(["confirm", "close"]);
-const props = defineProps<{
+defineProps<{
 	filter?: Partial<WorkflowInput>;
 }>();
 
@@ -41,7 +41,6 @@ const createAction = getAction("create", {
 	onFinish: ({ item }) => {
 		if (item) {
 			WorkflowInputController.loadList();
-			console.log("finished", item);
 			WorkflowInputController.setSelectedRows([item]);
 		}
 	}
@@ -54,5 +53,6 @@ const dialogColumns = computed(() => columns.filter(c => allowedColumns.includes
 const selectedInput = computed(() => WorkflowInputController.selectedRows.value[0] || null);
 onMounted(() => {
 	WorkflowInputController.initialize();
+	WorkflowInputController.setPagination({ rowsPerPage: 10 });
 });
 </script>

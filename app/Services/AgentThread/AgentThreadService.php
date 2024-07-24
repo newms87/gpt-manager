@@ -208,10 +208,11 @@ class AgentThreadService
         }
 
         if ($agent->response_notes || $agent->response_schema) {
-            $schema = json_encode($agent->response_schema);
+            $schema          = json_encode($agent->response_schema);
+            $jsonRequirement = $agent->response_format === 'text' ? '' : "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
             $messages->push([
                 'role'    => Message::ROLE_USER,
-                'content' => "RESPONSE FORMAT:\n$agent->response_notes\n\n$schema",
+                'content' => "RESPONSE FORMAT:\n$agent->response_notes\n$jsonRequirement\n$schema",
             ]);
         }
 

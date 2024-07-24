@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Workflow\WorkflowTask;
 use App\Services\Workflow\WorkflowTaskService;
+use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Jobs\Job;
 
 class RunWorkflowTaskJob extends Job
@@ -23,6 +24,12 @@ class RunWorkflowTaskJob extends Job
 
     public function run()
     {
+        if ($this->workflowTask->deleted_at) {
+            Log::debug("Skipping deleted workflow task {$this->workflowTask->id}");
+
+            return;
+        }
+
         WorkflowTaskService::start($this->workflowTask);
     }
 }

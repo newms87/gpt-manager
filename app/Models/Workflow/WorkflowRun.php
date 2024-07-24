@@ -75,7 +75,7 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
     public function sortedWorkflowJobRuns(): HasMany|WorkflowJobRun
     {
         // Order by started_at, but if started_at is null, sort to the bottom
-        return $this->workflowJobRuns()->orderByRaw('started_at IS NULL, started_at');
+        return $this->workflowJobRuns()->orderByRaw('started_at IS NULL, started_at, id');
     }
 
     public function runningJobRuns(): HasMany|WorkflowJobRun

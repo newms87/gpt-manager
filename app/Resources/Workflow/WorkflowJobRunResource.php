@@ -15,6 +15,7 @@ class WorkflowJobRunResource extends ActionResource
     {
         return [
             'id'           => $model->id,
+            'name'         => $model->workflowJob?->name . ' (' . $model->id . ')',
             'status'       => $model->status,
             'started_at'   => $model->started_at,
             'completed_at' => $model->completed_at,

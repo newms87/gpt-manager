@@ -1,10 +1,14 @@
 <template>
 	<QCard class="bg-slate-800 text-slate-300 rounded overflow-hidden">
 		<div class="flex items-center justify-between">
-			<div class="flex-grow cursor-pointer py-4 px-3">
+			<div class="flex-grow py-4 px-3 flex items-center flex-nowrap">
 				<a @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
-					{{ workflowRun.workflow_name }} ({{ workflowRun.id }})
+					{{ workflowRun.workflow_run_name }}
 				</a>
+
+				<div v-if="workflowRun.input_name" class="px-4 py-1 bg-sky-800 text-sky-200 ml-4 rounded-full">
+					{{ workflowRun.input_name }}
+				</div>
 			</div>
 			<ShowHideButton
 				v-model="showArtifacts"
@@ -66,6 +70,7 @@
 <script setup lang="ts">
 import ArtifactCard from "@/components/Modules/Artifacts/ArtifactCard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
 import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
 import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
@@ -87,5 +92,8 @@ const showArtifacts = ref(false);
 const showJobs = ref(false);
 
 const removeWorkflowRunAction = getAction("delete");
-removeWorkflowRunAction.onFinish = WorkflowInputController.getActiveItemDetails;
+removeWorkflowRunAction.onFinish = () => {
+	WorkflowInputController.activeItem.value && WorkflowInputController.getActiveItemDetails();
+	WorkflowController.activeItem.value && WorkflowController.getActiveItemDetails();
+};
 </script>
