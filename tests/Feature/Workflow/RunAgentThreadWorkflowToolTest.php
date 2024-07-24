@@ -511,6 +511,151 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEquals($expectedArtifact, $danceArtifact, "Should have produced the 1st artifact in the 'Dance' group");
     }
 
+    public function test_getArtifactGroups_groupByObjectInArrayAndIncludeFieldInGroupBy(): void
+    {
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = ['services.*.name'];
+        $groupBy               = ['services.*.name'];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'group_by'       => $groupBy,
+            'include_fields' => $includeFields,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertCount(4, $groups, 'Should have produced exactly 4 groups');
+
+        $writeCodeGroup    = array_shift($groups);
+        $writeCodeArtifact = $writeCodeGroup[0];
+        $expectedArtifact  = ['services' => [['name' => 'Write Code']]];
+        $this->assertCount(1, $writeCodeGroup, "Should have produced exactly 1 artifact in the 'Write Code' group");
+        $this->assertEquals($expectedArtifact, $writeCodeArtifact, "Should have produced the 1st artifact in the 'Write Code' group");
+
+        $testCodeGroup    = array_shift($groups);
+        $testCodeArtifact = $testCodeGroup[0];
+        $expectedArtifact = ['services' => [['name' => 'Test Code']]];
+        $this->assertCount(1, $testCodeGroup, "Should have produced exactly 1 artifact in the 'Test Code' group");
+        $this->assertEquals($expectedArtifact, $testCodeArtifact, "Should have produced the 1st artifact in the 'Test Code' group");
+
+        $entertainGroup    = array_shift($groups);
+        $entertainArtifact = $entertainGroup[0];
+        $expectedArtifact  = ['services' => [['name' => 'Entertain']]];
+        $this->assertCount(1, $entertainGroup, "Should have produced exactly 1 artifact in the 'Entertain' group");
+        $this->assertEquals($expectedArtifact, $entertainArtifact, "Should have produced the 1st artifact in the 'Entertain' group");
+
+        $danceGroup       = array_shift($groups);
+        $danceArtifact    = $danceGroup[0];
+        $expectedArtifact = ['services' => [['name' => 'Dance']]];
+        $this->assertCount(1, $danceGroup, "Should have produced exactly 1 artifact in the 'Dance' group");
+        $this->assertEquals($expectedArtifact, $danceArtifact, "Should have produced the 1st artifact in the 'Dance' group");
+    }
+
+    public function test_getArtifactGroups_groupByObjectInArrayAndIncludeFieldNotInGroupBy(): void
+    {
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = ['services.*.cost'];
+        $groupBy               = ['services.*.name'];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'group_by'       => $groupBy,
+            'include_fields' => $includeFields,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertCount(4, $groups, 'Should have produced exactly 4 groups');
+
+        $writeCodeGroup    = array_shift($groups);
+        $writeCodeArtifact = $writeCodeGroup[0];
+        $expectedArtifact  = ['services' => [['cost' => 500]]];
+        $this->assertCount(1, $writeCodeGroup, "Should have produced exactly 1 artifact in the 'Write Code' group");
+        $this->assertEquals($expectedArtifact, $writeCodeArtifact, "Should have produced the 1st artifact in the 'Write Code' group with cost only");
+
+        $testCodeGroup    = array_shift($groups);
+        $testCodeArtifact = $testCodeGroup[0];
+        $expectedArtifact = ['services' => [['cost' => 300]]];
+        $this->assertCount(1, $testCodeGroup, "Should have produced exactly 1 artifact in the 'Test Code' group");
+        $this->assertEquals($expectedArtifact, $testCodeArtifact, "Should have produced the 1st artifact in the 'Test Code' group with cost only");
+
+        $entertainGroup    = array_shift($groups);
+        $entertainArtifact = $entertainGroup[0];
+        $expectedArtifact  = ['services' => [['cost' => 800]]];
+        $this->assertCount(1, $entertainGroup, "Should have produced exactly 1 artifact in the 'Entertain' group");
+        $this->assertEquals($expectedArtifact, $entertainArtifact, "Should have produced the 1st artifact in the 'Entertain' group with cost only");
+
+        $danceGroup       = array_shift($groups);
+        $danceArtifact    = $danceGroup[0];
+        $expectedArtifact = ['services' => [['cost' => 300]]];
+        $this->assertCount(1, $danceGroup, "Should have produced exactly 1 artifact in the 'Dance' group");
+        $this->assertEquals($expectedArtifact, $danceArtifact, "Should have produced the 1st artifact in the 'Dance' group with cost only");
+    }
+
+    public function test_getArtifactGroups_includeFieldNonExistingScalarOfObjectInSubArray(): void
+    {
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = ['services.*.uses.*.name'];
+        $groupBy               = [];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'group_by'       => $groupBy,
+            'include_fields' => $includeFields,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertEmpty($groups, 'No groups should have been produced since the field does not exist');
+    }
+
+    public function test_getArtifactGroups_noGroupByAndIncludeFieldScalarOfObjectInSubArray(): void
+    {
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = ['services.*.options.*.name'];
+        $groupBy               = [];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'group_by'       => $groupBy,
+            'include_fields' => $includeFields,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertCount(1, $groups, 'Should have produced exactly 1 group');
+
+        $defaultGroup = array_shift($groups);
+        $this->assertCount(1, $defaultGroup, "Should have produced exactly 1 artifact in the default group. Dan Group has services w/ options, Mickey group does not.");
+        $danArtifact      = $defaultGroup[0];
+        $expectedArtifact = [
+            'services' => [
+                [
+                    'options' => [
+                        ['name' => $artifacts[0]['services'][0]['options'][0]['name']],
+                        ['name' => $artifacts[0]['services'][0]['options'][1]['name']],
+                    ],
+                ],
+                [
+                    'options' => [
+                        ['name' => $artifacts[0]['services'][1]['options'][0]['name']],
+                        ['name' => $artifacts[0]['services'][1]['options'][1]['name']],
+                    ],
+                ],
+            ],
+        ];
+        $this->assertEquals($expectedArtifact, $danArtifact, "Should have produced the artifact containing only all the services' options for the Dan object");
+    }
+
     public function test_getArtifactGroups_producesMultipleArtifactGroupsForGroupByArrayOfObjectsAndScalar(): void
     {
         // Given

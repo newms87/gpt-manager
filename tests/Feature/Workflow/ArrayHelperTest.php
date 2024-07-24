@@ -24,6 +24,153 @@ class ArrayHelperTest extends AuthenticatedTestCase
         ],
     ];
 
+    /*****************************
+     * extractNestedData Tests
+     *****************************/
+    public function test_extractNestedData_producesEmptyArrayFromStringArtifact(): void
+    {
+        // Given
+        $artifact       = 'string artifact';
+        $includedFields = ['name'];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData($artifact, $includedFields);
+
+        // Then
+        $this->assertNull($includedData);
+    }
+
+    public function test_extractNestedData_nonExistingScalarReturnsNull(): void
+    {
+        // Given
+        $artifact       = ['dob' => '1987-11-18'];
+        $includedFields = ['name'];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData($artifact, $includedFields);
+
+        // Then
+        $this->assertEquals(null, $includedData);
+    }
+
+    public function test_extractNestedData_producesIdenticalArtifactWhenIncludedFieldsEmpty(): void
+    {
+        // Given
+        $includedFields = [];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData(self::TEST_DATA, $includedFields);
+
+        // Then
+        $this->assertEquals(self::TEST_DATA, $includedData);
+    }
+
+    public function test_extractNestedData_producesSubsetOfArtifactWhenIncludedFieldsSet(): void
+    {
+        // Given
+        $includedFields = ['name'];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData(self::TEST_DATA, $includedFields);
+
+        // Then
+        $this->assertEquals(['name' => self::TEST_DATA['name']], $includedData);
+    }
+
+    public function test_extractNestedData_producesChildObjectWhenIndexReferencesObject(): void
+    {
+        // Given
+        $includedFields = ['address'];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData(self::TEST_DATA, $includedFields);
+
+        // Then
+        $this->assertEquals(['address' => self::TEST_DATA['address']], $includedData);
+    }
+
+    public function test_extractNestedData_producesArrayWithAllElementsWhenIndexReferencesArray(): void
+    {
+        // Given
+        $includedFields = ['aliases'];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData(self::TEST_DATA, $includedFields);
+
+        // Then
+        $this->assertEquals(['aliases' => self::TEST_DATA['aliases']], $includedData);
+    }
+
+    public function test_extractNestedData_producesArrayWithSpecifiedIndexKeysForEachElementWhenIndexUsesAsteriskSyntax(): void
+    {
+        // Given
+        $data           = self::TEST_DATA;
+        $includedFields = ['powers.*.name', 'powers.*.power'];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData($data, $includedFields);
+
+        // Then
+        $this->assertEquals([
+            'powers' => [
+                ['name' => $data['powers'][0]['name'], 'power' => $data['powers'][0]['power']],
+                ['name' => $data['powers'][1]['name'], 'power' => $data['powers'][1]['power']],
+                ['name' => $data['powers'][2]['name'], 'power' => $data['powers'][2]['power']],
+            ],
+        ], $includedData);
+    }
+
+    public function test_extractNestedData_includeScalarInNestedArrayOfObjects(): void
+    {
+        // Given
+        $data           = self::TEST_DATA;
+        $includedFields = ['powers.*.specs.*.name'];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData($data, $includedFields);
+
+        // Then
+        $this->assertEquals([
+            'powers' => [
+                [
+                    'specs' => [
+                        ['name' => $data['powers'][0]['specs'][0]['name']],
+                        ['name' => $data['powers'][0]['specs'][1]['name']],
+                    ],
+                ],
+                [
+                    'specs' => [
+                        ['name' => $data['powers'][1]['specs'][0]['name']],
+                        ['name' => $data['powers'][1]['specs'][1]['name']],
+                    ],
+                ],
+                [
+                    'specs' => [
+                        ['name' => $data['powers'][2]['specs'][0]['name']],
+                        ['name' => $data['powers'][2]['specs'][1]['name']],
+                    ],
+                ],
+            ],
+        ], $includedData);
+    }
+
+    public function test_extractNestedData_nonExistingNestedFieldReturnsNull(): void
+    {
+        // Given
+        $data           = self::TEST_DATA;
+        $includedFields = ['powers.*.specs.*.nothing'];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData($data, $includedFields);
+
+        // Then
+        $this->assertNull($includedData);
+    }
+
+
+    /*****************************
+     * crossProductExtractData Tests
+     *****************************/
     public function test_crossProductExtractData_producesEmptyArrayWhenNoFields(): void
     {
         // Given
@@ -112,6 +259,10 @@ class ArrayHelperTest extends AuthenticatedTestCase
         ], $crossProduct);
     }
 
+
+    /*****************************
+     * filterNestedData Tests
+     *****************************/
     public function test_filterNestedData_filterExistingScalarReturnsOriginalData(): void
     {
         // Given

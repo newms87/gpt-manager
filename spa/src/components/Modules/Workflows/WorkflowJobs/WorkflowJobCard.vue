@@ -41,6 +41,10 @@
 			</div>
 		</div>
 		<QCardSection v-if="isEditing" class="flex items-stretch flex-nowrap">
+			<div class="w-1/2 pr-8">
+				<h5 class="mb-4">Agent Assignments</h5>
+				<WorkflowJobAssignmentsManager :job="job" />
+			</div>
 			<div class="w-1/2">
 				<h5 class="mb-4">Job Dependencies</h5>
 				<QCheckbox
@@ -49,10 +53,6 @@
 					@update:model-value="updateJobAction.trigger(job, {use_input: $event})"
 				/>
 				<WorkflowJobDependenciesList :workflow="workflow" :job="job" />
-			</div>
-			<div class="w-1/2 pl-8">
-				<h5 class="mb-4">Agent Assignments</h5>
-				<WorkflowJobAssignmentsManager :job="job" />
 			</div>
 		</QCardSection>
 		<QCardSection v-if="showTasksExample">

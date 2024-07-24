@@ -77,26 +77,32 @@ trait ResolvesDependencyArtifactsTrait
                 if ($artifact->content && !$artifact->data) {
                     $groups['default'][] = $artifact->content;
                 } else {
-                    $groups['default'][] = ArrayHelper::extractNestedData($artifactData, $dependency->include_fields);
+                    $data = ArrayHelper::extractNestedData($artifactData, $dependency->include_fields);
+                    if ($data) {
+                        $groups['default'][] = $data;
+                    }
                 }
                 continue;
             }
 
             $groupsOfItemSets = ArrayHelper::crossProductExtractData($artifactData, $dependency->group_by);
-            $includedData     = ArrayHelper::extractNestedData($artifactData, $dependency->include_fields);
 
             foreach($groupsOfItemSets as $itemSet) {
                 $groupKey     = $this->generateGroupKey($itemSet);
-                $resolvedData = $includedData;
+                $resolvedData = $artifactData;
 
                 foreach($itemSet as $itemIndex => $itemValue) {
                     $resolvedData = ArrayHelper::filterNestedData($resolvedData, $itemIndex, $itemValue);
                     if (!$resolvedData) {
-                        throw new Exception("Failed to resolve data for $itemIndex:\n" . json_encode($itemValue) . "\n\nIncluded Data\n" . json_encode($includedData));
+                        throw new Exception("Failed to resolve data for $itemIndex:\n" . json_encode($itemValue) . "\n\nArtifact Data\n" . json_encode($artifactData));
                     }
                 }
 
-                $groups[$groupKey][] = $resolvedData;
+                $resolvedData = ArrayHelper::extractNestedData($resolvedData, $dependency->include_fields);
+
+                if ($resolvedData) {
+                    $groups[$groupKey][] = $resolvedData;
+                }
             }
         }
 
