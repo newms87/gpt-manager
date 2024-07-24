@@ -8,7 +8,6 @@ use App\Models\Workflow\WorkflowJobDependency;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
-use Illuminate\Support\Str;
 use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
@@ -616,7 +615,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEmpty($groups, 'No groups should have been produced since the field does not exist');
     }
 
-    public function test_getArtifactGroups_noGroupByAndIncludeFieldScalarOfObjectInSubArray(): void
+    public function test_getArtifactGroups_includeFieldScalarOfObjectInSubArray(): void
     {
         // Given
         $artifacts             = $this->getArtifacts();
@@ -656,6 +655,58 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEquals($expectedArtifact, $danArtifact, "Should have produced the artifact containing only all the services' options for the Dan object");
     }
 
+    public function test_getArtifactGroups_includeFieldMultipleScalarsOfObjectInSubArray(): void
+    {
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = ['services.*.options.*.name', 'services.*.options.*.cost'];
+        $groupBy               = [];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'group_by'       => $groupBy,
+            'include_fields' => $includeFields,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertCount(1, $groups, 'Should have produced exactly 1 group');
+
+        $defaultGroup = array_shift($groups);
+        $this->assertCount(1, $defaultGroup, "Should have produced exactly 1 artifact in the default group. Dan Group has services w/ options, Mickey group does not.");
+        $danArtifact      = $defaultGroup[0];
+        $expectedArtifact = [
+            'services' => [
+                [
+                    'options' => [
+                        [
+                            'name' => $artifacts[0]['services'][0]['options'][0]['name'],
+                            'cost' => $artifacts[0]['services'][0]['options'][0]['cost'],
+                        ],
+                        [
+                            'name' => $artifacts[0]['services'][0]['options'][1]['name'],
+                            'cost' => $artifacts[0]['services'][0]['options'][1]['cost'],
+                        ],
+                    ],
+                ],
+                [
+                    'options' => [
+                        [
+                            'name' => $artifacts[0]['services'][1]['options'][0]['name'],
+                            'cost' => $artifacts[0]['services'][1]['options'][0]['cost'],
+                        ],
+                        [
+                            'name' => $artifacts[0]['services'][1]['options'][1]['name'],
+                            'cost' => $artifacts[0]['services'][1]['options'][1]['cost'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $this->assertEquals($expectedArtifact, $danArtifact, "Should have produced the artifact containing only all the services' options for the Dan object");
+    }
+
     public function test_getArtifactGroups_producesMultipleArtifactGroupsForGroupByArrayOfObjectsAndScalar(): void
     {
         // Given
@@ -672,8 +723,6 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
 
         // Then
-        $singularKey = Str::singular('services');
-
         $writeCodeGroup               = array_shift($groups);
         $writeCodeArtifact            = $writeCodeGroup[0];
         $expectedArtifact             = $artifacts[0];
@@ -705,8 +754,6 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
 
     public function test_getArtifactGroups_producesMultipleArtifactGroupsForGroupByIndexInNestedArrayOfObjects(): void
     {
-        $this->markTestSkipped("This adds another layer of complexity, which will require a custom implementation of data_get() or a new approach");
-
         // Given
         $artifacts             = $this->getArtifacts();
         $includeFields         = [];
@@ -722,39 +769,62 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
 
         // Then
         $this->assertCount(4, $groups, 'Should have produced exactly 4 groups');
-        $singularKey = Str::singular('services');
 
-        $writeCodeGroup                 = array_shift($groups);
-        $writeCodeArtifact              = $writeCodeGroup[0];
-        $expectedArtifact               = $artifacts[0];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
-        unset($expectedArtifact['services']);
-        $this->assertCount(1, $writeCodeGroup, "Should have produced exactly 1 artifact in the 'Write Code' group");
-        $this->assertEquals($expectedArtifact, $writeCodeArtifact, "Should have produced the 1st artifact in the 'Write Code' group");
+        $phpGroup                     = array_shift($groups);
+        $phpArtifact                  = $phpGroup[0];
+        $expectedArtifact             = $artifacts[0];
+        $expectedArtifact['services'] = [
+            [
+                ...$expectedArtifact['services'][0],
+                'options' => [
+                    $expectedArtifact['services'][0]['options'][0],
+                ],
+            ],
+        ];
+        $this->assertCount(1, $phpGroup, "Should have produced exactly 1 artifact in the 'PHP' group");
+        $this->assertEquals($expectedArtifact, $phpArtifact, "Should have produced an artifact with the Write Code => PHP path");
 
-        $testCodeGroup                  = array_shift($groups);
-        $testCodeArtifact               = $testCodeGroup[0];
-        $expectedArtifact               = $artifacts[0];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
-        unset($expectedArtifact['services']);
-        $this->assertCount(1, $testCodeGroup, "Should have produced exactly 1 artifact in the 'Test Code' group");
-        $this->assertEquals($expectedArtifact, $testCodeArtifact, "Should have produced the 1st artifact in the 'Test Code' group");
+        $nodeGroup                    = array_shift($groups);
+        $nodeArtifact                 = $nodeGroup[0];
+        $expectedArtifact             = $artifacts[0];
+        $expectedArtifact['services'] = [
+            [
+                ...$expectedArtifact['services'][0],
+                'options' => [
+                    $expectedArtifact['services'][0]['options'][1],
+                ],
+            ],
+        ];
+        $this->assertCount(1, $nodeGroup, "Should have produced exactly 1 artifact in the 'Node' group");
+        $this->assertEquals($expectedArtifact, $nodeArtifact, "Should have produced an artifact with the Write Code => Node path");
 
-        $entertainGroup                 = array_shift($groups);
-        $entertainArtifact              = $entertainGroup[0];
-        $expectedArtifact               = $artifacts[1];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][0];
-        unset($expectedArtifact['services']);
-        $this->assertCount(1, $entertainGroup, "Should have produced exactly 1 artifact in the 'Entertain' group");
-        $this->assertEquals($expectedArtifact, $entertainArtifact, "Should have produced the 1st artifact in the 'Entertain' group");
+        $chromeGroup                  = array_shift($groups);
+        $chromeArtifact               = $chromeGroup[0];
+        $expectedArtifact             = $artifacts[0];
+        $expectedArtifact['services'] = [
+            [
+                ...$expectedArtifact['services'][1],
+                'options' => [
+                    $expectedArtifact['services'][1]['options'][0],
+                ],
+            ],
+        ];
+        $this->assertCount(1, $chromeGroup, "Should have produced exactly 1 artifact in the 'Chrome' group");
+        $this->assertEquals($expectedArtifact, $chromeArtifact, "Should have produced an artifact with the Test Code => Chrome path");
 
-        $danceGroup                     = array_shift($groups);
-        $danceArtifact                  = $danceGroup[0];
-        $expectedArtifact               = $artifacts[1];
-        $expectedArtifact[$singularKey] = $expectedArtifact['services'][1];
-        unset($expectedArtifact['services']);
-        $this->assertCount(1, $danceGroup, "Should have produced exactly 1 artifact in the 'Dance' group");
-        $this->assertEquals($expectedArtifact, $danceArtifact, "Should have produced the 1st artifact in the 'Dance' group");
+        $ieGroup                      = array_shift($groups);
+        $ieArtifact                   = $ieGroup[0];
+        $expectedArtifact             = $artifacts[0];
+        $expectedArtifact['services'] = [
+            [
+                ...$expectedArtifact['services'][1],
+                'options' => [
+                    $expectedArtifact['services'][1]['options'][1],
+                ],
+            ],
+        ];
+        $this->assertCount(1, $ieGroup, "Should have produced exactly 1 artifact in the 'IE' group");
+        $this->assertEquals($expectedArtifact, $ieArtifact, "Should have produced an artifact with the Test Code => IE path");
     }
 
     public function test_generateArtifactGroupTuples_producesEmptyArrayWhenNoDependencies(): void

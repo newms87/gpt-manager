@@ -18,9 +18,24 @@ class ArrayHelperTest extends AuthenticatedTestCase
             'zip'   => '80031',
         ],
         'powers'  => [
-            ['name' => 'Hammer', 'power' => 50, 'uses' => ['smash', 'pound'], 'specs' => [['name' => 'mana', 'value' => 30], ['name' => 'cooldown', 'value' => 5]]],
-            ['name' => 'Code', 'power' => 80, 'uses' => ['compile', 'debug'], 'specs' => [['name' => 'mana', 'value' => 50], ['name' => 'cooldown', 'value' => 10]]],
-            ['name' => 'Slap', 'power' => 50, 'uses' => ['slap', 'poke'], 'specs' => [['name' => 'mana', 'value' => 30], ['name' => 'cooldown', 'value' => 2]]],
+            [
+                'name'  => 'Hammer',
+                'power' => 50,
+                'uses'  => ['smash', 'pound'],
+                'specs' => [['name' => 'mana', 'value' => 30], ['name' => 'cooldown', 'value' => 5]],
+            ],
+            [
+                'name'  => 'Code',
+                'power' => 80,
+                'uses'  => ['compile', 'debug'],
+                'specs' => [['name' => 'mana', 'value' => 50], ['name' => 'cooldown', 'value' => 10]],
+            ],
+            [
+                'name'  => 'Slap',
+                'power' => 50,
+                'uses'  => ['slap', 'poke'],
+                'specs' => [['name' => 'mana', 'value' => 30], ['name' => 'cooldown', 'value' => 2]],
+            ],
         ],
     ];
 
@@ -148,6 +163,40 @@ class ArrayHelperTest extends AuthenticatedTestCase
                     'specs' => [
                         ['name' => $data['powers'][2]['specs'][0]['name']],
                         ['name' => $data['powers'][2]['specs'][1]['name']],
+                    ],
+                ],
+            ],
+        ], $includedData);
+    }
+
+    public function test_extractNestedData_includeMultipleScalarsInNestedArrayOfObjects(): void
+    {
+        // Given
+        $data           = self::TEST_DATA;
+        $includedFields = ['powers.*.specs.*.name', 'powers.*.specs.*.value'];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData($data, $includedFields);
+
+        // Then
+        $this->assertEquals([
+            'powers' => [
+                [
+                    'specs' => [
+                        $data['powers'][0]['specs'][0],
+                        $data['powers'][0]['specs'][1],
+                    ],
+                ],
+                [
+                    'specs' => [
+                        $data['powers'][1]['specs'][0],
+                        $data['powers'][1]['specs'][1],
+                    ],
+                ],
+                [
+                    'specs' => [
+                        $data['powers'][2]['specs'][0],
+                        $data['powers'][2]['specs'][1],
                     ],
                 ],
             ],
