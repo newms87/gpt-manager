@@ -23,7 +23,7 @@ import { FaSolidPencil as EditIcon } from "danx-icon";
 import { FilePreview } from "quasar-ui-danx";
 import { ref } from "vue";
 
-const props = defineProps<{
+defineProps<{
 	workflowInput: WorkflowInput;
 }>();
 

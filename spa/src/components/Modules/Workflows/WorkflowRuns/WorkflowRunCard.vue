@@ -78,8 +78,10 @@ import WorkflowJobRunCard from "@/components/Modules/Workflows/WorkflowRuns/Work
 import { ShowHideButton } from "@/components/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
+import { WorkflowRunRoutes } from "@/routes/workflowRoutes";
 import { WorkflowRun } from "@/types/workflows";
-import { computed, ref } from "vue";
+import { storeObject } from "quasar-ui-danx";
+import { computed, onMounted, ref, watch } from "vue";
 
 defineEmits(["remove"]);
 const props = defineProps<{
@@ -92,8 +94,29 @@ const showArtifacts = ref(false);
 const showJobs = ref(false);
 
 const removeWorkflowRunAction = getAction("delete");
-removeWorkflowRunAction.onFinish = () => {
-	WorkflowInputController.activeItem.value && WorkflowInputController.getActiveItemDetails();
-	WorkflowController.activeItem.value && WorkflowController.getActiveItemDetails();
+removeWorkflowRunAction.onFinish = async () => {
+	WorkflowInputController.activeItem.value && await WorkflowInputController.getActiveItemDetails();
+	WorkflowController.activeItem.value && await WorkflowController.getActiveItemDetails();
 };
+
+/********
+ * Refresh the workflow run every 2 seconds while it is running
+ */
+onMounted(refreshWorkflowInput);
+watch(() => props.workflowRun, refreshWorkflowInput);
+
+let refreshTimeout = null;
+function refreshWorkflowInput() {
+	if (refreshTimeout) {
+		clearTimeout(refreshTimeout);
+		refreshTimeout = null;
+	}
+
+	refreshTimeout = setTimeout(async () => {
+		if ([WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(props.workflowRun.status)) {
+			storeObject(await WorkflowRunRoutes.details(props.workflowRun));
+			refreshWorkflowInput();
+		}
+	}, 2000);
+}
 </script>
