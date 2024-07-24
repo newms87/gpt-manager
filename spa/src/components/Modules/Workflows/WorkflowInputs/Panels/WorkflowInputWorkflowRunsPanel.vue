@@ -38,7 +38,7 @@ import { WorkflowRoutes } from "@/routes/workflowRoutes";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { FaSolidCirclePlay as RunIcon } from "danx-icon";
 import { SelectField } from "quasar-ui-danx";
-import { onMounted, ref, shallowRef, watch } from "vue";
+import { onMounted, ref, shallowRef } from "vue";
 
 const props = defineProps<{
 	workflowInput: WorkflowInput;
@@ -50,25 +50,7 @@ const runWorkflowAction = getAction("run-workflow");
 
 onMounted(async () => {
 	workflows.value = (await WorkflowRoutes.list({ page: 1, rowsPerPage: 1000 })).data;
-	refreshWorkflowInput();
 });
-
-watch(() => props.workflowInput.__timestamp, refreshWorkflowInput);
-
-// TODO: Convert this to an action behavior / feature... Controller.startPollingActiveItemDetails()
-let refreshTimeout = null;
-function refreshWorkflowInput() {
-	if (refreshTimeout) {
-		clearTimeout(refreshTimeout);
-		refreshTimeout = null;
-	}
-
-	refreshTimeout = setTimeout(() => {
-		if (props.workflowInput.has_active_workflow_run) {
-			WorkflowInputController.getActiveItemDetails();
-		}
-	}, 2000);
-}
 
 async function onRunWorkflow() {
 	await runWorkflowAction.trigger({

@@ -1,16 +1,22 @@
 <template>
 	<div class="bg-slate-600 rounded-lg overflow-hidden">
 		<div class="flex items-center flex-nowrap pr-2">
-			<div class="flex-grow flex-nowrap flex items-center">
-				<div class="text-xs py-6 px-2 bg-gray-700">Task ({{ task.id }})</div>
-				<div>
-					<div class="text-lg font-bold px-2 text-ellipsis">{{ task.job_name }}</div>
-					<div class="flex items-center flex-nowrap px-2">
-						<div class="bg-slate-400 text-slate-800 text-sm px-2 py-1 rounded-lg text-no-wrap">
-							Group: {{ task.group || "N/A" }}
+			<div class="flex-grow flex-nowrap flex items-stretch">
+				<div class="text-xs px-2 bg-gray-700 flex items-center">Task ({{ task.id }})</div>
+				<div class="p-2 max-w-96">
+					<div class="text-lg font-bold text-ellipsis">{{ task.job_name }}</div>
+					<div class="flex items-center flex-nowrap">
+						<div class="bg-slate-400 text-slate-800 text-sm px-2 py-1 rounded-lg">
+							{{ task.group || "N/A" }}
 						</div>
-						<div class="text-sm text-slate-400 ml-3 text-no-wrap">by {{ task.agent_name }}</div>
 					</div>
+				</div>
+			</div>
+			<div class="mx-4">
+				<div class="text-sm text-slate-400 text-no-wrap">by {{ task.agent_name }}</div>
+				<div class="text-sm text-slate-400 bg-slate-800 px-3 py-1 mt-1 rounded-full text-no-wrap inline-block">{{
+						task.model
+					}}
 				</div>
 			</div>
 			<ShowHideButton v-if="task.thread" v-model="showThread" label="Thread" class="bg-sky-800 mx-1 text-sm" />

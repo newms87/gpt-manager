@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div class="flex items-center flex-nowrap h-20">
-			<div>{{ workflowInput.name }}</div>
+			<div class="text-base rounded-full bg-sky-800 text-sky-200 px-8 py-2">{{ workflowInput.name }}</div>
 			<div v-if="workflowInput.description" class="ml-4">
 				{{ workflowInput.description }}
 			</div>

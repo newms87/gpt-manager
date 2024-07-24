@@ -142,6 +142,11 @@ class WorkflowTaskService
             // Dispatch an async job for each pending task in the workflow job
             foreach($pendingJobRun->pendingTasks()->get() as $pendingTask) {
                 Log::debug("$pendingJobRun dispatching $pendingTask");
+                if ($pendingTask->job_dispatch_id) {
+                    Log::debug("Already dispatched");
+                    continue;
+                }
+
                 $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
                 $pendingTask->job_dispatch_id = $job?->getJobDispatch()?->id;
                 $pendingTask->save();

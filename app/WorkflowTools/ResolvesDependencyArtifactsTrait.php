@@ -128,7 +128,7 @@ trait ResolvesDependencyArtifactsTrait
                 $newGroupTuples = [];
                 foreach($groupTuples as $tupleKey => $tupleArtifacts) {
                     foreach($artifactGroups as $artifactGroupKey => $artifacts) {
-                        $newGroupTuples[$tupleKey . '|' . $artifactGroupKey] = array_merge($tupleArtifacts, $artifacts);
+                        $newGroupTuples[$tupleKey . ' | ' . $artifactGroupKey] = array_merge($tupleArtifacts, $artifacts);
                     }
                 }
                 $groupTuples = $newGroupTuples;
@@ -158,7 +158,7 @@ trait ResolvesDependencyArtifactsTrait
                 // Can't make a readable unique key from an array value, so just make a hash of all the data
                 $requiresHash = true;
             }
-            $tmpKey = ($groupByKey ? "$groupByKey," : '') . (is_array($value) ? $key : "$key:$value");
+            $tmpKey = ($groupByKey ? "$groupByKey," : '') . (is_array($value) ? $key : "$key: $value");
 
             // If we've exceeded the key length, we need to add a hash to make the key unique
             if ($groupByKey && strlen($tmpKey) > static::MAX_KEY_LENGTH) {
@@ -169,7 +169,7 @@ trait ResolvesDependencyArtifactsTrait
             $groupByKey = $tmpKey;
         }
 
-        $groupByKey = $currentKey ? "$currentKey|$groupByKey" : $groupByKey;
+        $groupByKey = $currentKey ? "$currentKey | $groupByKey" : $groupByKey;
         if (strlen($groupByKey) > static::MAX_KEY_LENGTH) {
             $requiresHash = true;
         }

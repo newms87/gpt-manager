@@ -61,6 +61,7 @@
 					v-model="content"
 					:readonly="readonly"
 					editor-class="text-slate-200"
+					:format="isJSON(content) ? 'json' : 'text'"
 					@update:model-value="updateDebouncedAction.trigger(message, {content})"
 				/>
 				<template v-if="message.data">
@@ -94,7 +95,7 @@ import {
 	FaSolidRobot as AssistantIcon,
 	FaSolidToolbox as ToolIcon
 } from "danx-icon";
-import { EditOnClickTextField, fDateTime, ListTransition, MultiFileField, UploadedFile } from "quasar-ui-danx";
+import { EditOnClickTextField, fDateTime, isJSON, ListTransition, MultiFileField, UploadedFile } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
