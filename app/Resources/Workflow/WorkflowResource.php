@@ -51,7 +51,7 @@ class WorkflowResource extends ActionResource
                     'agent' => AgentResource::make($workflowAssignment->agent),
                 ]),
             ]),
-            
+
             // TODO: Refactor this to query only a single Workflow Run when needed (see WorkflowInputResource)
             'runs' => WorkflowRunResource::collection($runs, fn(WorkflowRun $workflowRun) => [
                 'artifacts'       => ArtifactResource::collection($workflowRun->artifacts, fn(Artifact $artifact) => [
@@ -59,7 +59,7 @@ class WorkflowResource extends ActionResource
                     'data'    => $artifact->data,
                 ]),
                 'workflowJobRuns' => WorkflowJobRunResource::collection($workflowRun->sortedWorkflowJobRuns, fn(WorkflowJobRun $workflowJobRun) => [
-                    'depth'       => $workflowJobRun->workflowJob->dependency_level,
+                    'depth'       => $workflowJobRun->workflowJob?->dependency_level,
                     'workflowJob' => WorkflowJobResource::make($workflowJobRun->workflowJob),
                     'tasks'       => WorkflowTaskResource::collection($workflowJobRun->tasks, fn(WorkflowTask $task) => [
                         'audit_request_id' => $task->jobDispatch?->runningAuditRequest?->id,

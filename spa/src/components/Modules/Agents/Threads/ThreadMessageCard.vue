@@ -61,7 +61,7 @@
 					v-model="content"
 					:readonly="readonly"
 					editor-class="text-slate-200"
-					:format="isJSON(content) ? 'json' : 'text'"
+					:format="isJSON(content) ? 'yaml' : 'text'"
 					@update:model-value="updateDebouncedAction.trigger(message, {content})"
 				/>
 				<template v-if="message.data">

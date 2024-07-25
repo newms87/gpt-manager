@@ -53,7 +53,7 @@ class WorkflowRunResource extends ActionResource
                 'data'    => $artifact->data,
             ]),
             'workflowJobRuns' => WorkflowJobRunResource::collection($jobRuns, fn(WorkflowJobRun $workflowJobRun) => [
-                'depth'       => $workflowJobRun->workflowJob->dependency_level,
+                'depth'       => $workflowJobRun->workflowJob?->dependency_level,
                 'workflowJob' => WorkflowJobResource::make($workflowJobRun->workflowJob),
                 'tasks'       => WorkflowTaskResource::collection($workflowJobRun->tasks, fn(WorkflowTask $task) => [
                     'audit_request_id' => $task->jobDispatch?->runningAuditRequest?->id,

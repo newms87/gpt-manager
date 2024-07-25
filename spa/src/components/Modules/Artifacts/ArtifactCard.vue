@@ -7,7 +7,11 @@
 			<div>{{ fDateTime(artifact.created_at) }}</div>
 		</div>
 		<div>
-			<MarkdownEditor :model-value="artifact.content" format="json" readonly />
+			<MarkdownEditor
+				:model-value="artifact.content || artifact.data"
+				:format="artifact.content ? 'text' : 'yaml'"
+				readonly
+			/>
 		</div>
 	</div>
 </template>
