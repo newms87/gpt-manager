@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\MockData;
 
-use App\Api\OpenAi\Classes\OpenAiCompletionResponse;
+use App\Api\OpenAi\Classes\TestAiCompletionResponse;
 use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
 use App\Models\Workflow\Workflow;
@@ -43,7 +43,7 @@ trait AiMockData
 
     public function mocksOpenAiCompletionResponse($content = 'Mock completion message content', $finishReason = 'stop', $usage = null)
     {
-        return $this->mock(OpenAiApi::class)->shouldReceive('complete')->andReturn(OpenAiCompletionResponse::make([
+        return $this->mock(OpenAiApi::class)->shouldReceive('complete')->andReturn(TestAiCompletionResponse::make([
             'choices' => [
                 [
                     'message'       => ['content' => $content],

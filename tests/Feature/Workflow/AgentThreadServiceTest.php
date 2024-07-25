@@ -2,11 +2,129 @@
 
 namespace Tests\Feature\Workflow;
 
+use App\Jobs\ExecuteThreadRunJob;
+use App\Models\Agent\Agent;
+use App\Models\Agent\Message;
+use App\Models\Agent\Thread;
+use App\Models\Agent\ThreadRun;
 use App\Services\AgentThread\AgentThreadService;
+use Illuminate\Support\Facades\Queue;
+use Mockery;
+use Newms87\Danx\Exceptions\ValidationError;
 use Tests\AuthenticatedTestCase;
 
 class AgentThreadServiceTest extends AuthenticatedTestCase
 {
+    public function test_run_createsThreadRunSuccessfully()
+    {
+        // Given
+        $temperature = .7;
+        $agent       = Agent::factory()->create([
+            'temperature'     => $temperature,
+            'response_format' => 'json',
+        ]);
+        $thread      = Thread::factory()->create(['agent_id' => $agent->id]);
+        $thread->messages()->create(['role' => Message::ROLE_USER, 'content' => 'Test message']);
+
+        $service = new AgentThreadService();
+
+        // When
+        $threadRun = $service->run($thread);
+
+        // Then
+        $this->assertEquals(ThreadRun::STATUS_RUNNING, $threadRun->status);
+        $this->assertEquals($temperature, $threadRun->temperature);
+        $this->assertEquals($agent->tools, $threadRun->tools);
+        $this->assertEquals('json_object', $threadRun->response_format);
+    }
+
+    public function test_run_throwsExceptionWhenThreadIsAlreadyRunning()
+    {
+        // Given
+        $threadRun = ThreadRun::factory()->create(['status' => ThreadRun::STATUS_RUNNING]);
+        $service   = new AgentThreadService();
+
+        // Expect
+        $this->expectException(ValidationError::class);
+        $this->expectExceptionMessage('The thread is already running.');
+
+        // When
+        $service->run($threadRun->thread);
+    }
+
+    public function test_run_throwsExceptionWhenThreadHasNoMessages()
+    {
+        // Given
+        $thread  = Thread::factory()->create();
+        $service = new AgentThreadService();
+
+        // Expect
+        $this->expectException(ValidationError::class);
+        $this->expectExceptionMessage('You must add messages to the thread before running it.');
+
+        // When
+        $service->run($thread);
+    }
+
+    public function test_run_dispatchesJobWhenDispatchIsTrue()
+    {
+        // Given
+        Queue::fake();
+        $thread  = Thread::factory()->withMessages(1)->create();
+        $service = new AgentThreadService();
+
+        // When
+        $threadRun = $service->run($thread);
+
+        // Then
+        Queue::assertPushed(ExecuteThreadRunJob::class, function ($job) use ($threadRun) {
+            return $job->threadRun->id === $threadRun->id;
+        });
+        $this->assertEquals(ThreadRun::STATUS_RUNNING, $threadRun->status);
+    }
+
+    public function test_run_executesThreadRunWhenDispatchIsFalse()
+    {
+        // Given
+        $thread  = Thread::factory()->withMessages(1)->create();
+        $service = Mockery::mock(AgentThreadService::class)->makePartial();
+        $service->shouldReceive('executeThreadRun')->once();
+
+        // When
+        $threadRun = $service->run($thread, false);
+
+        // Then
+        $this->assertEquals(ThreadRun::STATUS_RUNNING, $threadRun->status);
+    }
+
+    public function test_run_setsResponseFormatToTextWhenAgentResponseFormatIsText()
+    {
+        // Given
+        $agent   = Agent::factory()->create(['response_format' => 'text']);
+        $thread  = Thread::factory()->withMessages(1)->create(['agent_id' => $agent->id]);
+        $service = new AgentThreadService();
+
+        // When
+        $threadRun = $service->run($thread);
+
+        // Then
+        $this->assertEquals('text', $threadRun->response_format);
+    }
+
+    public function test_run_setsJobDispatchIdWhenDispatchIsTrue()
+    {
+        // Given
+        Queue::fake();
+        $thread  = Thread::factory()->withMessages(1)->create();
+        $service = new AgentThreadService();
+
+        // When
+        $threadRun = $service->run($thread);
+
+        // Then
+        $this->assertNotNull($threadRun->job_dispatch_id);
+    }
+
     public function test_cleanContent_providesValidJsonWithExtraBackticksPresent(): void
     {
         // Given

@@ -1,14 +1,23 @@
 <?php
 
 use App\AiTools\GoogleSerpAiTool;
+use App\AiTools\SummarizerAiTool;
 use App\AiTools\UrlToImageAiTool;
 use App\Api\OpenAi\OpenAiApi;
+use Tests\Feature\TestApi\TestAiApi\TestAiApi;
 
 return [
     // The seed to use for AI completions to ensure consistent results
     'seed'          => env('AI_SEED', 11181987),
     'default_model' => 'gpt-4o',
     'models'        => [
+        TestAiApi::$serviceName => [
+            'test-model' => [
+                'input'   => 0,
+                'output'  => 0,
+                'context' => 128000,
+            ],
+        ],
         OpenAiApi::$serviceName => [
             'gpt-4o-mini' => [
                 'input'   => .00015,
@@ -44,6 +53,7 @@ return [
     ],
     'apis'          => [
         OpenAiApi::$serviceName => OpenAiApi::class,
+        TestAiApi::$serviceName => TestAiApi::class,
     ],
     'tools'         => [
         [
@@ -51,6 +61,12 @@ return [
             'name'        => UrlToImageAiTool::NAME,
             'description' => UrlToImageAiTool::DESCRIPTION,
             'parameters'  => UrlToImageAiTool::PARAMETERS,
+        ],
+        [
+            'class'       => SummarizerAiTool::class,
+            'name'        => SummarizerAiTool::NAME,
+            'description' => SummarizerAiTool::DESCRIPTION,
+            'parameters'  => SummarizerAiTool::PARAMETERS,
         ],
         [
             'class'       => GoogleSerpAiTool::class,

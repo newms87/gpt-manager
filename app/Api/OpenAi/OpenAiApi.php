@@ -4,6 +4,7 @@ namespace App\Api\OpenAi;
 
 use App\Api\AgentApiContracts\AgentApiContract;
 use App\Api\OpenAi\Classes\OpenAiCompletionResponse;
+use App\Api\OpenAi\Classes\OpenAiMessageFormatter;
 use Newms87\Danx\Api\BearerTokenApi;
 use Newms87\Danx\Exceptions\ApiException;
 
@@ -36,5 +37,10 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
             ] + $options)->json();
 
         return OpenAiCompletionResponse::make($response);
+    }
+
+    public function formatter(): OpenAiMessageFormatter
+    {
+        return app(OpenAiMessageFormatter::class);
     }
 }

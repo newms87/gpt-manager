@@ -12,7 +12,6 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
-use Newms87\Danx\Services\TranscodeFileService;
 use Throwable;
 
 class AgentThreadService
@@ -129,6 +128,7 @@ class AgentThreadService
                 $messages     = $this->getMessagesForApi($thread);
                 $messageCount = count($messages);
                 Log::debug("$thread running with $messageCount messages for $agent");
+
                 $response = $agent->getModelApi()->complete(
                     $agent->model,
                     $messages,
@@ -150,73 +150,23 @@ class AgentThreadService
      */
     public function getMessagesForApi(Thread $thread): array
     {
-        $agent      = $thread->agent;
-        $corePrompt = "The current date and time is " . now()->toDateTimeString() . "\n\n";
+        $agent        = $thread->agent;
+        $apiFormatter = $agent->getModelApi()->formatter();
 
-        $messages = collect([
-            [
-                'role'    => Message::ROLE_USER,
-                'content' => $corePrompt . $agent->prompt,
-            ],
-        ]);
+        $corePrompt = "The current date and time is " . now()->toDateTimeString() . "\n\n";
+        $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $corePrompt . $agent->prompt);
 
         foreach($thread->messages()->get() as $message) {
-            $content = $message->content;
-            // If first and last character of the message is a [ and ] then json decode the message as its an array of message elements (ie: text or image_url)
-            if (str_starts_with($content, '[') && str_ends_with($content, ']')) {
-                $content = json_decode($content, true);
-            }
-            $files = $message->storedFiles()->get();
-
-            // Add Image URLs to the content
-            if ($files->isNotEmpty()) {
-                if (is_string($content)) {
-                    $content = [
-                        [
-                            'type' => 'text',
-                            'text' => $content,
-                        ],
-                    ];
-                }
-
-                foreach($files as $file) {
-                    if ($file->isImage()) {
-                        $content[] = [
-                            'type'      => 'image_url',
-                            'image_url' => ['url' => $file->url],
-                        ];
-                    } elseif ($file->isPdf()) {
-                        $transcodes = $file->transcodes()->where('transcode_name', TranscodeFileService::TRANSCODE_PDF_TO_IMAGES)->get();
-
-                        foreach($transcodes as $transcode) {
-                            $content[] = [
-                                'type'      => 'image_url',
-                                'image_url' => ['url' => $transcode->url],
-                            ];
-                            Log::debug("$message appending transcoded file $transcode->url");
-                        }
-                    } else {
-                        throw new Exception('Only images are supported for now.');
-                    }
-                }
-            }
-
-            $messages->push([
-                    'role'    => $message->role,
-                    'content' => $content,
-                ] + ($message->data ?? []));
+            $messages[] = $apiFormatter->message($message);
         }
 
         if ($agent->response_notes || $agent->response_schema) {
             $schema          = json_encode($agent->response_schema);
             $jsonRequirement = $agent->response_format === 'text' ? '' : "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
-            $messages->push([
-                'role'    => Message::ROLE_USER,
-                'content' => "RESPONSE FORMAT:\n$agent->response_notes\n$jsonRequirement\n$schema",
-            ]);
+            $messages        = $apiFormatter->rawMessage(Message::ROLE_USER, "RESPONSE FORMAT:\n$agent->response_notes\n$jsonRequirement\n$schema");
         }
 
-        return $messages->toArray();
+        return $messages;
     }
 
 

@@ -18,17 +18,17 @@ class ThreadFactory extends Factory
     {
         return [
             'team_id'  => Team::factory(),
-            'user_id'  => fn(array $attributes) => User::factory()->create(['team_id' => $attributes['team_id']]),
-            'agent_id' => fn(array $attributes) => Agent::factory()->create(['team_id' => $attributes['team_id']]),
+            'user_id'  => fn(array $attributes) => User::factory()->recycle(Team::find($attributes['team_id']))->create(),
+            'agent_id' => fn(array $attributes) => Agent::factory()->recycle(Team::find($attributes['team_id']))->create(),
             'name'     => fake()->words(3, true),
             'summary'  => fake()->paragraph,
         ];
     }
 
-    public function configure(): ThreadFactory|Factory
+    public function withMessages($count = 3): ThreadFactory|Factory
     {
-        return $this->afterCreating(function (Thread $thread) {
-            $thread->messages()->saveMany(Message::factory()->count(3)->make(['thread_id' => $thread]));
-        });
+        return $this->afterCreating(fn(Thread $thread) => $thread->messages()->saveMany(
+            Message::factory()->count($count)->make(['thread_id' => $thread])
+        ));
     }
 }
