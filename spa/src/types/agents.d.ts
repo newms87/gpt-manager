@@ -32,6 +32,7 @@ export interface ThreadMessage extends ActionTargetItem {
 	id: number;
 	role: "assistant" | "user" | "tool";
 	title: string;
+	summary?: string;
 	content?: string;
 	data?: AnyObject;
 	files?: UploadedFile[];

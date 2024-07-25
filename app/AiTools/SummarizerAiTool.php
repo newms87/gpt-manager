@@ -19,7 +19,7 @@ class SummarizerAiTool implements AiToolContract
             ],
             'summary'    => [
                 'type'        => 'string',
-                'description' => 'The summarization of the current message of files.',
+                'description' => 'The summarization of the current message of files. This should include all extracted data or any relevant information required to fully respond to the request. YOU WILL NOT SEE THE FULL TEXT AGAIN SO INCLUDE ALL REQUIRED INFORMATION HERE.',
             ],
             'next'       => [
                 'type'        => 'boolean',
@@ -38,6 +38,12 @@ class SummarizerAiTool implements AiToolContract
     {
         //  Setup the summarizer tool
         $message->summarizer_total = count($items);
+
+        // If summary has been reset, reset the offset
+        if (!$message->summary) {
+            $message->summarizer_offset = 0;
+        }
+
         $message->save();
 
         // TODO: Implement Summarizer tool settings
@@ -49,7 +55,7 @@ class SummarizerAiTool implements AiToolContract
             if ($count >= $message->summarizer_offset) {
                 $pagedItems[] = $item;
             }
-            if ($count++ >= $limit) {
+            if (++$count >= $limit) {
                 break;
             }
         }

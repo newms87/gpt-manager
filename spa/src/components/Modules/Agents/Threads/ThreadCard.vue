@@ -15,9 +15,6 @@
 				:thread="thread"
 				class="mb-5"
 			/>
-		</div>
-
-		<div v-if="active" class="mt-4">
 			<ActionButton
 				:saving="thread.is_running"
 				:icon="CreateIcon"

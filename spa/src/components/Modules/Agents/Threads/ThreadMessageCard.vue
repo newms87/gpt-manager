@@ -71,6 +71,14 @@
 						:model-value="message.data"
 					/>
 				</template>
+				<div v-if="summary">
+					<div class="text-sm font-bold mt-3 mb-2">Summary</div>
+					<MarkdownEditor
+						v-model="summary"
+						:readonly="readonly"
+						@update:model-value="updateDebouncedAction.trigger(message, {summary})"
+					/>
+				</div>
 			</div>
 		</template>
 		<template v-if="showFiles && isUserMessage">
@@ -105,6 +113,7 @@ const props = defineProps<{
 }>();
 
 const content = ref(props.message.content);
+const summary = ref(props.message.summary);
 const files = ref<UploadedFile[]>(props.message.files || []);
 
 const showMessage = ref(true);

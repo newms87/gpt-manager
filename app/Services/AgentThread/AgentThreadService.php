@@ -107,7 +107,7 @@ class AgentThreadService
                 'response_format' => [
                     'type' => $threadRun->response_format ?: 'text',
                 ],
-                'seed'            => $threadRun->seed,
+                'seed'            => (int)$threadRun->seed,
             ];
 
             $tools = $agent->formatTools();
@@ -163,7 +163,7 @@ class AgentThreadService
         if ($agent->response_notes || $agent->response_schema) {
             $schema          = json_encode($agent->response_schema);
             $jsonRequirement = $agent->response_format === 'text' ? '' : "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
-            $messages        = $apiFormatter->rawMessage(Message::ROLE_USER, "RESPONSE FORMAT:\n$agent->response_notes\n$jsonRequirement\n$schema");
+            $messages[]      = $apiFormatter->rawMessage(Message::ROLE_USER, "RESPONSE FORMAT:\n$agent->response_notes\n$jsonRequirement\n$schema");
         }
 
         return $messages;

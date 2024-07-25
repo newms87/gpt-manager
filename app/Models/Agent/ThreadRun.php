@@ -40,6 +40,7 @@ class ThreadRun extends Model implements AuditableContract
     {
         return [
             'tools'        => 'json',
+            'temperature'  => 'float',
             'started_at'   => 'datetime',
             'completed_at' => 'datetime',
             'failed_at'    => 'datetime',

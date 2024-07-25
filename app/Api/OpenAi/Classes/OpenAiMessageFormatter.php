@@ -11,18 +11,18 @@ use Newms87\Danx\Services\TranscodeFileService;
 
 class OpenAiMessageFormatter implements AgentMessageFormatterContract
 {
-    public function rawMessage(string $role, string $content, array $data = []): array
+    public function rawMessage(string $role, string|array $content, array $data = null): array
     {
         return [
                 'role'    => $role,
-                'content' => $content,
+                'content' => is_string($content) ? $content : json_encode($content),
             ] + ($data ?? []);
     }
 
     public function message(Message $message): array
     {
         // If summary is set, use that instead of the original content of the message (this is to save on tokens and used by the Summarizer AI Tool)
-        $content = $message->summary ?: $message->content;
+        $content = $message->summary ?: $message->content ?: '';
 
         // If first and last character of the message is a [ and ] then json decode the message as its an array of message elements (ie: text or image_url)
         // This can happen with tool calls or when the user sends a message with multiple elements
@@ -56,7 +56,10 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
             foreach($pagedUrls as $url) {
                 $content[] = [
                     'type'      => 'image_url',
-                    'image_url' => ['url' => $url],
+                    'image_url' => [
+                        'url'    => $url,
+                        'detail' => 'high',
+                    ],
                 ];
             }
         }
