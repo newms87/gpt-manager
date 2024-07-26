@@ -4,5 +4,5 @@ namespace App\AiTools;
 
 interface AiToolContract
 {
-    public function execute($params);
+    public function execute($params): AiToolResponse;
 }

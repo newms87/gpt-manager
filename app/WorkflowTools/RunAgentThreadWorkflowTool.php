@@ -2,6 +2,7 @@
 
 namespace App\WorkflowTools;
 
+use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowTask;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,16 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
     use AssignsWorkflowTasksTrait, ResolvesDependencyArtifactsTrait;
 
     public static string $toolName = 'Run Agent Thread';
+
+    public function getResponsePreview(WorkflowJob $workflowJob): array|string|null
+    {
+        $response = [];
+        foreach($workflowJob->workflowAssignments as $assignment) {
+            $response[] = $assignment->agent->response_sample;
+        }
+
+        return $response;
+    }
 
     /**
      * Run the thread associated to the task and produce an artifact from the last message

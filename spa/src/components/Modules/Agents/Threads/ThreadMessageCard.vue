@@ -69,6 +69,7 @@
 					<MarkdownEditor
 						readonly
 						:model-value="message.data"
+						sync-model-changes
 					/>
 				</template>
 				<div v-if="summary">
@@ -76,6 +77,7 @@
 					<MarkdownEditor
 						v-model="summary"
 						:readonly="readonly"
+						sync-model-changes
 						@update:model-value="updateDebouncedAction.trigger(message, {summary})"
 					/>
 				</div>

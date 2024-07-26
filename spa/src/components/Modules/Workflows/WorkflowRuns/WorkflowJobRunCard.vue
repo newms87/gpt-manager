@@ -5,9 +5,9 @@
 				<div class="text-base">{{ jobRun.name }}</div>
 			</div>
 			<ShowHideButton
-				v-if="displayTasks.length > 0"
+				v-if="jobRun.tasks.length > 0"
 				v-model="isShowingTasks"
-				:label="displayTasks.length + ' Tasks'"
+				:label="jobRun.tasks.length + ' Tasks'"
 				class="mr-4 bg-slate-600 text-slate-200"
 			/>
 			<div
@@ -27,7 +27,7 @@
 		</div>
 		<div v-if="isShowingTasks" class="mt-4 w-full">
 			<WorkflowTaskCard
-				v-for="task in displayTasks"
+				v-for="task in jobRun.tasks"
 				:key="task.id"
 				:task="task"
 				class="my-1"
@@ -43,21 +43,17 @@ import { ShowHideButton } from "@/components/Shared";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import { WorkflowJobRun, WorkflowRun } from "@/types/workflows";
 import { FaSolidArrowsRotate as RestartIcon } from "danx-icon";
-import { computed, ref, shallowRef } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
 	workflowRun: WorkflowRun;
 	jobRun: WorkflowJobRun;
-	defaultTab?: string;
 }>();
 
 const restartJobAction = getAction("restart-job");
-const tasksTab = shallowRef(props.defaultTab || "all");
-const displayTasks = computed(() => tasksTab.value === "all" ? props.jobRun.tasks : props.jobRun.tasks.filter(t => t.status === tasksTab.value));
 
 const workflowStatus = computed(() => WORKFLOW_STATUS.resolve(props.jobRun.status));
 const isShowingTasks = ref(false);
-
 </script>
 
 <style lang="scss" scoped>

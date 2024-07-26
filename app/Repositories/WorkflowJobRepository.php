@@ -3,9 +3,8 @@
 namespace App\Repositories;
 
 use App\Models\Workflow\Workflow;
-use App\Models\Workflow\WorkflowAssignment;
 use App\Models\Workflow\WorkflowJob;
-use App\WorkflowTools\TranscodeWorkflowInputWorkflowTool;
+use App\WorkflowTools\WorkflowInputWorkflowTool;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +26,6 @@ class WorkflowJobRepository extends ActionRepository
     {
         return match ($action) {
             'create' => $this->create(Workflow::find($data['workflow_id']), $data),
-            'update' => $this->update($model, $data),
             'assign-agent' => $this->assignAgents($model, $data),
             'set-dependencies' => $this->setDependencies($model, $data),
             default => parent::applyAction($action, $model, $data)
@@ -35,10 +33,7 @@ class WorkflowJobRepository extends ActionRepository
     }
 
     /**
-     * @param Workflow $workflow
-     * @param          $data
-     * @return WorkflowJob
-     * @throws ValidationError
+     * Create a workflow and setup initial dependencies
      */
     public function create(Workflow $workflow, $data): WorkflowJob
     {
@@ -51,29 +46,7 @@ class WorkflowJobRepository extends ActionRepository
     }
 
     /**
-     * @param WorkflowJob $workflowJob
-     * @param             $data
-     * @return true
-     */
-    public function update(WorkflowJob $workflowJob, $data): true
-    {
-        $workflowJob->update($data);
-
-        if ($workflowJob->wasChanged('use_input')) {
-            $this->applyTranscodeWorkflowInputJobInWorkflow($workflowJob->workflow);
-            $this->calculateDependencyLevels($workflowJob->workflow);
-        }
-
-        return true;
-    }
-
-    /**
      * Assign an agent to a workflow job
-     *
-     * @param WorkflowJob $workflowJob
-     * @param             $data
-     * @return WorkflowAssignment[]
-     * @throws ValidationError
      */
     public function assignAgents(WorkflowJob $workflowJob, $data): array
     {
@@ -99,16 +72,12 @@ class WorkflowJobRepository extends ActionRepository
 
     /**
      * Set dependencies for a workflow job and calculate the dependency levels for the workflow
-     *
-     * @param WorkflowJob $workflowJob
-     * @param             $dependencies
-     * @return bool
-     * @throws ValidationError
      */
     public function setDependencies(WorkflowJob $workflowJob, $dependencies): bool
     {
         $this->assignDependenciesToWorkflowJob($workflowJob, $dependencies);
-        $this->applyTranscodeWorkflowInputJobInWorkflow($workflowJob->workflow);
+        // TODO: Remove this in favor of setting workflow job tool directly on workflow jobs
+        $this->applyWorkflowInputJobInWorkflow($workflowJob->workflow);
         $this->calculateDependencyLevels($workflowJob->workflow);
 
         return true;
@@ -116,11 +85,6 @@ class WorkflowJobRepository extends ActionRepository
 
     /**
      * Assign dependencies to a workflow job avoiding circular dependencies
-     *
-     * @param WorkflowJob $workflowJob
-     * @param             $dependencies
-     * @return void
-     * @throws ValidationError
      */
     public function assignDependenciesToWorkflowJob(WorkflowJob $workflowJob, $dependencies): void
     {
@@ -148,10 +112,6 @@ class WorkflowJobRepository extends ActionRepository
     /**
      * Checks if a circular dependency exists between the given job and the dependencies of another job to be depended
      * on
-     *
-     * @param WorkflowJob $workflowJob
-     * @param WorkflowJob $dependencyJob
-     * @return bool
      */
     public function isCircularDependency(WorkflowJob $workflowJob, WorkflowJob $dependencyJob): bool
     {
@@ -170,56 +130,30 @@ class WorkflowJobRepository extends ActionRepository
     }
 
     /**
-     * Prepends a Transcode Workflow Input job to the workflow if it does not already exist.
-     * This will ensure that the workflow input is prepared for the jobs that require it before running the rest of the
-     * workflow. The Transcode Workflow Input job will be a dependency for all jobs that require the workflow input (ie:
-     * use_input).
+     * TODO: Remove this in favor of user selecting Workflow Job Tool on jobs directly
      *
-     * @param Workflow $workflow
-     * @return void
+     * Prepends a Workflow Input job to the workflow if it does not already exist.
+     * This will ensure that the workflow input is prepared for the jobs that require it before running the rest of the
+     * workflow and provides a mechanism for choosing which parts of the input to group / pass into each job
      */
-    public function applyTranscodeWorkflowInputJobInWorkflow(Workflow $workflow): void
+    public function applyWorkflowInputJobInWorkflow(Workflow $workflow): void
     {
         // If the job already exists, then there is nothing to do
-        $transcodeWorkflowInputJob = $workflow->workflowJobs()->firstWhere('name', TranscodeWorkflowInputWorkflowTool::$toolName);
+        $workflowInputJob = $workflow->workflowJobs()->firstWhere('name', WorkflowInputWorkflowTool::$toolName);
 
-        if (!$transcodeWorkflowInputJob) {
-            $transcodeWorkflowInputJob = $workflow->workflowJobs()->create([
-                'name'          => TranscodeWorkflowInputWorkflowTool::$toolName,
-                'use_input'     => true,
-                'workflow_tool' => TranscodeWorkflowInputWorkflowTool::class,
+        if (!$workflowInputJob) {
+            $workflowInputJob = $workflow->workflowJobs()->create([
+                'name'          => WorkflowInputWorkflowTool::$toolName,
+                'workflow_tool' => WorkflowInputWorkflowTool::class,
             ]);
         }
 
-        $workflowJobs = $workflow->workflowJobs()->get();
-
-        // Only make the Workflow input a dependency for the jobs that require it
-        foreach($workflowJobs as $workflowJob) {
-            // Skip assigning the workflow input job to itself
-            if ($workflowJob->id === $transcodeWorkflowInputJob?->id) {
-                continue;
-            }
-
-            $workflowInputDependency = $workflowJob->dependencies()->firstWhere('depends_on_workflow_job_id', $transcodeWorkflowInputJob->id);
-            if ($workflowJob->use_input) {
-                if (!$workflowInputDependency) {
-                    $workflowJob->dependencies()->create([
-                        'depends_on_workflow_job_id' => $transcodeWorkflowInputJob->id,
-                    ]);
-                }
-            } else {
-                $workflowInputDependency?->delete();
-            }
-        }
-
-        Log::debug("$workflow prepended $transcodeWorkflowInputJob");
+        Log::debug("$workflow prepended $workflowInputJob");
     }
 
     /**
      * Determines the level of dependencies for each job in the workflow.
      * For example, if job A depends on job B, and job B depends on job C, then job A has a dependency level of 2.
-     * @param Workflow $workflow
-     * @return void
      */
     public function calculateDependencyLevels(Workflow $workflow): void
     {

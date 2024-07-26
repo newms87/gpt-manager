@@ -967,9 +967,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $workflowInput = WorkflowInput::factory()->create(['content' => $inputContent]);
         $workflowInput->storedFiles()->save($storedFile);
         $workflowRun    = WorkflowRun::factory()->recycle($workflowInput)->create();
-        $workflowJob    = WorkflowJob::factory()->hasWorkflowAssignments()->create([
-            'use_input' => true,
-        ]);
+        $workflowJob    = WorkflowJob::factory()->hasWorkflowAssignments()->create();
         $workflowJobRun = WorkflowJobRun::factory()->recycle($workflowJob)->recycle($workflowRun)->create();
 
         // When

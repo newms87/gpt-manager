@@ -3,7 +3,7 @@
 namespace App\Models\Workflow;
 
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
-use App\WorkflowTools\TranscodeWorkflowInputWorkflowTool;
+use App\WorkflowTools\WorkflowInputWorkflowTool;
 use App\WorkflowTools\WorkflowTool;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -70,7 +70,16 @@ class WorkflowJob extends Model implements AuditableContract
 
     public function getWorkflowTool(): WorkflowTool
     {
-        return app($this->workflow_tool ?: RunAgentThreadWorkflowTool::class);
+        try {
+            return app($this->workflow_tool ?: RunAgentThreadWorkflowTool::class);
+        } catch(\Throwable $exception) {
+            throw new Exception("Invalid workflow tool for $this->name: $this->workflow_tool");
+        }
+    }
+
+    public function getResponsePreview(): array|string|null
+    {
+        return $this->getWorkflowTool()->getResponsePreview($this);
     }
 
     public function getTasksPreview(): array
@@ -81,8 +90,23 @@ class WorkflowJob extends Model implements AuditableContract
             foreach($this->dependencies as $dependency) {
                 $artifacts = [];
 
-                if ($dependency->dependsOn->workflow_tool === TranscodeWorkflowInputWorkflowTool::class) {
-                    $artifacts[] = Artifact::make(['data' => 'Workflow Input']);
+                
+                if ($dependency->dependsOn->workflow_tool === WorkflowInputWorkflowTool::class) {
+                    $artifacts[] = Artifact::make([
+                        'data' => [
+                            'content' => 'Example content',
+                            'files'   => [
+                                [
+                                    'name' => 'example.pdf',
+                                    'url'  => 'https://example.com/example.pdf',
+                                ],
+                                [
+                                    'name' => 'example2.pdf',
+                                    'url'  => 'https://example.com/example2.pdf',
+                                ],
+                            ],
+                        ],
+                    ]);
                 } else {
                     foreach($dependency->dependsOn->workflowAssignments as $assignment) {
                         $artifacts[] = Artifact::make(['data' => $assignment->agent->response_sample]);

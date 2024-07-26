@@ -12,8 +12,6 @@ use Newms87\Danx\Services\TranscodeFileService;
 
 class UrlToImageAiTool implements AiToolContract
 {
-    use HasOutputImagesTrait;
-
     const string NAME        = 'url-to-image';
     const string DESCRIPTION = 'Convert a URL into a list of images that shows the full web page or PDF. Use the images to answer questions about a URL';
     const array  PARAMETERS  = [
@@ -27,7 +25,7 @@ class UrlToImageAiTool implements AiToolContract
         'required'   => ['url'],
     ];
 
-    public function execute($params): string
+    public function execute($params): AiToolResponse
     {
         $url = $params['url'] ?? null;
 
@@ -45,16 +43,20 @@ class UrlToImageAiTool implements AiToolContract
 
         $transcodes = $storedFile->transcodes()->get();
 
-        $chunkCount = $transcodes->count();
-        $response   = "Screenshot for file ID $storedFile->id is provided below.";
+        $fileCount = $transcodes->count();
+        $response  = new AiToolResponse();
 
-        if ($chunkCount > 1) {
-            $response .= "\nThere are $chunkCount separate images w/ the file ID in the path.";
+        $response->addContent(
+            "Screenshot for file ID $storedFile->id is provided below." .
+            ($fileCount > 1 ? " There are $fileCount separate images w/ the file ID in the path." : '')
+        );
+
+        if ($fileCount > 1) {
             foreach($transcodes as $transcode) {
-                $this->outputImages[] = $transcode->url;
+                $response->addStoredFile($transcode);
             }
         } else {
-            $this->outputImages[] = $storedFile->url;
+            $response->addStoredFile($storedFile);
         }
 
         return $response;

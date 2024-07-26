@@ -57,7 +57,6 @@ class DatabaseSeeder extends Seeder
             ->create([
                 'name'        => 'Ask Question Job',
                 'description' => 'Generate a question based on a topic',
-                'use_input'   => true,
             ]);
         $answerJob   = WorkflowJob::factory()
             ->recycle($workflow)
@@ -66,7 +65,6 @@ class DatabaseSeeder extends Seeder
             ->create([
                 'name'        => 'Answer Question Job',
                 'description' => 'Answer a question based on a topic',
-                'use_input'   => false,
             ]);
         WorkflowJob::factory()
             ->recycle($workflow)
@@ -75,7 +73,6 @@ class DatabaseSeeder extends Seeder
             ->create([
                 'name'        => 'Validate Question and Answer',
                 'description' => 'Validate the question and answer pair to ensure they are related and the answer is valid',
-                'use_input'   => true,
             ]);
 
         WorkflowInput::factory()->create([

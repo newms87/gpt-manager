@@ -2,7 +2,6 @@
 
 namespace App\Api\OpenAi\Classes;
 
-use App\AiTools\AiToolCaller;
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use Newms87\Danx\Input\Input;
 
@@ -42,7 +41,11 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
         foreach($this->choices[0]['message']['tool_calls'] as $toolCall) {
             if ($toolCall['type'] === 'function') {
                 $function    = $toolCall['function'];
-                $toolCalls[] = new AiToolCaller($toolCall['id'], $function['name'], json_decode($function['arguments'], true));
+                $toolCalls[] = new OpenAiToolCaller(
+                    $toolCall['id'],
+                    $function['name'],
+                    json_decode($function['arguments'], true)
+                );
             }
         }
 

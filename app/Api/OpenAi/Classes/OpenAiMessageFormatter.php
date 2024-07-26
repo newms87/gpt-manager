@@ -2,11 +2,12 @@
 
 namespace App\Api\OpenAi\Classes;
 
-use App\AiTools\SummarizerAiTool;
+use App\AiTools\AiToolResponse;
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
 use App\Models\Agent\Message;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Services\TranscodeFileService;
 
 class OpenAiMessageFormatter implements AgentMessageFormatterContract
@@ -15,15 +16,95 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
     {
         return [
                 'role'    => $role,
-                'content' => is_string($content) ? $content : json_encode($content),
+                'content' => $content,
             ] + ($data ?? []);
+    }
+
+    public function toolResponse(string $toolId, string $toolName, AiToolResponse $response): array
+    {
+        $messages = [];
+
+        $contentItems = $response->getContentItems();
+
+        foreach($contentItems as $index => $contentItem) {
+            if ($index === 0) {
+                // The first message needs to be the tool response for the Completion API to respond correctly
+                $messages[] = $this->rawMessage(Message::ROLE_TOOL, $contentItem, [
+                    'tool_call_id' => $toolId,
+                    'name'         => $toolName,
+                ]);
+            } else {
+                // Subsequent messages are user messages
+                $messages[] = $this->rawMessage(Message::ROLE_USER, $contentItem);
+            }
+        }
+
+        // If there are file URLs, add them as a separate message
+        if ($response->hasFiles()) {
+            $messages[] = $this->filesMessage('', $response->getFiles());
+        }
+
+        return $messages;
     }
 
     public function message(Message $message): array
     {
-        // If summary is set, use that instead of the original content of the message (this is to save on tokens and used by the Summarizer AI Tool)
-        $content = $message->summary ?: $message->content ?: '';
+        Log::debug("Appending $message to messages");
 
+        // If summary is set, use that instead of the original content of the message (this is to save on tokens and used by the Summarizer AI Tool)
+        $content = $this->formatContentMessage($message->summary ?: $message->content ?: '');
+
+        $files = $message->storedFiles()->get();
+
+        // Add Image URLs to the content
+        if ($files->isNotEmpty()) {
+            $fileUrls = $this->getFileUrls($files);
+
+            $content = array_merge($content, $this->formatFilesContent($fileUrls));
+        }
+
+        return $this->rawMessage($message->role, $content, $message->data);
+    }
+
+    /**
+     * Build a message with the content and file URLs
+     */
+    public function filesMessage(array|string $content, array $fileUrls): array
+    {
+        $content = $this->formatContentMessage($content);
+
+        $content = array_merge($content, $this->formatFilesContent($fileUrls));
+
+        return $this->rawMessage(Message::ROLE_USER, $content);
+    }
+
+    /**
+     * Get the Open AI parts for Image URL files for the vision API
+     */
+    protected function formatFilesContent(array $fileUrls, $detail = 'high'): array
+    {
+        Log::debug("\tappending " . count($fileUrls) . " files");
+
+        $filesContent = [];
+
+        foreach($fileUrls as $fileUrl) {
+            $filesContent[] = [
+                'type'      => 'image_url',
+                'image_url' => [
+                    'url'    => $fileUrl['url'],
+                    'detail' => $detail,
+                ],
+            ];
+        }
+
+        return $filesContent;
+    }
+
+    /**
+     * Return a standard Open AI format for a content text message
+     */
+    protected function formatContentMessage(string|array $content): array
+    {
         // If first and last character of the message is a [ and ] then json decode the message as its an array of message elements (ie: text or image_url)
         // This can happen with tool calls or when the user sends a message with multiple elements
         if (str_starts_with($content, '[') && str_ends_with($content, ']')) {
@@ -43,48 +124,41 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
             ];
         }
 
-        $files = $message->storedFiles()->get();
-
-        // Add Image URLs to the content
-        if ($files->isNotEmpty()) {
-            $urls      = $this->getFileUrls($files);
-            $pagedUrls = SummarizerAiTool::pageItems($message, $urls);
-
-            Log::debug("$message appending " . count($pagedUrls) . " / $message->summarizer_total files");
-            $content[] = ['type' => 'text', 'text' => SummarizerAiTool::enabledMessage($message)];
-
-            foreach($pagedUrls as $url) {
-                $content[] = [
-                    'type'      => 'image_url',
-                    'image_url' => [
-                        'url'    => $url,
-                        'detail' => 'high',
-                    ],
-                ];
-            }
-        }
-
-        return $this->rawMessage($message->role, $content, $message->data);
+        return $content;
     }
 
+    /**
+     * Get the file name/url pairs for all images and split PDFs into individual images
+     *
+     * @param StoredFile[] $files
+     * @return array{url: string, name: string}
+     * @throws Exception
+     */
     public function getFileUrls($files): array
     {
-        $urls = [];
+        $fileUrls = [];
 
         foreach($files as $file) {
             if ($file->isImage()) {
-                $urls[] = $file->url;
+                $fileUrls[] = [
+                    'url'  => $file->url,
+                    'name' => $file->filename,
+                ];
             } elseif ($file->isPdf()) {
+                /** @var StoredFile[] $transcodes */
                 $transcodes = $file->transcodes()->where('transcode_name', TranscodeFileService::TRANSCODE_PDF_TO_IMAGES)->get();
 
                 foreach($transcodes as $transcode) {
-                    $urls[] = $transcode->url;
+                    $fileUrls[] = [
+                        'url'  => $transcode->url,
+                        'name' => $transcode->filename,
+                    ];
                 }
             } else {
                 throw new Exception('Only images and PDFs are supported for now.');
             }
         }
 
-        return $urls;
+        return $fileUrls;
     }
 }

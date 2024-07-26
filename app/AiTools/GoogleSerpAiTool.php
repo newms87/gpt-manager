@@ -20,7 +20,7 @@ class GoogleSerpAiTool implements AiToolContract
         ],
     ];
 
-    public function execute($params): array
+    public function execute($params): AiToolResponse
     {
         $query = $params['q'] ?? null;
         Log::debug("Performing Google SERP search: $query");
@@ -31,15 +31,8 @@ class GoogleSerpAiTool implements AiToolContract
 
         $results = app(GoogleSerpApi::class)->search(['q' => $query]);
 
-        return [
-            [
-                'type' => 'text',
-                'text' => 'Google SERP Search Query: ' . $query,
-            ],
-            [
-                'type' => 'text',
-                'text' => $results,
-            ],
-        ];
+        $response = new AiToolResponse();
+
+        return $response->addContent("Google SERP Search Query: $query\n\n$results");
     }
 }

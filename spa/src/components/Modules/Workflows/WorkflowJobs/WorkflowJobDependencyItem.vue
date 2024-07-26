@@ -44,7 +44,7 @@
 <script setup lang="ts">
 import { ShowHideButton } from "@/components/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
-import { Workflow, WorkflowJob, WorkflowJobDependency } from "@/types/workflows";
+import { WorkflowJobDependency } from "@/types/workflows";
 import { FaSolidScrewdriverWrench as HideConfigureIcon, FaSolidWrench as ShowConfigureIcon } from "danx-icon";
 import { SelectField } from "quasar-ui-danx";
 import { computed, ref } from "vue";
@@ -52,8 +52,6 @@ import { computed, ref } from "vue";
 defineEmits(["update", "remove"]);
 const props = defineProps<{
 	dependency: WorkflowJobDependency;
-	job: WorkflowJob;
-	workflow: Workflow;
 	saving?: boolean;
 }>();
 
@@ -61,43 +59,39 @@ const isEditing = ref(false);
 const includeFields = ref(props.dependency.include_fields || []);
 const groupBy = ref(props.dependency.group_by || []);
 
-const dependentJob = computed(() => props.workflow.jobs.find(job => job.id === props.dependency.depends_on_id));
-const dependentJobAgentsWithoutResponseSample = computed(() => dependentJob.value.assignments.filter(assignment => !assignment.agent.response_sample));
-
 /**
  * The list of fields (including nested fields) available amongst all the sample responses for all assigned agents in the job dependencies.
  */
-const dependentFields = computed<string[]>(() => {
-	const fields = [];
-	for (const assignment of dependentJob.value.assignments) {
-		if (assignment.agent.response_sample) {
-			fields.push(...getNestedFieldList(assignment.agent.response_sample));
-		}
-	}
-	// make fields a unique list
-	return [...new Set(fields)];
-});
+const dependentFields = computed<string[]>(() => getNestedFieldList(props.dependency.depends_on_response));
 
 /**
  * A flat list of all fields and nested fields expressed in dot notation
  */
 function getNestedFieldList(object) {
 	const fields = [];
-	for (const fieldName of Object.keys(object)) {
-		const fieldValue = object[fieldName];
-		fields.push(fieldName);
-		if (Array.isArray(fieldValue)) {
-			for (const item of fieldValue) {
-				if (typeof item === "object") {
-					fields.push(...getNestedFieldList(item).map(nestedField => `${fieldName}.*.${nestedField}`));
-				}
+	if (Array.isArray(object)) {
+		for (const item of object) {
+			if (typeof item === "object") {
+				fields.push(...getNestedFieldList(item));
 			}
-		} else if (typeof fieldValue === "object") {
-			for (const nestedField of getNestedFieldList(fieldValue)) {
-				fields.push(`${fieldName}.${nestedField}`);
+		}
+	} else {
+		for (const fieldName of Object.keys(object)) {
+			const fieldValue = object[fieldName];
+			fields.push(fieldName);
+			if (Array.isArray(fieldValue)) {
+				for (const item of fieldValue) {
+					if (typeof item === "object") {
+						fields.push(...getNestedFieldList(item).map(nestedField => `${fieldName}.*.${nestedField}`));
+					}
+				}
+			} else if (typeof fieldValue === "object") {
+				for (const nestedField of getNestedFieldList(fieldValue)) {
+					fields.push(`${fieldName}.${nestedField}`);
+				}
 			}
 		}
 	}
-	return fields;
+	return [...new Set(fields)];
 }
 </script>

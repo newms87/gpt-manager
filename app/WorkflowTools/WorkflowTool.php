@@ -27,6 +27,14 @@ abstract class WorkflowTool
 
     abstract public function runTask(WorkflowTask $workflowTask): void;
 
+    /**
+     * Get a preview of what a response from this tool would look like
+     */
+    public function getResponsePreview(WorkflowJob $workflowJob): array|string|null
+    {
+        return [];
+    }
+
     public function __toString()
     {
         return "Workflow Tool: " . static::$toolName;

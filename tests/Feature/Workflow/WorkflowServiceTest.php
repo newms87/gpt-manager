@@ -22,7 +22,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $this->mocksOpenAiCompletionResponse()->once();
         $workflow = Workflow::factory()->create();
-        $this->openAiWorkflowJob($workflow, ['use_input' => true]);
+        $this->openAiWorkflowJob($workflow);
         $workflowRun = WorkflowRun::factory()->recycle($workflow)->create();
 
         // When
@@ -37,7 +37,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $this->mocksOpenAiCompletionResponse()->once();
         $workflow = Workflow::factory()->create();
-        $this->openAiWorkflowJob($workflow, ['use_input' => true]);
+        $this->openAiWorkflowJob($workflow);
         $workflowRun = WorkflowRun::factory()->recycle($workflow)->create();
 
         // When
@@ -161,7 +161,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->mocksOpenAiCompletionResponse()->once();
         $workflow     = Workflow::factory()->create();
         $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
-        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B', 'use_input' => true]);
+        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B']);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id]);
         $workflowRun     = WorkflowRun::factory()->recycle($workflow)->started()->create();
         $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
@@ -286,7 +286,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->mocksOpenAiCompletionResponse()->twice();
         $workflow     = Workflow::factory()->create();
         $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
-        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B', 'use_input' => true]);
+        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B']);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id, 'group_by' => ['service_dates.*.date']]);
         $workflowInputContent = 'Multiple Task Workflow Input Content';
         $workflowInput        = WorkflowInput::factory()->create(['name' => $workflowInputContent, 'content' => $workflowInputContent]);

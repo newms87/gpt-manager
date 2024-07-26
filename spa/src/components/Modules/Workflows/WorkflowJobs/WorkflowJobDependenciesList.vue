@@ -2,11 +2,9 @@
 	<div>
 		<div v-if="job.dependencies">
 			<WorkflowJobDependencyItem
-				v-for="dependency in job.dependencies.filter(d => !d.depends_on_workflow_tool)"
+				v-for="dependency in job.dependencies"
 				:key="'dependency-' + dependency.id"
 				:dependency="dependency"
-				:job="job"
-				:workflow="workflow"
 				class="mt-2"
 				@update="setDependenciesAction.trigger(job, job.dependencies.map(dep => dep.id === dependency.id ? $event : dep))"
 				@remove="setDependenciesAction.trigger(job, job.dependencies.filter(dep => dep.id !== dependency.id))"
@@ -49,7 +47,7 @@ function hasDependency(dependencyJob: WorkflowJob) {
 	return props.job.dependencies?.some(d => d.depends_on_id === dependencyJob.id);
 }
 
-const dependencyOptions = computed(() => props.workflow.jobs.filter(job => !hasDependency(job) && !job.workflow_tool && !isCircularDependency(job))
+const dependencyOptions = computed(() => props.workflow.jobs.filter(job => !hasDependency(job) && !isCircularDependency(job))
 	.map((job) => ({
 		label: job.name,
 		value: job.id

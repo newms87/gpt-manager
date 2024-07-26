@@ -63,22 +63,13 @@ trait AssignsWorkflowTasksTrait
      */
     protected function setupTaskThread(WorkflowTask $workflowTask, array $artifactTuple): Thread
     {
-        $workflowJobRun = $workflowTask->workflowJobRun;
-        $workflowRun    = $workflowJobRun->workflowRun;
-        $assignment     = $workflowTask->workflowAssignment;
-        $workflowJob    = $workflowTask->workflowJob;
+        $assignment  = $workflowTask->workflowAssignment;
+        $workflowJob = $workflowTask->workflowJob;
 
         $threadName = $workflowJob->name . " ($workflowTask->id) [group: " . ($workflowTask->group ?: 'default') . "] by {$assignment->agent->name}";
         $thread     = app(ThreadRepository::class)->create($assignment->agent, $threadName);
 
-        Log::debug("$workflowTask created $thread");
-
-        // First, we want to add the input content to the thread if the task uses input
-        if ($workflowJob->use_input) {
-            Log::debug("\tAdding $workflowRun->workflowInput");
-            $fileIds = $workflowRun->workflowInput->storedFiles->pluck('id')->toArray();
-            app(ThreadRepository::class)->addMessageToThread($thread, $workflowRun->workflowInput->content, $fileIds);
-        }
+        Log::debug("Setup Task Thread: $workflowTask created $thread");
 
         Log::debug("\tAdding " . count($artifactTuple) . " artifacts");
         foreach($artifactTuple as $item) {

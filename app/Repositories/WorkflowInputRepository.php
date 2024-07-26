@@ -74,8 +74,6 @@ class WorkflowInputRepository extends ActionRepository
         if (isset($data['files'])) {
             $files = StoredFile::whereIn('id', collect($data['files'])->pluck('id'))->get();
             $workflowInput->storedFiles()->sync($files);
-            $workflowInput->is_transcoded = false;
-            $workflowInput->save();
         }
     }
 }

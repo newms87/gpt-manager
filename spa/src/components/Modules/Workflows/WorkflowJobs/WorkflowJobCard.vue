@@ -47,11 +47,6 @@
 			</div>
 			<div class="w-1/2">
 				<h5 class="mb-4">Job Dependencies</h5>
-				<QCheckbox
-					:model-value="!!job.use_input"
-					label="Include Workflow Input?"
-					@update:model-value="updateJobAction.trigger(job, {use_input: $event})"
-				/>
 				<WorkflowJobDependenciesList :workflow="workflow" :job="job" />
 			</div>
 		</QCardSection>
@@ -86,6 +81,5 @@ defineProps<{
 const isEditing = ref(false);
 const showTasksExample = ref(false);
 const updateJobDebouncedAction = getAction("update-job-debounced");
-const updateJobAction = getAction("update-job");
 const deleteJobAction = getAction("delete-job");
 </script>
