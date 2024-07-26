@@ -2,11 +2,12 @@
 
 namespace Tests\Feature\MockData;
 
-use App\Api\OpenAi\Classes\TestAiCompletionResponse;
+use App\Api\OpenAi\Classes\OpenAiMessageFormatter;
 use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowJob;
+use Tests\Feature\TestApi\TestAiApi\Classes\TestAiCompletionResponse;
 use Tests\TestCase;
 
 /**
@@ -43,14 +44,16 @@ trait AiMockData
 
     public function mocksOpenAiCompletionResponse($content = 'Mock completion message content', $finishReason = 'stop', $usage = null)
     {
-        return $this->mock(OpenAiApi::class)->shouldReceive('complete')->andReturn(TestAiCompletionResponse::make([
-            'choices' => [
-                [
-                    'message'       => ['content' => $content],
-                    'finish_reason' => $finishReason,
+        return $this->mock(OpenAiApi::class)
+            ->shouldReceive('formatter')->andReturn(new OpenAiMessageFormatter)
+            ->shouldReceive('complete')->andReturn(TestAiCompletionResponse::make([
+                'choices' => [
+                    [
+                        'message'       => ['content' => $content],
+                        'finish_reason' => $finishReason,
+                    ],
                 ],
-            ],
-            'usage'   => $usage ?: ['prompt_tokens' => 10, 'completion_tokens' => 6],
-        ]));
+                'usage'   => $usage ?: ['prompt_tokens' => 10, 'completion_tokens' => 6],
+            ]));
     }
 }

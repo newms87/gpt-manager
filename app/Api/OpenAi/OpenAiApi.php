@@ -3,6 +3,7 @@
 namespace App\Api\OpenAi;
 
 use App\Api\AgentApiContracts\AgentApiContract;
+use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use App\Api\OpenAi\Classes\OpenAiCompletionResponse;
 use App\Api\OpenAi\Classes\OpenAiMessageFormatter;
 use Newms87\Danx\Api\BearerTokenApi;
@@ -29,7 +30,7 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         return $data;
     }
 
-    public function complete(string $model, array $messages, array $options): OpenAiCompletionResponse
+    public function complete(string $model, array $messages, array $options): OpenAiCompletionResponse|AgentCompletionResponseContract
     {
         $response = $this->post('chat/completions', [
                 'model'    => $model,

@@ -10,8 +10,10 @@ use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Workflow\WorkflowService;
+use App\WorkflowTools\WorkflowInputWorkflowTool;
 use Tests\AuthenticatedTestCase;
 use Tests\Feature\MockData\AiMockData;
+use Tests\Feature\TestApi\TestAiApi\Classes\TestAiCompletionResponse;
 
 class WorkflowServiceTest extends AuthenticatedTestCase
 {
@@ -182,8 +184,9 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $this->assertNotNull($pendingTaskB, 'Job B should have a completed task');
         $threadB = $pendingTaskB->thread()->first();
         $this->assertNotNull($threadB, 'Job B should have a thread created');
-        $this->assertEquals($threadB->messages[0]->content, $workflowRun->workflowInput->content, 'Job B first message should have the workflow input content');
-        $this->assertEquals($threadB->messages[1]->content, $artifactContent, 'Job B second message should have the artifact content from Job A');
+        $this->assertCount(2, $threadB->messages, 'Job B should have the Job A Artifact + the test response messages in the thread');
+        $this->assertEquals($threadB->messages[0]->content, $artifactContent, 'Job B second message should have the artifact content from Job A');
+        $this->assertEquals($threadB->messages[1]->content, (new TestAiCompletionResponse)->getContent(), 'Job B first message should have the test response content');
     }
 
     public function test_workflowJobRunFinished_multipleTasksDispatchedForAssignmentWithGroupByOfArrayOfPrimitives(): void
@@ -219,13 +222,13 @@ class WorkflowServiceTest extends AuthenticatedTestCase
 
         // Verify 1st Task messages are correct
         $firstTask = $completedTasks->first();
-        $this->assertEquals('service_dates:' . $serviceDates[0], $firstTask->group, 'The first task should have the first service date as the task group');
+        $this->assertEquals('service_dates: ' . $serviceDates[0], $firstTask->group, 'The first task should have the first service date as the task group');
         $firstTaskMessage = $firstTask->thread()->first()->messages()->first();
         $this->assertEquals(json_encode(['service_dates' => [$serviceDates[0]]]), $firstTaskMessage->content, 'Job B should have the first service date as the second thread message');
 
         // Verify 2nd Task messages are correct
         $secondTask = $completedTasks->last();
-        $this->assertEquals('service_dates:' . $serviceDates[1], $secondTask->group, 'The second task should have the second service date as the task group');
+        $this->assertEquals('service_dates: ' . $serviceDates[1], $secondTask->group, 'The second task should have the second service date as the task group');
         $secondTaskMessage = $secondTask->thread()->first()->messages()->first();
         $this->assertEquals(json_encode(['service_dates' => [$serviceDates[1]]]), $secondTaskMessage->content, 'Job B should have the second service date as the second message');
     }
@@ -284,25 +287,32 @@ class WorkflowServiceTest extends AuthenticatedTestCase
     {
         // Given
         $this->mocksOpenAiCompletionResponse()->twice();
-        $workflow     = Workflow::factory()->create();
-        $workflowJobA = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
-        $workflowJobB = $this->openAiWorkflowJob($workflow, ['name' => 'Job B']);
+        $workflow         = Workflow::factory()->create();
+        $workflowInputJob = $this->openAiWorkflowJob($workflow, ['name' => 'Workflow Input', 'workflow_tool' => WorkflowInputWorkflowTool::class]);
+        $workflowJobA     = $this->openAiWorkflowJob($workflow, ['name' => 'Job A']);
+        $workflowJobB     = $this->openAiWorkflowJob($workflow, ['name' => 'Job B']);
+        $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowInputJob->id]);
         $workflowJobB->dependencies()->create(['depends_on_workflow_job_id' => $workflowJobA->id, 'group_by' => ['service_dates.*.date']]);
         $workflowInputContent = 'Multiple Task Workflow Input Content';
         $workflowInput        = WorkflowInput::factory()->create(['name' => $workflowInputContent, 'content' => $workflowInputContent]);
         $workflowRun          = WorkflowRun::factory()->recycle($workflow)->recycle($workflowInput)->started()->create();
-        $workflowJobRunA      = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
+        $workflowInputJobRun  = WorkflowJobRun::factory()->recycle($workflowInputJob)->recycle($workflowRun)->create([
             'completed_at' => now(),
             'started_at'   => now(),
         ]);
-        $serviceDates         = [
+        $workflowInputJobRun->artifacts()->save(Artifact::factory()->create(['content' => $workflowInputContent]));
+        $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
+            'completed_at' => now(),
+            'started_at'   => now(),
+        ]);
+        $serviceDates    = [
             ['date' => '2022-01-01', 'service' => 'Service A'],
             ['date' => '2022-02-01', 'service' => 'Service B'],
         ];
-        $artifactData         = [
+        $artifactData    = [
             'service_dates' => $serviceDates,
         ];
-        $artifact             = Artifact::factory()->create(['data' => $artifactData]);
+        $artifact        = Artifact::factory()->create(['data' => $artifactData]);
         $workflowJobRunA->artifacts()->save($artifact);
         $workflowJobRunB = WorkflowJobRun::factory()->recycle($workflowJobB)->recycle($workflowRun)->create();
 
@@ -318,7 +328,8 @@ class WorkflowServiceTest extends AuthenticatedTestCase
 
         // Verify 1st Task messages are correct
         $firstTask = $completedTasks->first();
-        $this->assertEquals('service_dates.*.date:' . $serviceDates[0]['date'], $firstTask->group, 'The first task should have the first service date as the task group');
+
+        $this->assertEquals('default | service_dates.*.date: ' . $serviceDates[0]['date'], $firstTask->group, 'The first task should have the first service date as the task group');
         $firstTaskMessages = $firstTask->thread()->first()->messages()->get();
         $this->assertEquals($workflowInputContent, $firstTaskMessages[0]->content, 'Job B should have the workflow input content as the first thread message');
         $firstTaskServiceDateData = json_decode($firstTaskMessages[1]->content, true)['service_dates'][0];
@@ -328,7 +339,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
 
         // Verify 2nd Task messages are correct
         $secondTask = $completedTasks->last();
-        $this->assertEquals('service_dates.*.date:' . $serviceDates[1]['date'], $secondTask->group, 'The second task should have the second service date as the task group');
+        $this->assertEquals('default | service_dates.*.date: ' . $serviceDates[1]['date'], $secondTask->group, 'The second task should have the second service date as the task group');
         $secondTaskMessages = $secondTask->thread()->first()->messages()->get();
         $this->assertEquals($workflowInputContent, $secondTaskMessages[0]->content, 'Job B should have the workflow input content as the first thread message');
         $secondTaskServiceDateData = json_decode($secondTaskMessages[1]->content, true)['service_dates'][0];

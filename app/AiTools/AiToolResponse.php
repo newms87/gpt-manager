@@ -9,8 +9,8 @@ class AiToolResponse
     /** @var array{string} */
     protected array $content = [];
 
-    /** @var array{name: string, url: string}[] */
-    protected array $files = [];
+    /** @var StoredFile[] */
+    protected array $storedFiles = [];
 
     public function addContent(string $content): static
     {
@@ -29,32 +29,31 @@ class AiToolResponse
 
     public function addStoredFile(StoredFile $storedFile): static
     {
-        return $this->addFile([
-            'name' => $storedFile->filename,
-            'url'  => $storedFile->url,
-        ]);
-    }
-
-    /**
-     * @param array{name: string, url: string} $file
-     */
-    public function addFile(array $file): static
-    {
-        $this->files[] = $file;
+        $this->storedFiles[] = $storedFile;
 
         return $this;
     }
 
+    /**
+     * @param array{filename: string, url: string} $file
+     */
+    public function addFile(array $file): static
+    {
+        $storedFile = StoredFile::create($file);
+
+        return $this->addStoredFile($storedFile);
+    }
+
     public function hasFiles(): bool
     {
-        return count($this->files) > 0;
+        return count($this->storedFiles) > 0;
     }
 
     /**
-     * @return array{name: string, url: string}[]
+     * @return StoredFile[]
      */
     public function getFiles(): array
     {
-        return $this->files;
+        return $this->storedFiles;
     }
 }

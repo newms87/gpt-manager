@@ -172,7 +172,7 @@ class WorkflowJobRepository extends ActionRepository
     public function getDependencyLevel(WorkflowJob $job, $jobs): int
     {
         if ($job->dependencies->isEmpty()) {
-            return $job->workflow_tool ? 0 : 1;
+            return 1;
         }
 
         $maxLevel = 1;

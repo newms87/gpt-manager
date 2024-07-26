@@ -67,15 +67,27 @@ trait ResolvesDependencyArtifactsTrait
         foreach($workflowJobRun->artifacts as $artifact) {
             $artifactData = $artifact->data ?: [];
 
+            // If a json encoded string or primitive was set, just treat it like content
+            if (!is_array($artifactData)) {
+                $artifactData = ['content' => $artifactData];
+            }
+
             // Special case for string content artifacts, just treat all like JSON responses but with a {content: ...} entry
+            // NOTE: Overwrites any other content set in the special key for content!
             if ($artifact->content) {
                 $artifactData['content'] = $artifact->content;
             }
 
+            // Set the special key for files
+            $storedFiles = $artifact->storedFiles()->get();
+            if ($storedFiles->isNotEmpty()) {
+                $artifactData['files'] = $storedFiles->toArray();
+            }
+
             if (!$dependency->group_by) {
                 // Special case for content - only artifacts, just return the content as plain text
-                if ($artifact->content && !$artifact->data) {
-                    $groups['default'][] = $artifact->content;
+                if (count($artifactData) === 1 && !empty($artifactData['content'])) {
+                    $groups['default'][] = $artifactData['content'];
                 } else {
                     $data = ArrayHelper::extractNestedData($artifactData, $dependency->include_fields);
                     if ($data) {
@@ -115,7 +127,7 @@ trait ResolvesDependencyArtifactsTrait
     public function generateArtifactGroupTuples(array $dependencyArtifactGroups): array
     {
         if (!$dependencyArtifactGroups) {
-            return ['default' => []];
+            return ['default' => [['content' => 'Follow the prompt']]];
         }
 
         $groupTuples = [];

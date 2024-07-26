@@ -37,7 +37,7 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function getContent(): ?string
     {
-        return $this->messages[0]['content'] ?? null;
+        return 'Test AI Response Content';
     }
 
     public function inputTokens(): int

@@ -2,14 +2,13 @@
 
 namespace Tests\Feature\Workflow;
 
-use App\Models\Workflow\WorkflowInput;
+use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowJobDependency;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
 use Newms87\Danx\Helpers\ArrayHelper;
-use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 use Tests\Feature\MockData\AiMockData;
 
@@ -296,7 +295,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
 
         // Then
-        $dobGroup = $groups['dob:1987-11-18'] ?? [];
+        $dobGroup = $groups['dob: 1987-11-18'] ?? [];
         $this->assertCount(2, $dobGroup, "Should have produced exactly 2 artifacts in the '1987-11-18' group");
         $this->assertEquals($artifacts[0], $dobGroup[0], "Should have produced the 1st artifact in the '1987-11-18' group");
         $this->assertEquals($artifacts[1], $dobGroup[1], "Should have produced the 2nd artifact in the '1987-11-18' group");
@@ -320,8 +319,8 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Then
         $this->assertCount(2, $groups, "Should have produced exactly 2 groups");
 
-        $danGroup    = $groups['color:green,name:Dan Newman'] ?? [];
-        $MickeyGroup = $groups['color:red,name:Mickey Mouse'] ?? [];
+        $danGroup    = $groups['color: green,name: Dan Newman'] ?? [];
+        $MickeyGroup = $groups['color: red,name: Mickey Mouse'] ?? [];
         $this->assertCount(1, $danGroup, "Should have produced exactly 1 artifact in the 'Dan Newman,green' group");
         $this->assertEquals($artifacts[0], array_pop($danGroup), "Should have produced the 1st artifact in the 'Dan Newman' group");
         $this->assertCount(1, $MickeyGroup, "Should have produced exactly 1 artifact in the 'Mickey Mouse' group");
@@ -836,7 +835,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groupTuples = app(RunAgentThreadWorkflowTool::class)->generateArtifactGroupTuples($dependencyArtifactGroups);
 
         // Then
-        $this->assertEquals(['default' => []], $groupTuples);
+        $this->assertEquals(['default' => [['content' => 'Follow the prompt']]], $groupTuples);
     }
 
     public function test_generateArtifactGroupTuples_returnOriginalWhenOnlyOneGroup(): void
@@ -876,10 +875,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Then
         $mergedArtifacts = array_merge($artifacts, $artifacts);
         $this->assertEquals([
-            'group-a|group-c' => $mergedArtifacts,
-            'group-a|group-d' => $mergedArtifacts,
-            'group-b|group-c' => $mergedArtifacts,
-            'group-b|group-d' => $mergedArtifacts,
+            'group-a | group-c' => $mergedArtifacts,
+            'group-a | group-d' => $mergedArtifacts,
+            'group-b | group-c' => $mergedArtifacts,
+            'group-b | group-d' => $mergedArtifacts,
         ], $groupTuples);
     }
 
@@ -950,37 +949,38 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Then
         $tasks = $workflowJobRun->tasks()->get();
         $this->assertEquals(2, $tasks->count());
-        $this->assertEquals('name:' . $artifacts[0]['name'], $tasks->get(0)->group);
-        $this->assertEquals('name:' . $artifacts[1]['name'], $tasks->get(1)->group);
+        $this->assertEquals('name: ' . $artifacts[0]['name'], $tasks->get(0)->group);
+        $this->assertEquals('name: ' . $artifacts[1]['name'], $tasks->get(1)->group);
     }
 
     public function test_resolveAndAssignTasks_taskThreadHasWorkflowInput(): void
     {
         // Given
-        $inputContent  = 'Input Directive Test';
-        $storedFile    = StoredFile::create([
-            'disk'     => 'local',
-            'filepath' => 'test.jpg',
-            'filename' => 'test.jpg',
-            'mime'     => 'image/jpeg',
+        $inputContent = 'Input Directive Test';
+        $artifact     = Artifact::factory()->withStoredFile()->create([
+            'content' => $inputContent,
         ]);
-        $workflowInput = WorkflowInput::factory()->create(['content' => $inputContent]);
-        $workflowInput->storedFiles()->save($storedFile);
-        $workflowRun    = WorkflowRun::factory()->recycle($workflowInput)->create();
-        $workflowJob    = WorkflowJob::factory()->hasWorkflowAssignments()->create();
-        $workflowJobRun = WorkflowJobRun::factory()->recycle($workflowJob)->recycle($workflowRun)->create();
+
+        $workflowRun       = WorkflowRun::factory()->create();
+        $inputJob          = WorkflowJob::factory()->isWorkflowInput()->create();
+        $inputJobRun       = WorkflowJobRun::factory()->withArtifact($artifact)->completed()->create(['workflow_job_id' => $inputJob->id]);
+        $assignmentsJob    = WorkflowJob::factory()->hasWorkflowAssignments()->dependsOn([$inputJob])->create();
+        $assignmentsJobRun = WorkflowJobRun::factory()->recycle($assignmentsJob)->recycle($workflowRun)->create();
+
+        $prerequisiteJobRuns = [$inputJob->id => $inputJobRun];
 
         // When
-        app(RunAgentThreadWorkflowTool::class)->resolveAndAssignTasks($workflowJobRun);
+        app(RunAgentThreadWorkflowTool::class)->resolveAndAssignTasks($assignmentsJobRun, $prerequisiteJobRuns);
 
         // Then
-        $task   = $workflowJobRun->tasks()->first();
+        $task   = $assignmentsJobRun->tasks()->first();
         $thread = $task->thread()->first();
+
         $this->assertEquals(1, $thread->messages()->count());
 
         $message = $thread->messages()->first();
         $this->assertEquals($inputContent, $message->content);
-        $this->assertEquals($storedFile->id, $message->storedFiles()->first()->id);
+        $this->assertEquals($artifact->storedFiles()->first()->id, $message->storedFiles()->first()->id);
     }
 
     public function test_resolveAndAssignTasks_groupedTasksHaveThreadWithArtifact(): void

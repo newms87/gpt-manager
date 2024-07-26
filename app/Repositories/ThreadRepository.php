@@ -8,6 +8,7 @@ use App\Models\Agent\Thread;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Helpers\DateHelper;
+use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class ThreadRepository extends ActionRepository
@@ -52,12 +53,35 @@ class ThreadRepository extends ActionRepository
     /**
      * Append a new message to the thread
      */
-    public function addMessageToThread(Thread $thread, $content = null, ?array $fileIds = null): Thread
+    public function addMessageToThread(Thread $thread, string|array|int|bool|null $content = null, array $fileIds = []): Thread
     {
         if ($content || $fileIds) {
+            if (is_scalar($content) || !$content) {
+                $contentString = (string)$content;
+            } else {
+                // files is a special key that holds our file IDs
+                $storedFiles = $content['files'] ?? [];
+                unset($content['files']);
+
+                foreach($storedFiles as $storedFile) {
+                    $fileId = $storedFile instanceof StoredFile ? $storedFile->id : ($storedFile['id'] ?? null);
+                    if ($fileId) {
+                        $fileIds[] = $fileId;
+                    }
+                }
+
+                // If the content is a single key with a scalar value, just use that as the content string
+                if (!empty($content['content']) && count($content) === 1) {
+                    $contentString = $content['content'];
+                } else {
+                    // Otherwise convert the content to a JSON string
+                    $contentString = json_encode($content);
+                }
+            }
+
             $message = $thread->messages()->create([
                 'role'    => Message::ROLE_USER,
-                'content' => is_string($content) ? $content : json_encode($content),
+                'content' => $contentString,
             ]);
 
             if ($fileIds) {

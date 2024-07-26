@@ -28,7 +28,9 @@ trait AssignsWorkflowTasksTrait
         // Make sure we always assign at least 1 default task even if no artifacts were passed / no input required
         if (!$dependencyArtifacts) {
             $dependencyArtifacts = [
-                'default' => [],
+                'default' => [
+                    ['content' => 'Follow the prompt'],
+                ],
             ];
         }
 

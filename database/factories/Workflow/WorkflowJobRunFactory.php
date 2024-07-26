@@ -37,6 +37,11 @@ class WorkflowJobRunFactory extends Factory
         return $this->state(['started_at' => now(), 'failed_at' => now()]);
     }
 
+    public function withArtifact(Artifact $artifact): static
+    {
+        return $this->afterCreating(fn(WorkflowJobRun $workflowJobRun) => $workflowJobRun->artifacts()->save($artifact));
+    }
+
     public function withArtifactData(array $artifactData): static
     {
         return $this->afterCreating(function (WorkflowJobRun $workflowJobRun) use ($artifactData) {

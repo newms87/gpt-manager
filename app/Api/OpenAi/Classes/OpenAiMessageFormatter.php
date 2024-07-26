@@ -58,9 +58,9 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
 
         // Add Image URLs to the content
         if ($files->isNotEmpty()) {
-            $fileUrls = $this->getFileUrls($files);
+            $imageFiles = $this->getImageFiles($files);
 
-            $content = array_merge($content, $this->formatFilesContent($fileUrls));
+            $content = array_merge($content, $this->formatFilesContent($imageFiles));
         }
 
         return $this->rawMessage($message->role, $content, $message->data);
@@ -80,18 +80,19 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
 
     /**
      * Get the Open AI parts for Image URL files for the vision API
+     * @param StoredFile[]|array $storedFiles
      */
-    protected function formatFilesContent(array $fileUrls, $detail = 'high'): array
+    protected function formatFilesContent(array $storedFiles, $detail = 'high'): array
     {
-        Log::debug("\tappending " . count($fileUrls) . " files");
+        Log::debug("\tappending " . count($storedFiles) . " files");
 
         $filesContent = [];
 
-        foreach($fileUrls as $fileUrl) {
+        foreach($storedFiles as $storedFile) {
             $filesContent[] = [
                 'type'      => 'image_url',
                 'image_url' => [
-                    'url'    => $fileUrl['url'],
+                    'url'    => $storedFile instanceof StoredFile ? $storedFile->url : $storedFile['url'],
                     'detail' => $detail,
                 ],
             ];
@@ -131,34 +132,28 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
      * Get the file name/url pairs for all images and split PDFs into individual images
      *
      * @param StoredFile[] $files
-     * @return array{url: string, name: string}
+     * @return StoredFile[]
      * @throws Exception
      */
-    public function getFileUrls($files): array
+    public function getImageFiles($files): array
     {
-        $fileUrls = [];
+        $imageFiles = [];
 
         foreach($files as $file) {
             if ($file->isImage()) {
-                $fileUrls[] = [
-                    'url'  => $file->url,
-                    'name' => $file->filename,
-                ];
+                $imageFiles[] = $file;
             } elseif ($file->isPdf()) {
                 /** @var StoredFile[] $transcodes */
                 $transcodes = $file->transcodes()->where('transcode_name', TranscodeFileService::TRANSCODE_PDF_TO_IMAGES)->get();
 
                 foreach($transcodes as $transcode) {
-                    $fileUrls[] = [
-                        'url'  => $transcode->url,
-                        'name' => $transcode->filename,
-                    ];
+                    $imageFiles[] = $transcode;
                 }
             } else {
                 throw new Exception('Only images and PDFs are supported for now.');
             }
         }
 
-        return $fileUrls;
+        return $imageFiles;
     }
 }
