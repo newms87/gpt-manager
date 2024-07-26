@@ -84,7 +84,7 @@ class WorkflowTaskService
             // If the task completed successfully, then save the artifact and mark the job as completed if there are no more tasks
             if ($task->isComplete()) {
                 // Save the artifact from the completed task
-                $artifact = $task->artifact()->first();
+                $artifact = $task->artifacts()->first();
 
                 if ($artifact) {
                     $workflowJobRun->artifacts()->syncWithoutDetaching($artifact);

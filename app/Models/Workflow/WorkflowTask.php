@@ -73,7 +73,7 @@ class WorkflowTask extends Model implements AuditableContract, ComputedStatusCon
         return $this->belongsTo(Thread::class);
     }
 
-    public function artifact(): MorphToMany|Artifact
+    public function artifacts(): MorphToMany|Artifact
     {
         return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps();
     }

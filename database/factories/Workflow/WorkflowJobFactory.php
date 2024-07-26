@@ -23,7 +23,7 @@ class WorkflowJobFactory extends Factory
         ];
     }
 
-    public function isWorkflowInput(): static
+    public function isWorkflowInputTool(): static
     {
         return $this->state(function (array $attributes) {
             return [

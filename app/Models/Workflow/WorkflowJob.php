@@ -17,6 +17,7 @@ use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\CountableTrait;
+use Throwable;
 
 class WorkflowJob extends Model implements AuditableContract
 {
@@ -79,7 +80,13 @@ class WorkflowJob extends Model implements AuditableContract
 
     public function getResponsePreview(): array|string|null
     {
-        return $this->getWorkflowTool()->getResponsePreview($this);
+        try {
+            return $this->getWorkflowTool()->getResponsePreview($this);
+        } catch(Throwable $exception) {
+            Log::error("Error getting response preview for $this: $exception", ['exception' => $exception]);
+
+            return [];
+        }
     }
 
     public function getTasksPreview(): array
@@ -90,7 +97,7 @@ class WorkflowJob extends Model implements AuditableContract
             foreach($this->dependencies as $dependency) {
                 $artifacts = [];
 
-                
+
                 if ($dependency->dependsOn->workflow_tool === WorkflowInputWorkflowTool::class) {
                     $artifacts[] = Artifact::make([
                         'data' => [

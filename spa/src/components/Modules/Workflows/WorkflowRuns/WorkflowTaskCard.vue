@@ -12,7 +12,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="mx-4">
+			<div v-if="task.agent_name" class="mx-4">
 				<div class="text-sm text-slate-400 text-no-wrap">by {{ task.agent_name }}</div>
 				<div class="text-sm text-slate-400 bg-slate-800 px-3 py-1 mt-1 rounded-full text-no-wrap inline-block">{{
 						task.model

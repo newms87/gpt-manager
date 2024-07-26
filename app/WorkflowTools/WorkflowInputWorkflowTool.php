@@ -55,34 +55,26 @@ class WorkflowInputWorkflowTool extends WorkflowTool
         Log::debug(self::$toolName . ": preparing $workflowTask =====> $workflowInput");
         $files = [];
 
-        foreach($workflowInput->storedFiles as $storedFile) {
-            if ($storedFile->isPdf()) {
-                app(TranscodeFileService::class)->transcode(TranscodeFileService::TRANSCODE_PDF_TO_IMAGES, $storedFile);
-
-                $transcodes = $storedFile->transcodes()->where('transcode_name', TranscodeFileService::TRANSCODE_PDF_TO_IMAGES)->get();
-                foreach($transcodes as $transcode) {
-                    $files[] = [
-                        'name' => $transcode->filename,
-                        'url'  => $transcode->url,
-                    ];
-                }
-            } else {
-                $files[] = [
-                    'name' => $storedFile->filename,
-                    'url'  => $storedFile->url,
-                ];
-            }
-        }
-
-        $artifact = $workflowTask->artifact()->create([
+        $artifact = $workflowTask->artifacts()->create([
             'name'    => self::$toolName . ': ' . $workflowInput->name,
             'model'   => '',
             'content' => $workflowInput->content,
             'data'    => ['files' => $files],
         ]);
 
-        Log::debug(self::$toolName . ": created $artifact with content of " . strlen($artifact->content) . " bytes and " . count($files) . " files");
+        foreach($workflowInput->storedFiles as $storedFile) {
+            if ($storedFile->isPdf()) {
+                app(TranscodeFileService::class)->transcode(TranscodeFileService::TRANSCODE_PDF_TO_IMAGES, $storedFile);
 
-        $workflowInput->save();
+                $transcodes = $storedFile->transcodes()->where('transcode_name', TranscodeFileService::TRANSCODE_PDF_TO_IMAGES)->get();
+                foreach($transcodes as $transcode) {
+                    $artifact->storedFiles()->attach($transcode);
+                }
+            } else {
+                $artifact->storedFiles()->attach($storedFile);
+            }
+        }
+
+        Log::debug(self::$toolName . ": created $artifact with content of " . strlen($artifact->content) . " bytes and " . count($files) . " files");
     }
 }

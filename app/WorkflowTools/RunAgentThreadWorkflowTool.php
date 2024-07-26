@@ -44,7 +44,7 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
             $content = null;
         }
 
-        $artifact = $workflowTask->artifact()->create([
+        $artifact = $workflowTask->artifacts()->create([
             'name'    => $workflowTask->thread->name,
             'model'   => $assignment->agent->model,
             'content' => $content,

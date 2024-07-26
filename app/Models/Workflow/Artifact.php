@@ -35,6 +35,10 @@ class Artifact extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<Artifact ($this->id) $this->name>";
+        $contentLength = strlen($this->content);
+        $dataLength    = strlen(json_encode($this->data));
+        $filesCount    = $this->storedFiles()->count();
+
+        return "<Artifact id='$this->id' name='$this->name' contents='$contentLength bytes' data='$dataLength bytes' files='$filesCount'>";
     }
 }

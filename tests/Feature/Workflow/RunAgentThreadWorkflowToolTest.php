@@ -962,7 +962,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         ]);
 
         $workflowRun       = WorkflowRun::factory()->create();
-        $inputJob          = WorkflowJob::factory()->isWorkflowInput()->create();
+        $inputJob          = WorkflowJob::factory()->isWorkflowInputTool()->create();
         $inputJobRun       = WorkflowJobRun::factory()->withArtifact($artifact)->completed()->create(['workflow_job_id' => $inputJob->id]);
         $assignmentsJob    = WorkflowJob::factory()->hasWorkflowAssignments()->dependsOn([$inputJob])->create();
         $assignmentsJobRun = WorkflowJobRun::factory()->recycle($assignmentsJob)->recycle($workflowRun)->create();
