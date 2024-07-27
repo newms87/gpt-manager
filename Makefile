@@ -1,6 +1,7 @@
 danx:
 	vendor/bin/sail composer require newms87/danx
-	vendor/bin/sail composer artisan fix
+	vendor/bin/sail artisan fix
+	cd spa && yarn add quasar-ui-danx
 
 refresh-data:
 	vendor/bin/sail artisan migrate:refresh --seed

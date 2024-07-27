@@ -3062,16 +3062,16 @@
         },
         {
             "name": "newms87/danx",
-            "version": "1.2.13",
+            "version": "1.2.14",
             "source": {
                 "type": "git",
                 "url": "https://github.com/newms87/danx.git",
-                "reference": "bf206cbf8ade45bdc6bcf2568c0ac11495a26ca5"
+                "reference": "b5a5140ab717b1b2cc172be656aab324848d697f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/newms87/danx/zipball/bf206cbf8ade45bdc6bcf2568c0ac11495a26ca5",
-                "reference": "bf206cbf8ade45bdc6bcf2568c0ac11495a26ca5",
+                "url": "https://api.github.com/repos/newms87/danx/zipball/b5a5140ab717b1b2cc172be656aab324848d697f",
+                "reference": "b5a5140ab717b1b2cc172be656aab324848d697f",
                 "shasum": ""
             },
             "require": {
@@ -3121,9 +3121,9 @@
             "description": "Danx Auditing, Logging, and Helpers",
             "support": {
                 "issues": "https://github.com/newms87/danx/issues",
-                "source": "https://github.com/newms87/danx/tree/1.2.13"
+                "source": "https://github.com/newms87/danx/tree/1.2.14"
             },
-            "time": "2024-07-24T06:21:33+00:00"
+            "time": "2024-07-27T06:30:38+00:00"
         },
         {
             "name": "nikic/php-parser",
