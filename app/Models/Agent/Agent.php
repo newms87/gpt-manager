@@ -92,6 +92,10 @@ class Agent extends Model implements AuditableContract
     {
         $apiClass = config('ai.apis')[$this->api] ?? null;
         if (!$apiClass) {
+            // Special case for testing, as this TestAiApi only exists in testing / dev environments
+            if ($this->api === 'TestAI') {
+                return app('Tests\Feature\Api\TestAi\TestAiApi');
+            }
             throw new Exception('API class not found for ' . $this->api);
         }
 

@@ -7,7 +7,7 @@ use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowJob;
-use Tests\Feature\TestApi\TestAiApi\Classes\TestAiCompletionResponse;
+use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
 use Tests\TestCase;
 
 /**

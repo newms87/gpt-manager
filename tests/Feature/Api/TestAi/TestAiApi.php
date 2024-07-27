@@ -1,11 +1,11 @@
 <?php
 
-namespace Tests\Feature\TestApi\TestAiApi;
+namespace Tests\Feature\Api\TestAi;
 
 use App\Api\AgentApiContracts\AgentApiContract;
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
 use App\Api\OpenAi\Classes\OpenAiMessageFormatter;
-use Tests\Feature\TestApi\TestAiApi\Classes\TestAiCompletionResponse;
+use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
 
 class TestAiApi implements AgentApiContract
 {

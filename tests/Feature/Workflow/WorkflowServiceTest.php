@@ -12,8 +12,8 @@ use App\Models\Workflow\WorkflowRun;
 use App\Services\Workflow\WorkflowService;
 use App\WorkflowTools\WorkflowInputWorkflowTool;
 use Tests\AuthenticatedTestCase;
+use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
 use Tests\Feature\MockData\AiMockData;
-use Tests\Feature\TestApi\TestAiApi\Classes\TestAiCompletionResponse;
 
 class WorkflowServiceTest extends AuthenticatedTestCase
 {

@@ -5,7 +5,7 @@ namespace Database\Factories\Agent;
 use App\Models\Agent\Agent;
 use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Tests\Feature\TestApi\TestAiApi\TestAiApi;
+use Tests\Feature\Api\TestAi\TestAiApi;
 
 /**
  * @extends Factory<Agent>

@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\TestApi\TestAiApi\Classes;
+namespace Tests\Feature\Api\TestAi\Classes;
 
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use Newms87\Danx\Input\Input;

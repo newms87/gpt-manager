@@ -979,7 +979,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEquals(1, $thread->messages()->count());
 
         $message = $thread->messages()->first();
-        $this->assertEquals($inputContent, $message->content);
+        $this->assertEquals($inputContent . "\nFilename: test.jpg", $message->content);
         $this->assertEquals($artifact->storedFiles()->first()->id, $message->storedFiles()->first()->id);
     }
 
