@@ -63,19 +63,26 @@ class ThreadRepository extends ActionRepository
                 $storedFiles = $content['files'] ?? [];
                 unset($content['files']);
 
-                foreach($storedFiles as $storedFile) {
-                    $fileId = $storedFile instanceof StoredFile ? $storedFile->id : ($storedFile['id'] ?? null);
-                    if ($fileId) {
-                        $fileIds[] = $fileId;
-                    }
-                }
-
                 // If the content is a single key with a scalar value, just use that as the content string
                 if (!empty($content['content']) && count($content) === 1) {
                     $contentString = $content['content'];
                 } else {
                     // Otherwise convert the content to a JSON string
-                    $contentString = json_encode($content);
+                    $contentString = $content ? json_encode($content) : '';
+                }
+
+                foreach($storedFiles as $index => $storedFile) {
+                    if ($storedFile instanceof StoredFile) {
+                        $fileId   = $storedFile->id;
+                        $filename = $storedFile->filename;
+                    } else {
+                        $fileId   = ($storedFile['id'] ?? null);
+                        $filename = ($storedFile['name'] ?? $storedFile['filename'] ?? '');
+                    }
+                    if ($fileId) {
+                        $fileIds[]     = $fileId;
+                        $contentString .= ($contentString ? "\n" : "") . "Filename: $filename";
+                    }
                 }
             }
 

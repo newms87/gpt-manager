@@ -68,6 +68,7 @@ const dependentFields = computed<string[]>(() => getNestedFieldList(props.depend
  * A flat list of all fields and nested fields expressed in dot notation
  */
 function getNestedFieldList(object) {
+	if (!object) return [];
 	const fields = [];
 	if (Array.isArray(object)) {
 		for (const item of object) {
