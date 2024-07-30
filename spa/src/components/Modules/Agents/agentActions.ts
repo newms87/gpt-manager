@@ -85,4 +85,4 @@ const items: ActionOptions[] = [
 	}
 ];
 
-export const { getAction, getActions } = useActions(items, forAllItems);
+export const { getAction, getActions, extendAction } = useActions(items, forAllItems);
