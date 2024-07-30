@@ -10,6 +10,13 @@
 				:label="jobRun.tasks.length + ' Tasks'"
 				class="mr-4 bg-slate-600 text-slate-200"
 			/>
+			<div class="mr-4">
+				<ElapsedTimePill
+					timer-class="bg-slate-900 font-bold rounded-lg text-xs w-32 text-center py-2"
+					:start="jobRun.started_at"
+					:end="jobRun.failed_at || jobRun.completed_at"
+				/>
+			</div>
 			<div
 				class="flex items-center flex-nowrap text-md font-bold py-2 px-4 rounded-xl"
 				:class="workflowStatus.classPrimary"
@@ -38,6 +45,7 @@
 <script setup lang="ts">
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
+import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import WorkflowTaskCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowTaskCard";
 import { ShowHideButton } from "@/components/Shared";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
