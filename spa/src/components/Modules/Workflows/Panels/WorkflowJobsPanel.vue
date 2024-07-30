@@ -45,7 +45,8 @@ const jobFlowDiagram = computed(() => {
 
 	let diagram = "";
 	for (const job of props.workflow.jobs) {
-		const tasksStr = job.tasks_preview ? `\n${Object.keys(job.tasks_preview).length} tasks` : "";
+		const taskCount = Object.keys(job.tasks_preview).length;
+		const tasksStr = job.tasks_preview ? `\n${taskCount} ${taskCount === 1 ? "task" : "tasks"}` : "";
 		diagram += `${job.id}(${job.name + tasksStr})\n`;
 	}
 

@@ -20,7 +20,7 @@ class ThreadRunResource extends ActionResource
             'completed_at'  => $model->completed_at,
             'failed_at'     => $model->failed_at,
             'refreshed_at'  => $model->refreshed_at,
-            'input_token'   => $model->input_tokens,
+            'input_tokens'  => $model->input_tokens,
             'output_tokens' => $model->output_tokens,
         ];
     }

@@ -21,19 +21,21 @@ class ThreadRun extends Model implements AuditableContract
         STATUS_FAILED = 'Failed';
 
     protected $fillable = [
+        'agent_model',
         'completed_at',
         'failed_at',
         'input_tokens',
         'last_message_id',
         'output_tokens',
         'refreshed_at',
-        'started_at',
-        'status',
         'response_format',
         'seed',
+        'started_at',
+        'status',
         'temperature',
-        'tools',
         'tool_choice',
+        'tools',
+        'total_cost',
     ];
 
     public function casts(): array

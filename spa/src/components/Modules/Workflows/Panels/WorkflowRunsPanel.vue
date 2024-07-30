@@ -1,14 +1,19 @@
 <template>
 	<div class="p-6">
 		<div class="flex items-start flex-nowrap">
-			<QBtn @click="showInputDialog = true" class="bg-sky-800 mt-5" :class="{'px-8': !selectedInput }">
+			<QBtn class="bg-sky-800 mt-5" :class="{'px-8': !selectedInput }" @click="showInputDialog = true">
 				<template v-if="selectedInput">
 					<ChangeIcon class="w-6" />
 				</template>
 				<template v-else>Choose Workflow Input</template>
 			</QBtn>
 			<div class="flex-grow flex items-center flex-nowrap">
-				<WorkflowInputCard v-if="selectedInput" class="ml-4 w-full" :workflow-input="selectedInput" />
+				<WorkflowInputCard
+					v-if="selectedInput"
+					:key="selectedInput.id"
+					class="ml-4 w-full"
+					:workflow-input="selectedInput"
+				/>
 				<SelectWorkflowInputDialog
 					v-if="showInputDialog"
 					@close="showInputDialog = false"

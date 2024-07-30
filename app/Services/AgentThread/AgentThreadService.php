@@ -7,6 +7,7 @@ use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
+use App\Repositories\AgentRepository;
 use App\Services\Database\DatabaseRecordMapper;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -34,6 +35,7 @@ class AgentThreadService
         }
 
         $threadRun = $thread->runs()->create([
+            'agent_model'     => $agent->model,
             'status'          => ThreadRun::STATUS_RUNNING,
             'temperature'     => $agent->temperature,
             'tools'           => $agent->tools,
@@ -175,6 +177,17 @@ class AgentThreadService
      */
     public function handleResponse(Thread $thread, ThreadRun $threadRun, AgentCompletionResponseContract $response): void
     {
+        $inputTokens  = $threadRun->input_tokens + $response->inputTokens();
+        $outputTokens = $threadRun->output_tokens + $response->outputTokens();
+
+        $threadRun->update([
+            'agent_model'   => $thread->agent->model,
+            'refreshed_at'  => now(),
+            'total_cost'    => app(AgentRepository::class)->calcTotalCost($thread->agent, $inputTokens, $outputTokens),
+            'input_tokens'  => $inputTokens,
+            'output_tokens' => $outputTokens,
+        ]);
+
         if ($response->isToolCall()) {
             Log::debug("Completion Response: Handling " . count($response->getToolCallerFunctions()) . " tool calls");
 
@@ -208,11 +221,7 @@ class AgentThreadService
                 $thread->messages()->create($message);
             }
 
-            $threadRun->update([
-                'refreshed_at'  => now(),
-                'input_tokens'  => $threadRun->input_tokens + $response->inputTokens(),
-                'output_tokens' => $threadRun->output_tokens + $response->outputTokens(),
-            ]);
+
         } elseif ($response->isFinished()) {
             $lastMessage = $thread->messages()->create([
                 'role'    => Message::ROLE_ASSISTANT,
@@ -222,8 +231,6 @@ class AgentThreadService
             $threadRun->update([
                 'status'          => ThreadRun::STATUS_COMPLETED,
                 'completed_at'    => now(),
-                'input_tokens'    => $threadRun->input_tokens + $response->inputTokens(),
-                'output_tokens'   => $threadRun->output_tokens + $response->outputTokens(),
                 'last_message_id' => $lastMessage->id,
             ]);
 

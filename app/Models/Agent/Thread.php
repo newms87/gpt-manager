@@ -3,9 +3,9 @@
 namespace App\Models\Agent;
 
 use App\Models\Team\Team;
-use App\Repositories\AgentRepository;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -30,7 +30,7 @@ class Thread extends Model implements AuditableContract
         Agent::class => 'threads_count',
     ];
 
-    public function team()
+    public function team(): BelongsTo|Team
     {
         return $this->belongsTo(Team::class);
     }
@@ -50,12 +50,12 @@ class Thread extends Model implements AuditableContract
         return $this->hasOne(ThreadRun::class)->latest();
     }
 
-    public function messages()
+    public function messages(): HasMany|Message
     {
         return $this->hasMany(Message::class);
     }
 
-    public function agent()
+    public function agent(): BelongsTo|Agent
     {
         return $this->belongsTo(Agent::class);
     }
@@ -68,18 +68,14 @@ class Thread extends Model implements AuditableContract
     public function getUsage(): array
     {
         if (!$this->usage) {
-            $count        = $this->runs()->count();
-            $inputTokens  = $this->runs()->sum('input_tokens') ?? 0;
-            $outputTokens = $this->runs()->sum('output_tokens') ?? 0;
-
-            $cost = app(AgentRepository::class)->calcTotalCost($this->agent, $inputTokens, $outputTokens);
-
-            $this->usage = [
-                'input_tokens'  => $inputTokens,
-                'output_tokens' => $outputTokens,
-                'cost'          => $cost,
-                'count'         => $count,
-            ];
+            $this->usage = $this->runs()->withTrashed()->selectRaw(
+                'count(*) as count,' .
+                'sum(input_tokens) as input_tokens,' .
+                'sum(output_tokens) as output_tokens,' .
+                'sum(total_cost) as total_cost'
+            )
+                ->first()
+                ->toArray();
         }
 
         return $this->usage;
@@ -97,7 +93,7 @@ class Thread extends Model implements AuditableContract
 
     public function getTotalCost()
     {
-        return $this->getUsage()['cost'];
+        return $this->getUsage()['total_cost'];
     }
 
     public function __toString()
