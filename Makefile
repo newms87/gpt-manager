@@ -1,7 +1,11 @@
-danx:
+danx-spa:
+	cd spa && yarn add quasar-ui-danx
+
+danx-core:
 	vendor/bin/sail composer require newms87/danx
 	vendor/bin/sail artisan fix
-	cd spa && yarn add quasar-ui-danx
+
+danx: danx-spa danx-core
 
 refresh-data:
 	vendor/bin/sail artisan migrate:refresh --seed
