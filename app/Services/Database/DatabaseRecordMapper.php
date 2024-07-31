@@ -3,6 +3,7 @@
 namespace App\Services\Database;
 
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class DatabaseRecordMapper
 {
@@ -26,9 +27,12 @@ class DatabaseRecordMapper
             throw new Exception('Schema was not set');
         }
 
+        Log::debug("Writing " . count($entries) . " entries to database");
+
         foreach($entries as $entry) {
-            $tableName           = $entry['table'];
-            $records             = $entry['records'] ?? [];
+            $tableName = $entry['table'];
+            $records   = $entry['records'] ?? [];
+            Log::debug("\t$tableName: " . count($records) . " records");
             $relationFieldValues = $this->getRelatedFieldValues($entry['relations'] ?? []);
 
             foreach($records as $record) {

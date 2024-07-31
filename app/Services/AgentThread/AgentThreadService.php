@@ -252,6 +252,8 @@ class AgentThreadService
                         } catch(Exception $exception) {
                             Log::error("Error writing to database: " . $exception->getMessage());
                         }
+                    } else {
+                        Log::error("No schema file found for team " . team()->namespace);
                     }
                 }
             }
