@@ -14,9 +14,15 @@
 			</div>
 			<div class="ml-6">
 				<div class="flex justify-end">
-					<div class="bg-green-800 px-4 py-2 rounded-xl flex items-center">
+					<div
+						class="px-4 py-2 rounded-xl flex items-center" :class="{
+						'bg-green-800': drugIssue.issue.evaluation_score >= 80,
+						'bg-yellow-600': drugIssue.issue.evaluation_score >= 50 && drugIssue.issue.evaluation_score < 80,
+						'bg-red-800': drugIssue.issue.evaluation_score < 50
+
+					}"
+					>
 						<div class="text-2xl font-bold">{{ drugIssue.issue.evaluation_score }}</div>
-						<div class="text-lg">&nbsp;/ 100</div>
 					</div>
 				</div>
 

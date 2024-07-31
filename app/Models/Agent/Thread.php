@@ -70,9 +70,9 @@ class Thread extends Model implements AuditableContract
         if (!$this->usage) {
             $this->usage = $this->runs()->withTrashed()->selectRaw(
                 'count(*) as count,' .
-                'sum(input_tokens) as input_tokens,' .
-                'sum(output_tokens) as output_tokens,' .
-                'sum(total_cost) as total_cost'
+                'ifnull(sum(ifnull(input_tokens, 0)), 0) as input_tokens,' .
+                'ifnull(sum(ifnull(output_tokens, 0)), 0) as output_tokens,' .
+                'ifnull(sum(ifnull(total_cost, 0)), 0) as total_cost'
             )
                 ->first()
                 ->toArray();

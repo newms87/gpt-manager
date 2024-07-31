@@ -13,6 +13,7 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
+use Newms87\Danx\Helpers\StringHelper;
 use Throwable;
 
 class AgentThreadService
@@ -218,6 +219,9 @@ class AgentThreadService
 
             // Save all the tool response messages
             foreach($additionalMessages as $message) {
+                if (isset($message['content']) && is_array($message['content'])) {
+                    $message['content'] = StringHelper::safeJsonEncode($message['content']);
+                }
                 $thread->messages()->create($message);
             }
 

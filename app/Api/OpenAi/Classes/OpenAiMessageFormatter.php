@@ -29,9 +29,13 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
         foreach($contentItems as $index => $contentItem) {
             if ($index === 0) {
                 // The first message needs to be the tool response for the Completion API to respond correctly
+                // NOTE: the 'data' entry is stored directly on the message.data attribute in the DB (hence the structure)
+                // This will be used when setting up the response in the thread run.
                 $messages[] = $this->rawMessage(Message::ROLE_TOOL, $contentItem, [
-                    'tool_call_id' => $toolId,
-                    'name'         => $toolName,
+                    'data' => [
+                        'tool_call_id' => $toolId,
+                        'tool_name'    => $toolName,
+                    ],
                 ]);
             } else {
                 // Subsequent messages are user messages

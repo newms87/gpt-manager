@@ -3,7 +3,16 @@
 		<div class="flex items-center flex-nowrap overflow-hidden">
 			<div class="flex items-center flex-nowrap space-x-3 flex-grow">
 				<div class="rounded-2xl px-3 py-1" :class="methodClass">{{ apiLog.method }}</div>
-				<div class="bg-slate-500 rounded-2xl px-3 py-1">{{ apiLog.status_code }}</div>
+				<div
+					class="rounded-2xl px-3 py-1"
+					:class="{
+					'bg-red-800': apiLog.status_code >= 400,
+					'bg-yellow-700': apiLog.status_code < 400 && apiLog.status_code >= 300,
+					'bg-slate-500': apiLog.status_code < 300
+				}"
+				>
+					{{ apiLog.status_code }}
+				</div>
 			</div>
 			<div class="flex items-center flex-nowrap flex-shrink-0">
 				<ShowHideButton v-model="showRequest" label="Request" class="bg-slate-800 mr-2" />

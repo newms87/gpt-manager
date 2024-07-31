@@ -89,5 +89,5 @@ export interface WorkflowUsage {
 	count?: number;
 	input_tokens: number;
 	output_tokens: number;
-	cost: number;
+	total_cost: number;
 }
