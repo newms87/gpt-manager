@@ -92,6 +92,7 @@ class UrlToImageAiTool implements AiToolContract
         $storedFile = StoredFile::firstWhere('filepath', $filepath);
 
         if (!$storedFile) {
+            Log::debug("No Saved screenshot, taking new screenshot");
             $storedUrl = ScreenshotOneApi::make()->take($url, $filepath);
 
             $storedFile = StoredFile::create([

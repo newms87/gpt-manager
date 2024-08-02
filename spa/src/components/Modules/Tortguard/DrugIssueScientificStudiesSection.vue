@@ -9,7 +9,7 @@
 				</div>
 				<div class="text-sm mt-2">{{ study.description }}</div>
 				<div class="flex items-stretch mt-4">
-					<div class="grid grid-cols-3 gap-4">
+					<div class="grid grid-cols-5 gap-4">
 						<LabelValueBlock label="Quality Grade" :value="study.quality_grade" />
 						<LabelValueBlock label="Injury" :value="study.injury" />
 						<LabelValueBlock label="Group Size" :value="study.group_size ? fNumber(study.group_size) : '-'" />

@@ -31,11 +31,14 @@
 					:url="getSourceUrl('subjects', 'number_of_users')"
 				/>
 			</div>
-			<div class="max-w-[17rem] mt-5 text-justify">
-				<div>
-					{{ drug.generics.join(", ") }}
+			<div class="mt-5 flex">
+				<div class="inline-block">
+					<h6>Generic Competitors</h6>
+					<ul class="mt-2">
+						<li v-for="name in drug.generics" :key="name">{{ name }}</li>
+					</ul>
+					<DataSourceList :sources="getSources('subjects', 'generics')" class="mt-3" />
 				</div>
-				<DataSourceList :sources="getSources('subjects', 'generics')" class="mt-3" />
 			</div>
 		</template>
 	</div>

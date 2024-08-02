@@ -24,7 +24,7 @@ class WorkflowJobRunResource extends ActionResource
             'usage'        => [
                 'input_tokens'  => $model->getTotalInputTokens(),
                 'output_tokens' => $model->getTotalOutputTokens(),
-                'cost'          => $model->getTotalCost(),
+                'total_cost'    => $model->getTotalCost(),
             ],
         ];
     }
