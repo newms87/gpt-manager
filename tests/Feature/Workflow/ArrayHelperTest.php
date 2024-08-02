@@ -432,4 +432,211 @@ class ArrayHelperTest extends AuthenticatedTestCase
         $data['powers'][1]['specs'] = [$data['powers'][1]['specs'][0]];
         $this->assertEquals($data, $filteredData);
     }
+
+    /*****************************
+     * getNestedFieldList Tests
+     *****************************/
+
+    public function test_emptyInput_returnsEmptyArray(): void
+    {
+        // Given
+        $input = null;
+
+        // When
+        $result = ArrayHelper::getNestedFieldList($input);
+
+        // Then
+        $this->assertEmpty($result);
+    }
+
+    public function test_simpleObject_returnsTopLevelFields(): void
+    {
+        // Given
+        $input = [
+            'name' => 'John',
+            'age'  => 30,
+        ];
+
+        // When
+        $result = ArrayHelper::getNestedFieldList($input);
+
+        // Then
+        $this->assertEquals(['name', 'age'], $result);
+    }
+
+    public function test_nestedObject_returnsNestedFields(): void
+    {
+        // Given
+        $input = [
+            'name'    => 'John',
+            'address' => [
+                'street' => 'Main St',
+                'city'   => 'New York',
+            ],
+        ];
+
+        // When
+        $result = ArrayHelper::getNestedFieldList($input);
+
+        // Then
+        $expected = ['name', 'address', 'address.street', 'address.city'];
+        $this->assertEquals($expected, $result);
+    }
+
+    public function test_arrayOfObjects_returnsNestedFieldsWithAsterisk(): void
+    {
+        // Given
+        $input = [
+            'name'   => 'John',
+            'phones' => [
+                ['type' => 'home', 'number' => '1234567'],
+                ['type' => 'work', 'number' => '7654321'],
+            ],
+        ];
+
+        // When
+        $result = ArrayHelper::getNestedFieldList($input);
+
+        // Then
+        $expected = ['name', 'phones', 'phones.*.type', 'phones.*.number'];
+        $this->assertEquals($expected, $result);
+    }
+
+    public function test_deeplyNestedObject_returnsAllNestedFields(): void
+    {
+        // Given
+        $input = [
+            'user' => [
+                'name'    => 'John',
+                'address' => [
+                    'home' => [
+                        'street' => 'Main St',
+                        'city'   => 'New York',
+                    ],
+                    'work' => [
+                        'street' => 'Broadway',
+                        'city'   => 'Manhattan',
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $result = ArrayHelper::getNestedFieldList($input);
+
+        // Then
+        $expected = [
+            'user',
+            'user.name',
+            'user.address',
+            'user.address.home',
+            'user.address.home.street',
+            'user.address.home.city',
+            'user.address.work',
+            'user.address.work.street',
+            'user.address.work.city',
+        ];
+        $this->assertEquals($expected, $result);
+    }
+
+    public function test_mixedTypes_handlesAllTypesCorrectly(): void
+    {
+        // Given
+        $input = [
+            'name'      => 'John',
+            'age'       => 30,
+            'isStudent' => false,
+            'grades'    => [95, 87, 92],
+            'address'   => [
+                'street' => 'Main St',
+                'city'   => 'New York',
+            ],
+            'courses'   => [
+                ['name' => 'Math', 'grade' => 'A'],
+                ['name' => 'History', 'grade' => 'B'],
+            ],
+        ];
+
+        // When
+        $result = ArrayHelper::getNestedFieldList($input);
+
+        // Then
+        $expected = [
+            'name',
+            'age',
+            'isStudent',
+            'grades',
+            'address',
+            'address.street',
+            'address.city',
+            'courses',
+            'courses.*.name',
+            'courses.*.grade',
+        ];
+        $this->assertEquals($expected, $result);
+    }
+
+    public function test_duplicateNestedFields_returnsUniqueFields(): void
+    {
+        // Given
+        $input = [
+            'users' => [
+                ['name' => 'John', 'age' => 30],
+                ['name' => 'Jane', 'age' => 25],
+            ],
+        ];
+
+        // When
+        $result = ArrayHelper::getNestedFieldList($input);
+
+        // Then
+        $expected = ['users', 'users.*.name', 'users.*.age'];
+        $this->assertEquals($expected, $result);
+    }
+
+    public function test_emptyNestedObjects_includesEmptyObjects(): void
+    {
+        // Given
+        $input = [
+            'name'     => 'John',
+            'address'  => [],
+            'contacts' => [
+                [],
+                ['phone' => '1234567'],
+            ],
+        ];
+
+        // When
+        $result = ArrayHelper::getNestedFieldList($input);
+
+        // Then
+        $expected = ['name', 'address', 'contacts', 'contacts.*.phone'];
+        $this->assertEquals($expected, $result);
+    }
+
+    public function test_emptyNestedObjects_includesDeeplyNestedArraysOfObjects(): void
+    {
+        // Given
+        $input = [
+            'name'     => 'John',
+            'address'  => [],
+            'contacts' => [
+                [
+                    'phone'  => '1234567',
+                    'emails' => ['dan@a.com', 'dan@b.com'],
+                    'jobs'   => [
+                        ['title' => 'Developer', 'company' => 'ABC'],
+                        ['title' => 'Manager', 'company' => 'XYZ'],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $result = ArrayHelper::getNestedFieldList($input);
+
+        // Then
+        $expected = ['name', 'address', 'contacts', 'contacts.*.phone', 'contacts.*.emails', 'contacts.*.jobs', 'contacts.*.jobs.*.title', 'contacts.*.jobs.*.company'];
+        $this->assertEquals($expected, $result);
+    }
 }
