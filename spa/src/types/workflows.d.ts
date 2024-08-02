@@ -11,14 +11,21 @@ export interface Workflow extends ActionTargetItem {
 	runs?: WorkflowRun[];
 }
 
+export interface OrderByDependency {
+	name: string;
+	order: "asc" | "desc";
+}
+
 export interface WorkflowJobDependency {
 	id: number;
 	depends_on_id: number;
 	depends_on_name: string;
 	depends_on_workflow_tool: string;
-	depends_on_response: object;
+	depends_on_fields: string[];
+	force_schema?: boolean;
 	include_fields?: string[];
 	group_by?: string[];
+	order_by?: OrderByDependency[];
 }
 
 export interface WorkflowJob extends ActionTargetItem {

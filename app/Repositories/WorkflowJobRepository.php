@@ -100,8 +100,10 @@ class WorkflowJobRepository extends ActionRepository
                     'depends_on_workflow_job_id' => $dependency['depends_on_id'],
                 ]);
             }
-            $dependsOnWorkflowJob->group_by       = $dependency['group_by'] ?? [];
+            $dependsOnWorkflowJob->force_schema   = $dependency['force_schema'] ?? false;
             $dependsOnWorkflowJob->include_fields = $dependency['include_fields'] ?? [];
+            $dependsOnWorkflowJob->group_by       = $dependency['group_by'] ?? [];
+            $dependsOnWorkflowJob->order_by       = $dependency['order_by'] ?? [];
             $dependsOnWorkflowJob->save();
         }
 

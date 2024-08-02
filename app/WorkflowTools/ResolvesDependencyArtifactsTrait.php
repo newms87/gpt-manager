@@ -38,7 +38,7 @@ trait ResolvesDependencyArtifactsTrait
      * Get the set of artifact groups for each dependency based on the output artifacts of the completed prerequisite
      * jobs matching the dependency.
      *
-     * Groupings are based on each dependencies' group_by field, and the include_fields are used to filter the data
+     * Groupings are based on each dependencies' group_by field
      */
     public function getArtifactGroupsByDependency(array|Collection $dependencies, array|Collection $prerequisiteJobRuns): ?array
     {
@@ -64,6 +64,9 @@ trait ResolvesDependencyArtifactsTrait
     public function getArtifactGroups(WorkflowJobDependency $dependency, WorkflowJobRun $workflowJobRun): array
     {
         $groups = [];
+
+        $schemaFields = $dependency->include_fields ?: $dependency->dependsOn->getResponseFields();
+
         foreach($workflowJobRun->artifacts as $artifact) {
             $artifactData = $artifact->data ?: [];
 
@@ -89,7 +92,12 @@ trait ResolvesDependencyArtifactsTrait
                 if (count($artifactData) === 1 && !empty($artifactData['content'])) {
                     $groups['default'][] = $artifactData['content'];
                 } else {
-                    $data = ArrayHelper::extractNestedData($artifactData, $dependency->include_fields);
+                    $data = $artifactData;
+
+                    if ($dependency->force_schema) {
+                        $data = ArrayHelper::extractNestedData($data, $schemaFields);
+                    }
+
                     if ($data) {
                         $groups['default'][] = $data;
                     }
@@ -106,11 +114,13 @@ trait ResolvesDependencyArtifactsTrait
                 foreach($itemSet as $itemIndex => $itemValue) {
                     $resolvedData = ArrayHelper::filterNestedData($resolvedData, $itemIndex, $itemValue);
                     if (!$resolvedData) {
-                        throw new Exception("Failed to resolve data for $itemIndex:\n" . json_encode($itemValue) . "\n\nArtifact Data\n" . json_encode($artifactData));
+                        Log::debug("Artifact did not have data for $itemIndex. Omitting record " . $this->generateGroupKey($itemValue));
                     }
                 }
 
-                $resolvedData = ArrayHelper::extractNestedData($resolvedData, $dependency->include_fields);
+                if ($dependency->force_schema) {
+                    $resolvedData = ArrayHelper::extractNestedData($resolvedData, $schemaFields);
+                }
 
                 if ($resolvedData) {
                     $groups[$groupKey][] = $resolvedData;

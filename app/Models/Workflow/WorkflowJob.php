@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\CountableTrait;
 use Throwable;
@@ -87,6 +88,14 @@ class WorkflowJob extends Model implements AuditableContract
 
             return [];
         }
+    }
+
+    /**
+     * The list of fields that are returned in the expected response
+     */
+    public function getResponseFields(): array
+    {
+        return ArrayHelper::getNestedFieldList($this->getResponsePreview());
     }
 
     public function getTasksPreview(): array

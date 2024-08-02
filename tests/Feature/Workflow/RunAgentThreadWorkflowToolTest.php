@@ -195,12 +195,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = [];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -216,12 +214,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = [];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -238,12 +234,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['name'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -258,12 +252,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['name'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -283,12 +275,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['dob'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -305,12 +295,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['name', 'color'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -331,12 +319,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['address'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -356,12 +342,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['address.zip'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -380,12 +364,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['aliases', 'name'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -419,12 +401,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['services'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -466,12 +446,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['services.*.name'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -518,6 +496,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
             'group_by'       => $groupBy,
+            'force_schema'   => true,
             'include_fields' => $includeFields,
         ]);
 
@@ -561,6 +540,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
             'group_by'       => $groupBy,
+            'force_schema'   => true,
             'include_fields' => $includeFields,
         ]);
 
@@ -600,10 +580,9 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Given
         $artifacts             = $this->getArtifacts();
         $includeFields         = ['services.*.uses.*.name'];
-        $groupBy               = [];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
+            'force_schema'   => true,
             'include_fields' => $includeFields,
         ]);
 
@@ -619,10 +598,9 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Given
         $artifacts             = $this->getArtifacts();
         $includeFields         = ['services.*.options.*.name'];
-        $groupBy               = [];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
+            'force_schema'   => true,
             'include_fields' => $includeFields,
         ]);
 
@@ -659,10 +637,9 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Given
         $artifacts             = $this->getArtifacts();
         $includeFields         = ['services.*.options.*.name', 'services.*.options.*.cost'];
-        $groupBy               = [];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
+            'force_schema'   => true,
             'include_fields' => $includeFields,
         ]);
 
@@ -710,12 +687,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['services', 'name'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -755,12 +730,10 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['services.*.options.*.name'];
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'       => $groupBy,
-            'include_fields' => $includeFields,
+            'group_by' => $groupBy,
         ]);
 
         // When
@@ -902,15 +875,11 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
-        $groupBy               = [];
         $prerequisiteJob       = WorkflowJob::factory()->create();
         $prerequisiteJobRun    = WorkflowJobRun::factory()->withArtifactData($artifacts)->completed()->create(['workflow_job_id' => $prerequisiteJob]);
         $workflowJob           = WorkflowJob::factory()->hasWorkflowAssignments()->create();
         $workflowJobRun        = WorkflowJobRun::factory()->recycle($workflowJob)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
-            'group_by'                   => $groupBy,
-            'include_fields'             => $includeFields,
             'depends_on_workflow_job_id' => $prerequisiteJob,
         ]);
         $workflowJob->dependencies()->save($workflowJobDependency);
@@ -929,7 +898,6 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['name'];
         $prerequisiteJob       = WorkflowJob::factory()->create();
         $prerequisiteJobRun    = WorkflowJobRun::factory()->withArtifactData($artifacts)->completed()->create(['workflow_job_id' => $prerequisiteJob]);
@@ -937,7 +905,6 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $workflowJobRun        = WorkflowJobRun::factory()->recycle($workflowJob)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
             'group_by'                   => $groupBy,
-            'include_fields'             => $includeFields,
             'depends_on_workflow_job_id' => $prerequisiteJob,
         ]);
         $workflowJob->dependencies()->save($workflowJobDependency);
@@ -987,7 +954,6 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts             = $this->getArtifacts();
-        $includeFields         = [];
         $groupBy               = ['name'];
         $prerequisiteJob       = WorkflowJob::factory()->create();
         $prerequisiteJobRun    = WorkflowJobRun::factory()->withArtifactData($artifacts)->completed()->create(['workflow_job_id' => $prerequisiteJob]);
@@ -995,7 +961,6 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $workflowJobRun        = WorkflowJobRun::factory()->recycle($workflowJob)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
             'group_by'                   => $groupBy,
-            'include_fields'             => $includeFields,
             'depends_on_workflow_job_id' => $prerequisiteJob,
         ]);
         $workflowJob->dependencies()->save($workflowJobDependency);

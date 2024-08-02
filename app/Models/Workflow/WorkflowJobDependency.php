@@ -21,8 +21,10 @@ class WorkflowJobDependency extends Model implements AuditableContract
     public function casts(): array
     {
         return [
+            'force_schema'   => 'bool',
             'include_fields' => 'json',
             'group_by'       => 'json',
+            'order_by'       => 'json',
         ];
     }
 

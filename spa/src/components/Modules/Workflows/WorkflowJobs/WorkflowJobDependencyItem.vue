@@ -18,7 +18,7 @@
 					<SelectField
 						v-model="includeFields"
 						class="flex-grow"
-						:options="dependentFields"
+						:options="dependency.depends_on_fields"
 						clearable
 						multiple
 						placeholder="(All Data)"
@@ -30,7 +30,7 @@
 					<SelectField
 						v-model="groupBy"
 						class="flex-grow"
-						:options="dependentFields"
+						:options="dependency.depends_on_fields"
 						clearable
 						multiple
 						placeholder="(No Grouping)"
@@ -47,7 +47,7 @@ import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { WorkflowJobDependency } from "@/types/workflows";
 import { FaSolidScrewdriverWrench as HideConfigureIcon, FaSolidWrench as ShowConfigureIcon } from "danx-icon";
 import { SelectField } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 
 defineEmits(["update", "remove"]);
 const props = defineProps<{
@@ -58,41 +58,4 @@ const props = defineProps<{
 const isEditing = ref(false);
 const includeFields = ref(props.dependency.include_fields || []);
 const groupBy = ref(props.dependency.group_by || []);
-
-/**
- * The list of fields (including nested fields) available amongst all the sample responses for all assigned agents in the job dependencies.
- */
-const dependentFields = computed<string[]>(() => getNestedFieldList(props.dependency.depends_on_response));
-
-/**
- * A flat list of all fields and nested fields expressed in dot notation
- */
-function getNestedFieldList(object) {
-	if (!object) return [];
-	const fields = [];
-	if (Array.isArray(object)) {
-		for (const item of object) {
-			if (typeof item === "object") {
-				fields.push(...getNestedFieldList(item));
-			}
-		}
-	} else {
-		for (const fieldName of Object.keys(object)) {
-			const fieldValue = object[fieldName];
-			fields.push(fieldName);
-			if (Array.isArray(fieldValue)) {
-				for (const item of fieldValue) {
-					if (typeof item === "object") {
-						fields.push(...getNestedFieldList(item).map(nestedField => `${fieldName}.*.${nestedField}`));
-					}
-				}
-			} else if (typeof fieldValue === "object") {
-				for (const nestedField of getNestedFieldList(fieldValue)) {
-					fields.push(`${fieldName}.${nestedField}`);
-				}
-			}
-		}
-	}
-	return [...new Set(fields)];
-}
 </script>
