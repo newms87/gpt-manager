@@ -593,6 +593,73 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEmpty($groups, 'No groups should have been produced since the field does not exist');
     }
 
+    public function test_getArtifactGroups_allowsNonSchemaFields(): void
+    {
+        // Given
+        $artifacts   = [
+            [
+                'name'             => 'Bill',
+                'dob'              => '1987-11-18',
+                'non_schema_field' => 'Hello World',
+            ],
+        ];
+        $schema      = [
+            'name' => 'Dan',
+            'dob'  => '1987-11-18',
+        ];
+        $workflowJob = WorkflowJob::factory()->hasWorkflowAssignments()->create();
+        $agent       = $workflowJob->workflowAssignments()->first()->agent;
+        $agent->forceFill(['response_sample' => $schema])->save();
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'force_schema'               => false,
+            'depends_on_workflow_job_id' => $workflowJob,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertEquals(['default' => $artifacts], $groups, 'The artifact should be unmodified');
+    }
+
+    public function test_getArtifactGroups_forcesOnlySchemaFields(): void
+    {
+        // Given
+        $artifacts   = [
+            [
+                'name'             => 'Bill',
+                'dob'              => '1987-11-18',
+                'non_schema_field' => 'Hello World',
+            ],
+        ];
+        $schema      = [
+            'name' => 'Dan',
+            'dob'  => '1987-11-18',
+        ];
+        $workflowJob = WorkflowJob::factory()->hasWorkflowAssignments()->create();
+        $agent       = $workflowJob->workflowAssignments()->first()->agent;
+        $agent->forceFill(['response_sample' => $schema])->save();
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'force_schema'               => true,
+            'depends_on_workflow_job_id' => $workflowJob,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $this->assertEquals([
+            'default' => [
+                [
+                    'name' => $artifacts[0]['name'],
+                    'dob'  => $artifacts[0]['dob'],
+                ],
+            ],
+        ], $groups, 'The artifact should be unmodified');
+    }
+
     public function test_getArtifactGroups_includeFieldScalarOfObjectInSubArray(): void
     {
         // Given

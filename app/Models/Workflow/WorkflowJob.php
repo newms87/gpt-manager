@@ -95,7 +95,13 @@ class WorkflowJob extends Model implements AuditableContract
      */
     public function getResponseFields(): array
     {
-        return ArrayHelper::getNestedFieldList($this->getResponsePreview());
+        $responses = $this->getResponsePreview();
+        $fields    = [];
+        foreach($responses as $response) {
+            $fields = array_merge($fields, ArrayHelper::getNestedFieldList($response));
+        }
+
+        return array_unique($fields);
     }
 
     public function getTasksPreview(): array
