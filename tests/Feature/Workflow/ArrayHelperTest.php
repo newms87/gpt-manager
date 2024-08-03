@@ -55,7 +55,7 @@ class ArrayHelperTest extends AuthenticatedTestCase
         $this->assertNull($includedData);
     }
 
-    public function test_extractNestedData_nonExistingScalarReturnsNull(): void
+    public function test_extractNestedData_nonExistingScalarReturnsEmpty(): void
     {
         // Given
         $artifact       = ['dob' => '1987-11-18'];
@@ -65,7 +65,20 @@ class ArrayHelperTest extends AuthenticatedTestCase
         $includedData = ArrayHelper::extractNestedData($artifact, $includedFields);
 
         // Then
-        $this->assertEquals(null, $includedData);
+        $this->assertEmpty($includedData);
+    }
+
+    public function test_extractNestedData_nonExistingWithExistingScalarReturnsExistingData(): void
+    {
+        // Given
+        $artifact       = ['name' => 'Dan', 'dob' => '1987-11-18'];
+        $includedFields = ['name', 'non_existing'];
+
+        // When
+        $includedData = ArrayHelper::extractNestedData($artifact, $includedFields);
+
+        // Then
+        $this->assertEquals(['name' => 'Dan'], $includedData);
     }
 
     public function test_extractNestedData_producesIdenticalArtifactWhenIncludedFieldsEmpty(): void
@@ -213,7 +226,7 @@ class ArrayHelperTest extends AuthenticatedTestCase
         $includedData = ArrayHelper::extractNestedData($data, $includedFields);
 
         // Then
-        $this->assertNull($includedData);
+        $this->assertEmpty($includedData);
     }
 
 

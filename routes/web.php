@@ -15,6 +15,9 @@ Route::get('/healthcheck', function () {
     ];
 });
 
+Route::get('/', function () {
+    return view('dashboard');
+})->middleware(['auth']);
 // Dashboard
 Route::get('/dashboard', function () {
     return view('dashboard');

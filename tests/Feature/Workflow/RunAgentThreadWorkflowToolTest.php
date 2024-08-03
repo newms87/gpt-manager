@@ -593,6 +593,25 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEmpty($groups, 'No groups should have been produced since the field does not exist');
     }
 
+    public function test_getArtifactGroups_includeFieldNonExistingWithExistingStillReturnsGroup(): void
+    {
+        // Given
+        $artifacts             = $this->getArtifacts();
+        $includeFields         = ['name', 'non_existing'];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'force_schema'   => true,
+            'include_fields' => $includeFields,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $expected = ['default' => [['name' => 'Dan Newman'], ['name' => 'Mickey Mouse']]];
+        $this->assertEquals($expected, $groups, 'The Group should still have been returned with the existing field');
+    }
+
     public function test_getArtifactGroups_allowsNonSchemaFields(): void
     {
         // Given

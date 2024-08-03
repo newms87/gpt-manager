@@ -38,4 +38,11 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Team::class)->withTimestamps();
     }
+
+    public function delete()
+    {
+        $this->teams()->detach();
+
+        return parent::delete();
+    }
 }
