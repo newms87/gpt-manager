@@ -652,4 +652,31 @@ class ArrayHelperTest extends AuthenticatedTestCase
         $expected = ['name', 'address', 'contacts', 'contacts.*.phone', 'contacts.*.emails', 'contacts.*.jobs', 'contacts.*.jobs.*.title', 'contacts.*.jobs.*.company'];
         $this->assertEquals($expected, $result);
     }
+
+    /*****************************
+     * sortNestedData Tests
+     ****************************/
+
+    public function test_sortNestedData_sortsArrayByScalarField(): void
+    {
+        // Given
+        $data      = [
+            ['name' => 'John', 'age' => 30],
+            ['name' => 'Jane', 'age' => 25],
+            ['name' => 'Alice', 'age' => 35],
+        ];
+        $field     = 'name';
+        $direction = 'asc';
+
+        // When
+        ArrayHelper::sortNestedData($data, $field, $direction);
+
+        // Then
+        $expected = [
+            ['name' => 'Alice', 'age' => 35],
+            ['name' => 'Jane', 'age' => 25],
+            ['name' => 'John', 'age' => 30],
+        ];
+        $this->assertEquals($expected, $data);
+    }
 }

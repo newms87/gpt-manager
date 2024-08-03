@@ -885,6 +885,34 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEquals($expectedArtifact, $ieArtifact, "Should have produced an artifact with the Test Code => IE path");
     }
 
+    public function test_getArtifactGroups_ordersFieldsInAscendingOrder(): void
+    {
+        // Given
+        $artifacts             = [
+            ['name' => 'Mickey'],
+            ['name' => 'Bill'],
+            ['name' => 'Dan'],
+        ];
+        $groupBy               = ['name'];
+        $orderBy               = ['name' => 'name', 'direction' => 'asc'];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'order_by' => $orderBy,
+            'group_by' => $groupBy,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $firstGroup  = array_shift($groups);
+        $secondGroup = array_shift($groups);
+        $thirdGroup  = array_shift($groups);
+        $this->assertEquals([['name' => 'Bill']], $firstGroup, 'The first group should be Bill');
+        $this->assertEquals([['name' => 'Dan']], $secondGroup, 'The second group should be Dan');
+        $this->assertEquals([['name' => 'Mickey']], $thirdGroup, 'The third group should be Mickey');
+    }
+
     public function test_generateArtifactGroupTuples_producesEmptyArrayWhenNoDependencies(): void
     {
         // Given
