@@ -703,6 +703,52 @@ class ArrayHelperTest extends AuthenticatedTestCase
         $this->assertEquals($expected, $data);
     }
 
+    public function test_sortByNestedData_sortsArrayByArrayOfScalarsField(): void
+    {
+        // Given
+        $data      = [
+            ['name' => 'John', 'aliases' => ['Denver', 'Johnny']],
+            ['name' => 'Jane', 'aliases' => ['Alice', 'Janie']],
+            ['name' => 'Alice', 'aliases' => ['Bob', 'Ally']],
+        ];
+        $field     = 'aliases';
+        $direction = 'asc';
+
+        // When
+        ArrayHelper::sortByNestedData($data, $field, $direction);
+
+        // Then
+        $expected = [
+            ['name' => 'Jane', 'aliases' => ['Alice', 'Janie']],
+            ['name' => 'Alice', 'aliases' => ['Bob', 'Ally']],
+            ['name' => 'John', 'aliases' => ['Denver', 'Johnny']],
+        ];
+        $this->assertEquals($expected, $data);
+    }
+
+    public function test_sortByNestedData_sortsArrayByArrayOfNumbers(): void
+    {
+        // Given
+        $data      = [
+            ['name' => 'John', 'pages' => [20]],
+            ['name' => 'Jane', 'pages' => [3]],
+            ['name' => 'Alice', 'pages' => [10]],
+        ];
+        $field     = 'pages';
+        $direction = 'asc';
+
+        // When
+        ArrayHelper::sortByNestedData($data, $field, $direction);
+
+        // Then
+        $expected = [
+            ['name' => 'Jane', 'pages' => [3]],
+            ['name' => 'Alice', 'pages' => [10]],
+            ['name' => 'John', 'pages' => [20]],
+        ];
+        $this->assertEquals($expected, $data);
+    }
+
     public function test_sortByNestedData_sortsArrayByWildcardNestedField(): void
     {
         // Given

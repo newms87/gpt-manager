@@ -913,6 +913,36 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $this->assertEquals([['name' => 'Mickey']], $thirdGroup, 'The third group should be Mickey');
     }
 
+    public function test_getArtifactGroups_ordersPagesInAscendingOrderWithoutGroupBy(): void
+    {
+        // Given
+        $artifacts             = [
+            ['name' => 'Mickey', 'pages' => [3]],
+            ['name' => 'Bill', 'pages' => [1]],
+            ['name' => 'Dan', 'pages' => [4]],
+            ['name' => 'Aaron', 'pages' => [2]],
+        ];
+        $orderBy               = ['name' => 'pages', 'direction' => 'asc'];
+        $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
+        $workflowJobDependency = WorkflowJobDependency::factory()->create([
+            'order_by' => $orderBy,
+        ]);
+
+        // When
+        $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
+
+        // Then
+        $defaultGroup = array_shift($groups);
+        $firstGroup   = array_shift($defaultGroup);
+        $secondGroup  = array_shift($defaultGroup);
+        $thirdGroup   = array_shift($defaultGroup);
+        $fourthGroup  = array_shift($defaultGroup);
+        $this->assertEquals(['name' => 'Bill', 'pages' => [1]], $firstGroup, 'The first group should be Bill');
+        $this->assertEquals(['name' => 'Aaron', 'pages' => [2]], $secondGroup, 'The second group should be Aaron');
+        $this->assertEquals(['name' => 'Mickey', 'pages' => [3]], $thirdGroup, 'The third group should be Mickey');
+        $this->assertEquals(['name' => 'Dan', 'pages' => [4]], $fourthGroup, 'The fourth group should be Dan');
+    }
+
     public function test_generateArtifactGroupTuples_producesEmptyArrayWhenNoDependencies(): void
     {
         // Given

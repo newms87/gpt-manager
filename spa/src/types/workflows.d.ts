@@ -13,7 +13,7 @@ export interface Workflow extends ActionTargetItem {
 
 export interface OrderByDependency {
 	name: string;
-	order: "asc" | "desc";
+	direction: "asc" | "desc";
 }
 
 export interface WorkflowJobDependency {
@@ -25,7 +25,7 @@ export interface WorkflowJobDependency {
 	force_schema?: boolean;
 	include_fields?: string[];
 	group_by?: string[];
-	order_by?: OrderByDependency[];
+	order_by?: OrderByDependency;
 }
 
 export interface WorkflowJob extends ActionTargetItem {

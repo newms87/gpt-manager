@@ -63,6 +63,8 @@ trait ResolvesDependencyArtifactsTrait
      */
     public function getArtifactGroups(WorkflowJobDependency $dependency, WorkflowJobRun $workflowJobRun): array
     {
+        Log::debug("Building artifact groups for {$dependency->dependsOn->name} => {$dependency->workflowJob->name}");
+
         $groups = [];
 
         $schemaFields = $dependency->include_fields ?: $dependency->dependsOn->getResponseFields();
@@ -114,7 +116,7 @@ trait ResolvesDependencyArtifactsTrait
                 foreach($itemSet as $itemIndex => $itemValue) {
                     $resolvedData = ArrayHelper::filterNestedData($resolvedData, $itemIndex, $itemValue);
                     if (!$resolvedData) {
-                        Log::debug("Artifact did not have data for $itemIndex. Omitting record " . $this->generateGroupKey($itemValue));
+                        Log::debug("Artifact did not have data for $itemIndex. Omitting record " . (is_array($itemValue) ? $this->generateGroupKey($itemValue) : $itemValue));
                     }
                 }
 
@@ -130,7 +132,18 @@ trait ResolvesDependencyArtifactsTrait
 
         // Order the groups by the order_by clause
         if ($dependency->order_by) {
-            ArrayHelper::sortByNestedData($groups, $dependency->order_by['name'], $dependency->order_by['direction']);
+            Log::debug("Ordering groups by {$dependency->order_by['name']} {$dependency->order_by['direction']}");
+
+            // First sort each group by the order_by clause
+            ArrayHelper::sortByNestedData($groups, '*.' . $dependency->order_by['name'], $dependency->order_by['direction']);
+
+            // Then sort the items in each group by the order clause
+            foreach($groups as &$group) {
+                // The groups here are nested in an array of entries where each entry is a group. The group is an array of objects. For that reason we need the *. prefix
+                // to sort by the values of the objects in the groups.
+                ArrayHelper::sortByNestedData($group, $dependency->order_by['name'], $dependency->order_by['direction']);
+            }
+            unset($group);
         }
 
         return $groups;

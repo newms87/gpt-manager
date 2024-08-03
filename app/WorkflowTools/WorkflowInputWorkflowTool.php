@@ -33,12 +33,12 @@ class WorkflowInputWorkflowTool extends WorkflowTool
                 'content' => 'Example content',
                 'files'   => [
                     [
-                        'name' => 'example.pdf',
-                        'url'  => 'https://example.com/example.pdf',
+                        'filename' => 'example.pdf',
+                        'url'      => 'https://example.com/example.pdf',
                     ],
                     [
-                        'name' => 'example2.pdf',
-                        'url'  => 'https://example.com/example2.pdf',
+                        'filename' => 'example2.pdf',
+                        'url'      => 'https://example.com/example2.pdf',
                     ],
                 ],
             ],

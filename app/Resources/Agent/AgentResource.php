@@ -47,8 +47,8 @@ class AgentResource extends ActionResource
      */
     public static function details(Model $model): array
     {
-        $threads     = $model->threads()->orderByDesc('updated_at')->with('messages.storedFiles.transcodes')->get();
-        $assignments = $model->assignments()->with('workflowJob.workflow')->get();
+        $threads     = $model->threads()->orderByDesc('updated_at')->with('messages.storedFiles.transcodes')->limit(20)->get();
+        $assignments = $model->assignments()->with('workflowJob.workflow')->limit(20)->get();
 
         return static::make($model, [
             'threads'     => ThreadResource::collection($threads, fn(Thread $thread) => [
