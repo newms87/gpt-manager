@@ -654,10 +654,10 @@ class ArrayHelperTest extends AuthenticatedTestCase
     }
 
     /*****************************
-     * sortNestedData Tests
+     * sortByNestedData Tests
      ****************************/
 
-    public function test_sortNestedData_sortsArrayByScalarField(): void
+    public function test_sortByNestedData_sortsArrayByScalarField(): void
     {
         // Given
         $data      = [
@@ -669,13 +669,170 @@ class ArrayHelperTest extends AuthenticatedTestCase
         $direction = 'asc';
 
         // When
-        ArrayHelper::sortNestedData($data, $field, $direction);
+        ArrayHelper::sortByNestedData($data, $field, $direction);
 
         // Then
         $expected = [
             ['name' => 'Alice', 'age' => 35],
             ['name' => 'Jane', 'age' => 25],
             ['name' => 'John', 'age' => 30],
+        ];
+        $this->assertEquals($expected, $data);
+    }
+
+    public function test_sortByNestedData_sortsArrayByNestedField(): void
+    {
+        // Given
+        $data      = [
+            ['name' => 'John', 'address' => ['zip_code' => '12345']],
+            ['name' => 'Jane', 'address' => ['zip_code' => '54321']],
+            ['name' => 'Alice', 'address' => ['zip_code' => '11111']],
+        ];
+        $field     = 'address.zip_code';
+        $direction = 'asc';
+
+        // When
+        ArrayHelper::sortByNestedData($data, $field, $direction);
+
+        // Then
+        $expected = [
+            ['name' => 'Alice', 'address' => ['zip_code' => '11111']],
+            ['name' => 'John', 'address' => ['zip_code' => '12345']],
+            ['name' => 'Jane', 'address' => ['zip_code' => '54321']],
+        ];
+        $this->assertEquals($expected, $data);
+    }
+
+    public function test_sortByNestedData_sortsArrayByWildcardNestedField(): void
+    {
+        // Given
+        $data      = [
+            [
+                'name' => 'John', 'job' => [
+                ['title' => 'Developer', 'department' => ['name' => 'IT']],
+                ['title' => 'Manager', 'department' => ['name' => 'HR']],
+            ],
+            ],
+            [
+                'name' => 'Jane', 'job' => [
+                ['title' => 'Designer', 'department' => ['name' => 'A+ Marketing']],
+                ['title' => 'Coordinator', 'department' => ['name' => 'Sales']],
+            ],
+            ],
+        ];
+        $field     = 'job.*.department.name';
+        $direction = 'asc';
+
+        // When
+        ArrayHelper::sortByNestedData($data, $field, $direction);
+
+        // Then
+        $expected = [
+            [
+                'name' => 'Jane',
+                'job'  => [
+                    ['title' => 'Designer', 'department' => ['name' => 'A+ Marketing']],
+                    ['title' => 'Coordinator', 'department' => ['name' => 'Sales']],
+                ],
+            ],
+            [
+                'name' => 'John',
+                'job'  => [
+                    ['title' => 'Developer', 'department' => ['name' => 'IT']],
+                    ['title' => 'Manager', 'department' => ['name' => 'HR']],
+                ],
+            ],
+        ];
+        $this->assertEquals($expected, $data);
+    }
+
+    public function test_sortByNestedData_sortsArrayByMultipleWildcardNestedField(): void
+    {
+        // Given
+        $data      = [
+            [
+                'name' => 'John', 'job' => [
+                [
+                    'title' => 'Developer',
+                    'boss'  => [
+                        ['name' => 'Alice'],
+                        ['name' => 'Bob'],
+                    ],
+                ],
+                [
+                    'title' => 'Manager',
+                    'boss'  => [
+                        ['name' => 'Charlie'],
+                        ['name' => 'David'],
+                    ],
+                ],
+            ],
+            ],
+            [
+                'name' => 'Jane', 'job' => [
+                [
+                    'title' => 'Designer',
+                    'boss'  => [
+                        ['name' => 'Eve'],
+                        ['name' => 'Frank'],
+                    ],
+                ],
+                [
+                    'title' => 'Coordinator',
+                    'boss'  => [
+                        ['name' => 'Grace'],
+                        ['name' => 'Henry'],
+                    ],
+                ],
+            ],
+            ],
+        ];
+        $field     = 'job.*.boss.*.name';
+        $direction = 'desc';
+
+        // When
+        ArrayHelper::sortByNestedData($data, $field, $direction);
+
+        // Then
+        $expected = [
+            [
+                'name' => 'Jane',
+                'job'  => [
+                    [
+                        'title' => 'Designer',
+                        'boss'  => [
+                            ['name' => 'Eve'],
+                            ['name' => 'Frank'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Coordinator',
+                        'boss'  => [
+                            ['name' => 'Grace'],
+                            ['name' => 'Henry'],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'name' => 'John',
+                'job'  => [
+                    [
+                        'title' => 'Developer',
+                        'boss'  => [
+                            ['name' => 'Alice'],
+                            ['name' => 'Bob'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Manager',
+                        'boss'  => [
+                            ['name' => 'Charlie'],
+                            ['name' => 'David'],
+                        ],
+                    ],
+                ],
+            ],
         ];
         $this->assertEquals($expected, $data);
     }

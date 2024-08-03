@@ -130,7 +130,7 @@ trait ResolvesDependencyArtifactsTrait
 
         // Order the groups by the order_by clause
         if ($dependency->order_by) {
-            ArrayHelper::sortNestedData($groups, $dependency->order_by['name'], $dependency->order_by['direction']);
+            ArrayHelper::sortByNestedData($groups, $dependency->order_by['name'], $dependency->order_by['direction']);
         }
 
         return $groups;
