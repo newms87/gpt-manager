@@ -11,11 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
-use Newms87\Danx\Traits\CountableTrait;
 
 class Thread extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes, CountableTrait;
+    use HasFactory, AuditableTrait, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -25,10 +24,6 @@ class Thread extends Model implements AuditableContract
     ];
 
     protected array $usage = [];
-
-    public array $relatedCounters = [
-        Agent::class => 'threads_count',
-    ];
 
     public function team(): BelongsTo|Team
     {

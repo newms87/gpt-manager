@@ -8,15 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
-use Newms87\Danx\Traits\CountableTrait;
 
 class WorkflowAssignment extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes, AuditableTrait, CountableTrait;
-
-    public array $relatedCounters = [
-        Agent::class => 'assignments_count',
-    ];
+    use HasFactory, SoftDeletes, AuditableTrait;
 
     protected $guarded = [
         'id',

@@ -17,10 +17,11 @@ use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class Agent extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -33,6 +34,11 @@ class Agent extends Model implements AuditableContract
         'response_notes',
         'response_schema',
         'tools',
+    ];
+
+    public array $relationCounters = [
+        Thread::class             => ['threads' => 'threads_count'],
+        WorkflowAssignment::class => ['assignments' => 'assignments_count'],
     ];
 
     public function casts(): array

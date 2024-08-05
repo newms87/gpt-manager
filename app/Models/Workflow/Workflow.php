@@ -11,16 +11,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class Workflow extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
 
     protected $guarded = [
         'id',
         'created_at',
         'updated_at',
         'deleted_at',
+    ];
+
+    public array $relationCounters = [
+        WorkflowJob::class => ['workflowJobs' => 'jobs_count'],
+        WorkflowRun::class => ['workflowRuns' => 'runs_count'],
     ];
 
     public function team(): BelongsTo|Team
@@ -62,7 +68,7 @@ class Workflow extends Model implements AuditableContract
         $this->workflowJobs()->each(function (WorkflowJob $workflowJob) {
             $workflowJob->delete();
         });
-        
+
         return parent::delete();
     }
 

@@ -16,11 +16,11 @@ use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\AuditableTrait;
-use Newms87\Danx\Traits\CountableTrait;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class WorkflowInput extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasObjectTags, SoftDeletes, CountableTrait;
+    use HasFactory, AuditableTrait, HasObjectTags, SoftDeletes, HasRelationCountersTrait;
 
     protected $fillable = [
         'name',
@@ -28,8 +28,8 @@ class WorkflowInput extends Model implements AuditableContract
         'content',
     ];
 
-    public array $relatedCounters = [
-        ContentSource::class => 'workflow_inputs_count',
+    public array $relationCounters = [
+        WorkflowRun::class => ['workflowRuns' => 'workflow_runs_count'],
     ];
 
     public function casts()

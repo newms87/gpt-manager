@@ -10,11 +10,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Contracts\ComputedStatusContract;
 use Newms87\Danx\Traits\AuditableTrait;
-use Newms87\Danx\Traits\CountableTrait;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class WorkflowRun extends Model implements AuditableContract, ComputedStatusContract
 {
-    use HasFactory, SoftDeletes, AuditableTrait, CountableTrait;
+    use HasFactory, SoftDeletes, AuditableTrait, HasRelationCountersTrait;
 
     protected $guarded = [
         'id',
@@ -23,9 +23,9 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
         'deleted_at',
     ];
 
-    public array $relatedCounters = [
-        Workflow::class      => 'runs_count',
-        WorkflowInput::class => 'workflow_runs_count',
+    public array $relationCounters = [
+        Artifact::class       => ['artifacts' => 'artifacts_count'],
+        WorkflowJobRun::class => ['workflowJobRuns' => 'job_runs_count'],
     ];
 
     const string

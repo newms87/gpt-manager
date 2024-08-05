@@ -11,10 +11,11 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class ContentSource extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
 
     const string
         TYPE_API = 'api',
@@ -28,6 +29,10 @@ class ContentSource extends Model implements AuditableContract
         'per_page',
         'last_checkpoint',
         'polling_interval',
+    ];
+
+    public array $relationCounters = [
+        WorkflowInput::class => ['workflowInputs' => 'workflow_inputs_count'],
     ];
 
     public function casts(): array
