@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Models\Job\JobDispatch;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -17,5 +19,11 @@ class EventServiceProvider extends ServiceProvider
         JobDispatch::creating(function (JobDispatch $jobDispatch) {
             $jobDispatch->data = ['team_id' => team()?->id];
         });
+
+        $modelsWithTrait = ModelHelper::getModelsWithTrait(HasRelationCountersTrait::class);
+
+        foreach($modelsWithTrait as $model) {
+            $model::registerRelationshipCounters();
+        }
     }
 }
