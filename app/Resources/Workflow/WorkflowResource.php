@@ -2,21 +2,12 @@
 
 namespace App\Resources\Workflow;
 
-use App\Models\Agent\Message;
-use App\Models\Workflow\Artifact;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowAssignment;
 use App\Models\Workflow\WorkflowJob;
-use App\Models\Workflow\WorkflowJobRun;
-use App\Models\Workflow\WorkflowRun;
-use App\Models\Workflow\WorkflowTask;
 use App\Resources\Agent\AgentResource;
-use App\Resources\Agent\MessageResource;
-use App\Resources\Agent\ThreadResource;
 use Illuminate\Database\Eloquent\Model;
-use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Resources\ActionResource;
-use Newms87\Danx\Resources\StoredFileResource;
 
 class WorkflowResource extends ActionResource
 {
@@ -52,28 +43,7 @@ class WorkflowResource extends ActionResource
                 ]),
             ]),
 
-            // TODO: Refactor this to query only a single Workflow Run when needed (see WorkflowInputResource)
-            'runs' => WorkflowRunResource::collection($runs, fn(WorkflowRun $workflowRun) => [
-                'artifacts'       => ArtifactResource::collection($workflowRun->artifacts, fn(Artifact $artifact) => [
-                    'content' => $artifact->content,
-                    'data'    => $artifact->data,
-                ]),
-                'workflowJobRuns' => WorkflowJobRunResource::collection($workflowRun->sortedWorkflowJobRuns, fn(WorkflowJobRun $workflowJobRun) => [
-                    'depth'       => $workflowJobRun->workflowJob?->dependency_level,
-                    'workflowJob' => WorkflowJobResource::make($workflowJobRun->workflowJob),
-                    'tasks'       => WorkflowTaskResource::collection($workflowJobRun->tasks, fn(WorkflowTask $task) => [
-                        'audit_request_id' => $task->jobDispatch?->runningAuditRequest?->id,
-                        'logs'             => $task->jobDispatch?->runningAuditRequest?->logs,
-                        'thread'           => ThreadResource::make($task->thread, [
-                            'messages' => MessageResource::collection($task->thread?->messages, fn(Message $message) => [
-                                'files' => StoredFileResource::collection($message->storedFiles, fn(StoredFile $file) => [
-                                    'transcodes' => StoredFileResource::collection($file->transcodes),
-                                ]),
-                            ]),
-                        ]),
-                    ]),
-                ]),
-            ]),
+            'runs' => WorkflowRunResource::collection($runs),
         ]);
     }
 }

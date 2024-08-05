@@ -12,13 +12,15 @@
 			</div>
 			<ShowHideButton
 				v-model="showArtifacts"
-				:label="artifactCount + ' Artifacts'"
+				:label="workflowRun.artifacts_count + ' Artifacts'"
 				class="bg-sky-800 text-sky-200 mx-2"
+				@show="WorkflowRunRoutes.relation(props.workflowRun, 'artifacts')"
 			/>
 			<ShowHideButton
 				v-model="showJobs"
-				:label="jobCount + ' Jobs'"
+				:label="workflowRun.job_runs_count + ' Jobs'"
 				class="bg-slate-600 text-slate-200 mx-2"
+				@show="WorkflowRunRoutes.relation(props.workflowRun, 'workflowJobRuns')"
 			/>
 			<div class="mx-2">
 				<ElapsedTimePill
@@ -46,24 +48,36 @@
 				/>
 			</div>
 		</div>
-		<div class="flex items-stretch">
+		<div class="">
 			<div v-if="showArtifacts" class="p-3">
-				<ArtifactCard
-					v-for="artifact in workflowRun.artifacts"
-					:key="artifact.id"
-					:artifact="artifact"
-					class="my-3"
-				/>
+				<ListLoadingContainer
+					:loading="!workflowRun.artifacts"
+					:empty="workflowRun.artifacts_count === 0"
+					empty-text="No artifacts have been created."
+				>
+					<ArtifactCard
+						v-for="artifact in workflowRun.artifacts"
+						:key="artifact.id"
+						:artifact="artifact"
+						class="my-3"
+					/>
+				</ListLoadingContainer>
 			</div>
 		</div>
 		<div v-if="showJobs" class="p-3">
-			<WorkflowJobRunCard
-				v-for="job in workflowRun.workflowJobRuns"
-				:key="job.id"
-				:job-run="job"
-				class="mt-3"
-				:workflow-run="workflowRun"
-			/>
+			<ListLoadingContainer
+				:loading="!workflowRun.workflowJobRuns"
+				:empty="workflowRun.job_runs_count === 0"
+				empty-text="No job runs have been created."
+			>
+				<WorkflowJobRunCard
+					v-for="job in workflowRun.workflowJobRuns"
+					:key="job.id"
+					:job-run="job"
+					class="mt-3"
+					:workflow-run="workflowRun"
+				/>
+			</ListLoadingContainer>
 		</div>
 	</QCard>
 </template>
@@ -78,18 +92,17 @@ import WorkflowJobRunCard from "@/components/Modules/Workflows/WorkflowRuns/Work
 import { ShowHideButton } from "@/components/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
+import ListLoadingContainer from "@/components/Shared/Containers/ListLoadingContainer";
 import { WorkflowRunRoutes } from "@/routes/workflowRoutes";
 import { WorkflowRun } from "@/types/workflows";
 import { storeObject } from "quasar-ui-danx";
-import { computed, onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 
 defineEmits(["remove"]);
 const props = defineProps<{
 	workflowRun: WorkflowRun;
 }>();
 
-const artifactCount = computed(() => props.workflowRun.artifacts?.length);
-const jobCount = computed(() => props.workflowRun.workflowJobRuns?.length);
 const showArtifacts = ref(false);
 const showJobs = ref(false);
 

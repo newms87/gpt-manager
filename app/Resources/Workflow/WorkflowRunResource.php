@@ -27,6 +27,8 @@ class WorkflowRunResource extends ActionResource
             'workflow_run_name' => $model->workflow?->name . ' (' . $model->id . ')',
             'input_name'        => $model->workflowInput?->name,
             'status'            => $model->status,
+            'job_runs_count'    => $model->job_runs_count,
+            'artifacts_count'   => $model->artifacts_count,
             'started_at'        => $model->started_at,
             'completed_at'      => $model->completed_at,
             'failed_at'         => $model->failed_at,
@@ -44,14 +46,28 @@ class WorkflowRunResource extends ActionResource
      */
     public static function details(Model $model): array
     {
-        $jobRuns = $model->sortedWorkflowJobRuns()->with(['workflowJob', 'tasks.jobDispatch.runningAuditRequest', 'tasks.thread.messages.storedFiles.transcodes'])->get();
-
         return static::make($model, [
-            'workflowInput'   => WorkflowInputResource::make($model->workflowInput),
-            'artifacts'       => ArtifactResource::collection($model->artifacts, fn(Artifact $artifact) => [
+            'workflowInput' => WorkflowInputResource::make($model->workflowInput),
+            ...static::artifacts($model),
+            ...static::workflowJobRuns($model),
+        ]);
+    }
+
+    public static function artifacts(WorkflowRun $workflowRun): array
+    {
+        return [
+            'artifacts' => ArtifactResource::collection($workflowRun->artifacts, fn(Artifact $artifact) => [
                 'content' => $artifact->content,
                 'data'    => $artifact->data,
             ]),
+        ];
+    }
+
+    public static function workflowJobRuns(WorkflowRun $workflowRun): array
+    {
+        $jobRuns = $workflowRun->sortedWorkflowJobRuns()->with(['workflowJob', 'tasks.jobDispatch.runningAuditRequest', 'tasks.thread.messages.storedFiles.transcodes'])->get();
+
+        return [
             'workflowJobRuns' => WorkflowJobRunResource::collection($jobRuns, fn(WorkflowJobRun $workflowJobRun) => [
                 'depth'       => $workflowJobRun->workflowJob?->dependency_level,
                 'workflowJob' => WorkflowJobResource::make($workflowJobRun->workflowJob),
@@ -67,6 +83,6 @@ class WorkflowRunResource extends ActionResource
                     ]),
                 ]),
             ]),
-        ]);
+        ];
     }
 }

@@ -26,6 +26,7 @@ export interface Props {
 	tooltip?: string;
 }
 
+const emit = defineEmits(["show", "hide"]);
 const isShowing = defineModel<boolean>();
 const props = withDefaults(defineProps<Props>(), {
 	name: "",
@@ -51,13 +52,20 @@ if (props.name) {
 function onToggle() {
 	isShowing.value = !isShowing.value;
 
-	if (props.name) {
-		// NOTE: use nextTick to ensure the value is updated before saving (if the parent does not pass a value for modelValue, this can cause a desync)
-		nextTick(() => {
+
+	// NOTE: use nextTick to ensure the value is updated before saving (if the parent does not pass a value for modelValue, this can cause a desync)
+	nextTick(() => {
+		if (isShowing.value) {
+			emit("show");
+		} else {
+			emit("hide");
+		}
+
+		if (props.name) {
 			settings[props.name] = isShowing.value;
 			setItem(SETTINGS_KEY, { ...getItem(SETTINGS_KEY, {}), [props.name]: isShowing.value });
-		});
-	}
+		}
+	});
 }
 
 </script>

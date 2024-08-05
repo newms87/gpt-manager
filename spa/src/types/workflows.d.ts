@@ -83,6 +83,8 @@ export interface WorkflowRun extends ActionTargetItem {
 	workflow_run_name: string;
 	input_name: string;
 	status: string;
+	artifacts_count: number;
+	job_runs_count: number;
 	completed_at: string;
 	started_at: string;
 	failed_at: string;
