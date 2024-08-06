@@ -1,0 +1,78 @@
+tables:
+  objects:
+    fields:
+      id: true
+      ref: true
+      type:
+        type: string
+        length: 50
+      name:
+        type: string
+        length: 255
+      description:
+        type: text
+        nullable: true
+      url:
+        type: string
+        length: 2048
+        nullable: true
+      meta:
+        type: json
+        nullable: true
+      timestamps: true
+    indexes:
+      - name: unique_object_type_name
+        columns: [ type, name ]
+        unique: true
+
+  object_relationships:
+    fields:
+      id: true
+      relationship_name:
+        type: string
+        length: 255
+      object_id:
+        type: foreignId
+        foreign_key: objects.id
+      related_object_id:
+        type: foreignId
+        foreign_key: objects.id
+      timestamps: true
+    indexes:
+      - name: unique_related_object_field
+        columns: [ object_id, related_object_id ]
+        unique: true
+
+  object_attributes:
+    fields:
+      id: true
+      object_id:
+        type: foreignId
+        foreign_key: objects.id
+      name:
+        type: string
+        length: 255
+      date:
+        type: datetime
+        nullable: true
+      text_value:
+        type: text
+        nullable: true
+      json_value:
+        type: json
+        nullable: true
+      message_id:
+        type: foreignId
+        foreign_key: messages.id
+        foreign_prefix: ''
+        nullable: true
+      source_stored_file_id:
+        type: foreignUuid
+        foreign_key: stored_files.id
+        foreign_prefix: ''
+        nullable: true
+      timestamps: true
+    indexes:
+      - name: unique_object_attribute_name_field
+        columns: [ object_id, name ]
+        unique: true

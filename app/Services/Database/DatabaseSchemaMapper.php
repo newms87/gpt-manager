@@ -100,7 +100,7 @@ class DatabaseSchemaMapper
                     $column->first();
                 }
             }
-            
+
             $previousFieldName = $fieldName;
         }
 
@@ -151,18 +151,24 @@ class DatabaseSchemaMapper
         if (!empty($definition['default'])) {
             $column->default($definition['default']);
         }
-        if ($definition['type'] === 'foreignId') {
-            $foreignKey = $definition['foreign_key'] ?? null;
+        if (in_array($definition['type'], ['foreignId', 'foreignUuid'])) {
+            $foreignKey    = $definition['foreign_key'] ?? null;
+            $foreignPrefix = $definition['foreign_prefix'] ?? null;
+            $foreignType   = $definition['foreign_type'] ?? null;
+
             if (!$foreignKey) {
                 throw new Exception("foreign_key is required when setting foreignId type");
             }
 
             [$foreignTable, $foreignColumn] = explode('.', $foreignKey);
-            $foreignTable = $this->schema->realTableName($foreignTable);
+            $foreignTable = $foreignPrefix === null ? $this->schema->realTableName($foreignTable) : $foreignPrefix . $foreignTable;
 
             $indexName = 'fk_' . $table->getTable() . '_' . $name;
 
             if (!$this->hasForeignKey($table, $indexName)) {
+                if ($foreignType) {
+                    $column->type($foreignType);
+                }
                 $column->constrained($foreignTable, $foreignColumn, $indexName);
             }
         }

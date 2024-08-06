@@ -3,31 +3,30 @@ entities:
     name: "Actos: Bladder Cancer"
     relations:
       - relationship_name: Product
-        cardinality: 1
         type: Product
         name: Actos
       - relationship_name: Injury
         type: Injury
-        cardinality: 1
         name: Bladder Cancer
     attributes:
       - name: Severity Level
         value: 5
+        source_url: "https://www.fda.gov/drugs/warning-actos-risk-bladder-cancer"
       - name: Hospitalization
-        value: Yes
+        value: true
+        source_url: "https://www.fda.gov/drugs/warning-actos-risk-bladder-cancer"
       - name: Death
-        value: Yes
+        value: true
+        source_url: "https://www.fda.gov/drugs/warning-actos-risk-bladder-cancer"
   - type: Product
     name: Actos
     description: "Actos is a prescription medication used to treat type 2 diabetes."
     url: "https://www.actos.com/"
     relations:
       - relationship_name: Manufacturer
-        cardinality: 1
         type: Company
         name: Takeda Pharmaceuticals
       - relationship_name: Drug
-        cardinality: 1
         type: Drug
         name: Pioglitazone
     attributes:
@@ -70,7 +69,6 @@ entities:
     url: "https://patents.google.com/patent/US7135485B2/en"
     relations:
       - relationship_name: Drug
-        cardinality: 1
         type: Drug
         name: Actos
     attributes:
@@ -90,7 +88,6 @@ entities:
     url: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3488273/"
     relations:
       - relationship_name: Drug
-        cardinality: 1
         type: Drug
         name: Pioglitazone
     attributes:
