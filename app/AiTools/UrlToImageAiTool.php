@@ -88,25 +88,49 @@ class UrlToImageAiTool implements AiToolContract
     {
         Log::debug("Taking screenshot: $url");
 
-        $filepath   = "url-to-screenshot/" . md5($url) . ".jpg";
-        $storedFile = StoredFile::firstWhere('filepath', $filepath);
+        // Check for a previously cached web stored file, which might have a screenshot already
+        $storedWebFile = StoredFile::where('disk', 'web')->where('url', $url)->first();
 
-        if (!$storedFile) {
-            Log::debug("No Saved screenshot, taking new screenshot");
-            $storedUrl = ScreenshotOneApi::make()->take($url, $filepath);
-
-            $storedFile = StoredFile::create([
-                'disk'     => 's3',
-                'filename' => basename($filepath),
-                'filepath' => $filepath,
-                'mime'     => FileHelper::getMimeFromExtension($filepath),
-                'url'      => $storedUrl,
-                'size'     => FileHelper::getRemoteFileSize($storedUrl),
+        // Create the HTML stored file for future reference
+        if (!$storedWebFile) {
+            $storedWebFile = StoredFile::create([
+                'disk'     => 'web',
+                'filename' => basename($url),
+                'filepath' => $url,
+                'mime'     => StoredFile::MIME_HTML,
+                'url'      => $url,
+                'size'     => FileHelper::getRemoteFileSize($url),
             ]);
         }
 
-        app(TranscodeFileService::class)->transcode(TranscodeFileService::TRANSCODE_IMAGE_TO_VERTICAL_CHUNKS, $storedFile);
+        // Check for the screenshot of this web page
+        $storedImageFile = $storedWebFile->transcodes()->where('transcode_name', UrlToImageAiTool::NAME)->first();
 
-        return $storedFile;
+        if ($storedImageFile) {
+            Log::debug("Found existing Url to Image transcode: $storedImageFile->id");
+        } else {
+            Log::debug("Taking new screenshot");
+
+            $filepath  = "url-to-screenshot/" . md5($url) . ".jpg";
+            $storedUrl = ScreenshotOneApi::make()->take($url, $filepath);
+
+            // Store the screenshot and associate it with the web page file so it is cached in the DB for future uses
+            $storedImageFile = StoredFile::create([
+                'disk'                    => 's3',
+                'filename'                => basename($filepath),
+                'filepath'                => $filepath,
+                'mime'                    => StoredFile::MIME_JPEG,
+                'url'                     => $storedUrl,
+                'size'                    => FileHelper::getRemoteFileSize($storedUrl),
+                'original_stored_file_id' => $storedWebFile->id,
+                'transcode_name'          => UrlToImageAiTool::NAME,
+            ]);
+        }
+
+        // Transcode the image into vertical chunks for easier processing (will only transcode once if not already done)
+        app(TranscodeFileService::class)->transcode(TranscodeFileService::TRANSCODE_IMAGE_TO_VERTICAL_CHUNKS, $storedImageFile);
+
+        // Return the Image file (not the web file) as this is asset of interest
+        return $storedImageFile;
     }
 }
