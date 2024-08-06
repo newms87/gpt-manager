@@ -80,7 +80,7 @@ export interface WorkflowAssignment extends ActionTargetItem {
 export interface WorkflowRun extends ActionTargetItem {
 	id: number;
 	workflow_id: number;
-	workflow_run_name: string;
+	workflow_name: string;
 	input_name: string;
 	status: string;
 	artifacts_count: number;

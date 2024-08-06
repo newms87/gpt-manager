@@ -38,7 +38,13 @@
 			:key="workflowRun.id"
 			:workflow-run="workflowRun"
 			class="mb-2"
-		/>
+		>
+			<template #name>
+				<div v-if="workflowRun.input_name" class="px-4 py-1 bg-sky-800 text-sky-200 ml-4 rounded-full">
+					{{ workflowRun.input_name }}
+				</div>
+			</template>
+		</WorkflowRunCard>
 	</div>
 </template>
 <script setup lang="ts">

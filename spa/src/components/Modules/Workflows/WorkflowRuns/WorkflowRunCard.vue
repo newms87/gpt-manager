@@ -2,13 +2,10 @@
 	<QCard class="bg-slate-800 text-slate-300 rounded overflow-hidden">
 		<div class="flex items-center justify-between">
 			<div class="flex-grow py-4 px-3 flex items-center flex-nowrap">
-				<a @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
-					{{ workflowRun.workflow_run_name }}
-				</a>
-
-				<div v-if="workflowRun.input_name" class="px-4 py-1 bg-sky-800 text-sky-200 ml-4 rounded-full">
-					{{ workflowRun.input_name }}
+				<div class="text-slate-400">
+					ID: {{ workflowRun.id }}
 				</div>
+				<slot name="name" />
 			</div>
 			<ShowHideButton
 				v-model="showArtifacts"

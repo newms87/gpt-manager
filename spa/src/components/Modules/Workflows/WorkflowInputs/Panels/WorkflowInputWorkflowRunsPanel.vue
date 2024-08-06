@@ -27,7 +27,13 @@
 			:workflow-run="workflowRun"
 			class="mb-4"
 			@remove="WorkflowInputController.getActiveItemDetails"
-		/>
+		>
+			<template #name>
+				<a @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
+					{{ workflowRun.workflow_name }}
+				</a>
+			</template>
+		</WorkflowRunCard>
 	</div>
 </template>
 <script setup lang="ts">
