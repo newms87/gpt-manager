@@ -4,18 +4,27 @@ namespace App\Services\Database;
 
 use Exception;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Builder;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSchemaMapper
 {
-    protected SchemaManager $schema;
+    protected SchemaManager $schemaManager;
+    protected Builder       $schema;
+
+    public function __construct($database = null, $config = null)
+    {
+        $database     = $database ?: config('database.default');
+        $config       = $config ?: config('database.connections.' . $database);
+        $this->schema = DB::connectUsing($database . '-builder', $config)->getSchemaBuilder();
+    }
 
     public function map($prefix, $schemaFile)
     {
-        $this->schema = new SchemaManager($prefix, $schemaFile);
+        $this->schemaManager = new SchemaManager($prefix, $schemaFile);
 
-        foreach($this->schema->getTables() as $tableName => $tableSchema) {
-            if (Schema::hasTable($this->schema->realTableName($tableName))) {
+        foreach($this->schemaManager->getTables() as $tableName => $tableSchema) {
+            if ($this->schema->hasTable($this->schemaManager->realTableName($tableName))) {
                 $this->updateTable($tableName, $tableSchema);
             } else {
                 $this->createTable($tableName, $tableSchema);
@@ -25,7 +34,7 @@ class DatabaseSchemaMapper
 
     protected function createTable($tableName, $tableSchema)
     {
-        Schema::create($this->schema->realTableName($tableName), function (Blueprint $table) use ($tableSchema) {
+        $this->schema->create($this->schemaManager->realTableName($tableName), function (Blueprint $table) use ($tableSchema) {
             $fields  = $tableSchema['fields'] ?? [];
             $indexes = $tableSchema['indexes'] ?? [];
 
@@ -36,7 +45,7 @@ class DatabaseSchemaMapper
 
     protected function updateTable($tableName, $tableSchema)
     {
-        Schema::table($this->schema->realTableName($tableName), function (Blueprint $table) use ($tableSchema) {
+        $this->schema->table($this->schemaManager->realTableName($tableName), function (Blueprint $table) use ($tableSchema) {
             $fields  = $tableSchema['fields'] ?? [];
             $indexes = $tableSchema['indexes'] ?? [];
 
@@ -47,7 +56,7 @@ class DatabaseSchemaMapper
 
     protected function getColumn(Blueprint $table, $name): ?array
     {
-        $columns = Schema::getColumns($table->getTable());
+        $columns = $this->schema->getColumns($table->getTable());
         foreach($columns as $column) {
             if (strtolower($column['name']) === strtolower($name)) {
                 return $column;
@@ -66,7 +75,7 @@ class DatabaseSchemaMapper
 
     protected function updateColumns(Blueprint $table, $fields)
     {
-        $existingColumns = Schema::getColumnListing($table->getTable());
+        $existingColumns = $this->schema->getColumnListing($table->getTable());
         $definedColumns  = array_keys($fields);
 
         if (!empty($fields['timestamps'])) {
@@ -141,7 +150,7 @@ class DatabaseSchemaMapper
         }
         if (!empty($definition['unique'])) {
             $name = is_string($definition['unique']) ? $definition['unique'] : 'unique_' . $name;
-            if (!Schema::hasIndex($table->getTable(), $name)) {
+            if (!$this->schema->hasIndex($table->getTable(), $name)) {
                 $column->unique($name);
             }
         }
@@ -161,7 +170,7 @@ class DatabaseSchemaMapper
             }
 
             [$foreignTable, $foreignColumn] = explode('.', $foreignKey);
-            $foreignTable = $foreignPrefix === null ? $this->schema->realTableName($foreignTable) : $foreignPrefix . $foreignTable;
+            $foreignTable = $foreignPrefix === null ? $this->schemaManager->realTableName($foreignTable) : $foreignPrefix . $foreignTable;
 
             $indexName = 'fk_' . $table->getTable() . '_' . $name;
 
@@ -225,7 +234,7 @@ class DatabaseSchemaMapper
         if ($existingIndex) {
             // If the index with the same name exists, but has changed, drop it and recreate it
             if (implode(',', $existingIndex['columns']) !== implode(',', $columns)) {
-                Schema::table($table->getTable(), fn(Blueprint $t) => $t->dropIndex($name));
+                $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->dropIndex($name));
                 $this->addIndex($table, $index);
             }
         } else {
@@ -235,7 +244,7 @@ class DatabaseSchemaMapper
 
     protected function getIndex($table, $name)
     {
-        $indexes = Schema::getIndexes($table->getTable());
+        $indexes = $this->schema->getIndexes($table->getTable());
 
         foreach($indexes as $index) {
             if ($index['name'] === $name) {
@@ -248,7 +257,7 @@ class DatabaseSchemaMapper
 
     protected function hasForeignKey($table, $name)
     {
-        $fks = Schema::getForeignKeys($table->getTable());
+        $fks = $this->schema->getForeignKeys($table->getTable());
 
         foreach($fks as $fk) {
             if ($fk['name'] === $name) {

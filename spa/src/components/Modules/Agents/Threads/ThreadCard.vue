@@ -1,13 +1,13 @@
 <template>
 	<div class="bg-transparent text-slate-300 flex flex-col flex-nowrap" :class="{'h-full': active}">
 		<ThreadCardHeader v-model:active="active" v-model:logs="showLogs" :thread="thread" @close="$emit('close')" />
-		<AuditRequestLogsCard
-			v-if="showLogs"
-			:audit-request-id="thread.audit_request_id"
-			:logs="thread.logs"
-			class="my-6"
-		/>
 		<div v-if="active" class="mt-4 flex-grow overflow-y-scroll -mr-10 pr-5">
+			<AuditRequestLogsCard
+				v-if="showLogs"
+				:audit-request-id="thread.audit_request_id"
+				:logs="thread.logs"
+				class="my-6"
+			/>
 			<ThreadMessageCard
 				v-for="message in thread.messages"
 				:key="message.id"

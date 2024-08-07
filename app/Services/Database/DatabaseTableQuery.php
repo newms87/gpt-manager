@@ -34,6 +34,11 @@ class DatabaseTableQuery extends Builder
         return $this->tableSchema['fields'] ?? [];
     }
 
+    public function hasField($name): bool
+    {
+        return !empty($this->getFields()[$name]);
+    }
+
     public function isAutoRef()
     {
         return $this->tableSchema['auto_ref'] ?? false;
@@ -77,7 +82,11 @@ class DatabaseTableQuery extends Builder
     public function find($id, $columns = ['*']): object
     {
         if (!array_key_exists($id, $this->loadedRecords)) {
-            $this->loadedRecords[$id] = $this->where('ref', $id)->orWhere('id', $id)->first($columns) ?? null;
+            if ($this->hasField('ref')) {
+                $this->loadedRecords[$id] = $this->where(fn(Builder $builder) => $builder->where('ref', $id)->orWhere('id', $id))->first($columns) ?? null;
+            } else {
+                $this->loadedRecords[$id] = $this->where('id', $id)->first($columns) ?? null;
+            }
         }
 
         return $this->loadedRecords[$id];
@@ -86,7 +95,26 @@ class DatabaseTableQuery extends Builder
     /**
      * Create a new record
      */
-    public function create(array $record)
+    public function createOrUpdate(array $attributes, array $updates = []): object
+    {
+        $record = (array)$this->where($attributes)->first() ?: [];
+
+        $processedUpdates = $this->processFields($attributes + $updates + $record);
+
+        if ($record) {
+            $this->update($processedUpdates);
+            $id = $record['id'];
+        } else {
+            $id = $this->insertGetId($processedUpdates);
+        }
+
+        return $this->find($id);
+    }
+
+    /**
+     * Create a new record ensuring the ref field is unique
+     */
+    public function createOrUpdateWithRef(array $record): object
     {
         // Assign auto ref fields
         if ($this->isAutoRef()) {
@@ -100,6 +128,18 @@ class DatabaseTableQuery extends Builder
         // Fill in previously created record data
         $record += (array)$this->where('ref', $record['ref'])->first() ?: [];
 
+        $record = $this->processFields($record);
+
+        $this->updateOrInsert(['ref' => $record['ref']], $record);
+
+        return $this->find($record['ref']);
+    }
+
+    /**
+     * Cast fields to their respective types and make sure all required fields are present
+     */
+    public function processFields($record)
+    {
         foreach($this->getFields() as $fieldName => $fieldDefinition) {
             if ($fieldName === 'timestamps' && $fieldDefinition === true) {
                 if (empty($record['created_at'])) {
@@ -109,11 +149,11 @@ class DatabaseTableQuery extends Builder
                 $record['updated_at'] = $record['updated_at'] ?? now()->toDateTimeString();
             }
 
-            if (($fieldDefinition['type'] ?? '') === 'json') {
+            if (($fieldDefinition['type'] ?? '') === 'json' && isset($record[$fieldName])) {
                 $record[$fieldName] = json_encode($record[$fieldName]);
             }
         }
 
-        $this->updateOrInsert(['ref' => $record['ref']], $record);
+        return $record;
     }
 }

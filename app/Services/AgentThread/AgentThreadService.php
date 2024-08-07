@@ -3,12 +3,12 @@
 namespace App\Services\AgentThread;
 
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
+use App\Api\OpenAi\Classes\OpenAiToolCaller;
 use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use App\Repositories\AgentRepository;
-use App\Services\Database\DatabaseRecordMapper;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -189,76 +189,96 @@ class AgentThreadService
             'output_tokens' => $outputTokens,
         ]);
 
+        $lastMessage = $thread->messages()->create([
+            'role'    => Message::ROLE_ASSISTANT,
+            'content' => $response->getContent(),
+            'data'    => $response->getDataFields() ?: null,
+        ]);
+
         if ($response->isToolCall()) {
-            Log::debug("Completion Response: Handling " . count($response->getToolCallerFunctions()) . " tool calls");
-
-            $thread->messages()->create([
-                'role'    => Message::ROLE_ASSISTANT,
-                'content' => $response->getContent(),
-                'data'    => $response->getDataFields(),
-            ]);
-
-            // Additional messages that support the tool response, such as images
-            // These messages must appear after all tool responses,
-            // otherwise ChatGPT will throw an error thinking it is missing tool response messages
-            $additionalMessages = [];
-
-            // Call the tool functions
-            foreach($response->getToolCallerFunctions() as $toolCallerFunction) {
-                Log::debug("Handling tool call: " . $toolCallerFunction->getName());
-
-                $messages = $toolCallerFunction->call();
-
-                // Add the tool message
-                $toolMessage = array_shift($messages);
-                $thread->messages()->create($toolMessage);
-
-                // Append the additional messages to the list to appear after all tool responses
-                $additionalMessages = array_merge($additionalMessages, $messages);
-            }
-
-            // Save all the tool response messages
-            foreach($additionalMessages as $message) {
-                if (isset($message['content']) && is_array($message['content'])) {
-                    $message['content'] = StringHelper::safeJsonEncode($message['content']);
-                }
-                $thread->messages()->create($message);
-            }
-
-
+            $this->callToolsWithToolResponse($thread, $response);
         } elseif ($response->isFinished()) {
-            $lastMessage = $thread->messages()->create([
-                'role'    => Message::ROLE_ASSISTANT,
-                'content' => $response->getContent(),
-            ]);;
-
-            $threadRun->update([
-                'status'          => ThreadRun::STATUS_COMPLETED,
-                'completed_at'    => now(),
-                'last_message_id' => $lastMessage->id,
-            ]);
-
-            if ($lastMessage->content) {
-                $jsonData       = json_decode(AgentThreadService::cleanContent($lastMessage->content), true);
-                $databaseWrites = $jsonData['write_database'] ?? [];
-                if ($databaseWrites) {
-                    if (team()->schema_file) {
-                        $file = app_path(team()->schema_file);
-
-                        try {
-                            (new DatabaseRecordMapper)
-                                ->setSchema(team()->namespace, $file)
-                                ->map($databaseWrites);
-                        } catch(Exception $exception) {
-                            Log::error("Error writing to database: " . $exception->getMessage());
-                        }
-                    } else {
-                        Log::error("No schema file found for team " . team()->namespace);
-                    }
-                }
-            }
+            $this->finishThreadResponse($threadRun, $lastMessage);
         } else {
             throw new Exception('Unexpected response from AI model');
+        }
+    }
+
+    /**
+     * Finish the thread response by updating the thread run and calling the response tools (if any)
+     */
+    public function finishThreadResponse(ThreadRun $threadRun, Message $lastMessage): void
+    {
+        $threadRun->update([
+            'status'          => ThreadRun::STATUS_COMPLETED,
+            'completed_at'    => now(),
+            'last_message_id' => $lastMessage->id,
+        ]);
+
+        if ($lastMessage->content) {
+            $jsonData = json_decode(AgentThreadService::cleanContent($lastMessage->content), true);
+
+            $responseTools = $jsonData['response_tools'] ?? [];
+
+            if ($responseTools) {
+                Log::debug("Finishing thread response with " . count($responseTools) . " response tools");
+
+                foreach($responseTools as $tool) {
+                    $toolName = $tool['name'] ?? null;
+
+                    if (!$toolName) {
+                        throw new Exception("Response tool name is required: \n" . json_encode($tool));
+                    }
+
+                    Log::debug("Handling tool call: " . $toolName);
+
+                    $toolCaller = new OpenAiToolCaller(
+                        '',
+                        $tool['name'],
+                        json_decode($tool['arguments'], true)
+                    );
+
+                    $toolCaller->call();
+                }
+            }
+        }
+
+        Log::debug("Thread response is finished");
+    }
+
+    /**
+     * Call the AI Tools and attach the response from the tools to the thread for further processing by the AI Agent
+     */
+    public function callToolsWithToolResponse(Thread $thread, AgentCompletionResponseContract $response): void
+    {
+        Log::debug("Completion Response: Handling " . count($response->getToolCallerFunctions()) . " tool calls");
+
+
+        // Additional messages that support the tool response, such as images
+        // These messages must appear after all tool responses,
+        // otherwise ChatGPT will throw an error thinking it is missing tool response messages
+        $additionalMessages = [];
+
+        // Call the tool functions
+        foreach($response->getToolCallerFunctions() as $toolCallerFunction) {
+            Log::debug("Handling tool call: " . $toolCallerFunction->getName());
+
+            $messages = $toolCallerFunction->call();
+
+            // Add the tool message
+            $toolMessage = array_shift($messages);
+            $thread->messages()->create($toolMessage);
+
+            // Append the additional messages to the list to appear after all tool responses
+            $additionalMessages = array_merge($additionalMessages, $messages);
+        }
+
+        // Save all the tool response messages
+        foreach($additionalMessages as $message) {
+            if (isset($message['content']) && is_array($message['content'])) {
+                $message['content'] = StringHelper::safeJsonEncode($message['content']);
+            }
+            $thread->messages()->create($message);
         }
     }
 

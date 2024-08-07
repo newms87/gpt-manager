@@ -1,6 +1,7 @@
 <?php
 
 use App\AiTools\GoogleSerpAiTool;
+use App\AiTools\SaveObjects\SaveObjectsAiTool;
 use App\AiTools\SummarizerAiTool;
 use App\AiTools\UrlToImageAiTool;
 use App\Api\OpenAi\OpenAiApi;
@@ -52,6 +53,12 @@ return [
             'name'        => UrlToImageAiTool::NAME,
             'description' => UrlToImageAiTool::DESCRIPTION,
             'parameters'  => UrlToImageAiTool::PARAMETERS,
+        ],
+        [
+            'class'       => SaveObjectsAiTool::class,
+            'name'        => SaveObjectsAiTool::$name,
+            'description' => SaveObjectsAiTool::description(),
+            'parameters'  => SaveObjectsAiTool::parameters(),
         ],
         [
             'class'       => SummarizerAiTool::class,

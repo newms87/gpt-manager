@@ -16,6 +16,8 @@ class Team extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
+    protected $guarded = ['id', 'created_at', 'updated_at', 'deleted_at'];
+
     public function users(): BelongsToMany|User
     {
         return $this->belongsToMany(User::class)->withTimestamps();

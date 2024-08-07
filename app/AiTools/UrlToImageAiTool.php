@@ -86,6 +86,9 @@ class UrlToImageAiTool implements AiToolContract
 
     public function takeScreenshot($url): StoredFile
     {
+        $url = rtrim(trim($url), '/?\\#&');
+        $url = preg_replace('/#.*/', '', $url);
+
         Log::debug("Taking screenshot: $url");
 
         // Check for a previously cached web stored file, which might have a screenshot already
@@ -99,7 +102,7 @@ class UrlToImageAiTool implements AiToolContract
                 'filepath' => $url,
                 'mime'     => StoredFile::MIME_HTML,
                 'url'      => $url,
-                'size'     => FileHelper::getRemoteFileSize($url),
+                'size'     => 0,
             ]);
         }
 

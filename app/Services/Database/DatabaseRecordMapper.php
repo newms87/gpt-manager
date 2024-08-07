@@ -37,7 +37,7 @@ class DatabaseRecordMapper
 
             foreach($records as $record) {
                 $record += $relationFieldValues;
-                $this->schema->query($tableName)->create($record);
+                $this->schema->query($tableName)->createOrUpdateWithRef($record);
             }
         }
     }

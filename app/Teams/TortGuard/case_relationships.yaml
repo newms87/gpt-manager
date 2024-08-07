@@ -1,4 +1,4 @@
-entities:
+objects:
   - type: Product Injury
     name: "Actos: Bladder Cancer"
     relations:

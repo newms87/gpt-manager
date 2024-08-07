@@ -22,6 +22,7 @@ return new class extends Migration {
 
 
         Schema::whenTableHasColumn('users', 'team_id', function (Blueprint $table) {
+            $table->dropForeign(['team_id']);
             $table->dropColumn('team_id');
         });
     }

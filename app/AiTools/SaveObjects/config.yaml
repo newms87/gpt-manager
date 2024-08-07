@@ -1,0 +1,69 @@
+description: 'Saves an object in the object relationships schema in the team namespace'
+parameters:
+  type: object
+  properties:
+    objects:
+      type: array
+      description: 'The list of objects and their relations + attributes to save to the database. NOTE: Objects will be saved in the order provided.'
+      items:
+        type: object
+        properties:
+          type:
+            type: string
+            description: 'The type of object to save. Must be unique.'
+          name:
+            type: string
+            description: 'The name of the object to save. Must be unique per type'
+          description:
+            type: string
+            description: 'A description of the object to save'
+          url:
+            type: string
+            description: 'A URL that provides more information about the object (ie: company/product website, etc.)'
+          meta:
+            type: object
+            description: 'Any additional metadata to save with the object'
+          relations:
+            type: array
+            description: 'The list of related objects to the object being saved.'
+            items:
+              type: object
+              properties:
+                relationship_name:
+                  type: string
+                  description: 'The name of the relationship between the 2 objects'
+                related_id:
+                  type: string
+                  description: 'The ID of the related object'
+                type:
+                  type: string
+                  description: 'The type of the related object'
+                name:
+                  type: string
+                  description: 'The name of the related object'
+              required:
+                - relationship_name
+              oneOf:
+                - required:
+                    - related_id
+                - required:
+                    - type
+                    - name
+          attributes:
+            type: array
+            description: 'The attributes of the object to save. Name must be unique per object'
+            items:
+              required:
+                - name
+                - value
+                - source_url
+              properties:
+                name:
+                  type: string
+                  description: 'The unique name of the attribute'
+                value:
+                  type: string
+                  description: 'A value of any type for the attribute'
+                source_url:
+                  type: string
+                  description: 'The URL where the attribute was sourced from (if applicable)'
