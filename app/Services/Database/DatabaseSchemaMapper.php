@@ -104,6 +104,12 @@ class DatabaseSchemaMapper
 
             if ($column) {
                 if ($previousFieldName) {
+                    $previousFieldName = match ($previousFieldName) {
+                        'timestamps' => 'updated_at',
+                        'softDeletes' => 'deleted_at',
+                        default => $previousFieldName,
+                    };
+
                     $column->after($previousFieldName);
                 } else {
                     $column->first();

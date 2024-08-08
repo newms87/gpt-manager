@@ -5,15 +5,20 @@ namespace App\AiTools\SaveObjects;
 use App\AiTools\AiToolAbstract;
 use App\AiTools\AiToolContract;
 use App\AiTools\AiToolResponse;
+use App\Models\TeamObject\TeamObject;
+use App\Models\TeamObject\TeamObjectAttribute;
+use App\Models\TeamObject\TeamObjectRelationship;
 use App\Services\Database\SchemaManager;
 use BadFunctionCallException;
 use Illuminate\Support\Facades\Log;
+use Newms87\Danx\Helpers\FileHelper;
+use Newms87\Danx\Models\Utilities\StoredFile;
 use Str;
 
 class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
 {
     public static string $name = 'save-objects';
-    
+
     protected SchemaManager $schemaManager;
 
     public function __construct()
@@ -68,20 +73,20 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
             }
         }
 
-        $storedObject = $this->schemaManager->query('objects')->createOrUpdateWithRef($data);
+        $teamObject = TeamObject::updateOrCreate(['ref' => $data['ref']], $data);
 
         foreach($relations as $relation) {
-            $this->saveObjectRelation($storedObject, $relation);
+            $this->saveObjectRelation($teamObject, $relation);
         }
 
         foreach($attributes as $attribute) {
-            $this->saveObjectAttribute($storedObject, $attribute);
+            $this->saveObjectAttribute($teamObject, $attribute);
         }
 
-        return $storedObject;
+        return $teamObject;
     }
 
-    public function saveObjectRelation(object $object, $relation): void
+    public function saveObjectRelation(TeamObject $teamObject, $relation): void
     {
         $relationshipName = $relation['relationship_name'] ?? null;
         $relatedId        = $relation['related_id'] ?? $relation['related_ref'] ?? null;
@@ -101,7 +106,7 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
         }
 
         if ($relatedId) {
-            $relatedObject = $this->schemaManager->query('objects')->where('type', $relatedType)->find($relatedId);
+            $relatedObject = TeamObject::where('type', $relatedType)->find($relatedId);
         } else {
             $relatedObject = $this->saveObject($relation);
         }
@@ -111,9 +116,9 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
         }
 
         // Ensure the record is associated
-        $this->schemaManager->query('object_relationships')->createOrUpdate([
+        TeamObjectRelationship::updateOrCreate([
             'relationship_name' => $relationshipName,
-            'object_id'         => $object->id,
+            'object_id'         => $teamObject->id,
             'related_object_id' => $relatedObject->id,
         ]);
     }
@@ -129,15 +134,32 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
             throw new BadFunctionCallException("Save Objects requires a name and value for each attribute: \n\n" . json_encode($attribute));
         }
 
-        // TODO: Add source URL and message to the attribute
+        $storedFile = null;
 
-        $this->schemaManager->query('object_attributes')->createOrUpdate([
+        if ($sourceUrl) {
+            $sourceUrl  = FileHelper::normalizeUrl($sourceUrl);
+            $storedFile = StoredFile::firstWhere('url', $sourceUrl);
+
+            if (!$storedFile) {
+                $storedFile = StoredFile::create([
+                    'disk'     => 'web',
+                    'filename' => basename($sourceUrl),
+                    'filepath' => $sourceUrl,
+                    'mime'     => StoredFile::MIME_HTML,
+                    'url'      => $sourceUrl,
+                    'size'     => 0,
+                ]);
+            }
+        }
+
+        TeamObjectAttribute::updateOrCreate([
             'object_id' => $object->id,
             'name'      => $name,
         ], [
-            'date'       => $date,
-            'text_value' => is_array($value) ? null : $value,
-            'json_value' => is_array($value) ? json_encode($value) : null,
+            'date'                  => $date,
+            'text_value'            => is_array($value) ? null : $value,
+            'json_value'            => is_array($value) ? json_encode($value) : null,
+            'source_stored_file_id' => $storedFile?->id,
         ]);
     }
 }

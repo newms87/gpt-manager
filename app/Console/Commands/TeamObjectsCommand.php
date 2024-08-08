@@ -5,9 +5,9 @@ namespace App\Console\Commands;
 use App\Services\Database\DatabaseSchemaMapper;
 use Illuminate\Console\Command;
 
-class ObjectsCreateSchemaCommand extends Command
+class TeamObjectsCommand extends Command
 {
-    protected $signature   = 'objects:create-schema {namespace} {--database=}';
+    protected $signature   = 'team:objects {namespace} {--database=}';
     protected $description = 'Install the objects relationships schema in the given namespace';
 
     public function handle()

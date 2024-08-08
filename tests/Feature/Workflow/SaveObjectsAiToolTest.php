@@ -3,30 +3,20 @@
 namespace Tests\Feature\Workflow;
 
 use App\AiTools\SaveObjects\SaveObjectsAiTool;
-use App\Services\Database\SchemaManager;
+use App\Models\TeamObject\TeamObject;
+use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 
 class SaveObjectsAiToolTest extends AuthenticatedTestCase
 {
-    public SchemaManager $schemaManager;
-
     public function setUp(): void
     {
         parent::setUp();
 
         $this->user->currentTeam->update(['namespace' => 'testing']);
-        $this->schemaManager = new SchemaManager('testing', database_path('schemas/object_relationships.yaml'));
     }
 
-    public function tearDown(): void
-    {
-        $this->schemaManager->query('object_attributes')->where('id', '>', 0)->delete();
-        $this->schemaManager->query('object_relationships')->where('id', '>', 0)->delete();
-        $this->schemaManager->query('objects')->where('id', '>', 0)->delete();
-        parent::tearDown();
-    }
-
-    public function test_execute_objectWithNoRelationsOrAttributesCreated(): void
+    public function test_execute_objectCreated(): void
     {
         // Given
         $type        = 'Test Object';
@@ -52,7 +42,7 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         app(SaveObjectsAiTool::class)->execute($params);
 
         // Then
-        $testObject = (array)$this->schemaManager->query('objects')->where('name', $name)->first();
+        $testObject = TeamObject::firstWhere('name', $name);
         $expected   = [
             'type'        => $type,
             'name'        => $name,
@@ -60,28 +50,33 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
             'url'         => $url,
             'meta'        => $meta,
         ];
-
-        $this->assertArrayIsEqualToArrayOnlyConsideringListOfKeys($expected, $testObject, array_keys($expected));
+        $this->assertArrayIsEqualToArrayOnlyConsideringListOfKeys($expected, $testObject->toArray(), array_keys($expected));
     }
 
     public function test_execute_objectWithAttributesCreatedCorrectly(): void
     {
         // Given
-        $type   = 'Test Object';
-        $name   = 'Test B';
-        $params = [
+        $type      = 'Test Object';
+        $name      = 'Test B';
+        $attrADate = '2021-01-01 00:00:00';
+        $attrAUrl  = 'https://example-a.com';
+        $attrBUrl  = 'https://example-b.com';
+        $params    = [
             'objects' => [
                 [
                     'type'       => $type,
                     'name'       => $name,
                     'attributes' => [
                         [
-                            'name'  => 'Attribute A',
-                            'value' => 'Value A',
+                            'name'       => 'Attribute A',
+                            'value'      => 'Value A',
+                            'date'       => $attrADate,
+                            'source_url' => $attrAUrl,
                         ],
                         [
-                            'name'  => 'Attribute B',
-                            'value' => 'Value B',
+                            'name'       => 'Attribute B',
+                            'value'      => 'Value B',
+                            'source_url' => $attrBUrl,
                         ],
                     ],
                 ],
@@ -92,25 +87,30 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         app(SaveObjectsAiTool::class)->execute($params);
 
         // Then
-        $testObject = $this->schemaManager->query('objects')->where('type', $type)->where('name', $name)->first();
-        $attributes = $this->schemaManager->query('object_attributes')->where('object_id', $testObject->id)->get();
+        $testObject = TeamObject::where('type', $type)->where('name', $name)->first();
+        $attributes = $testObject->attributes()->get();
 
         $this->assertCount(2, $attributes, "Expected 2 attributes to be created for object $name");
 
-        $attributeA = $attributes->firstWhere('name', 'Attribute A');
+        $attributeA           = $attributes->firstWhere('name', 'Attribute A');
+        $attributeAStoredFile = StoredFile::find($attributeA->source_stored_file_id);
         $this->assertEquals('Value A', $attributeA->text_value, 'Attribute A value should be Value A');
+        $this->assertEquals($attrADate, $attributeA->date, 'Attribute A date should match');
+        $this->assertEquals($attrAUrl, $attributeAStoredFile?->url, 'Attribute A url should match');
 
         $attributeB = $attributes->firstWhere('name', 'Attribute B');
         $this->assertEquals('Value B', $attributeB->text_value, 'Attribute B value should be Value B');
+        $this->assertNull($attributeB->date, 'Attribute B date should be null');
     }
 
     public function test_execute_objectWithRelationsCreatedCorrectly(): void
     {
         // Given
-        $productName  = 'Phone';
-        $companyName  = 'Apple';
-        $locationName = 'Denver';
-        $params       = [
+        $productName   = 'Phone';
+        $companyName   = 'Apple';
+        $location1Name = 'Denver';
+        $location2Name = 'Boulder';
+        $params        = [
             'objects' => [
                 [
                     'type'      => 'Product',
@@ -124,7 +124,12 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
                         [
                             'relationship_name' => 'Locations',
                             'type'              => 'Location',
-                            'name'              => $locationName,
+                            'name'              => $location1Name,
+                        ],
+                        [
+                            'relationship_name' => 'Locations',
+                            'type'              => 'Location',
+                            'name'              => $location2Name,
                         ],
                     ],
                 ],
@@ -135,18 +140,18 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         app(SaveObjectsAiTool::class)->execute($params);
 
         // Then
-        $product  = $this->schemaManager->query('objects')->where('type', 'Product')->where('name', $productName)->first();
-        $company  = $this->schemaManager->query('objects')->where('type', 'Company')->where('name', $companyName)->first();
-        $location = $this->schemaManager->query('objects')->where('type', 'Location')->where('name', $locationName)->first();
+        $product = TeamObject::where('type', 'Product')->where('name', $productName)->first();
 
         $this->assertNotNull($product, 'Product object should be created');
-        $this->assertNotNull($company, 'Company object should be created');
-        $this->assertNotNull($location, 'Location object should be created');
 
-        $productCompany = $this->schemaManager->query('object_relationships')->where('object_id', $product->id)->where('related_object_id', $company->id)->first();
+        $productCompany = $product->relatedObjects('Company')->first();
         $this->assertNotNull($productCompany, 'Product should have a relationship with Company');
+        $this->assertEquals($companyName, $productCompany->name, 'The related company should be the same company');
 
-        $productLocation = $this->schemaManager->query('object_relationships')->where('object_id', $product->id)->where('related_object_id', $location->id)->first();
-        $this->assertNotNull($productLocation, 'Product should have a relationship with Location');
+        $productLocations = $product->relatedObjects('Locations')->get();
+        $this->assertCount(2, $productLocations, 'Product should have 2 locations');
+        $locationNames = $productLocations->pluck('name')->toArray();
+        $this->assertContains($location1Name, $locationNames, 'Product should have a relationship with Location 1');
+        $this->assertContains($location2Name, $locationNames, 'Product should have a relationship with Location 2');
     }
 }

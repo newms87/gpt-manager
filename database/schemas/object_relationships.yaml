@@ -20,6 +20,7 @@ tables:
         type: json
         nullable: true
       timestamps: true
+      softDeletes: true
     indexes:
       - name: unique_object_type_name
         columns: [ type, name ]
@@ -38,6 +39,7 @@ tables:
         type: foreignId
         foreign_key: objects.id
       timestamps: true
+      softDeletes: true
     indexes:
       - name: unique_related_object_field
         columns: [ object_id, related_object_id ]
@@ -72,6 +74,7 @@ tables:
         foreign_prefix: ''
         nullable: true
       timestamps: true
+      softDeletes: true
     indexes:
       - name: unique_object_attribute_name_field
         columns: [ object_id, name ]

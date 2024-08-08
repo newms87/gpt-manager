@@ -17,10 +17,7 @@ class ApiAuthController extends Controller
         }
 
         if ($teamName) {
-            $team = user()->teams()->firstWhere('name', $teamName);
-            if (!$team) {
-                return response()->json(['error' => "You are not on the team $teamName"], 401);
-            }
+            $team = user()->teams()->firstWhere('name', $teamName) ?: user()->teams()->first();
         } else {
             $team = user()->teams()->first();
         }
