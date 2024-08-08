@@ -83,6 +83,10 @@ class DatabaseSchemaMapper
             $definedColumns[] = 'updated_at';
         }
 
+        if (!empty($fields['softDeletes'])) {
+            $definedColumns[] = 'deleted_at';
+        }
+
         $previousFieldName = null;
 
         foreach($fields as $fieldName => $fieldDefinition) {
@@ -90,7 +94,11 @@ class DatabaseSchemaMapper
 
             // Special case for Timestamps
             if (is_bool($fieldDefinition)) {
-                $hasColumn = $fieldName === 'timestamps' ? in_array('created_at', $existingColumns) : in_array($fieldName, $existingColumns);
+                $hasColumn = match ($fieldName) {
+                    'timestamps' => in_array('created_at', $existingColumns),
+                    'softDeletes' => in_array('deleted_at', $existingColumns),
+                    default => in_array($fieldName, $existingColumns),
+                };
                 if (!$hasColumn) {
                     $column = $this->addColumn($table, $fieldName, $fieldDefinition);
                 }
@@ -240,8 +248,25 @@ class DatabaseSchemaMapper
         if ($existingIndex) {
             // If the index with the same name exists, but has changed, drop it and recreate it
             if (implode(',', $existingIndex['columns']) !== implode(',', $columns)) {
+                // Check if any of the fields in the index are used in a FK constraint, and remove those constraints before dropping the index
+                $fks        = $this->schema->getForeignKeys($table->getTable());
+                $droppedFks = [];
+
+                foreach($fks as $fk) {
+                    $fkColumns = $fk['columns'];
+                    // check if any of the FK columns are in the index
+                    if (array_intersect($fkColumns, $columns)) {
+                        $droppedFks[] = $fk;
+                        $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->dropForeign($fk['name']));
+                    }
+                }
                 $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->dropIndex($name));
                 $this->addIndex($table, $index);
+
+                // Recreate dropped FKs
+                foreach($droppedFks as $fk) {
+                    $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->foreign($fk['columns'], $fk['name'])->references($fk['foreign_columns'])->on($fk['foreign_table']));
+                }
             }
         } else {
             $this->addIndex($table, $index);
@@ -261,7 +286,7 @@ class DatabaseSchemaMapper
         return null;
     }
 
-    protected function hasForeignKey($table, $name)
+    protected function hasForeignKey($table, $name): bool
     {
         $fks = $this->schema->getForeignKeys($table->getTable());
 
