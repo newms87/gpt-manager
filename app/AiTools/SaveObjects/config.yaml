@@ -64,6 +64,9 @@ parameters:
                 value:
                   type: string
                   description: 'A value of any type for the attribute'
+                date:
+                  type: string
+                  description: "The date (yyyy-mm-dd) and time (00:00:00 if time n/a) of the attribute's value (if data changes over time). Format should always be full date (no partial dates)!"
                 source_url:
                   type: string
                   description: 'The URL where the attribute was sourced from (if applicable)'
