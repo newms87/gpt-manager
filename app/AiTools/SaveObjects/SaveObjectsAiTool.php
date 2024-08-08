@@ -141,6 +141,7 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
             $storedFile = StoredFile::firstWhere('url', $sourceUrl);
 
             if (!$storedFile) {
+                Log::debug("Creating Stored File for source URL");
                 $storedFile = StoredFile::create([
                     'disk'     => 'web',
                     'filename' => basename($sourceUrl),
@@ -150,13 +151,15 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
                     'size'     => 0,
                 ]);
             }
+
+            Log::debug("Stored File $storedFile->id references source URL $sourceUrl");
         }
 
         TeamObjectAttribute::updateOrCreate([
             'object_id' => $object->id,
             'name'      => $name,
+            'date'      => $date,
         ], [
-            'date'                  => $date,
             'text_value'            => is_array($value) ? null : $value,
             'json_value'            => is_array($value) ? json_encode($value) : null,
             'source_stored_file_id' => $storedFile?->id,

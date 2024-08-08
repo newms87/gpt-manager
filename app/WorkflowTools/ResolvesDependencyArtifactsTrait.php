@@ -13,7 +13,7 @@ use Newms87\Danx\Helpers\StringHelper;
 
 trait ResolvesDependencyArtifactsTrait
 {
-    const int MAX_KEY_LENGTH  = 100;
+    const int MAX_KEY_LENGTH  = 500;
     const int MAX_HASH_LENGTH = 6;
 
     /**
@@ -198,7 +198,16 @@ trait ResolvesDependencyArtifactsTrait
                 // Can't make a readable unique key from an array value, so just make a hash of all the data
                 $requiresHash = true;
             }
-            $tmpKey = ($groupByKey ? "$groupByKey," : '') . (is_array($value) ? $key : "$key: $value");
+            $groupKeyValue = $value;
+            if (is_array($groupKeyValue)) {
+                $resetValue = reset($groupKeyValue);
+                if (is_array($resetValue)) {
+                    $groupKeyValue = implode(',', $resetValue);
+                } else {
+                    $groupKeyValue = $resetValue;
+                }
+            }
+            $tmpKey = ($groupByKey ? "$groupByKey," : '') . $key . ':' . ($groupKeyValue ?: 'default');
 
             // If we've exceeded the key length, we need to add a hash to make the key unique
             if ($groupByKey && strlen($tmpKey) > static::MAX_KEY_LENGTH) {

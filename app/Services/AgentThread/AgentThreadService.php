@@ -164,9 +164,14 @@ class AgentThreadService
         }
 
         if ($agent->response_notes || $agent->response_schema) {
-            $schema          = json_encode($agent->response_schema);
-            $jsonRequirement = $agent->response_format === 'text' ? '' : "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
-            $messages[]      = $apiFormatter->rawMessage(Message::ROLE_USER, "RESPONSE FORMAT:\n$agent->response_notes\n$jsonRequirement\n$schema");
+            if ($agent->response_format === 'text') {
+                $jsonRequirement = '';
+                $schema          = '';
+            } else {
+                $schema          = json_encode($agent->response_schema);
+                $jsonRequirement = "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
+            }
+            $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, "RESPONSE FORMAT:\n$agent->response_notes\n$jsonRequirement\n$schema");
         }
 
         return $messages;
@@ -196,7 +201,17 @@ class AgentThreadService
         ]);
 
         if ($response->isToolCall()) {
-            $this->callToolsWithToolResponse($thread, $response);
+            // Check for duplicated tool calls and immediately stop thread so we don't waste resources
+            if ($this->hasDuplicatedToolCall($threadRun, $response)) {
+                Log::error("Duplicated tool call detected, stopping thread");
+                $lastMessage = $thread->messages()->create([
+                    'role'    => Message::ROLE_USER,
+                    'content' => "Duplicated tool call detected, stopping thread",
+                ]);
+                $this->finishThreadResponse($threadRun, $lastMessage);
+            } else {
+                $this->callToolsWithToolResponse($thread, $response);
+            }
         } elseif ($response->isFinished()) {
             $this->finishThreadResponse($threadRun, $lastMessage);
         } else {
@@ -253,7 +268,6 @@ class AgentThreadService
     {
         Log::debug("Completion Response: Handling " . count($response->getToolCallerFunctions()) . " tool calls");
 
-
         // Additional messages that support the tool response, such as images
         // These messages must appear after all tool responses,
         // otherwise ChatGPT will throw an error thinking it is missing tool response messages
@@ -280,6 +294,36 @@ class AgentThreadService
             }
             $thread->messages()->create($message);
         }
+    }
+
+    public function hasDuplicatedToolCall(ThreadRun $threadRun, AgentCompletionResponseContract $response): bool
+    {
+        $assistantMessages = $threadRun->thread->messages()->where('role', Message::ROLE_ASSISTANT)->get();
+
+        $toolCallHashes = [];
+
+        foreach($assistantMessages as $message) {
+            if (!$message->data || empty($message->data['tool_calls'])) {
+                continue;
+            }
+
+            $toolCalls = $message->data['tool_calls'];
+
+            foreach($toolCalls as $toolCall) {
+                if (empty($toolCall['function'])) {
+                    continue;
+                }
+                $hash = md5(json_encode($toolCall['function']));
+
+                if (!empty($toolCallHashes[$hash])) {
+                    return true;
+                }
+
+                $toolCallHashes[$hash] = true;
+            }
+        }
+
+        return false;
     }
 
     /**

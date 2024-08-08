@@ -32,7 +32,7 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function getDataFields(): array
     {
-        return collect($this->choices[0]['message'])->except(['role', 'message'])->toArray();
+        return collect($this->choices[0]['message'])->except(['role', 'content'])->toArray();
     }
 
     public function getToolCallerFunctions(): array
