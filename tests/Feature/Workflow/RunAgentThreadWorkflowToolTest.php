@@ -285,7 +285,8 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
 
         // Then
-        $dobGroup = $groups['dob: 1987-11-18'] ?? [];
+        dump($groups);
+        $dobGroup = $groups['dob:1987-11-18'] ?? [];
         $this->assertCount(2, $dobGroup, "Should have produced exactly 2 artifacts in the '1987-11-18' group");
         $this->assertEquals($artifacts[0], $dobGroup[0], "Should have produced the 1st artifact in the '1987-11-18' group");
         $this->assertEquals($artifacts[1], $dobGroup[1], "Should have produced the 2nd artifact in the '1987-11-18' group");
@@ -307,8 +308,8 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Then
         $this->assertCount(2, $groups, "Should have produced exactly 2 groups");
 
-        $danGroup    = $groups['color: green,name: Dan Newman'] ?? [];
-        $MickeyGroup = $groups['color: red,name: Mickey Mouse'] ?? [];
+        $danGroup    = $groups['color:green,name:Dan Newman'] ?? [];
+        $MickeyGroup = $groups['color:red,name:Mickey Mouse'] ?? [];
         $this->assertCount(1, $danGroup, "Should have produced exactly 1 artifact in the 'Dan Newman,green' group");
         $this->assertEquals($artifacts[0], array_pop($danGroup), "Should have produced the 1st artifact in the 'Dan Newman' group");
         $this->assertCount(1, $MickeyGroup, "Should have produced exactly 1 artifact in the 'Mickey Mouse' group");
@@ -1060,8 +1061,8 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Then
         $tasks = $workflowJobRun->tasks()->get();
         $this->assertEquals(2, $tasks->count());
-        $this->assertEquals('name: ' . $artifacts[0]['name'], $tasks->get(0)->group);
-        $this->assertEquals('name: ' . $artifacts[1]['name'], $tasks->get(1)->group);
+        $this->assertEquals('name:' . $artifacts[0]['name'], $tasks->get(0)->group);
+        $this->assertEquals('name:' . $artifacts[1]['name'], $tasks->get(1)->group);
     }
 
     public function test_resolveAndAssignTasks_taskThreadHasWorkflowInput(): void

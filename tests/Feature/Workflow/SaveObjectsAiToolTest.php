@@ -53,7 +53,7 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         $this->assertArrayIsEqualToArrayOnlyConsideringListOfKeys($expected, $testObject->toArray(), array_keys($expected));
     }
 
-    public function test_execute_objectWithAttributesCreatedCorrectly(): void
+    public function test_execute_objectWithAttributes(): void
     {
         // Given
         $type      = 'Test Object';
@@ -101,6 +101,52 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         $attributeB = $attributes->firstWhere('name', 'Attribute B');
         $this->assertEquals('Value B', $attributeB->text_value, 'Attribute B value should be Value B');
         $this->assertNull($attributeB->date, 'Attribute B date should be null');
+    }
+
+    public function test_execute_creating2AttributesWithSameNameDifferentDates(): void
+    {
+        // Given
+        $type      = 'Test Object';
+        $name      = 'Test B';
+        $attrADate = '2021-01-01 00:00:00';
+        $attrBDate = '2021-02-05 00:00:00';
+        $params    = [
+            'objects' => [
+                [
+                    'type'       => $type,
+                    'name'       => $name,
+                    'attributes' => [
+                        [
+                            'name'  => 'Attribute A',
+                            'value' => 'Value A',
+                            'date'  => $attrADate,
+                        ],
+                        [
+                            'name'  => 'Attribute A',
+                            'value' => 'Value B',
+                            'date'  => $attrBDate,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        app(SaveObjectsAiTool::class)->execute($params);
+
+        // Then
+        $testObject = TeamObject::where('type', $type)->where('name', $name)->first();
+        $attributes = $testObject->attributes()->get();
+
+        $this->assertCount(2, $attributes, "Expected 2 attributes to be created for object $name");
+
+        $attributeA = $attributes->firstWhere('date', $attrADate);
+        $this->assertEquals('Value A', $attributeA->text_value, 'Attribute date A value should be Value A');
+        $this->assertEquals($attrADate, $attributeA->date, 'Attribute A date should match');
+
+        $attributeB = $attributes->firstWhere('date', $attrBDate);
+        $this->assertEquals('Value B', $attributeB->text_value, 'Attribute date B value should be Value B');
+        $this->assertEquals($attrBDate, $attributeB->date, 'Attribute B date should match');
     }
 
     public function test_execute_objectWithRelationsCreatedCorrectly(): void

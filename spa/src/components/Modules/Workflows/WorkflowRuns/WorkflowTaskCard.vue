@@ -5,9 +5,12 @@
 				<div class="text-xs px-2 bg-gray-700 flex items-center">Task ({{ task.id }})</div>
 				<div class="p-2 max-w-96">
 					<div class="text-lg font-bold text-ellipsis">{{ task.job_name }}</div>
-					<div class="flex items-center flex-nowrap">
-						<div class="bg-slate-400 text-slate-800 text-sm px-2 py-1 rounded-lg">
-							{{ task.group || "N/A" }}
+					<div class="flex items-center flex-nowrap overflow-hidden">
+						<div class="bg-slate-400 text-slate-800 text-sm px-2 py-1 rounded-lg max-w-full overflow-ellipsis overflow-hidden">
+							<div v-for="groupItem in groupItems" :key="groupItem.groupKey">
+								{{ groupItem.groupValue || groupItem.groupKey }}
+								<QTooltip v-if="groupItem.groupValue">{{ groupItem.groupKey }}</QTooltip>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -58,4 +61,11 @@ const props = defineProps<{
 const workflowTaskStatus = computed(() => WORKFLOW_STATUS.resolve(props.task.status));
 const showLogs = ref(false);
 const showThread = ref(false);
+
+const groupItems = computed(() => {
+	return props.task.group.split(",").map((groupItem) => {
+		const [groupKey, groupValue] = groupItem.match(":") ? groupItem.split(":") : groupItem.split("#");
+		return { groupKey, groupValue };
+	});
+});
 </script>
