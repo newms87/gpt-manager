@@ -2,6 +2,8 @@
 
 namespace App\Services\Workflow;
 
+use App\Models\Workflow\Workflow;
+use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use Illuminate\Support\Collection;
@@ -11,6 +13,17 @@ use Throwable;
 
 class WorkflowService
 {
+    public function run(Workflow $workflow, WOrkflowInput $workflowInput): WorkflowRun
+    {
+        $workflowRun = $workflow->workflowRuns()->create([
+            'workflow_input_id' => $workflowInput->id,
+        ]);
+
+        WorkflowService::start($workflowRun);
+
+        return $workflowRun;
+    }
+
     /**
      * Begin the Workflow by creating all the jobs for the Workflow Run
      *

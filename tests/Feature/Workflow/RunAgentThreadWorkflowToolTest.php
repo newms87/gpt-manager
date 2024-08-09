@@ -285,7 +285,6 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groups = app(RunAgentThreadWorkflowTool::class)->getArtifactGroups($workflowJobDependency, $workflowJobRun);
 
         // Then
-        dump($groups);
         $dobGroup = $groups['dob:1987-11-18'] ?? [];
         $this->assertCount(2, $dobGroup, "Should have produced exactly 2 artifacts in the '1987-11-18' group");
         $this->assertEquals($artifacts[0], $dobGroup[0], "Should have produced the 1st artifact in the '1987-11-18' group");
