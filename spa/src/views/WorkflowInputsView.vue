@@ -1,5 +1,5 @@
 <template>
-	<WorkflowInputsTable />
+	<WorkflowInputsTable class="mr-4" />
 </template>
 <script setup>
 import WorkflowInputsTable from "@/components/Modules/Workflows/WorkflowInputs/WorkflowInputsTable";
