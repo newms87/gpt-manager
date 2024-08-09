@@ -20,14 +20,31 @@
 						</a>
 					</div>
 				</div>
-				<QBtn class="bg-lime-950 px-6 py-2 rounded-full" @click="isShowing = !isShowing">
-					<div class="text-base"> {{ drugInjury.name }}</div>
-					<div v-if="drugInjury.description" class="my-2">{{ drugInjury.description }}</div>
-				</QBtn>
+				<ShowHideButton
+					class="bg-lime-950 px-6 py-2 rounded-full"
+					:label="drugInjury.name"
+					@click="isShowing = !isShowing"
+				/>
+				<div v-if="drugInjury.description" class="ml-4">{{ drugInjury.description }}</div>
 			</div>
 			<div class="mx-3 flex items-center flex-nowrap">
-				<div class="mr-4">
-					<ShowHideButton v-model="isShowing" :label="'Details'" class="bg-slate-800 text-lg" />
+				<div v-if="drugInjury.workflowRun" class="mr-6 bg-slate-800 p-4 rounded-xl">
+					<div class="flex items-center flex-nowrap text-base">
+						<QSpinnerBall class="w-6 mr-2" />
+						<div>Researching</div>
+						<ElapsedTimePill
+							:start="drugInjury.workflowRun.started_at"
+							:end="drugInjury.workflowRun.completed_at"
+							class="ml-2"
+							timer-class="py-1 px-3 bg-slate-700 rounded-lg text-xs w-32 text-center"
+						/>
+					</div>
+					<div
+						class="px-4 py-1.5 rounded-lg mt-2 w-28 text-center"
+						:class="WORKFLOW_STATUS.resolve(drugInjury.workflowRun.status).classPrimary"
+					>
+						{{ drugInjury.workflowRun.status }}
+					</div>
 				</div>
 				<div
 					class="px-4 py-2 rounded-xl flex items-center" :class="{
@@ -72,9 +89,29 @@ import DrugIssueScientificStudiesSection from "@/components/Modules/Tortguard/Dr
 import DrugIssueSeveritySection from "@/components/Modules/Tortguard/DrugIssueSeveritySection";
 import DrugIssueWarningsSection from "@/components/Modules/Tortguard/DrugIssueWarningsSection";
 import { DrugInjury } from "@/components/Modules/Tortguard/tortguard";
+import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import { ShowHideButton } from "@/components/Shared";
 import LogoImage from "@/components/Shared/Images/LogoImage";
+import { TortguardRoutes } from "@/routes/tortguardRoutes";
+import { FlashMessages, storeObject } from "quasar-ui-danx";
+import { onMounted } from "vue";
 
-defineProps<{ drugInjury: DrugInjury }>();
+const props = defineProps<{ drugInjury: DrugInjury }>();
 const isShowing = defineModel<boolean>();
+
+onMounted(autoRefresh);
+
+async function autoRefresh() {
+	if (props.drugInjury?.workflowRun) {
+		const response = await TortguardRoutes.drugInjury(props.drugInjury.id);
+
+		if (!response.success) {
+			return FlashMessages.error("Failed to refresh " + props.drugInjury.name);
+		}
+
+		storeObject(response.drugInjury);
+		setTimeout(autoRefresh, 3000);
+	}
+}
 </script>

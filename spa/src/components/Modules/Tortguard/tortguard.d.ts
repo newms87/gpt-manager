@@ -1,7 +1,8 @@
+import { WorkflowRun } from "@/types";
 import { TypedObject, UploadedFile } from "quasar-ui-danx";
 
 interface TeamObject extends TypedObject {
-	id: string;
+	id: number;
 	name: string;
 	description: string | null;
 	url: string | null;
@@ -51,6 +52,7 @@ interface DrugInjury extends TeamObject {
 	product: DrugProduct;
 	studies: ScientificStudy[];
 	warnings: DrugWarning[];
+	workflowRun?: WorkflowRun;
 }
 
 interface DrugProduct extends TeamObject {

@@ -74,7 +74,14 @@ class TortguardRepository
         ]);
         $workflowInput->save();
 
-        return app(WorkflowService::class)->run($workflow, $workflowInput);
+        $workflowRun = app(WorkflowService::class)->run($workflow, $workflowInput);
+
+        $drugInjury->meta = [
+            'workflow_run_id' => $workflowRun->id,
+        ];
+        $drugInjury->save();
+
+        return $workflowRun;
     }
 
     public function getTeamObjectAttribute(int $id): TeamObjectAttribute

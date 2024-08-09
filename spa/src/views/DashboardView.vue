@@ -20,7 +20,7 @@
 import AiSearchBar from "@/components/Modules/AiSearch/AiSearchBar";
 import DrugInjuryCard from "@/components/Modules/Tortguard/DrugInjuryCard";
 import { DrugInjury } from "@/components/Modules/Tortguard/tortguard";
-import { FlashMessages, ListTransition, request } from "quasar-ui-danx";
+import { FlashMessages, ListTransition, request, storeObjects } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 
 const drugInjuries = ref<DrugInjury[]>([]);
@@ -40,7 +40,7 @@ async function loadDashboard() {
 	}
 
 	if (result.drugInjuries) {
-		drugInjuries.value = result.drugInjuries;
+		drugInjuries.value = storeObjects(result.drugInjuries);
 	}
 }
 

@@ -10,6 +10,7 @@ use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
 use App\Services\Database\SchemaManager;
 use BadFunctionCallException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -73,7 +74,13 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
             }
         }
 
-        $teamObject = TeamObject::updateOrCreate(['ref' => $data['ref']], $data);
+        $teamObject = TeamObject::where('type', $type)->where(fn(Builder $builder) => $builder->where('name', $name)->orWhere('ref', $data['ref']))->first();
+
+        if ($teamObject) {
+            $teamObject->update($data);
+        } else {
+            $teamObject = TeamObject::create($data);
+        }
 
         foreach($relations as $relation) {
             $this->saveObjectRelation($teamObject, $relation);

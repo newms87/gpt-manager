@@ -73,4 +73,15 @@ class TortguardController extends Controller
 
         return ['success' => true, 'workflowRun' => WorkflowRunResource::make($workflowRun)];
     }
+
+    public function getDrugInjury(int $id): array
+    {
+        $drugInjury = TeamObject::where('type', 'DrugInjury')->find($id);
+
+        if (!$drugInjury) {
+            throw new ValidationError('Drug Injury not found');
+        }
+
+        return ['success' => true, 'drugInjury' => DrugInjuryResource::details($drugInjury)];
+    }
 }

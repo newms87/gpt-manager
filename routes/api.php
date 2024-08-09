@@ -52,6 +52,7 @@ ActionRoute::routes('audit-requests', new AuditRequestsController);
 
 Route::get('/tortguard/search', [TortguardController::class, 'search'])->name('api.tortguard.search');
 Route::get('/tortguard/research', [TortguardController::class, 'research'])->name('api.tortguard.research');
+Route::get('/tortguard/drug-injury/{id}', [TortguardController::class, 'getDrugInjury'])->name('api.tortguard.drug-injury');
 
 // Tortguard
 Route::get('/tortguard/dashboard', [TortguardController::class, 'getDashboardData'])->name('api.tortguard');
