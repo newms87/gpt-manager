@@ -186,6 +186,8 @@ class AgentThreadService
         $inputTokens  = $threadRun->input_tokens + $response->inputTokens();
         $outputTokens = $threadRun->output_tokens + $response->outputTokens();
 
+        Log::debug("Handling response from AI model. input: " . $inputTokens . ", output: " . $outputTokens);
+
         $threadRun->update([
             'agent_model'   => $thread->agent->model,
             'refreshed_at'  => now(),
@@ -211,6 +213,7 @@ class AgentThreadService
                 $this->finishThreadResponse($threadRun, $lastMessage);
             } else {
                 $this->callToolsWithToolResponse($thread, $response);
+                Log::debug("Tool call response completed.");
             }
         } elseif ($response->isFinished()) {
             $this->finishThreadResponse($threadRun, $lastMessage);
@@ -224,6 +227,8 @@ class AgentThreadService
      */
     public function finishThreadResponse(ThreadRun $threadRun, Message $lastMessage): void
     {
+        Log::debug("Finishing thread response...");
+
         $threadRun->update([
             'status'          => ThreadRun::STATUS_COMPLETED,
             'completed_at'    => now(),

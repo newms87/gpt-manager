@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Contracts\ComputedStatusContract;
@@ -24,7 +26,7 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
     ];
 
     public array $relationCounters = [
-        Artifact::class       => ['artifacts' => 'artifacts_count'],
+        Artifactable::class   => ['artifactables' => 'artifacts_count'],
         WorkflowJobRun::class => ['workflowJobRuns' => 'job_runs_count'],
     ];
 
@@ -48,7 +50,7 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
         });
     }
 
-    public function casts()
+    public function casts(): array
     {
         return [
             'started_at'   => 'datetime',
@@ -88,9 +90,14 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
         return $this->workflowJobRuns()->whereIn('status', [WorkflowRun::STATUS_PENDING, WorkflowRun::STATUS_RUNNING]);
     }
 
-    public function artifacts()
+    public function artifactables(): MorphMany|Artifactable
     {
-        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps();
+        return $this->morphMany(Artifactable::class, 'artifactable');
+    }
+
+    public function artifacts(): MorphToMany|Artifact
+    {
+        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps()->using(Artifactable::class);
     }
 
     public function isCompleted(): bool

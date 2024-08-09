@@ -73,7 +73,7 @@ const validContent = computed(() => {
 		case"yaml":
 			return parseMarkdownYAML(rawContent.value);
 		case "ts":
-			return parseMarkdownJSON(rawContent.value);
+			return rawContent.value;
 		case "text":
 		default:
 			return rawContent.value;

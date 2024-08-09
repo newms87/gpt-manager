@@ -1,4 +1,5 @@
 DrugInjury:
+  type: DrugInjury
   attributes:
     - name: evaluation_score
       type: integer
@@ -30,7 +31,6 @@ DrugInjury:
   relations:
     DrugProduct:
       type: DrugProduct
-      cardinality: 1
       attributes:
         - name: number_of_users
           type: integer
@@ -43,8 +43,7 @@ DrugInjury:
           description: The statute of limitations tolling for the patent
       relations:
         Patents:
-          type: Patent
-          cardinality: many
+          type: Patent[]
           attributes:
             - name: patent_number
               type: string
@@ -59,8 +58,7 @@ DrugInjury:
               type: date
               description: The date the patent was issued
         DrugGenerics:
-          type: DrugGeneric
-          cardinality: many
+          type: DrugGeneric[]
           attributes:
             - name: generics
               type: json
@@ -70,7 +68,6 @@ DrugInjury:
               description: The statute of limitations tolling for the patent
         Company:
           type: Company
-          cardinality: 1
           attributes:
             - name: net_income
               type: integer
@@ -88,8 +85,7 @@ DrugInjury:
               type: integer
               description: Most recent total equity
     ScientificStudies:
-      type: ScientificStudy
-      cardinality: many
+      type: ScientificStudy[]
       attributes:
         - name: group_size
           type: integer
@@ -110,8 +106,7 @@ DrugInjury:
           type: text
           description: The complications observed in the study
     Warnings:
-      type: Warning
-      cardinality: many
+      type: Warning[]
       attributes:
         - name: issued_at
           type: date
