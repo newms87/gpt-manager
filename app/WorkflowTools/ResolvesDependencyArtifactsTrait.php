@@ -200,11 +200,11 @@ trait ResolvesDependencyArtifactsTrait
             }
             $groupKeyValue = $value;
             if (is_array($groupKeyValue)) {
-                $resetValue = reset($groupKeyValue);
-                if (is_array($resetValue)) {
-                    $groupKeyValue = implode(',', $resetValue);
+                $bestNameValue = $groupKeyValue['name'] ?? $groupKeyValue['title'] ?? $groupKeyValue['id'] ?? reset($groupKeyValue);
+                if (is_array($bestNameValue)) {
+                    $groupKeyValue = implode(',', $bestNameValue);
                 } else {
-                    $groupKeyValue = $resetValue;
+                    $groupKeyValue = $bestNameValue;
                 }
             }
             $tmpKey = ($groupByKey ? "$groupByKey," : '') . $key . ':' . ($groupKeyValue ?: 'default');
