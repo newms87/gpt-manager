@@ -2,8 +2,8 @@
 	<div class="drug-issue-company">
 		<LogoImage v-if="company.meta?.logo" :src="company.meta?.logo" class="max-w-24 max-h-10" :url="company.url" />
 
-		<div class="grid grid-cols-2 gap-4">
-			<LabelValueBlock label="Company" :value="company.name" :url="company.url" />
+		<div class="grid grid-cols-3 gap-4">
+			<LabelValueBlock label="Score" :value="company.score?.value" :url="company.url" />
 			<LabelValueBlock
 				label="Annual Revenue"
 				:value="fShortCurrency(company.annual_revenue?.value)"
@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { Company } from "@/components/Modules/Tortguard/drugs";
+import { Company } from "@/components/Modules/Tortguard/tortguard";
 import LogoImage from "@/components/Shared/Images/LogoImage";
 import { fShortCurrency, LabelValueBlock } from "quasar-ui-danx";
 

@@ -21,7 +21,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { DrugWarning } from "@/components/Modules/Tortguard/drugs";
+import { DrugWarning } from "@/components/Modules/Tortguard/tortguard";
 import { ShowHideButton } from "@/components/Shared";
 import { fDate } from "quasar-ui-danx";
 import { ref } from "vue";

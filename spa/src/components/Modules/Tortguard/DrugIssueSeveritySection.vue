@@ -1,5 +1,5 @@
 <template>
-	<div class="grid grid-cols-4 gap-4 mt-4">
+	<div class="grid grid-cols-4 gap-4">
 		<LabelValueBlock
 			label="Severity Level"
 			:value="drugInjury.severity_level?.value"
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { DrugInjury } from "@/components/Modules/Tortguard/drugs";
+import { DrugInjury } from "@/components/Modules/Tortguard/tortguard";
 import { fBoolean, fCurrencyNoCents, LabelValueBlock } from "quasar-ui-danx";
 
 defineProps<{ drugInjury: DrugInjury }>();

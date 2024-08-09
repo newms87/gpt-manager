@@ -36,7 +36,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { ScientificStudy } from "@/components/Modules/Tortguard/drugs";
+import { ScientificStudy } from "@/components/Modules/Tortguard/tortguard";
 import { ShowHideButton } from "@/components/Shared";
 import { fNumber, LabelValueBlock } from "quasar-ui-danx";
 import { ref } from "vue";

@@ -43,17 +43,20 @@
 			</div>
 		</div>
 		<div v-if="isShowing">
-			<div class="flex items-start mt-4">
+			<div class="flex items-start mt-4 mx-4">
 				<div class="flex-grow">
-					<DrugIssueCompanySection class="w-72 bg-slate-800 p-4 rounded-lg" :company="drugInjury.product.company" />
+					<div class="bg-slate-700 p-4 rounded-lg w-[30rem]">
+						<h6 class="mb-2">{{ drugInjury.product.company.name }}</h6>
+						<DrugIssueCompanySection :company="drugInjury.product.company" />
+					</div>
 				</div>
 				<div class="bg-sky-950 p-4 rounded-lg">
-					<h5>Severity</h5>
+					<h6 class="mb-2">Severity</h6>
 					<DrugIssueSeveritySection class="w-[40rem]" :drug-injury="drugInjury" />
 				</div>
 			</div>
-			<div>
-				<!--					<DrugIssuePatentSection :get-sources="getSources" :drug="drugInjury.drug" :get-source-url="getSourceUrl" />-->
+			<div class="p-4">
+				<DrugIssuePatentSection :patents="drugInjury.product.patents || []" />
 				<!--					<DrugIssueMarketSection :get-sources="getSources" :drug="drugInjury.drug" :get-source-url="getSourceUrl" />-->
 				<DrugIssueScientificStudiesSection :studies="drugInjury.studies || []" class="mt-6" />
 				<DrugIssueWarningsSection :warnings="drugInjury.warnings || []" class="mt-6" />
@@ -64,10 +67,11 @@
 
 <script setup lang="ts">
 import DrugIssueCompanySection from "@/components/Modules/Tortguard/DrugIssueCompanySection";
+import DrugIssuePatentSection from "@/components/Modules/Tortguard/DrugIssuePatentSection";
 import DrugIssueScientificStudiesSection from "@/components/Modules/Tortguard/DrugIssueScientificStudiesSection";
 import DrugIssueSeveritySection from "@/components/Modules/Tortguard/DrugIssueSeveritySection";
 import DrugIssueWarningsSection from "@/components/Modules/Tortguard/DrugIssueWarningsSection";
-import { DrugInjury } from "@/components/Modules/Tortguard/drugs";
+import { DrugInjury } from "@/components/Modules/Tortguard/tortguard";
 import { ShowHideButton } from "@/components/Shared";
 import LogoImage from "@/components/Shared/Images/LogoImage";
 

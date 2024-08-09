@@ -7,19 +7,19 @@
 					v-for="drugInjury in activeDrugInjuries"
 					:key="drugInjury.id"
 					:drug-injury="drugInjury"
-					class="mb-8"
+					class="mb-6"
 					@update:model-value="onShow(drugInjury, $event)"
 				/>
 			</ListTransition>
 		</div>
 
-		<AiSearchBar v-if="!activeDrugInjury" class="absolute bottom-0 left-0 w-full px-8 py-4" />
+		<AiSearchBar v-if="!activeDrugInjury" class="absolute bottom-0 left-0 w-full px-8 py-4" @refresh="loadDashboard" />
 	</div>
 </template>
 <script setup lang="ts">
 import AiSearchBar from "@/components/Modules/AiSearch/AiSearchBar";
 import DrugInjuryCard from "@/components/Modules/Tortguard/DrugInjuryCard";
-import { DrugInjury } from "@/components/Modules/Tortguard/drugs";
+import { DrugInjury } from "@/components/Modules/Tortguard/tortguard";
 import { FlashMessages, ListTransition, request } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 
@@ -27,10 +27,12 @@ const drugInjuries = ref<DrugInjury[]>([]);
 const activeDrugInjury = ref<DrugInjury | null>(null);
 const activeDrugInjuries = computed(() => activeDrugInjury.value ? drugInjuries.value.filter((di) => activeDrugInjury.value?.id === di.id) : drugInjuries.value);
 
-onMounted(async () => {
+onMounted(loadDashboard);
+
+async function loadDashboard() {
 	const result = await request.get("tortguard/dashboard");
 	if (!result) {
-		return FlashMessages.error("Failed to load drug issues");
+		return FlashMessages.error("Failed to load dashboard");
 	}
 
 	if (result.error) {
@@ -40,7 +42,7 @@ onMounted(async () => {
 	if (result.drugInjuries) {
 		drugInjuries.value = result.drugInjuries;
 	}
-});
+}
 
 function onShow(drugInjury: DrugInjury, isShowing: boolean) {
 	if (isShowing) {

@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { DataSource } from "@/components/Modules/Tortguard/drugs";
+import { DataSource } from "@/components/Modules/Tortguard/tortguard";
 import { FaSolidLink as SourceLinkIcon } from "danx-icon";
 
 defineProps<{ sources: DataSource[] }>();

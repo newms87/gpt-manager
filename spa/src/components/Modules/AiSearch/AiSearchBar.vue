@@ -18,7 +18,7 @@
 				<div>
 					<ClearIcon
 						v-if="searchText"
-						class="w-6 text-red-300 bg-red-900 mr-2 hover:bg-red-950 transition-all cursor-pointer"
+						class="w-6 text-slate-500 mr-5 hover:text-slate-800 transition-all cursor-pointer"
 						@click="onClear"
 					/>
 				</div>
@@ -60,31 +60,12 @@
 </template>
 <script setup lang="ts">
 import { AiSearchRoutes } from "@/routes/searchRoutes";
-import { WorkflowRun } from "@/types";
+import { ResearchResult, SearchItem, SearchResult } from "@/types/research";
 import { FaSolidRobot as BotIcon, FaSolidWandSparkles as SearchIcon, FaSolidXmark as ClearIcon } from "danx-icon";
 import { FlashMessages, ListTransition, TextField } from "quasar-ui-danx";
 import { ref } from "vue";
 
-export interface SearchItem {
-	product: string;
-	injury: string;
-	company: string;
-	description: string;
-	sources: { url: string }[];
-}
-
-export interface SearchResult {
-	success?: boolean;
-	message?: string;
-	results: SearchItem[];
-}
-
-export interface ResearchResult {
-	success?: boolean;
-	message?: string;
-	workflowRun?: WorkflowRun;
-}
-
+const emit = defineEmits(["refresh"]);
 const searchText = ref("");
 const searchResults = ref<SearchItem[]>([]);
 const isSearching = ref(false);
@@ -105,10 +86,11 @@ async function onSearch() {
 
 async function onResearch(result: SearchItem) {
 	isStartingResearch.value = result;
-	const response: ResearchResult = await AiSearchRoutes.research(result.product, result.injury);
+	const response: ResearchResult = await AiSearchRoutes.research(result);
 	isStartingResearch.value = null;
 
 	if (response.success) {
+		emit("refresh");
 		FlashMessages.info(`Researching ${result.product}: ${result.injury} in workflow ${response.workflowRun.id}`);
 		searchResults.value = searchResults.value.filter((r) => r !== result);
 	} else {

@@ -70,6 +70,7 @@ interface DrugGeneric extends TeamObject {
 }
 
 interface Company extends TeamObject {
+	score: NumberAttribute;
 	net_income: NumberAttribute;
 	annual_revenue: NumberAttribute;
 	operating_income: NumberAttribute;
@@ -78,10 +79,10 @@ interface Company extends TeamObject {
 }
 
 interface Patent extends TeamObject {
-	patent_number: StringAttribute;
-	patent_filed_date: DateAttribute;
-	patent_expiration_date: DateAttribute;
-	patent_issued_date: DateAttribute;
+	number: StringAttribute;
+	filed_date: DateAttribute;
+	expiration_date: DateAttribute;
+	issued_date: DateAttribute;
 }
 
 interface ScientificStudy extends TeamObject {

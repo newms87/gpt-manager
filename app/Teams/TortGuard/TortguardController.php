@@ -5,13 +5,11 @@ namespace App\Teams\TortGuard;
 use App\Http\Controllers\Controller;
 use App\Models\Agent\Agent;
 use App\Models\TeamObject\TeamObject;
-use App\Models\Workflow\Workflow;
-use App\Models\Workflow\WorkflowInput;
 use App\Repositories\ThreadRepository;
+use App\Repositories\Tortguard\TortguardRepository;
 use App\Resources\Tortguard\DrugInjuryResource;
 use App\Resources\Workflow\WorkflowRunResource;
 use App\Services\AgentThread\AgentThreadService;
-use App\Services\Workflow\WorkflowService;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\StringHelper;
@@ -24,7 +22,7 @@ class TortguardController extends Controller
      */
     public function getDashboardData(): array
     {
-        $drugInjuryObjects = TeamObject::where('type', 'DrugInjury')->get();
+        $drugInjuryObjects = TeamObject::where('type', 'DrugInjury')->orderByDesc('id')->limit(8)->get();
 
         $drugInjuries = [];
         foreach($drugInjuryObjects as $drugInjury) {
@@ -70,26 +68,8 @@ class TortguardController extends Controller
 
     public function research(): array
     {
-        $product  = request()->input('product');
-        $injury   = request()->input('injury');
-        $workflow = Workflow::where('team_id', team()->id)->firstWhere('name', 'Drug Injury Researcher');
-
-        if (!$workflow) {
-            throw new ValidationError('Drug Injury Researcher workflow not found');
-        }
-
-        $workflowInput = WorkflowInput::make()->forceFill([
-            'team_id' => team()->id,
-            'user_id' => user()->id,
-            'name'    => 'Research: ' . $product . ' - ' . $injury,
-            'content' => json_encode([
-                'product' => $product,
-                'injury'  => $injury,
-            ]),
-        ]);
-        $workflowInput->save();
-
-        $workflowRun = app(WorkflowService::class)->run($workflow, $workflowInput);
+        $searchResult = json_decode(request()->input('search_result'), true);
+        $workflowRun  = app(TortguardRepository::class)->research($searchResult);
 
         return ['success' => true, 'workflowRun' => WorkflowRunResource::make($workflowRun)];
     }
