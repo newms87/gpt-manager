@@ -137,7 +137,7 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
         $date      = $attribute['date'] ?? null;
         $sourceUrl = $attribute['source_url'] ?? null;
 
-        if (!$name || !$value) {
+        if (!$name || (!$value && !array_key_exists('value', $attribute))) {
             throw new BadFunctionCallException("Save Objects requires a name and value for each attribute: \n\n" . json_encode($attribute));
         }
 
