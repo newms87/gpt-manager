@@ -1,4 +1,5 @@
 interface TeamObject {
+    id: string;
     type: 'DrugInjury' | 'DrugProduct' | 'DrugGeneric' | 'Company' | 'Patent' | 'ScientificStudy' | 'Warning';
     name: string;
     description: string;

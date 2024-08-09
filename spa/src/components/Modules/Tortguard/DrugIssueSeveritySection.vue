@@ -2,39 +2,39 @@
 	<div class="grid grid-cols-4 gap-4 mt-4">
 		<LabelValueBlock
 			label="Severity Level"
-			:value="issue.severity_level"
+			:value="drugInjury.severity_level?.value"
 		/>
 		<LabelValueBlock
 			label="Hospitalization"
-			:value="fBoolean(issue.hospitalization)"
+			:value="fBoolean(drugInjury.hospitalization?.value)"
 		/>
 		<LabelValueBlock
 			label="Surgical Procedure"
-			:value="fBoolean(issue.surgical_procedure)"
+			:value="fBoolean(drugInjury.surgical_procedure?.value)"
 		/>
 		<LabelValueBlock
 			label="Permanent Disability"
-			:value="fBoolean(issue.permanent_disability)"
+			:value="fBoolean(drugInjury.permanent_disability?.value)"
 		/>
 		<LabelValueBlock
 			label="Death"
-			:value="fBoolean(issue.death)"
+			:value="fBoolean(drugInjury.death?.value)"
 		/>
 		<LabelValueBlock
 			label="Ongoing Care"
-			:value="fBoolean(issue.ongoing_care)"
+			:value="fBoolean(drugInjury.ongoing_care?.value)"
 		/>
 		<LabelValueBlock
 			class="col-span-2 !max-w-64"
 			label="Economic Damage"
-			:value="fCurrencyNoCents(issue.economic_damage_min) + ' - ' + fCurrencyNoCents(issue.economic_damage_max)"
+			:value="fCurrencyNoCents(drugInjury.economic_damage_min?.value) + ' - ' + fCurrencyNoCents(drugInjury.economic_damage_max?.value)"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { Issue } from "@/components/Modules/Tortguard/drugs";
+import { DrugInjury } from "@/components/Modules/Tortguard/drugs";
 import { fBoolean, fCurrencyNoCents, LabelValueBlock } from "quasar-ui-danx";
 
-defineProps<{ issue: Issue }>();
+defineProps<{ drugInjury: DrugInjury }>();
 </script>

@@ -5,8 +5,10 @@ namespace App\Models\TeamObject;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\AuditableTrait;
 
 /**
@@ -47,6 +49,11 @@ class TeamObjectAttribute extends Model implements AuditableContract
             'date'       => 'datetime',
             'json_value' => 'json',
         ];
+    }
+
+    public function sourceFile(): BelongsTo|StoredFile
+    {
+        return $this->belongsTo(StoredFile::class, 'source_stored_file_id');
     }
 
     public function __toString(): string

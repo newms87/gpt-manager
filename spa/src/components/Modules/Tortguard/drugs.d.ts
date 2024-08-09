@@ -1,86 +1,99 @@
-export interface Company {
-	id: number;
+import { TypedObject, UploadedFile } from "quasar-ui-danx";
+
+interface TeamObject extends TypedObject {
+	id: string;
 	name: string;
-	url: string;
-	logo: string;
-	annual_revenue: number;
-	operating_income: number;
-	net_income: number;
-	total_assets: number;
-	total_equity: number;
+	description: string | null;
+	url: string | null;
+	meta?: object | null;
 }
 
-export interface Drug {
-	id: number;
+interface TeamObjectAttribute {
+	id: string;
 	name: string;
-	url: string;
-	logo: string;
-	patent_number: string;
-	patent_filed_date: string;
-	patent_expiration_date: string;
-	patent_issued_date: string;
-	patent_details: string;
-	number_of_users: number;
-	market_share: number;
-	generic_name: string;
-	generics: string[];
-	statute_of_limitations_tolling: string;
+	date: Date;
+	value: object | string | boolean | number | Date | null;
+	source?: UploadedFile;
+	created_at: Date;
+	updated_at: Date;
 }
 
-export interface Issue {
-	id: number;
-	name: string;
-	description: string;
-	evaluation_score: number;
-	severity_level: string;
-	hospitalization: boolean;
-	surgical_procedure: boolean;
-	permanent_disability: boolean;
-	death: boolean;
-	ongoing_care: boolean;
-	economic_damage_min: number;
-	economic_damage_max: number;
+interface BooleanAttribute extends TeamObjectAttribute {
+	value: boolean | null;
 }
 
-export interface ScientificStudy {
-	id: number;
-	name: string;
-	url: string;
-	description: string;
-	quality_grade: string;
-	injury: string;
-	injury_description: string;
-	group_size?: number | string;
-	age_range?: string;
-	median_age?: string;
-	treatment_method?: string;
-	treatment_efficacy?: string;
-	complications?: string;
+interface StringAttribute extends TeamObjectAttribute {
+	value: number | null;
 }
 
-export interface DrugWarning {
-	id: number;
-	name: string;
-	url: string;
-	description: string;
-	issued_at: string;
-	injury_risks: string[];
+interface NumberAttribute extends TeamObjectAttribute {
+	value: number | null;
 }
 
-export interface DataSource {
-	id: number;
-	name: string;
-	url: string;
-	table: string;
-	field: string;
-	explanation: string;
+interface DateAttribute extends TeamObjectAttribute {
+	value: string | null;
 }
 
-export interface DrugIssue {
-	company: Company;
-	drug: Drug;
-	issue: Issue;
-	scientific_studies: ScientificStudy[];
+interface ObjectAttribute extends TeamObjectAttribute {
+	value: object | null;
+}
+
+interface DrugInjury extends TeamObject {
+	evaluation_score?: NumberAttribute;
+	severity_level?: NumberAttribute;
+	hospitalization?: BooleanAttribute;
+	surgical_procedure?: BooleanAttribute;
+	permanent_disability?: BooleanAttribute;
+	death?: BooleanAttribute;
+	ongoing_care?: BooleanAttribute;
+	economic_damage_min?: NumberAttribute;
+	economic_damage_max?: NumberAttribute;
+	product: DrugProduct;
+	studies: ScientificStudy[];
 	warnings: DrugWarning[];
-	data_sources: DataSource[];
+}
+
+interface DrugProduct extends TeamObject {
+	number_of_users: NumberAttribute;
+	market_share: NumberAttribute;
+	// The number of years the statute of limitations is tolled for this drug
+	statute_of_limitations_tolling: StringAttribute;
+	patents: Patent[];
+	// DrugProducts can have multiple DrugGenerics (ie: Actos can be pioglitazone and metformin)
+	generics: DrugGeneric[];
+	company: Company;
+}
+
+interface DrugGeneric extends TeamObject {
+	// DrugGenerics can have multiple DrugProducts (ie: acetaminophen can be in Tylenol, Excedrin, etc)
+	products: DrugProduct[];
+}
+
+interface Company extends TeamObject {
+	net_income: NumberAttribute;
+	annual_revenue: NumberAttribute;
+	operating_income: NumberAttribute;
+	total_assets: NumberAttribute;
+	total_equity: NumberAttribute;
+}
+
+interface Patent extends TeamObject {
+	patent_number: StringAttribute;
+	patent_filed_date: DateAttribute;
+	patent_expiration_date: DateAttribute;
+	patent_issued_date: DateAttribute;
+}
+
+interface ScientificStudy extends TeamObject {
+	group_size: NumberAttribute;
+	age_range: NumberAttribute;
+	median_age: NumberAttribute;
+	treatment_method: StringAttribute;
+	treatment_efficacy: StringAttribute;
+	complications: StringAttribute;
+}
+
+interface DrugWarning extends TeamObject {
+	issued_at: DateAttribute;
+	injury_risks: string[];
 }

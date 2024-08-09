@@ -8,10 +8,10 @@
 					<div class="flex-grow">
 						<a :href="warning.url" target="_blank">{{ warning.name }}</a>
 					</div>
-					<div class="bg-slate-900 text-slate-400 px-2 py-1 rounded-lg">{{ fDate(warning.issued_at) }}</div>
+					<div class="bg-slate-900 text-slate-400 px-2 py-1 rounded-lg">{{ fDate(warning.issued_at.value) }}</div>
 				</div>
 				<div class="text-sm mt-2">{{ warning.description }}</div>
-				<div class="mt-4">
+				<div v-if="warning.injury_risks" class="mt-4">
 					<ul class="list-disc ml-8">
 						<li v-for="injury in warning.injury_risks" :key="injury">{{ injury }}</li>
 					</ul>
