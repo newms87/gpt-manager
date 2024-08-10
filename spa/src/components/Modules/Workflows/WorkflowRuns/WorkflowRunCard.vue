@@ -1,6 +1,6 @@
 <template>
 	<QCard class="bg-slate-800 text-slate-300 rounded overflow-hidden">
-		<div class="flex items-center justify-between">
+		<div class="flex items-center justify-between flex-nowrap">
 			<div class="flex-grow py-4 px-3 flex items-center flex-nowrap">
 				<div class="text-slate-400">
 					ID: {{ workflowRun.id }}
@@ -19,19 +19,7 @@
 				class="bg-slate-600 text-slate-200 mx-2"
 				@show="WorkflowRunRoutes.relation(props.workflowRun, 'workflowJobRuns')"
 			/>
-			<div class="mx-2">
-				<ElapsedTimePill
-					timer-class="bg-slate-900 font-bold rounded-lg text-xs w-32 text-center py-2"
-					:start="workflowRun.started_at"
-					:end="workflowRun.failed_at || workflowRun.completed_at"
-				/>
-			</div>
-			<div
-				class="px-4 py-1.5 rounded-lg mx-2 w-28 text-center"
-				:class="WORKFLOW_STATUS.resolve(workflowRun.status).classPrimary"
-			>
-				{{ workflowRun.status }}
-			</div>
+			<WorkflowStatusTimerPill :runner="workflowRun" />
 			<div class="mx-2">
 				<AiTokenUsageButton :usage="workflowRun.usage" />
 			</div>
@@ -81,10 +69,10 @@
 <script setup lang="ts">
 import ArtifactCard from "@/components/Modules/Artifacts/ArtifactCard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
 import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
-import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import WorkflowJobRunCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunCard";
 import { ShowHideButton } from "@/components/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";

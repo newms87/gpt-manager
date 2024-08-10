@@ -82,6 +82,6 @@ class TortguardController extends Controller
             throw new ValidationError('Drug Injury not found');
         }
 
-        return ['success' => true, 'drugInjury' => DrugInjuryResource::details($drugInjury)];
+        return DrugInjuryResource::details($drugInjury);
     }
 }

@@ -24,10 +24,7 @@
 			</div>
 			<ShowHideButton v-if="task.thread" v-model="showThread" label="Thread" class="bg-sky-800 mx-1 text-sm" />
 			<ShowHideButton v-model="showLogs" label="Logs" class="bg-slate-800 mx-1 text-sm" />
-			<ElapsedTimePill :start="task.started_at" :end="task.failed_at || task.completed_at" class="mx-1" />
-			<div class="py-1 px-3 rounded-xl w-24 text-center ml-1" :class="workflowTaskStatus.classAlt">
-				{{ task.status }}
-			</div>
+			<WorkflowStatusTimerPill :runner="task" inverse class="mx-1" padding="py-1" />
 			<div class="ml-2">
 				<AiTokenUsageButton :usage="task.usage" />
 			</div>
@@ -48,8 +45,7 @@
 <script setup lang="ts">
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
-import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
-import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
+import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { AiTokenUsageButton, ShowHideButton } from "@/components/Shared";
 import { WorkflowTask } from "@/types/workflows";
 import { computed, ref } from "vue";
@@ -58,7 +54,6 @@ const props = defineProps<{
 	task: WorkflowTask;
 }>();
 
-const workflowTaskStatus = computed(() => WORKFLOW_STATUS.resolve(props.task.status));
 const showLogs = ref(false);
 const showThread = ref(false);
 

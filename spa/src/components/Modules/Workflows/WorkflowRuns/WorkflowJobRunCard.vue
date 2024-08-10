@@ -10,24 +10,11 @@
 				:label="jobRun.tasks.length + ' Tasks'"
 				class="mr-4 bg-slate-600 text-slate-200"
 			/>
-			<div class="mr-4">
-				<ElapsedTimePill
-					timer-class="bg-slate-900 font-bold rounded-lg text-xs w-32 text-center py-2"
-					:start="jobRun.started_at"
-					:end="jobRun.failed_at || jobRun.completed_at"
-				/>
-			</div>
-			<div
-				class="flex items-center flex-nowrap text-md font-bold py-2 px-4 rounded-xl"
-				:class="workflowStatus.classPrimary"
-			>
-				<div>{{ jobRun.status }}</div>
-				<RestartIcon
-					v-if="jobRun.status !== WORKFLOW_STATUS.PENDING.value"
-					class="w-4 cursor-pointer	ml-2"
-					@click="restartJobAction.trigger(workflowRun, {workflow_job_run_id: jobRun.id})"
-				/>
-			</div>
+			<WorkflowStatusTimerPill
+				:runner="jobRun"
+				restart
+				@restart="restartJobAction.trigger(workflowRun, {workflow_job_run_id: jobRun.id})"
+			/>
 			<div class="ml-2">
 				<AiTokenUsageButton :usage="jobRun.usage" />
 			</div>
@@ -43,24 +30,20 @@
 	</QCard>
 </template>
 <script setup lang="ts">
-import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
-import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
 import WorkflowTaskCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowTaskCard";
 import { ShowHideButton } from "@/components/Shared";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import { WorkflowJobRun, WorkflowRun } from "@/types/workflows";
-import { FaSolidArrowsRotate as RestartIcon } from "danx-icon";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 
-const props = defineProps<{
+defineProps<{
 	workflowRun: WorkflowRun;
 	jobRun: WorkflowJobRun;
 }>();
 
 const restartJobAction = getAction("restart-job");
-
-const workflowStatus = computed(() => WORKFLOW_STATUS.resolve(props.jobRun.status));
 const isShowingTasks = ref(false);
 </script>
 

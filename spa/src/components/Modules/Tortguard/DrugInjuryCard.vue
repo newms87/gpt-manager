@@ -28,24 +28,11 @@
 				<div v-if="drugInjury.description" class="ml-4">{{ drugInjury.description }}</div>
 			</div>
 			<div class="mx-3 flex items-center flex-nowrap">
-				<div v-if="drugInjury.workflowRun" class="mr-6 bg-slate-800 p-4 rounded-xl">
-					<div class="flex items-center flex-nowrap text-base">
-						<QSpinnerBall class="w-6 mr-2" />
-						<div>Researching</div>
-						<ElapsedTimePill
-							:start="drugInjury.workflowRun.started_at"
-							:end="drugInjury.workflowRun.completed_at"
-							class="ml-2"
-							timer-class="py-1 px-3 bg-slate-700 rounded-lg text-xs w-32 text-center"
-						/>
-					</div>
-					<div
-						class="px-4 py-1.5 rounded-lg mt-2 w-28 text-center"
-						:class="WORKFLOW_STATUS.resolve(drugInjury.workflowRun.status).classPrimary"
-					>
-						{{ drugInjury.workflowRun.status }}
-					</div>
-				</div>
+				<WorkflowResearchingCard
+					v-if="drugInjury.workflowRun"
+					:workflow-run="drugInjury.workflowRun"
+					class="mr-6 bg-slate-800 my-2"
+				/>
 				<div
 					class="px-4 py-2 rounded-xl flex items-center" :class="{
 						'!bg-slate-900': !drugInjury.evaluation_score,
@@ -90,28 +77,21 @@ import DrugIssueSeveritySection from "@/components/Modules/Tortguard/DrugIssueSe
 import DrugIssueWarningsSection from "@/components/Modules/Tortguard/DrugIssueWarningsSection";
 import { DrugInjury } from "@/components/Modules/Tortguard/tortguard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
-import ElapsedTimePill from "@/components/Modules/Workflows/WorkflowRuns/ElapsedTimePill";
+import WorkflowResearchingCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowResearchCard";
 import { ShowHideButton } from "@/components/Shared";
 import LogoImage from "@/components/Shared/Images/LogoImage";
 import { TortguardRoutes } from "@/routes/tortguardRoutes";
-import { FlashMessages, storeObject } from "quasar-ui-danx";
+import { autoRefreshObject } from "quasar-ui-danx";
 import { onMounted } from "vue";
 
 const props = defineProps<{ drugInjury: DrugInjury }>();
 const isShowing = defineModel<boolean>();
 
-onMounted(autoRefresh);
-
-async function autoRefresh() {
-	if (props.drugInjury?.workflowRun) {
-		const response = await TortguardRoutes.drugInjury(props.drugInjury.id);
-
-		if (!response.success) {
-			return FlashMessages.error("Failed to refresh " + props.drugInjury.name);
-		}
-
-		storeObject(response.drugInjury);
-		setTimeout(autoRefresh, 3000);
-	}
-}
+onMounted(() => {
+	autoRefreshObject(
+		props.drugInjury,
+		(d: DrugInjury) => d.workflowRun?.status === WORKFLOW_STATUS.RUNNING.value,
+		(d: DrugInjury) => TortguardRoutes.drugInjury(d.id)
+	);
+});
 </script>

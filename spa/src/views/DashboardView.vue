@@ -2,7 +2,7 @@
 	<div class="relative h-full">
 		<div v-if="!drugInjuries.length" class="text-center text-gray-400 text-lg">No drug injuries found</div>
 		<div v-else class="p-8 overflow-y-auto h-full">
-			<ListTransition>
+			<ListTransition class="pb-10">
 				<DrugInjuryCard
 					v-for="drugInjury in activeDrugInjuries"
 					:key="drugInjury.id"

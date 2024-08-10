@@ -14,7 +14,7 @@ export interface ElapsedTimePillProps {
 const props = withDefaults(defineProps<ElapsedTimePillProps>(), {
 	start: null,
 	end: null,
-	timerClass: "py-1 px-3 bg-slate-800 rounded-lg text-xs w-32 text-center"
+	timerClass: "py-1 px-3 bg-slate-800 rounded-xl text-xs w-28 text-center"
 });
 
 const taskTimer = ref(calcTaskTimer());

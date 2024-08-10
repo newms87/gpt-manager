@@ -31,26 +31,24 @@ class TortguardRepository
             throw new ValidationError('Product and Injury are required');
         }
 
-        $drugInjury = TeamObject::create([
-            'team_id'     => team()->id,
-            'ref'         => Str::slug($product . ':' . $injury),
-            'type'        => 'DrugInjury',
-            'name'        => $product . ': ' . $injury,
+        $drugInjury = TeamObject::firstOrCreate([
+            'ref'  => Str::slug($product . ':' . $injury),
+            'type' => 'DrugInjury',
+            'name' => $product . ': ' . $injury,
+        ], [
             'description' => $description,
         ]);
 
-        $drugProduct = TeamObject::create([
-            'team_id' => team()->id,
-            'ref'     => Str::slug($product),
-            'type'    => 'DrugProduct',
-            'name'    => $product,
+        $drugProduct = TeamObject::firstOrCreate([
+            'ref'  => Str::slug($product),
+            'type' => 'DrugProduct',
+            'name' => $product,
         ]);
 
-        $company = TeamObject::create([
-            'team_id' => team()->id,
-            'ref'     => Str::slug($company),
-            'type'    => 'Company',
-            'name'    => $company,
+        $company = TeamObject::firstOrCreate([
+            'ref'  => Str::slug($company),
+            'type' => 'Company',
+            'name' => $company,
         ]);
 
         $drugInjury->relationships()->create([

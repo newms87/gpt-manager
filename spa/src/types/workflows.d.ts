@@ -39,28 +39,18 @@ export interface WorkflowJob extends ActionTargetItem {
 	workflow?: Workflow;
 }
 
-export interface WorkflowJobRun {
-	id: number;
+export interface WorkflowJobRun extends WorkflowRunner {
 	name: string;
-	status: string;
-	completed_at: string;
-	started_at: string;
-	failed_at: string;
 	workflowJob: WorkflowJob;
 	tasks: WorkflowTask[];
 	usage: WorkflowUsage;
 }
 
-export interface WorkflowTask {
-	id: number;
+export interface WorkflowTask extends WorkflowRunner {
 	job_name: string;
 	group: string;
 	agent_name: string;
 	model: string;
-	status: string;
-	completed_at: string;
-	started_at: string;
-	failed_at: string;
 	artifact?: Artifact;
 	thread: AgentThread;
 	audit_request_id: string;
@@ -77,17 +67,20 @@ export interface WorkflowAssignment extends ActionTargetItem {
 	agent?: Agent;
 }
 
-export interface WorkflowRun extends ActionTargetItem {
+export interface WorkflowRunner extends ActionTargetItem {
 	id: number;
-	workflow_id: number;
-	workflow_name: string;
-	input_name: string;
-	status: string;
-	artifacts_count: number;
-	job_runs_count: number;
+	status: "Pending" | "Running" | "Failed" | "Completed";
 	completed_at: string;
 	started_at: string;
 	failed_at: string;
+}
+
+export interface WorkflowRun extends WorkflowRunner {
+	workflow_id: number;
+	workflow_name: string;
+	input_name: string;
+	artifacts_count: number;
+	job_runs_count: number;
 	workflowInput?: WorkflowInput;
 	workflowJobRuns?: WorkflowJobRun[];
 	artifacts?: Artifact[];
