@@ -148,4 +148,224 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertEquals('{"key": "value"}', $cleanedContent);
     }
+
+    public function test_formatResponseSchema_providesValidJsonSchema(): void
+    {
+        // Given
+        $name     = 'test-schema';
+        $response = [
+            'key' => [
+                'type' => 'string',
+            ],
+        ];
+
+        // When
+        $formattedResponse = app(AgentThreadService::class)->formatResponseSchema($name, $response);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'key' => [
+                        'type' => 'string',
+                    ],
+                ],
+                'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatResponseSchema_requiresAllPropertiesOfNestedObjects(): void
+    {
+        // Given
+        $name     = 'test-schema';
+        $response = [
+            'key' => [
+                'type'       => 'object',
+                'properties' => [
+                    'nested_a' => [
+                        'type' => 'string',
+                    ],
+                    'nested_b' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'nested-key' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $formattedResponse = app(AgentThreadService::class)->formatResponseSchema($name, $response);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'key' => [
+                        'type'                 => 'object',
+                        'properties'           => [
+                            'nested_a' => [
+                                'type' => 'string',
+                            ],
+                            'nested_b' => [
+                                'type'                 => 'object',
+                                'properties'           => [
+                                    'nested-key' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                                'required'             => ['nested-key'],
+                                'additionalProperties' => false,
+                            ],
+                        ],
+                        'required'             => ['nested_a', 'nested_b'],
+                        'additionalProperties' => false,
+                    ],
+                ],
+                'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatResponseSchema_requiresAllPropertiesOfNestedArrays(): void
+    {
+        // Given
+        $name     = 'test-schema';
+        $response = [
+            'key' => [
+                'type'  => 'array',
+                'items' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'nested_a' => [
+                            'type' => 'string',
+                        ],
+                        'nested_b' => [
+                            'type'       => 'object',
+                            'properties' => [
+                                'nested-key' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $formattedResponse = app(AgentThreadService::class)->formatResponseSchema($name, $response);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'key' => [
+                        'type'  => 'array',
+                        'items' => [
+                            'type'                 => 'object',
+                            'properties'           => [
+                                'nested_a' => [
+                                    'type' => 'string',
+                                ],
+                                'nested_b' => [
+                                    'type'                 => 'object',
+                                    'properties'           => [
+                                        'nested-key' => [
+                                            'type' => 'string',
+                                        ],
+                                    ],
+                                    'required'             => ['nested-key'],
+                                    'additionalProperties' => false,
+                                ],
+                            ],
+                            'required'             => ['nested_a', 'nested_b'],
+                            'additionalProperties' => false,
+                        ],
+                    ],
+                ],
+                'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatResponseSchema_addsDescriptionToProperties(): void
+    {
+        // Given
+        $name     = 'test-schema';
+        $response = [
+            'key' => [
+                'type'        => 'string',
+                'description' => 'A test description',
+            ],
+        ];
+
+        // When
+        $formattedResponse = app(AgentThreadService::class)->formatResponseSchema($name, $response);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'key' => [
+                        'type'        => 'string',
+                        'description' => 'A test description',
+                    ],
+                ],
+                'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatResponseSchema_addsEnumToProperties()
+    {
+        // Given
+        $name     = 'test-schema';
+        $response = [
+            'key' => [
+                'type' => 'string',
+                'enum' => ['value1', 'value2'],
+            ],
+        ];
+
+        // When
+        $formattedResponse = app(AgentThreadService::class)->formatResponseSchema($name, $response);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'key' => [
+                        'type' => 'string',
+                        'enum' => ['value1', 'value2'],
+                    ],
+                ],
+                'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
 }

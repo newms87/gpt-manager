@@ -172,21 +172,10 @@ class AgentThreadService
         // Ensures all properties (and sub properties) are both required and have no additional properties. It does this recursively.
         foreach($schema as $key => $value) {
             $childName             = $name . '.' . $key;
-            $formattedSchema[$key] = match ($value['type'] ?? null) {
-                'object' => $this->formatResponseSchema($childName, $value['properties'] ?? [], $depth + 1),
-                'array' => [
-                    'type'  => 'array',
-                    'items' => $this->formatResponseSchema($childName, $value['items'] ?? [], $depth + 1),
-                ],
-                'string', 'number', 'integer', 'boolean', 'null' => ['type' => $value['type']],
-                default => throw new Exception("Unknown type: " . $value['type']),
-            };
+            $formattedSchema[$key] = $this->formatResponseSchemaItem($childName, $value, $depth);
         }
 
         if ($depth > 0) {
-            $formattedSchema['required']             = array_keys($schema);
-            $formattedSchema['additionalProperties'] = false;
-
             return $formattedSchema;
         }
 
@@ -200,6 +189,40 @@ class AgentThreadService
                 'properties'           => $formattedSchema,
             ],
         ];
+    }
+
+    public function formatResponseSchemaItem($name, $value, $depth = 0): array
+    {
+        $type        = $value['type'] ?? null;
+        $description = $value['description'] ?? null;
+        $enum        = $value['enum'] ?? null;
+        $properties  = $value['properties'] ?? [];
+        $items       = $value['items'] ?? [];
+
+        $item = match ($type) {
+            'object' => [
+                'type'                 => 'object',
+                'properties'           => $this->formatResponseSchema("$name.properties", $properties, $depth + 1),
+                'required'             => array_keys($properties),
+                'additionalProperties' => false,
+            ],
+            'array' => [
+                'type'  => 'array',
+                'items' => $this->formatResponseSchemaItem("$name.items", $items, $depth + 1),
+            ],
+            'string', 'number', 'integer', 'boolean', 'null' => ['type' => $type],
+            default => throw new Exception("Unknown type: " . $type),
+        };
+
+        if ($description) {
+            $item['description'] = $description;
+        }
+
+        if ($enum) {
+            $item['enum'] = $enum;
+        }
+
+        return $item;
     }
 
     /**
