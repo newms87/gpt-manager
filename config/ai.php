@@ -5,13 +5,21 @@ use App\AiTools\SaveObjects\SaveObjectsAiTool;
 use App\AiTools\SummarizerAiTool;
 use App\AiTools\UrlToImageAiTool;
 use App\Api\OpenAi\OpenAiApi;
+use App\Api\PerplexityAi\PerplexityAiApi;
 
 return [
     // The seed to use for AI completions to ensure consistent results
     'seed'          => env('AI_SEED', 11181987),
     'default_model' => 'gpt-4o',
     'models'        => [
-        OpenAiApi::$serviceName => [
+        PerplexityAiApi::$serviceName => [
+            'llama-3.1-sonar-large-128k-online' => [
+                'context' => 127072,
+                'input'   => .001,
+                'output'  => .001,
+            ],
+        ],
+        OpenAiApi::$serviceName       => [
             'gpt-4o-mini' => [
                 'input'   => .00015,
                 'output'  => .0006,
@@ -45,7 +53,8 @@ return [
         ],
     ],
     'apis'          => [
-        OpenAiApi::$serviceName => OpenAiApi::class,
+        OpenAiApi::$serviceName       => OpenAiApi::class,
+        PerplexityAiApi::$serviceName => PerplexityAiApi::class,
     ],
     'tools'         => [
         [

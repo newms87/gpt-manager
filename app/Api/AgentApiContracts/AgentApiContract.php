@@ -5,12 +5,6 @@ namespace App\Api\AgentApiContracts;
 interface AgentApiContract
 {
     /**
-     * Returns an array of model ID strings
-     * @return string[]
-     */
-    public function getModels(): array;
-
-    /**
      * Retrieve a Message formatter that can convert messages and files into a message structure the API expects
      */
     public function formatter(): AgentMessageFormatterContract;
