@@ -25,7 +25,7 @@
 					readonly
 					:model-value="agent.response_sample"
 					sync-model-changes
-					:format="agent.response_format"
+					:format="agent.schema_format"
 				/>
 			</div>
 		</div>
@@ -56,9 +56,21 @@ const agentForm: Form = {
 				...props,
 				options: [
 					{ label: "Text", value: "text" },
-					{ label: "JSON Schema", value: "json" },
-					{ label: "YAML Schema", value: "yaml" },
-					{ label: "Typescript Schema", value: "ts" }
+					{ label: "JSON Object", value: "json_object" },
+					{ label: "JSON Schema", value: "json_schema" }
+				]
+			})
+		},
+		{
+			name: "schema_format",
+			label: "Format",
+			enabled: (input) => input.response_format !== "text",
+			vnode: (props) => h(SelectField, {
+				...props,
+				options: [
+					{ label: "JSON", value: "json" },
+					{ label: "YAML", value: "yaml" },
+					{ label: "Typescript", value: "ts" }
 				]
 			})
 		},
@@ -76,7 +88,7 @@ const agentForm: Form = {
 			enabled: (input) => input.response_format !== "text",
 			vnode: (field, input) => h(MarkdownEditor, {
 				...field,
-				format: input.response_format,
+				format: input.schema_format,
 				maxLength: 100000
 			})
 		}

@@ -21,7 +21,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $temperature = .7;
         $agent       = Agent::factory()->create([
             'temperature'     => $temperature,
-            'response_format' => 'json',
+            'response_format' => 'json_object',
         ]);
         $thread      = Thread::factory()->create(['agent_id' => $agent->id]);
         $thread->messages()->create(['role' => Message::ROLE_USER, 'content' => 'Test message']);

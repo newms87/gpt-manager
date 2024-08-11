@@ -29,7 +29,7 @@
 				v-if="agent.response_sample"
 				:model-value="agent.response_sample"
 				sync-model-changes
-				:format="agent.response_format"
+				:format="agent.schema_format"
 				readonly
 			/>
 			<template v-else>

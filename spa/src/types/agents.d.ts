@@ -13,7 +13,8 @@ export interface Agent extends ActionTargetItem {
 	tools: string[];
 	threads: AgentThread[];
 	assignments?: WorkflowAssignment[];
-	response_format: "text" | "json" | "yaml" | "ts";
+	schema_format: "text" | "json" | "yaml" | "ts";
+	response_format: "text" | "json_object" | "json_schema";
 	response_notes?: string;
 	response_schema?: AnyObject;
 	response_sample?: AnyObject;

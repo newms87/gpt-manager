@@ -31,6 +31,7 @@ class AgentResource extends ActionResource
             'temperature'       => $model->temperature,
             'tools'             => $model->tools ?: [],
             'prompt'            => $model->prompt,
+            'schema_format'     => $model->schema_format,
             'response_format'   => $model->response_format,
             'response_notes'    => $model->response_notes,
             'response_schema'   => $model->response_schema,

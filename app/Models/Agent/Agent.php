@@ -30,6 +30,7 @@ class Agent extends Model implements AuditableContract
         'model',
         'temperature',
         'prompt',
+        'schema_format',
         'response_format',
         'response_notes',
         'response_schema',

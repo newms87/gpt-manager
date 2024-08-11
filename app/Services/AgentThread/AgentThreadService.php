@@ -41,7 +41,7 @@ class AgentThreadService
             'temperature'     => $agent->temperature,
             'tools'           => $agent->tools,
             'tool_choice'     => 'auto',
-            'response_format' => $agent->response_format === 'text' ? 'text' : 'json_object',
+            'response_format' => $agent->response_format,
             'seed'            => config('ai.seed'),
             'started_at'      => now(),
         ]);
@@ -113,6 +113,10 @@ class AgentThreadService
                 'seed'            => (int)$threadRun->seed,
             ];
 
+            if ($threadRun->response_format === 'json_schema') {
+                $options['response_format']['json_schema'] = $this->formatResponseSchema($agent->response_schema);
+            }
+
             $tools = $agent->formatTools();
 
             if ($tools) {
@@ -149,6 +153,56 @@ class AgentThreadService
     }
 
     /**
+     * Format the response schema for the AI model
+     * @param string $name   The name for this version of the schema
+     * @param array  $schema The schema to format. The schema should be properly formatted JSON schema (starting with
+     *                       properties of an object as they will be nested inside the main schema)
+     * @param int    $depth  The depth of the schema (used for recursion)
+     * @return array
+     * @throws Exception
+     */
+    public function formatResponseSchema(string $name, array $schema, int $depth = 0): array
+    {
+        if (!$schema) {
+            throw new Exception("$name in schema is empty");
+        }
+
+        $formattedSchema = [];
+
+        // Ensures all properties (and sub properties) are both required and have no additional properties. It does this recursively.
+        foreach($schema as $key => $value) {
+            $childName             = $name . '.' . $key;
+            $formattedSchema[$key] = match ($value['type'] ?? null) {
+                'object' => $this->formatResponseSchema($childName, $value['properties'] ?? [], $depth + 1),
+                'array' => [
+                    'type'  => 'array',
+                    'items' => $this->formatResponseSchema($childName, $value['items'] ?? [], $depth + 1),
+                ],
+                'string', 'number', 'integer', 'boolean', 'null' => ['type' => $value['type']],
+                default => throw new Exception("Unknown type: " . $value['type']),
+            };
+        }
+
+        if ($depth > 0) {
+            $formattedSchema['required']             = array_keys($schema);
+            $formattedSchema['additionalProperties'] = false;
+
+            return $formattedSchema;
+        }
+
+        return [
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'additionalProperties' => false,
+                'required'             => array_keys($schema),
+                'properties'           => $formattedSchema,
+            ],
+        ];
+    }
+
+    /**
      * Format the messages to be sent to an AI completion API
      */
     public function getMessagesForApi(Thread $thread): array
@@ -164,14 +218,16 @@ class AgentThreadService
         }
 
         if ($agent->response_notes || $agent->response_schema) {
-            if ($agent->response_format === 'text') {
-                $jsonRequirement = '';
-                $schema          = '';
-            } else {
-                $schema          = json_encode($agent->response_schema);
-                $jsonRequirement = "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
+            $responseMessage = "RESPONSE FORMAT:\n$agent->response_notes";
+
+            // JSON Object responses provide a schema for the response, but not via the json_schema structured response mechanics by Open AI (possibly others)
+            // So this is just a message to the LLM instead of a requirement built in
+            if ($agent->response_format === 'json_object') {
+                $responseMessage .= json_encode($agent->response_schema);
+                $responseMessage .= "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
             }
-            $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, "RESPONSE FORMAT:\n$agent->response_notes\n$jsonRequirement\n$schema");
+
+            $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $responseMessage);
         }
 
         return $messages;
