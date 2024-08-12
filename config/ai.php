@@ -7,22 +7,32 @@ use App\AiTools\UrlToImageAiTool;
 use App\Api\OpenAi\OpenAiApi;
 use App\Api\PerplexityAi\PerplexityAiApi;
 
+$million  = 1000000;
+$thousand = 1000;
+
 return [
     // The seed to use for AI completions to ensure consistent results
     'seed'          => env('AI_SEED', 11181987),
     'default_model' => 'gpt-4o',
     'models'        => [
         PerplexityAiApi::$serviceName => [
+            'llama-3.1-sonar-small-128k-online' => [
+                'context'     => 127072,
+                'input'       => .2 / $million,
+                'output'      => .2 / $million,
+                'per_request' => 5 / $thousand,
+            ],
             'llama-3.1-sonar-large-128k-online' => [
-                'context' => 127072,
-                'input'   => .001,
-                'output'  => .001,
+                'context'     => 127072,
+                'input'       => 1 / $million,
+                'output'      => 1 / $million,
+                'per_request' => 5 / $thousand,
             ],
         ],
         OpenAiApi::$serviceName       => [
-            'gpt-4o-mini' => [
-                'input'   => .00015,
-                'output'  => .0006,
+            'gpt-4o-mini'       => [
+                'input'   => .15 / $million,
+                'output'  => .60 / $million,
                 'context' => 128000,
                 'image'   => [
                     'tokens' => 5667,
@@ -30,9 +40,9 @@ return [
                     'tile'   => '512x512',
                 ],
             ],
-            'gpt-4o'      => [
-                'input'   => .005,
-                'output'  => .015,
+            'gpt-4o'            => [
+                'input'   => 5 / $million,
+                'output'  => 15 / $million,
                 'context' => 128000,
                 'image'   => [
                     'tokens' => 170,
@@ -40,9 +50,9 @@ return [
                     'tile'   => '512x512',
                 ],
             ],
-            'gpt-4-turbo' => [
-                'input'   => .01,
-                'output'  => .03,
+            'gpt-4o-2024-08-06' => [
+                'input'   => 2.5 / $million,
+                'output'  => 10 / $million,
                 'context' => 128000,
                 'image'   => [
                     'tokens' => 170,

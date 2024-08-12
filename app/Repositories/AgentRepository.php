@@ -30,8 +30,9 @@ class AgentRepository extends ActionRepository
     public function fieldOptions(?array $filter = []): array
     {
         $aiModels = collect(static::getAiModels())->sortKeys()->map(function ($aiModel) {
-            $input  = $aiModel['details']['input'] * 1000;
-            $output = $aiModel['details']['output'] * 1000;
+            $million = 1000000;
+            $input   = $aiModel['details']['input'] * $million;
+            $output  = $aiModel['details']['output'] * $million;
 
             return [
                 'label'   => $aiModel['api'] . ': ' . $aiModel['name'] . " (\$$input in + \$$output out / 1M tokens)",
@@ -164,7 +165,7 @@ class AgentRepository extends ActionRepository
             return null;
         }
 
-        return ($modelCosts['input'] * $inputTokens / 1000) + ($modelCosts['output'] * $outputToken / 1000);
+        return ($modelCosts['input'] * $inputTokens) + ($modelCosts['output'] * $outputToken);
     }
 
     /**
