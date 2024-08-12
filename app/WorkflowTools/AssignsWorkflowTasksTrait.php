@@ -4,6 +4,7 @@ namespace App\WorkflowTools;
 
 use App\Models\Agent\Thread;
 use App\Models\Workflow\WorkflowJobRun;
+use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
 use App\Repositories\ThreadRepository;
 use Illuminate\Support\Collection;
@@ -50,7 +51,7 @@ trait AssignsWorkflowTasksTrait
                     'workflow_job_id'        => $workflowJobRun->workflow_job_id,
                     'workflow_assignment_id' => $assignment->id,
                     'group'                  => $groupName,
-                    'status'                 => WorkflowTask::STATUS_PENDING,
+                    'status'                 => WorkflowRun::STATUS_PENDING,
                 ]);
 
                 $this->setupTaskThread($task, $artifactTuple);

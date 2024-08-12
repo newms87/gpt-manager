@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Workflow\WorkflowRun;
+use App\Models\Workflow\WorkflowTask;
 use App\Services\Workflow\WorkflowService;
 use App\Services\Workflow\WorkflowTaskService;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -19,6 +20,33 @@ class WorkflowRunRepository extends ActionRepository
             'restart-job' => $this->restartWorkflowJobRun($model, $data),
             default => parent::applyAction($action, $model, $data)
         };
+    }
+
+    public function taskTimedOut(WorkflowTask $task): void
+    {
+        $task->failed_at = now();
+        $task->computeStatus()->save();
+
+        if (!$task->workflowJobRun->failed_at) {
+            $task->workflowJobRun->failed_at = now();
+            $task->workflowJobRun->computeStatus()->save();
+            $workflowRun            = $task->workflowJobRun->workflowRun()->withTrashed()->first();
+            $workflowRun->failed_at = now();
+            $workflowRun->computeStatus()->save();
+        }
+    }
+
+    public function checkForTimeouts(WorkflowRun $workflowRun): WorkflowRun
+    {
+        foreach($workflowRun->workflowJobRuns as $workflowJobRun) {
+            foreach($workflowJobRun->tasks as $task) {
+                if ($task->isTimedOut()) {
+                    $this->taskTimedOut($task);
+                }
+            }
+        }
+
+        return $workflowRun;
     }
 
     public function restartWorkflowRun(WorkflowRun $workflowRun): WorkflowRun

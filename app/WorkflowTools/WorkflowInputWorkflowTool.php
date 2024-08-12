@@ -4,6 +4,7 @@ namespace App\WorkflowTools;
 
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowJobRun;
+use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +21,7 @@ class WorkflowInputWorkflowTool extends WorkflowTool
         $workflowJobRun->tasks()->create([
             'user_id'                => user()->id,
             'workflow_job_id'        => $workflowJobRun->workflow_job_id,
-            'status'                 => WorkflowTask::STATUS_PENDING,
+            'status'                 => WorkflowRun::STATUS_PENDING,
             'workflow_assignment_id' => null,
             'group'                  => 'default',
         ]);

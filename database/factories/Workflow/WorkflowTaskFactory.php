@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Workflow;
 
-use App\Models\Workflow\WorkflowTask;
+use App\Models\Workflow\WorkflowRun;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class WorkflowTaskFactory extends Factory
@@ -11,7 +11,7 @@ class WorkflowTaskFactory extends Factory
     {
         return [
             'group'        => '',
-            'status'       => WorkflowTask::STATUS_PENDING,
+            'status'       => WorkflowRun::STATUS_PENDING,
             'started_at'   => null,
             'completed_at' => null,
             'failed_at'    => null,

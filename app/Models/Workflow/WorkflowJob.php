@@ -57,7 +57,7 @@ class WorkflowJob extends Model implements AuditableContract
 
     public function remainingTasks(): HasMany|WorkflowTask
     {
-        return $this->hasMany(WorkflowTask::class)->whereIn('status', [WorkflowTask::STATUS_PENDING, WorkflowTask::STATUS_RUNNING]);
+        return $this->hasMany(WorkflowTask::class)->whereIn('status', [WorkflowRun::STATUS_PENDING, WorkflowRun::STATUS_RUNNING]);
     }
 
     public function workflowAssignments(): HasMany|WorkflowAssignment

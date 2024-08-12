@@ -34,12 +34,14 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
         STATUS_PENDING = 'Pending',
         STATUS_RUNNING = 'Running',
         STATUS_COMPLETED = 'Completed',
+        STATUS_TIMED_OUT = 'Timed Out',
         STATUS_FAILED = 'Failed';
 
     const array STATUSES = [
         self::STATUS_PENDING,
         self::STATUS_RUNNING,
         self::STATUS_COMPLETED,
+        self::STATUS_TIMED_OUT,
         self::STATUS_FAILED,
     ];
 

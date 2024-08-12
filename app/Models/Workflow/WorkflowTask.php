@@ -17,19 +17,6 @@ class WorkflowTask extends Model implements AuditableContract, ComputedStatusCon
 {
     use HasFactory, SoftDeletes, AuditableTrait;
 
-    const string
-        STATUS_PENDING = 'Pending',
-        STATUS_RUNNING = 'Running',
-        STATUS_COMPLETED = 'Completed',
-        STATUS_FAILED = 'Failed';
-
-    const array STATUSES = [
-        self::STATUS_PENDING,
-        self::STATUS_RUNNING,
-        self::STATUS_COMPLETED,
-        self::STATUS_FAILED,
-    ];
-
     protected $guarded = [
         'id',
         'created_at',
@@ -85,22 +72,29 @@ class WorkflowTask extends Model implements AuditableContract, ComputedStatusCon
 
     public function isComplete(): bool
     {
-        return $this->status === self::STATUS_COMPLETED;
+        return $this->status === WorkflowRun::STATUS_COMPLETED;
     }
 
     public function computeStatus(): static
     {
         if ($this->started_at === null) {
-            $this->status = self::STATUS_PENDING;
+            $this->status = WorkflowRun::STATUS_PENDING;
+        } elseif ($this->isTimedOut()) {
+            $this->status = WorkflowRun::STATUS_TIMED_OUT;
         } elseif ($this->failed_at !== null) {
-            $this->status = self::STATUS_FAILED;
+            $this->status = WorkflowRun::STATUS_FAILED;
         } elseif ($this->completed_at === null) {
-            $this->status = self::STATUS_RUNNING;
+            $this->status = WorkflowRun::STATUS_RUNNING;
         } else {
-            $this->status = self::STATUS_COMPLETED;
+            $this->status = WorkflowRun::STATUS_COMPLETED;
         }
 
         return $this;
+    }
+
+    public function isTimedOut(): bool
+    {
+        return $this->started_at && $this->started_at->addSeconds($this->workflowJob?->timeout_after ?: 0)->isPast();
     }
 
     public function getTotalInputTokens()

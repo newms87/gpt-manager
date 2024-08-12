@@ -56,17 +56,17 @@ class WorkflowJobRun extends Model implements AuditableContract, ComputedStatusC
 
     public function pendingTasks(): HasMany|WorkflowTask
     {
-        return $this->tasks()->where('status', WorkflowTask::STATUS_PENDING);
+        return $this->tasks()->where('status', WorkflowRun::STATUS_PENDING);
     }
 
     public function remainingTasks(): HasMany|WorkflowTask
     {
-        return $this->tasks()->whereIn('status', [WorkflowTask::STATUS_PENDING, WorkflowTask::STATUS_RUNNING]);
+        return $this->tasks()->whereIn('status', [WorkflowRun::STATUS_PENDING, WorkflowRun::STATUS_RUNNING]);
     }
 
     public function completedTasks(): HasMany|WorkflowTask
     {
-        return $this->tasks()->where('status', WorkflowTask::STATUS_COMPLETED);
+        return $this->tasks()->where('status', WorkflowRun::STATUS_COMPLETED);
     }
 
     public function artifacts(): MorphToMany|Artifact

@@ -6,7 +6,7 @@ export interface WorkflowStatus {
 
 export const WORKFLOW_STATUS = {
 	resolve(value): WorkflowStatus {
-		return [WORKFLOW_STATUS.PENDING, WORKFLOW_STATUS.RUNNING, WORKFLOW_STATUS.COMPLETED, WORKFLOW_STATUS.FAILED].find(s => s.value === value);
+		return [WORKFLOW_STATUS.PENDING, WORKFLOW_STATUS.RUNNING, WORKFLOW_STATUS.COMPLETED, WORKFLOW_STATUS.FAILED, WORKFLOW_STATUS.TIMED_OUT].find(s => s.value === value);
 	},
 
 	PENDING: {
@@ -28,5 +28,10 @@ export const WORKFLOW_STATUS = {
 		value: "Failed",
 		classPrimary: "bg-red-800 text-red-200",
 		classAlt: "bg-red-200 text-red-800"
+	},
+	TIMED_OUT: {
+		value: "Timed Out",
+		classPrimary: "bg-gray-800 text-gray-200",
+		classAlt: "bg-gray-200 text-gray-800"
 	}
 };
