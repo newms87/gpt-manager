@@ -51,10 +51,10 @@ class Message extends Model implements AuditableContract
     public function getCleanContent(): string
     {
         // Remove any ```json and trailing ``` from content if they are present
-        return preg_replace('/^```json\n(.*)\n```$/s', '$1', trim($this->content));
+        return preg_replace('/^```json\n(.*)\n```$/s', '$1', trim($this->content ?? ''));
     }
 
-    public function getJsonContent(): array
+    public function getJsonContent(): ?array
     {
         return json_decode($this->getCleanContent(), true);
     }

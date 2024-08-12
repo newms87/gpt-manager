@@ -11,6 +11,7 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 
 /**
+ * @property int    $id
  * @property string $type
  * @property string $name
  * @property string $description

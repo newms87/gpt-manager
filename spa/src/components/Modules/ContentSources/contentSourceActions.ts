@@ -1,12 +1,11 @@
 import { ContentSourceController } from "@/components/Modules/ContentSources/contentSourceControls";
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { ContentSourceRoutes } from "@/routes/contentSourceRoutes";
-import { ConfirmActionDialog, useActions } from "quasar-ui-danx";
-import { ActionOptions } from "quasar-ui-danx";
+import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
 // This is the default action options for all items
-const forAllItems: ActionOptions = {
+const forAllItems: Partial<ActionOptions> = {
 	onAction: ContentSourceRoutes.applyAction,
 	onBatchAction: ContentSourceRoutes.batchAction,
 	onBatchSuccess: ContentSourceController.clearSelectedRows

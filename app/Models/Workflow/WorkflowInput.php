@@ -26,6 +26,8 @@ class WorkflowInput extends Model implements AuditableContract
         'name',
         'description',
         'content',
+        'team_object_id',
+        'team_object_type',
     ];
 
     public array $relationCounters = [

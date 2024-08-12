@@ -8,21 +8,16 @@
 					:url="drugSideEffect.product.url"
 					class="w-32"
 				/>
-				<div class="px-4 py-2 w-48">
+				<div class="px-4 py-2 w-48 flex-shrink-0">
 					<div>
 						<a target="_blank" :href="drugSideEffect.product.url" class="text-xl font-bold text-sky-300">
 							{{ drugSideEffect.product.name }}
 						</a>
 					</div>
-					<div class="mt-2">
-						<a target="_blank" :href="drugSideEffect.product.company.url" class="text-sm text-slate-300 font-semibold ">
-							{{ drugSideEffect.product.company.name }}
-						</a>
-					</div>
 				</div>
 				<ShowHideButton
 					class="bg-lime-950 px-6 py-2 rounded-full"
-					:label="drugSideEffect.name"
+					:label="sideEffectName"
 					@click="isShowing = !isShowing"
 				/>
 				<div v-if="drugSideEffect.description" class="ml-4">{{ drugSideEffect.description }}</div>
@@ -49,10 +44,12 @@
 		<div v-if="isShowing">
 			<div class="flex items-start mt-4 mx-4">
 				<div class="flex-grow">
-					<div class="bg-slate-700 p-4 rounded-lg w-[30rem]">
-						<h6 class="mb-2">{{ drugSideEffect.product.company.name }}</h6>
-						<DrugIssueCompanySection :company="drugSideEffect.product.company" />
-					</div>
+					<DrugIssueCompanyCard
+						v-for="company in drugSideEffect.product.companies"
+						:key="company.id"
+						:company="company"
+						class="bg-slate-700 w-[30rem] mb-4"
+					/>
 				</div>
 				<div class="bg-sky-950 p-4 rounded-lg">
 					<h6 class="mb-2">Severity</h6>
@@ -70,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import DrugIssueCompanySection from "@/components/Modules/Tortguard/DrugIssueCompanySection";
+import DrugIssueCompanyCard from "@/components/Modules/Tortguard/DrugIssueCompanySection";
 import DrugIssuePatentSection from "@/components/Modules/Tortguard/DrugIssuePatentSection";
 import DrugIssueScientificStudiesSection from "@/components/Modules/Tortguard/DrugIssueScientificStudiesSection";
 import DrugIssueSeveritySection from "@/components/Modules/Tortguard/DrugIssueSeveritySection";
@@ -82,7 +79,7 @@ import { ShowHideButton } from "@/components/Shared";
 import LogoImage from "@/components/Shared/Images/LogoImage";
 import { TortguardRoutes } from "@/routes/tortguardRoutes";
 import { autoRefreshObject } from "quasar-ui-danx";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 
 const props = defineProps<{ drugSideEffect: DrugSideEffect }>();
 const isShowing = defineModel<boolean>();
@@ -94,4 +91,6 @@ onMounted(() => {
 		(d: DrugSideEffect) => TortguardRoutes.drugSideEffect(d.id)
 	);
 });
+
+const sideEffectName = computed(() => props.drugSideEffect.name.replace(props.drugSideEffect.product.name + ": ", ""));
 </script>

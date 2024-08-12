@@ -5,7 +5,7 @@ import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
 // This is the default action options for all items
-const forAllItems: ActionOptions = {
+const forAllItems: Partial<ActionOptions> = {
 	onAction: WorkflowRoutes.applyAction,
 	onBatchAction: WorkflowRoutes.batchAction,
 	onBatchSuccess: WorkflowController.clearSelectedRows

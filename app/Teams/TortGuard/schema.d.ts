@@ -30,7 +30,7 @@ interface DrugProduct extends TeamObject {
     patents: Patent[];
     // DrugProducts can have multiple DrugGenerics (ie: Actos can be pioglitazone and metformin)
     generics: DrugGeneric[];
-    company: Company;
+    companies: Company[];
 }
 
 interface DrugGeneric extends TeamObject {

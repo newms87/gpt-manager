@@ -4,8 +4,6 @@ namespace App\Repositories\Tortguard;
 
 use App\Models\Agent\Agent;
 use App\Models\TeamObject\TeamObject;
-use App\Models\TeamObject\TeamObjectAttribute;
-use App\Models\TeamObject\TeamObjectRelation;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowRun;
@@ -134,15 +132,5 @@ class TortguardRepository
         $DrugSideEffect->save();
 
         return $workflowRun;
-    }
-
-    public function getTeamObjectAttribute(int $id): TeamObjectAttribute
-    {
-        return TeamObjectAttribute::findOrFail($id);
-    }
-
-    public function getTeamObjectRelation(int $id): TeamObjectRelation
-    {
-        return TeamObjectRelation::findOrFail($id);
     }
 }

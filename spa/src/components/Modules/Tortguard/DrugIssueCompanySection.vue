@@ -1,6 +1,8 @@
 <template>
-	<div class="drug-issue-company">
+	<div class="drug-issue-company p-4 rounded-lg">
 		<LogoImage v-if="company.meta?.logo" :src="company.meta?.logo" class="max-w-24 max-h-10" :url="company.url" />
+
+		<h6 class="mb-2">{{ company.name }}</h6>
 
 		<div class="grid grid-cols-3 gap-4">
 			<LabelValueBlock label="Score" :value="company.score?.value" :url="company.url" />

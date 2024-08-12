@@ -51,6 +51,11 @@ class TeamObjectAttribute extends Model implements AuditableContract
         ];
     }
 
+    public function getValue(): string|array
+    {
+        return $this->text_value ?? $this->json_value;
+    }
+    
     public function sourceFile(): BelongsTo|StoredFile
     {
         return $this->belongsTo(StoredFile::class, 'source_stored_file_id');
