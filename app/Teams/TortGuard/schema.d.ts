@@ -1,13 +1,13 @@
 interface TeamObject {
     id: string;
-    type: 'DrugInjury' | 'DrugProduct' | 'DrugGeneric' | 'Company' | 'Patent' | 'ScientificStudy' | 'Warning';
+    type: 'DrugSideEffect' | 'DrugProduct' | 'DrugGeneric' | 'Company' | 'Patent' | 'ScientificStudy' | 'Warning';
     name: string;
     description: string;
     url: string;
     meta: object;
 }
 
-interface DrugInjury extends TeamObject {
+interface DrugSideEffect extends TeamObject {
     evaluation_score: number;
     severity_level: number;
     hospitalization: boolean;

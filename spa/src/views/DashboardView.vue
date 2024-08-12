@@ -1,36 +1,44 @@
 <template>
 	<div class="relative h-full">
-		<div v-if="!drugInjuries.length" class="text-center text-gray-400 text-lg">No drug injuries found</div>
+		<div v-if="!drugSideEffects.length" class="text-center text-gray-400 text-xl py-10">No drug side-effects found</div>
 		<div v-else class="p-8 overflow-y-auto h-full">
 			<ListTransition class="pb-10">
-				<DrugInjuryCard
-					v-for="drugInjury in activeDrugInjuries"
-					:key="drugInjury.id"
-					:drug-injury="drugInjury"
+				<DrugSideEffectCard
+					v-for="drugSideEffect in activeDrugSideEffects"
+					:key="drugSideEffect.id"
+					:drug-side-effect="drugSideEffect"
 					class="mb-6"
-					@update:model-value="onShow(drugInjury, $event)"
+					@update:model-value="onShow(drugSideEffect, $event)"
 				/>
 			</ListTransition>
 		</div>
 
-		<AiSearchBar v-if="!activeDrugInjury" class="absolute bottom-0 left-0 w-full px-8 py-4" @refresh="loadDashboard" />
+		<AiSearchBar
+			v-if="!activeDrugSideEffect"
+			class="absolute bottom-0 left-0 w-full px-8 py-4"
+			@refresh="loadDashboard"
+		/>
 	</div>
 </template>
 <script setup lang="ts">
 import AiSearchBar from "@/components/Modules/AiSearch/AiSearchBar";
-import DrugInjuryCard from "@/components/Modules/Tortguard/DrugInjuryCard";
-import { DrugInjury } from "@/components/Modules/Tortguard/tortguard";
+import DrugSideEffectCard from "@/components/Modules/Tortguard/DrugSideEffectCard";
+import { DrugSideEffect } from "@/components/Modules/Tortguard/tortguard";
 import { FlashMessages, ListTransition, request, storeObjects } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 
-const drugInjuries = ref<DrugInjury[]>([]);
-const activeDrugInjury = ref<DrugInjury | null>(null);
-const activeDrugInjuries = computed(() => activeDrugInjury.value ? drugInjuries.value.filter((di) => activeDrugInjury.value?.id === di.id) : drugInjuries.value);
+const drugSideEffects = ref<DrugSideEffect[]>([]);
+const activeDrugSideEffect = ref<DrugSideEffect | null>(null);
+const activeDrugSideEffects = computed(() => activeDrugSideEffect.value ? drugSideEffects.value.filter((di) => activeDrugSideEffect.value?.id === di.id) : drugSideEffects.value);
 
 onMounted(loadDashboard);
 
 async function loadDashboard() {
-	const result = await request.get("tortguard/dashboard");
+	const result: {
+		error?: string,
+		message?: string,
+		drugSideEffects?: DrugSideEffect[]
+	} = await request.get("tortguard/dashboard");
 	if (!result) {
 		return FlashMessages.error("Failed to load dashboard");
 	}
@@ -39,16 +47,16 @@ async function loadDashboard() {
 		return FlashMessages.error(result.message || result.error);
 	}
 
-	if (result.drugInjuries) {
-		drugInjuries.value = storeObjects(result.drugInjuries);
+	if (result.drugSideEffects) {
+		drugSideEffects.value = storeObjects(result.drugSideEffects);
 	}
 }
 
-function onShow(drugInjury: DrugInjury, isShowing: boolean) {
+function onShow(drugSideEffect: DrugSideEffect, isShowing: boolean) {
 	if (isShowing) {
-		activeDrugInjury.value = drugInjury;
+		activeDrugSideEffect.value = drugSideEffect;
 	} else {
-		activeDrugInjury.value = null;
+		activeDrugSideEffect.value = null;
 	}
 }
 </script>

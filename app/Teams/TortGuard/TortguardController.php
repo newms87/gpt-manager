@@ -5,14 +5,12 @@ namespace App\Teams\TortGuard;
 use App\Http\Controllers\Controller;
 use App\Models\Agent\Agent;
 use App\Models\TeamObject\TeamObject;
-use App\Repositories\ThreadRepository;
 use App\Repositories\Tortguard\TortguardRepository;
-use App\Resources\Tortguard\DrugInjuryResource;
+use App\Resources\Tortguard\DrugSideEffectResource;
+use App\Resources\Tortguard\DrugSideEffectSearchResultResource;
 use App\Resources\Workflow\WorkflowRunResource;
-use App\Services\AgentThread\AgentThreadService;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
-use Newms87\Danx\Helpers\StringHelper;
 
 class TortguardController extends Controller
 {
@@ -22,15 +20,15 @@ class TortguardController extends Controller
      */
     public function getDashboardData(): array
     {
-        $drugInjuryObjects = TeamObject::where('type', 'DrugInjury')->orderByDesc('id')->limit(8)->get();
+        $DrugSideEffectObjects = TeamObject::where('type', 'DrugSideEffect')->orderByDesc('id')->limit(8)->get();
 
-        $drugInjuries = [];
-        foreach($drugInjuryObjects as $drugInjury) {
-            $drugInjuries[] = DrugInjuryResource::details($drugInjury);
+        $drugSideEffects = [];
+        foreach($DrugSideEffectObjects as $DrugSideEffect) {
+            $drugSideEffects[] = DrugSideEffectResource::details($DrugSideEffect);
         }
 
         return [
-            'drugInjuries' => $drugInjuries,
+            'drugSideEffects' => $drugSideEffects,
         ];
     }
 
@@ -39,49 +37,38 @@ class TortguardController extends Controller
      */
     public function search(): array
     {
-        $query = request()->input('query');
-        $agent = Agent::where('team_id', team()->id)->firstWhere('name', 'Search Agent');
+        $agentName = 'Drug Side-Effect Search';
+        $query     = request()->input('query');
+        $agent     = Agent::where('team_id', team()->id)->firstWhere('name', $agentName);
 
         if (!$agent) {
-            throw new ValidationError('Search Agent not found');
+            throw new ValidationError("$agentName not found");
         }
 
-        $thread = $agent->threads()->create([
-            'user_id'  => user()->id,
-            'team_id'  => $agent->team_id,
-            'name'     => 'Search: ' . $query,
-            'agent_id' => $agent->id,
-        ]);
+        $results = app(TortguardRepository::class)->search($agent, $query);
 
-        app(ThreadRepository::class)->addMessageToThread($thread, 'Query: ' . $query);
-
-        $threadRun = app(AgentThreadService::class)->run($thread, dispatch: false);
-
-        if (!$threadRun->lastMessage) {
-            return [
-                'error' => "No results found for query: $query",
-            ];
-        }
-
-        return ['success' => true, ...StringHelper::safeJsonDecode($threadRun->lastMessage->content, 100000)];
+        return [
+            'success' => true,
+            'results' => DrugSideEffectSearchResultResource::collection($results),
+        ];
     }
 
     public function research(): array
     {
-        $searchResult = json_decode(request()->input('search_result'), true);
+        $searchResult = request()->input('input');
         $workflowRun  = app(TortguardRepository::class)->research($searchResult);
 
         return ['success' => true, 'workflowRun' => WorkflowRunResource::make($workflowRun)];
     }
 
-    public function getDrugInjury(int $id): array
+    public function getDrugSideEffect(int $id): array
     {
-        $drugInjury = TeamObject::where('type', 'DrugInjury')->find($id);
+        $DrugSideEffect = TeamObject::where('type', 'DrugSideEffect')->find($id);
 
-        if (!$drugInjury) {
-            throw new ValidationError('Drug Injury not found');
+        if (!$DrugSideEffect) {
+            throw new ValidationError('Drug Side Effect not found');
         }
 
-        return DrugInjuryResource::details($drugInjury);
+        return DrugSideEffectResource::details($DrugSideEffect);
     }
 }

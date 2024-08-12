@@ -7,7 +7,7 @@ use App\Models\Workflow\WorkflowRun;
 use App\Resources\Workflow\WorkflowRunResource;
 use Illuminate\Database\Eloquent\Model;
 
-class DrugInjuryResource extends TeamObjectResource
+class DrugSideEffectResource extends TeamObjectResource
 {
     /**
      * @param TeamObject $model

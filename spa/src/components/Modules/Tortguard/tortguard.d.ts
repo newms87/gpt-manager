@@ -39,7 +39,7 @@ interface ObjectAttribute extends TeamObjectAttribute {
 	value: object | null;
 }
 
-interface DrugInjury extends TeamObject {
+interface DrugSideEffect extends TeamObject {
 	evaluation_score?: NumberAttribute;
 	severity_level?: NumberAttribute;
 	hospitalization?: BooleanAttribute;

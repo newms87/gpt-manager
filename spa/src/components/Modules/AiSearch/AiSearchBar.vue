@@ -33,43 +33,29 @@
 						Searching for {{ searchText }}...
 					</div>
 				</div>
-				<div
+				<AiSearchResult
 					v-for="result in searchResults"
-					:key="result.product + result.injury"
-					class="bg-slate-800 rounded-lg shadow-lg px-4 py-2 m-2 flex items-center flex-nowrap"
-				>
-					<div class="flex-grow">
-						<div class="text-lg font-bold text-sky-300 flex items-center">
-							<a :href="result.sources[0].url" target="_blank">{{ result.product }}: {{ result.injury }}</a>
-							<div class="text-sm text-slate-400 ml-3">by {{ result.company }}</div>
-						</div>
-						<div class="mt-2">
-							{{ result.description }}
-						</div>
-					</div>
-					<div>
-						<QBtn class="bg-lime-900 px-4" :loading="isStartingResearch === result" @click="onResearch(result)">
-							<BotIcon class="w-5 mr-3" />
-							Research
-						</QBtn>
-					</div>
-				</div>
+					:key="result.product_name"
+					class="m-2"
+					:result="result"
+					@research="onResearch"
+				/>
 			</ListTransition>
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
+import AiSearchResult from "@/components/Modules/AiSearch/AiSearchResult";
 import { AiSearchRoutes } from "@/routes/searchRoutes";
-import { ResearchResult, SearchItem, SearchResult } from "@/types/research";
-import { FaSolidRobot as BotIcon, FaSolidWandSparkles as SearchIcon, FaSolidXmark as ClearIcon } from "danx-icon";
+import { SearchResult, SearchResultItem, SearchResultItemBySideEffect } from "@/types/research";
+import { FaSolidWandSparkles as SearchIcon, FaSolidXmark as ClearIcon } from "danx-icon";
 import { FlashMessages, ListTransition, TextField } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const emit = defineEmits(["refresh"]);
 const searchText = ref("");
-const searchResults = ref<SearchItem[]>([]);
+const searchResults = ref<SearchResultItem[]>([]);
 const isSearching = ref(false);
-const isStartingResearch = ref<SearchItem | null>(null);
 
 async function onSearch() {
 	isSearching.value = true;
@@ -84,18 +70,9 @@ async function onSearch() {
 	}
 }
 
-async function onResearch(result: SearchItem) {
-	isStartingResearch.value = result;
-	const response: ResearchResult = await AiSearchRoutes.research(result);
-	isStartingResearch.value = null;
-
-	if (response.success) {
-		emit("refresh");
-		FlashMessages.info(`Researching ${result.product}: ${result.injury} in workflow ${response.workflowRun.id}`);
-		searchResults.value = searchResults.value.filter((r) => r !== result);
-	} else {
-		FlashMessages.error(response.message || "Failed to start researching agent. Try again later...");
-	}
+async function onResearch(result: SearchResultItemBySideEffect) {
+	searchResults.value = searchResults.value.filter((r) => r.product_name !== result.product_name);
+	emit("refresh");
 }
 
 function onClear() {
