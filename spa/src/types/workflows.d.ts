@@ -37,6 +37,7 @@ export interface WorkflowJob extends ActionTargetItem {
 	dependencies: WorkflowJobDependency[];
 	assignments: WorkflowAssignment[];
 	workflow?: Workflow;
+	response_schema?: AnyObject | null;
 }
 
 export interface WorkflowJobRun extends WorkflowRunner {

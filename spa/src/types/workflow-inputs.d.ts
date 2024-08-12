@@ -13,6 +13,8 @@ export interface WorkflowInput extends ActionTargetItem {
 	workflow_runs_count: number;
 	workflowRuns?: WorkflowRun[];
 	has_active_workflow_run: boolean;
+	team_object_type: string;
+	team_object_id: number;
 	created_at: string;
 	updated_at: string;
 }

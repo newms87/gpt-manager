@@ -80,8 +80,8 @@ import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import ListLoadingContainer from "@/components/Shared/Containers/ListLoadingContainer";
 import { WorkflowRunRoutes } from "@/routes/workflowRoutes";
 import { WorkflowRun } from "@/types/workflows";
-import { storeObject } from "quasar-ui-danx";
-import { onMounted, ref, watch } from "vue";
+import { autoRefreshObject } from "quasar-ui-danx";
+import { onMounted, ref } from "vue";
 
 defineEmits(["remove"]);
 const props = defineProps<{
@@ -100,21 +100,11 @@ removeWorkflowRunAction.onFinish = async () => {
 /********
  * Refresh the workflow run every 2 seconds while it is running
  */
-onMounted(refreshWorkflowInput);
-watch(() => props.workflowRun, refreshWorkflowInput);
-
-let refreshTimeout = null;
-function refreshWorkflowInput() {
-	if (refreshTimeout) {
-		clearTimeout(refreshTimeout);
-		refreshTimeout = null;
-	}
-
-	refreshTimeout = setTimeout(async () => {
-		if ([WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(props.workflowRun.status)) {
-			storeObject(await WorkflowRunRoutes.details(props.workflowRun));
-			refreshWorkflowInput();
-		}
-	}, 2000);
-}
+onMounted(() => {
+	autoRefreshObject(
+		props.workflowRun,
+		(wr: WorkflowRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(wr.status),
+		(wr: WorkflowRun) => WorkflowRunRoutes.details(wr)
+	);
+});
 </script>

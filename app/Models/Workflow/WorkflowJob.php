@@ -30,6 +30,13 @@ class WorkflowJob extends Model implements AuditableContract
         'deleted_at',
     ];
 
+    public function casts(): array
+    {
+        return [
+            'response_schema' => 'json',
+        ];
+    }
+
     public function workflow(): BelongsTo|Workflow
     {
         return $this->belongsTo(Workflow::class);

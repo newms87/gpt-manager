@@ -2,10 +2,12 @@
 
 namespace App\WorkflowTools;
 
+use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
+use App\Repositories\TeamObjectRepository;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Services\TranscodeFileService;
@@ -29,7 +31,7 @@ class WorkflowInputWorkflowTool extends WorkflowTool
 
     public function getResponsePreview(WorkflowJob $workflowJob): array|string|null
     {
-        return [
+        $response = [
             [
                 'content' => 'Example content',
                 'files'   => [
@@ -44,6 +46,13 @@ class WorkflowInputWorkflowTool extends WorkflowTool
                 ],
             ],
         ];
+
+
+        if ($workflowJob->response_schema) {
+            $response[0]['teamObjects'] = [$workflowJob->response_schema];
+        }
+
+        return $response;
     }
 
     /**
@@ -60,7 +69,10 @@ class WorkflowInputWorkflowTool extends WorkflowTool
             'name'    => self::$toolName . ': ' . $workflowInput->name,
             'model'   => '',
             'content' => $workflowInput->content,
-            'data'    => ['files' => $files],
+            'data'    => [
+                'files'       => $files,
+                'teamObjects' => $this->getTeamObjects($workflowInput),
+            ],
         ]);
 
         foreach($workflowInput->storedFiles as $storedFile) {
@@ -77,5 +89,18 @@ class WorkflowInputWorkflowTool extends WorkflowTool
         }
 
         Log::debug(self::$toolName . ": created $artifact with content of " . strlen($artifact->content) . " bytes and " . count($files) . " files");
+    }
+
+    public function getTeamObjects(WorkflowInput $workflowInput): array
+    {
+        if (!$workflowInput->team_object_type) {
+            return [];
+        }
+        
+        $teamObject = app(TeamObjectRepository::class)->getFullyLoadedTeamObject($workflowInput->team_object_type, $workflowInput->team_object_id);
+
+        // TODO: For now just one object, but maybe add team_object_filter field to query the team objects required
+
+        return [$teamObject];
     }
 }

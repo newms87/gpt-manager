@@ -10,28 +10,31 @@
 						@update:model-value="updateJobDebouncedAction.trigger(job, { name: $event})"
 					/>
 				</div>
-				<template v-if="!isTool">
-					<div v-if="job.dependencies.length > 0" class="whitespace-nowrap ml-4">
-						{{ job.dependencies.length }} Dependencies
+				<div v-if="job.dependencies.length > 0" class="whitespace-nowrap ml-4">
+					{{ job.dependencies.length }} Dependencies
+				</div>
+				<div v-if="!isTool" class="whitespace-nowrap ml-4">
+					<div v-if="job.assignments.length > 0">{{ job.assignments.length }} Assignments</div>
+					<div v-else class="text-red-600 flex items-center flex-nowrap">
+						<WarningIcon class="w-4 mr-2 -mt-1" />
+						No Assignments
 					</div>
-					<div class="whitespace-nowrap ml-4">
-						<div v-if="job.assignments.length > 0">{{ job.assignments.length }} Assignments</div>
-						<div v-else class="text-red-600 flex items-center flex-nowrap">
-							<WarningIcon class="w-4 mr-2 -mt-1" />
-							No Assignments
-						</div>
-					</div>
-					<ShowHideButton
-						v-model="showTasksExample"
-						label="Tasks Preview"
-						class="ml-4 bg-sky-700 text-slate-300 rounded"
-					/>
-					<ShowHideButton
-						v-model="isEditing"
-						label="Edit"
-						class="ml-4 bg-slate-700 text-slate-300 rounded"
-					/>
-				</template>
+				</div>
+				<ShowHideButton
+					v-model="showTasksExample"
+					label="Tasks Preview"
+					class="ml-4 bg-sky-700 text-slate-300 rounded"
+				/>
+				<ShowHideButton
+					v-model="showResponseSchema"
+					label="Response"
+					class="ml-4 bg-lime-900 text-slate-300 rounded"
+				/>
+				<ShowHideButton
+					v-model="isEditing"
+					label="Edit"
+					class="ml-4 bg-slate-700 text-slate-300 rounded"
+				/>
 				<ActionButton
 					:action="deleteJobAction"
 					:target="job"
@@ -42,8 +45,13 @@
 		</div>
 		<QCardSection v-if="isEditing" class="flex items-stretch flex-nowrap">
 			<div class="w-1/2 pr-8">
-				<h5 class="mb-4">Agent Assignments</h5>
-				<WorkflowJobAssignmentsManager :job="job" />
+				<template v-if="isTool">
+					<h5>Workflow Tool</h5>
+				</template>
+				<template v-else>
+					<h5 class="mb-4">Agent Assignments</h5>
+					<WorkflowJobAssignmentsManager :job="job" />
+				</template>
 			</div>
 			<div class="w-1/2">
 				<h5 class="mb-4">Job Dependencies</h5>
@@ -57,6 +65,16 @@
 					<div class="font-bold">{{ index }}</div>
 					<MarkdownEditor readonly format="yaml" :model-value="task" sync-model-changes />
 				</div>
+			</div>
+		</QCardSection>
+		<QCardSection v-if="showResponseSchema">
+			<h6 class="text-base">Response Schema</h6>
+			<div class="mt-4">
+				<MarkdownEditor
+					format="yaml"
+					:model-value="job.response_schema"
+					@update:model-value="updateJobDebouncedAction.trigger(job, { response_schema: $event})"
+				/>
 			</div>
 		</QCardSection>
 	</QCard>
@@ -80,6 +98,7 @@ defineProps<{
 
 const isEditing = ref(false);
 const showTasksExample = ref(false);
+const showResponseSchema = ref(false);
 const updateJobDebouncedAction = getAction("update-job-debounced");
 const deleteJobAction = getAction("delete-job");
 </script>

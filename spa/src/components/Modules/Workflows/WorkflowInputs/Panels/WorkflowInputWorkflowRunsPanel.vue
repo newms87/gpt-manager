@@ -29,7 +29,7 @@
 			@remove="WorkflowInputController.getActiveItemDetails"
 		>
 			<template #name>
-				<a @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
+				<a class="ml-4" @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
 					{{ workflowRun.workflow_name }}
 				</a>
 			</template>

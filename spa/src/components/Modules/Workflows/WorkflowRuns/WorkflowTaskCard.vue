@@ -16,7 +16,11 @@
 				</div>
 			</div>
 			<div v-if="task.agent_name" class="mx-4">
-				<div class="text-sm text-slate-400 text-no-wrap">by {{ task.agent_name }}</div>
+				<div class="text-sm text-slate-400 text-no-wrap">
+					<a :href="agentUrl(task.agent_id)" target="_blank">
+						by {{ task.agent_name }}
+					</a>
+				</div>
 				<div class="text-sm text-slate-400 bg-slate-800 px-3 py-1 mt-1 rounded-full text-no-wrap inline-block">{{
 						task.model
 					}}
@@ -47,6 +51,7 @@ import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessage
 import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { AiTokenUsageButton, ShowHideButton } from "@/components/Shared";
+import router from "@/router";
 import { WorkflowTask } from "@/types/workflows";
 import { computed, ref } from "vue";
 
@@ -63,4 +68,8 @@ const groupItems = computed(() => {
 		return { groupKey, groupValue };
 	});
 });
+
+function agentUrl(id) {
+	return router.resolve({ name: "agents", params: { id } }).href;
+}
 </script>

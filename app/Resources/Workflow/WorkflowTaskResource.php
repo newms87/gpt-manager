@@ -18,6 +18,7 @@ class WorkflowTaskResource extends ActionResource
             'id'           => $model->id,
             'job_name'     => $model->workflowJob?->name,
             'group'        => $model->group,
+            'agent_id'     => $model->workflowAssignment?->agent->id,
             'agent_name'   => $model->workflowAssignment?->agent->name,
             'model'        => $model->thread?->runs()->first()?->agent_model ?? $model->thread?->agent?->model,
             'status'       => $model->status,

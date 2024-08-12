@@ -7,18 +7,24 @@ use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
 use Log;
 use Newms87\Danx\Resources\StoredFileResource;
+use Str;
 
 class TeamObjectRepository
 {
-    public function loadTeamObject($type, $id): TeamObject
+    public function loadTeamObject($type, $id): ?TeamObject
     {
         return TeamObject::where('id', $id)->where('type', $type)->first();
     }
 
-    public function getFullyLoadedTeamObject($type, $id): TeamObject
+    public function getFullyLoadedTeamObject($type, $id): ?TeamObject
     {
         $object = $this->loadTeamObject($type, $id);
 
+        if (!$object) {
+            return null;
+        }
+
+        $this->loadTeamObjectAttributes($object);
         $this->recursivelyLoadTeamObjectRelations($object);
 
         return $object;
@@ -64,7 +70,7 @@ class TeamObjectRepository
 
     protected function recursivelyLoadTeamObjectRelations(TeamObject $teamObject, $maxDepth = 10): void
     {
-        $relationships = TeamObjectRelationship::where('team_object_id', $teamObject->id)->get();
+        $relationships = TeamObjectRelationship::where('object_id', $teamObject->id)->get();
 
         foreach($relationships as $relationship) {
             $object = TeamObject::find($relationship->related_object_id);
@@ -75,7 +81,21 @@ class TeamObjectRepository
             }
 
             $this->loadTeamObjectAttributes($object);
-            $teamObject->setRelation($relationship->relationship_name, $object);
+
+            // Otherwise set the object as the relationship
+            $currentRelation = $object;
+
+            // If the relationship is plural, add the object to the relationship array
+            if (Str::plural($relationship->relationship_name) === $relationship->relationship_name) {
+                if ($teamObject->relationLoaded($relationship->relationship_name)) {
+                    $currentRelation = $teamObject->getRelation($relationship->relationship_name);
+                    $currentRelation->push($object);
+                } else {
+                    $currentRelation = collect([$object]);
+                }
+            }
+
+            $teamObject->setRelation($relationship->relationship_name, $currentRelation);
 
             // Keep loading recursively if we haven't reached the max depth
             if ($maxDepth > 0) {

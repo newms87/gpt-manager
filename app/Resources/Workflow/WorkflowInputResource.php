@@ -32,6 +32,8 @@ class WorkflowInputResource extends ActionResource
             'thumb'                   => StoredFileResource::make($thumbFile),
             'has_active_workflow_run' => $model->activeWorkflowRuns()->exists(),
             'tags'                    => $model->objectTags()->pluck('name'),
+            'team_object_type'        => $model->team_object_type,
+            'team_object_id'          => $model->team_object_id,
             'created_at'              => $model->created_at,
             'updated_at'              => $model->updated_at,
         ];

@@ -156,11 +156,15 @@ class AgentThreadService
     /**
      * Format the response schema for the AI model based on the agent's name and response_schema
      */
-    public function formatResponseSchemaForAgent(Agent $agent): array
+    public function formatResponseSchemaForAgent(Agent $agent): array|string
     {
-        $name = $agent->name . ':' . substr(md5(json_encode($agent->response_schema)), 0, 7);
+        if (is_array($agent->response_schema)) {
+            $name = $agent->name . ':' . substr(md5(json_encode($agent->response_schema)), 0, 7);
 
-        return $this->formatResponseSchema($name, $agent->response_schema);
+            return $this->formatResponseSchema($name, $agent->response_schema);
+        }
+
+        return $agent->response_schema;
     }
 
     /**

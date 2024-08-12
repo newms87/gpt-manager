@@ -35,10 +35,11 @@ class WorkflowJobResource extends ActionResource
         $assignments = $model->workflowAssignments()->with(['agent'])->get();
 
         return static::make($model, [
-            'tasks_preview' => $model->getTasksPreview(),
-            'workflow'      => WorkflowResource::make($model->workflow),
-            'dependencies'  => WorkflowJobDependencyResource::collection($model->dependencies),
-            'assignments'   => WorkflowAssignmentResource::collection($assignments, fn(WorkflowAssignment $workflowAssignment) => [
+            'tasks_preview'   => $model->getTasksPreview(),
+            'response_schema' => $model->response_schema,
+            'workflow'        => WorkflowResource::make($model->workflow),
+            'dependencies'    => WorkflowJobDependencyResource::collection($model->dependencies),
+            'assignments'     => WorkflowAssignmentResource::collection($assignments, fn(WorkflowAssignment $workflowAssignment) => [
                 'agent' => AgentResource::make($workflowAssignment->agent),
             ]),
         ]);

@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\WorkflowInput;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -40,8 +41,11 @@ class WorkflowInputRepository extends ActionRepository
             ->whereHas('objectTags')
             ->select(['objectTags.id as value', 'objectTags.name as label'])->get();
 
+        $teamObjectTypes = TeamObject::distinct()->select('type')->get()->pluck('type');
+
         return [
-            'tags' => $tags,
+            'tags'            => $tags,
+            'teamObjectTypes' => $teamObjectTypes,
         ];
     }
 

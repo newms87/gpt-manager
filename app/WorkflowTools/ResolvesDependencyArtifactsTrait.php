@@ -116,7 +116,7 @@ trait ResolvesDependencyArtifactsTrait
                 foreach($itemSet as $itemIndex => $itemValue) {
                     $resolvedData = ArrayHelper::filterNestedData($resolvedData, $itemIndex, $itemValue);
                     if (!$resolvedData) {
-                        Log::debug("Artifact did not have data for $itemIndex. Omitting record " . (is_array($itemValue) ? $this->generateGroupKey($itemValue) : $itemValue));
+                        Log::debug("$artifact did not have data for $itemIndex. Omitting record " . (is_array($itemValue) ? $this->generateGroupKey($itemValue) : $itemValue));
                     }
                 }
 
@@ -202,7 +202,7 @@ trait ResolvesDependencyArtifactsTrait
             if (is_array($groupKeyValue)) {
                 $bestNameValue = $groupKeyValue['name'] ?? $groupKeyValue['title'] ?? $groupKeyValue['id'] ?? reset($groupKeyValue);
                 if (is_array($bestNameValue)) {
-                    $groupKeyValue = implode(',', $bestNameValue);
+                    $groupKeyValue = substr(md5(json_encode($bestNameValue)), 0, 6);
                 } else {
                     $groupKeyValue = $bestNameValue;
                 }

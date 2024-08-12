@@ -14,9 +14,9 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputActions";
+import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { WorkflowInput } from "@/types/workflow-inputs";
-import { MultiFileField, RenderedForm } from "quasar-ui-danx";
-import { Form } from "quasar-ui-danx";
+import { Form, IntegerField, MultiFileField, RenderedForm, SelectField } from "quasar-ui-danx";
 import { h, ref, watch } from "vue";
 
 const props = defineProps<{
@@ -26,7 +26,9 @@ const props = defineProps<{
 const updateAction = getAction("update-debounced");
 const input = ref({
 	content: props.workflowInput.content,
-	files: props.workflowInput.files
+	files: props.workflowInput.files,
+	team_object_type: props.workflowInput.team_object_type,
+	team_object_id: props.workflowInput.team_object_id
 });
 
 // Load the files/content if they have been loaded after the component is mounted
@@ -34,6 +36,8 @@ watch(() => props.workflowInput.files, () => {
 	if (!input.value.files) {
 		input.value.files = props.workflowInput.files;
 		input.value.content = props.workflowInput.content;
+		input.value.team_object_type = props.workflowInput.team_object_type;
+		input.value.team_object_id = props.workflowInput.team_object_id;
 	}
 });
 
@@ -48,6 +52,19 @@ const workflowForm: Form = {
 			name: "files",
 			vnode: (props) => h(MultiFileField, { ...props }),
 			label: "Files"
+		},
+		{
+			name: "team_object_type",
+			vnode: (props) => h(SelectField, {
+				...props,
+				options: WorkflowInputController.getFieldOptions("teamObjectTypes")
+			}),
+			label: "Team Object Type"
+		},
+		{
+			name: "team_object_id",
+			vnode: (props) => h(IntegerField, { ...props }),
+			label: "Team Object ID"
 		}
 	]
 };
