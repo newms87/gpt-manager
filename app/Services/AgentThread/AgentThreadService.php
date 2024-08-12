@@ -5,6 +5,7 @@ namespace App\Services\AgentThread;
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use App\Api\OpenAi\Classes\OpenAiToolCaller;
 use App\Jobs\ExecuteThreadRunJob;
+use App\Models\Agent\Agent;
 use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
@@ -114,7 +115,7 @@ class AgentThreadService
             ];
 
             if ($threadRun->response_format === 'json_schema') {
-                $options['response_format']['json_schema'] = $this->formatResponseSchema($agent->response_schema);
+                $options['response_format']['json_schema'] = $this->formatResponseSchemaForAgent($agent);
             }
 
             $tools = $agent->formatTools();
@@ -150,6 +151,16 @@ class AgentThreadService
             $threadRun->save();
             throw $throwable;
         }
+    }
+
+    /**
+     * Format the response schema for the AI model based on the agent's name and response_schema
+     */
+    public function formatResponseSchemaForAgent(Agent $agent): array
+    {
+        $name = $agent->name . ':' . substr(md5(json_encode($agent->response_schema)), 0, 7);
+
+        return $this->formatResponseSchema($name, $agent->response_schema);
     }
 
     /**
@@ -199,15 +210,17 @@ class AgentThreadService
         $properties  = $value['properties'] ?? [];
         $items       = $value['items'] ?? [];
 
-        $item = match ($type) {
+        $resolvedType = is_array($type) ? $type[0] : $type;
+
+        $item = match ($resolvedType) {
             'object' => [
-                'type'                 => 'object',
+                'type'                 => $type,
                 'properties'           => $this->formatResponseSchema("$name.properties", $properties, $depth + 1),
                 'required'             => array_keys($properties),
                 'additionalProperties' => false,
             ],
             'array' => [
-                'type'  => 'array',
+                'type'  => $type,
                 'items' => $this->formatResponseSchemaItem("$name.items", $items, $depth + 1),
             ],
             'string', 'number', 'integer', 'boolean', 'null' => ['type' => $type],
@@ -240,18 +253,35 @@ class AgentThreadService
             $messages[] = $apiFormatter->message($message);
         }
 
-        if ($agent->response_notes || $agent->response_schema) {
-            $responseMessage = "RESPONSE FORMAT:\n$agent->response_notes";
+        $responseMessage = '';
 
+        if ($agent->response_notes) {
+            $responseMessage = "RESPONSE NOTES:\n$agent->response_notes";
+        }
+
+        if ($agent->response_format !== 'text' && $agent->response_schema) {
             // JSON Object responses provide a schema for the response, but not via the json_schema structured response mechanics by Open AI (possibly others)
             // So this is just a message to the LLM instead of a requirement built in
-            if ($agent->response_format === 'json_object') {
-                $responseMessage .= json_encode($agent->response_schema);
-                $responseMessage .= "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
+            $responseSchema = $agent->response_schema;
+
+            // If the response format is JSON Schema, but the agent does not accept JSON schema, we need to format the response schema for the AI model
+            // and provide a message so the agent can see the schema (simulating response schema format)
+            // XXX: NOTE this is a hack for Perplexity AI, which does support JSON Schema, but does not seem to respond to it for their online models
+            if ($agent->response_format === 'json_schema' && !$apiFormatter->acceptsJsonSchema()) {
+                $responseSchema = $this->formatResponseSchemaForAgent($agent);
             }
 
+            if ($responseSchema) {
+                $responseMessage .= json_encode($responseSchema);
+                $responseMessage .= "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
+            }
+        }
+
+        if ($responseMessage) {
             $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $responseMessage);
         }
+
+        $messages = $apiFormatter->messageList($messages);
 
         return $messages;
     }
@@ -315,7 +345,7 @@ class AgentThreadService
         ]);
 
         if ($lastMessage->content) {
-            $jsonData = json_decode(AgentThreadService::cleanContent($lastMessage->content), true);
+            $jsonData = $lastMessage->getJsonContent();
 
             $responseTools = $jsonData['response_tools'] ?? [];
 
@@ -408,14 +438,5 @@ class AgentThreadService
         }
 
         return false;
-    }
-
-    /**
-     * Cleans the AI Model responses to make sure we have valid JSON, if the response is JSON
-     */
-    public static function cleanContent($content): string
-    {
-        // Remove any ```json and trailing ``` from content if they are present
-        return preg_replace('/^```json\n(.*)\n```$/s', '$1', trim($content));
     }
 }

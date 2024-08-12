@@ -12,6 +12,16 @@ use Newms87\Danx\Services\TranscodeFileService;
 
 class OpenAiMessageFormatter implements AgentMessageFormatterContract
 {
+    public function acceptsJsonSchema(): bool
+    {
+        return true;
+    }
+
+    public function messageList(array $messages): array
+    {
+        return $messages;
+    }
+
     public function rawMessage(string $role, string|array $content, array $data = null): array
     {
         return [

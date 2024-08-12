@@ -129,9 +129,10 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         // Given
         $content = "```json\n{\"key\": \"value\"}\n```";
+        $message = new Message(['content' => $content]);
 
         // When
-        $cleanedContent = AgentThreadService::cleanContent($content);
+        $cleanedContent = $message->getCleanContent();
 
         // Then
         $this->assertEquals('{"key": "value"}', $cleanedContent);
@@ -141,9 +142,10 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         // Given
         $content = "{\"key\": \"value\"}";
+        $message = new Message(['content' => $content]);
 
         // When
-        $cleanedContent = AgentThreadService::cleanContent($content);
+        $cleanedContent = $message->getCleanContent();
 
         // Then
         $this->assertEquals('{"key": "value"}', $cleanedContent);

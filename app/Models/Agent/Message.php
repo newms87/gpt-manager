@@ -45,6 +45,20 @@ class Message extends Model implements AuditableContract
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
     }
 
+    /**
+     * Cleans the AI Model responses to make sure we have valid JSON, if the response is JSON
+     */
+    public function getCleanContent(): string
+    {
+        // Remove any ```json and trailing ``` from content if they are present
+        return preg_replace('/^```json\n(.*)\n```$/s', '$1', trim($this->content));
+    }
+
+    public function getJsonContent(): array
+    {
+        return json_decode($this->getCleanContent(), true);
+    }
+
     public function __toString()
     {
         $message = StringHelper::limitText(20, $this->title ?: $this->content) ?: '(Empty)';

@@ -6,7 +6,6 @@ use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowTask;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Support\Facades\Log;
-use Newms87\Danx\Helpers\StringHelper;
 
 class RunAgentThreadWorkflowTool extends WorkflowTool
 {
@@ -33,15 +32,14 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
         $threadRun = app(AgentThreadService::class)->run($workflowTask->thread, dispatch: false);
 
         // Produce the artifact
-        $lastMessage = $threadRun->lastMessage;
-        $assignment  = $workflowTask->workflowAssignment;
-
-        $content = AgentThreadService::cleanContent($lastMessage->content);
-        $data    = null;
+        $assignment = $workflowTask->workflowAssignment;
 
         if ($assignment->agent->response_format !== 'text') {
-            $data    = StringHelper::safeJsonDecode($content, 1000000);
+            $data    = $threadRun->lastMessage->getJsonContent();
             $content = null;
+        } else {
+            $data    = null;
+            $content = $threadRun->lastMessage->getCleanContent();
         }
 
         $artifact = $workflowTask->artifacts()->create([

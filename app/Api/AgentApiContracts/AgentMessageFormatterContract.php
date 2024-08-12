@@ -11,5 +11,9 @@ interface AgentMessageFormatterContract
 
     public function message(Message $message): array;
 
+    public function messageList(array $messages): array;
+
+    public function acceptsJsonSchema(): bool;
+    
     public function toolResponse(string $toolId, string $toolName, AiToolResponse $response): array;
 }
