@@ -5,7 +5,6 @@
 			class="large-white flex-grow rounded-full overflow-hidden"
 			input-class="text-xl h-14 rounded-full"
 			placeholder="AI Search..."
-			:debounce="500"
 			:disabled="isSearching"
 			@submit="onSearch"
 		>
@@ -33,7 +32,7 @@
 						Searching for {{ searchText }}...
 					</div>
 				</div>
-				<div v-else-if="drugSideEffect" class="p-4">
+				<div v-else-if="drugSideEffect && showHelpMessage" class="p-4" @click="showHelpMessage = false">
 					Ask me anything about {{ drugSideEffect.product.companies.map(c => c.name).join(", ") }} or {{
 						drugSideEffect.product.name
 					}} and
@@ -64,6 +63,7 @@ const props = defineProps<{ drugSideEffect: DrugSideEffect | null }>();
 const searchText = ref("");
 const searchResults = ref<SearchResultItem[]>([]);
 const isSearching = ref(false);
+const showHelpMessage = ref(true);
 
 async function onSearch() {
 	if (!searchText.value) return;

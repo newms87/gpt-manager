@@ -16,11 +16,7 @@
 			label="Surgical Procedure"
 			:value="fBoolean(drugSideEffect.surgical_procedure?.value)"
 		/>
-		<LabelValueBlock
-			class="col-span-2"
-			label="Economic Damage"
-			:value="drugSideEffect.economic_impact?.value"
-		/>
+
 		<LabelValueBlock
 			label="Permanent Disability"
 			:value="fBoolean(drugSideEffect.permanent_disability?.value)"
@@ -64,10 +60,12 @@
 			/>
 			<LabelValueBlock
 				label="Onset"
+				class="col-span-2"
 				:value="drugSideEffect.onset?.value"
 			/>
 			<LabelValueBlock
 				label="Duration"
+				class="col-span-2"
 				:value="drugSideEffect.duration?.value"
 			/>
 			<LabelValueBlock
@@ -94,6 +92,17 @@
 				label="Economic Long Term"
 				:value="drugSideEffect.economic_long_term?.value"
 			/>
+			<LabelValueBlock
+				class="col-span-4"
+				label="Economic Damage"
+				:value="drugSideEffect.economic_impact?.value"
+			/>
+
+			<LabelValueBlock
+				:class="drugSideEffect.demographics?.value ? 'col-span-3' : ''"
+				label="Demographics"
+				:value="drugSideEffect.demographics?.value"
+			/>
 
 			<template v-if="drugSideEffect.surgical_procedure?.value">
 				<LabelValueBlock
@@ -107,12 +116,6 @@
 					:value="fBoolean(drugSideEffect.surgical_procedure_description?.value)"
 				/>
 			</template>
-
-			<LabelValueBlock
-				:class="drugSideEffect.demographics?.value ? 'col-span-3' : ''"
-				label="Demographics"
-				:value="drugSideEffect.demographics?.value"
-			/>
 
 			<LabelValueBlock
 				class="col-span-3"

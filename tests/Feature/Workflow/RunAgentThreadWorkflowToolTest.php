@@ -658,7 +658,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         ];
         $workflowJob = WorkflowJob::factory()->hasWorkflowAssignments()->create();
         $agent       = $workflowJob->workflowAssignments()->first()->agent;
-        $agent->forceFill(['response_sample' => $schema])->save();
+        $agent->forceFill(['response_sample' => $schema, 'response_format' => 'json_object'])->save();
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
             'force_schema'               => true,
