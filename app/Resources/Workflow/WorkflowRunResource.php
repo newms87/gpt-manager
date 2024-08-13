@@ -25,6 +25,7 @@ class WorkflowRunResource extends ActionResource
             'id'              => $model->id,
             'workflow_id'     => $model->workflow_id,
             'workflow_name'   => $model->workflow?->name,
+            'input_id'        => $model->workflowInput?->id,
             'input_name'      => $model->workflowInput?->name,
             'status'          => $model->status,
             'job_runs_count'  => $model->job_runs_count,

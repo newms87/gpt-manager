@@ -17,7 +17,7 @@ import { getAction } from "@/components/Modules/Workflows/WorkflowInputs/workflo
 import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { Form, IntegerField, MultiFileField, RenderedForm, SelectField } from "quasar-ui-danx";
-import { h, ref, watch } from "vue";
+import { h, onMounted, ref, watch } from "vue";
 
 const props = defineProps<{
 	workflowInput: WorkflowInput,
@@ -38,6 +38,12 @@ watch(() => props.workflowInput.files, () => {
 		input.value.content = props.workflowInput.content;
 		input.value.team_object_type = props.workflowInput.team_object_type;
 		input.value.team_object_id = props.workflowInput.team_object_id;
+	}
+});
+
+onMounted(() => {
+	if (!WorkflowInputController.getFieldOptions("teamObjectTypes")?.length) {
+		WorkflowInputController.loadFieldOptions();
 	}
 });
 

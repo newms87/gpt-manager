@@ -13,14 +13,25 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
 
     public static string $toolName = 'Run Agent Thread';
 
-    public function getResponsePreview(WorkflowJob $workflowJob): array|string|null
+    /**
+     * Get a list of response formats from all agents or the response schema itself (as a list of 1 item)
+     */
+    public function getResponsesPreview(WorkflowJob $workflowJob): array
     {
-        $response = [];
-        foreach($workflowJob->workflowAssignments as $assignment) {
-            $response[] = $assignment->agent->response_sample;
+        if ($workflowJob->response_schema) {
+            return [$workflowJob->response_schema];
         }
 
-        return $response;
+        $responses = [];
+        foreach($workflowJob->workflowAssignments as $assignment) {
+            if ($assignment->agent->response_format === 'text') {
+                $responses[] = ['content' => 'Text content'];
+            } else {
+                $responses[] = $assignment->agent->response_sample;
+            }
+        }
+
+        return $responses;
     }
 
     /**

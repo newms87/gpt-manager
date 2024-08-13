@@ -81,10 +81,13 @@ class WorkflowJob extends Model implements AuditableContract
         }
     }
 
-    public function getResponsePreview(): array|string|null
+    /**
+     * Gets a list of all the responses that are expected from the workflow tool
+     */
+    public function getResponsesPreview(): array
     {
         try {
-            return $this->getWorkflowTool()->getResponsePreview($this);
+            return $this->getWorkflowTool()->getResponsesPreview($this);
         } catch(Throwable $exception) {
             Log::error("Error getting response preview for $this: $exception", ['exception' => $exception]);
 
@@ -97,8 +100,9 @@ class WorkflowJob extends Model implements AuditableContract
      */
     public function getResponseFields(): array
     {
-        $responses = $this->getResponsePreview();
-        $fields    = [];
+        $responses = $this->getResponsesPreview();
+        
+        $fields = [];
         foreach($responses as $response) {
             $fields = array_merge($fields, ArrayHelper::getNestedFieldList($response));
         }

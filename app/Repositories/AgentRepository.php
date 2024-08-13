@@ -7,7 +7,6 @@ use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
-use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class AgentRepository extends ActionRepository
@@ -188,7 +187,7 @@ class AgentRepository extends ActionRepository
 
         $threadRun = app(AgentThreadService::class)->run($thread, dispatch: false);
 
-        $agent->response_sample = StringHelper::safeJsonDecode($threadRun->lastMessage->content, 999999);
+        $agent->response_sample = $threadRun->lastMessage->getJsonContent() ?: $threadRun->lastMessage->getCleanContent();
         $agent->save();
 
         // Clean up the thread so we don't clutter the UI

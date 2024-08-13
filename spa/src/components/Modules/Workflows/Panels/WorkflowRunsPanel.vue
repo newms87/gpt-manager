@@ -40,9 +40,13 @@
 			class="mb-2"
 		>
 			<template #name>
-				<div v-if="workflowRun.input_name" class="px-4 py-1 bg-sky-800 text-sky-200 ml-4 rounded-full">
+				<QBtn
+					v-if="workflowRun.input_name"
+					class="px-4 py-1 bg-sky-800 text-sky-200 ml-4 rounded-full"
+					@click="loadInputFromRun(workflowRun)"
+				>
 					{{ workflowRun.input_name }}
-				</div>
+				</QBtn>
 			</template>
 		</WorkflowRunCard>
 	</div>
@@ -54,7 +58,7 @@ import WorkflowInputCard from "@/components/Modules/Workflows/WorkflowInputs/Wor
 import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 import { ActionButton } from "@/components/Shared";
 import { WorkflowInputRoutes } from "@/routes/workflowInputRoutes";
-import { Workflow, WorkflowInput } from "@/types";
+import { Workflow, WorkflowInput, WorkflowRun } from "@/types";
 import { FaSolidArrowsRotate as ChangeIcon } from "danx-icon";
 import { storeObject } from "quasar-ui-danx";
 import { computed, ref } from "vue";
@@ -68,6 +72,15 @@ const actionInput = computed(() => ({ workflow_input_id: selectedInput.value?.id
 const showInputDialog = ref<boolean>(false);
 
 const runWorkflowAction = getAction("run-workflow");
+
+function loadInputFromRun(workflowRun: WorkflowRun) {
+	const input = storeObject({
+		id: workflowRun.input_id,
+		name: workflowRun.input_name,
+		__type: "WorkflowInputResource"
+	});
+	onConfirmSelection(input);
+}
 
 async function onConfirmSelection(input: WorkflowInput) {
 	selectedInput.value = input;

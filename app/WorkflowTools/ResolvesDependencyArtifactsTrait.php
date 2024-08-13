@@ -13,7 +13,7 @@ use Newms87\Danx\Helpers\StringHelper;
 
 trait ResolvesDependencyArtifactsTrait
 {
-    const int MAX_KEY_LENGTH  = 500;
+    const int MAX_KEY_LENGTH  = 100;
     const int MAX_HASH_LENGTH = 6;
 
     /**
@@ -204,7 +204,7 @@ trait ResolvesDependencyArtifactsTrait
                 if (is_array($bestNameValue)) {
                     $groupKeyValue = substr(md5(json_encode($bestNameValue)), 0, 6);
                 } else {
-                    $groupKeyValue = $bestNameValue;
+                    $groupKeyValue = substr($bestNameValue, 0, 20);
                 }
             }
             $tmpKey = ($groupByKey ? "$groupByKey," : '') . $key . ':' . ($groupKeyValue ?: 'default');
@@ -219,10 +219,8 @@ trait ResolvesDependencyArtifactsTrait
         }
 
         $groupByKey = $currentKey ? "$currentKey | $groupByKey" : $groupByKey;
-        if (strlen($groupByKey) > static::MAX_KEY_LENGTH) {
-            $requiresHash = true;
-        }
-        if ($requiresHash) {
+
+        if ($requiresHash || strlen($groupByKey) > static::MAX_KEY_LENGTH) {
             $hash       = '#' . substr(md5(json_encode($groupedItems)), 0, static::MAX_HASH_LENGTH);
             $groupByKey = StringHelper::limitText(static::MAX_KEY_LENGTH, $groupByKey, $hash);
         }

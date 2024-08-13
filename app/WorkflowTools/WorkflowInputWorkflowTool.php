@@ -29,7 +29,7 @@ class WorkflowInputWorkflowTool extends WorkflowTool
         ]);
     }
 
-    public function getResponsePreview(WorkflowJob $workflowJob): array|string|null
+    public function getResponsesPreview(WorkflowJob $workflowJob): array|string|null
     {
         $response = [
             [
@@ -96,7 +96,7 @@ class WorkflowInputWorkflowTool extends WorkflowTool
         if (!$workflowInput->team_object_type) {
             return [];
         }
-        
+
         $teamObject = app(TeamObjectRepository::class)->getFullyLoadedTeamObject($workflowInput->team_object_type, $workflowInput->team_object_id);
 
         // TODO: For now just one object, but maybe add team_object_filter field to query the team objects required

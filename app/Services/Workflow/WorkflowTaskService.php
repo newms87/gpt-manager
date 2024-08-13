@@ -101,6 +101,8 @@ class WorkflowTaskService
                 Log::debug("$workflowJobRun has failed");
                 $workflowJobRun->failed_at = now();
                 $workflowJobRun->save();
+                $workflowJobRun->workflowRun->failed_at = now();
+                $workflowJobRun->workflowRun->save();
             }
 
             LockHelper::release($workflowJobRun);

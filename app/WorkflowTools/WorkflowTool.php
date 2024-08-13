@@ -30,7 +30,7 @@ abstract class WorkflowTool
     /**
      * Get a preview of what a response from this tool would look like
      */
-    public function getResponsePreview(WorkflowJob $workflowJob): array|string|null
+    public function getResponsesPreview(WorkflowJob $workflowJob): array|string|null
     {
         return [];
     }

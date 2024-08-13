@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Helpers\StringHelper;
+use Str;
 use Throwable;
 
 class AgentThreadService
@@ -161,7 +162,7 @@ class AgentThreadService
         if (is_array($agent->response_schema)) {
             $name = $agent->name . ':' . substr(md5(json_encode($agent->response_schema)), 0, 7);
 
-            return $this->formatResponseSchema($name, $agent->response_schema);
+            return $this->formatResponseSchema(Str::slug($name), $agent->response_schema);
         }
 
         return $agent->response_schema;
@@ -228,7 +229,7 @@ class AgentThreadService
                 'items' => $this->formatResponseSchemaItem("$name.items", $items, $depth + 1),
             ],
             'string', 'number', 'integer', 'boolean', 'null' => ['type' => $type],
-            default => throw new Exception("Unknown type: " . $type),
+            default => throw new Exception("Unknown type at path $name: " . $type),
         };
 
         if ($description) {

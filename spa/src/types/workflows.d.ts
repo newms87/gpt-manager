@@ -79,6 +79,7 @@ export interface WorkflowRunner extends ActionTargetItem {
 export interface WorkflowRun extends WorkflowRunner {
 	workflow_id: number;
 	workflow_name: string;
+	input_id: number;
 	input_name: string;
 	artifacts_count: number;
 	job_runs_count: number;
