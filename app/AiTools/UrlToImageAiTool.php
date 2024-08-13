@@ -2,7 +2,6 @@
 
 namespace App\AiTools;
 
-use App\AiTools\Traits\HasOutputImagesTrait;
 use App\Api\ScreenshotOne\ScreenshotOneApi;
 use BadFunctionCallException;
 use Illuminate\Support\Facades\Log;
@@ -29,7 +28,7 @@ class UrlToImageAiTool implements AiToolContract
     {
         $url = $params['url'] ?? null;
 
-        Log::debug("Executing URL to Screenshot AI Tool: $url");
+        Log::debug("Executing URL to Image AI Tool: $url");
 
         if (!$url) {
             throw new BadFunctionCallException("URL to Screenshot requires a URL");
@@ -70,7 +69,7 @@ class UrlToImageAiTool implements AiToolContract
 
         if (!$storedFile) {
             $storedFile = StoredFile::create([
-                'disk'     => 'www',
+                'disk'     => 'web',
                 'filename' => basename($pdfUrl),
                 'filepath' => $pdfUrl,
                 'mime'     => StoredFile::MIME_PDF,
@@ -87,7 +86,7 @@ class UrlToImageAiTool implements AiToolContract
     public function takeScreenshot($url): StoredFile
     {
         $url = FileHelper::normalizeUrl($url);
-        
+
         Log::debug("Taking screenshot: $url");
 
         // Check for a previously cached web stored file, which might have a screenshot already

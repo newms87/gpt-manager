@@ -3,7 +3,7 @@
 		<div class="card-header flex items-center flex-nowrap bg-sky-900">
 			<div class="flex items-center flex-grow flex-nowrap">
 				<LogoImage
-					v-if="drugSideEffect.product.meta?.logo"
+					v-if="drugSideEffect.product?.meta?.logo"
 					:src="drugSideEffect.product.meta?.logo"
 					:url="drugSideEffect.product.url"
 					class="w-32"

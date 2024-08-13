@@ -4,6 +4,7 @@ use App\AiTools\GoogleSerpAiTool;
 use App\AiTools\SaveObjects\SaveObjectsAiTool;
 use App\AiTools\SummarizerAiTool;
 use App\AiTools\UrlToImageAiTool;
+use App\AiTools\UrlToMarkdownAiTool;
 use App\Api\OpenAi\OpenAiApi;
 use App\Api\PerplexityAi\PerplexityAiApi;
 
@@ -72,6 +73,12 @@ return [
             'name'        => UrlToImageAiTool::NAME,
             'description' => UrlToImageAiTool::DESCRIPTION,
             'parameters'  => UrlToImageAiTool::PARAMETERS,
+        ],
+        [
+            'class'       => UrlToMarkdownAiTool::class,
+            'name'        => UrlToMarkdownAiTool::NAME,
+            'description' => UrlToMarkdownAiTool::DESCRIPTION,
+            'parameters'  => UrlToMarkdownAiTool::PARAMETERS,
         ],
         [
             'class'       => SaveObjectsAiTool::class,

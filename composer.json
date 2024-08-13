@@ -19,6 +19,7 @@
         "laravel/vapor-core": "^2.37",
         "league/flysystem": "^3.27",
         "league/flysystem-aws-s3-v3": "^3.27",
+        "league/html-to-markdown": "^5.1",
         "newms87/danx": "^1.2"
     },
     "require-dev": {

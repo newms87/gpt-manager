@@ -3,6 +3,7 @@
 		<LabelValueBlock
 			label="Prevalence"
 			:value="drugSideEffect.prevalence?.value"
+			:url="drugSideEffect.prevalence?.source?.url"
 		/>
 		<LabelValueBlock
 			label="Hospitalization Rate"
@@ -81,11 +82,13 @@
 				label="Ongoing Care Duration"
 				class="col-span-2"
 				:value="drugSideEffect.ongoing_care_duration?.value"
+				:url="drugSideEffect.ongoing_care_duration?.source?.url"
 			/>
 			<LabelValueBlock
 				class="col-span-2"
 				label="Indirect Costs"
 				:value="drugSideEffect.indirect_costs?.value"
+				:url="drugSideEffect.indirect_costs?.source?.url"
 			/>
 			<LabelValueBlock
 				class="col-span-2"
@@ -109,11 +112,12 @@
 					class="col-span-1"
 					label="Surgical Procedure Rate %"
 					:value="drugSideEffect.surgical_procedure_rate?.value"
+					:url="drugSideEffect.surgical_procedure_rate?.source?.url"
 				/>
 				<LabelValueBlock
 					class="col-span-3"
 					label="Surgical Procedure"
-					:value="fBoolean(drugSideEffect.surgical_procedure_description?.value)"
+					:value="drugSideEffect.surgical_procedure_description?.value"
 				/>
 			</template>
 
