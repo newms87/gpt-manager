@@ -24,14 +24,14 @@ class WorkflowTask extends Model implements AuditableContract, ComputedStatusCon
         'deleted_at',
     ];
 
-    public static function booted()
+    public static function booted(): void
     {
         static::saving(function ($workflowTask) {
             $workflowTask->computeStatus();
         });
     }
 
-    public function casts()
+    public function casts(): array
     {
         return [
             'started_at'   => 'datetime',
@@ -94,7 +94,15 @@ class WorkflowTask extends Model implements AuditableContract, ComputedStatusCon
 
     public function isTimedOut(): bool
     {
-        return $this->started_at && $this->started_at->addSeconds($this->workflowJob?->timeout_after ?: 0)->isPast();
+        if ($this->status === WorkflowRun::STATUS_TIMED_OUT) {
+            return true;
+        }
+
+        if (!$this->started_at || $this->completed_at) {
+            return false;
+        }
+
+        return $this->started_at->addSeconds($this->workflowJob?->timeout_after ?: 0)->isPast();
     }
 
     public function getTotalInputTokens()

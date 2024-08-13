@@ -5,7 +5,7 @@ import { h } from "vue";
 export const fields = [
 	{
 		name: "name",
-		vnode: (props) => h(TextField, { ...props, maxLength: 40 }),
+		vnode: (props) => h(TextField, { ...props, maxLength: 100 }),
 		label: "Agent Name",
 		required: true
 	},

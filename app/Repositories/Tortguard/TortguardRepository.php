@@ -93,6 +93,7 @@ class TortguardRepository
                 'relationship_name' => 'companies',
             ]);
 
+            // If the company has a parent company, create the parent company
             if ($parentName) {
                 $parent = TeamObject::firstOrCreate([
                     'ref'  => Str::slug($parentName),
@@ -100,13 +101,21 @@ class TortguardRepository
                     'name' => $parentName,
                 ]);
 
+                // Add the parent company to the subsidiary company
                 $company->relationships()->create([
                     'related_object_id' => $parent->id,
                     'relationship_name' => 'parent',
                 ]);
+
+                // Add the parent company to the drug product as well
+                $drugProduct->relationships()->create([
+                    'related_object_id' => $parent->id,
+                    'relationship_name' => 'companies',
+                ]);
             }
         }
 
+        // Add the drug Product to the Side Effect
         $DrugSideEffect->relationships()->create([
             'related_object_id' => $drugProduct->id,
             'relationship_name' => 'product',
@@ -114,13 +123,11 @@ class TortguardRepository
 
 
         $workflowInput = WorkflowInput::make()->forceFill([
-            'team_id' => team()->id,
-            'user_id' => user()->id,
-            'name'    => 'Research: ' . $productName . ' - ' . $sideEffect,
-            'content' => json_encode([
-                'product'     => $productName,
-                'side_effect' => $sideEffect,
-            ]),
+            'team_id'          => team()->id,
+            'user_id'          => user()->id,
+            'name'             => 'Research: ' . $productName . ' - ' . $sideEffect,
+            'team_object_type' => 'DrugSideEffect',
+            'team_object_id'   => $DrugSideEffect->id,
         ]);
         $workflowInput->save();
 

@@ -5,7 +5,7 @@
 		<h6 class="mb-2">{{ company.name }}</h6>
 
 		<div class="grid grid-cols-3 gap-4">
-			<LabelValueBlock label="Score" :value="company.score?.value" :url="company.url" />
+			<LabelValueBlock v-if="company.parent" label="Parent" :value="company.parent.name" :url="company.parent.url" />
 			<LabelValueBlock
 				label="Annual Revenue"
 				:value="fShortCurrency(company.annual_revenue?.value)"

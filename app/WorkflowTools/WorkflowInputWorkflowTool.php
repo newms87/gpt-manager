@@ -88,7 +88,7 @@ class WorkflowInputWorkflowTool extends WorkflowTool
             }
         }
 
-        Log::debug(self::$toolName . ": created $artifact with content of " . strlen($artifact->content) . " bytes and " . count($files) . " files");
+        Log::debug(self::$toolName . ": created $artifact");
     }
 
     public function getTeamObjects(WorkflowInput $workflowInput): array

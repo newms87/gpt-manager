@@ -21,7 +21,9 @@ class DrugSideEffectResource extends TeamObjectResource
 
         return static::make($model, [
             'product'     => DrugProductResource::make($product, [
-                'companies' => CompanyResource::collection($companies),
+                'companies' => CompanyResource::collection($companies, fn($company) => [
+                    'parent' => CompanyResource::make($company->relatedObjects('parent')->first()),
+                ]),
             ]),
             'workflowRun' => WorkflowRunResource::make($workflowRun),
         ]);

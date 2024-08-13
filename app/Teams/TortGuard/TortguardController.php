@@ -45,6 +45,10 @@ class TortguardController extends Controller
             throw new ValidationError("$agentName not found");
         }
 
+        if (!$query) {
+            throw new ValidationError('Search query is required');
+        }
+
         $results = app(TortguardRepository::class)->search($agent, $query);
 
         return [

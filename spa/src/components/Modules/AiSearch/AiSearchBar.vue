@@ -58,6 +58,8 @@ const searchResults = ref<SearchResultItem[]>([]);
 const isSearching = ref(false);
 
 async function onSearch() {
+	if (!searchText.value) return;
+	
 	isSearching.value = true;
 	const response: SearchResult = await AiSearchRoutes.search(searchText.value);
 	isSearching.value = false;
