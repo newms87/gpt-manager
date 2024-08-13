@@ -33,6 +33,12 @@
 						Searching for {{ searchText }}...
 					</div>
 				</div>
+				<div v-else-if="drugSideEffect" class="p-4">
+					Ask me anything about {{ drugSideEffect.product.companies.map(c => c.name).join(", ") }} or {{
+						drugSideEffect.product.name
+					}} and
+					I will be happy to answer!
+				</div>
 				<AiSearchResult
 					v-for="result in searchResults"
 					:key="result.product_name"
@@ -46,6 +52,7 @@
 </template>
 <script setup lang="ts">
 import AiSearchResult from "@/components/Modules/AiSearch/AiSearchResult";
+import { DrugSideEffect } from "@/components/Modules/Tortguard/tortguard";
 import { AiSearchRoutes } from "@/routes/searchRoutes";
 import { SearchResult, SearchResultItem, SearchResultItemBySideEffect } from "@/types/research";
 import { FaSolidWandSparkles as SearchIcon, FaSolidXmark as ClearIcon } from "danx-icon";
@@ -53,13 +60,20 @@ import { FlashMessages, ListTransition, TextField } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const emit = defineEmits(["refresh"]);
+const props = defineProps<{ drugSideEffect: DrugSideEffect | null }>();
 const searchText = ref("");
 const searchResults = ref<SearchResultItem[]>([]);
 const isSearching = ref(false);
 
 async function onSearch() {
 	if (!searchText.value) return;
-	
+
+	if (props.drugSideEffect) {
+		searchText.value = "";
+		FlashMessages.warning("This feature is coming soon!");
+		return;
+	}
+
 	isSearching.value = true;
 	const response: SearchResult = await AiSearchRoutes.search(searchText.value);
 	isSearching.value = false;

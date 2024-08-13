@@ -2,7 +2,7 @@
 	<div class="relative h-full">
 		<div v-if="!drugSideEffects.length" class="text-center text-gray-400 text-xl py-10">No drug side-effects found</div>
 		<div v-else class="p-8 overflow-y-auto h-full">
-			<ListTransition class="pb-10">
+			<ListTransition class="pb-24">
 				<DrugSideEffectCard
 					v-for="drugSideEffect in activeDrugSideEffects"
 					:key="drugSideEffect.id"
@@ -14,7 +14,7 @@
 		</div>
 
 		<AiSearchBar
-			v-if="!activeDrugSideEffect"
+			:drug-side-effect="activeDrugSideEffect"
 			class="absolute bottom-0 left-0 w-full px-8 py-4"
 			@refresh="loadDashboard"
 		/>

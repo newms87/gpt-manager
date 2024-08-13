@@ -42,8 +42,8 @@
 			</div>
 		</div>
 		<div v-if="isShowing">
-			<div class="flex items-start mt-4 mx-4">
-				<div class="flex-grow">
+			<div class="flex items-start flex-nowrap mt-4 mx-4">
+				<div class="flex-shrink-0">
 					<DrugIssueCompanyCard
 						v-for="company in drugSideEffect.product.companies"
 						:key="company.id"
@@ -51,9 +51,11 @@
 						class="bg-slate-700 w-[30rem] mb-4"
 					/>
 				</div>
-				<div class="bg-sky-950 p-4 rounded-lg">
-					<h6 class="mb-2">Severity</h6>
-					<DrugIssueSeveritySection class="w-[40rem]" :drug-side-effect="drugSideEffect" />
+				<div class="bg-sky-950 p-4 rounded-lg flex-grow ml-4">
+					<h6 class="mb-2">Severity
+						<ShowHideButton v-model="severityExpanded" />
+					</h6>
+					<DrugIssueSeveritySection :drug-side-effect="drugSideEffect" :expanded="severityExpanded" />
 				</div>
 			</div>
 			<div class="p-4">
@@ -79,7 +81,7 @@ import { ShowHideButton } from "@/components/Shared";
 import LogoImage from "@/components/Shared/Images/LogoImage";
 import { TortguardRoutes } from "@/routes/tortguardRoutes";
 import { autoRefreshObject } from "quasar-ui-danx";
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 const props = defineProps<{ drugSideEffect: DrugSideEffect }>();
 const isShowing = defineModel<boolean>();
@@ -93,4 +95,5 @@ onMounted(() => {
 });
 
 const sideEffectName = computed(() => props.drugSideEffect.name.replace(props.drugSideEffect.product.name + ": ", ""));
+const severityExpanded = ref(false);
 </script>
