@@ -3151,23 +3151,25 @@
         },
         {
             "name": "newms87/danx",
-            "version": "1.2.20",
+            "version": "1.2.21",
             "source": {
                 "type": "git",
                 "url": "https://github.com/newms87/danx.git",
-                "reference": "0055113e472b75ff1aadf502169fb24f0ab44ab5"
+                "reference": "c3a16248503fdf2c97209af622b75f0e26d97682"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/newms87/danx/zipball/0055113e472b75ff1aadf502169fb24f0ab44ab5",
-                "reference": "0055113e472b75ff1aadf502169fb24f0ab44ab5",
+                "url": "https://api.github.com/repos/newms87/danx/zipball/c3a16248503fdf2c97209af622b75f0e26d97682",
+                "reference": "c3a16248503fdf2c97209af622b75f0e26d97682",
                 "shasum": ""
             },
             "require": {
                 "aws/aws-sdk-php": "^3.305",
                 "ext-curl": "*",
+                "ext-dom": "*",
                 "ext-exif": "*",
                 "ext-iconv": "*",
+                "ext-libxml": "*",
                 "ext-zip": "*",
                 "illuminate/bus": "^11.1",
                 "illuminate/console": "^11.1",
@@ -3179,6 +3181,7 @@
                 "illuminate/support": "^11.1",
                 "intervention/image": "^3.6",
                 "james-heinrich/getid3": "^1.9",
+                "league/html-to-markdown": "^5.1",
                 "monolog/monolog": "^3.5",
                 "nesbot/carbon": "^3.2",
                 "owen-it/laravel-auditing": "^13.6",
@@ -3210,9 +3213,9 @@
             "description": "Danx Auditing, Logging, and Helpers",
             "support": {
                 "issues": "https://github.com/newms87/danx/issues",
-                "source": "https://github.com/newms87/danx/tree/1.2.20"
+                "source": "https://github.com/newms87/danx/tree/1.2.21"
             },
-            "time": "2024-08-10T07:19:13+00:00"
+            "time": "2024-08-14T07:06:07+00:00"
         },
         {
             "name": "nikic/php-parser",

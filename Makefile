@@ -3,7 +3,7 @@ danx-spa:
 
 danx-core:
 	vendor/bin/sail composer require newms87/danx
-	vendor/bin/sail artisan fix
+	vendor/bin/sail artisan danx:link
 
 danx: danx-spa danx-core
 
