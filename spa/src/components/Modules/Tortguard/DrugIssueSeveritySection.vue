@@ -1,148 +1,140 @@
 <template>
 	<div class="grid grid-cols-6 gap-4">
-		<LabelValueBlock
+		<TeamObjectAttributeBlock
 			label="Prevalence"
-			:value="drugSideEffect.prevalence?.value"
-			:url="drugSideEffect.prevalence?.source?.url"
+			:attribute="drugSideEffect.prevalence"
 		/>
-		<LabelValueBlock
+		<TeamObjectAttributeBlock
 			label="Hospitalization Rate"
-			:value="drugSideEffect.hospitalization_rate?.value"
+			:attribute="drugSideEffect.hospitalization_rate"
 		/>
-		<LabelValueBlock
+		<TeamObjectAttributeBlock
 			label="Death"
-			:value="fBoolean(drugSideEffect.death?.value)"
+			:attribute="drugSideEffect.death"
 		/>
-		<LabelValueBlock
+		<TeamObjectAttributeBlock
 			label="Surgical Procedure"
-			:value="fBoolean(drugSideEffect.surgical_procedure?.value)"
+			:attribute="drugSideEffect.surgical_procedure"
 		/>
-
-		<LabelValueBlock
+		<TeamObjectAttributeBlock
 			label="Permanent Disability"
-			:value="fBoolean(drugSideEffect.permanent_disability?.value)"
+			:attribute="drugSideEffect.permanent_disability"
 		/>
-		<LabelValueBlock
+		<TeamObjectAttributeBlock
 			label="Ongoing Care"
-			:value="fBoolean(drugSideEffect.ongoing_care?.value)"
+			:attribute="drugSideEffect.ongoing_care"
 		/>
 
 		<template v-if="expanded">
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Is Reversible"
-				:value="fBoolean(drugSideEffect.is_reversible?.value)"
+				:attribute="drugSideEffect.is_reversible"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Recovery Time"
-				:value="drugSideEffect.recovery_time?.value"
+				:attribute="drugSideEffect.recovery_time"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Disability Rate"
-				:value="drugSideEffect.disability_rate?.value"
+				:attribute="drugSideEffect.disability_rate"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Hospital Duration"
-				:value="drugSideEffect.hospital_duration?.value"
+				:attribute="drugSideEffect.hospital_duration"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				class="col-span-2"
 				label="Common Disabilities"
-				:value="drugSideEffect.common_disabilities?.value"
+				:attribute="drugSideEffect.common_disabilities"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Mortality Rate"
-				:value="drugSideEffect.mortality_rate?.value"
+				:attribute="drugSideEffect.mortality_rate"
 			/>
-			<LabelValueBlock
-				v-if="drugSideEffect.death_factors?.value"
+			<TeamObjectAttributeBlock
+				v-if="drugSideEffect.death_factors"
 				class="col-span-2"
 				label="Death Factors"
-				:value="drugSideEffect.death_factors?.value"
+				:attribute="drugSideEffect.death_factors"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Onset"
 				class="col-span-2"
-				:value="drugSideEffect.onset?.value"
+				:attribute="drugSideEffect.onset"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Duration"
 				class="col-span-2"
-				:value="drugSideEffect.duration?.value"
+				:attribute="drugSideEffect.duration"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Acute/Chronic"
-				:value="drugSideEffect.acute_or_chronic?.value"
+				:attribute="drugSideEffect.acute_or_chronic"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Ongoing Care Type"
 				class="col-span-2"
-				:value="drugSideEffect.ongoing_care_type?.value"
+				:attribute="drugSideEffect.ongoing_care_type"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Ongoing Care Duration"
 				class="col-span-2"
-				:value="drugSideEffect.ongoing_care_duration?.value"
-				:url="drugSideEffect.ongoing_care_duration?.source?.url"
+				:attribute="drugSideEffect.ongoing_care_duration"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				class="col-span-2"
 				label="Indirect Costs"
-				:value="drugSideEffect.indirect_costs?.value"
-				:url="drugSideEffect.indirect_costs?.source?.url"
+				:attribute="drugSideEffect.indirect_costs"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				class="col-span-2"
 				label="Economic Long Term"
-				:value="drugSideEffect.economic_long_term?.value"
+				:attribute="drugSideEffect.economic_long_term"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				class="col-span-4"
 				label="Economic Damage"
-				:value="drugSideEffect.economic_impact?.value"
+				:attribute="drugSideEffect.economic_impact"
 			/>
-
-			<LabelValueBlock
-				:class="drugSideEffect.demographics?.value ? 'col-span-3' : ''"
+			<TeamObjectAttributeBlock
+				:class="drugSideEffect.demographics ? 'col-span-3' : ''"
 				label="Demographics"
-				:value="drugSideEffect.demographics?.value"
+				:attribute="drugSideEffect.demographics"
 			/>
-
-			<template v-if="drugSideEffect.surgical_procedure?.value">
-				<LabelValueBlock
+			<template v-if="drugSideEffect.surgical_procedure">
+				<TeamObjectAttributeBlock
 					class="col-span-1"
 					label="Surgical Procedure Rate %"
-					:value="drugSideEffect.surgical_procedure_rate?.value"
-					:url="drugSideEffect.surgical_procedure_rate?.source?.url"
+					:attribute="drugSideEffect.surgical_procedure_rate"
 				/>
-				<LabelValueBlock
+				<TeamObjectAttributeBlock
 					class="col-span-3"
 					label="Surgical Procedure"
-					:value="drugSideEffect.surgical_procedure_description?.value"
+					:attribute="drugSideEffect.surgical_procedure_description"
 				/>
 			</template>
-
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				class="col-span-3"
 				label="Quality of Life"
-				:value="drugSideEffect.quality_of_life?.value"
+				:attribute="drugSideEffect.quality_of_life"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				class="col-span-3"
 				label="Psychological Impact"
-				:value="drugSideEffect.psychological_impact?.value"
+				:attribute="drugSideEffect.psychological_impact"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				class="col-span-3"
 				label="Social Impact"
-				:value="drugSideEffect.social_impact?.value"
+				:attribute="drugSideEffect.social_impact"
 			/>
 		</template>
 	</div>
 </template>
 
 <script setup lang="ts">
+import TeamObjectAttributeBlock from "@/components/Modules/Tortguard/TeamObjectAttributeBlock";
 import { DrugSideEffect } from "@/components/Modules/Tortguard/tortguard";
-import { fBoolean, LabelValueBlock } from "quasar-ui-danx";
 
 defineProps<{ drugSideEffect: DrugSideEffect, expanded: boolean }>();
 </script>

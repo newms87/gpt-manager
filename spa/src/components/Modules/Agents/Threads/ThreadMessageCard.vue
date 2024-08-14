@@ -43,6 +43,7 @@
 						tooltip="Delete message"
 					/>
 					<ActionButton
+						v-if="thread"
 						:action="resetToMessageAction"
 						:target="thread"
 						:input="{ message_id: message.id }"
@@ -110,7 +111,7 @@ import { computed, ref } from "vue";
 
 const props = defineProps<{
 	message: ThreadMessage;
-	thread: AgentThread,
+	thread?: AgentThread,
 	readonly?: boolean;
 }>();
 

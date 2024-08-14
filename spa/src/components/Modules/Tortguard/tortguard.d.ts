@@ -1,4 +1,4 @@
-import { WorkflowRun } from "@/types";
+import { ThreadMessage, WorkflowRun } from "@/types";
 import { TypedObject, UploadedFile } from "quasar-ui-danx";
 
 interface TeamObject extends TypedObject {
@@ -15,6 +15,7 @@ interface TeamObjectAttribute {
 	date: Date;
 	value: object | string | boolean | number | Date | null;
 	source?: UploadedFile;
+	sourceMessages?: ThreadMessage[];
 	created_at: Date;
 	updated_at: Date;
 }
