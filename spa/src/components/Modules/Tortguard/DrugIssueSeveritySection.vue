@@ -11,18 +11,22 @@
 		<TeamObjectAttributeBlock
 			label="Death"
 			:attribute="drugSideEffect.death"
+			format="boolean"
 		/>
 		<TeamObjectAttributeBlock
 			label="Surgical Procedure"
 			:attribute="drugSideEffect.surgical_procedure"
+			format="boolean"
 		/>
 		<TeamObjectAttributeBlock
 			label="Permanent Disability"
 			:attribute="drugSideEffect.permanent_disability"
+			format="boolean"
 		/>
 		<TeamObjectAttributeBlock
 			label="Ongoing Care"
 			:attribute="drugSideEffect.ongoing_care"
+			format="boolean"
 		/>
 
 		<template v-if="expanded">

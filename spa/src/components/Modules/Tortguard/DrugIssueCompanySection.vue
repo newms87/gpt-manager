@@ -5,40 +5,45 @@
 		<h6 class="mb-2">{{ company.name }}</h6>
 
 		<div class="grid grid-cols-3 gap-4">
-			<LabelValueBlock v-if="company.parent" label="Parent" :value="company.parent.name" :url="company.parent.url" />
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
+				v-if="company.parent"
+				label="Parent"
+				:attribute="company.parent.name"
+				:url="company.parent.url"
+			/>
+			<TeamObjectAttributeBlock
 				label="Annual Revenue"
-				:value="fShortCurrency(company.annual_revenue?.value)"
-				:url="company.annual_revenue?.source?.url"
+				format="shortCurrency"
+				:attribute="company.annual_revenue"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Operating Income"
-				:value="fShortCurrency(company.operating_income?.value)"
-				:url="company.operating_income?.source?.url"
+				:attribute="company.operating_income"
+				format="shortCurrency"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Net Income"
-				:value="fShortCurrency(company.net_income?.value)"
-				:url="company.net_income?.source?.url"
+				:attribute="company.net_income"
+				format="shortCurrency"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Total Assets"
-				:value="fShortCurrency(company.total_assets?.value)"
-				:url="company.total_assets?.source?.url"
+				:attribute="company.total_assets"
+				format="shortCurrency"
 			/>
-			<LabelValueBlock
+			<TeamObjectAttributeBlock
 				label="Total Equity"
-				:value="fShortCurrency(company.total_equity?.value)"
-				:url="company.total_equity?.source?.url"
+				:attribute="company.total_equity"
+				format="shortCurrency"
 			/>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
+import TeamObjectAttributeBlock from "@/components/Modules/Tortguard/TeamObjectAttributeBlock";
 import { Company } from "@/components/Modules/Tortguard/tortguard";
 import LogoImage from "@/components/Shared/Images/LogoImage";
-import { fShortCurrency, LabelValueBlock } from "quasar-ui-danx";
 
 defineProps<{ company: Company }>();
 </script>

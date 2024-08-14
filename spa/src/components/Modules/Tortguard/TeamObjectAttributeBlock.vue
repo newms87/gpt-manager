@@ -24,12 +24,13 @@
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import { TeamObjectAttribute } from "@/components/Modules/Tortguard/tortguard";
 import { FaSolidLink as LinkIcon } from "danx-icon";
-import { fBoolean, fNumber, LabelValueBlock } from "quasar-ui-danx";
+import { fBoolean, fNumber, fShortCurrency, LabelValueBlock } from "quasar-ui-danx";
 import { computed } from "vue";
 
 const props = defineProps<{
 	label: string;
 	attribute?: TeamObjectAttribute;
+	format?: "boolean" | "shortCurrency" | "number";
 }>();
 
 const resolvedValue = computed(() => {
@@ -38,12 +39,15 @@ const resolvedValue = computed(() => {
 		return "-";
 	}
 
-	switch (typeof value) {
+	switch (props.format) {
 		case "boolean":
-			return fBoolean(value);
+			return fBoolean(!!value);
 
 		case "number":
-			return fNumber(value);
+			return fNumber(+value);
+
+		case "shortCurrency":
+			return fShortCurrency(+value);
 
 		default:
 			return value;
