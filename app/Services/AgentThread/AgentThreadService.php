@@ -207,6 +207,9 @@ class AgentThreadService
         ];
     }
 
+    /**
+     * Format the response schema to match the requirements of JSON schema for completions API
+     */
     public function formatResponseSchemaItem($name, $value, $depth = 0): array
     {
         $type        = $value['type'] ?? null;
@@ -255,7 +258,13 @@ class AgentThreadService
         $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $corePrompt . $agent->prompt);
 
         foreach($thread->messages()->get() as $message) {
-            $messages[] = $apiFormatter->message($message);
+            $formattedMessage = $apiFormatter->message($message);
+
+            if ($message->isUser()) {
+                $messages[] = $apiFormatter->wrapMessage("<AgentMessage id='$message->id'>", $formattedMessage, "</AgentMessage>");
+            } else {
+                $messages[] = $formattedMessage;
+            }
         }
 
         $responseMessage = '';
@@ -286,11 +295,8 @@ class AgentThreadService
             $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $responseMessage);
         }
 
-        $messages = $apiFormatter->messageList($messages);
-
-        return $messages;
+        return $apiFormatter->messageList($messages);
     }
-
 
     /**
      * Handle the response from the AI model

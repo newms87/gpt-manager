@@ -3,6 +3,7 @@
 namespace Tests\Feature\Workflow;
 
 use App\AiTools\SaveObjects\SaveObjectsAiTool;
+use App\Models\Agent\Message;
 use App\Models\TeamObject\TeamObject;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
@@ -101,6 +102,50 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         $attributeB = $attributes->firstWhere('name', 'Attribute B');
         $this->assertEquals('Value B', $attributeB->text_value, 'Attribute B value should be Value B');
         $this->assertNull($attributeB->date, 'Attribute B date should be null');
+    }
+
+    public function test_execute_objectWithAttributesStoresSourceMessages(): void
+    {
+        // Given
+        $type      = 'Test Object';
+        $name      = 'Test B';
+        $attrADate = '2021-01-01 00:00:00';
+        $attrAUrl  = 'https://example-a.com';
+        $message   = Message::factory()->create();
+        $params    = [
+            'objects' => [
+                [
+                    'type'       => $type,
+                    'name'       => $name,
+                    'attributes' => [
+                        [
+                            'name'        => 'Attribute A',
+                            'value'       => 'Value A',
+                            'date'        => $attrADate,
+                            'source_url'  => $attrAUrl,
+                            'message_ids' => [$message->id],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        app(SaveObjectsAiTool::class)->execute($params);
+
+        // Then
+        $testObject = TeamObject::where('type', $type)->where('name', $name)->first();
+        $attributes = $testObject->attributes()->get();
+
+        $this->assertCount(1, $attributes, "Expected 1 attribute to be created for object $name");
+
+        $attributeA = $attributes->firstWhere('name', 'Attribute A');
+        $this->assertEquals('Value A', $attributeA->text_value, 'Attribute A value should be Value A');
+        $this->assertEquals($attrADate, $attributeA->date, 'Attribute A date should match');
+
+        $sourceMessages = $attributeA->sourceMessages()->get();
+        $this->assertCount(1, $sourceMessages, 'Expected 1 source message to be created');
+        $this->assertEquals($message->id, $sourceMessages->first()->id, 'Source message ID should match');
     }
 
     public function test_execute_creating2AttributesWithSameNameDifferentDates(): void

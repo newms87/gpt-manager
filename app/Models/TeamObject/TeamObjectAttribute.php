@@ -2,10 +2,12 @@
 
 namespace App\Models\TeamObject;
 
+use App\Models\Agent\Message;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -55,10 +57,15 @@ class TeamObjectAttribute extends Model implements AuditableContract
     {
         return $this->text_value ?? $this->json_value;
     }
-    
+
     public function sourceFile(): BelongsTo|StoredFile
     {
         return $this->belongsTo(StoredFile::class, 'source_stored_file_id');
+    }
+
+    public function sourceMessages(): MorphToMany|Message
+    {
+        return $this->morphToMany(Message::class, 'messageable', 'messageables')->withTimestamps();
     }
 
     public function __toString(): string

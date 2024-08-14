@@ -132,10 +132,11 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
 
     public function saveObjectAttribute($object, $attribute): void
     {
-        $name      = $attribute['name'] ?? null;
-        $value     = $attribute['value'] ?? null;
-        $date      = $attribute['date'] ?? null;
-        $sourceUrl = $attribute['source_url'] ?? null;
+        $name       = $attribute['name'] ?? null;
+        $value      = $attribute['value'] ?? null;
+        $date       = $attribute['date'] ?? null;
+        $sourceUrl  = $attribute['source_url'] ?? null;
+        $messageIds = $attribute['message_ids'] ?? [];
 
         if (!$name || (!$value && !array_key_exists('value', $attribute))) {
             throw new BadFunctionCallException("Save Objects requires a name and value for each attribute: \n\n" . json_encode($attribute));
@@ -162,7 +163,7 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
             Log::debug("Stored File $storedFile->id references source URL $sourceUrl");
         }
 
-        TeamObjectAttribute::updateOrCreate([
+        $teamObjectAttribute = TeamObjectAttribute::updateOrCreate([
             'object_id' => $object->id,
             'name'      => $name,
             'date'      => $date,
@@ -171,5 +172,9 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
             'json_value'            => is_array($value) ? json_encode($value) : null,
             'source_stored_file_id' => $storedFile?->id,
         ]);
+
+        if ($messageIds) {
+            $teamObjectAttribute->sourceMessages()->syncWithoutDetaching($messageIds);
+        }
     }
 }

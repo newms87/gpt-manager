@@ -37,7 +37,7 @@ import { getAction } from "@/components/Modules/Agents/agentActions";
 import { ActionButton } from "@/components/Shared";
 import { Agent } from "@/types/agents";
 import { FaSolidRobot as GenerateSampleIcon } from "danx-icon";
-import { ActionForm, Form, SelectField } from "quasar-ui-danx";
+import { ActionForm, BooleanField, Form, SelectField } from "quasar-ui-danx";
 import { h } from "vue";
 
 defineProps<{
@@ -51,7 +51,7 @@ const agentForm: Form = {
 	fields: [
 		{
 			name: "response_format",
-			label: "Format",
+			label: "Response Format",
 			vnode: (props) => h(SelectField, {
 				...props,
 				options: [
@@ -63,7 +63,7 @@ const agentForm: Form = {
 		},
 		{
 			name: "schema_format",
-			label: "Format",
+			label: "Schema Format",
 			enabled: (input) => input.response_format !== "text",
 			vnode: (props) => h(SelectField, {
 				...props,
@@ -73,6 +73,11 @@ const agentForm: Form = {
 					{ label: "Typescript", value: "ts" }
 				]
 			})
+		},
+		{
+			name: "enable_message_sources",
+			label: "Enable Message Sources?",
+			vnode: (props) => h(BooleanField, { ...props })
 		},
 		{
 			name: "response_notes",

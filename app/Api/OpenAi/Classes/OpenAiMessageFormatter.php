@@ -22,6 +22,23 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
         return $messages;
     }
 
+    public function wrapMessage(string $prefix, array $message, string $suffix = ''): array
+    {
+        if (!isset($message['content'])) {
+            throw new Exception('Error wrapping formatted message: Invalid Open AI Message format');
+        }
+
+        if (is_string($message['content'])) {
+            $message['content'] = $prefix . $message['content'] . $suffix;
+        } else {
+            $prefixText         = ['type' => 'text', 'text' => $prefix];
+            $suffixText         = ['type' => 'text', 'text' => $suffix];
+            $message['content'] = array_merge([$prefixText], $message['content'], [$suffixText]);
+        }
+
+        return $message;
+    }
+
     public function rawMessage(string $role, string|array $content, array $data = null): array
     {
         return [

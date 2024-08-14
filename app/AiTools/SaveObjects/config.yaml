@@ -70,3 +70,8 @@ parameters:
                 source_url:
                   type: [ "string", "null" ]
                   description: 'The URL where the attribute was sourced from (if applicable)'
+                message_ids:
+                  type: array
+                  description: "The list of message IDs that the attribute was sourced from. Each user message should have <AgentMessage id='message_id'>...</AgentMessage> set. Add the list of message IDs that contained the source of the attribute's value. If no <AgentMessage> tags are present, omit this field"
+                  items:
+                    type: string

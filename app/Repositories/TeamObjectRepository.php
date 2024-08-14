@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
+use App\Resources\Agent\MessageResource;
 use Log;
 use Newms87\Danx\Resources\StoredFileResource;
 use Str;
@@ -32,29 +33,31 @@ class TeamObjectRepository
 
     public function loadTeamObjectAttributes(TeamObject $teamObject): void
     {
-        $attributes = TeamObjectAttribute::where('object_id', $teamObject->id)->get();
+        $attributes = TeamObjectAttribute::where('object_id', $teamObject->id)->with('sourceFile', 'sourceMessages')->get();
 
         foreach($attributes as $attribute) {
             $currentValue = $teamObject->getAttribute($attribute->name);
             if (!$currentValue) {
                 $currentValue = [
-                    'id'         => $attribute->id,
-                    'name'       => $attribute->name,
-                    'date'       => $attribute->date,
-                    'value'      => $attribute->getValue(),
-                    'source'     => StoredFileResource::make($attribute->sourceFile),
-                    'dates'      => [],
-                    'created_at' => $attribute->created_at,
-                    'updated_at' => $attribute->updated_at,
+                    'id'             => $attribute->id,
+                    'name'           => $attribute->name,
+                    'date'           => $attribute->date,
+                    'value'          => $attribute->getValue(),
+                    'source'         => StoredFileResource::make($attribute->sourceFile),
+                    'sourceMessages' => MessageResource::collection($attribute->sourceMessages),
+                    'dates'          => [],
+                    'created_at'     => $attribute->created_at,
+                    'updated_at'     => $attribute->updated_at,
                 ];
             } elseif (!$attribute->date) {
                 // If date is not set, this is the primary attribute (overwrite it)
-                $currentValue['id']         = $attribute->id;
-                $currentValue['date']       = null;
-                $currentValue['value']      = $attribute->getValue();
-                $currentValue['source']     = StoredFileResource::make($attribute->sourceFile);
-                $currentValue['created_at'] = $attribute->created_at;
-                $currentValue['updated_at'] = $attribute->updated_at;
+                $currentValue['id']             = $attribute->id;
+                $currentValue['date']           = null;
+                $currentValue['value']          = $attribute->getValue();
+                $currentValue['source']         = StoredFileResource::make($attribute->sourceFile);
+                $currentValue['sourceMessages'] = MessageResource::collection($attribute->sourceMessages);
+                $currentValue['created_at']     = $attribute->created_at;
+                $currentValue['updated_at']     = $attribute->updated_at;
             }
 
             if ($attribute->date) {

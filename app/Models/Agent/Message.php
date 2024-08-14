@@ -45,6 +45,11 @@ class Message extends Model implements AuditableContract
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
     }
 
+    public function isUser(): bool
+    {
+        return $this->role === self::ROLE_USER;
+    }
+    
     /**
      * Cleans the AI Model responses to make sure we have valid JSON, if the response is JSON
      */

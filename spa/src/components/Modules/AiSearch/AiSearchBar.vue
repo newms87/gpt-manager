@@ -4,7 +4,7 @@
 			v-model="searchText"
 			class="large-white flex-grow rounded-full overflow-hidden"
 			input-class="text-xl h-14 rounded-full"
-			placeholder="AI Search..."
+			:placeholder="drugSideEffect ? `I'm your personal ${drugSideEffect.product.name} expert. Ask any question...` : 'AI Search...'"
 			:disabled="isSearching"
 			@submit="onSearch"
 		>
