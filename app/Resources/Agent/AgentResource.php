@@ -37,6 +37,7 @@ class AgentResource extends ActionResource
             'response_schema'        => $model->response_schema,
             'response_sample'        => $model->getFormattedSampleResponse(),
             'enable_message_sources' => $model->enable_message_sources,
+            'retry_count'            => $model->retry_count,
             'threads_count'          => $model->threads_count,
             'assignments_count'      => $model->assignments_count,
             'created_at'             => $model->created_at,

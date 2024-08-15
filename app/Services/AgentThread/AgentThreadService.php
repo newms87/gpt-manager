@@ -126,6 +126,8 @@ class AgentThreadService
                 $options['tools']       = $tools;
             }
 
+            $retries = $agent->retry_count ?: 0;
+
             do {
                 $threadRun->refresh();
                 if ($threadRun->status !== ThreadRun::STATUS_RUNNING) {
@@ -144,8 +146,16 @@ class AgentThreadService
                     $options
                 );
 
+                if ($response->isEmpty() && ($retries-- > 0)) {
+                    Log::debug("Empty response from AI model. Retrying... (retries left: $retries)");
+                    continue;
+                } elseif ($response->isFinished()) {
+                    // If we have a non-empty finished response, no need to retry
+                    $retries = 0;
+                }
+
                 $this->handleResponse($thread, $threadRun, $response);
-            } while(!$response->isFinished());
+            } while(!$response->isFinished() || $retries > 0);
         } catch(Throwable $throwable) {
             $threadRun->status    = ThreadRun::STATUS_FAILED;
             $threadRun->failed_at = now();

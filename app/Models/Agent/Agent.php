@@ -36,6 +36,7 @@ class Agent extends Model implements AuditableContract
         'response_schema',
         'enable_message_sources',
         'tools',
+        'retry_count',
     ];
 
     public array $relationCounters = [

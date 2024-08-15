@@ -66,7 +66,7 @@ class WorkflowService
         /** @var WorkflowJobRun[]|Collection $pendingJobRuns */
         $pendingJobRuns = $workflowJobRunsByStatus->get(WorkflowRun::STATUS_PENDING) ?? [];
 
-        Log::debug("$workflowRun dispatching {$pendingJobRuns->count()} pending jobs..");
+        Log::debug("$workflowRun dispatching " . count($pendingJobRuns) . " pending jobs...");
 
         foreach($pendingJobRuns as $pendingJobRun) {
             $workflowJob = $pendingJobRun->workflowJob;

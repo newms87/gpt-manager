@@ -20,6 +20,11 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
         parent::__construct($items);
     }
 
+    public function isEmpty(): bool
+    {
+        return empty($this->choices[0]['message']['content']);
+    }
+
     public function isToolCall(): bool
     {
         return $this->choices[0]['finish_reason'] === 'tool_calls';

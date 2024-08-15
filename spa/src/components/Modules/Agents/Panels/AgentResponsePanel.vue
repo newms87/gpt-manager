@@ -37,7 +37,7 @@ import { getAction } from "@/components/Modules/Agents/agentActions";
 import { ActionButton } from "@/components/Shared";
 import { Agent } from "@/types/agents";
 import { FaSolidRobot as GenerateSampleIcon } from "danx-icon";
-import { ActionForm, BooleanField, Form, SelectField } from "quasar-ui-danx";
+import { ActionForm, BooleanField, Form, NumberField, SelectField } from "quasar-ui-danx";
 import { h } from "vue";
 
 defineProps<{
@@ -78,6 +78,11 @@ const agentForm: Form = {
 			name: "enable_message_sources",
 			label: "Enable Message Sources?",
 			vnode: (props) => h(BooleanField, { ...props })
+		},
+		{
+			name: "retry_count",
+			label: "Valid response retries?",
+			vnode: (props) => h(NumberField, { ...props, class: "w-40" })
 		},
 		{
 			name: "response_notes",
