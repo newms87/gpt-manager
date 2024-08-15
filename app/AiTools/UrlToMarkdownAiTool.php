@@ -4,7 +4,6 @@ namespace App\AiTools;
 
 use BadFunctionCallException;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\FileRepository;
@@ -61,14 +60,13 @@ class UrlToMarkdownAiTool implements AiToolContract
         if (!$storedWebFile) {
             Log::debug("Storing web file: $url");
 
-            $storedWebFile = StoredFile::create([
-                'disk'     => 'web',
-                'filename' => basename($url),
-                'filepath' => $url,
-                'mime'     => StoredFile::MIME_HTML,
-                'url'      => $url,
-                'size'     => 0,
-            ]);
+            $storedWebFile = app(FileRepository::class)->createFileWithUrl(
+                $url,
+                $url,
+                [
+                    'disk' => 'web',
+                    'mime' => StoredFile::MIME_HTML,
+                ]);
         }
 
         // Check for the screenshot of this web page
@@ -83,19 +81,18 @@ class UrlToMarkdownAiTool implements AiToolContract
 
             // Save the markdown contents to a publicly accessible storage location
             $filepath = "url-to-markdown/" . md5($url) . ".jpg";
-            app(FileRepository::class)->storeOnDisk($filepath, $markdown, 's3');
 
             // Store the screenshot and associate it with the web page file so it is cached in the DB for future uses
-            $storedMarkdownFile = StoredFile::create([
-                'disk'                    => 's3',
-                'filename'                => basename($filepath),
-                'filepath'                => $filepath,
-                'mime'                    => StoredFile::MIME_TEXT,
-                'url'                     => Storage::disk('s3')->url($filepath),
-                'size'                    => strlen($markdown),
-                'original_stored_file_id' => $storedWebFile->id,
-                'transcode_name'          => UrlToMarkdownAiTool::NAME,
-            ]);
+            $storedMarkdownFile = app(FileRepository::class)->createFileWithContents(
+                $filepath,
+                $markdown,
+                [
+                    'disk'                    => 's3',
+                    'mime'                    => StoredFile::MIME_TEXT,
+                    'original_stored_file_id' => $storedWebFile->id,
+                    'transcode_name'          => UrlToMarkdownAiTool::NAME,
+                ]
+            );
         }
 
         // Return the Image file (not the web file) as this is asset of interest

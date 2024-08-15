@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
+use Newms87\Danx\Repositories\FileRepository;
 use Str;
 
 class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
@@ -150,14 +151,7 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
 
             if (!$storedFile) {
                 Log::debug("Creating Stored File for source URL");
-                $storedFile = StoredFile::create([
-                    'disk'     => 'web',
-                    'filename' => basename($sourceUrl),
-                    'filepath' => $sourceUrl,
-                    'mime'     => StoredFile::MIME_HTML,
-                    'url'      => $sourceUrl,
-                    'size'     => 0,
-                ]);
+                $storedFile = app(FileRepository::class)->createFileWithUrl($sourceUrl, $sourceUrl, ['disk' => 'web', 'mime' => StoredFile::MIME_HTML]);
             }
 
             Log::debug("Stored File $storedFile->id references source URL $sourceUrl");

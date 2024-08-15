@@ -136,7 +136,9 @@ class WorkflowTaskService
                 $pendingTasks = $pendingJobRun->pendingTasks()->get();
 
                 // If there are no tasks, the job is automatically completed
-                if ($pendingTasks->isEmpty()) {
+                // NOTE: we check that there really are no tasks (instead of just pending tasks) in case there were tasks run. In that case it should not be auto-completed
+                //       Tasks may have just completed or failed and due to race conditions not properly updated yet.
+                if ($pendingTasks->isEmpty() && $pendingJobRun->tasks()->doesntExist()) {
                     $pendingJobRun->completed_at = now();
                     $pendingJobRun->save();
                     Log::debug("$pendingJobRun has no pending tasks, marking job as complete");

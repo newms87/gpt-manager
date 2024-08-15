@@ -7,6 +7,7 @@ use BadFunctionCallException;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
+use Newms87\Danx\Repositories\FileRepository;
 use Newms87\Danx\Services\TranscodeFileService;
 
 class UrlToImageAiTool implements AiToolContract
@@ -68,14 +69,15 @@ class UrlToImageAiTool implements AiToolContract
         $storedFile = StoredFile::firstWhere('url', $pdfUrl);
 
         if (!$storedFile) {
-            $storedFile = StoredFile::create([
-                'disk'     => 'web',
-                'filename' => basename($pdfUrl),
-                'filepath' => $pdfUrl,
-                'mime'     => StoredFile::MIME_PDF,
-                'url'      => $pdfUrl,
-                'size'     => FileHelper::getRemoteFileSize($pdfUrl),
-            ]);
+            $storedFile = app(FileRepository::class)->createFileWithUrl(
+                $pdfUrl,
+                $pdfUrl,
+                [
+                    'disk' => 'web',
+                    'mime' => StoredFile::MIME_PDF,
+                    'size' => FileHelper::getRemoteFileSize($pdfUrl),
+                ]
+            );
         }
 
         app(TranscodeFileService::class)->transcode(TranscodeFileService::TRANSCODE_PDF_TO_IMAGES, $storedFile);
@@ -94,14 +96,7 @@ class UrlToImageAiTool implements AiToolContract
 
         // Create the HTML stored file for future reference
         if (!$storedWebFile) {
-            $storedWebFile = StoredFile::create([
-                'disk'     => 'web',
-                'filename' => basename($url),
-                'filepath' => $url,
-                'mime'     => StoredFile::MIME_HTML,
-                'url'      => $url,
-                'size'     => 0,
-            ]);
+            $storedWebFile = app(FileRepository::class)->createFileWithUrl($url, $url, ['disk' => 'web', 'mime' => StoredFile::MIME_HTML]);
         }
 
         // Check for the screenshot of this web page
@@ -116,16 +111,16 @@ class UrlToImageAiTool implements AiToolContract
             $storedUrl = ScreenshotOneApi::make()->take($url, $filepath);
 
             // Store the screenshot and associate it with the web page file so it is cached in the DB for future uses
-            $storedImageFile = StoredFile::create([
-                'disk'                    => 's3',
-                'filename'                => basename($filepath),
-                'filepath'                => $filepath,
-                'mime'                    => StoredFile::MIME_JPEG,
-                'url'                     => $storedUrl,
-                'size'                    => FileHelper::getRemoteFileSize($storedUrl),
-                'original_stored_file_id' => $storedWebFile->id,
-                'transcode_name'          => UrlToImageAiTool::NAME,
-            ]);
+            $storedImageFile = app(FileRepository::class)->createFileWithUrl(
+                $filepath,
+                $storedUrl,
+                [
+                    'disk'                    => 's3',
+                    'mime'                    => StoredFile::MIME_JPEG,
+                    'size'                    => FileHelper::getRemoteFileSize($storedUrl),
+                    'original_stored_file_id' => $storedWebFile->id,
+                    'transcode_name'          => UrlToImageAiTool::NAME,
+                ]);
         }
 
         // Transcode the image into vertical chunks for easier processing (will only transcode once if not already done)
