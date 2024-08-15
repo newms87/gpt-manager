@@ -5,10 +5,10 @@
 		<h6 class="mb-2">{{ company.name }}</h6>
 
 		<div class="grid grid-cols-3 gap-4">
-			<TeamObjectAttributeBlock
+			<LabelValueBlock
 				v-if="company.parent"
 				label="Parent"
-				:attribute="company.parent.name"
+				:value="company.parent.name"
 				:url="company.parent.url"
 			/>
 			<TeamObjectAttributeBlock
@@ -44,6 +44,7 @@
 import TeamObjectAttributeBlock from "@/components/Modules/Tortguard/TeamObjectAttributeBlock";
 import { Company } from "@/components/Modules/Tortguard/tortguard";
 import LogoImage from "@/components/Shared/Images/LogoImage";
+import { LabelValueBlock } from "quasar-ui-danx";
 
 defineProps<{ company: Company }>();
 </script>

@@ -41,7 +41,7 @@ const resolvedValue = computed(() => {
 
 	switch (props.format) {
 		case "boolean":
-			return fBoolean(!!value);
+			return fBoolean(value);
 
 		case "number":
 			return fNumber(+value);

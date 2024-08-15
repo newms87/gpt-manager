@@ -9,9 +9,8 @@
 			:attribute="drugSideEffect.hospitalization_rate"
 		/>
 		<TeamObjectAttributeBlock
-			label="Death"
-			:attribute="drugSideEffect.death"
-			format="boolean"
+			label="Mortality Rate"
+			:attribute="drugSideEffect.mortality_rate"
 		/>
 		<TeamObjectAttributeBlock
 			label="Surgical Procedure"
@@ -50,10 +49,6 @@
 				class="col-span-2"
 				label="Common Disabilities"
 				:attribute="drugSideEffect.common_disabilities"
-			/>
-			<TeamObjectAttributeBlock
-				label="Mortality Rate"
-				:attribute="drugSideEffect.mortality_rate"
 			/>
 			<TeamObjectAttributeBlock
 				v-if="drugSideEffect.death_factors"
