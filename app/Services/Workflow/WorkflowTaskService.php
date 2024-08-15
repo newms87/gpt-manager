@@ -130,28 +130,34 @@ class WorkflowTaskService
     public static function dispatchPendingWorkflowTasks(WorkflowRun $workflowRun): void
     {
         foreach($workflowRun->runningJobRuns()->get() as $pendingJobRun) {
-            $pendingTasks = $pendingJobRun->pendingTasks()->get();
+            LockHelper::acquire($pendingJobRun);
 
-            // If there are no tasks, the job is automatically completed
-            if ($pendingTasks->isEmpty()) {
-                $pendingJobRun->completed_at = now();
-                $pendingJobRun->save();
-                Log::debug("$pendingJobRun has no pending tasks, marking job as complete");
-                WorkflowService::workflowJobRunFinished($pendingJobRun);
-                continue;
-            }
+            try {
+                $pendingTasks = $pendingJobRun->pendingTasks()->get();
 
-            // Dispatch an async job for each pending task in the workflow job
-            foreach($pendingJobRun->pendingTasks()->get() as $pendingTask) {
-                Log::debug("$pendingJobRun dispatching $pendingTask");
-                if ($pendingTask->job_dispatch_id) {
-                    Log::debug("Already dispatched");
+                // If there are no tasks, the job is automatically completed
+                if ($pendingTasks->isEmpty()) {
+                    $pendingJobRun->completed_at = now();
+                    $pendingJobRun->save();
+                    Log::debug("$pendingJobRun has no pending tasks, marking job as complete");
+                    WorkflowService::workflowJobRunFinished($pendingJobRun);
                     continue;
                 }
 
-                $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
-                $pendingTask->job_dispatch_id = $job?->getJobDispatch()?->id;
-                $pendingTask->save();
+                // Dispatch an async job for each pending task in the workflow job
+                foreach($pendingJobRun->pendingTasks()->get() as $pendingTask) {
+                    Log::debug("$pendingJobRun dispatching $pendingTask");
+                    if ($pendingTask->job_dispatch_id) {
+                        Log::debug("Already dispatched");
+                        continue;
+                    }
+
+                    $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
+                    $pendingTask->job_dispatch_id = $job?->getJobDispatch()?->id;
+                    $pendingTask->save();
+                }
+            } finally {
+                LockHelper::release($pendingJobRun);
             }
         }
     }

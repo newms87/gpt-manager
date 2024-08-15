@@ -29,6 +29,12 @@ return [
                 'output'      => 1 / $million,
                 'per_request' => 5 / $thousand,
             ],
+            'llama-3.1-sonar-huge-128k-online'  => [
+                'context'     => 127072,
+                'input'       => 5 / $million,
+                'output'      => 5 / $million,
+                'per_request' => 5 / $thousand,
+            ],
         ],
         OpenAiApi::$serviceName       => [
             'gpt-4o-mini'       => [

@@ -10,7 +10,7 @@
 				<div>
 					<a v-if="attribute.source" :href="attribute.source.url" target="_blank">{{ attribute.source.url }}</a>
 				</div>
-				<div v-if="attribute.sourceMessages?.length" class="mt-4">
+				<div v-if="attribute.sourceMessages?.length" class="mt-4 space-y-4">
 					<ThreadMessageCard
 						v-for="message in attribute.sourceMessages" :key="message.id" readonly
 						:message="message"

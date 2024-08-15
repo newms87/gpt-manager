@@ -69,7 +69,9 @@ trait ResolvesDependencyArtifactsTrait
 
         $schemaFields = $dependency->include_fields ?: $dependency->dependsOn->getResponseFields();
 
-        foreach($workflowJobRun->artifacts as $artifact) {
+        $artifacts = $workflowJobRun->artifacts()->get();
+
+        foreach($artifacts as $artifact) {
             $artifactData = $artifact->data ?: [];
 
             // If a json encoded string or primitive was set, just treat it like content
