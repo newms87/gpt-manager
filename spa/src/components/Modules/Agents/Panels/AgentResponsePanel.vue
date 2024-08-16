@@ -25,7 +25,7 @@
 					readonly
 					:model-value="agent.response_sample"
 					sync-model-changes
-					:format="agent.schema_format"
+					:format="agent.response_format === 'text' ? 'text' : agent.schema_format"
 				/>
 			</div>
 		</div>

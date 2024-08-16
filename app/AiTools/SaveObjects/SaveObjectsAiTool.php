@@ -136,6 +136,7 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
         $name       = $attribute['name'] ?? null;
         $value      = $attribute['value'] ?? null;
         $date       = $attribute['date'] ?? null;
+        $confidence = $attribute['confidence'] ?? null;
         $sourceUrl  = $attribute['source_url'] ?? null;
         $messageIds = $attribute['message_ids'] ?? [];
 
@@ -164,6 +165,7 @@ class SaveObjectsAiTool extends AiToolAbstract implements AiToolContract
         ], [
             'text_value'            => is_array($value) ? null : $value,
             'json_value'            => is_array($value) ? json_encode($value) : null,
+            'confidence'            => $confidence,
             'source_stored_file_id' => $storedFile?->id,
         ]);
 

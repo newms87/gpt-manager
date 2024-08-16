@@ -67,6 +67,9 @@ parameters:
                 date:
                   type: [ "string", "null" ]
                   description: "The date (yyyy-mm-dd) and time (00:00:00 if time n/a) of the attribute's value (if data changes over time). Format should always be full date (no partial dates)!"
+                confidence:
+                  type: [ "string" ]
+                  description: 'The confidence level of the attribute value. Must be one of the following: "High", "Medium", "Low"'
                 source_url:
                   type: [ "string", "null" ]
                   description: 'The URL where the attribute was sourced from (if applicable)'

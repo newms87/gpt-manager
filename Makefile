@@ -7,6 +7,12 @@ danx-core:
 
 danx: danx-spa danx-core
 
+queue-scale:
+	docker-compose up -d --scale queue-worker=10
+
+queue-restart:
+	vendor/bin/sail artisan queue:restart
+
 refresh-data:
 	vendor/bin/sail artisan migrate:refresh --seed
 

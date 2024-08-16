@@ -49,7 +49,12 @@ class Message extends Model implements AuditableContract
     {
         return $this->role === self::ROLE_USER;
     }
-    
+
+    public function isTool(): bool
+    {
+        return $this->role === self::ROLE_TOOL;
+    }
+
     /**
      * Cleans the AI Model responses to make sure we have valid JSON, if the response is JSON
      */

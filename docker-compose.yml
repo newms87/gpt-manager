@@ -27,6 +27,30 @@ services:
             - mysql
             - meilisearch
             - mailpit
+
+    queue-worker:
+        build:
+            context: ./vendor/laravel/sail/runtimes/8.3
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP:-1000}'
+        image: sail-8.3/app
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
+            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
+            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+        command: php artisan queue:work
+        volumes:
+            - '.:/var/www/html'
+            - '../danx:/var/www/danx'
+        networks:
+            - sail
+        depends_on:
+            - redis
+            - mysql
+
     redis:
         image: 'redis:alpine'
         ports:
