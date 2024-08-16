@@ -43,6 +43,6 @@ class WorkflowJobDependency extends Model implements AuditableContract
         $dependent = $this->workflowJob->name;
         $dependsOn = $this->dependsOn->name;
 
-        return "<WorkflowJobDependency ($this->id) $dependent --depends on--> $dependsOn>";
+        return "<WorkflowJobDependency ($this->id) $dependent depends on $dependsOn>";
     }
 }

@@ -3,15 +3,14 @@
 namespace App\Repositories\Tortguard;
 
 use App\Models\Agent\Agent;
-use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowRun;
+use App\Repositories\TeamObjectRepository;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\Workflow\WorkflowService;
 use Newms87\Danx\Exceptions\ValidationError;
-use Str;
 
 class TortguardRepository
 {
@@ -51,6 +50,45 @@ class TortguardRepository
         $companies   = $searchResult['companies'] ?? null;
         $sideEffect  = $searchResult['side_effect'] ?? null;
 
+        if (!$productName || !$sideEffect) {
+            throw new ValidationError('Product Name and Side Effect are required for research');
+        }
+
+        $teamObjectRepo = app(TeamObjectRepository::class);
+
+        $drugSideEffect = $teamObjectRepo->saveTeamObject('DrugSideEffect', $productName . ': ' . $sideEffect, [
+            'description' => $description,
+        ]);
+
+        $drugProduct = $teamObjectRepo->saveTeamObject('DrugProduct', $productName, [
+            'url' => $productUrl,
+        ]);
+
+        foreach($companies as $company) {
+            $companyName = $company['name'] ?? $company;
+            $parentName  = $company['parent_name'] ?? null;
+
+            $company = $teamObjectRepo->saveTeamObject('Company', $companyName, [
+                'meta' => $parentName ? ['is_subsidiary' => true] : [],
+            ]);
+
+            $teamObjectRepo->saveTeamObjectRelationship($drugProduct, 'companies', $company);
+
+            // If the company has a parent company, create the parent company
+            if ($parentName) {
+                $parentCompany = $teamObjectRepo->saveTeamObject('Company', $parentName);
+
+                // Add the parent company to the subsidiary company
+                $teamObjectRepo->saveTeamObjectRelationship($company, 'parent', $parentCompany);
+
+                // Add the parent company to the drug product as well
+                $teamObjectRepo->saveTeamObjectRelationship($drugProduct, 'companies', $parentCompany);
+            }
+        }
+
+        // Add the drug Product to the Side Effect
+        $teamObjectRepo->saveTeamObjectRelationship($drugSideEffect, 'product', $drugProduct);
+
         $researchWorkflowName = 'Drug Side-Effect Researcher';
         $workflow             = Workflow::where('team_id', team()->id)->firstWhere('name', $researchWorkflowName);
 
@@ -58,85 +96,21 @@ class TortguardRepository
             throw new ValidationError("$researchWorkflowName workflow not found");
         }
 
-        if (!$productName || !$sideEffect) {
-            throw new ValidationError('Product Name and Side Effect are required for research');
-        }
-
-        $DrugSideEffect = TeamObject::firstOrCreate([
-            'ref'  => Str::slug($productName . ':' . $sideEffect),
-            'type' => 'DrugSideEffect',
-            'name' => $productName . ': ' . $sideEffect,
-        ], [
-            'description' => $description,
-        ]);
-
-        $drugProduct = TeamObject::firstOrCreate([
-            'ref'  => Str::slug($productName),
-            'type' => 'DrugProduct',
-            'name' => $productName,
-        ], [
-            'url' => $productUrl,
-        ]);
-
-        foreach($companies as $company) {
-            $companyName = $company['name'] ?? $company;
-            $parentName  = $company['parent_name'] ?? null;
-            $company     = TeamObject::firstOrCreate([
-                'ref'  => Str::slug($companyName),
-                'type' => 'Company',
-                'name' => $companyName,
-                'meta' => $parentName ? ['is_subsidiary' => true] : [],
-            ]);
-
-            $drugProduct->relationships()->create([
-                'related_object_id' => $company->id,
-                'relationship_name' => 'companies',
-            ]);
-
-            // If the company has a parent company, create the parent company
-            if ($parentName) {
-                $parent = TeamObject::firstOrCreate([
-                    'ref'  => Str::slug($parentName),
-                    'type' => 'Company',
-                    'name' => $parentName,
-                ]);
-
-                // Add the parent company to the subsidiary company
-                $company->relationships()->create([
-                    'related_object_id' => $parent->id,
-                    'relationship_name' => 'parent',
-                ]);
-
-                // Add the parent company to the drug product as well
-                $drugProduct->relationships()->create([
-                    'related_object_id' => $parent->id,
-                    'relationship_name' => 'companies',
-                ]);
-            }
-        }
-
-        // Add the drug Product to the Side Effect
-        $DrugSideEffect->relationships()->create([
-            'related_object_id' => $drugProduct->id,
-            'relationship_name' => 'product',
-        ]);
-
-
         $workflowInput = WorkflowInput::make()->forceFill([
             'team_id'          => team()->id,
             'user_id'          => user()->id,
             'name'             => 'Research: ' . $productName . ' - ' . $sideEffect,
             'team_object_type' => 'DrugSideEffect',
-            'team_object_id'   => $DrugSideEffect->id,
+            'team_object_id'   => $drugSideEffect->id,
         ]);
         $workflowInput->save();
 
         $workflowRun = app(WorkflowService::class)->run($workflow, $workflowInput);
 
-        $DrugSideEffect->meta = [
+        $drugSideEffect->meta = [
             'workflow_run_id' => $workflowRun->id,
         ];
-        $DrugSideEffect->save();
+        $drugSideEffect->save();
 
         return $workflowRun;
     }

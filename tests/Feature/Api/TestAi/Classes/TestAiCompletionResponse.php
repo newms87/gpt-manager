@@ -20,6 +20,11 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
         return false;
     }
 
+    public function isMessageEmpty(): bool
+    {
+        return false;
+    }
+
     public function isFinished(): bool
     {
         return true;

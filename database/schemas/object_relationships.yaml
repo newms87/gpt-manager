@@ -63,6 +63,9 @@ tables:
       json_value:
         type: json
         nullable: true
+      confidence:
+        type: string
+        nullable: true
       message_id:
         type: foreignId
         foreign_key: messages.id

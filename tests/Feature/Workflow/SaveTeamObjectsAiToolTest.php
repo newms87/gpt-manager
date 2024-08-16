@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\Workflow;
 
-use App\AiTools\SaveObjects\SaveObjectsAiTool;
+use App\AiTools\SaveObjects\SaveTeamObjectsAiTool;
 use App\Models\Agent\Message;
 use App\Models\TeamObject\TeamObject;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 
-class SaveObjectsAiToolTest extends AuthenticatedTestCase
+class SaveTeamObjectsAiToolTest extends AuthenticatedTestCase
 {
     public function setUp(): void
     {
@@ -40,7 +40,7 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         ];
 
         // When
-        app(SaveObjectsAiTool::class)->execute($params);
+        app(SaveTeamObjectsAiTool::class)->execute($params);
 
         // Then
         $testObject = TeamObject::firstWhere('name', $name);
@@ -85,7 +85,7 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         ];
 
         // When
-        app(SaveObjectsAiTool::class)->execute($params);
+        app(SaveTeamObjectsAiTool::class)->execute($params);
 
         // Then
         $testObject = TeamObject::where('type', $type)->where('name', $name)->first();
@@ -131,7 +131,7 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         ];
 
         // When
-        app(SaveObjectsAiTool::class)->execute($params);
+        app(SaveTeamObjectsAiTool::class)->execute($params);
 
         // Then
         $testObject = TeamObject::where('type', $type)->where('name', $name)->first();
@@ -177,7 +177,7 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         ];
 
         // When
-        app(SaveObjectsAiTool::class)->execute($params);
+        app(SaveTeamObjectsAiTool::class)->execute($params);
 
         // Then
         $testObject = TeamObject::where('type', $type)->where('name', $name)->first();
@@ -228,7 +228,7 @@ class SaveObjectsAiToolTest extends AuthenticatedTestCase
         ];
 
         // When
-        app(SaveObjectsAiTool::class)->execute($params);
+        app(SaveTeamObjectsAiTool::class)->execute($params);
 
         // Then
         $product = TeamObject::where('type', 'Product')->where('name', $productName)->first();

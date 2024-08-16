@@ -12,6 +12,7 @@ use App\Models\Agent\ThreadRun;
 use App\Repositories\AgentRepository;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Newms87\Danx\Exceptions\ApiRequestException;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Helpers\StringHelper;
@@ -126,7 +127,9 @@ class AgentThreadService
                 $options['tools']       = $tools;
             }
 
-            $retries = $agent->retry_count ?: 0;
+            $response         = null;
+            $retries          = $agent->retry_count ?: 0;
+            $status500retries = 3;
 
             do {
                 $threadRun->refresh();
@@ -140,13 +143,26 @@ class AgentThreadService
                 $messageCount = count($messages);
                 Log::debug("$thread running with $messageCount messages for $agent");
 
-                $response = $agent->getModelApi()->complete(
-                    $agent->model,
-                    $messages,
-                    $options
-                );
+                try {
+                    $response = $agent->getModelApi()->complete(
+                        $agent->model,
+                        $messages,
+                        $options
+                    );
+                } catch(ApiRequestException $exception) {
+                    if ($exception->getStatusCode() >= 500) {
+                        if ($status500retries-- > 0) {
+                            Log::warning("500 level error from completion API. Retrying in 5 seconds... (retries left: $status500retries)");
+                            sleep(5);
+                            continue;
+                        }
+                    }
 
-                if ($response->isEmpty() && ($retries-- > 0)) {
+                    // If the error is not a 500 level error, or we have exhausted retries, throw the exception
+                    throw $exception;
+                }
+
+                if ($response->isMessageEmpty() && ($retries-- > 0)) {
                     Log::debug("Empty response from AI model. Retrying... (retries left: $retries)");
                     continue;
                 } elseif ($response->isFinished()) {
@@ -155,7 +171,7 @@ class AgentThreadService
                 }
 
                 $this->handleResponse($thread, $threadRun, $response);
-            } while(!$response->isFinished() || $retries > 0);
+            } while(!$response?->isFinished() || $retries > 0);
         } catch(Throwable $throwable) {
             $threadRun->status    = ThreadRun::STATUS_FAILED;
             $threadRun->failed_at = now();

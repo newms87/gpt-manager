@@ -13,6 +13,8 @@ queue-scale:
 queue-restart:
 	vendor/bin/sail artisan queue:restart
 
+queue-scale-restart: queue-restart queue-scale
+
 refresh-data:
 	vendor/bin/sail artisan migrate:refresh --seed
 

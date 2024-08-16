@@ -6,17 +6,122 @@ use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
 use App\Resources\Agent\MessageResource;
+use BadFunctionCallException;
+use Illuminate\Database\Eloquent\Builder;
 use Log;
+use Newms87\Danx\Helpers\FileHelper;
+use Newms87\Danx\Models\Utilities\StoredFile;
+use Newms87\Danx\Repositories\FileRepository;
 use Newms87\Danx\Resources\StoredFileResource;
 use Str;
 
 class TeamObjectRepository
 {
+    /**
+     * Create or Update a Team Object record based on type and name
+     */
+    public function saveTeamObject($type, $name, $input = []): TeamObject
+    {
+        if (!$type || !$name) {
+            throw new BadFunctionCallException("Save Objects requires a type and name for each object: \n\nType: $type\nName: $name\nInput:\n" . json_encode($input));
+        }
+
+        $data = [
+            'type' => $type,
+            'ref'  => Str::slug($name),
+            'name' => $name,
+        ];
+
+        // If the keys are set for additional fields, update the fields with those values (including null)
+        foreach(['description', 'url', 'meta'] as $key) {
+            if (array_key_exists($key, $input)) {
+                $data[$key] = $input[$key];
+            }
+        }
+
+        $teamObject = TeamObject::where('type', $type)
+            ->where(fn(Builder $builder) => $builder->where('name', $name)->orWhere('ref', $data['ref']))
+            ->first();
+
+        if ($teamObject) {
+            $teamObject->update($data);
+        } else {
+            $teamObject = TeamObject::create($data);
+        }
+
+        return $teamObject;
+    }
+
+    /**
+     * Create or Update the value, date, confidence and sources for a Team Object Attribute record based on team object
+     * and attribute name
+     */
+    public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $value, $date = null, $confidence = null, $sourceUrl = null, $messageIds = []): TeamObjectAttribute
+    {
+        if (!$name) {
+            throw new BadFunctionCallException("Save Team Object Attribute requires a name");
+        }
+
+        $storedFile = null;
+
+        if ($sourceUrl) {
+            $sourceUrl  = FileHelper::normalizeUrl($sourceUrl);
+            $storedFile = StoredFile::firstWhere('url', $sourceUrl);
+
+            if (!$storedFile) {
+                \Illuminate\Support\Facades\Log::debug("Creating Stored File for source URL");
+                $storedFile = app(FileRepository::class)->createFileWithUrl($sourceUrl, $sourceUrl, ['disk' => 'web', 'mime' => StoredFile::MIME_HTML]);
+            }
+
+            Log::debug("Stored File $storedFile->id references source URL $sourceUrl");
+        }
+
+        $teamObjectAttribute = TeamObjectAttribute::updateOrCreate([
+            'object_id' => $teamObject->id,
+            'name'      => $name,
+            'date'      => $date,
+        ], [
+            'text_value'            => is_array($value) ? null : $value,
+            'json_value'            => is_array($value) ? json_encode($value) : null,
+            'confidence'            => $confidence,
+            'source_stored_file_id' => $storedFile?->id,
+        ]);
+
+        if ($messageIds) {
+            $teamObjectAttribute->sourceMessages()->syncWithoutDetaching($messageIds);
+        }
+
+        return $teamObjectAttribute;
+    }
+
+    /**
+     * Create or Update a Team Object Relationship record based on team object, relationship name and related object
+     */
+    public function saveTeamObjectRelationship(TeamObject $teamObject, string $relationshipName, TeamObject $relatedObject): void
+    {
+        if (!$relationshipName) {
+            throw new BadFunctionCallException("Save Objects requires a relationship_name for each relation: TeamObject:\n$teamObject\n\nRelated:\n$relatedObject");
+        }
+
+        // Ensure the record is associated
+        TeamObjectRelationship::updateOrCreate([
+            'relationship_name' => $relationshipName,
+            'object_id'         => $teamObject->id,
+            'related_object_id' => $relatedObject->id,
+        ]);
+    }
+
+    /**
+     * Load a Team Object record based on type and ID
+     */
     public function loadTeamObject($type, $id): ?TeamObject
     {
         return TeamObject::where('id', $id)->where('type', $type)->first();
     }
 
+    /**
+     * Load a Team Object record based on type and name and load all attributes and relationships (recursively)
+     */
     public function getFullyLoadedTeamObject($type, $id): ?TeamObject
     {
         $object = $this->loadTeamObject($type, $id);
@@ -31,6 +136,9 @@ class TeamObjectRepository
         return $object;
     }
 
+    /**
+     * Load all attributes for a Team Object record
+     */
     public function loadTeamObjectAttributes(TeamObject $teamObject): void
     {
         $attributes = TeamObjectAttribute::where('object_id', $teamObject->id)->with('sourceFile', 'sourceMessages')->get();
@@ -71,6 +179,9 @@ class TeamObjectRepository
         }
     }
 
+    /**
+     * Load all relationships for a Team Object record and recursively load all attributes and relationships
+     */
     protected function recursivelyLoadTeamObjectRelations(TeamObject $teamObject, $maxDepth = 10): void
     {
         $relationships = TeamObjectRelationship::where('object_id', $teamObject->id)->get();

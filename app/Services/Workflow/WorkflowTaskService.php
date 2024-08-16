@@ -21,6 +21,9 @@ class WorkflowTaskService
      */
     public static function start(WorkflowTask $workflowTask): void
     {
+        Log::debug("$workflowTask started");
+
+        // Note: We must lock before checking pending status in case a race condition caused someone else to beat us to this task
         LockHelper::acquire($workflowTask);
 
         if ($workflowTask->status !== WorkflowRun::STATUS_PENDING) {
@@ -30,15 +33,16 @@ class WorkflowTaskService
             return;
         }
 
-        Log::debug("$workflowTask started");
         $workflowTask->started_at = now();
         $workflowTask->save();
 
         try {
             // Run the workflow tool for the task
             $tool = $workflowTask->workflowJob->getWorkflowTool();
-            Log::debug("Running $tool");
+
+            Log::debug("$workflowTask running $tool");
             $tool->runTask($workflowTask);
+            Log::debug("$workflowTask completed $tool");
 
             $workflowTask->completed_at = now();
             $workflowTask->save();
@@ -129,6 +133,8 @@ class WorkflowTaskService
      */
     public static function dispatchPendingWorkflowTasks(WorkflowRun $workflowRun): void
     {
+        $jobsToDispatch = [];
+
         foreach($workflowRun->runningJobRuns()->get() as $pendingJobRun) {
             LockHelper::acquire($pendingJobRun);
 
@@ -154,13 +160,19 @@ class WorkflowTaskService
                         continue;
                     }
 
-                    $job                          = (new RunWorkflowTaskJob($pendingTask))->dispatch();
-                    $pendingTask->job_dispatch_id = $job?->getJobDispatch()?->id;
+                    $job                          = (new RunWorkflowTaskJob($pendingTask));
+                    $pendingTask->job_dispatch_id = $job->getJobDispatch()?->id;
                     $pendingTask->save();
+                    $jobsToDispatch[] = $job;
                 }
             } finally {
                 LockHelper::release($pendingJobRun);
             }
+        }
+
+        // Dispatch all the jobs after releasing the locks
+        foreach($jobsToDispatch as $job) {
+            $job->dispatch();
         }
     }
 }

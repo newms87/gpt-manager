@@ -6,8 +6,8 @@ use App\AiTools\AiToolCaller;
 
 interface AgentCompletionResponseContract
 {
-    public function isEmpty(): bool;
-    
+    public function isMessageEmpty(): bool;
+
     public function isToolCall(): bool;
 
     public function getDataFields(): array;
