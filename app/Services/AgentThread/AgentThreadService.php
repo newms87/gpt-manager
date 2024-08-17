@@ -353,7 +353,7 @@ class AgentThreadService
         if (!$response->isToolCall() && !$response->isFinished()) {
             throw new Exception('Unexpected response from AI model');
         }
-        
+
         if ($response->isToolCall()) {
             // Check for duplicated tool calls and immediately stop thread so we don't waste resources
             if ($this->hasDuplicatedToolCall($threadRun, $response)) {
@@ -364,7 +364,7 @@ class AgentThreadService
                 ]);
                 $this->finishThreadResponse($threadRun, $lastMessage);
             } else {
-                $this->callToolsWithToolResponse($thread, $response);
+                $this->callToolsWithToolResponse($thread, $threadRun, $response);
                 Log::debug("Tool call response completed.");
             }
         }
@@ -410,7 +410,7 @@ class AgentThreadService
                         json_decode($tool['arguments'], true)
                     );
 
-                    $toolCaller->call();
+                    $toolCaller->call($threadRun);
                 }
             }
         }
@@ -421,7 +421,7 @@ class AgentThreadService
     /**
      * Call the AI Tools and attach the response from the tools to the thread for further processing by the AI Agent
      */
-    public function callToolsWithToolResponse(Thread $thread, AgentCompletionResponseContract $response): void
+    public function callToolsWithToolResponse(Thread $thread, ThreadRun $threadRun, AgentCompletionResponseContract $response): void
     {
         Log::debug("Completion Response: Handling " . count($response->getToolCallerFunctions()) . " tool calls");
 
@@ -434,7 +434,7 @@ class AgentThreadService
         foreach($response->getToolCallerFunctions() as $toolCallerFunction) {
             Log::debug("Handling tool call: " . $toolCallerFunction->getName());
 
-            $messages = $toolCallerFunction->call();
+            $messages = $toolCallerFunction->call($threadRun);
 
             // Add the tool message
             $toolMessage = array_shift($messages);

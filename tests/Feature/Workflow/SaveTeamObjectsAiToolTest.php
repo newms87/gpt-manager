@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Workflow;
 
-use App\AiTools\SaveObjects\SaveTeamObjectsAiTool;
+use App\AiTools\SaveTeamObjects\SaveTeamObjectsAiTool;
 use App\Models\Agent\Message;
 use App\Models\TeamObject\TeamObject;
 use Newms87\Danx\Models\Utilities\StoredFile;

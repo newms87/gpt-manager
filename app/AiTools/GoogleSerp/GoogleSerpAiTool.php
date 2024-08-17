@@ -1,24 +1,17 @@
 <?php
 
-namespace App\AiTools;
+namespace App\AiTools\GoogleSerp;
 
+use App\AiTools\AiToolAbstract;
+use App\AiTools\AiToolContract;
+use App\AiTools\AiToolResponse;
 use App\Api\GoogleSerpApi\GoogleSerpApi;
 use BadFunctionCallException;
 use Illuminate\Support\Facades\Log;
 
-class GoogleSerpAiTool implements AiToolContract
+class GoogleSerpAiTool extends AiToolAbstract implements AiToolContract
 {
-    const string NAME        = 'google-serp';
-    const string DESCRIPTION = 'Search the web using Google Search Engine and get the results';
-    const array  PARAMETERS  = [
-        'type'       => 'object',
-        'properties' => [
-            'q' => [
-                'type'        => 'string',
-                'description' => 'The search query terms',
-            ],
-        ],
-    ];
+    public static string $name = 'google-serp';
 
     public function execute($params): AiToolResponse
     {

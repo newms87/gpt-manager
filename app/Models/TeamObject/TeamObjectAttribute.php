@@ -3,6 +3,7 @@
 namespace App\Models\TeamObject;
 
 use App\Models\Agent\Message;
+use App\Models\Agent\ThreadRun;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
@@ -14,18 +15,19 @@ use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\AuditableTrait;
 
 /**
- * @property int    $id
- * @property string $object_id
- * @property string $name
- * @property Carbon $date
- * @property string $description
- * @property string $confidence
- * @property string $text_value
- * @property array  $json_value
- * @property string $message_id
- * @property string $source_stored_file_id
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property int       $id
+ * @property string    $object_id
+ * @property string    $name
+ * @property Carbon    $date
+ * @property string    $description
+ * @property string    $confidence
+ * @property string    $text_value
+ * @property array     $json_value
+ * @property string    $message_id
+ * @property string    $source_stored_file_id
+ * @property Carbon    $created_at
+ * @property Carbon    $updated_at
+ * @property ThreadRun $threadRun
  */
 class TeamObjectAttribute extends Model implements AuditableContract
 {
@@ -71,6 +73,11 @@ class TeamObjectAttribute extends Model implements AuditableContract
     public function sourceMessages(): MorphToMany|Message
     {
         return $this->morphToMany(Message::class, 'messageable', 'messageables')->withTimestamps();
+    }
+
+    public function threadRun(): BelongsTo|ThreadRun
+    {
+        return $this->belongsTo(ThreadRun::class, 'thread_run_id');
     }
 
     public function __toString(): string

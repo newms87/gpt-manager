@@ -64,7 +64,7 @@ tables:
         type: json
         nullable: true
       description:
-        type: string
+        type: text
         nullable: true
       confidence:
         type: string
@@ -77,6 +77,11 @@ tables:
       source_stored_file_id:
         type: foreignUuid
         foreign_key: stored_files.id
+        foreign_prefix: ''
+        nullable: true
+      thread_run_id:
+        type: foreignId
+        foreign_key: thread_runs.id
         foreign_prefix: ''
         nullable: true
       timestamps: true

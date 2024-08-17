@@ -18,7 +18,7 @@ abstract class TeamObjectAttributeResource extends ActionResource
         $threadUrl = null;
 
         if ($model->sourceMessages?->isNotEmpty()) {
-            $thread    = $model->sourceMessages->first()->thread;
+            $thread    = $model->threadRun?->thread;
             $threadUrl = app_url("agents/$thread->agent_id/threads/$thread->id");
         }
 

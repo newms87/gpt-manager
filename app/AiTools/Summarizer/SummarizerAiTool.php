@@ -1,44 +1,18 @@
 <?php
 
-namespace App\AiTools;
+namespace App\AiTools\Summarizer;
 
+use App\AiTools\AiToolAbstract;
+use App\AiTools\AiToolContract;
+use App\AiTools\AiToolResponse;
 use App\Models\Agent\Message;
 use BadFunctionCallException;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\StringHelper;
 
-class SummarizerAiTool implements AiToolContract
+class SummarizerAiTool extends AiToolAbstract implements AiToolContract
 {
-    const string NAME        = 'summarizer';
-    const string DESCRIPTION = 'Summarize the response for the request in JSON (or text if not collecting data) based on the currently available information from the provided text or files. Only make 1 call to summarize the tool per unique Message ID (ie: M-12345). IMPORTANT: Keep calling the tool until all files have been read or you\'re 100% sure you have all information necessary.';
-    const array  PARAMETERS  = [
-        'type'       => 'object',
-        'properties' => [
-            'message_id' => [
-                'type'        => 'string',
-                'description' => 'The message ID to summarize in format MSG-12345 (given in message when summarization is allowed)',
-            ],
-            'summary'    => [
-                'type'        => 'object',
-                'description' => 'The currently collected data as JSON or if the response is text based use {content: ""}, then a summary of the findings form the files / text you are viewing. INCLUDE AS MUCH RELEVANT INFORMATION AS POSSIBLE IN THE SUMMARY!!',
-                "properties"  => [
-                    "content" => [
-                        "type"        => "string",
-                        "description" => "The summary of the data collected from the message or files.",
-                    ],
-                    "data"    => [
-                        "type"        => "object",
-                        "description" => "The data collected from the message or files.",
-                    ],
-                ],
-            ],
-            'next'       => [
-                'type'        => 'boolean',
-                'description' => 'Continue summarizing the next message or files. Set to true unless you know you have all the information necessary to complete the task.',
-            ],
-        ],
-        'required'   => ['message_id', 'summary', 'next'],
-    ];
+    public static string $name = 'summarizer';
 
     public static function enabledMessage(Message $message): string
     {

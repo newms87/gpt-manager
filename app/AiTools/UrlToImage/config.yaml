@@ -1,0 +1,9 @@
+description: 'Convert a URL into a list of images that shows the full web page or PDF. Use the images to answer questions about a URL'
+parameters:
+  type: object
+  required:
+    - url
+  properties:
+    url:
+      type: string
+      description: 'The URL to convert to images. Can be a PDF or HTML website.'

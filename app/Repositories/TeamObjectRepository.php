@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Agent\ThreadRun;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
@@ -56,7 +57,17 @@ class TeamObjectRepository
      * Create or Update the value, date, confidence and sources for a Team Object Attribute record based on team object
      * and attribute name
      */
-    public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $value, $date = null, $description = null, $confidence = null, $sourceUrl = null, $messageIds = []): TeamObjectAttribute
+    public function saveTeamObjectAttribute(
+        TeamObject $teamObject,
+                   $name,
+                   $value,
+                   $date = null,
+                   $description = null,
+                   $confidence = null,
+                   $sourceUrl = null,
+                   $messageIds = [],
+        ThreadRun  $threadRun = null
+    ): TeamObjectAttribute
     {
         if (!$name) {
             throw new BadFunctionCallException("Save Team Object Attribute requires a name");
@@ -86,6 +97,7 @@ class TeamObjectRepository
             'description'           => $description,
             'confidence'            => $confidence,
             'source_stored_file_id' => $storedFile?->id,
+            'thread_run_id'         => $threadRun?->id,
         ]);
 
         if ($messageIds) {

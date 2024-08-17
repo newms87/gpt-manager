@@ -58,8 +58,11 @@ parameters:
             items:
               required:
                 - name
+                - description
                 - value
+                - confidence
                 - source_url
+                - message_ids
               properties:
                 name:
                   type: string

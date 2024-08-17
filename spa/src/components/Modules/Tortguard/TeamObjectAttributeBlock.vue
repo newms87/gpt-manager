@@ -4,9 +4,10 @@
 			<div class="flex items-center flex-nowrap">
 				{{ label }}
 				<div class="ml-1">
-					<HighConfidenceIcon v-if="attribute.confidence === 'High'" class="text-green-600 w-3" />
-					<MediumConfidenceIcon v-if="attribute.confidence === 'Medium'" class="text-amber-400 w-3" />
-					<LowConfidenceIcon v-if="attribute.confidence === 'Low'" class="text-red-400 w-3" />
+					<HighConfidenceIcon v-if="attribute?.confidence === 'High'" class="text-green-600 w-3" />
+					<MediumConfidenceIcon v-else-if="attribute?.confidence === 'Medium'" class="text-amber-400 w-3" />
+					<LowConfidenceIcon v-else-if="attribute?.confidence === 'Low'" class="text-red-400 w-3" />
+					<NoConfidenceIcon v-else class="text-slate-500 w-3" />
 				</div>
 			</div>
 		</template>
@@ -27,7 +28,7 @@
 						</a>
 					</div>
 				</div>
-				<div v-if="attribute.description" class="my-4">
+				<div v-if="attribute.description" class="my-4 px-6 p-2 bg-slate-900 text-slate-400 rounded-full text-base">
 					{{ attribute.description }}
 				</div>
 				<div v-if="attribute.sourceMessages?.length" class="mt-4 space-y-4">
@@ -45,7 +46,8 @@ import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessage
 import { TeamObjectAttribute } from "@/components/Modules/Tortguard/tortguard";
 import {
 	FaBrandsThreads as ThreadLinkIcon,
-	FaSolidAnglesDown as LowConfidenceIcon,
+	FaSolidAngleDown as LowConfidenceIcon,
+	FaSolidAnglesDown as NoConfidenceIcon,
 	FaSolidAnglesUp as HighConfidenceIcon,
 	FaSolidAngleUp as MediumConfidenceIcon,
 	FaSolidLink as LinkIcon

@@ -1,7 +1,10 @@
 <?php
 
-namespace App\AiTools;
+namespace App\AiTools\UrlToImage;
 
+use App\AiTools\AiToolAbstract;
+use App\AiTools\AiToolContract;
+use App\AiTools\AiToolResponse;
 use App\Api\ScreenshotOne\ScreenshotOneApi;
 use BadFunctionCallException;
 use Illuminate\Support\Facades\Log;
@@ -10,20 +13,9 @@ use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\FileRepository;
 use Newms87\Danx\Services\TranscodeFileService;
 
-class UrlToImageAiTool implements AiToolContract
+class UrlToImageAiTool extends AiToolAbstract implements AiToolContract
 {
-    const string NAME        = 'url-to-image';
-    const string DESCRIPTION = 'Convert a URL into a list of images that shows the full web page or PDF. Use the images to answer questions about a URL';
-    const array  PARAMETERS  = [
-        'type'       => 'object',
-        'properties' => [
-            'url' => [
-                'type'        => 'string',
-                'description' => 'The URL to convert to images. Can be a PDF or HTML website.',
-            ],
-        ],
-        'required'   => ['url'],
-    ];
+    public static string $name = 'url-to-image';
 
     public function execute($params): AiToolResponse
     {

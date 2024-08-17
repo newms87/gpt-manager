@@ -1,27 +1,19 @@
 <?php
 
-namespace App\AiTools;
+namespace App\AiTools\UrlToMarkdown;
 
+use App\AiTools\AiToolAbstract;
+use App\AiTools\AiToolContract;
+use App\AiTools\AiToolResponse;
 use BadFunctionCallException;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\FileRepository;
 
-class UrlToMarkdownAiTool implements AiToolContract
+class UrlToMarkdownAiTool extends AiToolAbstract implements AiToolContract
 {
-    const string NAME        = 'url-to-markdown';
-    const string DESCRIPTION = 'Convert a URL into markdown. Use the markdown formatted text to answer questions about a URL';
-    const array  PARAMETERS  = [
-        'type'       => 'object',
-        'properties' => [
-            'url' => [
-                'type'        => 'string',
-                'description' => 'The URL to convert to markdown. Only works on XML / HTML websites.',
-            ],
-        ],
-        'required'   => ['url'],
-    ];
+    public static string $name = 'url-to-markdown';
 
     public function execute($params): AiToolResponse
     {

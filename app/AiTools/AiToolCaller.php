@@ -3,6 +3,7 @@
 namespace App\AiTools;
 
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
+use App\Models\Agent\ThreadRun;
 use BadFunctionCallException;
 
 abstract class AiToolCaller
@@ -20,13 +21,15 @@ abstract class AiToolCaller
 
     abstract public function getFormatter(): AgentMessageFormatterContract;
 
-    public function call(): array
+    public function call(ThreadRun $threadRun): array
     {
         $tool = $this->getTool();
 
         if (!$tool) {
             throw new BadFunctionCallException("Tool not found: " . $this->name);
         }
+
+        $tool->setThreadRun($threadRun);
 
         $response = $tool->execute($this->arguments);
 

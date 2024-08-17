@@ -1,6 +1,6 @@
 <?php
 
-namespace App\AiTools\SaveObjects;
+namespace App\AiTools\SaveTeamObjects;
 
 use App\AiTools\AiToolAbstract;
 use App\AiTools\AiToolContract;
@@ -96,6 +96,6 @@ class SaveTeamObjectsAiTool extends AiToolAbstract implements AiToolContract
             throw new BadFunctionCallException("Save Objects requires a value for each attribute: \n\n" . json_encode($attribute));
         }
 
-        app(TeamObjectRepository::class)->saveTeamObjectAttribute($object, $name, $value, $date, $description, $confidence, $sourceUrl, $messageIds);
+        app(TeamObjectRepository::class)->saveTeamObjectAttribute($object, $name, $value, $date, $description, $confidence, $sourceUrl, $messageIds, $this->threadRun);
     }
 }

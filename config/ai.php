@@ -1,10 +1,10 @@
 <?php
 
-use App\AiTools\GoogleSerpAiTool;
-use App\AiTools\SaveObjects\SaveTeamObjectsAiTool;
-use App\AiTools\SummarizerAiTool;
-use App\AiTools\UrlToImageAiTool;
-use App\AiTools\UrlToMarkdownAiTool;
+use App\AiTools\GoogleSerp\GoogleSerpAiTool;
+use App\AiTools\SaveTeamObjects\SaveTeamObjectsAiTool;
+use App\AiTools\Summarizer\SummarizerAiTool;
+use App\AiTools\UrlToImage\UrlToImageAiTool;
+use App\AiTools\UrlToMarkdown\UrlToMarkdownAiTool;
 use App\Api\OpenAi\OpenAiApi;
 use App\Api\PerplexityAi\PerplexityAiApi;
 
@@ -76,15 +76,15 @@ return [
     'tools'         => [
         [
             'class'       => UrlToImageAiTool::class,
-            'name'        => UrlToImageAiTool::NAME,
-            'description' => UrlToImageAiTool::DESCRIPTION,
-            'parameters'  => UrlToImageAiTool::PARAMETERS,
+            'name'        => UrlToImageAiTool::$name,
+            'description' => UrlToImageAiTool::description(),
+            'parameters'  => UrlToImageAiTool::parameters(),
         ],
         [
             'class'       => UrlToMarkdownAiTool::class,
-            'name'        => UrlToMarkdownAiTool::NAME,
-            'description' => UrlToMarkdownAiTool::DESCRIPTION,
-            'parameters'  => UrlToMarkdownAiTool::PARAMETERS,
+            'name'        => UrlToMarkdownAiTool::$name,
+            'description' => UrlToMarkdownAiTool::description(),
+            'parameters'  => UrlToMarkdownAiTool::parameters(),
         ],
         [
             'class'       => SaveTeamObjectsAiTool::class,
@@ -94,15 +94,15 @@ return [
         ],
         [
             'class'       => SummarizerAiTool::class,
-            'name'        => SummarizerAiTool::NAME,
-            'description' => SummarizerAiTool::DESCRIPTION,
-            'parameters'  => SummarizerAiTool::PARAMETERS,
+            'name'        => SummarizerAiTool::$name,
+            'description' => SummarizerAiTool::description(),
+            'parameters'  => SummarizerAiTool::parameters(),
         ],
         [
             'class'       => GoogleSerpAiTool::class,
-            'name'        => GoogleSerpAiTool::NAME,
-            'description' => GoogleSerpAiTool::DESCRIPTION,
-            'parameters'  => GoogleSerpAiTool::PARAMETERS,
+            'name'        => GoogleSerpAiTool::$name,
+            'description' => GoogleSerpAiTool::description(),
+            'parameters'  => GoogleSerpAiTool::parameters(),
         ],
     ],
 ];

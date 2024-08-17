@@ -1,0 +1,9 @@
+description: 'Convert a URL into markdown. Use the markdown formatted text to answer questions about a URL'
+parameters:
+  type: object
+  required:
+    - url
+  properties:
+    url:
+      type: string
+      description: 'The URL to convert to markdown. Only works on XML / HTML websites.'

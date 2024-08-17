@@ -15,11 +15,6 @@ use Newms87\Danx\Input\Input;
  */
 class OpenAiCompletionResponse extends Input implements AgentCompletionResponseContract
 {
-    public function __construct($items = [])
-    {
-        parent::__construct($items);
-    }
-
     public function isMessageEmpty(): bool
     {
         return empty($this->choices[0]['message']['content']);
