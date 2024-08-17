@@ -62,7 +62,7 @@ class UrlToMarkdownAiTool extends AiToolAbstract implements AiToolContract
         }
 
         // Check for the screenshot of this web page
-        $storedMarkdownFile = $storedWebFile->transcodes()->where('transcode_name', UrlToMarkdownAiTool::NAME)->first();
+        $storedMarkdownFile = $storedWebFile->transcodes()->where('transcode_name', UrlToMarkdownAiTool::$name)->first();
 
         if ($storedMarkdownFile) {
             Log::debug("Found existing Url to Markdown transcode: $storedMarkdownFile->id");
@@ -82,7 +82,7 @@ class UrlToMarkdownAiTool extends AiToolAbstract implements AiToolContract
                     'disk'                    => 's3',
                     'mime'                    => StoredFile::MIME_TEXT,
                     'original_stored_file_id' => $storedWebFile->id,
-                    'transcode_name'          => UrlToMarkdownAiTool::NAME,
+                    'transcode_name'          => UrlToMarkdownAiTool::$name,
                 ]
             );
         }

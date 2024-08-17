@@ -8,6 +8,9 @@
 					<MediumConfidenceIcon v-else-if="attribute?.confidence === 'Medium'" class="text-amber-400 w-3" />
 					<LowConfidenceIcon v-else-if="attribute?.confidence === 'Low'" class="text-red-400 w-3" />
 					<NoConfidenceIcon v-else class="text-slate-500 w-3" />
+					<QTooltip>
+						{{ attribute?.confidence ? attribute.confidence + " Confidence" : "No Data Found" }}
+					</QTooltip>
 				</div>
 			</div>
 		</template>

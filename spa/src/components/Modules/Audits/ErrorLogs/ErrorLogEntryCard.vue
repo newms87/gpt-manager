@@ -63,5 +63,5 @@ const levelNames = {
 
 const levelName = computed(() => levelNames[props.error.level] || "UNKNOWN");
 
-const stackTrace = computed(() => showVendor.value ? props.error.stack_trace : props.error.stack_trace.filter(trace => !trace.file.includes("/vendor/")));
+const stackTrace = computed(() => showVendor.value ? props.error.stack_trace : props.error.stack_trace.filter(trace => !trace.file?.includes("/vendor/")));
 </script>

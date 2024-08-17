@@ -92,7 +92,7 @@ class UrlToImageAiTool extends AiToolAbstract implements AiToolContract
         }
 
         // Check for the screenshot of this web page
-        $storedImageFile = $storedWebFile->transcodes()->where('transcode_name', UrlToImageAiTool::NAME)->first();
+        $storedImageFile = $storedWebFile->transcodes()->where('transcode_name', UrlToImageAiTool::$name)->first();
 
         if ($storedImageFile) {
             Log::debug("Found existing Url to Image transcode: $storedImageFile->id");
@@ -111,7 +111,7 @@ class UrlToImageAiTool extends AiToolAbstract implements AiToolContract
                     'mime'                    => StoredFile::MIME_JPEG,
                     'size'                    => FileHelper::getRemoteFileSize($storedUrl),
                     'original_stored_file_id' => $storedWebFile->id,
-                    'transcode_name'          => UrlToImageAiTool::NAME,
+                    'transcode_name'          => UrlToImageAiTool::$name,
                 ]);
         }
 

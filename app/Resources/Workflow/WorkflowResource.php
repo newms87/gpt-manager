@@ -32,7 +32,11 @@ class WorkflowResource extends ActionResource
     public static function details(Model $model): array
     {
         $jobs = $model->sortedAgentWorkflowJobs()->with(['dependencies', 'workflowAssignments.agent'])->get();
-        $runs = $model->workflowRuns()->with(['artifacts', 'sortedWorkflowJobRuns' => ['workflowJob', 'tasks' => ['jobDispatch.runningAuditRequest', 'thread.messages.storedFiles.transcodes']]])->orderByDesc('id')->get();
+        $runs = $model->workflowRuns()
+            ->with(['artifacts', 'sortedWorkflowJobRuns' => ['workflowJob', 'tasks' => ['jobDispatch.runningAuditRequest', 'thread.messages.storedFiles.transcodes']]])
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get();
 
         return static::make($model, [
             'jobs' => WorkflowJobResource::collection($jobs, fn(WorkflowJob $workflowJob) => [

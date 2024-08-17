@@ -45,12 +45,17 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
         // Produce the artifact
         $assignment = $workflowTask->workflowAssignment;
 
-        if ($assignment->agent->response_format !== 'text') {
-            $data    = $threadRun->lastMessage->getJsonContent();
-            $content = null;
-        } else {
-            $data    = null;
-            $content = $threadRun->lastMessage->getCleanContent();
+        $data    = null;
+        $content = null;
+
+        // If the agent responded with a message, set the content or data
+        // NOTE: Sometimes an agent may respond with a tools response that includes an is_finished flag, and our lastMessage may be empty
+        if ($threadRun->lastMessage) {
+            if ($assignment->agent->response_format !== 'text') {
+                $data = $threadRun->lastMessage->getJsonContent();
+            } else {
+                $content = $threadRun->lastMessage->getCleanContent();
+            }
         }
 
         $artifact = $workflowTask->artifacts()->create([
