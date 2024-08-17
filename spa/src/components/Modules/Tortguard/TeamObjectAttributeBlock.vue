@@ -7,8 +7,15 @@
 		>
 			<LinkIcon class="w-4 cursor-pointer text-sky-500" />
 			<QMenu class="p-4 mt-4 bg-slate-600">
-				<div>
-					<a v-if="attribute.source" :href="attribute.source.url" target="_blank">{{ attribute.source.url }}</a>
+				<div class="flex flex-nowrap">
+					<div class="flex-grow">
+						<a v-if="attribute.source" :href="attribute.source.url" target="_blank">{{ attribute.source.url }}</a>
+					</div>
+					<div>
+						<a :href="attribute.thread_url" target="_blank">
+							<ThreadLinkIcon class="w-4" />
+						</a>
+					</div>
 				</div>
 				<div v-if="attribute.sourceMessages?.length" class="mt-4 space-y-4">
 					<ThreadMessageCard
@@ -23,7 +30,7 @@
 <script setup lang="ts">
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import { TeamObjectAttribute } from "@/components/Modules/Tortguard/tortguard";
-import { FaSolidLink as LinkIcon } from "danx-icon";
+import { FaBrandsThreads as ThreadLinkIcon, FaSolidLink as LinkIcon } from "danx-icon";
 import { fBoolean, fNumber, fShortCurrency, LabelValueBlock } from "quasar-ui-danx";
 import { computed } from "vue";
 

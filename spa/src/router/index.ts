@@ -50,7 +50,7 @@ const router = createRouter({
 					meta: { title: "Workflows", type: "WorkflowResource" }
 				},
 				{
-					path: "/agents/:id?/:panel?",
+					path: "/agents/:id?/:panel?/:thread_id?",
 					name: "agents",
 					component: AgentsView,
 					meta: { title: "Agents", type: "AgentResource" }

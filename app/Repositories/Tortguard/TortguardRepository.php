@@ -56,12 +56,12 @@ class TortguardRepository
 
         $teamObjectRepo = app(TeamObjectRepository::class);
 
-        $drugSideEffect = $teamObjectRepo->saveTeamObject('DrugSideEffect', $productName . ': ' . $sideEffect, [
-            'description' => $description,
-        ]);
-
         $drugProduct = $teamObjectRepo->saveTeamObject('DrugProduct', $productName, [
             'url' => $productUrl,
+        ]);
+
+        $drugSideEffect = $teamObjectRepo->saveTeamObject('DrugSideEffect', $productName . ': ' . $sideEffect, [
+            'description' => $description,
         ]);
 
         foreach($companies as $company) {

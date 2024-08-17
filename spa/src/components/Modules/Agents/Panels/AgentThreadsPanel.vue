@@ -16,9 +16,9 @@
 				<ThreadCard
 					:class="{'my-4': !activeThread }"
 					:thread="thread"
-					:active="activeThread?.id === thread.id"
-					@update:active="activeThread = (activeThread?.id === thread.id ? null : thread)"
-					@close="activeThread = null"
+					:active="activeThreadId === thread.id"
+					@update:active="setActiveThreadId(activeThreadId === thread.id ? null : thread.id)"
+					@close="setActiveThreadId(null)"
 				/>
 			</template>
 		</ListTransition>
@@ -27,17 +27,26 @@
 <script setup lang="ts">
 import { getAction } from "@/components/Modules/Agents/agentActions";
 import ThreadCard from "@/components/Modules/Agents/Threads/ThreadCard";
-import { Agent, AgentThread } from "@/types/agents";
+import router from "@/router";
+import { Agent } from "@/types/agents";
 import { FaRegularMessage as CreateIcon } from "danx-icon";
 import { ListTransition } from "quasar-ui-danx";
-import { computed, shallowRef } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 const props = defineProps<{
 	agent: Agent,
 }>();
 
-const activeThread = shallowRef<AgentThread | null>(null);
+const activeThreadId = ref<number | null>(null);
+const activeThread = computed(() => props.agent.threads?.find((t) => t.id === activeThreadId.value));
 const visibleThreads = computed(() => activeThread.value ? [activeThread.value] : props.agent.threads);
 
 const createThreadAction = getAction("create-thread");
+
+function setActiveThreadId(id) {
+	activeThreadId.value = id;
+	router.push({ name: "agents", params: { id: props.agent.id, panel: "threads", thread_id: id?.toString() } });
+}
+// On mounted, try to resolve the thread from the URL
+onMounted(() => activeThreadId.value = parseInt(router.currentRoute.value.params.thread_id as string));
 </script>
