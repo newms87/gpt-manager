@@ -1,6 +1,8 @@
 <template>
 	<div class="relative h-full">
-		<div v-if="!drugSideEffects.length" class="text-center text-gray-400 text-xl py-10">No drug side-effects found</div>
+		<div v-if="!drugSideEffects.length" class="text-center text-gray-400 text-xl py-10">Currently there are no active
+			research projects. Ask the AI below to find you some!
+		</div>
 		<div v-else class="p-8 overflow-y-auto h-full">
 			<ListTransition class="pb-24">
 				<DrugSideEffectCard

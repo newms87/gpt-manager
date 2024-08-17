@@ -4,6 +4,7 @@ namespace App\Services\AgentThread;
 
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use App\Api\OpenAi\Classes\OpenAiToolCaller;
+use App\Api\OpenAi\OpenAiApi;
 use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\Agent;
 use App\Models\Agent\Message;
@@ -317,6 +318,12 @@ class AgentThreadService
         if ($responseSchema) {
             $responseMessage .= json_encode($responseSchema);
             $responseMessage .= "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
+        }
+
+        // XXX: Open AI has a bug that causes the completion API to call a non-documented tools call
+        // This encourages the model to avoid that
+        if ($agent->api === OpenAiApi::$serviceName) {
+            $responseMessage .= "\n\nmulti_tool_use.parallel is not a valid function call. DO NOT USE!";
         }
 
         if ($responseMessage) {

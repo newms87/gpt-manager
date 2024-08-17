@@ -16,14 +16,20 @@
 				</div>
 			</div>
 			<div v-if="task.agent_name" class="mx-4">
-				<div class="text-sm text-slate-400 text-no-wrap">
-					<a :href="agentUrl(task.agent_id)" target="_blank">
+				<div class="text-sm text-slate-400 flex items-center flex-nowrap">
+					<a :href="agentUrl(task.agent_id)" target="_blank" class="inline-block">
 						by {{ task.agent_name }}
 					</a>
 				</div>
-				<div class="text-sm text-slate-400 bg-slate-800 px-3 py-1 mt-1 rounded-full text-no-wrap inline-block">{{
-						task.model
-					}}
+				<div class="flex items-center flex-nowrap">
+					<div class="text-sm text-slate-400 bg-slate-800 px-3 py-1 mt-1 rounded-full text-no-wrap inline-block">
+						{{
+							task.model
+						}}
+					</div>
+					<a :href="threadUrl(task)" target="_blank" class="inline-block ml-3">
+						<ThreadLinkIcon class="w-4" />
+					</a>
 				</div>
 			</div>
 			<ShowHideButton v-if="task.thread" v-model="showThread" label="Thread" class="bg-sky-800 mx-1 text-sm" />
@@ -53,6 +59,7 @@ import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { AiTokenUsageButton, ShowHideButton } from "@/components/Shared";
 import router from "@/router";
 import { WorkflowTask } from "@/types/workflows";
+import { FaSolidMessage as ThreadLinkIcon } from "danx-icon";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
@@ -71,5 +78,12 @@ const groupItems = computed(() => {
 
 function agentUrl(id) {
 	return router.resolve({ name: "agents", params: { id } }).href;
+}
+
+function threadUrl(task) {
+	return router.resolve({
+		name: "agents",
+		params: { id: task.agent_id, panel: "threads", thread_id: task.thread.id.toString() }
+	}).href;
 }
 </script>

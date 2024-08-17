@@ -50,6 +50,7 @@ export interface WorkflowJobRun extends WorkflowRunner {
 export interface WorkflowTask extends WorkflowRunner {
 	job_name: string;
 	group: string;
+	agent_id: number;
 	agent_name: string;
 	model: string;
 	artifact?: Artifact;
