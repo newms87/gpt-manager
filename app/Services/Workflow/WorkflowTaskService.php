@@ -83,8 +83,6 @@ class WorkflowTaskService
             // Make sure race conditions don't allow a Job to be marked completed when another task failed
             LockHelper::acquire($workflowJobRun);
 
-            $isFinished = $workflowJobRun->remainingTasks()->count() === 0;
-
             // If the task completed successfully, then save the artifact and mark the job as completed if there are no more tasks
             if ($task->isComplete()) {
                 // Save the artifact from the completed task
@@ -94,35 +92,18 @@ class WorkflowTaskService
                     $workflowJobRun->artifacts()->syncWithoutDetaching($artifact);
                     Log::debug("$workflowJobRun attached $artifact");
                 }
-
-                // If we have finished all tasks in the workflow job run, then mark job as completed and notify the workflow run
-                if ($isFinished) {
-                    // The workflow Job Run has completed successfully. Save the artifact from the completed task and notify the Workflow Run
-                    $workflowJobRun->completed_at = now();
-                    $workflowJobRun->save();
-                }
-            } else {
-                Log::debug("$workflowJobRun has failed");
-                $workflowJobRun->failed_at = now();
-                $workflowJobRun->save();
-                $workflowJobRun->workflowRun->failed_at = now();
-                $workflowJobRun->workflowRun->save();
             }
 
             LockHelper::release($workflowJobRun);
-
-            if ($isFinished) {
-                WorkflowService::workflowJobRunFinished($workflowJobRun);
-            }
         } catch(Throwable $e) {
             // If there was an exception while processing the next dispatch, then mark the task and the workflow as failed
             ErrorLog::logException(ErrorLog::ERROR, $e);
             $task->failed_at = now();
             $task->save();
-            $workflowJobRun->failed_at = now();
-            $workflowJobRun->save();
-            $workflowJobRun->workflowRun->failed_at = now();
-            $workflowJobRun->workflowRun->save();
+        }
+
+        if ($workflowJobRun->remainingTasks()->count() === 0) {
+            WorkflowService::workflowJobRunFinished($workflowJobRun);
         }
     }
 

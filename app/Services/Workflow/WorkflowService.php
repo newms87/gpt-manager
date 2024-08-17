@@ -126,6 +126,12 @@ class WorkflowService
         Log::debug("$workflowJobRun finished running");
         $workflowRun = $workflowJobRun->workflowRun;
 
+        if ($workflowJobRun->tasks()->whereNotNull('failed_at')->exists()) {
+            $workflowJobRun->failed_at = now();
+            $workflowJobRun->save();
+            Log::debug("$workflowJobRun has failed");
+        }
+
         // If the workflow run has failed, stop processing
         if ($workflowRun->failed_at) {
             Log::debug("$workflowRun has already failed, stopping dispatch");
@@ -136,31 +142,32 @@ class WorkflowService
         // Make sure no race conditions accidentally complete a workflow when another one failed or double dispatch jobs
         LockHelper::acquire($workflowRun);
 
-        if ($workflowJobRun->isComplete()) {
-            // Save the artifact from the completed task
-            $artifacts = $workflowJobRun->artifacts()->get();
-            $workflowRun->artifacts()->syncWithoutDetaching($artifacts);
-            Log::debug("$workflowRun attached {$artifacts->count()} artifacts");
+        // Save the artifact from the completed task
+        $artifacts = $workflowJobRun->artifacts()->get();
+        $workflowRun->artifacts()->syncWithoutDetaching($artifacts);
+        Log::debug("$workflowRun attached {$artifacts->count()} artifacts");
 
-            // If we have completed all Workflow Job Runs in the workflow run, then mark the workflow run as completed
-            if ($workflowRun->remainingJobRuns()->doesntExist()) {
+        // Mark the Workflow Job Run as completed
+        $workflowJobRun->completed_at = now();
+        $workflowJobRun->save();
+
+        // If we have completed all Workflow Job Runs in the workflow run, then mark the workflow run as completed
+        if ($workflowRun->remainingJobRuns()->doesntExist()) {
+            if ($workflowRun->failedJobRuns()->exists()) {
+                $workflowRun->failed_at = now();
+                $workflowRun->save();
+                Log::debug("$workflowRun has failed");
+            } else {
                 $workflowRun->completed_at = now();
                 $workflowRun->save();
                 Log::debug("$workflowRun has completed");
             }
-        } else {
-            // If the Workflow Job Run failed, then mark the Workflow Run as failed
-            $workflowRun->failed_at = now();
-            $workflowRun->save();
-            Log::debug("$workflowRun has failed");
         }
 
         if ($workflowRun->isRunning()) {
             Log::debug("$workflowRun dispatching next jobs..");
             // Dispatch the next set of Workflow Job Runs
             WorkflowService::dispatchPendingWorkflowJobs($workflowRun);
-        } else {
-            Log::debug("$workflowRun done");
         }
 
         // Release the lock here as its possible while we are dispatching the tasks, another task has completed and would like to proceed
