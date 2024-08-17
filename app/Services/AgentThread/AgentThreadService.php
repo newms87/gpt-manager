@@ -295,27 +295,28 @@ class AgentThreadService
         }
 
         $responseMessage = '';
+        $responseSchema  = null;
 
         if ($agent->response_notes) {
             $responseMessage = "RESPONSE NOTES:\n$agent->response_notes";
         }
 
-        if ($agent->response_format !== 'text' && $agent->response_schema) {
-            // JSON Object responses provide a schema for the response, but not via the json_schema structured response mechanics by Open AI (possibly others)
-            // So this is just a message to the LLM instead of a requirement built in
+        // JSON Object responses provide a schema for the response, but not via the json_schema structured response mechanics by Open AI (possibly others)
+        // So this is just a message to the LLM instead of a requirement built in
+        if ($agent->response_format === 'json_object' && $agent->response_schema) {
             $responseSchema = $agent->response_schema;
+        }
 
-            // If the response format is JSON Schema, but the agent does not accept JSON schema, we need to format the response schema for the AI model
-            // and provide a message so the agent can see the schema (simulating response schema format)
-            // XXX: NOTE this is a hack for Perplexity AI, which does support JSON Schema, but does not seem to respond to it for their online models
-            if ($agent->response_format === 'json_schema' && !$apiFormatter->acceptsJsonSchema()) {
-                $responseSchema = $this->formatResponseSchemaForAgent($agent);
-            }
+        // If the response format is JSON Schema, but the agent does not accept JSON schema, we need to format the response schema for the AI model
+        // and provide a message so the agent can see the schema (simulating response schema format)
+        // XXX: NOTE this is a hack for Perplexity AI, which does support JSON Schema, but does not seem to respond to it for their online models
+        if ($agent->response_format === 'json_schema' && !$apiFormatter->acceptsJsonSchema()) {
+            $responseSchema = $this->formatResponseSchemaForAgent($agent);
+        }
 
-            if ($responseSchema) {
-                $responseMessage .= json_encode($responseSchema);
-                $responseMessage .= "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
-            }
+        if ($responseSchema) {
+            $responseMessage .= json_encode($responseSchema);
+            $responseMessage .= "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
         }
 
         if ($responseMessage) {
@@ -349,6 +350,10 @@ class AgentThreadService
             'data'    => $response->getDataFields() ?: null,
         ]);
 
+        if (!$response->isToolCall() && !$response->isFinished()) {
+            throw new Exception('Unexpected response from AI model');
+        }
+        
         if ($response->isToolCall()) {
             // Check for duplicated tool calls and immediately stop thread so we don't waste resources
             if ($this->hasDuplicatedToolCall($threadRun, $response)) {
@@ -362,10 +367,10 @@ class AgentThreadService
                 $this->callToolsWithToolResponse($thread, $response);
                 Log::debug("Tool call response completed.");
             }
-        } elseif ($response->isFinished()) {
+        }
+
+        if ($response->isFinished()) {
             $this->finishThreadResponse($threadRun, $lastMessage);
-        } else {
-            throw new Exception('Unexpected response from AI model');
         }
     }
 

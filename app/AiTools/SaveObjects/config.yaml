@@ -2,6 +2,9 @@ description: 'Saves an object in the object relationships schema in the team nam
 parameters:
   type: object
   properties:
+    is_finished:
+      type: boolean
+      description: 'Set to true if after saving the objects, the conversation is finished. Set to false if the conversation is not finished.'
     objects:
       type: array
       description: 'The list of objects and their relations + attributes to save to the database. NOTE: Objects will be saved in the order provided.'

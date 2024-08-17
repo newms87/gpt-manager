@@ -32,7 +32,29 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function isFinished(): bool
     {
-        return $this->choices[0]['finish_reason'] === 'stop';
+        if ($this->choices[0]['finish_reason'] === 'stop') {
+            return true;
+        }
+
+        // Check if the is_finished flag was set to true for all tool calls.
+        // If so, the completion is finished. If any tools are not finished,
+        // the completion is not finished.
+        $toolsFinished = false;
+
+        foreach($this->choices[0]['message']['tool_calls'] as $toolCall) {
+            if ($toolCall['type'] === 'function') {
+                $function  = $toolCall['function'];
+                $arguments = json_decode($function['arguments'], true);
+                if (empty($arguments['is_finished'])) {
+                    return false;
+                } else {
+                    // If the function is finished, set the flag to true.
+                    $toolsFinished = true;
+                }
+            }
+        }
+
+        return $toolsFinished;
     }
 
     public function getDataFields(): array
