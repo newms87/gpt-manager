@@ -6,11 +6,14 @@ use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\WorkflowRun;
 use App\Resources\Workflow\WorkflowRunResource;
 use Illuminate\Database\Eloquent\Model;
+use Newms87\Danx\Exceptions\ValidationError;
 
 class DrugSideEffectResource extends TeamObjectResource
 {
     /**
      * @param TeamObject $model
+     * @return array
+     * @throws ValidationError
      */
     public static function details(Model $model): array
     {
@@ -18,6 +21,10 @@ class DrugSideEffectResource extends TeamObjectResource
         $companies     = $product?->relatedObjects('companies')->get();
         $workflowRunId = $model->meta['workflow_run_id'] ?? null;
         $workflowRun   = $workflowRunId ? WorkflowRun::find($workflowRunId) : null;
+
+        if (!$product) {
+            throw new ValidationError('Product not found');
+        }
 
         return static::make($model, [
             'product'     => DrugProductResource::make($product, [

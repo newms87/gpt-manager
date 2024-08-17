@@ -10,7 +10,9 @@ use App\Resources\Tortguard\DrugSideEffectResource;
 use App\Resources\Tortguard\DrugSideEffectSearchResultResource;
 use App\Resources\Workflow\WorkflowRunResource;
 use Exception;
+use Log;
 use Newms87\Danx\Exceptions\ValidationError;
+use Throwable;
 
 class TortguardController extends Controller
 {
@@ -24,7 +26,11 @@ class TortguardController extends Controller
 
         $drugSideEffects = [];
         foreach($DrugSideEffectObjects as $DrugSideEffect) {
-            $drugSideEffects[] = DrugSideEffectResource::details($DrugSideEffect);
+            try {
+                $drugSideEffects[] = DrugSideEffectResource::details($DrugSideEffect);
+            } catch(Throwable $e) {
+                Log::error('Error getting Drug Side Effect details: ' . $e->getMessage(), ['exception' => $e]);
+            }
         }
 
         return [
