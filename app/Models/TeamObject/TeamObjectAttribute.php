@@ -14,13 +14,18 @@ use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\AuditableTrait;
 
 /**
+ * @property int    $id
  * @property string $object_id
  * @property string $name
  * @property Carbon $date
+ * @property string $description
+ * @property string $confidence
  * @property string $text_value
  * @property array  $json_value
  * @property string $message_id
  * @property string $source_stored_file_id
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  */
 class TeamObjectAttribute extends Model implements AuditableContract
 {

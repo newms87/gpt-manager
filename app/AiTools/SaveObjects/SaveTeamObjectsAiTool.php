@@ -84,17 +84,18 @@ class SaveTeamObjectsAiTool extends AiToolAbstract implements AiToolContract
 
     public function saveObjectAttribute($object, $attribute): void
     {
-        $name       = $attribute['name'] ?? null;
-        $value      = $attribute['value'] ?? null;
-        $date       = $attribute['date'] ?? null;
-        $confidence = $attribute['confidence'] ?? null;
-        $sourceUrl  = $attribute['source_url'] ?? null;
-        $messageIds = $attribute['message_ids'] ?? [];
+        $name        = $attribute['name'] ?? null;
+        $value       = $attribute['value'] ?? null;
+        $date        = $attribute['date'] ?? null;
+        $description = $attribute['description'] ?? null;
+        $confidence  = $attribute['confidence'] ?? null;
+        $sourceUrl   = $attribute['source_url'] ?? null;
+        $messageIds  = $attribute['message_ids'] ?? [];
 
         if (!array_key_exists('value', $attribute)) {
             throw new BadFunctionCallException("Save Objects requires a value for each attribute: \n\n" . json_encode($attribute));
         }
 
-        app(TeamObjectRepository::class)->saveTeamObjectAttribute($object, $name, $value, $date, $confidence, $sourceUrl, $messageIds);
+        app(TeamObjectRepository::class)->saveTeamObjectAttribute($object, $name, $value, $date, $description, $confidence, $sourceUrl, $messageIds);
     }
 }

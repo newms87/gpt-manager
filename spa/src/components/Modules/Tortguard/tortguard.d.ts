@@ -14,6 +14,8 @@ interface TeamObjectAttribute {
 	name: string;
 	date: Date;
 	value: object | string | boolean | number | Date | null;
+	description: string;
+	confidence: string;
 	source?: UploadedFile;
 	sourceMessages?: ThreadMessage[];
 	thread_url?: string;

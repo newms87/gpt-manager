@@ -63,6 +63,9 @@ tables:
       json_value:
         type: json
         nullable: true
+      description:
+        type: string
+        nullable: true
       confidence:
         type: string
         nullable: true

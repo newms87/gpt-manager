@@ -56,7 +56,7 @@ class TeamObjectRepository
      * Create or Update the value, date, confidence and sources for a Team Object Attribute record based on team object
      * and attribute name
      */
-    public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $value, $date = null, $confidence = null, $sourceUrl = null, $messageIds = []): TeamObjectAttribute
+    public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $value, $date = null, $description = null, $confidence = null, $sourceUrl = null, $messageIds = []): TeamObjectAttribute
     {
         if (!$name) {
             throw new BadFunctionCallException("Save Team Object Attribute requires a name");
@@ -69,7 +69,7 @@ class TeamObjectRepository
             $storedFile = StoredFile::firstWhere('url', $sourceUrl);
 
             if (!$storedFile) {
-                \Illuminate\Support\Facades\Log::debug("Creating Stored File for source URL");
+                Log::debug("Creating Stored File for source URL");
                 $storedFile = app(FileRepository::class)->createFileWithUrl($sourceUrl, $sourceUrl, ['disk' => 'web', 'mime' => StoredFile::MIME_HTML]);
             }
 
@@ -83,6 +83,7 @@ class TeamObjectRepository
         ], [
             'text_value'            => is_array($value) ? null : $value,
             'json_value'            => is_array($value) ? json_encode($value) : null,
+            'description'           => $description,
             'confidence'            => $confidence,
             'source_stored_file_id' => $storedFile?->id,
         ]);

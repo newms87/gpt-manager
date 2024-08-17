@@ -27,6 +27,8 @@ abstract class TeamObjectAttributeResource extends ActionResource
             'name'           => $model->name,
             'date'           => $model->date,
             'value'          => $model->json_value ?? $model->text_value,
+            'confidence'     => $model->confidence,
+            'description'    => $model->description,
             'source'         => StoredFileResource::make($model->sourceFile),
             'sourceMessages' => MessageResource::collection($model->sourceMessages),
             'thread_url'     => $threadUrl,

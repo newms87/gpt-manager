@@ -64,6 +64,9 @@ parameters:
                 name:
                   type: string
                   description: 'The unique name of the attribute'
+                description:
+                  type: string
+                  description: 'A brief description of the attribute and an explanation of why the value was chosen and why the confidence level was set to what it was'
                 value:
                   type: [ "string", "number", "boolean" ]
                   description: 'A value of any type for the attribute'
@@ -71,7 +74,7 @@ parameters:
                   type: [ "string", "null" ]
                   description: "The date (yyyy-mm-dd) and time (00:00:00 if time n/a) of the attribute's value (if data changes over time). Format should always be full date (no partial dates)!"
                 confidence:
-                  type: [ "string" ]
+                  type: string
                   description: 'The confidence level of the attribute value. Must be one of the following: "High", "Medium", "Low"'
                 source_url:
                   type: [ "string", "null" ]
