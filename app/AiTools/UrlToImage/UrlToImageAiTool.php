@@ -12,6 +12,7 @@ use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\FileRepository;
 use Newms87\Danx\Services\TranscodeFileService;
+use Throwable;
 
 class UrlToImageAiTool extends AiToolAbstract implements AiToolContract
 {
@@ -24,32 +25,39 @@ class UrlToImageAiTool extends AiToolAbstract implements AiToolContract
         Log::debug("Executing URL to Image AI Tool: $url");
 
         if (!$url) {
-            throw new BadFunctionCallException("URL to Screenshot requires a URL");
+            throw new BadFunctionCallException("URL to Image requires a URL");
         }
 
-        if (FileHelper::isPdf($url)) {
-            $storedFile = $this->convertPdfToImages($url);
-        } else {
-            $storedFile = $this->takeScreenshot($url);
-        }
+        $response = new AiToolResponse();
 
-        $transcodes = $storedFile->transcodes()->get();
-
-        $fileCount = $transcodes->count();
-        $response  = new AiToolResponse();
-
-        $response->addContent(
-            "Screenshot for file ID $storedFile->id is provided below." .
-            ($fileCount > 1 ? " There are $fileCount separate images w/ the file ID in the path." : '')
-        );
-
-        if ($fileCount > 1) {
-            foreach($transcodes as $transcode) {
-                $response->addStoredFile($transcode);
+        try {
+            if (FileHelper::isPdf($url)) {
+                $storedFile = $this->convertPdfToImages($url);
+            } else {
+                $storedFile = $this->takeScreenshot($url);
             }
-        } else {
-            $response->addStoredFile($storedFile);
+
+            $transcodes = $storedFile->transcodes()->get();
+            $fileCount  = $transcodes->count();
+
+            $response->addContent(
+                "Screenshot for file ID $storedFile->id is provided below." .
+                ($fileCount > 1 ? " There are $fileCount separate images w/ the file ID in the path." : '')
+            );
+
+            if ($fileCount > 1) {
+                foreach($transcodes as $transcode) {
+                    $response->addStoredFile($transcode);
+                }
+            } else {
+                $response->addStoredFile($storedFile);
+            }
+        } catch(Throwable $throwable) {
+            Log::error("Error converting URL to Image: $url: " . $throwable->getMessage(), ['exception' => $throwable]);
+
+            $response->addContent("Error converting URL to Image: $url. Try another URL");
         }
+
 
         return $response;
     }
@@ -99,7 +107,7 @@ class UrlToImageAiTool extends AiToolAbstract implements AiToolContract
         } else {
             Log::debug("Taking new screenshot");
 
-            $filepath  = "url-to-screenshot/" . md5($url) . ".jpg";
+            $filepath  = "url-to-image/" . md5($url) . ".jpg";
             $storedUrl = ScreenshotOneApi::make()->take($url, $filepath);
 
             // Store the screenshot and associate it with the web page file so it is cached in the DB for future uses
