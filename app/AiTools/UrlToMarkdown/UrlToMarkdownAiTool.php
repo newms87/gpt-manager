@@ -80,7 +80,7 @@ class UrlToMarkdownAiTool extends AiToolAbstract implements AiToolContract
             $markdown = FileHelper::htmlToMarkdown($url);
 
             // Save the markdown contents to a publicly accessible storage location
-            $filepath = "url-to-markdown/" . md5($url) . ".jpg";
+            $filepath = "url-to-markdown/" . md5($url) . ".md";
 
             // Store the screenshot and associate it with the web page file so it is cached in the DB for future uses
             $storedMarkdownFile = app(FileRepository::class)->createFileWithContents(
