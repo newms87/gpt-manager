@@ -85,8 +85,6 @@ interface DrugSideEffect extends TeamObject {
 	disability_rate?: StringAttribute;
 	hospital_duration?: StringAttribute;
 	product: DrugProduct;
-	studies: ScientificStudy[];
-	warnings: DrugWarning[];
 	workflowRuns?: WorkflowRun[];
 }
 
@@ -99,6 +97,8 @@ interface DrugProduct extends TeamObject {
 	// DrugProducts can have multiple DrugGenerics (ie: Actos can be pioglitazone and metformin)
 	generics: DrugGeneric[];
 	companies: Company[];
+	scientificStudies: ScientificStudy[];
+	warnings: DrugWarning[];
 }
 
 interface DrugGeneric extends TeamObject {
@@ -129,12 +129,27 @@ interface Patent extends TeamObject {
 }
 
 interface ScientificStudy extends TeamObject {
-	group_size: NumberAttribute;
-	age_range: NumberAttribute;
-	median_age: NumberAttribute;
-	treatment_method: StringAttribute;
-	treatment_efficacy: StringAttribute;
-	complications: StringAttribute;
+	authors: StringArrayAttribute;
+	publication_date: DateAttribute;
+	journal_name: StringAttribute;
+	doi: StringAttribute;
+	objective: StringAttribute;
+	study_design: StringAttribute;
+	methodology: StringAttribute;
+	population: StringAttribute;
+	sample_size: StringAttribute;
+	interventions: StringAttribute;
+	control_group: StringAttribute;
+	outcomes: StringAttribute;
+	results: StringAttribute;
+	statistical_analysis: StringAttribute;
+	adverse_events: StringAttribute;
+	conclusions: StringAttribute;
+	limitations: StringAttribute;
+	funding_sources: StringAttribute;
+	conflicts_of_interest: StringAttribute;
+	ethical_approval: StringAttribute;
+	trial_registration_number: StringAttribute;
 }
 
 interface DrugWarning extends TeamObject {
