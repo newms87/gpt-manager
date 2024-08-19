@@ -11,6 +11,8 @@ class RunWorkflowTaskJob extends Job
 {
     public WorkflowTask $workflowTask;
 
+    public int $timeout = 610;
+
     public function __construct(WorkflowTask $workflowTask)
     {
         $this->workflowTask = $workflowTask;

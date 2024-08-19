@@ -22,6 +22,9 @@ tables:
       timestamps: true
       softDeletes: true
     indexes:
+      - name: unique_object_type_ref
+        columns: [ type, ref ]
+        unique: true
       - name: unique_object_type_name
         columns: [ type, name ]
         unique: true

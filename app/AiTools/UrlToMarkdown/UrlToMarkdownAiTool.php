@@ -33,7 +33,7 @@ class UrlToMarkdownAiTool extends AiToolAbstract implements AiToolContract
 
             $contents         = $storedFile->getContents();
             $contentLength    = strlen($contents);
-            $maxContentLength = 50000;
+            $maxContentLength = 20000;
             $response->addContent(
                 "Markdown for URL $storedFile->filepath is provided below:\n\n" .
                 substr($contents, 0, $maxContentLength) .

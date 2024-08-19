@@ -139,7 +139,7 @@ class DatabaseSchemaMapper
         // When the field is a boolean, it means it's a simple field without any additional definition
         if (is_bool($definition)) {
             if ($name === 'ref') {
-                return $table->string('ref')->unique();
+                return $table->string('ref');
             } else {
                 return $table->{$name}();
             }
