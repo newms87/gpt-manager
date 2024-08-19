@@ -1,6 +1,7 @@
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { WorkflowAssignmentRoutes, WorkflowJobRoutes, WorkflowRoutes } from "@/routes/workflowRoutes";
+import { FaSolidCopy as CopyIcon, FaSolidPencil as EditIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
 import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
@@ -25,6 +26,13 @@ const items: ActionOptions[] = [
 		name: "update"
 	},
 	{
+		name: "copy",
+		label: "Copy",
+		icon: CopyIcon,
+		menu: true,
+		onSuccess: WorkflowController.loadListAndSummary
+	},
+	{
 		name: "update-debounced",
 		alias: "update",
 		debounce: 1000
@@ -32,6 +40,7 @@ const items: ActionOptions[] = [
 	{
 		label: "Edit",
 		name: "edit",
+		icon: EditIcon,
 		menu: true,
 		onAction: (action, target) => WorkflowController.activatePanel(target, "edit")
 	},
@@ -39,6 +48,8 @@ const items: ActionOptions[] = [
 		name: "delete",
 		label: "Delete",
 		class: "text-red-500",
+		iconClass: "text-red-500",
+		icon: DeleteIcon,
 		menu: true,
 		batch: true,
 		onFinish: WorkflowController.loadListAndSummary,

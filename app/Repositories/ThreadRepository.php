@@ -8,6 +8,7 @@ use App\Models\Agent\Thread;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Helpers\DateHelper;
+use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -115,7 +116,7 @@ class ThreadRepository extends ActionRepository
     public function copyThread(Thread $thread)
     {
         $newThread       = $thread->replicate();
-        $newThread->name .= " (Copy)";
+        $newThread->name = ModelHelper::getNextModelName($thread);
         $newThread->save();
 
         foreach($thread->messages as $message) {

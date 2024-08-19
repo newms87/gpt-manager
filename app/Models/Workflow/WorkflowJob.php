@@ -101,7 +101,7 @@ class WorkflowJob extends Model implements AuditableContract
     public function getResponseFields(): array
     {
         $responses = $this->getResponsesPreview();
-        
+
         $fields = [];
         foreach($responses as $response) {
             $fields = array_merge($fields, ArrayHelper::getNestedFieldList($response));
@@ -153,6 +153,22 @@ class WorkflowJob extends Model implements AuditableContract
 
             return [];
         }
+    }
+
+    public function replicate(array $except = null)
+    {
+        $newWorkflowJob = parent::replicate($except);
+        $newWorkflowJob->save();
+
+        foreach($this->workflowAssignments as $assignment) {
+            $newAssignment                  = $assignment->replicate();
+            $newAssignment->workflow_job_id = $newWorkflowJob->id;
+            $newAssignment->save();
+        }
+
+        // NOTE: Dependencies are handles by the Workflow replication process as this involves associating the new job and the new dependent job
+
+        return $newWorkflowJob;
     }
 
     public function delete()

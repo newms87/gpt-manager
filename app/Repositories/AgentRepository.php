@@ -7,6 +7,7 @@ use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
+use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class AgentRepository extends ActionRepository
@@ -103,13 +104,8 @@ class AgentRepository extends ActionRepository
      */
     public function copyAgent(Agent $agent)
     {
-        $newAgent = $agent->replicate(['threads_count', 'assignments_count']);
-        $count    = 1;
-        do {
-            $newAgent->name = $agent->name . " ($count)";
-            $count++;
-        } while(Agent::where('name', $newAgent->name)->exists());
-
+        $newAgent       = $agent->replicate(['threads_count', 'assignments_count']);
+        $newAgent->name = ModelHelper::getNextModelName($agent);
         $newAgent->save();
 
         return $newAgent;

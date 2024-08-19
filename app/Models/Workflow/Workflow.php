@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
@@ -63,7 +64,37 @@ class Workflow extends Model implements AuditableContract
         return $this;
     }
 
-    public function delete()
+    public function replicate(array $except = null): Workflow
+    {
+        $except = $except ?? ['runs_count', 'jobs_count'];
+
+        $newWorkflow       = parent::replicate($except);
+        $newWorkflow->name = ModelHelper::getNextModelName($this);
+        $newWorkflow->save();
+
+        foreach($this->workflowJobs as $workflowJob) {
+            $newWorkflowJob              = $workflowJob->replicate();
+            $newWorkflowJob->workflow_id = $newWorkflow->id;
+            $newWorkflowJob->save();
+        }
+
+        $newWorkflow->jobs_count = $newWorkflow->workflowJobs()->count();
+
+        // last step is to fix the dependencies relationships as they're still pointing to the old workflow jobs
+        foreach($this->workflowJobs as $workflowJob) {
+            $newWorkflowJob = $newWorkflow->workflowJobs()->where('name', $workflowJob->name)->first();
+            foreach($workflowJob->dependencies as $dependency) {
+                $newDependency                             = $dependency->replicate();
+                $newDependency->workflow_job_id            = $newWorkflowJob->id;
+                $newDependency->depends_on_workflow_job_id = $newWorkflow->workflowJobs()->where('name', $dependency->dependsOn->name)->first()->id;
+                $newDependency->save();
+            }
+        }
+
+        return $newWorkflow;
+    }
+
+    public function delete(): bool|null
     {
         $this->workflowJobs()->each(function (WorkflowJob $workflowJob) {
             $workflowJob->delete();
