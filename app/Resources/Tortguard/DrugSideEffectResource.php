@@ -31,6 +31,7 @@ class DrugSideEffectResource extends TeamObjectResource
                 'companies' => CompanyResource::collection($companies, fn($company) => [
                     'parent' => CompanyResource::make($company->relatedObjects('parent')->first()),
                 ]),
+                'patents'   => PatentResource::collection($product->relatedObjects('patents')->get()),
             ]),
             'workflowRuns' => WorkflowRunResource::collection($workflowRuns),
         ]);

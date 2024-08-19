@@ -61,7 +61,6 @@ class SaveTeamObjectsAiTool extends AiToolAbstract implements AiToolContract
         $relationshipName = $relation['relationship_name'] ?? null;
         $relatedId        = $relation['related_id'] ?? $relation['related_ref'] ?? null;
         $relatedType      = $relation['type'] ?? null;
-        $relatedName      = $relation['name'] ?? null;
 
         if (!$relatedType) {
             throw new BadFunctionCallException("Save Objects requires a type for each relation: \n\n" . json_encode($relation));
@@ -71,9 +70,15 @@ class SaveTeamObjectsAiTool extends AiToolAbstract implements AiToolContract
 
         if ($relatedId) {
             $relatedObject = TeamObject::where('type', $relatedType)->find($relatedId);
-        } else {
-            $relatedObject = $teamRepo->saveTeamObject($relatedType, $relatedName);
+
+            if (!$relatedObject) {
+                throw new BadFunctionCallException("Could not find related object: $relatedType ($relatedId)");
+            }
+            $relation['name'] = $relatedObject->name;
         }
+
+        // Recursively save the related object
+        $relatedObject = $this->saveObject($relation);
 
         if (!$relatedObject) {
             throw new BadFunctionCallException("Could not resolve related object: \n\n" . json_encode($relation));

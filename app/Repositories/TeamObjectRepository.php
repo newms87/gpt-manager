@@ -11,6 +11,7 @@ use BadFunctionCallException;
 use Illuminate\Database\Eloquent\Builder;
 use Log;
 use Newms87\Danx\Helpers\FileHelper;
+use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\FileRepository;
 use Newms87\Danx\Resources\StoredFileResource;
@@ -87,13 +88,15 @@ class TeamObjectRepository
             Log::debug("Stored File $storedFile->id references source URL $sourceUrl");
         }
 
+        $jsonValue = StringHelper::safeJsonDecode($value, maxEntrySize: 100000, forceJson: false);
+
         $teamObjectAttribute = TeamObjectAttribute::updateOrCreate([
             'object_id' => $teamObject->id,
             'name'      => $name,
             'date'      => $date,
         ], [
-            'text_value'            => is_array($value) ? null : $value,
-            'json_value'            => is_array($value) ? json_encode($value) : null,
+            'text_value'            => $jsonValue ? null : $value,
+            'json_value'            => $jsonValue ?: null,
             'description'           => $description,
             'confidence'            => $confidence,
             'source_stored_file_id' => $storedFile?->id,
@@ -101,6 +104,8 @@ class TeamObjectRepository
         ]);
 
         if ($messageIds) {
+            // Filter out empty / null values from message ids
+            $messageIds = array_filter($messageIds);
             $teamObjectAttribute->sourceMessages()->syncWithoutDetaching($messageIds);
         }
 

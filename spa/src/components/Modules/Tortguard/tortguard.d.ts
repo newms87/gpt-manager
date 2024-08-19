@@ -13,7 +13,7 @@ interface TeamObjectAttribute {
 	id: string;
 	name: string;
 	date: Date;
-	value: object | string | boolean | number | Date | null;
+	value: object | string | boolean | number | Date | string[] | object[] | null;
 	description: string;
 	confidence: string;
 	source?: UploadedFile;
@@ -41,6 +41,14 @@ interface DateAttribute extends TeamObjectAttribute {
 
 interface ObjectAttribute extends TeamObjectAttribute {
 	value: object | null;
+}
+
+interface StringArrayAttribute extends TeamObjectAttribute {
+	value: string[] | null;
+}
+
+interface ObjectArrayAttribute extends TeamObjectAttribute {
+	value: object[] | null;
 }
 
 interface DrugSideEffect extends TeamObject {
@@ -79,7 +87,7 @@ interface DrugSideEffect extends TeamObject {
 	product: DrugProduct;
 	studies: ScientificStudy[];
 	warnings: DrugWarning[];
-	workflowRun?: WorkflowRun;
+	workflowRuns?: WorkflowRun[];
 }
 
 interface DrugProduct extends TeamObject {
@@ -112,6 +120,12 @@ interface Patent extends TeamObject {
 	filed_date: DateAttribute;
 	expiration_date: DateAttribute;
 	issued_date: DateAttribute;
+	priority_date: DateAttribute;
+	inventors: StringArrayAttribute;
+	owners: StringArrayAttribute;
+	specification: StringAttribute;
+	claims: StringArrayAttribute;
+	legal_status: StringAttribute;
 }
 
 interface ScientificStudy extends TeamObject {

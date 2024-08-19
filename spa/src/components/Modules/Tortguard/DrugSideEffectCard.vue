@@ -22,11 +22,11 @@
 				/>
 				<div v-if="drugSideEffect.description" class="ml-4">{{ drugSideEffect.description }}</div>
 			</div>
-			<div class="mx-3 flex items-center flex-nowrap">
+			<div class="mx-3 my-2 flex items-center flex-nowrap">
 				<WorkflowResearchingCard
-					v-if="drugSideEffect.workflowRun"
+					v-if="drugSideEffect.workflowRuns"
 					:workflow-runs="drugSideEffect.workflowRuns"
-					class="mr-6 bg-slate-800 my-2"
+					class="mr-6 bg-slate-800"
 				/>
 				<div
 					class="px-4 py-2 rounded-xl flex items-center" :class="{
@@ -34,7 +34,6 @@
 						'bg-green-800': drugSideEffect.evaluation_score?.value >= 80,
 						'bg-yellow-600': drugSideEffect.evaluation_score?.value >= 50 && drugSideEffect.evaluation_score?.value < 80,
 						'bg-red-800': drugSideEffect.evaluation_score?.value < 50
-
 					}"
 				>
 					<div class="text-2xl font-bold">{{ drugSideEffect.evaluation_score?.value || "N/A" }}</div>
@@ -70,10 +69,10 @@
 
 <script setup lang="ts">
 import DrugIssueCompanyCard from "@/components/Modules/Tortguard/DrugIssueCompanySection";
-import DrugIssuePatentSection from "@/components/Modules/Tortguard/DrugIssuePatentSection";
 import DrugIssueScientificStudiesSection from "@/components/Modules/Tortguard/DrugIssueScientificStudiesSection";
 import DrugIssueSeveritySection from "@/components/Modules/Tortguard/DrugIssueSeveritySection";
 import DrugIssueWarningsSection from "@/components/Modules/Tortguard/DrugIssueWarningsSection";
+import DrugIssuePatentSection from "@/components/Modules/Tortguard/DrugPatentSection";
 import { DrugSideEffect } from "@/components/Modules/Tortguard/tortguard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import WorkflowResearchingCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowResearchCard";
@@ -89,7 +88,7 @@ const isShowing = defineModel<boolean>();
 onMounted(() => {
 	autoRefreshObject(
 		props.drugSideEffect,
-		(d: DrugSideEffect) => d.workflowRun?.status === WORKFLOW_STATUS.RUNNING.value,
+		(d: DrugSideEffect) => !!d.workflowRuns.find(wr => wr.status === WORKFLOW_STATUS.RUNNING.value),
 		(d: DrugSideEffect) => TortguardRoutes.drugSideEffect(d.id)
 	);
 });

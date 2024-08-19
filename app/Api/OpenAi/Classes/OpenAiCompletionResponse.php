@@ -17,7 +17,7 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
 {
     public function isMessageEmpty(): bool
     {
-        return empty($this->choices[0]['message']['content']);
+        return !$this->getContent() && !$this->getToolCalls();
     }
 
     public function isToolCall(): bool
@@ -36,7 +36,7 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
         // the completion is not finished.
         $toolsFinished = false;
 
-        foreach($this->choices[0]['message']['tool_calls'] as $toolCall) {
+        foreach($this->getToolCalls() as $toolCall) {
             if ($toolCall['type'] === 'function') {
                 $function  = $toolCall['function'];
                 $arguments = json_decode($function['arguments'], true);
@@ -59,11 +59,11 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function getToolCallerFunctions(): array
     {
-        $toolCalls = [];
-        foreach($this->choices[0]['message']['tool_calls'] as $toolCall) {
+        $toolCallerFunctions = [];
+        foreach($this->getToolCalls() as $toolCall) {
             if ($toolCall['type'] === 'function') {
-                $function    = $toolCall['function'];
-                $toolCalls[] = new OpenAiToolCaller(
+                $function              = $toolCall['function'];
+                $toolCallerFunctions[] = new OpenAiToolCaller(
                     $toolCall['id'],
                     $function['name'],
                     json_decode($function['arguments'], true)
@@ -71,12 +71,17 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
             }
         }
 
-        return $toolCalls;
+        return $toolCallerFunctions;
     }
 
     public function getContent(): ?string
     {
         return $this->choices[0]['message']['content'] ?? null;
+    }
+
+    public function getToolCalls(): array
+    {
+        return $this->choices[0]['message']['tool_calls'] ?? [];
     }
 
     public function inputTokens(): int

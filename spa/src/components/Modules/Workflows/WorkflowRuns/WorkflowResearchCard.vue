@@ -1,15 +1,18 @@
 <template>
-	<div class="px-4 py-2 rounded-xl">
-		<div class="flex items-center flex-nowrap">
+	<div class="px-4 py-2 relative" :class="{'rounded-xl': !showWorkflowRuns, 'rounded-t-xl': showWorkflowRuns}">
+		<div class="flex items-center justify-end flex-nowrap">
 			<ShowHideButton v-model="showWorkflowRuns" label="Research" />
-			<WorkflowStatusTimerPill :runner="workflowRuns[0]" class="ml-2" />
+			<WorkflowStatusTimerPill :runner="bestRunner" class="ml-2" />
 		</div>
-		<div class="p-4">
-			<div v-for="workflowRun in workflowRuns" :key="workflowRun.id">
-				<div class="flex items-center flex-nowrap">
-					<a :href="workflowRunUrl(workflowRun)" target="_blank" class="font-bold">{{ workflowRun.name }}</a>
-					<WorkflowStatusTimerPill :runner="workflowRuns[0]" class="ml-2" />
-				</div>
+		<div
+			v-if="showWorkflowRuns"
+			class="mt-4 space-y-2 absolute top-8 right-0 w-[30rem] p-4 rounded-b-xl rounded-tl-xl bg-slate-700 shadow-lg shadow-slate-800"
+		>
+			<div v-for="workflowRun in workflowRuns" :key="workflowRun.id" class="flex items-center flex-nowrap">
+				<a :href="workflowRunUrl(workflowRun)" target="_blank" class="font-bold flex-grow">{{
+						workflowRun.workflow_name
+					}}</a>
+				<WorkflowStatusTimerPill :runner="workflowRun" class="ml-4" />
 			</div>
 		</div>
 	</div>
@@ -23,7 +26,7 @@ import router from "@/router";
 import { WorkflowRunRoutes } from "@/routes/workflowRoutes";
 import { WorkflowRun } from "@/types";
 import { autoRefreshObject } from "quasar-ui-danx";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 const props = defineProps<{ workflowRuns: WorkflowRun[], refresh?: boolean }>();
 
@@ -39,6 +42,7 @@ onMounted(() => {
 	}
 });
 
+const bestRunner = computed(() => props.workflowRuns.find(wr => wr.status === WORKFLOW_STATUS.RUNNING.value) || props.workflowRuns.find(wr => wr.status === WORKFLOW_STATUS.COMPLETED.value) || props.workflowRuns[0]);
 function workflowRunUrl(workflowRun: WorkflowRun) {
 	return router.resolve({
 		name: "workflows",

@@ -14,10 +14,17 @@
 				</div>
 			</div>
 		</template>
-		{{ resolvedValue }}
+		<template v-if="Array.isArray(resolvedValue)">
+			<ul class="list-disc list-inside">
+				<li v-for="value in resolvedValue" :key="value">{{ value }}</li>
+			</ul>
+		</template>
+		<template v-else>
+			{{ resolvedValue }}
+		</template>
 		<div
 			v-if="attribute?.source || attribute?.sourceMessages"
-			class="inline-block"
+			class="inline-block ml-2"
 		>
 			<LinkIcon class="w-4 cursor-pointer text-sky-500" />
 			<QMenu class="p-4 mt-4 bg-slate-600">
@@ -55,13 +62,13 @@ import {
 	FaSolidAngleUp as MediumConfidenceIcon,
 	FaSolidLink as LinkIcon
 } from "danx-icon";
-import { fBoolean, fNumber, fShortCurrency, LabelValueBlock } from "quasar-ui-danx";
+import { fBoolean, fDate, fNumber, fShortCurrency, LabelValueBlock } from "quasar-ui-danx";
 import { computed } from "vue";
 
 const props = defineProps<{
 	label: string;
 	attribute?: TeamObjectAttribute;
-	format?: "boolean" | "shortCurrency" | "number";
+	format?: "boolean" | "shortCurrency" | "number" | "date" | "list";
 }>();
 
 const resolvedValue = computed(() => {
@@ -79,6 +86,12 @@ const resolvedValue = computed(() => {
 
 		case "shortCurrency":
 			return fShortCurrency(+value);
+
+		case "date":
+			return fDate(value as string);
+
+		case "list":
+			return (value as string[]).join(", ");
 
 		default:
 			return value;
