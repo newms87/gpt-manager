@@ -1,5 +1,3 @@
-import { WorkflowRun } from "@/types/workflows";
-
 export interface SearchResultItem {
 	product_name: string;
 	product_url: string;
@@ -34,5 +32,5 @@ export interface SearchResult {
 export interface ResearchResult {
 	success?: boolean;
 	message?: string;
-	workflowRun?: WorkflowRun;
+	workflowRunNames?: string[];
 }

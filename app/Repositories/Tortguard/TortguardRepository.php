@@ -5,11 +5,11 @@ namespace App\Repositories\Tortguard;
 use App\Models\Agent\Agent;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowInput;
-use App\Models\Workflow\WorkflowRun;
 use App\Repositories\TeamObjectRepository;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\Workflow\WorkflowService;
+use Log;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class TortguardRepository
@@ -42,7 +42,11 @@ class TortguardRepository
         return $searchResults['results'] ?: [];
     }
 
-    public function research($searchResult): WorkflowRun
+    /**
+     * Perform research on a search result
+     * returns an array of names of the workflows that have started running
+     */
+    public function research($searchResult): array
     {
         $productName = $searchResult['product_name'] ?? null;
         $productUrl  = $searchResult['product_name'] ?? null;
@@ -89,13 +93,6 @@ class TortguardRepository
         // Add the drug Product to the Side Effect
         $teamObjectRepo->saveTeamObjectRelationship($drugSideEffect, 'product', $drugProduct);
 
-        $researchWorkflowName = 'Drug Side-Effect Researcher';
-        $workflow             = Workflow::where('team_id', team()->id)->firstWhere('name', $researchWorkflowName);
-
-        if (!$workflow) {
-            throw new ValidationError("$researchWorkflowName workflow not found");
-        }
-
         $workflowInput = WorkflowInput::make()->forceFill([
             'team_id'          => team()->id,
             'user_id'          => user()->id,
@@ -105,13 +102,28 @@ class TortguardRepository
         ]);
         $workflowInput->save();
 
-        $workflowRun = app(WorkflowService::class)->run($workflow, $workflowInput);
+        $researchWorkflowNames  = ['Research: Drug Side-Effect Severity', 'Research: Drug Companies', 'Research: Drug Patents'];
+        $researchWorkflowRunIds = [];
+
+        foreach($researchWorkflowNames as $researchWorkflowName) {
+            $workflow = Workflow::where('team_id', team()->id)->firstWhere('name', $researchWorkflowName);
+
+            if (!$workflow) {
+                Log::error("Workflow not found: $researchWorkflowName");
+                continue;
+            }
+
+            $workflowRun = app(WorkflowService::class)->run($workflow, $workflowInput);
+
+            $researchWorkflowRunIds[] = $workflowRun->id;
+        }
+
 
         $drugSideEffect->meta = [
-            'workflow_run_id' => $workflowRun->id,
+            'workflow_run_ids' => $researchWorkflowRunIds,
         ];
         $drugSideEffect->save();
 
-        return $workflowRun;
+        return $researchWorkflowNames;
     }
 }

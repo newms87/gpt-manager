@@ -61,7 +61,7 @@ async function onResearch(result: SearchResultItemBySideEffect) {
 
 	if (response.success) {
 		emit("research", result);
-		FlashMessages.info(`Researching ${result.product_name}: ${result.side_effect} in workflow ${response.workflowRun.id}`);
+		FlashMessages.info(`Researching ${result.product_name}: ${result.side_effect}. The following workflows have started running: ${response.workflowRunNames.join(", ")}`);
 	} else {
 		FlashMessages.error(response.message || "Failed to start researching agent. Try again later...");
 	}

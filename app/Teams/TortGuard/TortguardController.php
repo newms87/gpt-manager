@@ -8,7 +8,6 @@ use App\Models\TeamObject\TeamObject;
 use App\Repositories\Tortguard\TortguardRepository;
 use App\Resources\Tortguard\DrugSideEffectResource;
 use App\Resources\Tortguard\DrugSideEffectSearchResultResource;
-use App\Resources\Workflow\WorkflowRunResource;
 use Exception;
 use Log;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -65,10 +64,10 @@ class TortguardController extends Controller
 
     public function research(): array
     {
-        $searchResult = request()->input('input');
-        $workflowRun  = app(TortguardRepository::class)->research($searchResult);
+        $searchResult     = request()->input('input');
+        $workflowRunNames = app(TortguardRepository::class)->research($searchResult);
 
-        return ['success' => true, 'workflowRun' => WorkflowRunResource::make($workflowRun)];
+        return ['success' => true, 'workflowRunNames' => $workflowRunNames];
     }
 
     public function getDrugSideEffect(int $id): array

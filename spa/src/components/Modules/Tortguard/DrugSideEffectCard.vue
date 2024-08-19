@@ -25,7 +25,7 @@
 			<div class="mx-3 flex items-center flex-nowrap">
 				<WorkflowResearchingCard
 					v-if="drugSideEffect.workflowRun"
-					:workflow-run="drugSideEffect.workflowRun"
+					:workflow-runs="drugSideEffect.workflowRuns"
 					class="mr-6 bg-slate-800 my-2"
 				/>
 				<div

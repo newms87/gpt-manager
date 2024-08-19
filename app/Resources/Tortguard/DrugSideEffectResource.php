@@ -17,22 +17,22 @@ class DrugSideEffectResource extends TeamObjectResource
      */
     public static function details(Model $model): array
     {
-        $product       = $model->relatedObjects('product')->first();
-        $companies     = $product?->relatedObjects('companies')->get();
-        $workflowRunId = $model->meta['workflow_run_id'] ?? null;
-        $workflowRun   = $workflowRunId ? WorkflowRun::find($workflowRunId) : null;
+        $product        = $model->relatedObjects('product')->first();
+        $companies      = $product?->relatedObjects('companies')->get();
+        $workflowRunIds = $model->meta['workflow_run_ids'] ?? null;
+        $workflowRuns   = $workflowRunIds ? WorkflowRun::whereIn('id', $workflowRunIds)->get() : [];
 
         if (!$product) {
             throw new ValidationError('Product not found');
         }
 
         return static::make($model, [
-            'product'     => DrugProductResource::make($product, [
+            'product'      => DrugProductResource::make($product, [
                 'companies' => CompanyResource::collection($companies, fn($company) => [
                     'parent' => CompanyResource::make($company->relatedObjects('parent')->first()),
                 ]),
             ]),
-            'workflowRun' => WorkflowRunResource::make($workflowRun),
+            'workflowRuns' => WorkflowRunResource::collection($workflowRuns),
         ]);
     }
 }
