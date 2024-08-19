@@ -33,7 +33,7 @@ class TortguardRepository
             ];
         }
 
-        $searchResults = $threadRun->lastMessage->getJsonContent();
+        $searchResults = $threadRun->lastMessage->getJsonContent() ?? [];
 
         if (!array_key_exists('results', $searchResults)) {
             throw new ValidationError("Search results key was not set in response from $agent");
@@ -102,7 +102,13 @@ class TortguardRepository
         ]);
         $workflowInput->save();
 
-        $researchWorkflowNames  = ['Research: Drug Side-Effect Severity', 'Research: Drug Companies', 'Research: Drug Patents'];
+        $researchWorkflowNames  = [
+            'Research: Drug Side-Effect Severity',
+            'Research: Drug Companies',
+            'Research: Drug Patents',
+            'Research: Drug Scientific Studies',
+            'Research: Drug FDA Warnings',
+        ];
         $researchWorkflowRunIds = [];
 
         foreach($researchWorkflowNames as $researchWorkflowName) {

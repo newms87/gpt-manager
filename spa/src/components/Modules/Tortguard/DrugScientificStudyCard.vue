@@ -5,7 +5,7 @@
 		</div>
 		<div class="text-sm mt-2">{{ study.description }}</div>
 		<div class="flex items-stretch mt-4">
-			<div class="grid grid-cols-10 gap-4">
+			<div class="grid grid-cols-6 gap-4">
 				<TeamObjectAttributeBlock
 					label="Authors"
 					:attribute="study.authors"

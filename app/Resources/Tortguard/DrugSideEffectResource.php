@@ -33,6 +33,7 @@ class DrugSideEffectResource extends TeamObjectResource
                 ]),
                 'patents'           => PatentResource::collection($product->relatedObjects('patents')->get()),
                 'scientificStudies' => ScientificStudyResource::collection($product->relatedObjects('scientificStudies')->get()),
+                'warnings'          => DrugWarningResource::collection($product->relatedObjects('warnings')->get()),
             ]),
             'workflowRuns' => WorkflowRunResource::collection($workflowRuns),
         ]);

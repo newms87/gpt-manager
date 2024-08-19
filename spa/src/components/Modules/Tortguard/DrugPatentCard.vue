@@ -1,6 +1,8 @@
 <template>
 	<div class="bg-slate-900 p-4 rounded-xl">
-		<div>{{ patent.description }}</div>
+		<div class="font-bold mb-4 text-base">
+			<a :href="patent.url" target="_blank">{{ patent.description }}</a>
+		</div>
 		<div class="grid grid-cols-10 gap-4">
 			<LabelValueBlock
 				label="Patent Number"

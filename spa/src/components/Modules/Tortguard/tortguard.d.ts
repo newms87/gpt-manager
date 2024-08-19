@@ -153,6 +153,13 @@ interface ScientificStudy extends TeamObject {
 }
 
 interface DrugWarning extends TeamObject {
-	issued_at: DateAttribute;
-	injury_risks: string[];
+	reference_number: StringAttribute;
+	warning_type: StringAttribute;
+	warning_date: DateAttribute;
+	reason: StringAttribute;
+	affected_populations: StringAttribute;
+	recommended_actions: StringAttribute;
+	adverse_events: StringAttribute;
+	risk_level: StringAttribute;
+	regulatory_actions: StringAttribute;
 }

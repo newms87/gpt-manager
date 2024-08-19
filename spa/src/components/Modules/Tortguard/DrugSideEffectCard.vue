@@ -61,7 +61,7 @@
 				<DrugIssuePatentSection :patents="drugSideEffect.product.patents || []" />
 				<!--					<DrugIssueMarketSection :get-sources="getSources" :drug="drugSideEffect.drug" :get-source-url="getSourceUrl" />-->
 				<DrugIssueScientificStudiesSection :studies="drugSideEffect.product.scientificStudies || []" class="mt-6" />
-				<DrugIssueWarningsSection :warnings="drugSideEffect.warnings || []" class="mt-6" />
+				<DrugIssueWarningsSection :warnings="drugSideEffect.product.warnings || []" class="mt-6" />
 			</div>
 		</div>
 	</div>
@@ -70,9 +70,9 @@
 <script setup lang="ts">
 import DrugIssueCompanyCard from "@/components/Modules/Tortguard/DrugIssueCompanySection";
 import DrugIssueSeveritySection from "@/components/Modules/Tortguard/DrugIssueSeveritySection";
-import DrugIssueWarningsSection from "@/components/Modules/Tortguard/DrugIssueWarningsSection";
 import DrugIssuePatentSection from "@/components/Modules/Tortguard/DrugPatentSection";
 import DrugIssueScientificStudiesSection from "@/components/Modules/Tortguard/DrugScientificStudiesSection";
+import DrugIssueWarningsSection from "@/components/Modules/Tortguard/DrugWarningsSection";
 import { DrugSideEffect } from "@/components/Modules/Tortguard/tortguard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import WorkflowResearchingCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowResearchCard";
