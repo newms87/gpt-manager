@@ -1,7 +1,14 @@
+import { ImportWorkflowDialog } from "@/components/Modules/Workflows/Shared";
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { WorkflowAssignmentRoutes, WorkflowJobRoutes, WorkflowRoutes } from "@/routes/workflowRoutes";
-import { FaSolidCopy as CopyIcon, FaSolidPencil as EditIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
+import { Workflow } from "@/types";
+import {
+	FaSolidCopy as CopyIcon,
+	FaSolidDatabase as ExportJsonIcon,
+	FaSolidPencil as EditIcon,
+	FaSolidTrash as DeleteIcon
+} from "danx-icon";
 import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
 
@@ -62,6 +69,20 @@ const items: ActionOptions[] = [
 	},
 	{
 		name: "run-workflow"
+	},
+	{
+		name: "export-json",
+		label: "Export as JSON",
+		icon: ExportJsonIcon,
+		menu: true,
+		onAction: async (action, target: Workflow) => await WorkflowRoutes.exportAsJson(target)
+	},
+	{
+		name: "import-json",
+		label: "Import from JSON",
+		onAction: WorkflowRoutes.applyAction,
+		onFinish: WorkflowController.loadListAndSummary,
+		vnode: () => h(ImportWorkflowDialog)
 	},
 	{
 		name: "create-job",

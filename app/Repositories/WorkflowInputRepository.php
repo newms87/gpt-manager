@@ -9,6 +9,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\ActionRepository;
+use Schema;
 
 class WorkflowInputRepository extends ActionRepository
 {
@@ -41,12 +42,16 @@ class WorkflowInputRepository extends ActionRepository
             ->whereHas('objectTags')
             ->select(['objectTags.id as value', 'objectTags.name as label'])->get();
 
-        $teamObjectTypes = TeamObject::distinct()->select('type')->get()->pluck('type');
-
-        return [
-            'tags'            => $tags,
-            'teamObjectTypes' => $teamObjectTypes,
+        $options = [
+            'tags' => $tags,
         ];
+
+        // If the team objects has been installed, add the object types to the field options
+        if (Schema::hasTable((new TeamObject())->getTable())) {
+            $options['teamObjectTypes'] = TeamObject::distinct()->select('type')->get()->pluck('type');
+        }
+
+        return $options;
     }
 
     public function createWorkflowInput(array $data): WorkflowInput

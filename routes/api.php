@@ -36,7 +36,9 @@ FileUploadRoute::routes();
 ActionRoute::routes('content-sources', new ContentSourcesController);
 
 // Workflows
-ActionRoute::routes('workflows', new WorkflowsController);
+ActionRoute::routes('workflows', new WorkflowsController, function () {
+    Route::get('{workflow}/export-as-json', [WorkflowsController::class, 'exportAsJson'])->name('workflows.export-as-json');
+});
 ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
 ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController);

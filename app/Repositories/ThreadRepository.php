@@ -9,6 +9,7 @@ use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Helpers\DateHelper;
 use Newms87\Danx\Helpers\ModelHelper;
+use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -30,7 +31,7 @@ class ThreadRepository extends ActionRepository
         $thread = Thread::make()->forceFill([
             'team_id'  => team()->id,
             'user_id'  => user()->id,
-            'name'     => $name,
+            'name'     => StringHelper::logSafeString(substr($name, 0, 150)),
             'agent_id' => $agent->id,
         ]);
         $thread->save();
