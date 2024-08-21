@@ -3,8 +3,9 @@
 namespace App\AiTools;
 
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
+use App\Models\Agent\Message;
 use App\Models\Agent\ThreadRun;
-use BadFunctionCallException;
+use Illuminate\Support\Facades\Log;
 
 abstract class AiToolCaller
 {
@@ -26,7 +27,7 @@ abstract class AiToolCaller
         $tool = $this->getTool();
 
         if (!$tool) {
-            throw new BadFunctionCallException("Tool not found: " . $this->name);
+            return $this->handleToolNotFound($threadRun);
         }
 
         $tool->setThreadRun($threadRun);
@@ -58,5 +59,19 @@ abstract class AiToolCaller
         }
 
         return null;
+    }
+
+    protected function handleToolNotFound(ThreadRun $threadRun): array
+    {
+        Log::error("$threadRun called an unknown tool: $this->name");
+
+        // Delete the last tool message as this message was invalid
+        $threadRun->thread->messages()->get()->last()->delete();
+        $threadRun->thread->messages()->create([
+            'content' => "The tool $this->name does not exist. DO NOT USE",
+            'role'    => Message::ROLE_USER,
+        ]);
+
+        return [];
     }
 }

@@ -443,12 +443,14 @@ class AgentThreadService
 
             $messages = $toolCallerFunction->call($threadRun);
 
-            // Add the tool message
-            $toolMessage = array_shift($messages);
-            $thread->messages()->create($toolMessage);
+            if ($messages) {
+                // Add the tool message
+                $toolMessage = array_shift($messages);
+                $thread->messages()->create($toolMessage);
 
-            // Append the additional messages to the list to appear after all tool responses
-            $additionalMessages = array_merge($additionalMessages, $messages);
+                // Append the additional messages to the list to appear after all tool responses
+                $additionalMessages = array_merge($additionalMessages, $messages);
+            }
         }
 
         // Save all the tool response messages
@@ -460,6 +462,10 @@ class AgentThreadService
         }
     }
 
+    /**
+     * Check if the thread run has already made the exact same tool call in the current thread.
+     * This will avoid any looping by the agent
+     */
     public function hasDuplicatedToolCall(ThreadRun $threadRun, AgentCompletionResponseContract $response): bool
     {
         $assistantMessages = $threadRun->thread->messages()->where('role', Message::ROLE_ASSISTANT)->get();

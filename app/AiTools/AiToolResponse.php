@@ -2,6 +2,7 @@
 
 namespace App\AiTools;
 
+use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
 class AiToolResponse
@@ -14,7 +15,8 @@ class AiToolResponse
 
     public function addContent(string $content): static
     {
-        $this->content[] = $content;
+        // Limit the content to 65,000 characters as this is the limit for a TEXT field in the database
+        $this->content[] = StringHelper::logSafeString($content, 65000);
 
         return $this;
     }
