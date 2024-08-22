@@ -1,57 +1,62 @@
 <template>
-	<div class="drug-issue-market mt-6">
-		<ShowHideButton
-			v-if="drug.generics.length > 0"
-			:label="'Market ' + drug.generic_name + ': ' + fShortNumber(drug.number_of_users) + ' patients'"
-			class="bg-sky-950"
-			@click="isShowing = !isShowing"
-		/>
-		<div v-else>No Generics (100% market share)</div>
-
-		<template v-if="isShowing">
-			<div class="grid grid-cols-2 gap-4 mt-4">
-				<LabelValueBlock
-					label="Generic Name"
-					:value="drug.generic_name"
-					:url="getSourceUrl('subjects', 'generic_name')"
-				/>
-				<LabelValueBlock
-					label="Generics"
-					:value="drug.generics.length"
-					:url="getSourceUrl('subjects', 'generics')"
-				/>
-				<LabelValueBlock
-					label="Market Share"
-					:value="fPercent(drug.market_share)"
-					:url="getSourceUrl('subjects', 'market_share')"
-				/>
-				<LabelValueBlock
-					label="Patients"
-					:value="fNumber(drug.number_of_users)"
-					:url="getSourceUrl('subjects', 'number_of_users')"
-				/>
-			</div>
-			<div class="mt-5 flex">
-				<div class="inline-block">
-					<h6>Generic Competitors</h6>
-					<ul class="mt-2">
-						<li v-for="name in drug.generics" :key="name">{{ name }}</li>
-					</ul>
-					<DataSourceList :sources="getSources('subjects', 'generics')" class="mt-3" />
+	<div class="drug-market-section p-4 bg-sky-950 rounded-lg">
+		<h6 class="mb-2">
+			Market
+			<ShowHideButton v-model="expanded" :label="product.generics.length + ' Generics'" />
+		</h6>
+		<div class="grid grid-cols-6 gap-4">
+			<TeamObjectAttributeBlock
+				label="Market Share"
+				:attribute="product.market_share"
+			/>
+			<TeamObjectAttributeBlock
+				label="Number of Users"
+				:attribute="product.number_of_users"
+			/>
+			<TeamObjectAttributeBlock
+				label="Price Per Unit"
+				:attribute="product.price_per_unit"
+			/>
+			<TeamObjectAttributeBlock
+				label="Annual Revenue"
+				:attribute="product.annual_revenue"
+			/>
+		</div>
+		<div v-if="expanded">
+			<div v-for="generic in product.generics" :key="generic.id" class="my-3 px-4 py-2 bg-slate-700 rounded-xl">
+				<div class="mb-3 font-bold">
+					<a :href="generic.url" target="_blank">{{ generic.name }}</a>
+				</div>
+				<div class="grid grid-cols-6 gap-4">
+					<TeamObjectAttributeBlock
+						label="Market Share"
+						:attribute="generic.market_share"
+					/>
+					<TeamObjectAttributeBlock
+						label="Number of Users"
+						:attribute="generic.number_of_users"
+					/>
+					<TeamObjectAttributeBlock
+						label="Price Per Unit"
+						:attribute="generic.price_per_unit"
+					/>
+					<TeamObjectAttributeBlock
+						label="Annual Revenue"
+						:attribute="generic.annual_revenue"
+					/>
 				</div>
 			</div>
-		</template>
+		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
-import DataSourceList from "@/components/Modules/Tortguard/DataSourceList";
-import { DataSource, Drug } from "@/components/Modules/Tortguard/tortguard";
+import TeamObjectAttributeBlock from "@/components/Modules/Tortguard/TeamObjectAttributeBlock";
+import { DrugProduct } from "@/components/Modules/Tortguard/tortguard";
 import { ShowHideButton } from "@/components/Shared";
-import { fNumber, fPercent, fShortNumber, LabelValueBlock } from "quasar-ui-danx";
 import { ref } from "vue";
 
-defineProps<{ drug: Drug, getSources: (table, field) => DataSource[], getSourceUrl: (table, field) => string }>();
+defineProps<{ product: DrugProduct }>();
 
-const isShowing = ref(false);
+const expanded = ref(false);
 </script>

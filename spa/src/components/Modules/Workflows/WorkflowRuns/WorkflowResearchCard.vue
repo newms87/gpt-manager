@@ -6,7 +6,7 @@
 		</div>
 		<div
 			v-if="showWorkflowRuns"
-			class="mt-4 space-y-2 absolute top-8 right-0 w-[30rem] p-4 rounded-b-xl rounded-tl-xl bg-slate-700 shadow-lg shadow-slate-800 z-10"
+			class="mt-4 space-y-2 absolute top-8 right-0 w-[32rem] p-4 rounded-b-xl rounded-tl-xl bg-slate-700 shadow-lg shadow-slate-800 z-10"
 		>
 			<div v-for="workflowRun in workflowRuns" :key="workflowRun.id" class="flex items-center flex-nowrap">
 				<a :href="workflowRunUrl(workflowRun)" target="_blank" class="font-bold flex-grow">{{

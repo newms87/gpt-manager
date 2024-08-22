@@ -89,8 +89,11 @@ interface DrugSideEffect extends TeamObject {
 }
 
 interface DrugProduct extends TeamObject {
-	number_of_users: NumberAttribute;
-	market_share: NumberAttribute;
+	number_of_users: StringAttribute;
+	market_share: StringAttribute;
+	annual_revenue: StringAttribute;
+	price_per_unit: StringAttribute;
+
 	// The number of years the statute of limitations is tolled for this drug
 	statute_of_limitations_tolling: StringAttribute;
 	patents: Patent[];
@@ -103,12 +106,14 @@ interface DrugProduct extends TeamObject {
 }
 
 interface DrugIndication extends TeamObject {
-	
+
 }
 
 interface DrugGeneric extends TeamObject {
-	// DrugGenerics can have multiple DrugProducts (ie: acetaminophen can be in Tylenol, Excedrin, etc)
-	products: DrugProduct[];
+	number_of_users: StringAttribute;
+	market_share: StringAttribute;
+	annual_revenue: StringAttribute;
+	price_per_unit: StringAttribute;
 }
 
 interface Company extends TeamObject {

@@ -53,16 +53,13 @@
 						class="bg-slate-700 w-[30rem] mb-4"
 					/>
 				</div>
-				<div class="bg-sky-950 p-4 rounded-lg flex-grow ml-4">
-					<h6 class="mb-2">Severity
-						<ShowHideButton v-model="severityExpanded" />
-					</h6>
-					<DrugSideEffectSeveritySection :drug-side-effect="drugSideEffect" :expanded="severityExpanded" />
+				<div class="flex-grow ml-4">
+					<DrugMarketSection :product="drugSideEffect.product" class="mb-4" />
+					<DrugSideEffectSeveritySection :drug-side-effect="drugSideEffect" />
 				</div>
 			</div>
 			<div class="p-4">
 				<DrugPatentSection :patents="drugSideEffect.product.patents || []" />
-				<!--					<DrugIssueMarketSection :get-sources="getSources" :drug="drugSideEffect.drug" :get-source-url="getSourceUrl" />-->
 				<DrugScientificStudiesSection :studies="drugSideEffect.product.scientificStudies || []" class="mt-6" />
 				<DrugWarningsSection :warnings="drugSideEffect.product.warnings || []" class="mt-6" />
 			</div>
@@ -72,6 +69,7 @@
 
 <script setup lang="ts">
 import DrugCompanyCard from "@/components/Modules/Tortguard/DrugCompanyCard";
+import DrugMarketSection from "@/components/Modules/Tortguard/DrugMarketSection";
 import DrugPatentSection from "@/components/Modules/Tortguard/DrugPatentSection";
 import DrugScientificStudiesSection from "@/components/Modules/Tortguard/DrugScientificStudiesSection";
 import DrugSideEffectSeveritySection from "@/components/Modules/Tortguard/DrugSideEffectSeveritySection";
@@ -83,7 +81,7 @@ import { ShowHideButton } from "@/components/Shared";
 import LogoImage from "@/components/Shared/Images/LogoImage";
 import { TortguardRoutes } from "@/routes/tortguardRoutes";
 import { autoRefreshObject } from "quasar-ui-danx";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted } from "vue";
 
 const props = defineProps<{ drugSideEffect: DrugSideEffect }>();
 const isShowing = defineModel<boolean>();
@@ -97,5 +95,4 @@ onMounted(() => {
 });
 
 const sideEffectName = computed(() => props.drugSideEffect.name.replace(props.drugSideEffect.product.name + ": ", ""));
-const severityExpanded = ref(false);
 </script>

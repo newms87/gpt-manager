@@ -121,6 +121,7 @@ class TortguardRepository
             'Research: Drug Patents',
             'Research: Drug Scientific Studies',
             'Research: Drug FDA Warnings',
+            'Research: Drug Generics',
         ];
         $researchWorkflowRunIds = [];
 
