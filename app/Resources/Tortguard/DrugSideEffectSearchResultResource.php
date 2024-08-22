@@ -15,8 +15,8 @@ class DrugSideEffectSearchResultResource extends JsonResource
             'product_name'       => $result['product_name'] ?? '',
             'description'        => $result['description'] ?? '',
             'side_effects'       => $result['side_effects'] ?? [],
-            'treatment_for'      => $result['treatment_for'] ?? [],
             'companies'          => $result['companies'] ?? [],
+            'indications'        => $result['indications'] ?? [],
             'generic_drug_names' => $result['generic_drug_names'] ?? [],
         ];
     }

@@ -97,8 +97,13 @@ interface DrugProduct extends TeamObject {
 	// DrugProducts can have multiple DrugGenerics (ie: Actos can be pioglitazone and metformin)
 	generics: DrugGeneric[];
 	companies: Company[];
+	indications: DrugIndication[];
 	scientificStudies: ScientificStudy[];
 	warnings: DrugWarning[];
+}
+
+interface DrugIndication extends TeamObject {
+	
 }
 
 interface DrugGeneric extends TeamObject {

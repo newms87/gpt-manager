@@ -3,7 +3,7 @@ export interface SearchResultItem {
 	product_url: string;
 	description: string;
 	side_effects: string[];
-	treatment_for: string[];
+	indications: string[];
 	generic_drug_names: string[];
 	companies: SearchResultItemCompany[];
 }
@@ -13,7 +13,7 @@ export interface SearchResultItemBySideEffect {
 	product_url: string;
 	description: string;
 	side_effect: string;
-	treatment_for: string[];
+	indications: string[];
 	generic_drug_names: string[];
 	companies: SearchResultItemCompany[];
 }

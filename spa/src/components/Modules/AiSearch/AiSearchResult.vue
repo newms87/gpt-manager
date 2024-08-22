@@ -17,8 +17,13 @@
 		<div class="flex-grow ml-4 flex items-center">
 			<div>
 				<div class="max-w-[50rem]">{{ result.description }}</div>
-				<div class="mt-4">
-					<b>Generics:</b> {{ result.generic_drug_names.join(", ") }}
+				<div class="mt-4 flex items-center flex-nowrap">
+					<div>
+						<b>Indications:</b> {{ result.indications.join(", ") || "N/A" }}
+					</div>
+					<div class="ml-6">
+						<b>Generics:</b> {{ result.generic_drug_names.join(", ") || "N/A" }}
+					</div>
 				</div>
 			</div>
 		</div>

@@ -14,6 +14,9 @@
 							{{ drugSideEffect.product.name }}
 						</a>
 					</div>
+					<div>
+						{{ drugSideEffect.product.indications.map(i => i.name).join(", ") }}
+					</div>
 				</div>
 				<ShowHideButton
 					class="bg-lime-950 px-6 py-2 rounded-full"
@@ -43,7 +46,7 @@
 		<div v-if="isShowing">
 			<div class="flex items-start flex-nowrap mt-4 mx-4">
 				<div class="flex-shrink-0">
-					<DrugIssueCompanyCard
+					<DrugCompanyCard
 						v-for="company in drugSideEffect.product.companies"
 						:key="company.id"
 						:company="company"
@@ -54,25 +57,25 @@
 					<h6 class="mb-2">Severity
 						<ShowHideButton v-model="severityExpanded" />
 					</h6>
-					<DrugIssueSeveritySection :drug-side-effect="drugSideEffect" :expanded="severityExpanded" />
+					<DrugSideEffectSeveritySection :drug-side-effect="drugSideEffect" :expanded="severityExpanded" />
 				</div>
 			</div>
 			<div class="p-4">
-				<DrugIssuePatentSection :patents="drugSideEffect.product.patents || []" />
+				<DrugPatentSection :patents="drugSideEffect.product.patents || []" />
 				<!--					<DrugIssueMarketSection :get-sources="getSources" :drug="drugSideEffect.drug" :get-source-url="getSourceUrl" />-->
-				<DrugIssueScientificStudiesSection :studies="drugSideEffect.product.scientificStudies || []" class="mt-6" />
-				<DrugIssueWarningsSection :warnings="drugSideEffect.product.warnings || []" class="mt-6" />
+				<DrugScientificStudiesSection :studies="drugSideEffect.product.scientificStudies || []" class="mt-6" />
+				<DrugWarningsSection :warnings="drugSideEffect.product.warnings || []" class="mt-6" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
-import DrugIssueCompanyCard from "@/components/Modules/Tortguard/DrugIssueCompanySection";
-import DrugIssueSeveritySection from "@/components/Modules/Tortguard/DrugIssueSeveritySection";
-import DrugIssuePatentSection from "@/components/Modules/Tortguard/DrugPatentSection";
-import DrugIssueScientificStudiesSection from "@/components/Modules/Tortguard/DrugScientificStudiesSection";
-import DrugIssueWarningsSection from "@/components/Modules/Tortguard/DrugWarningsSection";
+import DrugCompanyCard from "@/components/Modules/Tortguard/DrugCompanyCard";
+import DrugPatentSection from "@/components/Modules/Tortguard/DrugPatentSection";
+import DrugScientificStudiesSection from "@/components/Modules/Tortguard/DrugScientificStudiesSection";
+import DrugSideEffectSeveritySection from "@/components/Modules/Tortguard/DrugSideEffectSeveritySection";
+import DrugWarningsSection from "@/components/Modules/Tortguard/DrugWarningsSection";
 import { DrugSideEffect } from "@/components/Modules/Tortguard/tortguard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import WorkflowResearchingCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowResearchCard";

@@ -11,6 +11,7 @@ use App\Services\AgentThread\AgentThreadService;
 use App\Services\Workflow\WorkflowService;
 use Log;
 use Newms87\Danx\Exceptions\ValidationError;
+use Str;
 
 class TortguardRepository
 {
@@ -48,11 +49,13 @@ class TortguardRepository
      */
     public function research($searchResult): array
     {
-        $productName = $searchResult['product_name'] ?? null;
-        $productUrl  = $searchResult['product_name'] ?? null;
-        $description = $searchResult['description'] ?? null;
-        $companies   = $searchResult['companies'] ?? null;
-        $sideEffect  = $searchResult['side_effect'] ?? null;
+        $productName      = $searchResult['product_name'] ?? null;
+        $productUrl       = $searchResult['product_name'] ?? null;
+        $description      = $searchResult['description'] ?? null;
+        $companies        = $searchResult['companies'] ?? null;
+        $sideEffect       = $searchResult['side_effect'] ?? null;
+        $indications      = $searchResult['indications'] ?? null;
+        $genericDrugNames = $searchResult['generic_drug_names'] ?? null;
 
         if (!$productName || !$sideEffect) {
             throw new ValidationError('Product Name and Side Effect are required for research');
@@ -67,6 +70,16 @@ class TortguardRepository
         $drugSideEffect = $teamObjectRepo->saveTeamObject('DrugSideEffect', $productName . ': ' . $sideEffect, [
             'description' => $description,
         ]);
+
+        foreach($indications as $indicationName) {
+            $indication = $teamObjectRepo->saveTeamObject('DrugIndication', Str::title($indicationName));
+            $teamObjectRepo->saveTeamObjectRelationship($drugProduct, 'indications', $indication);
+        }
+
+        foreach($genericDrugNames as $genericDrugName) {
+            $genericDrug = $teamObjectRepo->saveTeamObject('DrugGeneric', Str::title($genericDrugName));
+            $teamObjectRepo->saveTeamObjectRelationship($drugProduct, 'generics', $genericDrug);
+        }
 
         foreach($companies as $company) {
             $companyName = $company['name'] ?? $company;
