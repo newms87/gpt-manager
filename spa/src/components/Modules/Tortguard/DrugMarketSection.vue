@@ -2,7 +2,7 @@
 	<div class="drug-market-section p-4 bg-sky-950 rounded-lg">
 		<h6 class="mb-2">
 			Market
-			<ShowHideButton v-model="expanded" :label="product.generics.length + ' Generics'" />
+			<ShowHideButton v-model="expanded" :label="product.generics.length + ' Branded Generics'" class="ml-2" />
 		</h6>
 		<div class="grid grid-cols-6 gap-4">
 			<TeamObjectAttributeBlock
