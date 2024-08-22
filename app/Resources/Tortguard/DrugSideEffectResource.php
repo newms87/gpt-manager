@@ -35,6 +35,7 @@ class DrugSideEffectResource extends TeamObjectResource
                 'scientificStudies' => ScientificStudyResource::collection($product->relatedObjects('scientificStudies')->get()),
                 'warnings'          => DrugWarningResource::collection($product->relatedObjects('warnings')->get()),
                 'generics'          => DrugProductResource::collection($product->relatedObjects('generics')->get()),
+                'genericNames'      => DrugGenericNameResource::collection($product->relatedObjects('genericNames')->get()),
                 'indications'       => DrugIndicationResource::collection($product->relatedObjects('indications')->get()),
             ]),
             'workflowRuns' => WorkflowRunResource::collection($workflowRuns),

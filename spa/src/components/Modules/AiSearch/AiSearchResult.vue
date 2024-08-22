@@ -22,7 +22,7 @@
 						<b>Indications:</b> {{ result.indications.join(", ") || "N/A" }}
 					</div>
 					<div class="ml-6">
-						<b>Generics:</b> {{ result.generic_drug_names.join(", ") || "N/A" }}
+						<b>Generic Names:</b> {{ result.generic_drug_names.join(", ") || "N/A" }}
 					</div>
 				</div>
 			</div>

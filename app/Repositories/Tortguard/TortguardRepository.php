@@ -77,8 +77,8 @@ class TortguardRepository
         }
 
         foreach($genericDrugNames as $genericDrugName) {
-            $genericDrug = $teamObjectRepo->saveTeamObject('DrugGeneric', Str::title($genericDrugName));
-            $teamObjectRepo->saveTeamObjectRelationship($drugProduct, 'generics', $genericDrug);
+            $genericDrug = $teamObjectRepo->saveTeamObject('DrugGenericName', Str::title($genericDrugName));
+            $teamObjectRepo->saveTeamObjectRelationship($drugProduct, 'genericNames', $genericDrug);
         }
 
         foreach($companies as $company) {

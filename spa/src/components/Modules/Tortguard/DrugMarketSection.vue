@@ -21,6 +21,10 @@
 				label="Annual Revenue"
 				:attribute="product.annual_revenue"
 			/>
+			<LabelValueBlock
+				label="Generic Names"
+				:value="product.genericNames?.map(g => g.name).join(', ')"
+			/>
 		</div>
 		<div v-if="expanded">
 			<div v-for="generic in product.generics" :key="generic.id" class="my-3 px-4 py-2 bg-slate-700 rounded-xl">
@@ -54,6 +58,7 @@
 import TeamObjectAttributeBlock from "@/components/Modules/Tortguard/TeamObjectAttributeBlock";
 import { DrugProduct } from "@/components/Modules/Tortguard/tortguard";
 import { ShowHideButton } from "@/components/Shared";
+import { LabelValueBlock } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineProps<{ product: DrugProduct }>();

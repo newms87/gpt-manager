@@ -97,6 +97,7 @@ interface DrugProduct extends TeamObject {
 	// The number of years the statute of limitations is tolled for this drug
 	statute_of_limitations_tolling: StringAttribute;
 	patents: Patent[];
+	genericNames: DrugGenericName[];
 	// DrugProducts can have multiple DrugGenerics (ie: Actos can be pioglitazone and metformin)
 	generics: DrugGeneric[];
 	companies: Company[];
@@ -105,9 +106,10 @@ interface DrugProduct extends TeamObject {
 	warnings: DrugWarning[];
 }
 
-interface DrugIndication extends TeamObject {
+interface DrugIndication extends TeamObject {}
 
-}
+interface DrugGenericName extends TeamObject {}
+
 
 interface DrugGeneric extends TeamObject {
 	number_of_users: StringAttribute;
