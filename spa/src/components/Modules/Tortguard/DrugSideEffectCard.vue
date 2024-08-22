@@ -21,7 +21,7 @@
 				<ShowHideButton
 					class="bg-lime-950 px-6 py-2 rounded-full"
 					:label="sideEffectName"
-					@click="isShowing = !isShowing"
+					@click="onShow"
 				/>
 				<div v-if="drugSideEffect.description" class="ml-4">{{ drugSideEffect.description }}</div>
 			</div>
@@ -44,25 +44,31 @@
 			</div>
 		</div>
 		<div v-if="isShowing">
-			<div class="flex items-start flex-nowrap mt-4 mx-4">
-				<div class="flex-shrink-0">
-					<DrugCompanyCard
-						v-for="company in drugSideEffect.product.companies"
-						:key="company.id"
-						:company="company"
-						class="bg-slate-700 w-[30rem] mb-4"
-					/>
-				</div>
-				<div class="flex-grow ml-4">
-					<DrugMarketSection :product="drugSideEffect.product" class="mb-4" />
-					<DrugSideEffectSeveritySection :drug-side-effect="drugSideEffect" />
-				</div>
+			<div v-if="isLoading || !drugSideEffect.product?.generics" class="m-4">
+				<QSkeleton class="w-full h-[30rem]" />
 			</div>
-			<div class="p-4">
-				<DrugPatentSection :patents="drugSideEffect.product.patents || []" />
-				<DrugScientificStudiesSection :studies="drugSideEffect.product.scientificStudies || []" class="mt-6" />
-				<DrugWarningsSection :warnings="drugSideEffect.product.warnings || []" class="mt-6" />
-			</div>
+
+			<template v-else>
+				<div class="flex items-start flex-nowrap mt-4 mx-4">
+					<div v-if="drugSideEffect.product.companies" class="flex-shrink-0">
+						<DrugCompanyCard
+							v-for="company in drugSideEffect.product.companies"
+							:key="company.id"
+							:company="company"
+							class="bg-slate-700 w-[30rem] mb-4"
+						/>
+					</div>
+					<div class="flex-grow ml-4">
+						<DrugMarketSection :product="drugSideEffect.product" class="mb-4" />
+						<DrugSideEffectSeveritySection :drug-side-effect="drugSideEffect" />
+					</div>
+				</div>
+				<div class="p-4">
+					<DrugPatentSection :patents="drugSideEffect.product.patents || []" />
+					<DrugScientificStudiesSection :studies="drugSideEffect.product.scientificStudies || []" class="mt-6" />
+					<DrugWarningsSection :warnings="drugSideEffect.product.warnings || []" class="mt-6" />
+				</div>
+			</template>
 		</div>
 	</div>
 </template>
@@ -80,8 +86,8 @@ import WorkflowResearchingCard from "@/components/Modules/Workflows/WorkflowRuns
 import { ShowHideButton } from "@/components/Shared";
 import LogoImage from "@/components/Shared/Images/LogoImage";
 import { TortguardRoutes } from "@/routes/tortguardRoutes";
-import { autoRefreshObject } from "quasar-ui-danx";
-import { computed, onMounted } from "vue";
+import { autoRefreshObject, storeObject } from "quasar-ui-danx";
+import { computed, onMounted, ref } from "vue";
 
 const props = defineProps<{ drugSideEffect: DrugSideEffect }>();
 const isShowing = defineModel<boolean>();
@@ -95,4 +101,20 @@ onMounted(() => {
 });
 
 const sideEffectName = computed(() => props.drugSideEffect.name.replace(props.drugSideEffect.product.name + ": ", ""));
+function onShow() {
+	isShowing.value = !isShowing.value;
+	loadDrugSideEffect();
+}
+
+const isLoading = ref(false);
+async function loadDrugSideEffect() {
+	isLoading.value = true;
+	const response = await TortguardRoutes.drugSideEffect(props.drugSideEffect.id);
+
+	if (response) {
+		storeObject(response);
+	}
+	isLoading.value = false;
+}
+
 </script>

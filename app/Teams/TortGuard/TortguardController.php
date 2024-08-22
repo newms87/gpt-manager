@@ -9,6 +9,7 @@ use App\Repositories\Tortguard\TortguardRepository;
 use App\Resources\Tortguard\DrugSideEffectResource;
 use App\Resources\Tortguard\DrugSideEffectSearchResultResource;
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Throwable;
@@ -21,13 +22,17 @@ class TortguardController extends Controller
      */
     public function getDashboardData(): array
     {
-        $DrugSideEffectObjects = TeamObject::where('type', 'DrugSideEffect')->orderByDesc('id')->limit(8)->get();
+        $DrugSideEffectObjects = TeamObject::where('type', 'DrugSideEffect')
+            ->whereHas('relationships', fn(Builder $builder) => $builder->where('relationship_name', 'product'))
+            ->orderByDesc('id')
+            ->limit(8)
+            ->get();
 
         $drugSideEffects = [];
         foreach($DrugSideEffectObjects as $DrugSideEffect) {
             try {
-                $drugSideEffects[] = DrugSideEffectResource::details($DrugSideEffect);
-            } catch(Throwable $e) {
+                $drugSideEffects[] = DrugSideEffectResource::dashboard($DrugSideEffect);
+            } catch(Throwable|Exception|ValidationError $e) {
                 Log::error('Error getting Drug Side Effect details: ' . $e->getMessage(), ['exception' => $e]);
             }
         }

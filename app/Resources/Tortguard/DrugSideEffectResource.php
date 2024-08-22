@@ -10,6 +10,24 @@ use Newms87\Danx\Exceptions\ValidationError;
 
 class DrugSideEffectResource extends TeamObjectResource
 {
+    public static function dashboard(Model $model): array
+    {
+        $product        = $model->relatedObjects('product')->first();
+        $workflowRunIds = $model->meta['workflow_run_ids'] ?? null;
+        $workflowRuns   = $workflowRunIds ? WorkflowRun::whereIn('id', $workflowRunIds)->get() : [];
+
+        if (!$product) {
+            throw new ValidationError('Product not found');
+        }
+
+        return static::make($model, [
+            'product'      => DrugProductResource::make($product, [
+                'indications' => DrugIndicationResource::collection($product->relatedObjects('indications')->get()),
+            ]),
+            'workflowRuns' => WorkflowRunResource::collection($workflowRuns),
+        ]);
+    }
+
     /**
      * @param TeamObject $model
      * @return array

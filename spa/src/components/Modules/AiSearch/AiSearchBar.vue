@@ -32,7 +32,11 @@
 						Searching for {{ searchText }}...
 					</div>
 				</div>
-				<div v-else-if="drugSideEffect && showHelpMessage" class="p-4" @click="showHelpMessage = false">
+				<div
+					v-else-if="drugSideEffect?.product?.companies && showHelpMessage"
+					class="p-4"
+					@click="showHelpMessage = false"
+				>
 					Ask me anything about {{ drugSideEffect.product.companies.map(c => c.name).join(", ") }} or {{
 						drugSideEffect.product.name
 					}} and
