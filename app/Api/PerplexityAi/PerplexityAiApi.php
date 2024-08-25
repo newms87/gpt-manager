@@ -12,7 +12,7 @@ class PerplexityAiApi extends BearerTokenApi implements AgentApiContract
 {
     protected array $rateLimits = [
         [
-            'limit'          => 20,
+            'limit'          => 19,
             'interval'       => 60,
             'waitPerAttempt' => 3,
         ],
