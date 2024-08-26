@@ -4,6 +4,7 @@ import {
 	FaSolidDownload as WorkflowInputsIcon,
 	FaSolidRobot as AgentsIcon,
 	FaSolidTableCells as ContentSourcesIcon,
+	FaSolidTextSlash as PromptsIcon,
 	FaSolidWorm as WorkflowsIcon
 } from "danx-icon";
 
@@ -27,6 +28,11 @@ export default [
 		label: "Workflows",
 		icon: WorkflowsIcon,
 		route: { name: "workflows" }
+	},
+	{
+		label: "Prompts",
+		icon: PromptsIcon,
+		route: { name: "prompts" }
 	},
 	{
 		label: "Agents",

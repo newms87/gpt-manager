@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('prompt_directives', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('team_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->text('directive_text')->nullable();
             $table->timestamps();

@@ -1,4 +1,5 @@
 import { ThePageLayout, ThePrimaryLayout } from "@/components/Layouts";
+import { PromptSchemaTable } from "@/components/Modules/Prompts";
 import { siteSettings } from "@/config";
 import { isAuthenticated, setAuthToken } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
@@ -9,6 +10,7 @@ import {
 	DashboardView,
 	LoginView,
 	PageNotFoundView,
+	PromptsView,
 	WorkflowInputsView,
 	WorkflowsView
 } from "@/views";
@@ -48,6 +50,26 @@ const router = createRouter({
 					name: "workflows",
 					component: WorkflowsView,
 					meta: { title: "Workflows", type: "WorkflowResource" }
+				},
+				{
+					path: "prompts",
+					name: "prompts",
+					redirect: { name: "prompts.schemas" },
+					component: PromptsView,
+					children: [
+						{
+							path: "schemas/:id?/:panel?",
+							name: "prompts.schemas",
+							component: PromptSchemaTable,
+							meta: { title: "Prompt Schemas", type: "PromptSchemaResource" }
+						},
+						{
+							path: "directives/:id?/:panel?",
+							name: "prompts.directives",
+							component: PromptSchemaTable,
+							meta: { title: "Prompt Directives", type: "PromptDirectiveResource" }
+						}
+					]
 				},
 				{
 					path: "/agents/:id?/:panel?/:thread_id?",

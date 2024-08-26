@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
@@ -24,6 +25,9 @@ class PromptSchema extends Model implements AuditableContract
         FORMAT_JSON_SCHEMA = 'json_schema',
         FORMAT_JSON_OBJECT = 'json_object';
 
+    const string
+        TYPE_AGENT_RESPONSE = 'Agent Response';
+    
     protected $guarded = [
         'id',
         'created_at',
@@ -75,6 +79,22 @@ class PromptSchema extends Model implements AuditableContract
 
         return parent::delete();
     }
+
+    public function validate(): static
+    {
+        validator($this->toArray(), [
+            'name' => [
+                'required',
+                'max:80',
+                'string',
+                Rule::unique('prompt_schemas')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
+            ],
+            'type' => 'required|string',
+        ])->validate();
+
+        return $this;
+    }
+
 
     public static function booted(): void
     {

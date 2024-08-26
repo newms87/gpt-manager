@@ -3,6 +3,7 @@
 use App\Http\Controllers\Ai\AgentsController;
 use App\Http\Controllers\Ai\ContentSourcesController;
 use App\Http\Controllers\Ai\MessagesController;
+use App\Http\Controllers\Ai\PromptSchemasController;
 use App\Http\Controllers\Ai\ThreadsController;
 use App\Http\Controllers\Ai\WorkflowAssignmentsController;
 use App\Http\Controllers\Ai\WorkflowInputsController;
@@ -40,6 +41,7 @@ ActionRoute::routes('workflows', new WorkflowsController, function () {
     Route::get('{workflow}/export-as-json', [WorkflowsController::class, 'exportAsJson'])->name('workflows.export-as-json');
 });
 ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
+ActionRoute::routes('prompt/schemas', new PromptSchemasController);
 ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController);
 ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);

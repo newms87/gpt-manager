@@ -12,9 +12,10 @@ return new class extends Migration {
     {
         Schema::create('prompt_schemas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('team_id')->constrained()->cascadeOnDelete();
             $table->string('type');
             $table->string('name');
-            $table->string('description');
+            $table->string('description')->default('');
             $table->string('schema_format');
             $table->json('schema')->nullable();
             $table->unsignedInteger('agents_count')->default(0);

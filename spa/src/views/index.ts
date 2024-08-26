@@ -4,5 +4,6 @@ export { default as ContentSourcesView } from "./ContentSourcesView.vue";
 export { default as DashboardView } from "./DashboardView.vue";
 export { default as LoginView } from "./LoginView.vue";
 export { default as PageNotFoundView } from "./PageNotFoundView.vue";
+export { default as PromptsView } from "./PromptsView.vue";
 export { default as WorkflowInputsView } from "./WorkflowInputsView.vue";
 export { default as WorkflowsView } from "./WorkflowsView.vue";
