@@ -16,7 +16,6 @@ class PromptDirectiveFactory extends Factory
         return [
             'team_id'        => Team::factory(),
             'name'           => fake()->unique()->firstName,
-            'description'    => fake()->paragraph,
             'directive_text' => fake()->paragraph,
         ];
     }

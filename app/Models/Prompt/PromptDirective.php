@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
@@ -44,10 +45,25 @@ class PromptDirective extends Model implements AuditableContract
     {
         $agentsCount = $this->agents()->count();
         if ($agentsCount) {
-            throw new Exception("Cannot delete Prompt Schema $this->name: there are $agentsCount agents with this schema assigned.");
+            throw new Exception("Cannot delete Prompt Directive $this->name: there are $agentsCount agents with this directive assigned.");
         }
 
         return parent::delete();
+    }
+
+
+    public function validate(): static
+    {
+        validator($this->toArray(), [
+            'name' => [
+                'required',
+                'max:255',
+                'string',
+                Rule::unique('prompt_directives')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
+            ],
+        ])->validate();
+
+        return $this;
     }
 
     public static function booted(): void

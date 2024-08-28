@@ -3,6 +3,7 @@
 use App\Http\Controllers\Ai\AgentsController;
 use App\Http\Controllers\Ai\ContentSourcesController;
 use App\Http\Controllers\Ai\MessagesController;
+use App\Http\Controllers\Ai\PromptDirectivesController;
 use App\Http\Controllers\Ai\PromptSchemasController;
 use App\Http\Controllers\Ai\ThreadsController;
 use App\Http\Controllers\Ai\WorkflowAssignmentsController;
@@ -42,6 +43,7 @@ ActionRoute::routes('workflows', new WorkflowsController, function () {
 });
 ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
 ActionRoute::routes('prompt/schemas', new PromptSchemasController);
+ActionRoute::routes('prompt/directives', new PromptDirectivesController);
 ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController);
 ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);

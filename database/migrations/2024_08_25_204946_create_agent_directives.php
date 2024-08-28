@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->foreignId('team_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->text('directive_text')->nullable();
+            $table->unsignedInteger('agents_count')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });
