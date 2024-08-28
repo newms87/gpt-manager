@@ -19,8 +19,8 @@ export const panels = computed<ActionPanel[]>(() => [
 		vnode: (promptSchema: PromptSchema) => h(PromptSchemaDefinitionPanel, { promptSchema })
 	},
 	{
-		name: "promptSchemas",
-		label: "PromptSchemas",
+		name: "agents",
+		label: "Agents",
 		tabVnode: (promptSchema: PromptSchema) => h(BadgeTab, { count: promptSchema.agents_count }),
 		vnode: (promptSchema: PromptSchema) => h(PromptSchemaAgentsPanel, { promptSchema })
 	}

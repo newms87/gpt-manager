@@ -11,7 +11,7 @@
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
 import { PromptSchema } from "@/types/prompts";
-import { ActionForm, Form } from "quasar-ui-danx";
+import { ActionForm, Form, SelectField } from "quasar-ui-danx";
 import { h } from "vue";
 
 defineProps<{
@@ -23,9 +23,22 @@ const updateDebouncedAction = getAction("update-debounced");
 const promptSchemaForm: Form = {
 	fields: [
 		{
-			name: "schema",
-			vnode: (props) => h(MarkdownEditor, {
+			name: "schema_format",
+			label: "Schema Format",
+			vnode: (props) => h(SelectField, {
 				...props,
+				options: [
+					{ label: "JSON", value: "json" },
+					{ label: "YAML", value: "yaml" },
+					{ label: "Typescript", value: "ts" }
+				]
+			})
+		},
+		{
+			name: "schema",
+			vnode: (props, input) => h(MarkdownEditor, {
+				...props,
+				format: input.schema_format,
 				maxLength: 64000
 			}),
 			label: "Schema"
