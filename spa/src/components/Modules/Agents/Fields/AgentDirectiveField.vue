@@ -2,27 +2,62 @@
 	<div>
 		<div class="mb-4">Directives</div>
 
+		<h6>Top</h6>
 		<ListTransition
 			name="fade-down-list"
-			data-drop-zone="column-list"
+			data-drop-zone="top-directives-dz"
 		>
-			<ListItemDraggable
-				v-for="(agentDirective, index) in agent.directives"
-				:key="agentDirective.id"
-				:list-items="agent.directives"
-				drop-zone="column-list"
-				:class="{'rounded-b-lg': index === agent.directives.length - 1}"
-				show-handle
-				handle-class="px-2"
-				@update:list-items="onListChange"
-			>
-				<AgentDirectiveCard
-					:agent-directive="agentDirective"
-					class="my-2"
-					:is-removing="removeDirectiveAction.isApplying"
-					@remove="removeDirectiveAction.trigger(agent, { id: agentDirective.directive.id })"
-				/>
-			</ListItemDraggable>
+			<template v-if="!topDirectives.length">
+				<div class="text-center text-gray-500 border-dashed border border-slate-500 p-4">Drag Directive Here</div>
+			</template>
+			<template v-else>
+				<ListItemDraggable
+					v-for="(agentDirective) in topDirectives"
+					:key="agentDirective.id"
+					:list-items="topDirectives"
+					drop-zone="top-directives-dz"
+					show-handle
+					handle-class="px-2"
+					@update:list-items="onListPositionChange($event, 'Top')"
+					@drop-zone="onDropZoneChange"
+				>
+					<AgentDirectiveCard
+						:agent-directive="agentDirective"
+						class="my-2"
+						:is-removing="removeDirectiveAction.isApplying"
+						@remove="removeDirectiveAction.trigger(agent, { id: agentDirective.directive.id })"
+					/>
+				</ListItemDraggable>
+			</template>
+		</ListTransition>
+
+		<h6 class="mt-4">Bottom</h6>
+		<ListTransition
+			name="fade-down-list"
+			data-drop-zone="bottom-directives-dz"
+		>
+			<template v-if="!bottomDirectives.length">
+				<div class="text-center text-gray-500 border-dashed border border-slate-500 p-4">Drag Directive Here</div>
+			</template>
+			<template v-else>
+				<ListItemDraggable
+					v-for="(agentDirective) in bottomDirectives"
+					:key="agentDirective.id"
+					:list-items="bottomDirectives"
+					drop-zone="bottom-directives-dz"
+					show-handle
+					handle-class="px-2"
+					@update:list-items="onListPositionChange($event, 'Bottom')"
+					@drop-zone="onDropZoneChange"
+				>
+					<AgentDirectiveCard
+						:agent-directive="agentDirective"
+						class="my-2"
+						:is-removing="removeDirectiveAction.isApplying"
+						@remove="removeDirectiveAction.trigger(agent, { id: agentDirective.directive.id })"
+					/>
+				</ListItemDraggable>
+			</template>
 		</ListTransition>
 
 
@@ -45,6 +80,7 @@ import AgentDirectiveCard from "@/components/Modules/Agents/Fields/AgentDirectiv
 import { getAction as getDirectiveAction } from "@/components/Modules/Prompts/Directives/promptDirectiveActions";
 import { Agent } from "@/types/agents";
 import { ListItemDraggable, ListTransition, SelectField } from "quasar-ui-danx";
+import { computed } from "vue";
 
 const props = defineProps<{
 	agent: Agent,
@@ -54,6 +90,9 @@ const saveDirectiveAction = getAction("save-directive");
 const updateDirectivesAction = getAction("update-directives");
 const removeDirectiveAction = getAction("remove-directive");
 const createDirectiveAction = getDirectiveAction("create", { onFinish: AgentController.loadFieldOptions });
+
+const topDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Top") || []);
+const bottomDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Bottom") || []);
 
 async function onCreateDirective() {
 	const { item: directive } = await createDirectiveAction.trigger();
@@ -67,12 +106,26 @@ async function addAgentDirective(id) {
 	await saveDirectiveAction.trigger(props.agent, { id });
 }
 
-function onListChange(directives) {
-	const updatedDirectives = directives.map((directive, index) => ({
+function onListPositionChange(directives, section) {
+	directives = directives.filter((directive) => directive.id);
+	const top = section === "Top" ? directives : topDirectives.value;
+	const bottom = section === "Bottom" ? directives : bottomDirectives.value;
+	const updatedDirectives = [...top, ...bottom].map((directive, index) => ({
 		...directive,
 		position: index
 	}));
 	updateDirectivesAction.trigger(props.agent, { directives: updatedDirectives });
+}
 
+function onDropZoneChange(event) {
+	const section = event.dropZone.dataset.dropZone === "top-directives-dz" ? "Top" : "Bottom";
+	const position = event.newPosition;
+	let updatedDirectives = [...props.agent.directives];
+	let index = updatedDirectives.findIndex((directive) => directive.id === event.item.id);
+	updatedDirectives.splice(index, 1);
+	updatedDirectives.splice(position, 0, { ...event.item, position, section });
+	updateDirectivesAction.trigger(props.agent, {
+		directives: updatedDirectives
+	});
 }
 </script>
