@@ -7,6 +7,8 @@
 			:key="agentDirective.id"
 			:agent-directive="agentDirective"
 			class="mb-4"
+			:is-removing="removeDirectiveAction.isApplying"
+			@remove="removeDirectiveAction.trigger(agent, { id: agentDirective.directive.id })"
 		/>
 
 		<div class="flex items-stretch flex-nowrap">
@@ -33,7 +35,8 @@ const props = defineProps<{
 	agent: Agent,
 }>();
 
-const addDirectiveAction = getAction("save-directive");
+const saveDirectiveAction = getAction("save-directive");
+const removeDirectiveAction = getAction("remove-directive");
 const createDirectiveAction = getDirectiveAction("create", { onFinish: AgentController.loadFieldOptions });
 
 async function onCreateDirective() {
@@ -45,6 +48,6 @@ async function onCreateDirective() {
 }
 
 async function addAgentDirective(id) {
-	await addDirectiveAction.trigger(props.agent, { id });
+	await saveDirectiveAction.trigger(props.agent, { id });
 }
 </script>

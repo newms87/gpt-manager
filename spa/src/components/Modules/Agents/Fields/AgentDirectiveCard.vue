@@ -6,6 +6,7 @@
 				<div class="flex-grow">{{ agentDirective.directive.name }}</div>
 				<QBtn
 					class="bg-red-900 ml-4"
+					:loading="isRemoving"
 					@click="$emit('remove')"
 				>
 					<RemoveIcon class="w-4" />
@@ -28,6 +29,7 @@ import { ref } from "vue";
 defineEmits(["remove"]);
 defineProps<{
 	agentDirective: AgentPromptDirective,
+	isRemoving: boolean
 }>();
 
 const isEditing = ref(false);
