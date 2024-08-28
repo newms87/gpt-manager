@@ -16,7 +16,6 @@ const items: ActionOptions[] = [
 		name: "create",
 		label: "Create Prompt Schema",
 		vnode: () => h(CreateNewWithNameDialog, { title: "Create Prompt Schema" }),
-		onAction: (action, target, input) => PromptSchemaRoutes.applyAction(action, target, input),
 		onFinish: (result) => {
 			PromptSchemaController.activatePanel(result.item, "edit");
 			PromptSchemaController.loadListAndSummary();

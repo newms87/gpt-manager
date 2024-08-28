@@ -8,6 +8,26 @@
 
 		<QSeparator class="bg-slate-500 my-8" />
 
+		<h6 class="mb-4">Response Schema</h6>
+
+		<div class="flex items-stretch flex-nowrap">
+			<SelectField
+				class="flex-grow"
+				:model-value="agent.responseSchema?.id"
+				:options="AgentController.getFieldOptions('promptSchemas')"
+				@update="onChangeSchema"
+			/>
+			<QBtn class="bg-green-900 ml-4 w-1/5" :loading="createSchemaAction.isApplying" @click="onCreateSchema">
+				Create
+			</QBtn>
+		</div>
+
+		<div v-if="agent.responseSchema">
+			<PromptSchemaDefinitionPanel :prompt-schema="agent.responseSchema" />
+		</div>
+
+		<QSeparator class="bg-slate-500 my-8" />
+
 		<div>
 			<h3>Sample Response</h3>
 			<ActionButton
@@ -34,18 +54,35 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Agents/agentActions";
+import { AgentController } from "@/components/Modules/Agents/agentControls";
+import { PromptSchemaDefinitionPanel } from "@/components/Modules/Prompts/Schemas/Panels";
+import { getAction as getSchemaAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
 import { ActionButton } from "@/components/Shared";
 import { Agent } from "@/types/agents";
 import { FaSolidRobot as GenerateSampleIcon } from "danx-icon";
 import { ActionForm, BooleanField, Form, NumberField, SelectField } from "quasar-ui-danx";
 import { h } from "vue";
 
-defineProps<{
+const props = defineProps<{
 	agent: Agent,
 }>();
 
 const updateDebouncedAction = getAction("update-debounced");
+const updateAction = getAction("update");
 const sampleAction = getAction("generate-sample");
+const createSchemaAction = getSchemaAction("create", { onFinish: AgentController.loadFieldOptions });
+
+async function onCreateSchema() {
+	const { item: promptSchema } = await createSchemaAction.trigger();
+
+	if (promptSchema) {
+		await updateAction.trigger(props.agent, { response_schema_id: promptSchema.id });
+	}
+}
+
+async function onChangeSchema(response_schema_id) {
+	await updateAction.trigger(props.agent, { response_schema_id });
+}
 
 const agentForm: Form = {
 	fields: [
@@ -58,19 +95,6 @@ const agentForm: Form = {
 					{ label: "Text", value: "text" },
 					{ label: "JSON Object", value: "json_object" },
 					{ label: "JSON Schema", value: "json_schema" }
-				]
-			})
-		},
-		{
-			name: "schema_format",
-			label: "Schema Format",
-			enabled: (input) => input.response_format !== "text",
-			vnode: (props) => h(SelectField, {
-				...props,
-				options: [
-					{ label: "JSON", value: "json" },
-					{ label: "YAML", value: "yaml" },
-					{ label: "Typescript", value: "ts" }
 				]
 			})
 		},
@@ -90,16 +114,6 @@ const agentForm: Form = {
 			vnode: (props) => h(MarkdownEditor, {
 				...props,
 				maxLength: 10000
-			})
-		},
-		{
-			name: "response_schema",
-			label: "Schema",
-			enabled: (input) => input.response_format !== "text",
-			vnode: (field, input) => h(MarkdownEditor, {
-				...field,
-				format: input.schema_format,
-				maxLength: 100000
 			})
 		}
 	]

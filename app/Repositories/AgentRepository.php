@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Agent\Agent;
+use App\Models\Prompt\PromptSchema;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -43,9 +44,17 @@ class AgentRepository extends ActionRepository
 
         $aiTools = config('ai.tools');
 
+        $promptSchemas = PromptSchema::get()->map(function ($promptSchema) {
+            return [
+                'label' => $promptSchema->name,
+                'value' => $promptSchema->id,
+            ];
+        });
+
         return [
-            'aiModels' => $aiModels,
-            'aiTools'  => $aiTools,
+            'aiModels'      => $aiModels,
+            'aiTools'       => $aiTools,
+            'promptSchemas' => $promptSchemas,
         ];
     }
 

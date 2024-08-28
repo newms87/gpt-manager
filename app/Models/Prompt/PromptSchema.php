@@ -22,12 +22,13 @@ class PromptSchema extends Model implements AuditableContract
     use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
 
     const string
-        FORMAT_JSON_SCHEMA = 'json_schema',
-        FORMAT_JSON_OBJECT = 'json_object';
+        FORMAT_JSON = 'json',
+        FORMAT_YAML = 'yaml',
+        FORMAT_TYPESCRIPT = 'typescript';
 
     const string
         TYPE_AGENT_RESPONSE = 'Agent Response';
-    
+
     protected $guarded = [
         'id',
         'created_at',

@@ -43,7 +43,7 @@ class PromptSchemaRepository extends ActionRepository
 
         $input += [
             'type'          => PromptSchema::TYPE_AGENT_RESPONSE,
-            'schema_format' => PromptSchema::FORMAT_JSON_SCHEMA,
+            'schema_format' => PromptSchema::FORMAT_YAML,
         ];
 
         return $this->updatePromptSchema($promptSchema, $input);

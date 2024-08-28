@@ -6,6 +6,7 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Workflow\WorkflowAssignment;
+use App\Resources\Prompt\PromptSchemaResource;
 use App\Resources\Workflow\WorkflowAssignmentResource;
 use App\Resources\Workflow\WorkflowJobResource;
 use App\Resources\Workflow\WorkflowResource;
@@ -35,6 +36,7 @@ class AgentResource extends ActionResource
             'response_format'        => $model->response_format,
             'response_notes'         => $model->response_notes,
             'response_schema'        => $model->response_schema,
+            'responseSchema'         => PromptSchemaResource::make($model->responseSchema),
             'response_sample'        => $model->getFormattedSampleResponse(),
             'enable_message_sources' => $model->enable_message_sources,
             'retry_count'            => $model->retry_count,

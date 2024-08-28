@@ -3,6 +3,7 @@
 namespace App\Models\Agent;
 
 use App\Api\AgentApiContracts\AgentApiContract;
+use App\Models\Prompt\PromptSchema;
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowAssignment;
 use App\Models\Workflow\WorkflowJob;
@@ -34,6 +35,7 @@ class Agent extends Model implements AuditableContract
         'response_format',
         'response_notes',
         'response_schema',
+        'response_schema_id',
         'enable_message_sources',
         'tools',
         'retry_count',
@@ -63,6 +65,11 @@ class Agent extends Model implements AuditableContract
     public function knowledge(): BelongsTo|Knowledge
     {
         return $this->belongsTo(Knowledge::class);
+    }
+
+    public function responseSchema(): BelongsTo|PromptSchema
+    {
+        return $this->belongsTo(PromptSchema::class);
     }
 
     public function threads(): HasMany|Thread
