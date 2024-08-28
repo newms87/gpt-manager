@@ -5,7 +5,7 @@ export const fields = [
 	{
 		name: "name",
 		vnode: (props) => h(TextField, { ...props, maxLength: 100 }),
-		label: "Agent Name",
+		label: "Name",
 		required: true
 	},
 	{
