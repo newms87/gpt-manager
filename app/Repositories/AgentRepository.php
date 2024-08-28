@@ -3,11 +3,14 @@
 namespace App\Repositories;
 
 use App\Models\Agent\Agent;
+use App\Models\Prompt\AgentPromptDirective;
+use App\Models\Prompt\PromptDirective;
 use App\Models\Prompt\PromptSchema;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -44,17 +47,27 @@ class AgentRepository extends ActionRepository
 
         $aiTools = config('ai.tools');
 
-        $promptSchemas = PromptSchema::get()->map(function ($promptSchema) {
-            return [
-                'label' => $promptSchema->name,
-                'value' => $promptSchema->id,
-            ];
-        });
+        $promptSchemas = PromptSchema::where('team_id', team()->id)
+            ->get()->map(function ($promptSchema) {
+                return [
+                    'label' => $promptSchema->name,
+                    'value' => $promptSchema->id,
+                ];
+            });
+
+        $promptDirectives = PromptDirective::where('team_id', team()->id)
+            ->get()->map(function ($promptDirective) {
+                return [
+                    'label' => $promptDirective->name,
+                    'value' => $promptDirective->id,
+                ];
+            });
 
         return [
-            'aiModels'      => $aiModels,
-            'aiTools'       => $aiTools,
-            'promptSchemas' => $promptSchemas,
+            'aiModels'         => $aiModels,
+            'aiTools'          => $aiTools,
+            'promptSchemas'    => $promptSchemas,
+            'promptDirectives' => $promptDirectives,
         ];
     }
 
@@ -69,6 +82,8 @@ class AgentRepository extends ActionRepository
             'copy' => $this->copyAgent($model),
             'create-thread' => app(ThreadRepository::class)->create($model),
             'generate-sample' => $this->generateSample($model),
+            'save-directive' => $this->saveDirective($model, $data['id'] ?? null, $data['section'] ?? null, $data['position'] ?? 0),
+            'remove-directive' => $this->removeDirective($model, $data['id'] ?? null),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -170,6 +185,33 @@ class AgentRepository extends ActionRepository
         }
 
         return ($modelCosts['input'] * $inputTokens) + ($modelCosts['output'] * $outputToken);
+    }
+
+    /**
+     * Add / Update a directive to an agent
+     */
+    public function saveDirective(Agent $agent, $directiveId, $section = AgentPromptDirective::SECTION_TOP, $position = 0): AgentPromptDirective
+    {
+        $directive = PromptDirective::where('team_id', team()->id)->find($directiveId);
+
+        if (!$directive) {
+            throw new ValidationError('Directive not found');
+        }
+        
+        return $agent->directives()->updateOrCreate([
+            'prompt_directive_id' => $directiveId,
+        ], [
+            'section'  => $section ?? AgentPromptDirective::SECTION_TOP,
+            'position' => $position,
+        ]);
+    }
+
+    /**
+     * Remove a directive from an agent
+     */
+    public function removeDirective(Agent $agent, $directiveId): bool
+    {
+        return $agent->directives()->where('prompt_directive_id', $directiveId)->delete();
     }
 
     /**

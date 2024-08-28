@@ -5,12 +5,12 @@
 		<div class="flex items-stretch flex-nowrap">
 			<SelectField
 				class="flex-grow"
-				:model-value="agent.responseSchema?.id"
+				:model-value="agent.response_schema?.id"
 				:options="AgentController.getFieldOptions('promptSchemas')"
 				@update="onChangeSchema"
 			/>
 			<ShowHideButton
-				v-if="agent.responseSchema"
+				v-if="agent.response_schema"
 				v-model="isEditingSchema"
 				label="Edit"
 				class="bg-sky-800 w-1/5 ml-4"
@@ -20,16 +20,16 @@
 			</QBtn>
 		</div>
 
-		<div v-if="isEditingSchema && agent.responseSchema">
+		<div v-if="isEditingSchema && agent.response_schema">
 			<ActionForm
 				class="px-6 pt-6"
 				:action="updateDebouncedSchemaAction"
-				:target="agent.responseSchema"
+				:target="agent.response_schema"
 				:form="{fields}"
 				hide-saved-at
 				@saved="AgentController.loadFieldOptions"
 			/>
-			<PromptSchemaDefinitionPanel class="pt-0" :prompt-schema="agent.responseSchema" />
+			<PromptSchemaDefinitionPanel class="pt-0" :prompt-schema="agent.response_schema" />
 		</div>
 	</div>
 </template>

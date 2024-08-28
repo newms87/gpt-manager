@@ -18,3 +18,10 @@ export interface PromptDirective extends ActionTargetItem {
 	directive_text: string;
 	agents_count: number;
 }
+
+export interface AgentPromptDirective extends ActionTargetItem {
+	id: string;
+	directive: PromptDirective;
+	position: number;
+	section: string;
+}

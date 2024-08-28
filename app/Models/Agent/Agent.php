@@ -3,6 +3,7 @@
 namespace App\Models\Agent;
 
 use App\Api\AgentApiContracts\AgentApiContract;
+use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Prompt\PromptSchema;
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowAssignment;
@@ -70,6 +71,11 @@ class Agent extends Model implements AuditableContract
     public function responseSchema(): BelongsTo|PromptSchema
     {
         return $this->belongsTo(PromptSchema::class);
+    }
+
+    public function directives(): HasMany|AgentPromptDirective
+    {
+        return $this->hasMany(AgentPromptDirective::class);
     }
 
     public function threads(): HasMany|Thread

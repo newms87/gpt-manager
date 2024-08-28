@@ -5,7 +5,10 @@ namespace App\Resources\Agent;
 use App\Models\Agent\Agent;
 use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
+use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Workflow\WorkflowAssignment;
+use App\Resources\Prompt\AgentPromptDirectiveResource;
+use App\Resources\Prompt\PromptDirectiveResource;
 use App\Resources\Prompt\PromptSchemaResource;
 use App\Resources\Workflow\WorkflowAssignmentResource;
 use App\Resources\Workflow\WorkflowJobResource;
@@ -32,11 +35,8 @@ class AgentResource extends ActionResource
             'temperature'            => $model->temperature,
             'tools'                  => $model->tools ?: [],
             'prompt'                 => $model->prompt,
-            'schema_format'          => $model->schema_format,
             'response_format'        => $model->response_format,
             'response_notes'         => $model->response_notes,
-            'response_schema'        => $model->response_schema,
-            'responseSchema'         => PromptSchemaResource::make($model->responseSchema),
             'response_sample'        => $model->getFormattedSampleResponse(),
             'enable_message_sources' => $model->enable_message_sources,
             'retry_count'            => $model->retry_count,
@@ -54,16 +54,21 @@ class AgentResource extends ActionResource
     {
         $threads     = $model->threads()->orderByDesc('updated_at')->with('messages.storedFiles.transcodes')->limit(20)->get();
         $assignments = $model->assignments()->with('workflowJob.workflow')->limit(20)->get();
+        $directives  = $model->directives()->with('directive')->get();
 
         return static::make($model, [
-            'threads'     => ThreadResource::collection($threads, fn(Thread $thread) => [
+            'response_schema' => PromptSchemaResource::make($model->responseSchema),
+            'directives'      => AgentPromptDirectiveResource::collection($directives, fn(AgentPromptDirective $agentPromptDirective) => [
+                'directive' => PromptDirectiveResource::make($agentPromptDirective->directive),
+            ]),
+            'threads'         => ThreadResource::collection($threads, fn(Thread $thread) => [
                 'messages' => MessageResource::collection($thread->messages, fn(Message $message) => [
                     'files' => StoredFileResource::collection($message->storedFiles, fn(StoredFile $storedFile) => [
                         'transcodes' => StoredFileResource::collection($storedFile->transcodes),
                     ]),
                 ]),
             ]),
-            'assignments' => WorkflowAssignmentResource::collection($assignments, fn(WorkflowAssignment $assignment) => [
+            'assignments'     => WorkflowAssignmentResource::collection($assignments, fn(WorkflowAssignment $assignment) => [
                 'workflowJob' => WorkflowJobResource::make($assignment->workflowJob, [
                     'workflow' => WorkflowResource::make($assignment->workflowJob->workflow),
                 ]),
