@@ -14,10 +14,11 @@ use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
+use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class PromptDirective extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 
     protected $guarded = [
         'id',
@@ -25,6 +26,11 @@ class PromptDirective extends Model implements AuditableContract
         'updated_at',
         'deleted_at',
         'agents_count',
+    ];
+
+    protected array $keywordFields = [
+        'name',
+        'directive_text',
     ];
 
     public array $relationCounters = [

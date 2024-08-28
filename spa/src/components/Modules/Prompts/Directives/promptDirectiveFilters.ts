@@ -6,20 +6,19 @@ export const filters = computed(() => [
 		flat: true,
 		fields: [
 			{
+				type: "text",
+				name: "keywords",
+				label: "Search"
+			},
+			{
 				type: "date-range",
 				name: "created_at",
-				label: "Created Date",
-				inline: true
+				label: "Created Date"
 			},
 			{
 				type: "date-range",
 				name: "updated_at",
 				label: "Updated Date"
-			},
-			{
-				type: "text",
-				name: "keywords",
-				label: "Search"
 			}
 		]
 	}
