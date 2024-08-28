@@ -82,6 +82,10 @@ const items: ActionOptions[] = [
 		alias: "delete",
 		onAction: WorkflowAssignmentRoutes.applyAction,
 		onFinish: AgentController.getActiveItemDetails
+	},
+	{
+		name: "update-directives",
+		optimistic: true
 	}
 ];
 

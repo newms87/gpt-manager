@@ -20,7 +20,6 @@ class AgentPromptDirective extends Model implements AuditableContract
         'id',
         'created_at',
         'updated_at',
-        'deleted_at',
     ];
 
     public function agent(): BelongsTo|Agent

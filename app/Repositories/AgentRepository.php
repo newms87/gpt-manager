@@ -83,6 +83,7 @@ class AgentRepository extends ActionRepository
             'create-thread' => app(ThreadRepository::class)->create($model),
             'generate-sample' => $this->generateSample($model),
             'save-directive' => $this->saveDirective($model, $data['id'] ?? null, $data['section'] ?? null, $data['position'] ?? 0),
+            'update-directives' => $this->updateDirectives($model, $data['directives'] ?? []),
             'remove-directive' => $this->removeDirective($model, $data['id'] ?? null),
             default => parent::applyAction($action, $model, $data)
         };
@@ -197,13 +198,34 @@ class AgentRepository extends ActionRepository
         if (!$directive) {
             throw new ValidationError('Directive not found');
         }
-        
+
         return $agent->directives()->updateOrCreate([
             'prompt_directive_id' => $directiveId,
         ], [
             'section'  => $section ?? AgentPromptDirective::SECTION_TOP,
             'position' => $position,
         ]);
+    }
+
+    /**
+     * Update the order of directives in an agent
+     */
+    public function updateDirectives(Agent $agent, $agentDirectives): bool
+    {
+        foreach($agentDirectives as $position => $directive) {
+            $agentDirective = $agent->directives()->find($directive['id']);
+
+            if (!$agentDirective) {
+                throw new ValidationError("Directive with ID $directive[id] not found");
+            }
+
+            $agentDirective->update([
+                'section'  => $directive['section'],
+                'position' => $position,
+            ]);
+        }
+
+        return true;
     }
 
     /**

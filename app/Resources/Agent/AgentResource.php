@@ -54,7 +54,7 @@ class AgentResource extends ActionResource
     {
         $threads     = $model->threads()->orderByDesc('updated_at')->with('messages.storedFiles.transcodes')->limit(20)->get();
         $assignments = $model->assignments()->with('workflowJob.workflow')->limit(20)->get();
-        $directives  = $model->directives()->with('directive')->get();
+        $directives  = $model->directives()->orderBy('position')->with('directive')->get();
 
         return static::make($model, [
             'response_schema' => PromptSchemaResource::make($model->responseSchema),
