@@ -1,5 +1,5 @@
 import { ThePageLayout, ThePrimaryLayout } from "@/components/Layouts";
-import { PromptSchemaTable } from "@/components/Modules/Prompts";
+import { PromptDirectiveTable, PromptSchemaTable } from "@/components/Modules/Prompts";
 import { siteSettings } from "@/config";
 import { isAuthenticated, setAuthToken } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
@@ -66,7 +66,7 @@ const router = createRouter({
 						{
 							path: "directives/:id?/:panel?",
 							name: "prompts.directives",
-							component: PromptSchemaTable,
+							component: PromptDirectiveTable,
 							meta: { title: "Prompt Directives", type: "PromptDirectiveResource" }
 						}
 					]

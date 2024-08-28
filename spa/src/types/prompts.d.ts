@@ -11,3 +11,10 @@ export interface PromptSchema extends ActionTargetItem {
 	schema: object | object[];
 	agents: Agent[];
 }
+
+export interface PromptDirective extends ActionTargetItem {
+	id: string;
+	name: string;
+	directive_text: string;
+	agents_count: number;
+}
