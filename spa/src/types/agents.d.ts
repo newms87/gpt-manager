@@ -8,14 +8,12 @@ export interface Agent extends ActionTargetItem {
 	model: string;
 	temperature: string;
 	description: string;
-	prompt: string;
 	threads_count: number;
 	assignments_count: number;
 	tools: string[];
 	threads: AgentThread[];
 	assignments?: WorkflowAssignment[];
 	response_format: "text" | "json_object" | "json_schema";
-	response_notes?: string;
 	response_schema?: PromptSchema;
 	directives?: AgentPromptDirective[];
 	response_sample?: AnyObject;

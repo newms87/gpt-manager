@@ -64,11 +64,11 @@
 				class="flex-grow"
 				:options="availableDirectives"
 				:disable="!availableDirectives.length"
-				:placeholder="availableDirectives.length ? 'Select Directive' : 'No Directives Available'"
+				:placeholder="availableDirectives.length ? '+ Add Directive' : 'No Directives Available'"
 				@update="addAgentDirective"
 			/>
 			<QBtn class="bg-green-900 ml-4 w-1/5" :loading="createDirectiveAction.isApplying" @click="onCreateDirective">
-				Create
+				Create Directive
 			</QBtn>
 		</div>
 	</div>

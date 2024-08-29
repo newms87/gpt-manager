@@ -23,7 +23,6 @@ class AgentFactory extends Factory
             'model'        => 'test-model',
             'tools'        => fake()->randomElements(collect(config('ai.tools'))->pluck('name')->toArray()),
             'temperature'  => 0,
-            'prompt'       => fake()->paragraphs(10, true),
         ];
     }
 }

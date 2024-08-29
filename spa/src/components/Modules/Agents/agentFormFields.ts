@@ -1,5 +1,5 @@
 import { AgentController } from "@/components/Modules/Agents/agentControls";
-import { SelectField, SliderNumberField, TextField } from "quasar-ui-danx";
+import { BooleanField, NumberField, SelectField, SliderNumberField, TextField } from "quasar-ui-danx";
 import { h } from "vue";
 
 export const fields = [
@@ -34,5 +34,28 @@ export const fields = [
 		}),
 		label: "Temperature",
 		required: true
+	},
+	{
+		name: "response_format",
+		label: "Response Format",
+		vnode: (props) => h(SelectField, {
+			...props,
+			class: "w-56",
+			options: [
+				{ label: "Text", value: "text" },
+				{ label: "JSON Object", value: "json_object" },
+				{ label: "JSON Schema", value: "json_schema" }
+			]
+		})
+	},
+	{
+		name: "enable_message_sources",
+		label: "Enable Message Sources?",
+		vnode: (props) => h(BooleanField, { ...props })
+	},
+	{
+		name: "retry_count",
+		label: "Valid response retries?",
+		vnode: (props) => h(NumberField, { ...props, class: "w-40" })
 	}
 ];

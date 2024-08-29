@@ -2,7 +2,6 @@ import {
 	AgentAssignmentsPanel,
 	AgentInfoPanel,
 	AgentPromptPanel,
-	AgentResponsePanel,
 	AgentThreadsPanel,
 	AgentToolsPanel
 } from "@/components/Modules/Agents/Panels";
@@ -26,11 +25,6 @@ export const panels = computed<ActionPanel[]>(() => [
 		name: "prompt",
 		label: "Prompt",
 		vnode: (agent: Agent) => h(AgentPromptPanel, { agent })
-	},
-	{
-		name: "response",
-		label: "Response",
-		vnode: (agent: Agent) => h(AgentResponsePanel, { agent })
 	},
 	{
 		name: "threads",

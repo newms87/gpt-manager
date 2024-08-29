@@ -16,7 +16,7 @@
 				class="bg-sky-800 w-1/5 ml-4"
 			/>
 			<QBtn class="bg-green-900 ml-4 w-1/5" :loading="createSchemaAction.isApplying" @click="onCreateSchema">
-				Create
+				Create Schema
 			</QBtn>
 		</div>
 
