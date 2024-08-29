@@ -2,12 +2,12 @@
 	<div>
 		<div class="mb-4">Directives</div>
 
-		<h6>Top</h6>
+		<h6>Before</h6>
 		<ListTransition
 			name="fade-down-list"
 			data-drop-zone="top-directives-dz"
 		>
-			<template v-if="!topDirectives.length">
+			<template v-if="isDragging && !topDirectives.length">
 				<div class="text-center text-gray-500 border-dashed border border-slate-500 p-4">Drag Directive Here</div>
 			</template>
 			<template v-else>
@@ -20,6 +20,8 @@
 					handle-class="px-2"
 					@update:list-items="onListPositionChange($event, 'Top')"
 					@drop-zone="onDropZoneChange"
+					@dragstart="onDragStart"
+					@dragend="onDragEnd"
 				>
 					<AgentDirectiveCard
 						:agent-directive="agentDirective"
@@ -31,12 +33,12 @@
 			</template>
 		</ListTransition>
 
-		<h6 class="mt-4">Bottom</h6>
+		<h6 class="mt-4">After</h6>
 		<ListTransition
 			name="fade-down-list"
 			data-drop-zone="bottom-directives-dz"
 		>
-			<template v-if="!bottomDirectives.length">
+			<template v-if="isDragging && !bottomDirectives.length">
 				<div class="text-center text-gray-500 border-dashed border border-slate-500 p-4">Drag Directive Here</div>
 			</template>
 			<template v-else>
@@ -49,6 +51,8 @@
 					handle-class="px-2"
 					@update:list-items="onListPositionChange($event, 'Bottom')"
 					@drop-zone="onDropZoneChange"
+					@dragstart="onDragStart"
+					@dragend="onDragEnd"
 				>
 					<AgentDirectiveCard
 						:agent-directive="agentDirective"
@@ -64,7 +68,9 @@
 		<div class="flex items-stretch flex-nowrap mt-4">
 			<SelectField
 				class="flex-grow"
-				:options="AgentController.getFieldOptions('promptDirectives')"
+				:options="availableDirectives"
+				:disable="!availableDirectives.length"
+				:placeholder="availableDirectives.length ? 'Select Directive' : 'No Directives Available'"
 				@update="addAgentDirective"
 			/>
 			<QBtn class="bg-green-900 ml-4 w-1/5" :loading="createDirectiveAction.isApplying" @click="onCreateDirective">
@@ -80,7 +86,7 @@ import AgentDirectiveCard from "@/components/Modules/Agents/Fields/AgentDirectiv
 import { getAction as getDirectiveAction } from "@/components/Modules/Prompts/Directives/promptDirectiveActions";
 import { Agent } from "@/types/agents";
 import { ListItemDraggable, ListTransition, SelectField } from "quasar-ui-danx";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
 	agent: Agent,
@@ -91,9 +97,10 @@ const updateDirectivesAction = getAction("update-directives");
 const removeDirectiveAction = getAction("remove-directive");
 const createDirectiveAction = getDirectiveAction("create", { onFinish: AgentController.loadFieldOptions });
 
+const availableDirectives = computed(() => AgentController.getFieldOptions("promptDirectives").filter((directive) => !props.agent.directives?.find((agentDirective) => agentDirective.directive.id === directive.value)));
 const topDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Top") || []);
 const bottomDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Bottom") || []);
-
+const isDragging = ref(false);
 async function onCreateDirective() {
 	const { item: directive } = await createDirectiveAction.trigger();
 
@@ -119,7 +126,7 @@ function onListPositionChange(directives, section) {
 
 function onDropZoneChange(event) {
 	const section = event.dropZone.dataset.dropZone === "top-directives-dz" ? "Top" : "Bottom";
-	const position = event.newPosition;
+	const position = section === "Top" ? topDirectives.value.length + 1 : bottomDirectives.value.length + 1;
 	let updatedDirectives = [...props.agent.directives];
 	let index = updatedDirectives.findIndex((directive) => directive.id === event.item.id);
 	updatedDirectives.splice(index, 1);
@@ -127,5 +134,14 @@ function onDropZoneChange(event) {
 	updateDirectivesAction.trigger(props.agent, {
 		directives: updatedDirectives
 	});
+}
+
+function onDragStart() {
+	setTimeout(() => {
+		isDragging.value = true;
+	}, 200);
+}
+function onDragEnd() {
+	isDragging.value = false;
 }
 </script>
