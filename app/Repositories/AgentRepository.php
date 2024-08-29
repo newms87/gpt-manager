@@ -115,10 +115,6 @@ class AgentRepository extends ActionRepository
         $agent->fill($data);
         $agent->api = AgentRepository::getApiForModel($agent->model);
 
-        if ($agent->isDirty('response_schema')) {
-            $agent->response_sample = null;
-        }
-
         $agent->validate()->save($data);
 
         return $agent;

@@ -9,7 +9,7 @@
 		<QSeparator class="bg-slate-500 my-8" />
 
 		<AgentDirectiveField :agent="agent" />
-		
+
 		<QSeparator class="bg-slate-500 my-8" />
 
 		<AgentSchemaField :agent="agent" />
@@ -64,6 +64,7 @@ const agentForm: Form = {
 			label: "Response Format",
 			vnode: (props) => h(SelectField, {
 				...props,
+				class: "w-56",
 				options: [
 					{ label: "Text", value: "text" },
 					{ label: "JSON Object", value: "json_object" },
@@ -80,14 +81,6 @@ const agentForm: Form = {
 			name: "retry_count",
 			label: "Valid response retries?",
 			vnode: (props) => h(NumberField, { ...props, class: "w-40" })
-		},
-		{
-			name: "response_notes",
-			label: "Directive",
-			vnode: (props) => h(MarkdownEditor, {
-				...props,
-				maxLength: 10000
-			})
 		}
 	]
 };

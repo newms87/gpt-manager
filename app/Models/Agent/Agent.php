@@ -31,11 +31,7 @@ class Agent extends Model implements AuditableContract
         'api',
         'model',
         'temperature',
-        'prompt',
-        'schema_format',
         'response_format',
-        'response_notes',
-        'response_schema',
         'response_schema_id',
         'enable_message_sources',
         'tools',
@@ -51,7 +47,6 @@ class Agent extends Model implements AuditableContract
     {
         return [
             'tools'                  => 'json',
-            'response_schema'        => 'json',
             'response_sample'        => 'json',
             'enable_message_sources' => 'boolean',
             'temperature'            => 'float',
@@ -75,7 +70,17 @@ class Agent extends Model implements AuditableContract
 
     public function directives(): HasMany|AgentPromptDirective
     {
-        return $this->hasMany(AgentPromptDirective::class);
+        return $this->hasMany(AgentPromptDirective::class)->orderBy('position');
+    }
+
+    public function topDirectives(): HasMany|AgentPromptDirective
+    {
+        return $this->directives()->where('section', AgentPromptDirective::SECTION_TOP);
+    }
+
+    public function bottomDirectives(): HasMany|AgentPromptDirective
+    {
+        return $this->directives()->where('section', AgentPromptDirective::SECTION_BOTTOM);
     }
 
     public function threads(): HasMany|Thread

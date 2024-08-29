@@ -1,8 +1,6 @@
 <template>
 	<div>
-		<div class="mb-4">Directives</div>
-
-		<h6>Before</h6>
+		<h6>Before Thread</h6>
 		<ListTransition
 			name="fade-down-list"
 			data-drop-zone="top-directives-dz"
@@ -16,8 +14,6 @@
 					:key="agentDirective.id"
 					:list-items="topDirectives"
 					drop-zone="top-directives-dz"
-					show-handle
-					handle-class="px-2"
 					@update:list-items="onListPositionChange($event, 'Top')"
 					@drop-zone="onDropZoneChange"
 					@dragstart="onDragStart"
@@ -33,7 +29,7 @@
 			</template>
 		</ListTransition>
 
-		<h6 class="mt-4">After</h6>
+		<h6 class="mt-4">After Thread</h6>
 		<ListTransition
 			name="fade-down-list"
 			data-drop-zone="bottom-directives-dz"
@@ -47,8 +43,6 @@
 					:key="agentDirective.id"
 					:list-items="bottomDirectives"
 					drop-zone="bottom-directives-dz"
-					show-handle
-					handle-class="px-2"
 					@update:list-items="onListPositionChange($event, 'Bottom')"
 					@drop-zone="onDropZoneChange"
 					@dragstart="onDragStart"

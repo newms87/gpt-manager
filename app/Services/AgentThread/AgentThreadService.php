@@ -3,6 +3,7 @@
 namespace App\Services\AgentThread;
 
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
+use App\Api\AgentApiContracts\AgentMessageFormatterContract;
 use App\Api\OpenAi\Classes\OpenAiToolCaller;
 use App\Api\OpenAi\OpenAiApi;
 use App\Jobs\ExecuteThreadRunJob;
@@ -182,17 +183,18 @@ class AgentThreadService
     }
 
     /**
-     * Format the response schema for the AI model based on the agent's name and response_schema
+     * Format the response schema for the AI model based on the agent's name and responseSchema
      */
     public function formatResponseSchemaForAgent(Agent $agent): array|string
     {
-        if (is_array($agent->response_schema)) {
-            $name = $agent->name . ':' . substr(md5(json_encode($agent->response_schema)), 0, 7);
+        $responseSchema = $agent->responseSchema?->schema ?? '';
+        if (is_array($responseSchema)) {
+            $name = $agent->name . ':' . substr(md5(json_encode($responseSchema)), 0, 7);
 
-            return $this->formatResponseSchema(Str::slug($name), $agent->response_schema);
+            return $this->formatResponseSchema(Str::slug($name), $responseSchema);
         }
 
-        return $agent->response_schema;
+        return $responseSchema;
     }
 
     /**
@@ -282,8 +284,14 @@ class AgentThreadService
         $apiFormatter = $agent->getModelApi()->formatter();
 
         $corePrompt = "The current date and time is " . now()->toDateTimeString() . "\n\n";
-        $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $corePrompt . $agent->prompt);
+        $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $corePrompt);
 
+        // Top Directives go before thread messages
+        foreach($agent->topDirectives()->get() as $topDirective) {
+            $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $topDirective->directive->directive_text);
+        }
+
+        // Thread messages are inserted between the directives
         foreach($thread->messages()->get() as $message) {
             $formattedMessage = $apiFormatter->message($message);
 
@@ -295,17 +303,32 @@ class AgentThreadService
             }
         }
 
+        // Bottom Directives go after thread messages
+        foreach($agent->bottomDirectives()->get() as $bottomDirective) {
+            $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $bottomDirective->directive->directive_text);
+        }
+
+        $responseMessage = $this->getResponseMessage($agent, $apiFormatter);
+
+        if ($responseMessage) {
+            $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $responseMessage);
+        }
+
+        return $apiFormatter->messageList($messages);
+    }
+
+    /**
+     * Get the response message for the AI model
+     */
+    public function getResponseMessage(Agent $agent, AgentMessageFormatterContract $apiFormatter): string
+    {
         $responseMessage = '';
         $responseSchema  = null;
 
-        if ($agent->response_notes) {
-            $responseMessage = "RESPONSE NOTES:\n$agent->response_notes";
-        }
-
         // JSON Object responses provide a schema for the response, but not via the json_schema structured response mechanics by Open AI (possibly others)
         // So this is just a message to the LLM instead of a requirement built in
-        if ($agent->response_format === 'json_object' && $agent->response_schema) {
-            $responseSchema = $agent->response_schema;
+        if ($agent->response_format === 'json_object' && $agent->responseSchema) {
+            $responseSchema = $agent->responseSchema->schema;
         }
 
         // If the response format is JSON Schema, but the agent does not accept JSON schema, we need to format the response schema for the AI model
@@ -323,14 +346,10 @@ class AgentThreadService
         // XXX: Open AI has a bug that causes the completion API to call a non-documented tools call
         // This encourages the model to avoid that
         if ($agent->api === OpenAiApi::$serviceName) {
-            $responseMessage .= "\n\nmulti_tool_use.parallel is not a valid function call. DO NOT USE!";
+            $responseMessage .= "\n\nmulti_tool_use.parallel IS NOT A VALID FUNCTION CALL. DO NOT USE!";
         }
 
-        if ($responseMessage) {
-            $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $responseMessage);
-        }
-
-        return $apiFormatter->messageList($messages);
+        return $responseMessage;
     }
 
     /**
