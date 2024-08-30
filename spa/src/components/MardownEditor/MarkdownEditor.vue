@@ -12,6 +12,7 @@
 				v-model.trim="rawContent"
 				:class="editorClass"
 				:readonly="readonly"
+				@focusin="isEditing = true"
 				@focusout="refreshEditor"
 				@update:model-value="updateContent"
 			/>
@@ -110,7 +111,11 @@ function formatContent(value) {
 	}
 }
 
+const isEditing = ref(false);
+
 function refreshEditor() {
+	isEditing.value = false;
+
 	if (validContent.value) {
 		rawContent.value = formatContent(content.value);
 	}
@@ -132,6 +137,9 @@ onBeforeMount(() => {
 // Watch for changes in the content and update the model if the syncModelChanges prop is set
 if (props.syncModelChanges) {
 	watch(() => content.value, () => {
+		// Don't update the content if the user is currently editing
+		if (isEditing.value) return;
+
 		rawContent.value = formatContent(content.value);
 		refreshEditor();
 	});

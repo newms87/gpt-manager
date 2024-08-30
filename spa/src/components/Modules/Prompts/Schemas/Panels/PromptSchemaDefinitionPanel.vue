@@ -9,7 +9,7 @@
 		<QSeparator class="bg-slate-500 my-8" />
 
 		<div>
-			<h3>Example Response</h3>
+			<h6>Example Response</h6>
 			<ActionButton
 				:action="generateExampleAction"
 				:target="promptSchema"
@@ -20,14 +20,12 @@
 				:loading="generateExampleAction.isApplying"
 				@click="generateExampleAction.trigger(promptSchema)"
 			/>
-			<div v-if="promptSchema.response_example">
-				<MarkdownEditor
-					readonly
-					:model-value="promptSchema.response_example"
-					sync-model-changes
-					:format="promptSchema.schema_format"
-				/>
-			</div>
+			<MarkdownEditor
+				:model-value="promptSchema.response_example"
+				sync-model-changes
+				:format="promptSchema.schema_format"
+				@update:model-value="updateDebouncedAction.trigger(promptSchema, { response_example: $event })"
+			/>
 		</div>
 	</div>
 </template>

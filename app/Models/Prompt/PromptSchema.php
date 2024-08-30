@@ -15,10 +15,11 @@ use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
+use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class PromptSchema extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 
     const string
         FORMAT_JSON = 'json',
@@ -35,6 +36,13 @@ class PromptSchema extends Model implements AuditableContract
         'deleted_at',
         'agents_count',
         'workflow_jobs_count',
+    ];
+
+    protected array $keywordFields = [
+        'type',
+        'name',
+        'description',
+        'schema_format',
     ];
 
     public array $relationCounters = [

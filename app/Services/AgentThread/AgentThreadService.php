@@ -288,7 +288,9 @@ class AgentThreadService
 
         // Top Directives go before thread messages
         foreach($agent->topDirectives()->get() as $topDirective) {
-            $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $topDirective->directive->directive_text);
+            if ($topDirective->directive->directive_text) {
+                $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $topDirective->directive->directive_text);
+            }
         }
 
         // Thread messages are inserted between the directives
@@ -305,7 +307,9 @@ class AgentThreadService
 
         // Bottom Directives go after thread messages
         foreach($agent->bottomDirectives()->get() as $bottomDirective) {
-            $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $bottomDirective->directive->directive_text);
+            if ($bottomDirective->directive->directive_text) {
+                $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $bottomDirective->directive->directive_text);
+            }
         }
 
         $responseMessage = $this->getResponseMessage($agent, $apiFormatter);
@@ -323,24 +327,27 @@ class AgentThreadService
     public function getResponseMessage(Agent $agent, AgentMessageFormatterContract $apiFormatter): string
     {
         $responseMessage = '';
-        $responseSchema  = null;
 
         // JSON Object responses provide a schema for the response, but not via the json_schema structured response mechanics by Open AI (possibly others)
         // So this is just a message to the LLM instead of a requirement built in
-        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_OBJECT && $agent->responseSchema) {
-            $responseSchema = $agent->responseSchema->schema;
+        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_OBJECT && $agent->responseSchema?->schema) {
+            $responseMessage .= "\n\nResponse Schema:\n" . json_encode($agent->responseSchema->schema);
         }
 
         // If the response format is JSON Schema, but the agent does not accept JSON schema, we need to format the response schema for the AI model
         // and provide a message so the agent can see the schema (simulating response schema format)
         // XXX: NOTE this is a hack for Perplexity AI, which does support JSON Schema, but does not seem to respond to it for their online models
-        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && !$apiFormatter->acceptsJsonSchema()) {
-            $responseSchema = $this->formatResponseSchemaForAgent($agent);
+        elseif ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && !$apiFormatter->acceptsJsonSchema()) {
+            $responseMessage .= "\n\nResponse Schema:\n" . json_encode($this->formatResponseSchemaForAgent($agent));
         }
 
-        if ($responseSchema) {
-            $responseMessage .= json_encode($responseSchema);
-            $responseMessage .= "\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT\n";
+        // Include the Example response
+        if ($agent->responseSchema?->response_example) {
+            $responseMessage .= "\n\nExample Response:\n" . json_encode($agent->responseSchema->response_example);
+        }
+
+        if ($agent->response_format !== 'text') {
+            $responseMessage .= "\n\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT";
         }
 
         // XXX: Open AI has a bug that causes the completion API to call a non-documented tools call

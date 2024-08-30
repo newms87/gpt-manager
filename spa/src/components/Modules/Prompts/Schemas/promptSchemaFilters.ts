@@ -1,4 +1,3 @@
-import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { computed } from "vue";
 
 export const filters = computed(() => [
@@ -7,16 +6,19 @@ export const filters = computed(() => [
 		flat: true,
 		fields: [
 			{
-				type: "date-range",
-				name: "created_at",
-				label: "Created Date",
-				inline: true
+				type: "text",
+				name: "keywords",
+				label: "Search"
 			},
 			{
-				type: "multi-select",
-				name: "model",
-				label: "AI Model",
-				options: AgentController.getFieldOptions("aiModels")
+				type: "date-range",
+				name: "created_at",
+				label: "Created Date"
+			},
+			{
+				type: "date-range",
+				name: "updated_at",
+				label: "Updated Date"
 			}
 		]
 	}
