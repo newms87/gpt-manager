@@ -137,7 +137,9 @@ class WorkflowJob extends Model implements AuditableContract
                     ]);
                 } else {
                     foreach($dependency->dependsOn->workflowAssignments as $assignment) {
-                        $artifacts[] = Artifact::make(['data' => $assignment->agent->response_sample]);
+                        if ($assignment->agent->responseSchema) {
+                            $artifacts[] = Artifact::make(['data' => $assignment->agent->responseSchema?->response_example]);
+                        }
                     }
                 }
 

@@ -81,7 +81,7 @@ class AgentRepository extends ActionRepository
             'update' => $this->updateAgent($model, $data),
             'copy' => $this->copyAgent($model),
             'create-thread' => app(ThreadRepository::class)->create($model),
-            'generate-sample' => $this->generateSample($model),
+            'generate-sample' => $this->generateResponseExample($model),
             'save-directive' => $this->saveDirective($model, $data['id'] ?? null, $data['section'] ?? null, $data['position'] ?? 0),
             'update-directives' => $this->updateDirectives($model, $data['directives'] ?? []),
             'remove-directive' => $this->removeDirective($model, $data['id'] ?? null),
@@ -238,8 +238,12 @@ class AgentRepository extends ActionRepository
      * This is useful for feedback for the user to validate the response schema and also used to identify available
      * fields for grouping in Agent Assignments.
      */
-    public function generateSample(Agent $agent): true
+    public function generateResponseExample(Agent $agent): true
     {
+        if (!$agent->responseSchema) {
+            throw new ValidationError('Response schema is required to generate a sample response');
+        }
+
         $threadRepo = app(ThreadRepository::class);
         $thread     = $threadRepo->create($agent, 'Response Sample');
 
@@ -252,8 +256,8 @@ class AgentRepository extends ActionRepository
 
         $threadRun = app(AgentThreadService::class)->run($thread, dispatch: false);
 
-        $agent->response_sample = $threadRun->lastMessage->getJsonContent() ?: $threadRun->lastMessage->getCleanContent();
-        $agent->save();
+        $agent->responseSchema->response_example = $threadRun->lastMessage->getJsonContent() ?: $threadRun->lastMessage->getCleanContent();
+        $agent->responseSchema->save();
 
         // Clean up the thread so we don't clutter the UI
         $thread->delete();

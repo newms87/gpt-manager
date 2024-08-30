@@ -47,7 +47,6 @@ class Agent extends Model implements AuditableContract
     {
         return [
             'tools'                  => 'json',
-            'response_sample'        => 'json',
             'enable_message_sources' => 'boolean',
             'temperature'            => 'float',
         ];
@@ -128,14 +127,6 @@ class Agent extends Model implements AuditableContract
         }
 
         return app($apiClass);
-    }
-
-    public function getFormattedSampleResponse(): string|array|null
-    {
-        return match ($this->response_format) {
-            'text' => $this->response_sample ? (is_array($this->response_sample) ? ($this->response_sample['content'] ?? json_encode($this->response_sample)) : $this->response_sample) : '',
-            default => $this->response_sample,
-        };
     }
 
     public function validate(): static

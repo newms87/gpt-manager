@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->string('description')->default('');
             $table->string('schema_format');
             $table->json('schema')->nullable();
+            $table->json('response_example')->nullable();
             $table->unsignedInteger('agents_count')->default(0);
             $table->unsignedInteger('workflow_jobs_count')->default(0);
             $table->timestamps();

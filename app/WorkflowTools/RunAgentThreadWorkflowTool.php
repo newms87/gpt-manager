@@ -27,7 +27,7 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
             if ($assignment->agent->response_format === 'text') {
                 $responses[] = ['content' => 'Text content'];
             } else {
-                $responses[] = $assignment->agent->response_sample;
+                $responses[] = $assignment->agent->responseSchema->response_example ?? [];
             }
         }
 
