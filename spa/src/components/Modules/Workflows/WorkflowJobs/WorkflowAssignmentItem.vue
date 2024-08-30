@@ -26,20 +26,20 @@
 		</div>
 		<div v-if="showResponse" class="mt-4">
 			<MarkdownEditor
-				v-if="agent.response_sample"
-				:model-value="agent.response_sample"
+				v-if="agent.responseSchema"
+				:model-value="agent.responseSchema.response_example"
 				sync-model-changes
-				:format="agent.schema_format"
+				:format="agent.responseSchema.schema_format"
 				readonly
 			/>
 			<template v-else>
 				<ActionButton
-					:action="sampleAction"
-					:target="assignment.agent"
+					:action="generateExampleAction"
+					:target="agent.responseSchema"
 					:icon="GenerateIcon"
 					icon-class="w-6"
 					class="bg-lime-900 px-8 mt-4 w-full"
-					label="Generate Response Preview"
+					label="Generate Response Example"
 				/>
 			</template>
 		</div>
@@ -48,8 +48,8 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { getAction } from "@/components/Modules/Agents/agentActions";
 import AgentPanelsDialog from "@/components/Modules/Agents/AgentPanelsDialog";
+import { getAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
 import { ShowHideButton } from "@/components/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { Agent } from "@/types";
@@ -66,6 +66,6 @@ const props = defineProps<{
 
 const showResponse = ref(false);
 const isEditingAgent = ref(false);
-const sampleAction = getAction("generate-sample");
+const generateExampleAction = getAction("generate-example");
 const agent = computed<Agent>(() => props.assignment.agent);
 </script>

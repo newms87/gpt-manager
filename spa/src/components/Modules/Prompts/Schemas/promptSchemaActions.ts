@@ -8,7 +8,8 @@ import { h } from "vue";
 
 // This is the default action options for all items
 const forAllItems: Partial<ActionOptions> = {
-	onAction: PromptSchemaRoutes.applyAction
+	onAction: PromptSchemaRoutes.applyAction,
+	onBatchAction: PromptSchemaRoutes.batchAction
 };
 
 const items: ActionOptions[] = [

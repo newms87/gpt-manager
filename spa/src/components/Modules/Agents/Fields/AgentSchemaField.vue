@@ -14,34 +14,28 @@
 			</QTabs>
 		</div>
 
-		<div v-if="agent.response_format !== 'text'" class="mt-4 flex items-stretch flex-nowrap">
-			<SelectField
-				class="flex-grow"
-				:model-value="agent.response_schema?.id"
+		<div v-if="agent.response_format !== 'text'" class="mt-4">
+			<SelectOrCreateField
+				v-model:editing="isEditingSchema"
+				:selected="agent.responseSchema?.id"
+				:show-edit="!!agent.responseSchema"
 				:options="AgentController.getFieldOptions('promptSchemas')"
-				@update="onChangeSchema"
+				:loading="createSchemaAction.isApplying"
+				@create="onCreateSchema"
+				@update:selected="onChangeSchema"
 			/>
-			<ShowHideButton
-				v-if="agent.response_schema"
-				v-model="isEditingSchema"
-				label="Edit"
-				class="bg-sky-800 w-1/5 ml-4"
-			/>
-			<QBtn class="bg-green-900 ml-4 w-1/5" :loading="createSchemaAction.isApplying" @click="onCreateSchema">
-				Create Schema
-			</QBtn>
 		</div>
 
-		<div v-if="isEditingSchema && agent.response_schema">
+		<div v-if="isEditingSchema && agent.responseSchema">
 			<ActionForm
 				class="px-6 pt-6"
 				:action="updateDebouncedSchemaAction"
-				:target="agent.response_schema"
+				:target="agent.responseSchema"
 				:form="{fields}"
 				hide-saved-at
 				@saved="AgentController.loadFieldOptions"
 			/>
-			<PromptSchemaDefinitionPanel class="pt-0" :prompt-schema="agent.response_schema" />
+			<PromptSchemaDefinitionPanel class="pt-0" :prompt-schema="agent.responseSchema" />
 		</div>
 	</div>
 </template>
@@ -50,9 +44,8 @@ import { getAction } from "@/components/Modules/Agents/agentActions";
 import { AgentController } from "@/components/Modules/Agents/agentControls";
 import { PromptSchemaDefinitionPanel } from "@/components/Modules/Prompts/Schemas/Panels";
 import { getAction as getSchemaAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
-import { ShowHideButton } from "@/components/Shared";
 import { Agent } from "@/types/agents";
-import { ActionForm, SelectField, TextField } from "quasar-ui-danx";
+import { ActionForm, SelectOrCreateField, TextField } from "quasar-ui-danx";
 import { h, nextTick, ref } from "vue";
 
 const props = defineProps<{

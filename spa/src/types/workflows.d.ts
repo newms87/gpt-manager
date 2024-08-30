@@ -1,5 +1,6 @@
 import { Agent, AgentThread } from "@/types/agents";
 import { Artifact } from "@/types/artifacts";
+import { PromptSchema } from "@/types/prompts";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
 
@@ -37,7 +38,7 @@ export interface WorkflowJob extends ActionTargetItem {
 	dependencies: WorkflowJobDependency[];
 	assignments: WorkflowAssignment[];
 	workflow?: Workflow;
-	response_schema?: AnyObject | null;
+	responseSchema?: PromptSchema | null;
 }
 
 export interface WorkflowJobRun extends WorkflowRunner {

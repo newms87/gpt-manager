@@ -107,8 +107,8 @@ class PromptSchema extends Model implements AuditableContract
 
     public static function booted(): void
     {
-        static::creating(function (PromptSchema $agent) {
-            $agent->team_id = $agent->team_id ?? team()->id;
+        static::creating(function (PromptSchema $promptSchema) {
+            $promptSchema->team_id = $promptSchema->team_id ?? team()->id ?? null;
         });
     }
 

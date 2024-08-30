@@ -26,7 +26,7 @@
 					class="ml-4 bg-sky-700 text-slate-300 rounded"
 				/>
 				<ShowHideButton
-					v-model="showResponseSchema"
+					v-model="showResponseExample"
 					label="Response"
 					class="ml-4 bg-lime-900 text-slate-300 rounded"
 				/>
@@ -67,13 +67,21 @@
 				</div>
 			</div>
 		</QCardSection>
-		<QCardSection v-if="showResponseSchema">
-			<h6 class="text-base">Response Schema</h6>
+		<QCardSection v-if="showResponseExample">
+			<h6 class="text-base">Response Example</h6>
+			<SelectOrCreateField
+				:selected="job.responseSchema?.id"
+				:options="AgentController.getFieldOptions('promptSchemas')"
+				:loading="createSchemaAction.isApplying"
+				@create="onCreateSchema"
+				@update:selected="onChangeSchema"
+			/>
 			<div class="mt-4">
 				<MarkdownEditor
-					format="yaml"
-					:model-value="job.response_schema"
-					@update:model-value="updateJobDebouncedAction.trigger(job, { response_schema: $event})"
+					v-if="job.responseSchema"
+					:format="job.responseSchema.schema_format"
+					:model-value="job.responseSchema.response_example"
+					@update:model-value="updatePromptSchemaAction.trigger(job.responseSchema, { response_example: $event})"
 				/>
 			</div>
 		</QCardSection>
@@ -81,16 +89,18 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import { AgentController } from "@/components/Modules/Agents/agentControls";
+import { getAction as getPromptSchemaAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import WorkflowJobAssignmentsManager from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobAssignmentsManager";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
-import { ActionButton, ShowHideButton } from "@/components/Shared";
+import { ActionButton } from "@/components/Shared";
 import { Workflow, WorkflowJob } from "@/types/workflows";
 import { FaSolidTriangleExclamation as WarningIcon } from "danx-icon";
-import { EditOnClickTextField } from "quasar-ui-danx";
-import { ref } from "vue";
+import { EditOnClickTextField, SelectOrCreateField, ShowHideButton } from "quasar-ui-danx";
+import { nextTick, onMounted, ref } from "vue";
 
-defineProps<{
+const props = defineProps<{
 	job: WorkflowJob;
 	workflow: Workflow;
 	isTool?: boolean;
@@ -98,7 +108,28 @@ defineProps<{
 
 const isEditing = ref(false);
 const showTasksExample = ref(false);
-const showResponseSchema = ref(false);
+const showResponseExample = ref(false);
+const updateJobAction = getAction("update-job-debounced");
 const updateJobDebouncedAction = getAction("update-job-debounced");
+const updatePromptSchemaAction = getPromptSchemaAction("update-debounced");
+const createSchemaAction = getPromptSchemaAction("create");
 const deleteJobAction = getAction("delete-job");
+
+onMounted(AgentController.loadFieldOptions);
+
+async function onCreateSchema() {
+	const { item: promptSchema } = await createSchemaAction.trigger();
+
+	if (promptSchema) {
+		await updateJobAction.trigger(props.job, { response_schema_id: promptSchema.id });
+	}
+}
+
+async function onChangeSchema(response_schema_id) {
+	await updateJobAction.trigger(props.job, { response_schema_id });
+	showResponseExample.value = false;
+	await nextTick(() => {
+		showResponseExample.value = true;
+	});
+}
 </script>

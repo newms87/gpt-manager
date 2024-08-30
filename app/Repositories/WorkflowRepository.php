@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Agent\Agent;
 use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Prompt\PromptDirective;
+use App\Models\Prompt\PromptSchema;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowAssignment;
 use App\Models\Workflow\WorkflowInput;
@@ -102,7 +103,7 @@ class WorkflowRepository extends ActionRepository
                     'max_attempts'     => $job->max_attempts,
                     'workflow_tool'    => $job->workflow_tool,
                     'dependency_level' => $job->dependency_level,
-                    'response_schema'  => $job->response_schema,
+                    'responseSchema'   => $job->responseSchema?->only(['type', 'name', 'description', 'schema_format', 'schema', 'response_example']),
                     'dependencies'     => $job->dependencies()->get()->map(function (WorkflowJobDependency $dependency) {
                         return [
                             'depends_on_workflow_job_name' => $dependency->dependsOn->name,
@@ -113,8 +114,7 @@ class WorkflowRepository extends ActionRepository
                         ];
                     }),
                     'assignments'      => $job->workflowAssignments->map(function (WorkflowAssignment $assignment) {
-                        $agent          = $assignment->agent;
-                        $responseSchema = $agent->responseSchema;
+                        $agent = $assignment->agent;
 
                         return [
                             'is_required'  => $assignment->is_required,
@@ -139,13 +139,7 @@ class WorkflowRepository extends ActionRepository
                                         ],
                                     ];
                                 }),
-                                'responseSchema'         => [
-                                    'type'          => $responseSchema->type,
-                                    'name'          => $responseSchema->name,
-                                    'description'   => $responseSchema->description,
-                                    'schema_format' => $responseSchema->schema_format,
-                                    'schema'        => $responseSchema->schema,
-                                ],
+                                'responseSchema'         => $agent->responseSchema?->only(['type', 'name', 'description', 'schema_format', 'schema', 'response_example']),
                             ],
                         ];
                     }),
@@ -176,8 +170,22 @@ class WorkflowRepository extends ActionRepository
         ]);
 
         foreach($data['jobs'] as $jobData) {
-            $workflowJob = $workflow->workflowJobs()->create(collect($jobData)->except('assignments', 'dependencies')->toArray());
+            $workflowJob = $workflow->workflowJobs()->create(collect($jobData)->except('responseSchema', 'assignments', 'dependencies')->toArray());
 
+            // Fill in Response Schema
+            $responseSchemaData = $jobData['responseSchema'] ?? null;
+
+            if ($responseSchemaData) {
+                $responseSchema = PromptSchema::updateOrCreate([
+                    'team_id' => team()->id,
+                    'name'    => $responseSchemaData['name'],
+                ],
+                    collect($responseSchemaData)->except('name')->toArray()
+                );
+                $workflowJob->responseSchema()->associate($responseSchema)->save();
+            }
+
+            // Fill in assignments for workflow job
             foreach($jobData['assignments'] as $assignmentData) {
                 // Create the Agent
                 $agentData = $assignmentData['agent'];
@@ -186,9 +194,8 @@ class WorkflowRepository extends ActionRepository
                         'team_id' => team()->id,
                         'name'    => $agentData['name'],
                     ],
-                    [
-                        ...collect($agentData)->except(['name', 'directives', 'responseSchema'])->toArray(),
-                    ]);
+                    collect($agentData)->except(['name', 'directives', 'responseSchema'])->toArray()
+                );
 
                 // Assign agent to workflow job
                 $workflowJob->workflowAssignments()->create([
@@ -198,16 +205,17 @@ class WorkflowRepository extends ActionRepository
                 ]);
 
                 // Fill in Prompt Response schema
-                $responseSchemaData = $agentData['responseSchema'];
-                $responseSchema     = $agent->responseSchema()->updateOrCreate(
-                    [
+                $responseSchemaData = $agentData['responseSchema'] ?? null;
+
+                if ($responseSchemaData) {
+                    $responseSchema = PromptSchema::updateOrCreate([
                         'team_id' => team()->id,
                         'name'    => $responseSchemaData['name'],
                     ],
-                    [
-                        ...collect($responseSchemaData)->except('name')->toArray(),
-                    ]);
-                $agent->responseSchema()->associate($responseSchema)->save();
+                        collect($responseSchemaData)->except('name')->toArray()
+                    );
+                    $agent->responseSchema()->associate($responseSchema)->save();
+                }
 
                 // Create Directives
                 foreach($agentData['directives'] as $agentDirectiveData) {
