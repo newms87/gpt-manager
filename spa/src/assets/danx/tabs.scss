@@ -1,0 +1,12 @@
+.q-tabs {
+	&.tab-buttons {
+		@apply rounded-r-xl rounded-l-xl border;
+		.q-tab__content {
+			@apply z-10;
+		}
+
+		.q-tab__indicator {
+			@apply h-full;
+		}
+	}
+}

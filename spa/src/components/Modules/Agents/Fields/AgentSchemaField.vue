@@ -1,8 +1,20 @@
 <template>
 	<div>
-		<div class="mb-4">Response Schema</div>
+		<div class="flex items-center flex-nowrap">
+			<h6>Response Schema</h6>
+			<QTabs
+				class="ml-4 tab-buttons border-sky-900"
+				indicator-color="sky-900"
+				:model-value="agent.response_format"
+				@update:model-value="updateAction.trigger(agent, {response_format: $event})"
+			>
+				<QTab name="text" label="Text" />
+				<QTab name="json_object" label="JSON Object" />
+				<QTab name="json_schema" label="JSON Schema" />
+			</QTabs>
+		</div>
 
-		<div class="flex items-stretch flex-nowrap">
+		<div v-if="agent.response_format !== 'text'" class="mt-4 flex items-stretch flex-nowrap">
 			<SelectField
 				class="flex-grow"
 				:model-value="agent.response_schema?.id"
@@ -41,7 +53,7 @@ import { getAction as getSchemaAction } from "@/components/Modules/Prompts/Schem
 import { ShowHideButton } from "@/components/Shared";
 import { Agent } from "@/types/agents";
 import { ActionForm, SelectField, TextField } from "quasar-ui-danx";
-import { h, ref } from "vue";
+import { h, nextTick, ref } from "vue";
 
 const props = defineProps<{
 	agent: Agent,
@@ -70,5 +82,9 @@ async function onCreateSchema() {
 
 async function onChangeSchema(response_schema_id) {
 	await updateAction.trigger(props.agent, { response_schema_id });
+	isEditingSchema.value = false;
+	await nextTick(() => {
+		isEditingSchema.value = true;
+	});
 }
 </script>
