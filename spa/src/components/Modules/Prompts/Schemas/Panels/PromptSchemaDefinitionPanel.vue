@@ -12,20 +12,20 @@
 			<h3>Example Response</h3>
 			<ActionButton
 				:action="generateExampleAction"
-				:target="agent"
+				:target="promptSchema"
 				class="my-4 bg-sky-800 text-base px-6"
-				:icon="GenerateSampleIcon"
+				:icon="GenerateExampleIcon"
 				icon-class="w-5"
-				label="Generate Sample"
-				:loading="sampleAction.isApplying"
-				@click="sampleAction.trigger(agent)"
+				label="Generate Example Response"
+				:loading="generateExampleAction.isApplying"
+				@click="generateExampleAction.trigger(promptSchema)"
 			/>
-			<div v-if="agent.response_sample">
+			<div v-if="promptSchema.response_example">
 				<MarkdownEditor
 					readonly
-					:model-value="agent.response_sample"
+					:model-value="promptSchema.response_example"
 					sync-model-changes
-					:format="agent.response_format === 'text' ? 'text' : agent.schema_format"
+					:format="promptSchema.schema_format"
 				/>
 			</div>
 		</div>
@@ -36,7 +36,7 @@ import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { getAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
 import { ActionButton } from "@/components/Shared";
 import { PromptSchema } from "@/types/prompts";
-import { FaSolidRobot as GenerateSampleIcon } from "danx-icon";
+import { FaSolidRobot as GenerateExampleIcon } from "danx-icon";
 import { ActionForm, Form, SelectField } from "quasar-ui-danx";
 import { h } from "vue";
 
@@ -45,7 +45,7 @@ defineProps<{
 }>();
 
 const updateDebouncedAction = getAction("update-debounced");
-const sampleAction = getAction("generate-sample");
+const generateExampleAction = getAction("generate-example");
 
 const promptSchemaForm: Form = {
 	fields: [

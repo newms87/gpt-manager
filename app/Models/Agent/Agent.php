@@ -20,10 +20,11 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
+use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class Agent extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 
     const string
         RESPONSE_FORMAT_TEXT = 'text',
@@ -41,6 +42,14 @@ class Agent extends Model implements AuditableContract
         'enable_message_sources',
         'tools',
         'retry_count',
+    ];
+
+    protected array $keywordFields = [
+        'name',
+        'description',
+        'api',
+        'model',
+        'response_format',
     ];
 
     public array $relationCounters = [

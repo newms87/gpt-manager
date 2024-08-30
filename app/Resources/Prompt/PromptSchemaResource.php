@@ -19,6 +19,7 @@ class PromptSchemaResource extends ActionResource
             'description'         => $model->description,
             'schema_format'       => $model->schema_format,
             'schema'              => $model->schema,
+            'response_example'    => $model->response_example,
             'agents_count'        => $model->agents_count,
             'workflow_jobs_count' => $model->workflow_jobs_count,
             'created_at'          => $model->created_at,

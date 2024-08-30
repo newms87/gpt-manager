@@ -91,14 +91,15 @@ class PromptSchemaRepository extends ActionRepository
         $threadRepo = app(ThreadRepository::class);
         $thread     = $threadRepo->create($agent, $promptSchema->name . ' Response Example');
 
-        $message = 'Create a response with example data. Provide a robust example response so all fields are included in the resulting JSON object with all permutations of fields from the given schema. The goal is to create a response with an example that shows all possible fields for a response (even if fields are mutually exclusive or seem unnecessary or wrong, include all fields if they are in the schema conditionally, optionally or required). Pay close attention to field type if implied or specified!! If type is array, always provide exactly 2 items. Respond with JSON only! NO OTHER TEXT.';
+        $message = 'Create a response following the provided schema below using example data. Provide a robust example response so all fields are included in the resulting JSON object with all permutations of fields from the given schema. DO NOT INCLUDE fields that do not exist in the schema below!! The goal is to create a response with an example that shows all possible fields for a response (even if fields are mutually exclusive or seem unnecessary or wrong, include all fields if they are in the schema conditionally, optionally or required). Pay close attention to field type if implied or specified!! If type is array, always provide exactly 2 items. Respond with JSON only! NO OTHER TEXT.';
 
         $threadRepo->addMessageToThread($thread, $message);
+        $threadRepo->addMessageToThread($thread, $promptSchema->schema);
 
         $threadRun = app(AgentThreadService::class)->run($thread, dispatch: false);
 
-        $agent->responseSchema->response_example = $threadRun->lastMessage->getJsonContent() ?: [];
-        $agent->responseSchema->save();
+        $promptSchema->response_example = $threadRun->lastMessage->getJsonContent() ?: [];
+        $promptSchema->save();
 
         // Clean up the thread so we don't clutter the UI
         $thread->delete();

@@ -7,6 +7,11 @@ export const filters = computed(() => [
 		flat: true,
 		fields: [
 			{
+				type: "text",
+				name: "keywords",
+				label: "Search"
+			},
+			{
 				type: "date-range",
 				name: "created_at",
 				label: "Created Date",
