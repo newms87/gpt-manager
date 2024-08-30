@@ -113,13 +113,13 @@ class AgentThreadService
             $options = [
                 'temperature'     => $threadRun->temperature,
                 'response_format' => [
-                    'type' => $threadRun->response_format ?: 'text',
+                    'type' => $threadRun->response_format ?: Agent::RESPONSE_FORMAT_TEXT,
                 ],
                 'seed'            => (int)$threadRun->seed,
             ];
 
-            if ($threadRun->response_format === 'json_schema') {
-                $options['response_format']['json_schema'] = $this->formatResponseSchemaForAgent($agent);
+            if ($threadRun->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA) {
+                $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = $this->formatResponseSchemaForAgent($agent);
             }
 
             $tools = $agent->formatTools();
@@ -327,14 +327,14 @@ class AgentThreadService
 
         // JSON Object responses provide a schema for the response, but not via the json_schema structured response mechanics by Open AI (possibly others)
         // So this is just a message to the LLM instead of a requirement built in
-        if ($agent->response_format === 'json_object' && $agent->responseSchema) {
+        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_OBJECT && $agent->responseSchema) {
             $responseSchema = $agent->responseSchema->schema;
         }
 
         // If the response format is JSON Schema, but the agent does not accept JSON schema, we need to format the response schema for the AI model
         // and provide a message so the agent can see the schema (simulating response schema format)
         // XXX: NOTE this is a hack for Perplexity AI, which does support JSON Schema, but does not seem to respond to it for their online models
-        if ($agent->response_format === 'json_schema' && !$apiFormatter->acceptsJsonSchema()) {
+        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && !$apiFormatter->acceptsJsonSchema()) {
             $responseSchema = $this->formatResponseSchemaForAgent($agent);
         }
 

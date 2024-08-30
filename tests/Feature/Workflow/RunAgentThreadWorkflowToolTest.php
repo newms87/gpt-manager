@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Workflow;
 
+use App\Models\Agent\Agent;
 use App\Models\Prompt\PromptSchema;
 use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowJob;
@@ -661,7 +662,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $promptSchema    = PromptSchema::factory()->create(['response_example' => $responseExample]);
         $workflowJob->responseSchema()->associate($promptSchema)->save();
         $agent = $workflowJob->workflowAssignments()->first()->agent;
-        $agent->forceFill(['response_format' => 'json_object'])->save();
+        $agent->forceFill(['response_format' => Agent::RESPONSE_FORMAT_JSON_OBJECT])->save();
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
             'force_schema'               => true,

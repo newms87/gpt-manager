@@ -6,7 +6,6 @@ use App\Models\Agent\Agent;
 use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Prompt\PromptDirective;
 use App\Models\Prompt\PromptSchema;
-use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
@@ -81,7 +80,6 @@ class AgentRepository extends ActionRepository
             'update' => $this->updateAgent($model, $data),
             'copy' => $this->copyAgent($model),
             'create-thread' => app(ThreadRepository::class)->create($model),
-            'generate-sample' => $this->generateResponseExample($model),
             'save-directive' => $this->saveDirective($model, $data['id'] ?? null, $data['section'] ?? null, $data['position'] ?? 0),
             'update-directives' => $this->updateDirectives($model, $data['directives'] ?? []),
             'remove-directive' => $this->removeDirective($model, $data['id'] ?? null),
@@ -230,38 +228,5 @@ class AgentRepository extends ActionRepository
     public function removeDirective(Agent $agent, $directiveId): bool
     {
         return $agent->directives()->where('prompt_directive_id', $directiveId)->delete();
-    }
-
-    /**
-     * Generate a sample response based on the prompt and response schema.
-     *
-     * This is useful for feedback for the user to validate the response schema and also used to identify available
-     * fields for grouping in Agent Assignments.
-     */
-    public function generateResponseExample(Agent $agent): true
-    {
-        if (!$agent->responseSchema) {
-            throw new ValidationError('Response schema is required to generate a sample response');
-        }
-
-        $threadRepo = app(ThreadRepository::class);
-        $thread     = $threadRepo->create($agent, 'Response Sample');
-
-        if ($agent->response_format === 'text') {
-            $message = 'Provide a robust sample response so the user can have an idea of what the text response will look like given an expected input.';
-        } else {
-            $message = 'Create a response with example data. Provide a robust sample response so all fields have been resolved with all permutations of fields in the designed response object. The goal is to create a response with an example that shows all possible fields for a response (even if fields are mutually exclusive or seem unnecessary or wrong, include all fields if they are in the response format). Pay close attention to field type if implied or specified!! If type is array, always provide exactly 2 elements. Respond with JSON only! NO OTHER TEXT.';
-        }
-        $threadRepo->addMessageToThread($thread, $message);
-
-        $threadRun = app(AgentThreadService::class)->run($thread, dispatch: false);
-
-        $agent->responseSchema->response_example = $threadRun->lastMessage->getJsonContent() ?: $threadRun->lastMessage->getCleanContent();
-        $agent->responseSchema->save();
-
-        // Clean up the thread so we don't clutter the UI
-        $thread->delete();
-
-        return true;
     }
 }

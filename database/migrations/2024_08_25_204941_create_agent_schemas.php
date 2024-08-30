@@ -26,7 +26,7 @@ return new class extends Migration {
         });
 
         Schema::table('agents', function (Blueprint $table) {
-            $table->foreignId('response_schema_id')->nullable()->after('response_schema')->references('id')->on('prompt_schemas');
+            $table->foreignId('response_schema_id')->nullable()->after('response_format')->references('id')->on('prompt_schemas');
         });
 
         Schema::table('workflow_jobs', function (Blueprint $table) {

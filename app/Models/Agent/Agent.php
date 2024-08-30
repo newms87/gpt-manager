@@ -25,6 +25,11 @@ class Agent extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
 
+    const string
+        RESPONSE_FORMAT_TEXT = 'text',
+        RESPONSE_FORMAT_JSON_SCHEMA = 'json_schema',
+        RESPONSE_FORMAT_JSON_OBJECT = 'json_object';
+
     protected $fillable = [
         'name',
         'description',

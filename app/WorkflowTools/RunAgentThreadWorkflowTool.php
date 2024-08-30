@@ -2,6 +2,7 @@
 
 namespace App\WorkflowTools;
 
+use App\Models\Agent\Agent;
 use App\Models\Workflow\WorkflowTask;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Support\Facades\Log;
@@ -29,7 +30,7 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
         // If the agent responded with a message, set the content or data
         // NOTE: Sometimes an agent may respond with a tools response that includes an is_finished flag, and our lastMessage may be empty
         if ($threadRun->lastMessage) {
-            if ($assignment->agent->response_format !== 'text') {
+            if ($assignment->agent->response_format !== Agent::RESPONSE_FORMAT_TEXT) {
                 $data = $threadRun->lastMessage->getJsonContent();
             } else {
                 $content = $threadRun->lastMessage->getCleanContent();

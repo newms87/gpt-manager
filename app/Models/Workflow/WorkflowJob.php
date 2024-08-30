@@ -82,8 +82,8 @@ class WorkflowJob extends Model implements AuditableContract
     {
         try {
             return app($this->workflow_tool ?: RunAgentThreadWorkflowTool::class);
-        } catch(\Throwable $exception) {
-            throw new Exception("Invalid workflow tool for $this->name: $this->workflow_tool");
+        } catch(Throwable $exception) {
+            throw new Exception("Invalid workflow tool for $this->name: $this->workflow_tool", $exception->getCode(), $exception);
         }
     }
 

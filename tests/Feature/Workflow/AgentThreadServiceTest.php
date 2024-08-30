@@ -21,7 +21,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $temperature = .7;
         $agent       = Agent::factory()->create([
             'temperature'     => $temperature,
-            'response_format' => 'json_object',
+            'response_format' => Agent::RESPONSE_FORMAT_JSON_OBJECT,
         ]);
         $thread      = Thread::factory()->create(['agent_id' => $agent->id]);
         $thread->messages()->create(['role' => Message::ROLE_USER, 'content' => 'Test message']);
@@ -35,7 +35,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $this->assertEquals(ThreadRun::STATUS_RUNNING, $threadRun->status);
         $this->assertEquals($temperature, $threadRun->temperature);
         $this->assertEquals($agent->tools, $threadRun->tools);
-        $this->assertEquals('json_object', $threadRun->response_format);
+        $this->assertEquals(Agent::RESPONSE_FORMAT_JSON_OBJECT, $threadRun->response_format);
     }
 
     public function test_run_throwsExceptionWhenThreadIsAlreadyRunning()
@@ -100,7 +100,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     public function test_run_setsResponseFormatToTextWhenAgentResponseFormatIsText()
     {
         // Given
-        $agent   = Agent::factory()->create(['response_format' => 'text']);
+        $agent   = Agent::factory()->create(['response_format' => Agent::RESPONSE_FORMAT_TEXT]);
         $thread  = Thread::factory()->withMessages(1)->create(['agent_id' => $agent->id]);
         $service = new AgentThreadService();
 
@@ -108,7 +108,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $threadRun = $service->run($thread);
 
         // Then
-        $this->assertEquals('text', $threadRun->response_format);
+        $this->assertEquals(Agent::RESPONSE_FORMAT_TEXT, $threadRun->response_format);
     }
 
     public function test_run_setsJobDispatchIdWhenDispatchIsTrue()
