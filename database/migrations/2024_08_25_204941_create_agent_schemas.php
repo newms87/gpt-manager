@@ -30,7 +30,7 @@ return new class extends Migration {
         });
 
         Schema::table('workflow_jobs', function (Blueprint $table) {
-            $table->foreignId('response_schema_id')->nullable()->references('id')->on('prompt_schemas');
+            $table->foreignId('response_schema_id')->nullable()->after('dependency_level')->references('id')->on('prompt_schemas');
         });
     }
 

@@ -21,7 +21,7 @@ return new class extends Migration {
             ],
                 [
                     'type'          => PromptSchema::TYPE_AGENT_RESPONSE,
-                    'schema_format' => $agent->schema_format,
+                    'schema_format' => $agent->schema_format ?: PromptSchema::FORMAT_YAML,
                     'schema'        => $agent->response_schema,
                 ]);
 

@@ -9,7 +9,6 @@ use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
@@ -46,7 +45,8 @@ class PromptSchema extends Model implements AuditableContract
     public function casts(): array
     {
         return [
-            'schema' => 'json',
+            'schema'           => 'json',
+            'response_example' => 'json',
         ];
     }
 
@@ -57,12 +57,12 @@ class PromptSchema extends Model implements AuditableContract
 
     public function agents(): HasMany|Agent
     {
-        return $this->hasMany(Agent::class);
+        return $this->hasMany(Agent::class, 'response_schema_id');
     }
 
-    public function workflowJobs(): BelongsToMany|WorkflowJob
+    public function workflowJobs(): HasMany|WorkflowJob
     {
-        return $this->belongsToMany(WorkflowJob::class)->withTimestamps();
+        return $this->hasMany(WorkflowJob::class, 'response_schema_id');
     }
 
     public function delete(): bool

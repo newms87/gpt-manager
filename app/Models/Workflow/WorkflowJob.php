@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Models\Prompt\PromptSchema;
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
 use App\WorkflowTools\WorkflowInputWorkflowTool;
 use App\WorkflowTools\WorkflowTool;
@@ -72,6 +73,11 @@ class WorkflowJob extends Model implements AuditableContract
         return $this->hasMany(WorkflowAssignment::class);
     }
 
+    public function responseSchema(): BelongsTo|PromptSchema
+    {
+        return $this->belongsTo(PromptSchema::class, 'response_schema_id');
+    }
+
     public function getWorkflowTool(): WorkflowTool
     {
         try {
@@ -84,12 +90,12 @@ class WorkflowJob extends Model implements AuditableContract
     /**
      * Gets a list of all the responses that are expected from the workflow tool
      */
-    public function getResponsesPreview(): array
+    public function getResponseExample(): array
     {
         try {
-            return $this->getWorkflowTool()->getResponsesPreview($this);
+            return $this->getWorkflowTool()->getResponseExample($this);
         } catch(Throwable $exception) {
-            Log::error("Error getting response preview for $this: $exception", ['exception' => $exception]);
+            Log::error("Error getting response example for $this: $exception", ['exception' => $exception]);
 
             return [];
         }
@@ -100,16 +106,12 @@ class WorkflowJob extends Model implements AuditableContract
      */
     public function getResponseFields(): array
     {
-        $responses = $this->getResponsesPreview();
-
-        $fields = [];
-        foreach($responses as $response) {
-            $fields = array_merge($fields, ArrayHelper::getNestedFieldList($response));
-        }
-
-        return array_unique($fields);
+        return ArrayHelper::getNestedFieldList($this->getResponseExample());
     }
 
+    /**
+     * Get an example list of tasks that will be created by the workflow tool
+     */
     public function getTasksPreview(): array
     {
         try {
@@ -118,22 +120,10 @@ class WorkflowJob extends Model implements AuditableContract
             foreach($this->dependencies as $dependency) {
                 $artifacts = [];
 
-
                 if ($dependency->dependsOn->workflow_tool === WorkflowInputWorkflowTool::class) {
+                    $example     = $dependency->dependsOn->getResponseExample();
                     $artifacts[] = Artifact::make([
-                        'data' => [
-                            'content' => 'Example content',
-                            'files'   => [
-                                [
-                                    'name' => 'example.pdf',
-                                    'url'  => 'https://example.com/example.pdf',
-                                ],
-                                [
-                                    'name' => 'example2.pdf',
-                                    'url'  => 'https://example.com/example2.pdf',
-                                ],
-                            ],
-                        ],
+                        'data' => $example,
                     ]);
                 } else {
                     foreach($dependency->dependsOn->workflowAssignments as $assignment) {

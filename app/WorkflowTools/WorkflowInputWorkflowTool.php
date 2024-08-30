@@ -29,27 +29,30 @@ class WorkflowInputWorkflowTool extends WorkflowTool
         ]);
     }
 
-    public function getResponsesPreview(WorkflowJob $workflowJob): array|string|null
+    /**
+     * Get a usable example of what a response from this tool would look like
+     * NOTE: Workflow input tool behaves a little differently in that it uses any assigned schemas as a template for
+     * the teamObjects. The assumption is that a schema is defined for the selected Team Object type.
+     */
+    public function getResponseExample(WorkflowJob $workflowJob): array
     {
         $response = [
-            [
-                'content' => 'Example content',
-                'files'   => [
-                    [
-                        'filename' => 'example.pdf',
-                        'url'      => 'https://example.com/example.pdf',
-                    ],
-                    [
-                        'filename' => 'example2.pdf',
-                        'url'      => 'https://example.com/example2.pdf',
-                    ],
+            'content' => 'Example content',
+            'files'   => [
+                [
+                    'filename' => 'example.pdf',
+                    'url'      => 'https://example.com/example.pdf',
+                ],
+                [
+                    'filename' => 'example2.pdf',
+                    'url'      => 'https://example.com/example2.pdf',
                 ],
             ],
         ];
 
 
-        if ($workflowJob->response_schema) {
-            $response[0]['teamObjects'] = [$workflowJob->response_schema];
+        if ($workflowJob->responseSchema) {
+            $response['teamObjects'] = [$workflowJob->responseSchema->response_example];
         }
 
         return $response;
@@ -62,7 +65,7 @@ class WorkflowInputWorkflowTool extends WorkflowTool
     {
         $workflowInput = $workflowTask->workflowJobRun->workflowRun->workflowInput;
 
-        Log::debug(self::$toolName . ": preparing $workflowTask =====> $workflowInput");
+        Log::debug(self::$toolName . ": preparing $workflowTask ==> $workflowInput");
         $files = [];
 
         $artifact = $workflowTask->artifacts()->create([

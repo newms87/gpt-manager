@@ -28,11 +28,15 @@ abstract class WorkflowTool
     abstract public function runTask(WorkflowTask $workflowTask): void;
 
     /**
-     * Get a preview of what a response from this tool would look like
+     * Get a usable example of what a response from this tool would look like
      */
-    public function getResponsesPreview(WorkflowJob $workflowJob): array|string|null
+    public function getResponseExample(WorkflowJob $workflowJob): array|string|null
     {
-        return [];
+        if (!$workflowJob->responseSchema) {
+            return [];
+        }
+
+        return $workflowJob->responseSchema->response_example;
     }
 
     public function __toString()

@@ -44,7 +44,7 @@ class PromptDirective extends Model implements AuditableContract
 
     public function agents(): BelongsToMany|Agent
     {
-        return $this->belongsToMany(Agent::class);
+        return $this->belongsToMany(Agent::class, 'agent_prompt_directives');
     }
 
     public function delete(): bool
