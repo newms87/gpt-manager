@@ -20,7 +20,6 @@ class Thread extends Model implements AuditableContract
         'id',
         'created_at',
         'updated_at',
-        'deleted_at',
     ];
 
     protected array $usage = [];
