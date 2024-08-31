@@ -14,9 +14,10 @@ class DatabaseSchemaMapper
 
     public function __construct($database = null, $config = null)
     {
-        $database     = $database ?: config('database.default');
-        $config       = $config ?: config('database.connections.' . $database);
-        $this->schema = DB::connectUsing($database . '-builder', $config)->getSchemaBuilder();
+        $database = $database ?: config('database.default');
+        $config   = $config ?: config('database.connections.' . $database);
+
+        $this->schema = DB::connectUsing(uniqid() . '-builder', $config)->getSchemaBuilder();
     }
 
     public function map($prefix, $schemaFile)

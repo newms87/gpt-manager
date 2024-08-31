@@ -10,7 +10,7 @@ class TestingSeeder extends Seeder
 {
     public function run(): void
     {
-        $team = Team::firstOrCreate(['name' => 'Team Dan']);
+        $team = Team::firstOrCreate(['name' => 'Team Dan', 'namespace' => 'team-dan']);
 
         $email = config('gpt-manager.email');
         if (User::where('email', $email)->doesntExist()) {
@@ -19,7 +19,7 @@ class TestingSeeder extends Seeder
                 'email' => $email,
             ]);
 
-            $user->teams()->save($team);
+            $user->teams()->syncWithoutDetaching([$team->id]);
         }
 
         app(TortguardSeeder::class)->run();
