@@ -10,12 +10,7 @@ class TestingSeeder extends Seeder
 {
     public function run(): void
     {
-        $team = Team::firstWhere('name', 'Team Dan');
-        if (!$team) {
-            $team = Team::factory()->create([
-                'name' => 'Team Dan',
-            ]);
-        }
+        $team = Team::firstOrCreate(['name' => 'Team Dan']);
 
         $email = config('gpt-manager.email');
         if (User::where('email', $email)->doesntExist()) {
@@ -26,5 +21,8 @@ class TestingSeeder extends Seeder
 
             $user->teams()->save($team);
         }
+
+        app(TortguardSeeder::class)->run();
+        app(OnDemandsSeeder::class)->run();
     }
 }

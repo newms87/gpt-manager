@@ -32,7 +32,7 @@ class WorkflowJob extends Model implements AuditableContract
         'deleted_at',
     ];
 
-    protected array $relatedCounters = [
+    protected array $relationCounters = [
         WorkflowJobRun::class => ['workflowJobRuns' => 'runs_count'],
     ];
 
