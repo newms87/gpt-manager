@@ -18,17 +18,22 @@ use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Throwable;
 
 class WorkflowJob extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes, AuditableTrait;
+    use HasFactory, SoftDeletes, AuditableTrait, HasRelationCountersTrait;
 
     protected $guarded = [
         'id',
         'created_at',
         'updated_at',
         'deleted_at',
+    ];
+
+    protected array $relatedCounters = [
+        WorkflowJobRun::class => ['workflowJobRuns' => 'runs_count'],
     ];
 
     public function workflow(): BelongsTo|Workflow

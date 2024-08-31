@@ -20,10 +20,8 @@ class WorkflowJobResource extends ActionResource
             'id'            => $model->id,
             'name'          => $model->name,
             'description'   => $model->description,
-
-            // TODO: refactor to countable
-            'runs_count'    => $model->workflowJobRuns()->count(),
             'workflow_tool' => $model->workflow_tool,
+            'runs_count'    => $model->runs_count,
             'created_at'    => $model->created_at,
         ];
     }
