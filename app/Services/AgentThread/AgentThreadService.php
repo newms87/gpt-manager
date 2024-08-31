@@ -214,6 +214,9 @@ class AgentThreadService
 
         $formattedSchema = [];
 
+        // If the Schema has defined properties at the top level, we need to move into the properties key
+        $schema = $schema['properties'] ?? $schema;
+
         // Ensures all properties (and sub properties) are both required and have no additional properties. It does this recursively.
         foreach($schema as $key => $value) {
             $childName             = $name . '.' . $key;

@@ -17,6 +17,9 @@ parameters:
           name:
             type: string
             description: 'The name of the object to save. Must be unique per type'
+          date:
+            type: string
+            description: 'The date (yyyy-mm-dd) and time (00:00:00 if time n/a) of the object. Format should always be full date (no partial dates)!'
           description:
             type: string
             description: 'A description of the object to save'
@@ -44,6 +47,15 @@ parameters:
                 name:
                   type: string
                   description: 'The name of the related object'
+                attributes:
+                  type: array
+                  items:
+                    type: object
+                relations:
+                  type: array
+                  description: 'The list of related objects to the related object being saved.'
+                  items:
+                    type: object
               required:
                 - relationship_name
               oneOf:

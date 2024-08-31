@@ -9,19 +9,22 @@
 		<QSeparator class="bg-slate-500 my-8" />
 
 		<div>
-			<h6>Example Response</h6>
-			<ActionButton
-				:action="generateExampleAction"
-				:target="promptSchema"
-				class="my-4 bg-sky-800 text-base px-6"
-				:icon="GenerateExampleIcon"
-				icon-class="w-5"
-				label="Generate Example Response"
-				:loading="generateExampleAction.isApplying"
-				@click="generateExampleAction.trigger(promptSchema)"
-			/>
+			<div class="flex items-center flex-nowrap gap-x-4">
+				<h6>Example Response</h6>
+				<ActionButton
+					:action="generateExampleAction"
+					:target="promptSchema"
+					class="text-base px-6"
+					:class="{'bg-yellow-800': !!promptSchema.response_example, 'bg-sky-800': !promptSchema.response_example}"
+					:icon="GenerateExampleIcon"
+					icon-class="w-5"
+					:label="promptSchema.response_example ? 'Regenerate Example' : 'Generate Example'"
+					:loading="generateExampleAction.isApplying"
+					@click="generateExampleAction.trigger(promptSchema)"
+				/>
+			</div>
 			<MarkdownEditor
-				:model-value="promptSchema.response_example"
+				:model-value="promptSchema.response_example || ''"
 				sync-model-changes
 				:format="promptSchema.schema_format"
 				@update:model-value="updateDebouncedAction.trigger(promptSchema, { response_example: $event })"
