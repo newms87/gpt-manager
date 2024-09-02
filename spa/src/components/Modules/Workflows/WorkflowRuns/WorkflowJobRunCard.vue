@@ -33,9 +33,9 @@
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
 import WorkflowTaskCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowTaskCard";
-import { ShowHideButton } from "@/components/Shared";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import { WorkflowJobRun, WorkflowRun } from "@/types/workflows";
+import { ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineProps<{

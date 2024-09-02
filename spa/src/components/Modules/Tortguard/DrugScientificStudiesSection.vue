@@ -10,7 +10,7 @@
 <script setup lang="ts">
 import DrugScientificStudyCard from "@/components/Modules/Tortguard/DrugScientificStudyCard";
 import { ScientificStudy } from "@/components/Modules/Tortguard/tortguard";
-import { ShowHideButton } from "@/components/Shared";
+import { ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineProps<{

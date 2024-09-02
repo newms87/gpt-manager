@@ -56,10 +56,11 @@
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
-import { AiTokenUsageButton, ShowHideButton } from "@/components/Shared";
+import { AiTokenUsageButton } from "@/components/Shared";
 import router from "@/router";
 import { WorkflowTask } from "@/types/workflows";
 import { FaSolidMessage as ThreadLinkIcon } from "danx-icon";
+import { ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{

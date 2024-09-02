@@ -74,13 +74,12 @@ import { WorkflowController } from "@/components/Modules/Workflows/workflowContr
 import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
 import WorkflowJobRunCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunCard";
-import { ShowHideButton } from "@/components/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import ListLoadingContainer from "@/components/Shared/Containers/ListLoadingContainer";
 import { WorkflowRunRoutes } from "@/routes/workflowRoutes";
 import { WorkflowRun } from "@/types/workflows";
-import { autoRefreshObject } from "quasar-ui-danx";
+import { autoRefreshObject, ShowHideButton } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
 
 defineEmits(["remove"]);

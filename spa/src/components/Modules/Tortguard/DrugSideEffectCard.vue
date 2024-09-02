@@ -83,10 +83,9 @@ import DrugWarningsSection from "@/components/Modules/Tortguard/DrugWarningsSect
 import { DrugSideEffect } from "@/components/Modules/Tortguard/tortguard";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import WorkflowResearchingCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowResearchCard";
-import { ShowHideButton } from "@/components/Shared";
 import LogoImage from "@/components/Shared/Images/LogoImage";
 import { TortguardRoutes } from "@/routes/tortguardRoutes";
-import { autoRefreshObject, storeObject } from "quasar-ui-danx";
+import { autoRefreshObject, ShowHideButton, storeObject } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 
 const props = defineProps<{ drugSideEffect: DrugSideEffect }>();

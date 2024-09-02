@@ -41,8 +41,7 @@
 </template>
 <script setup lang="ts">
 import { ErrorLogEntry } from "@/components/Modules/Audits/audit-requests";
-import { ShowHideButton } from "@/components/Shared";
-import { fDateTime } from "quasar-ui-danx";
+import { fDateTime, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{

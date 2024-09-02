@@ -57,8 +57,7 @@
 <script setup lang="ts">
 import TeamObjectAttributeBlock from "@/components/Modules/Tortguard/TeamObjectAttributeBlock";
 import { DrugProduct } from "@/components/Modules/Tortguard/tortguard";
-import { ShowHideButton } from "@/components/Shared";
-import { LabelValueBlock } from "quasar-ui-danx";
+import { LabelValueBlock, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineProps<{ product: DrugProduct }>();

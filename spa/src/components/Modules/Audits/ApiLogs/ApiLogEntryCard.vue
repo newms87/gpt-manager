@@ -45,8 +45,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { ApiLog } from "@/components/Modules/Audits/audit-requests";
-import { ShowHideButton } from "@/components/Shared";
-import { dbDateTime } from "quasar-ui-danx";
+import { dbDateTime, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{

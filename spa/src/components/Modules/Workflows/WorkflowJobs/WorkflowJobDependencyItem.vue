@@ -75,11 +75,10 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { ShowHideButton } from "@/components/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { WorkflowJobDependency } from "@/types/workflows";
 import { FaSolidScrewdriverWrench as HideConfigureIcon, FaSolidWrench as ShowConfigureIcon } from "danx-icon";
-import { ListTransition, SelectField } from "quasar-ui-danx";
+import { ListTransition, SelectField, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const emit = defineEmits(["update", "remove"]);

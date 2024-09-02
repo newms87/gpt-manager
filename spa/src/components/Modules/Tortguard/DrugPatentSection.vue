@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import DrugPatentCard from "@/components/Modules/Tortguard/DrugPatentCard";
 import { Patent } from "@/components/Modules/Tortguard/tortguard";
-import { ShowHideButton } from "@/components/Shared";
+import { ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const isShowing = ref(false);

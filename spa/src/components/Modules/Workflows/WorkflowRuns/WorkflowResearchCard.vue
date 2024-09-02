@@ -21,11 +21,10 @@
 <script setup lang="ts">
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
-import { ShowHideButton } from "@/components/Shared";
 import router from "@/router";
 import { WorkflowRunRoutes } from "@/routes/workflowRoutes";
 import { WorkflowRun } from "@/types";
-import { autoRefreshObject } from "quasar-ui-danx";
+import { autoRefreshObject, ShowHideButton } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 
 const props = defineProps<{ workflowRuns: WorkflowRun[], refresh?: boolean }>();

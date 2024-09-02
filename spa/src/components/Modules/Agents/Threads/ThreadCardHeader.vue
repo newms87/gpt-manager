@@ -52,10 +52,10 @@
 
 <script setup lang="ts">
 import { getAction, getActions } from "@/components/Modules/Agents/Threads/threadActions";
-import { ActionButton, AiTokenUsageButton, ShowHideButton } from "@/components/Shared";
+import { ActionButton, AiTokenUsageButton } from "@/components/Shared";
 import { AgentThread } from "@/types/agents";
 import { FaSolidFileCircleCheck as ShowLogsIcon, FaSolidFileCircleXmark as HideLogsIcon } from "danx-icon";
-import { ActionMenu, EditOnClickTextField, fDateTime } from "quasar-ui-danx";
+import { ActionMenu, EditOnClickTextField, fDateTime, ShowHideButton } from "quasar-ui-danx";
 
 defineEmits(["toggle", "close"]);
 defineProps<{
@@ -68,5 +68,4 @@ const showLogs = defineModel<boolean>("logs", { default: false });
 const runAction = getAction("run");
 const stopAction = getAction("stop");
 const updateAction = getAction("update");
-const deleteAction = getAction("delete");
 </script>

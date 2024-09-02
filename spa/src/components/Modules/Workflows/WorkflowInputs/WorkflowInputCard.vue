@@ -17,10 +17,9 @@
 </template>
 <script setup lang="ts">
 import { WorkflowInputInputPanel } from "@/components/Modules/Workflows/WorkflowInputs/Panels";
-import { ShowHideButton } from "@/components/Shared";
 import { WorkflowInput } from "@/types";
 import { FaSolidPencil as EditIcon } from "danx-icon";
-import { FilePreview } from "quasar-ui-danx";
+import { FilePreview, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineProps<{
