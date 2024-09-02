@@ -23,7 +23,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { extendAction as extendAgentAction } from "@/components/Modules/Agents/agentActions";
+import { extendAction as extendAgentAction } from "@/components/Modules/Agents/config/actions";
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
 import WorkflowAssignmentItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowAssignmentItem";

@@ -2,7 +2,7 @@
 	<PanelsDrawer
 		:title="promptSchema.name"
 		:panels="panels"
-		:active-item="promptSchema"
+		:target="promptSchema"
 		position="standard"
 		panels-class="w-full"
 		@close="$emit('close')"
@@ -10,9 +10,8 @@
 </template>
 
 <script lang="ts" setup>
-import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
-import { panels } from "@/components/Modules/Prompts/Schemas/promptSchemaPanels";
-import { PromptSchemaRoutes } from "@/routes/promptRoutes";
+import { dxPromptSchema, panels } from "@/components/Modules/Prompts/Schemas/config";
+import { PromptSchemaRoutes } from "@/components/Modules/Prompts/Schemas/config/routes";
 import { PromptSchema } from "@/types";
 import { PanelsDrawer } from "quasar-ui-danx";
 

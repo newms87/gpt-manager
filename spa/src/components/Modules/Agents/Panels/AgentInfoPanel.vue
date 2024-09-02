@@ -8,8 +8,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/agentActions";
-import { fields } from "@/components/Modules/Agents/agentFormFields";
+import { getAction } from "@/components/Modules/Agents/config/actions";
+import { fields } from "@/components/Modules/Agents/config/formFields";
 import { Agent } from "@/types/agents";
 import { ActionForm } from "quasar-ui-danx";
 

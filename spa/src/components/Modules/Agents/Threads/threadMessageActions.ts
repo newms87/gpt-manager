@@ -1,5 +1,5 @@
-import { AgentController } from "@/components/Modules/Agents/agentControls";
-import { MessageRoutes } from "@/routes/agentRoutes";
+import { dxAgent } from "@/components/Modules/Agents/config/controls";
+import { MessageRoutes } from "@/components/Modules/Agents/config/routes";
 import { ThreadMessage } from "@/types/agents";
 import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
@@ -25,7 +25,7 @@ const items: ActionOptions[] = [
 		class: "text-red-500",
 		menu: true,
 		batch: true,
-		onFinish: AgentController.getActiveItemDetails,
+		onFinish: dxAgent.getActiveItemDetails,
 		// If the thread is empty, allow deleting w/o confirmation
 		vnode: (target: ThreadMessage) => !target.content ? false : h(ConfirmActionDialog, {
 			action: "Delete",

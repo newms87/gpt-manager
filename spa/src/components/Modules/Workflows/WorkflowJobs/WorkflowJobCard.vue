@@ -71,7 +71,7 @@
 			<h6 class="text-base">Response Example</h6>
 			<SelectOrCreateField
 				:selected="job.responseSchema?.id"
-				:options="AgentController.getFieldOptions('promptSchemas')"
+				:options="dxAgent.getFieldOptions('promptSchemas')"
 				:loading="createSchemaAction.isApplying"
 				@create="onCreateSchema"
 				@update:selected="onChangeSchema"
@@ -89,8 +89,8 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { AgentController } from "@/components/Modules/Agents/agentControls";
-import { getAction as getPromptSchemaAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
+import { dxAgent } from "@/components/Modules/Agents/config/controls";
+import { getAction as getPromptSchemaAction } from "@/components/Modules/Prompts/Schemas/config/actions";
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import WorkflowJobAssignmentsManager from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobAssignmentsManager";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
@@ -115,7 +115,7 @@ const updatePromptSchemaAction = getPromptSchemaAction("update-debounced");
 const createSchemaAction = getPromptSchemaAction("create");
 const deleteJobAction = getAction("delete-job");
 
-onMounted(AgentController.loadFieldOptions);
+onMounted(dxAgent.loadFieldOptions);
 
 async function onCreateSchema() {
 	const { item: promptSchema } = await createSchemaAction.trigger();

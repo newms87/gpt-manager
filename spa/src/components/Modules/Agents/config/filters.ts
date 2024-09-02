@@ -1,4 +1,4 @@
-import { AgentController } from "@/components/Modules/Agents/agentControls";
+import { dxAgent } from "@/components/Modules/Agents/config/controls";
 import { computed } from "vue";
 
 export const filters = computed(() => [
@@ -21,7 +21,7 @@ export const filters = computed(() => [
 				type: "multi-select",
 				name: "model",
 				label: "AI Model",
-				options: AgentController.getFieldOptions("aiModels")
+				options: dxAgent.getFieldOptions("aiModels")
 			}
 		]
 	}

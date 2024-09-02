@@ -1,54 +1,16 @@
-import { ContentSourceController } from "@/components/Modules/ContentSources/contentSourceControls";
-import { CreateNewWithNameDialog } from "@/components/Shared";
+import { dxContentSource } from "@/components/Modules/ContentSources/contentSourceControls";
 import { ContentSourceRoutes } from "@/routes/contentSourceRoutes";
-import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
-import { h } from "vue";
+import { ActionOptions, useActions, withDefaultActions } from "quasar-ui-danx";
 
 // This is the default action options for all items
 const forAllItems: Partial<ActionOptions> = {
 	onAction: ContentSourceRoutes.applyAction,
 	onBatchAction: ContentSourceRoutes.batchAction,
-	onBatchSuccess: ContentSourceController.clearSelectedRows
+	onBatchSuccess: dxContentSource.clearSelectedRows
 };
 
 const items: ActionOptions[] = [
-	{
-		name: "create",
-		label: "Create Content Source",
-		vnode: () => h(CreateNewWithNameDialog, { title: "Create Content Source" }),
-		onFinish: (result) => {
-			ContentSourceController.activatePanel(result.item, "edit");
-			ContentSourceController.loadListAndSummary();
-		}
-	},
-	{
-		name: "update"
-	},
-	{
-		name: "update-debounced",
-		alias: "update",
-		debounce: 1000
-	},
-	{
-		label: "Edit",
-		name: "edit",
-		menu: true,
-		onAction: (action, target) => ContentSourceController.activatePanel(target, "edit")
-	},
-	{
-		name: "delete",
-		label: "Delete",
-		class: "text-red-500",
-		menu: true,
-		batch: true,
-		onFinish: ContentSourceController.loadListAndSummary,
-		vnode: target => h(ConfirmActionDialog, {
-			action: "Delete",
-			label: "ContentSources",
-			target,
-			confirmClass: "bg-red-900"
-		})
-	},
+	...withDefaultActions("Content Sources", dxContentSource),
 	{
 		name: "fetch"
 	}

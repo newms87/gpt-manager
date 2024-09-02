@@ -25,8 +25,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/agentActions";
-import { AgentController } from "@/components/Modules/Agents/agentControls";
+import { getAction } from "@/components/Modules/Agents/config/actions";
+import { dxAgent } from "@/components/Modules/Agents/config/controls";
 import { Agent } from "@/types/agents";
 import { ActionForm } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
@@ -46,7 +46,7 @@ watch(() => props.agent, (agent) => {
 	selectedTools.value = Array.isArray(agent.tools) ? agent.tools : [];
 });
 
-const availableTools = computed<AiTool[]>(() => AgentController.getFieldOptions("aiTools"));
+const availableTools = computed<AiTool[]>(() => dxAgent.getFieldOptions("aiTools"));
 const updateAction = getAction("update");
 function onUpdate(value) {
 	if (Array.isArray(value)) {

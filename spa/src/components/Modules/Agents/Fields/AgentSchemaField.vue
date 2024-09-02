@@ -19,7 +19,7 @@
 				v-model:editing="isEditingSchema"
 				:selected="agent.responseSchema?.id"
 				:show-edit="!!agent.responseSchema"
-				:options="AgentController.getFieldOptions('promptSchemas')"
+				:options="dxAgent.getFieldOptions('promptSchemas')"
 				:loading="createSchemaAction.isApplying"
 				@create="onCreateSchema"
 				@update:selected="onChangeSchema"
@@ -33,17 +33,17 @@
 				:target="agent.responseSchema"
 				:form="{fields}"
 				hide-saved-at
-				@saved="AgentController.loadFieldOptions"
+				@saved="dxAgent.loadFieldOptions"
 			/>
 			<PromptSchemaDefinitionPanel class="pt-0" :prompt-schema="agent.responseSchema" />
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/agentActions";
-import { AgentController } from "@/components/Modules/Agents/agentControls";
+import { getAction } from "@/components/Modules/Agents/config/actions";
+import { dxAgent } from "@/components/Modules/Agents/config/controls";
+import { getAction as getSchemaAction } from "@/components/Modules/Prompts/Schemas/config/actions";
 import { PromptSchemaDefinitionPanel } from "@/components/Modules/Prompts/Schemas/Panels";
-import { getAction as getSchemaAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
 import { Agent } from "@/types/agents";
 import { ActionForm, SelectOrCreateField, TextField } from "quasar-ui-danx";
 import { h, nextTick, ref } from "vue";
@@ -62,8 +62,8 @@ const fields = [{
 const isEditingSchema = ref(false);
 
 const updateAction = getAction("update");
-const createSchemaAction = getSchemaAction("create", { onFinish: AgentController.loadFieldOptions });
-const updateDebouncedSchemaAction = getSchemaAction("update-debounced", { onFinish: AgentController.loadFieldOptions });
+const createSchemaAction = getSchemaAction("create", { onFinish: dxAgent.loadFieldOptions });
+const updateDebouncedSchemaAction = getSchemaAction("update-debounced", { onFinish: dxAgent.loadFieldOptions });
 
 async function onCreateSchema() {
 	const { item: promptSchema } = await createSchemaAction.trigger();

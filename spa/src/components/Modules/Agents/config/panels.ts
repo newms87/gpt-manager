@@ -5,8 +5,8 @@ import {
 	AgentThreadsPanel,
 	AgentToolsPanel
 } from "@/components/Modules/Agents/Panels";
+import { Agent } from "@/types";
 import { ActionPanel, BadgeTab } from "quasar-ui-danx";
-import { Agent } from "src/types";
 import { computed, h } from "vue";
 
 export const panels = computed<ActionPanel[]>(() => [

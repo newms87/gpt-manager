@@ -28,15 +28,6 @@ class PromptSchemaRepository extends ActionRepository
         ]);
     }
 
-    public function fieldOptions(?array $filter = []): array
-    {
-        $schemas = $this->query()->get()->map(fn(PromptSchema $schema) => ['value' => $schema->id, 'label' => $schema->name]);
-
-        return [
-            'schemas' => $schemas,
-        ];
-    }
-
     /**
      * Apply the given action to the model.
      */

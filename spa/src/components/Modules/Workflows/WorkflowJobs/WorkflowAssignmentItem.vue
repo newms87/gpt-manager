@@ -49,7 +49,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import AgentPanelsDialog from "@/components/Modules/Agents/AgentPanelsDialog";
-import { getAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
+import { getAction } from "@/components/Modules/Prompts/Schemas/config/actions";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { Agent } from "@/types";
 import { WorkflowAssignment } from "@/types/workflows";

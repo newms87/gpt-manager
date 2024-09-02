@@ -17,11 +17,11 @@
 	</ActionTableLayout>
 </template>
 <script setup lang="ts">
-import { getAction, getActions } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
-import { columns } from "@/components/Modules/Prompts/Schemas/promptSchemaColumns";
-import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
-import { filters } from "@/components/Modules/Prompts/Schemas/promptSchemaFilters";
-import { panels } from "@/components/Modules/Prompts/Schemas/promptSchemaPanels";
+import { getAction, getActions } from "@/components/Modules/Prompts/Schemas/config/actions";
+import { columns } from "@/components/Modules/Prompts/Schemas/config/columns";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas/config/controls";
+import { filters } from "@/components/Modules/Prompts/Schemas/config/filters";
+import { panels } from "@/components/Modules/Prompts/Schemas/config/panels";
 import { ActionTableLayout } from "quasar-ui-danx";
 
 dxPromptSchema.initialize();

@@ -25,7 +25,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/agentActions";
+import { getAction } from "@/components/Modules/Agents/config/actions";
 import ThreadCard from "@/components/Modules/Agents/Threads/ThreadCard";
 import router from "@/router";
 import { Agent } from "@/types/agents";

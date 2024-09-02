@@ -34,7 +34,7 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { getAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
+import { getAction } from "@/components/Modules/Prompts/Schemas/config/actions";
 import { ActionButton } from "@/components/Shared";
 import { PromptSchema } from "@/types/prompts";
 import { FaSolidRobot as GenerateExampleIcon } from "danx-icon";

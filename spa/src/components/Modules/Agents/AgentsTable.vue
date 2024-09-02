@@ -1,7 +1,7 @@
 <template>
 	<ActionTableLayout
 		title="Agents"
-		:controller="AgentController"
+		:controller="dxAgent"
 		table-class="bg-slate-600"
 		filter-class="bg-slate-500"
 		show-filters
@@ -17,13 +17,13 @@
 	</ActionTableLayout>
 </template>
 <script setup lang="ts">
-import { getAction, getActions } from "@/components/Modules/Agents/agentActions";
-import { columns } from "@/components/Modules/Agents/agentColumns";
-import { AgentController } from "@/components/Modules/Agents/agentControls";
-import { filters } from "@/components/Modules/Agents/agentFilters";
-import { panels } from "@/components/Modules/Agents/agentPanels";
+import { getAction, getActions } from "@/components/Modules/Agents/config/actions";
+import { columns } from "@/components/Modules/Agents/config/columns";
+import { dxAgent } from "@/components/Modules/Agents/config/controls";
+import { filters } from "@/components/Modules/Agents/config/filters";
+import { panels } from "@/components/Modules/Agents/config/panels";
 import { ActionTableLayout } from "quasar-ui-danx";
 
-AgentController.initialize();
+dxAgent.initialize();
 const createAction = getAction("create");
 </script>

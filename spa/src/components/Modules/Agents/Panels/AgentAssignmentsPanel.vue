@@ -13,7 +13,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/agentActions";
+import { getAction } from "@/components/Modules/Agents/config/actions";
 import WorkflowAssignmentItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowAssignmentItem";
 import { Agent } from "@/types/agents";
 import { ListTransition } from "quasar-ui-danx";

@@ -5,6 +5,7 @@ use App\Http\Controllers\Ai\ContentSourcesController;
 use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\PromptDirectivesController;
 use App\Http\Controllers\Ai\PromptSchemasController;
+use App\Http\Controllers\Ai\TeamObjectsController;
 use App\Http\Controllers\Ai\ThreadsController;
 use App\Http\Controllers\Ai\WorkflowAssignmentsController;
 use App\Http\Controllers\Ai\WorkflowInputsController;
@@ -52,6 +53,9 @@ ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);
 ActionRoute::routes('agents', new AgentsController);
 ActionRoute::routes('threads', new ThreadsController);
 ActionRoute::routes('messages', new MessagesController);
+
+// Team Objects
+ActionRoute::routes('team-objects', new TeamObjectsController());
 
 // Audits
 ActionRoute::routes('audit-requests', new AuditRequestsController);

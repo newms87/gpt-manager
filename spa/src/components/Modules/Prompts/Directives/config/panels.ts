@@ -1,7 +1,4 @@
-import {
-	PromptDirectiveAgentsPanel,
-	PromptDirectiveDefinitionPanel
-} from "@/components/Modules/Prompts/Directives/Panels";
+import { PromptDirectiveAgentsPanel, PromptDirectiveDefinitionPanel } from "@/components/Modules/Prompts/Directives";
 import { PromptDirective } from "@/types";
 import { ActionPanel, BadgeTab } from "quasar-ui-danx";
 import { computed, h } from "vue";

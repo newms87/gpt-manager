@@ -9,16 +9,31 @@ use App\Models\TeamObject\TeamObjectRelationship;
 use App\Resources\Agent\MessageResource;
 use BadFunctionCallException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Log;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
+use Newms87\Danx\Repositories\ActionRepository;
 use Newms87\Danx\Repositories\FileRepository;
 use Newms87\Danx\Resources\StoredFileResource;
 use Str;
 
-class TeamObjectRepository
+class TeamObjectRepository extends ActionRepository
 {
+    public static string $model = TeamObject::class;
+
+    public function applyAction(string $action, TeamObject|Model|array|null $model = null, ?array $data = null)
+    {
+        $type = $data['type'] ?? null;
+        $name = $data['name'] ?? null;
+
+        return match ($action) {
+            'create', 'update' => $this->saveTeamObject($type, $name, $data),
+            default => parent::applyAction($action, $model, $data)
+        };
+    }
+
     /**
      * Create or Update a Team Object record based on type and name
      */

@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { getAction } from "@/components/Modules/Prompts/Directives/promptDirectiveActions";
+import { getAction } from "@/components/Modules/Prompts/Directives/config/actions";
 import { AgentPromptDirective } from "@/types";
 import { FaSolidCircleXmark as RemoveIcon, FaSolidPencil as EditIcon } from "danx-icon";
 import { EditOnClickTextField, ShowHideButton } from "quasar-ui-danx";

@@ -2,7 +2,7 @@
 	<PanelsDrawer
 		:title="agent.name"
 		:panels="panels"
-		:active-item="agent"
+		:traget="agent"
 		position="standard"
 		panels-class="w-full"
 		@close="$emit('close')"
@@ -10,9 +10,9 @@
 </template>
 
 <script lang="ts" setup>
-import { AgentController } from "@/components/Modules/Agents/agentControls";
-import { panels } from "@/components/Modules/Agents/agentPanels";
-import { AgentRoutes } from "@/routes/agentRoutes";
+import { dxAgent } from "@/components/Modules/Agents/config/controls";
+import { panels } from "@/components/Modules/Agents/config/panels";
+import { AgentRoutes } from "@/components/Modules/Agents/config/routes";
 import { Agent } from "@/types";
 import { PanelsDrawer } from "quasar-ui-danx";
 
@@ -23,5 +23,5 @@ export interface AgentPanelsDialogProps {
 defineEmits(["close"]);
 const props = defineProps<AgentPanelsDialogProps>();
 AgentRoutes.detailsAndStore(props.agent);
-AgentController.loadFieldOptions();
+dxAgent.loadFieldOptions();
 </script>

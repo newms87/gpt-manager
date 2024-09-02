@@ -1,8 +1,8 @@
-import { getActions } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
-import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
+import { getActions } from "@/components/Modules/Prompts/Directives/config/actions";
+import { dxPromptDirective } from "@/components/Modules/Prompts/Directives/config/controls";
 import { ActionTargetItem, fDate, fNumber, TableColumn } from "quasar-ui-danx";
 
-const onEdit = (promptSchema: ActionTargetItem) => dxPromptSchema.activatePanel(promptSchema, "edit");
+const onEdit = (promptDirective: ActionTargetItem) => dxPromptDirective.activatePanel(promptDirective, "edit");
 
 export const columns: TableColumn[] = [
 	{
@@ -29,26 +29,8 @@ export const columns: TableColumn[] = [
 		onClick: onEdit
 	},
 	{
-		name: "description",
-		label: "Description",
-		sortable: true,
-		align: "left"
-	},
-	{
-		name: "schema_format",
-		label: "Schema Format",
-		sortable: true,
-		align: "left"
-	},
-	{
 		name: "agents_count",
 		label: "Agents",
-		format: fNumber,
-		sortable: true
-	},
-	{
-		name: "workflow_jobs_count",
-		label: "Workflow Jobs",
 		format: fNumber,
 		sortable: true
 	},

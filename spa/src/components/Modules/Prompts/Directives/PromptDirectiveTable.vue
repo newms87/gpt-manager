@@ -1,7 +1,7 @@
 <template>
 	<ActionTableLayout
 		title=""
-		:controller="PromptDirectiveController"
+		:controller="dxPromptDirective"
 		table-class="bg-slate-600"
 		filter-class="bg-slate-500"
 		show-filters
@@ -17,13 +17,13 @@
 	</ActionTableLayout>
 </template>
 <script setup lang="ts">
-import { getAction, getActions } from "@/components/Modules/Prompts/Directives/promptDirectiveActions";
-import { columns } from "@/components/Modules/Prompts/Directives/promptDirectiveColumns";
-import { PromptDirectiveController } from "@/components/Modules/Prompts/Directives/promptDirectiveControls";
-import { filters } from "@/components/Modules/Prompts/Directives/promptDirectiveFilters";
-import { panels } from "@/components/Modules/Prompts/Directives/promptDirectivePanels";
+import { getAction, getActions } from "@/components/Modules/Prompts/Directives/config/actions";
+import { columns } from "@/components/Modules/Prompts/Directives/config/columns";
+import { dxPromptDirective } from "@/components/Modules/Prompts/Directives/config/controls";
+import { filters } from "@/components/Modules/Prompts/Directives/config/filters";
+import { panels } from "@/components/Modules/Prompts/Directives/config/panels";
 import { ActionTableLayout } from "quasar-ui-danx";
 
-PromptDirectiveController.initialize();
+dxPromptDirective.initialize();
 const createAction = getAction("create");
 </script>

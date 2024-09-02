@@ -1,5 +1,4 @@
 {
-  //    "extends": "@vue/tsconfig/tsconfig.dom.json",
   "include": [
     "env.d.ts",
     "vite.config.ts",
@@ -25,7 +24,7 @@
     // Allow JavaScript files to be compiled,
     "allowJs": true,
     // Skip type checking of all declaration files (*.d.ts),
-    "skipLibCheck": true,
+    "skipLibCheck": false,
     // Enable compatibility with CommonJS modules for default exports,
     "esModuleInterop": true,
     // Allow default imports from modules with no default export,

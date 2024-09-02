@@ -9,7 +9,7 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { getAction } from "@/components/Modules/Prompts/Directives/promptDirectiveActions";
+import { getAction } from "@/components/Modules/Prompts/Directives/config/actions";
 import { PromptDirective } from "@/types/prompts";
 import { ActionForm, Form, TextField } from "quasar-ui-danx";
 import { h } from "vue";

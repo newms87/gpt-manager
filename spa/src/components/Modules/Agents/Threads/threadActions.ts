@@ -1,5 +1,5 @@
-import { AgentController } from "@/components/Modules/Agents/agentControls";
-import { ThreadRoutes } from "@/routes/agentRoutes";
+import { dxAgent } from "@/components/Modules/Agents/config/controls";
+import { ThreadRoutes } from "@/components/Modules/Agents/config/routes";
 import { ThreadMessage } from "@/types";
 import { FaSolidCopy as CopyIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
 import { ActionOptions, ConfirmActionDialog, pollUntil, storeObject, useActions } from "quasar-ui-danx";
@@ -36,7 +36,7 @@ const items: ActionOptions[] = [
 		label: "Copy",
 		icon: CopyIcon,
 		menu: true,
-		onSuccess: AgentController.getActiveItemDetails
+		onSuccess: dxAgent.getActiveItemDetails
 	},
 	{
 		name: "delete",
@@ -45,7 +45,7 @@ const items: ActionOptions[] = [
 		icon: DeleteIcon,
 		menu: true,
 		batch: true,
-		onSuccess: AgentController.getActiveItemDetails,
+		onSuccess: dxAgent.getActiveItemDetails,
 		vnode: target => h(ConfirmActionDialog, { action: "Delete", label: "Threads", target, confirmClass: "bg-red-900" })
 	},
 	{
@@ -58,13 +58,13 @@ const items: ActionOptions[] = [
 				role: "user"
 			});
 		},
-		onSuccess: AgentController.getActiveItemDetails
+		onSuccess: dxAgent.getActiveItemDetails
 	},
 	{
 		name: "reset-to-message",
 		label: "Reset To Message",
 		class: "text-red-500",
-		onSuccess: AgentController.getActiveItemDetails,
+		onSuccess: dxAgent.getActiveItemDetails,
 		vnode: (target: ThreadMessage) => h(ConfirmActionDialog, {
 			action: "Reset To Message",
 			label: "Delete all following messages",

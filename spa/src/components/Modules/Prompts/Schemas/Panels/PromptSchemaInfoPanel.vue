@@ -8,8 +8,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
-import { fields } from "@/components/Modules/Prompts/Schemas/promptSchemaFormFields";
+import { getAction } from "@/components/Modules/Prompts/Schemas/config/actions";
+import { fields } from "@/components/Modules/Prompts/Schemas/config/formFields";
 import { PromptSchema } from "@/types/prompts";
 import { ActionForm } from "quasar-ui-danx";
 

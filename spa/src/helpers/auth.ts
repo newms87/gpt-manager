@@ -1,4 +1,4 @@
-import { AuthTeam, AuthUser } from "@/types/user";
+import { AuthTeam, AuthUser } from "@/types";
 import { danxOptions, getItem, setItem } from "quasar-ui-danx";
 import { ref } from "vue";
 

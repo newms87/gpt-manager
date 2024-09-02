@@ -1,7 +1,7 @@
 <template>
 	<ActionTableLayout
 		title="Content Sources"
-		:controller="ContentSourceController"
+		:controller="dxContentSource"
 		table-class="bg-slate-600"
 		filter-class="bg-slate-500"
 		show-filters
@@ -19,11 +19,11 @@
 <script setup lang="ts">
 import { getAction, getActions } from "@/components/Modules/ContentSources/contentSourceActions";
 import { columns } from "@/components/Modules/ContentSources/contentSourceColumns";
-import { ContentSourceController } from "@/components/Modules/ContentSources/contentSourceControls";
+import { dxContentSource } from "@/components/Modules/ContentSources/contentSourceControls";
 import { filters } from "@/components/Modules/ContentSources/contentSourceFilters";
 import { panels } from "@/components/Modules/ContentSources/contentSourcePanels";
 import { ActionTableLayout } from "quasar-ui-danx";
 
-ContentSourceController.initialize();
+dxContentSource.initialize();
 const createAction = getAction("create");
 </script>

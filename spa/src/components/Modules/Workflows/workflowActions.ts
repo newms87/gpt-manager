@@ -1,15 +1,15 @@
 import { ImportWorkflowDialog } from "@/components/Modules/Workflows/Shared";
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
-import { CreateNewWithNameDialog } from "@/components/Shared";
 import { WorkflowAssignmentRoutes, WorkflowJobRoutes, WorkflowRoutes } from "@/routes/workflowRoutes";
 import { Workflow } from "@/types";
+import { FaSolidCopy as CopyIcon, FaSolidDatabase as ExportJsonIcon } from "danx-icon";
 import {
-	FaSolidCopy as CopyIcon,
-	FaSolidDatabase as ExportJsonIcon,
-	FaSolidPencil as EditIcon,
-	FaSolidTrash as DeleteIcon
-} from "danx-icon";
-import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
+	ActionOptions,
+	ConfirmActionDialog,
+	CreateNewWithNameDialog,
+	useActions,
+	withDefaultActions
+} from "quasar-ui-danx";
 import { h } from "vue";
 
 // This is the default action options for all items
@@ -20,52 +20,13 @@ const forAllItems: Partial<ActionOptions> = {
 };
 
 const items: ActionOptions[] = [
-	{
-		name: "create",
-		label: "Create Workflow",
-		vnode: () => h(CreateNewWithNameDialog, { title: "Create Workflow" }),
-		onFinish: (result) => {
-			WorkflowController.activatePanel(result.item, "edit");
-			WorkflowController.loadListAndSummary();
-		}
-	},
-	{
-		name: "update"
-	},
+	...withDefaultActions("Workflows", WorkflowController),
 	{
 		name: "copy",
 		label: "Copy",
 		icon: CopyIcon,
 		menu: true,
 		onSuccess: WorkflowController.loadListAndSummary
-	},
-	{
-		name: "update-debounced",
-		alias: "update",
-		debounce: 1000
-	},
-	{
-		label: "Edit",
-		name: "edit",
-		icon: EditIcon,
-		menu: true,
-		onAction: (action, target) => WorkflowController.activatePanel(target, "edit")
-	},
-	{
-		name: "delete",
-		label: "Delete",
-		class: "text-red-500",
-		iconClass: "text-red-500",
-		icon: DeleteIcon,
-		menu: true,
-		batch: true,
-		onFinish: WorkflowController.loadListAndSummary,
-		vnode: target => h(ConfirmActionDialog, {
-			action: "Delete",
-			label: "Workflows",
-			target,
-			confirmClass: "bg-red-900"
-		})
 	},
 	{
 		name: "run-workflow"
