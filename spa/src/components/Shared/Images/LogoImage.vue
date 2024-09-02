@@ -1,7 +1,7 @@
 <template>
 	<a class="logo-image block overflow-hidden" target="_blank" :href="url">
 		<div v-if="isSvg" class="w-full h-full" v-html="src" />
-		<img v-if="isImage" :alt="alt" :src="src" />
+		<img v-if="isImage" :alt="alt" :src="src" :class="imageClass" />
 	</a>
 </template>
 
@@ -12,6 +12,7 @@ const props = defineProps<{
 	src: string;
 	alt?: string;
 	url?: string;
+	imageClass?: string | object;
 }>();
 
 const isSvg = computed(() => props.src.startsWith("<svg"));

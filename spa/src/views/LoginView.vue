@@ -3,8 +3,8 @@
 		<QCard class="bg-slate-700 p-6 min-w-96">
 			<QCardSection>
 				<div class="pb-3">
-					<h4>{{ siteSettings.name }} Log In</h4>
-					<div v-if="authTeam" class="mt-3">{{ authTeam }}</div>
+					<h4>Log In</h4>
+					<div v-if="authTeam" class="mt-3">{{ authTeam.name }}</div>
 				</div>
 				<div class="mt-3">
 					<div>
@@ -36,7 +36,6 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { siteSettings } from "@/config";
 import { authTeam, setAuthTeam, setAuthToken, setAuthUser } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
 import { TextField } from "quasar-ui-danx";
@@ -48,7 +47,7 @@ const router = useRouter();
 const input = ref({
 	email: "",
 	password: "",
-	team_name: authTeam.value
+	team_name: authTeam.value.name
 });
 
 const isLoggingIn = ref(false);

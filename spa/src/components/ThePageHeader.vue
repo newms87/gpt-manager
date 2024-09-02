@@ -1,14 +1,14 @@
 <template>
 	<QToolbar>
 		<QToolbarTitle class="bg-sky-800 flex items-center">
-			<div v-if="siteSettings.logo">
-				<LogoImage :src="siteSettings.logo" class="w-16 h-16" />
+			<div v-if="authTeam?.logo">
+				<LogoImage :src="authTeam.logo" class="h-16" image-class="max-h-full" />
 			</div>
-			<div class="pl-3 py-4 flex-grow">{{ siteSettings.name }}</div>
+			<div class="pl-3 py-4 flex-grow">{{ authTeam?.name || "GPT Manager" }}</div>
 			<div class="px-3 flex items-center flex-nowrap">
 				<div class="mr-4">
 					<div v-if="authUser" class="text-sm">{{ authUser.email }}</div>
-					<div class="text-xs text-slate-400">{{ authTeam }}</div>
+					<div v-if="authTeam" class="text-xs text-slate-400">{{ authTeam.name }}</div>
 				</div>
 				<QBtn class="bg-sky-950 px-1 py-3 shadow-2" round>
 					<AccountIcon class="w-4" />
@@ -29,7 +29,6 @@
 </template>
 <script setup lang="ts">
 import LogoImage from "@/components/Shared/Images/LogoImage";
-import { siteSettings } from "@/config";
 import { authTeam, authUser } from "@/helpers";
 import router from "@/router";
 import { FaSolidUser as AccountIcon } from "danx-icon";

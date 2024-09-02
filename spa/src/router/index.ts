@@ -1,7 +1,6 @@
 import { ThePageLayout, ThePrimaryLayout } from "@/components/Layouts";
 import { PromptDirectiveTable, PromptSchemaTable } from "@/components/Modules/Prompts";
-import { siteSettings } from "@/config";
-import { isAuthenticated, setAuthToken } from "@/helpers/auth";
+import { authTeam, isAuthenticated, setAuthToken } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
 import {
 	AgentsView,
@@ -134,7 +133,7 @@ router.beforeEach(async (to) => {
 });
 
 router.afterEach(to => {
-	document.title = (to.meta.title ? `${to.meta.title} | ` : "") + siteSettings.value.name;
+	document.title = (to.meta.title ? `${to.meta.title} | ` : "") + (authTeam.value?.name || "GPT Manager");
 });
 
 export default router;

@@ -1,4 +1,4 @@
-import { AuthUser } from "@/types/user";
+import { AuthTeam, AuthUser } from "@/types/user";
 import { danxOptions, getItem, setItem } from "quasar-ui-danx";
 import { ref } from "vue";
 
@@ -6,8 +6,8 @@ const AUTH_TOKEN_KEY = "auth-token";
 const AUTH_TEAM_KEY = "auth-team";
 const AUTH_USER_KEY = "auth-user";
 export const authToken = ref(getAuthToken() || "");
-export const authTeam = ref(getAuthTeam() || "");
-export const authUser = ref(getAuthUser());
+export const authTeam = ref<AuthTeam>(getAuthTeam());
+export const authUser = ref<AuthUser>(getAuthUser());
 
 // Set the Authorization header for all requests
 if (isAuthenticated()) {
@@ -40,7 +40,7 @@ export function setAuthToken(token: string) {
 /**
  * Get the authentication team from local storage
  */
-export function getAuthTeam() {
+export function getAuthTeam(): AuthTeam | null {
 	// Check URL ?team= query parameter
 	const urlParams = new URLSearchParams(window.location.search);
 	const team = urlParams.get("team");
@@ -50,7 +50,7 @@ export function getAuthTeam() {
 /**
  * Set the authentication team in local storage
  */
-export function setAuthTeam(team: string) {
+export function setAuthTeam(team: AuthTeam) {
 	setItem(AUTH_TEAM_KEY, team);
 	authTeam.value = team;
 }

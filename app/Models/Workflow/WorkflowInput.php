@@ -17,10 +17,11 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
+use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class WorkflowInput extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasObjectTags, SoftDeletes, HasRelationCountersTrait;
+    use HasFactory, AuditableTrait, HasObjectTags, SoftDeletes, HasRelationCountersTrait, KeywordSearchTrait;
 
     protected $fillable = [
         'name',
@@ -29,6 +30,8 @@ class WorkflowInput extends Model implements AuditableContract
         'team_object_id',
         'team_object_type',
     ];
+
+    protected array $keywordFields = ['name', 'description'];
 
     public array $relationCounters = [
         WorkflowRun::class => ['workflowRuns' => 'workflow_runs_count'],

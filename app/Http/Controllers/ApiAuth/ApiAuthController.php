@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ApiAuth;
 
 use App\Http\Controllers\Controller;
+use App\Resources\Auth\TeamResource;
 use App\Resources\Auth\UserResource;
 
 class ApiAuthController extends Controller
@@ -28,7 +29,7 @@ class ApiAuthController extends Controller
 
         return response()->json([
             'token' => user()->createToken($team->name)->plainTextToken,
-            'team'  => $team->name,
+            'team'  => TeamResource::make($team),
             'user'  => UserResource::make(user()),
         ]);
     }
