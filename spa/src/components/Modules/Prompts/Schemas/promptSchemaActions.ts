@@ -1,4 +1,4 @@
-import { PromptSchemaController } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
 import { CreateNewWithNameDialog } from "@/components/Shared";
 import { PromptSchemaRoutes } from "@/routes/promptRoutes";
 import { FaSolidCopy as CopyIcon, FaSolidPencil as EditIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
@@ -18,8 +18,8 @@ const items: ActionOptions[] = [
 		label: "Create Prompt Schema",
 		vnode: () => h(CreateNewWithNameDialog, { title: "Create Prompt Schema" }),
 		onFinish: (result) => {
-			PromptSchemaController.activatePanel(result.item, "edit");
-			PromptSchemaController.loadListAndSummary();
+			dxPromptSchema.activatePanel(result.item, "edit");
+			dxPromptSchema.loadListAndSummary();
 		}
 	},
 	{
@@ -36,14 +36,14 @@ const items: ActionOptions[] = [
 		label: "Copy",
 		icon: CopyIcon,
 		menu: true,
-		onSuccess: PromptSchemaController.loadListAndSummary
+		onSuccess: dxPromptSchema.loadListAndSummary
 	},
 	{
 		label: "Edit",
 		name: "edit",
 		icon: EditIcon,
 		menu: true,
-		onAction: (action, target) => PromptSchemaController.activatePanel(target, "edit")
+		onAction: (action, target) => dxPromptSchema.activatePanel(target, "edit")
 	},
 	{
 		name: "delete",
@@ -53,7 +53,7 @@ const items: ActionOptions[] = [
 		icon: DeleteIcon,
 		menu: true,
 		batch: true,
-		onFinish: PromptSchemaController.loadListAndSummary,
+		onFinish: dxPromptSchema.loadListAndSummary,
 		vnode: (target: ActionTarget) => h(ConfirmActionDialog, {
 			action: "Delete",
 			label: "PromptSchemas",

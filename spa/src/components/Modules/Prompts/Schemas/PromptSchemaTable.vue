@@ -1,7 +1,7 @@
 <template>
 	<ActionTableLayout
 		title=""
-		:controller="PromptSchemaController"
+		:controller="dxPromptSchema"
 		table-class="bg-slate-600"
 		filter-class="bg-slate-500"
 		show-filters
@@ -19,11 +19,11 @@
 <script setup lang="ts">
 import { getAction, getActions } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
 import { columns } from "@/components/Modules/Prompts/Schemas/promptSchemaColumns";
-import { PromptSchemaController } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
 import { filters } from "@/components/Modules/Prompts/Schemas/promptSchemaFilters";
 import { panels } from "@/components/Modules/Prompts/Schemas/promptSchemaPanels";
 import { ActionTableLayout } from "quasar-ui-danx";
 
-PromptSchemaController.initialize();
+dxPromptSchema.initialize();
 const createAction = getAction("create");
 </script>

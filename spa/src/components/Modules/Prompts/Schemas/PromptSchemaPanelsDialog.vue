@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts" setup>
-import { PromptSchemaController } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
 import { panels } from "@/components/Modules/Prompts/Schemas/promptSchemaPanels";
 import { PromptSchemaRoutes } from "@/routes/promptRoutes";
 import { PromptSchema } from "@/types";
@@ -23,5 +23,5 @@ export interface PromptSchemaPanelsDialogProps {
 defineEmits(["close"]);
 const props = defineProps<PromptSchemaPanelsDialogProps>();
 PromptSchemaRoutes.detailsAndStore(props.promptSchema);
-PromptSchemaController.loadFieldOptions();
+dxPromptSchema.loadFieldOptions();
 </script>

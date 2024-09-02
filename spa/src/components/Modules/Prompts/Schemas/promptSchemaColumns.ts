@@ -1,8 +1,8 @@
 import { getActions } from "@/components/Modules/Prompts/Schemas/promptSchemaActions";
-import { PromptSchemaController } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas/promptSchemaControls";
 import { ActionTargetItem, fDate, fNumber, TableColumn } from "quasar-ui-danx";
 
-const onEdit = (promptSchema: ActionTargetItem) => PromptSchemaController.activatePanel(promptSchema, "edit");
+const onEdit = (promptSchema: ActionTargetItem) => dxPromptSchema.activatePanel(promptSchema, "edit");
 
 export const columns: TableColumn[] = [
 	{
