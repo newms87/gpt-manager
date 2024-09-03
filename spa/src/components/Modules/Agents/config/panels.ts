@@ -6,10 +6,10 @@ import {
 	AgentToolsPanel
 } from "@/components/Modules/Agents/Panels";
 import { Agent } from "@/types";
-import { ActionPanel, BadgeTab } from "quasar-ui-danx";
-import { computed, h } from "vue";
+import { BadgeTab } from "quasar-ui-danx";
+import { h } from "vue";
 
-export const panels = computed<ActionPanel[]>(() => [
+export const panels = [
 	{
 		name: "edit",
 		label: "Details",
@@ -38,4 +38,4 @@ export const panels = computed<ActionPanel[]>(() => [
 		tabVnode: (agent: Agent) => h(BadgeTab, { count: agent.assignments_count }),
 		vnode: (agent: Agent) => h(AgentAssignmentsPanel, { agent })
 	}
-]);
+];

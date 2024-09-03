@@ -1,15 +1,18 @@
 import { controls as agentControls } from "@/components/Modules/Agents/config/controls";
 import { ThreadMessage } from "@/types";
-import { FaSolidCopy as CopyIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
-import { ActionOptions, ConfirmActionDialog, pollUntil, storeObject, useActions } from "quasar-ui-danx";
+import {
+	ActionOptions,
+	ConfirmActionDialog,
+	pollUntil,
+	storeObject,
+	useActions,
+	withDefaultActions
+} from "quasar-ui-danx";
 import { h } from "vue";
 import { routes } from "./routes";
 
 export const actions: ActionOptions[] = [
-	{
-		name: "update",
-		debounce: 500
-	},
+	...withDefaultActions("Agent Thread"),
 	{
 		name: "run",
 		onAction: async (action, target) => {
@@ -25,23 +28,6 @@ export const actions: ActionOptions[] = [
 
 			return response;
 		}
-	},
-	{
-		name: "copy",
-		label: "Copy",
-		icon: CopyIcon,
-		menu: true,
-		onSuccess: agentControls.getActiveItemDetails
-	},
-	{
-		name: "delete",
-		label: "Delete",
-		iconClass: "text-red-500",
-		icon: DeleteIcon,
-		menu: true,
-		batch: true,
-		onSuccess: agentControls.getActiveItemDetails,
-		vnode: target => h(ConfirmActionDialog, { action: "Delete", label: "Threads", target, confirmClass: "bg-red-900" })
 	},
 	{
 		name: "create-message",
@@ -71,3 +57,8 @@ export const actions: ActionOptions[] = [
 ];
 
 export const actionControls = useActions(actions, { routes });
+
+actionControls.modifyAction("delete", { onSuccess: agentControls.getActiveItemDetails });
+actionControls.modifyAction("copy", { onSuccess: agentControls.getActiveItemDetails });
+
+export const menuActions = actionControls.getActions(["copy", "delete"]);

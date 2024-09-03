@@ -18,7 +18,8 @@
 			<SelectOrCreateField
 				v-model:editing="isEditingSchema"
 				:selected="agent.responseSchema?.id"
-				:show-edit="!!agent.responseSchema"
+				show-edit
+				:can-edit="!!agent.responseSchema"
 				:options="dxAgent.getFieldOptions('promptSchemas')"
 				:loading="createSchemaAction.isApplying"
 				@create="onCreateSchema"

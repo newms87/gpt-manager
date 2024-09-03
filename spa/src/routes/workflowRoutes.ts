@@ -10,7 +10,6 @@ interface WorkflowRoutes extends ListControlsRoutes {
 export const WorkflowRoutes = useActionRoutes(API_URL + "/workflows", {
 	exportAsJson: async (workflow: Workflow) => {
 		const response = await request.get(`${API_URL}/workflows/${workflow.id}/export-as-json`);
-		console.log("got response", response);
 		return download(JSON.stringify(response), `${workflow.name}.json`);
 	}
 }) as WorkflowRoutes;

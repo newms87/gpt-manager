@@ -1,7 +1,7 @@
 <template>
 	<PanelsDrawer
 		:title="agent.name"
-		:panels="panels"
+		:panels="dxAgent.panels"
 		:target="agent"
 		position="standard"
 		panels-class="w-full"
@@ -11,7 +11,6 @@
 
 <script lang="ts" setup>
 import { dxAgent } from "@/components/Modules/Agents";
-import { panels } from "@/components/Modules/Agents/config/panels";
 import { Agent } from "@/types";
 import { PanelsDrawer } from "quasar-ui-danx";
 

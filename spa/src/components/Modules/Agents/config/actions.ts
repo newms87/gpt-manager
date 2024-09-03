@@ -12,7 +12,6 @@ export const actions: ActionOptions[] = [
 		name: "batch-update",
 		alias: "update",
 		label: "Batch Update",
-		batch: true,
 		icon: EditIcon,
 		onFinish: controls.loadListAndSummary,
 		onBatchSuccess: controls.clearSelectedRows,
@@ -34,3 +33,5 @@ export const actions: ActionOptions[] = [
 ];
 
 export const actionControls = useActions(actions, { routes });
+export const menuActions = actionControls.getActions(["copy", "edit", "delete"]);
+export const batchActions = actionControls.getActions(["batch-update", "delete"]);

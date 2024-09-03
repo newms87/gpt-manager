@@ -17,7 +17,7 @@
 				label="Response Preview"
 				class="bg-sky-800 mx-3"
 			/>
-			<ShowHideButton v-model="isEditingAgent" :show-icon="EditIcon" class="mx-2" />
+			<ShowHideButton v-if="agent" v-model="isEditingAgent" :show-icon="EditIcon" class="mx-2" />
 			<ActionButton
 				:action="unassignAction"
 				:target="assignment"

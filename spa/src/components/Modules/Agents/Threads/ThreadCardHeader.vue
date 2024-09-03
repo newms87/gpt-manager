@@ -43,7 +43,7 @@
 		/>
 		<ActionMenu
 			v-else
-			:actions="dxAgentThread.getActions({menu: true})"
+			:actions="dxAgentThread.menuActions"
 			:target="thread"
 			@success="$event.name === 'delete' ? $emit('close') : null"
 		/>
