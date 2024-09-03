@@ -1,7 +1,7 @@
 <template>
 	<PanelsDrawer
 		:title="promptDirective.name"
-		:panels="dxPromptDirective.panels.value"
+		:panels="dxPromptDirective.panels"
 		:target="promptDirective"
 		position="standard"
 		panels-class="w-full"

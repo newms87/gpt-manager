@@ -7,7 +7,6 @@
 		show-filters
 		refresh-button
 		:filters="filters"
-		:actions="dxPromptDirective.getActions()"
 		:columns="columns"
 		:panels="panels"
 	>

@@ -1,9 +1,9 @@
 import { WorkflowInfoPanel, WorkflowJobsPanel, WorkflowRunsPanel } from "@/components/Modules/Workflows/Panels";
 import { Workflow } from "@/types";
 import { ActionPanel, BadgeTab } from "quasar-ui-danx";
-import { computed, h } from "vue";
+import { h } from "vue";
 
-export const panels = computed<ActionPanel[]>(() => [
+export const panels: ActionPanel[] = [
 	{
 		name: "edit",
 		label: "Details",
@@ -21,4 +21,4 @@ export const panels = computed<ActionPanel[]>(() => [
 		tabVnode: (workflow: Workflow) => h(BadgeTab, { count: workflow.runs_count }),
 		vnode: (workflow: Workflow) => h(WorkflowRunsPanel, { workflow })
 	}
-]);
+];

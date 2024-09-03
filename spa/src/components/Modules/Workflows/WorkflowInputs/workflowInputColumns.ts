@@ -1,17 +1,7 @@
-import { getActions } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputActions";
 import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
-import { fDate, fNumber } from "quasar-ui-danx";
-import { TableColumn } from "quasar-ui-danx";
+import { fDate, fNumber, TableColumn } from "quasar-ui-danx";
 
 export const columns: TableColumn[] = [
-	{
-		name: "menu",
-		label: "",
-		required: true,
-		hideContent: true,
-		shrink: true,
-		actionMenu: getActions({ menu: true })
-	},
 	{
 		name: "id",
 		label: "ID",

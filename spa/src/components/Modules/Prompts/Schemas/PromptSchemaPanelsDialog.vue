@@ -1,7 +1,7 @@
 <template>
 	<PanelsDrawer
 		:title="promptSchema.name"
-		:panels="dxPromptSchema.panels.value"
+		:panels="dxPromptSchema.panels"
 		:target="promptSchema"
 		position="standard"
 		panels-class="w-full"

@@ -1,7 +1,7 @@
-import { TextField } from "quasar-ui-danx";
+import { FormField, TextField } from "quasar-ui-danx";
 import { h } from "vue";
 
-export const fields = [
+export const fields: FormField[] = [
 	{
 		name: "name",
 		vnode: (props) => h(TextField, { ...props, maxLength: 100 }),

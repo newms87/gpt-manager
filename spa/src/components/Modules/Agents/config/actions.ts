@@ -1,20 +1,13 @@
 import { AgentsBatchUpdateDialog } from "@/components/Modules/Agents/Dialogs";
 import { WorkflowAssignmentRoutes } from "@/routes/workflowRoutes";
-import { FaSolidCopy as CopyIcon, FaSolidPencil as EditIcon } from "danx-icon";
+import { FaSolidPencil as EditIcon } from "danx-icon";
 import { ActionOptions, useActions, withDefaultActions } from "quasar-ui-danx";
 import { h } from "vue";
 import { controls } from "./controls";
 import { routes } from "./routes";
 
 export const actions: ActionOptions[] = [
-	...withDefaultActions(controls),
-	{
-		name: "copy",
-		label: "Copy",
-		icon: CopyIcon,
-		menu: true,
-		onSuccess: controls.loadListAndSummary
-	},
+	...withDefaultActions("Agent", controls),
 	{
 		name: "batch-update",
 		alias: "update",

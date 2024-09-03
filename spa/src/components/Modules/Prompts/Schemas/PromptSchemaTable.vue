@@ -7,7 +7,6 @@
 		show-filters
 		refresh-button
 		:filters="filters"
-		:actions="dxPromptSchema.getActions()"
 		:columns="columns"
 		:panels="panels"
 	>
@@ -17,7 +16,7 @@
 	</ActionTableLayout>
 </template>
 <script setup lang="ts">
-import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas/config";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import { columns } from "@/components/Modules/Prompts/Schemas/config/columns";
 import { filters } from "@/components/Modules/Prompts/Schemas/config/filters";
 import { panels } from "@/components/Modules/Prompts/Schemas/config/panels";

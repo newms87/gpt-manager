@@ -1,17 +1,8 @@
-import { getActions } from "@/components/Modules/ContentSources/contentSourceActions";
 import { dxContentSource } from "@/components/Modules/ContentSources/contentSourceControls";
 import router from "@/router";
 import { fDate, fNumber, TableColumn } from "quasar-ui-danx";
 
 export const columns: TableColumn[] = [
-	{
-		name: "menu",
-		label: "",
-		required: true,
-		hideContent: true,
-		shrink: true,
-		actionMenu: getActions({ menu: true })
-	},
 	{
 		name: "id",
 		label: "ID",

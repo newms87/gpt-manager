@@ -5,9 +5,9 @@ import {
 } from "@/components/Modules/Prompts/Schemas/Panels";
 import { PromptSchema } from "@/types";
 import { ActionPanel, BadgeTab } from "quasar-ui-danx";
-import { computed, h } from "vue";
+import { h } from "vue";
 
-export const panels = computed<ActionPanel[]>(() => [
+export const panels: ActionPanel[] = [
 	{
 		name: "edit",
 		label: "Details",
@@ -24,4 +24,4 @@ export const panels = computed<ActionPanel[]>(() => [
 		tabVnode: (promptSchema: PromptSchema) => h(BadgeTab, { count: promptSchema.agents_count }),
 		vnode: (promptSchema: PromptSchema) => h(PromptSchemaAgentsPanel, { promptSchema })
 	}
-]);
+];

@@ -1,18 +1,9 @@
 import { ActionTargetItem, fDate, fNumber, TableColumn } from "quasar-ui-danx";
-import { actionControls } from "./actions";
 import { controls } from "./controls";
 
 const onEdit = (promptSchema: ActionTargetItem) => controls.activatePanel(promptSchema, "edit");
 
 export const columns: TableColumn[] = [
-	{
-		name: "menu",
-		label: "",
-		required: true,
-		hideContent: true,
-		shrink: true,
-		actionMenu: actionControls.getActions({ menu: true })
-	},
 	{
 		name: "id",
 		label: "ID",

@@ -1,9 +1,9 @@
 import { PromptDirectiveAgentsPanel, PromptDirectiveDefinitionPanel } from "@/components/Modules/Prompts/Directives";
 import { PromptDirective } from "@/types";
 import { ActionPanel, BadgeTab } from "quasar-ui-danx";
-import { computed, h } from "vue";
+import { h } from "vue";
 
-export const panels = computed<ActionPanel[]>(() => [
+export const panels: ActionPanel[] = [
 	{
 		name: "edit",
 		label: "Definition",
@@ -15,4 +15,4 @@ export const panels = computed<ActionPanel[]>(() => [
 		tabVnode: (promptDirective: PromptDirective) => h(BadgeTab, { count: promptDirective.agents_count }),
 		vnode: (promptDirective: PromptDirective) => h(PromptDirectiveAgentsPanel, { promptDirective })
 	}
-]);
+];
