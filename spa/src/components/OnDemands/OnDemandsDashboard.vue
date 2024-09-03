@@ -66,8 +66,8 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { dxPromptSchema, getAction as getSchemaAction } from "@/components/Modules/Prompts/Schemas";
-import { dxTeamObject, getAction as getTeamObjectAction, TeamObjectCard } from "@/components/Modules/TeamObjects";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
+import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
 import { FlashMessages, getItem, SelectOrCreateField, setItem } from "quasar-ui-danx";
 import { computed, nextTick, onMounted, ref } from "vue";
 
@@ -75,9 +75,9 @@ const PROMPT_SCHEMA_STORED_KEY = "dx-prompt-schema";
 
 onMounted(init);
 
-const createSchemaAction = getSchemaAction("create");
-const updateDebouncedSchemaAction = getSchemaAction("update-debounced");
-const createTeamObjectAction = getTeamObjectAction("create");
+const createSchemaAction = dxPromptSchema.getAction("create");
+const updateDebouncedSchemaAction = dxPromptSchema.getAction("update-debounced");
+const createTeamObjectAction = dxTeamObject.getAction("create");
 const isEditingSchema = ref(false);
 
 const activeSchema = computed(() => dxPromptSchema.activeItem.value);

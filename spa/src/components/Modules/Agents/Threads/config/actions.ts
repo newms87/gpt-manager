@@ -1,16 +1,11 @@
-import { dxAgent } from "@/components/Modules/Agents/config/controls";
-import { ThreadRoutes } from "@/components/Modules/Agents/config/routes";
+import { controls as agentControls } from "@/components/Modules/Agents/config/controls";
 import { ThreadMessage } from "@/types";
 import { FaSolidCopy as CopyIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
 import { ActionOptions, ConfirmActionDialog, pollUntil, storeObject, useActions } from "quasar-ui-danx";
 import { h } from "vue";
+import { routes } from "./routes";
 
-const forAllItems: Partial<ActionOptions> = {
-	onAction: ThreadRoutes.applyAction,
-	onBatchAction: ThreadRoutes.batchAction
-};
-
-const items: ActionOptions[] = [
+export const actions: ActionOptions[] = [
 	{
 		name: "update",
 		debounce: 500
@@ -18,11 +13,11 @@ const items: ActionOptions[] = [
 	{
 		name: "run",
 		onAction: async (action, target) => {
-			const response = await ThreadRoutes.applyAction(action, target);
+			const response = await routes.applyAction(action, target);
 
 			if (response.success) {
 				pollUntil(async () => {
-					const thread = await ThreadRoutes.details(target);
+					const thread = await routes.details(target);
 					storeObject(thread);
 					return !thread.is_running;
 				}, 1000);
@@ -36,7 +31,7 @@ const items: ActionOptions[] = [
 		label: "Copy",
 		icon: CopyIcon,
 		menu: true,
-		onSuccess: dxAgent.getActiveItemDetails
+		onSuccess: agentControls.getActiveItemDetails
 	},
 	{
 		name: "delete",
@@ -45,7 +40,7 @@ const items: ActionOptions[] = [
 		icon: DeleteIcon,
 		menu: true,
 		batch: true,
-		onSuccess: dxAgent.getActiveItemDetails,
+		onSuccess: agentControls.getActiveItemDetails,
 		vnode: target => h(ConfirmActionDialog, { action: "Delete", label: "Threads", target, confirmClass: "bg-red-900" })
 	},
 	{
@@ -58,13 +53,13 @@ const items: ActionOptions[] = [
 				role: "user"
 			});
 		},
-		onSuccess: dxAgent.getActiveItemDetails
+		onSuccess: agentControls.getActiveItemDetails
 	},
 	{
 		name: "reset-to-message",
 		label: "Reset To Message",
 		class: "text-red-500",
-		onSuccess: dxAgent.getActiveItemDetails,
+		onSuccess: agentControls.getActiveItemDetails,
 		vnode: (target: ThreadMessage) => h(ConfirmActionDialog, {
 			action: "Reset To Message",
 			label: "Delete all following messages",
@@ -75,4 +70,4 @@ const items: ActionOptions[] = [
 	}
 ];
 
-export const { getAction, getActions } = useActions(items, forAllItems);
+export const actionControls = useActions(actions, { routes });

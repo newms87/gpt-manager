@@ -1,4 +1,18 @@
-import { AgentRoutes } from "@/components/Modules/Agents/config/routes";
-import { ActionController, useListControls } from "quasar-ui-danx";
+import { Agent } from "@/types";
+import { ListController, PagedItems, useListControls } from "quasar-ui-danx";
+import type { ShallowRef } from "vue";
+import { routes } from "./routes";
 
-export const dxAgent: ActionController = useListControls("agents", { label: "Agents", routes: AgentRoutes });
+export interface AgentPagedItems extends PagedItems {
+	data: Agent[];
+}
+
+export interface AgentControllerInterface extends ListController {
+	activeItem: ShallowRef<Agent>;
+	pagedItems: ShallowRef<AgentPagedItems>;
+}
+
+export const controls = useListControls("agents", {
+	label: "Agents",
+	routes
+}) as AgentControllerInterface;

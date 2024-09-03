@@ -1,24 +1,17 @@
 import { FaSolidCopy as CopyIcon } from "danx-icon";
 import { ActionOptions, useActions, withDefaultActions } from "quasar-ui-danx";
-import { dxPromptSchema } from "./controls";
-import { PromptSchemaRoutes } from "./routes";
+import { controls } from "./controls";
+import { routes } from "./routes";
 
-
-// This is the default action options for all items
-const forAllItems: Partial<ActionOptions> = {
-	onAction: PromptSchemaRoutes.applyAction,
-	onBatchAction: PromptSchemaRoutes.batchAction
-};
-
-const items: ActionOptions[] = [
-	...withDefaultActions(dxPromptSchema),
+export const actions: ActionOptions[] = [
+	...withDefaultActions(controls),
 	{
 		name: "copy",
 		label: "Copy",
 		icon: CopyIcon,
 		menu: true,
-		onSuccess: dxPromptSchema.loadListAndSummary
+		onSuccess: controls.loadListAndSummary
 	}
 ];
 
-export const { getAction, getActions, extendAction } = useActions(items, forAllItems);
+export const actionControls = useActions(actions, { routes });

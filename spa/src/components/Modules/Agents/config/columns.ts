@@ -1,6 +1,6 @@
-import { getActions } from "@/components/Modules/Agents/config/actions";
-import { dxAgent } from "@/components/Modules/Agents/config/controls";
 import { fDate, fNumber, TableColumn } from "quasar-ui-danx";
+import { actionControls } from "./actions";
+import { controls } from "./controls";
 
 export const columns: TableColumn[] = [
 	{
@@ -9,7 +9,7 @@ export const columns: TableColumn[] = [
 		required: true,
 		hideContent: true,
 		shrink: true,
-		actionMenu: getActions({ menu: true })
+		actionMenu: actionControls.getActions({ menu: true })
 	},
 	{
 		name: "id",
@@ -17,14 +17,14 @@ export const columns: TableColumn[] = [
 		align: "left",
 		sortable: true,
 		shrink: true,
-		onClick: (agent) => dxAgent.activatePanel(agent, "edit")
+		onClick: (agent) => controls.activatePanel(agent, "edit")
 	},
 	{
 		name: "name",
 		label: "Name",
 		align: "left",
 		sortable: true,
-		onClick: (agent) => dxAgent.activatePanel(agent, "edit")
+		onClick: (agent) => controls.activatePanel(agent, "edit")
 	},
 	{
 		name: "description",
@@ -54,14 +54,14 @@ export const columns: TableColumn[] = [
 		label: "Threads",
 		format: fNumber,
 		sortable: true,
-		onClick: (agent) => dxAgent.activatePanel(agent, "threads")
+		onClick: (agent) => controls.activatePanel(agent, "threads")
 	},
 	{
 		name: "assignments_count",
 		label: "Assignments",
 		format: fNumber,
 		sortable: true,
-		onClick: (agent) => dxAgent.activatePanel(agent, "assignments")
+		onClick: (agent) => controls.activatePanel(agent, "assignments")
 	},
 	{
 		name: "created_at",

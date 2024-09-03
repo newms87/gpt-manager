@@ -89,8 +89,8 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { dxAgent } from "@/components/Modules/Agents/config/controls";
-import { getAction as getPromptSchemaAction } from "@/components/Modules/Prompts/Schemas/config/actions";
+import { dxAgent } from "@/components/Modules/Agents";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import WorkflowJobAssignmentsManager from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobAssignmentsManager";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
@@ -111,8 +111,8 @@ const showTasksExample = ref(false);
 const showResponseExample = ref(false);
 const updateJobAction = getAction("update-job-debounced");
 const updateJobDebouncedAction = getAction("update-job-debounced");
-const updatePromptSchemaAction = getPromptSchemaAction("update-debounced");
-const createSchemaAction = getPromptSchemaAction("create");
+const updatePromptSchemaAction = dxPromptSchema.getAction("update-debounced");
+const createSchemaAction = dxPromptSchema.getAction("create");
 const deleteJobAction = getAction("delete-job");
 
 onMounted(dxAgent.loadFieldOptions);

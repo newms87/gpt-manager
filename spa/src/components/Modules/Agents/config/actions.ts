@@ -1,27 +1,19 @@
-import { dxAgent } from "@/components/Modules/Agents/config/controls";
 import { AgentsBatchUpdateDialog } from "@/components/Modules/Agents/Dialogs";
 import { WorkflowAssignmentRoutes } from "@/routes/workflowRoutes";
 import { FaSolidCopy as CopyIcon, FaSolidPencil as EditIcon } from "danx-icon";
 import { ActionOptions, useActions, withDefaultActions } from "quasar-ui-danx";
 import { h } from "vue";
-import { AgentRoutes } from "./routes";
+import { controls } from "./controls";
+import { routes } from "./routes";
 
-
-// This is the default action options for all items
-const forAllItems: Partial<ActionOptions> = {
-	onAction: AgentRoutes.applyAction,
-	onBatchAction: AgentRoutes.batchAction,
-	onBatchSuccess: dxAgent.clearSelectedRows
-};
-
-const items: ActionOptions[] = [
-	...withDefaultActions(dxAgent),
+export const actions: ActionOptions[] = [
+	...withDefaultActions(controls),
 	{
 		name: "copy",
 		label: "Copy",
 		icon: CopyIcon,
 		menu: true,
-		onSuccess: dxAgent.loadListAndSummary
+		onSuccess: controls.loadListAndSummary
 	},
 	{
 		name: "batch-update",
@@ -29,7 +21,8 @@ const items: ActionOptions[] = [
 		label: "Batch Update",
 		batch: true,
 		icon: EditIcon,
-		onFinish: dxAgent.loadListAndSummary,
+		onFinish: controls.loadListAndSummary,
+		onBatchSuccess: controls.clearSelectedRows,
 		vnode: ads => h(AgentsBatchUpdateDialog, { confirmText: "Apply to " + ads.length + " Agents" })
 	},
 	{
@@ -39,7 +32,7 @@ const items: ActionOptions[] = [
 		name: "unassign-agent",
 		alias: "delete",
 		onAction: WorkflowAssignmentRoutes.applyAction,
-		onFinish: dxAgent.getActiveItemDetails
+		onFinish: controls.getActiveItemDetails
 	},
 	{
 		name: "update-directives",
@@ -47,4 +40,4 @@ const items: ActionOptions[] = [
 	}
 ];
 
-export const { getAction, getActions, extendAction } = useActions(items, forAllItems);
+export const actionControls = useActions(actions, { routes });

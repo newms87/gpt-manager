@@ -95,8 +95,8 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { getAction as getThreadAction } from "@/components/Modules/Agents/Threads/threadActions";
-import { getAction } from "@/components/Modules/Agents/Threads/threadMessageActions";
+import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
+import { dxThreadMessage } from "@/components/Modules/Agents/Threads/ThreadMessage/config";
 import { ActionButton } from "@/components/Shared";
 import { AgentThread, ThreadMessage } from "@/types/agents";
 import {
@@ -153,9 +153,9 @@ const avatar = computed<{
 	}
 });
 
-const deleteAction = getAction("delete");
-const resetToMessageAction = getThreadAction("reset-to-message");
-const updateAction = getAction("update");
-const saveFilesAction = getAction("save-files");
-const updateDebouncedAction = getAction("updateDebounced");
+const deleteAction = dxThreadMessage.getAction("delete");
+const resetToMessageAction = dxAgentThread.getAction("reset-to-message");
+const updateAction = dxThreadMessage.getAction("update");
+const saveFilesAction = dxThreadMessage.getAction("save-files");
+const updateDebouncedAction = dxThreadMessage.getAction("updateDebounced");
 </script>

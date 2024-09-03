@@ -10,9 +10,14 @@
 				</div>
 				<div>{{ object.description }}</div>
 			</div>
-			<div>
-				<ShowHideButton v-model="isShowing" label="Show" class="py-2 px-6 bg-sky-900" @show="onShow" />
-			</div>
+			<ShowHideButton v-model="isShowing" label="Show" class="py-2 px-6 bg-sky-900" @show="onShow" />
+			<ShowHideButton
+				v-model="isEditing"
+				label="Edit"
+				:show-icon="EditIcon"
+				class="py-2 px-6 bg-sky-900"
+				@show="editAction.trigger(object)"
+			/>
 		</div>
 		<div v-if="isShowing">
 			{{ object }}
@@ -20,17 +25,18 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { TeamObjectRoutes } from "@/components/Modules/TeamObjects";
+import { dxTeamObject } from "@/components/Modules/TeamObjects";
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
-import { FaSolidLink as LinkIcon } from "danx-icon";
+import { FaSolidLink as LinkIcon, FaSolidPencil as EditIcon } from "danx-icon";
 import { ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const props = defineProps<{ object: TeamObject }>();
 
+const isEditing = ref(false);
 const isShowing = ref(false);
-
+const editAction = dxTeamObject.getAction("edit");
 async function onShow() {
-	await TeamObjectRoutes.detailsAndStore(props.object);
+	await dxTeamObject.routes.detailsAndStore(props.object);
 }
 </script>

@@ -1,6 +1,15 @@
-export * from "./actions";
-export * from "./columns";
-export * from "./controls";
-export * from "./filters";
-export * from "./panels";
-export * from "./routes";
+import { actionControls } from "./actions";
+import { columns } from "./columns";
+import { controls } from "./controls";
+import { filters } from "./filters";
+import { panels } from "./panels";
+import { routes } from "./routes";
+
+export const dxPromptDirective = {
+	...controls,
+	...actionControls,
+	columns,
+	filters,
+	panels,
+	routes
+};

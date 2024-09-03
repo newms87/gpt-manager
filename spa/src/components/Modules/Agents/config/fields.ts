@@ -1,6 +1,6 @@
-import { dxAgent } from "@/components/Modules/Agents/config/controls";
 import { BooleanField, NumberField, SelectField, SliderNumberField, TextField } from "quasar-ui-danx";
 import { h } from "vue";
+import { controls } from "./controls";
 
 export const fields = [
 	{
@@ -18,7 +18,7 @@ export const fields = [
 		name: "model",
 		vnode: (props) => h(SelectField, {
 			...props,
-			options: dxAgent.getFieldOptions("aiModels")
+			options: controls.getFieldOptions("aiModels")
 		}),
 		label: "Model",
 		required: true

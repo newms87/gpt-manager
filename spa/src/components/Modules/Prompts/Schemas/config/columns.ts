@@ -1,8 +1,8 @@
 import { ActionTargetItem, fDate, fNumber, TableColumn } from "quasar-ui-danx";
-import { getActions } from "./actions";
-import { dxPromptSchema } from "./controls";
+import { actionControls } from "./actions";
+import { controls } from "./controls";
 
-const onEdit = (promptSchema: ActionTargetItem) => dxPromptSchema.activatePanel(promptSchema, "edit");
+const onEdit = (promptSchema: ActionTargetItem) => controls.activatePanel(promptSchema, "edit");
 
 export const columns: TableColumn[] = [
 	{
@@ -11,7 +11,7 @@ export const columns: TableColumn[] = [
 		required: true,
 		hideContent: true,
 		shrink: true,
-		actionMenu: getActions({ menu: true })
+		actionMenu: actionControls.getActions({ menu: true })
 	},
 	{
 		name: "id",

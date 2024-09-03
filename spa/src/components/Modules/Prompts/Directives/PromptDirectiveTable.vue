@@ -7,7 +7,7 @@
 		show-filters
 		refresh-button
 		:filters="filters"
-		:actions="getActions()"
+		:actions="dxPromptDirective.getActions()"
 		:columns="columns"
 		:panels="panels"
 	>
@@ -17,13 +17,12 @@
 	</ActionTableLayout>
 </template>
 <script setup lang="ts">
-import { getAction, getActions } from "@/components/Modules/Prompts/Directives/config/actions";
+import { dxPromptDirective } from "@/components/Modules/Prompts/Directives/config";
 import { columns } from "@/components/Modules/Prompts/Directives/config/columns";
-import { dxPromptDirective } from "@/components/Modules/Prompts/Directives/config/controls";
 import { filters } from "@/components/Modules/Prompts/Directives/config/filters";
 import { panels } from "@/components/Modules/Prompts/Directives/config/panels";
 import { ActionTableLayout } from "quasar-ui-danx";
 
 dxPromptDirective.initialize();
-const createAction = getAction("create");
+const createAction = dxPromptDirective.getAction("create");
 </script>

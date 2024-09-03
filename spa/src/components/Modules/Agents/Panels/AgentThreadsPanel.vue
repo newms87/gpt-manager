@@ -25,7 +25,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/config/actions";
+import { dxAgent } from "@/components/Modules/Agents";
 import ThreadCard from "@/components/Modules/Agents/Threads/ThreadCard";
 import router from "@/router";
 import { Agent } from "@/types/agents";
@@ -41,7 +41,7 @@ const activeThreadId = ref<number | null>(null);
 const activeThread = computed(() => props.agent.threads?.find((t) => t.id === activeThreadId.value));
 const visibleThreads = computed(() => activeThread.value ? [activeThread.value] : props.agent.threads);
 
-const createThreadAction = getAction("create-thread");
+const createThreadAction = dxAgent.getAction("create-thread");
 
 function setActiveThreadId(id) {
 	activeThreadId.value = id;

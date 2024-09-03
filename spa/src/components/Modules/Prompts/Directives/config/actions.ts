@@ -1,15 +1,9 @@
 import { ActionOptions, useActions, withDefaultActions } from "quasar-ui-danx";
-import { dxPromptDirective } from "./controls";
-import { PromptDirectiveRoutes } from "./routes";
-
-
-// This is the default action options for all items
-const forAllItems: Partial<ActionOptions> = {
-	onAction: PromptDirectiveRoutes.applyAction
-};
+import { controls } from "./controls";
+import { routes } from "./routes";
 
 const items: ActionOptions[] = [
-	...withDefaultActions(dxPromptDirective)
+	...withDefaultActions(controls)
 ];
 
-export const { getAction, getActions, extendAction } = useActions(items, forAllItems);
+export const actionControls = useActions(items, { routes });

@@ -34,7 +34,7 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { getAction } from "@/components/Modules/Prompts/Schemas/config/actions";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import { ActionButton } from "@/components/Shared";
 import { PromptSchema } from "@/types/prompts";
 import { FaSolidRobot as GenerateExampleIcon } from "danx-icon";
@@ -45,8 +45,8 @@ defineProps<{
 	promptSchema: PromptSchema,
 }>();
 
-const updateDebouncedAction = getAction("update-debounced");
-const generateExampleAction = getAction("generate-example");
+const updateDebouncedAction = dxPromptSchema.getAction("update-debounced");
+const generateExampleAction = dxPromptSchema.getAction("generate-example");
 
 const promptSchemaForm: Form = {
 	fields: [

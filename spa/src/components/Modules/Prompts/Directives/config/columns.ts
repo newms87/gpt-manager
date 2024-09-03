@@ -1,8 +1,8 @@
-import { getActions } from "@/components/Modules/Prompts/Directives/config/actions";
-import { dxPromptDirective } from "@/components/Modules/Prompts/Directives/config/controls";
 import { ActionTargetItem, fDate, fNumber, TableColumn } from "quasar-ui-danx";
+import { actionControls } from "./actions";
+import { controls } from "./controls";
 
-const onEdit = (promptDirective: ActionTargetItem) => dxPromptDirective.activatePanel(promptDirective, "edit");
+const onEdit = (promptDirective: ActionTargetItem) => controls.activatePanel(promptDirective, "edit");
 
 export const columns: TableColumn[] = [
 	{
@@ -11,7 +11,7 @@ export const columns: TableColumn[] = [
 		required: true,
 		hideContent: true,
 		shrink: true,
-		actionMenu: getActions({ menu: true })
+		actionMenu: actionControls.getActions({ menu: true })
 	},
 	{
 		name: "id",

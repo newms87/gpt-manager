@@ -1,14 +1,10 @@
-import { dxAgent } from "@/components/Modules/Agents/config/controls";
-import { MessageRoutes } from "@/components/Modules/Agents/config/routes";
+import { controls as agentControls } from "@/components/Modules/Agents/config/controls";
 import { ThreadMessage } from "@/types/agents";
 import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
+import { routes } from "./routes";
 
-const forAllItems: Partial<ActionOptions> = {
-	onAction: MessageRoutes.applyAction,
-	onBatchAction: MessageRoutes.batchAction
-};
-const items: ActionOptions[] = [
+export const actions: ActionOptions[] = [
 	{
 		name: "update",
 		optimistic: true
@@ -25,7 +21,7 @@ const items: ActionOptions[] = [
 		class: "text-red-500",
 		menu: true,
 		batch: true,
-		onFinish: dxAgent.getActiveItemDetails,
+		onFinish: agentControls.getActiveItemDetails,
 		// If the thread is empty, allow deleting w/o confirmation
 		vnode: (target: ThreadMessage) => !target.content ? false : h(ConfirmActionDialog, {
 			action: "Delete",
@@ -36,4 +32,4 @@ const items: ActionOptions[] = [
 	}
 ];
 
-export const { getAction, getActions } = useActions(items, forAllItems);
+export const actionControls = useActions(actions, { routes });

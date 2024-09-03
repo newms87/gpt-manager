@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/Threads/threadActions";
+import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import ThreadCardHeader from "@/components/Modules/Agents/Threads/ThreadCardHeader";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
@@ -44,5 +44,5 @@ defineProps<{
 
 const active = defineModel<boolean>("active", { default: false });
 const showLogs = ref(false);
-const createMessageAction = getAction("create-message");
+const createMessageAction = dxAgentThread.getAction("create-message");
 </script>

@@ -8,7 +8,7 @@
 	</ConfirmDialog>
 </template>
 <script setup lang="ts">
-import { fields } from "@/components/Modules/Agents/config/formFields";
+import { fields } from "@/components/Modules/Agents/config/fields";
 import { ConfirmDialog, RenderedForm } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 

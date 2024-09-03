@@ -1,7 +1,8 @@
-import { dxAgent } from "@/components/Modules/Agents/config/controls";
+import { FilterGroup } from "quasar-ui-danx";
 import { computed } from "vue";
+import { controls } from "./controls";
 
-export const filters = computed(() => [
+export const filters = computed<FilterGroup[]>(() => [
 	{
 		name: "General",
 		flat: true,
@@ -21,7 +22,7 @@ export const filters = computed(() => [
 				type: "multi-select",
 				name: "model",
 				label: "AI Model",
-				options: dxAgent.getFieldOptions("aiModels")
+				options: controls.getFieldOptions("aiModels")
 			}
 		]
 	}

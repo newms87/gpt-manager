@@ -1,19 +1,12 @@
 import { ActionOptions, RenderedFormDialog, useActions, withDefaultActions } from "quasar-ui-danx";
 import { h } from "vue";
-import { dxTeamObject } from "./controls";
+import { controls } from "./controls";
 import { fields } from "./fields";
-import { TeamObjectRoutes } from "./routes";
+import { routes } from "./routes";
 
-
-// This is the default action options for all items
-const forAllItems: Partial<ActionOptions> = {
-	onAction: TeamObjectRoutes.applyAction,
-	onBatchAction: TeamObjectRoutes.batchAction
-};
-
-const excludes = ["create"];
-const items: ActionOptions[] = [
-	...withDefaultActions(dxTeamObject).filter(a => !excludes.includes(a.name)),
+const excludes = ["create", "edit"];
+export const actions: ActionOptions[] = [
+	...withDefaultActions(controls).filter(a => !excludes.includes(a.name)),
 	{
 		name: "create",
 		label: "Create",
@@ -22,8 +15,19 @@ const items: ActionOptions[] = [
 			contentClass: "w-96",
 			form: { fields }
 		}),
-		onFinish: dxTeamObject.loadList
+		onFinish: controls.loadList
+	},
+	{
+		name: "edit",
+		alias: "update",
+		label: "Edit",
+		vnode: (target, data) => h(RenderedFormDialog, {
+			title: "Edit " + data.type + " " + target.name,
+			contentClass: "w-96",
+			form: { fields }
+		}),
+		onFinish: controls.loadList
 	}
 ];
 
-export const { getAction, getActions, extendAction } = useActions(items, forAllItems);
+export const actionControls = useActions(actions, { routes });

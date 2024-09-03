@@ -1,7 +1,7 @@
 <template>
 	<PanelsDrawer
 		:title="promptDirective.name"
-		:panels="panels"
+		:panels="dxPromptDirective.panels.value"
 		:target="promptDirective"
 		position="standard"
 		panels-class="w-full"
@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts" setup>
-import { dxPromptDirective, panels, PromptDirectiveRoutes } from "@/components/Modules/Prompts/Directives";
+import { dxPromptDirective } from "@/components/Modules/Prompts/Directives";
 import { PromptDirective } from "@/types";
 import { PanelsDrawer } from "quasar-ui-danx";
 
@@ -20,6 +20,6 @@ export interface PromptDirectivePanelsDialogProps {
 
 defineEmits(["close"]);
 const props = defineProps<PromptDirectivePanelsDialogProps>();
-PromptDirectiveRoutes.detailsAndStore(props.promptDirective);
+dxPromptDirective.routes.detailsAndStore(props.promptDirective);
 dxPromptDirective.loadFieldOptions();
 </script>

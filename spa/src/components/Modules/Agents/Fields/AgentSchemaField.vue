@@ -40,9 +40,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/config/actions";
-import { dxAgent } from "@/components/Modules/Agents/config/controls";
-import { getAction as getSchemaAction } from "@/components/Modules/Prompts/Schemas/config/actions";
+import { dxAgent } from "@/components/Modules/Agents";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import { PromptSchemaDefinitionPanel } from "@/components/Modules/Prompts/Schemas/Panels";
 import { Agent } from "@/types/agents";
 import { ActionForm, SelectOrCreateField, TextField } from "quasar-ui-danx";
@@ -61,9 +60,9 @@ const fields = [{
 
 const isEditingSchema = ref(false);
 
-const updateAction = getAction("update");
-const createSchemaAction = getSchemaAction("create", { onFinish: dxAgent.loadFieldOptions });
-const updateDebouncedSchemaAction = getSchemaAction("update-debounced", { onFinish: dxAgent.loadFieldOptions });
+const updateAction = dxAgent.getAction("update");
+const createSchemaAction = dxPromptSchema.getAction("create", { onFinish: dxAgent.loadFieldOptions });
+const updateDebouncedSchemaAction = dxPromptSchema.getAction("update-debounced", { onFinish: dxAgent.loadFieldOptions });
 
 async function onCreateSchema() {
 	const { item: promptSchema } = await createSchemaAction.trigger();

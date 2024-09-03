@@ -8,8 +8,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/config/actions";
-import { fields } from "@/components/Modules/Agents/config/formFields";
+import { dxAgent } from "@/components/Modules/Agents";
+import { fields } from "@/components/Modules/Agents/config/fields";
 import { Agent } from "@/types/agents";
 import { ActionForm } from "quasar-ui-danx";
 
@@ -17,5 +17,5 @@ defineProps<{
 	agent: Agent,
 }>();
 
-const updateAction = getAction("update-debounced");
+const updateAction = dxAgent.getAction("update-debounced");
 </script>

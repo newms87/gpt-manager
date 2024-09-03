@@ -23,7 +23,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { extendAction as extendAgentAction } from "@/components/Modules/Agents/config/actions";
+import { dxAgent } from "@/components/Modules/Agents";
 import { getAction } from "@/components/Modules/Workflows/workflowActions";
 import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
 import WorkflowAssignmentItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowAssignmentItem";
@@ -36,7 +36,7 @@ const props = defineProps<{
 	job: WorkflowJob;
 }>();
 
-const createAgentAction = extendAgentAction("create", props.job.id, {
+const createAgentAction = dxAgent.extendAction("create", props.job.id, {
 	onFinish: async (result) => {
 		await assignAgentAction.trigger(props.job, { ids: [result.item.id] });
 		await WorkflowController.loadFieldOptions();

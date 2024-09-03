@@ -43,7 +43,7 @@
 		/>
 		<ActionMenu
 			v-else
-			:actions="getActions({menu: true})"
+			:actions="dxAgentThread.getActions({menu: true})"
 			:target="thread"
 			@success="$event.name === 'delete' ? $emit('close') : null"
 		/>
@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { getAction, getActions } from "@/components/Modules/Agents/Threads/threadActions";
+import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { ActionButton, AiTokenUsageButton } from "@/components/Shared";
 import { AgentThread } from "@/types/agents";
 import { FaSolidFileCircleCheck as ShowLogsIcon, FaSolidFileCircleXmark as HideLogsIcon } from "danx-icon";
@@ -65,7 +65,7 @@ defineProps<{
 const active = defineModel<boolean>("active", { default: false });
 const showLogs = defineModel<boolean>("logs", { default: false });
 
-const runAction = getAction("run");
-const stopAction = getAction("stop");
-const updateAction = getAction("update");
+const runAction = dxAgentThread.getAction("run");
+const stopAction = dxAgentThread.getAction("stop");
+const updateAction = dxAgentThread.getAction("update");
 </script>

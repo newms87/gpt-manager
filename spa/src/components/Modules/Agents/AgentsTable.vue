@@ -7,7 +7,7 @@
 		show-filters
 		refresh-button
 		:filters="filters"
-		:actions="getActions()"
+		:actions="dxAgent.getActions()"
 		:columns="columns"
 		:panels="panels"
 	>
@@ -17,13 +17,12 @@
 	</ActionTableLayout>
 </template>
 <script setup lang="ts">
-import { getAction, getActions } from "@/components/Modules/Agents/config/actions";
+import { dxAgent } from "@/components/Modules/Agents/config";
 import { columns } from "@/components/Modules/Agents/config/columns";
-import { dxAgent } from "@/components/Modules/Agents/config/controls";
 import { filters } from "@/components/Modules/Agents/config/filters";
 import { panels } from "@/components/Modules/Agents/config/panels";
 import { ActionTableLayout } from "quasar-ui-danx";
 
 dxAgent.initialize();
-const createAction = getAction("create");
+const createAction = dxAgent.getAction("create");
 </script>

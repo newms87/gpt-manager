@@ -25,8 +25,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/config/actions";
-import { dxAgent } from "@/components/Modules/Agents/config/controls";
+import { dxAgent } from "@/components/Modules/Agents";
 import { Agent } from "@/types/agents";
 import { ActionForm } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
@@ -47,7 +46,7 @@ watch(() => props.agent, (agent) => {
 });
 
 const availableTools = computed<AiTool[]>(() => dxAgent.getFieldOptions("aiTools"));
-const updateAction = getAction("update");
+const updateAction = dxAgent.getAction("update");
 function onUpdate(value) {
 	if (Array.isArray(value)) {
 		updateAction.trigger(props.agent, { tools: selectedTools.value });

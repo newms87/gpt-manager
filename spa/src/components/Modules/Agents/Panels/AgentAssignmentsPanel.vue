@@ -13,7 +13,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Agents/config/actions";
+import { dxAgent } from "@/components/Modules/Agents";
 import WorkflowAssignmentItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowAssignmentItem";
 import { Agent } from "@/types/agents";
 import { ListTransition } from "quasar-ui-danx";
@@ -22,5 +22,5 @@ defineProps<{
 	agent: Agent,
 }>();
 
-const unassignAgentAction = getAction("unassign-agent");
+const unassignAgentAction = dxAgent.getAction("unassign-agent");
 </script>

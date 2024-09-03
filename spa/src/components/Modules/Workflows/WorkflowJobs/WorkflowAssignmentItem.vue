@@ -49,7 +49,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import AgentPanelsDialog from "@/components/Modules/Agents/AgentPanelsDialog";
-import { getAction } from "@/components/Modules/Prompts/Schemas/config/actions";
+import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import { Agent } from "@/types";
 import { WorkflowAssignment } from "@/types/workflows";
@@ -65,6 +65,6 @@ const props = defineProps<{
 
 const showResponse = ref(false);
 const isEditingAgent = ref(false);
-const generateExampleAction = getAction("generate-example");
+const generateExampleAction = dxPromptSchema.getAction("generate-example");
 const agent = computed<Agent>(() => props.assignment.agent);
 </script>

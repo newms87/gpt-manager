@@ -2,6 +2,7 @@
 
 declare module "*.svg" {
 	const content: never;
+	// @ts-expect-error - Not sure what typescript deal is here w/ duplicate declared var...
 	export default content;
 }
 

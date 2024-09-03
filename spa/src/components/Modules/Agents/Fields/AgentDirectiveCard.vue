@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { getAction } from "@/components/Modules/Prompts/Directives/config/actions";
+import { dxAgent } from "@/components/Modules/Agents";
 import { AgentPromptDirective } from "@/types";
 import { FaSolidCircleXmark as RemoveIcon, FaSolidPencil as EditIcon } from "danx-icon";
 import { EditOnClickTextField, ShowHideButton } from "quasar-ui-danx";
@@ -43,6 +43,6 @@ const props = defineProps<{
 
 const directive = computed(() => props.agentDirective.directive);
 const isEditing = ref(false);
-const updateDirectiveAction = getAction("update");
-const updateDebouncedDirectiveAction = getAction("update-debounced");
+const updateDirectiveAction = dxAgent.getAction("update");
+const updateDebouncedDirectiveAction = dxAgent.getAction("update-debounced");
 </script>
