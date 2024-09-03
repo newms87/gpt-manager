@@ -11,7 +11,7 @@ const forAllItems: Partial<ActionOptions> = {
 };
 
 const items: ActionOptions[] = [
-	...withDefaultActions("Prompt Schemas", dxPromptSchema),
+	...withDefaultActions(dxPromptSchema),
 	{
 		name: "copy",
 		label: "Copy",

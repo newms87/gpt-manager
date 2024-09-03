@@ -2,7 +2,7 @@
 	<PanelsDrawer
 		:title="agent.name"
 		:panels="panels"
-		:traget="agent"
+		:target="agent"
 		position="standard"
 		panels-class="w-full"
 		@close="$emit('close')"

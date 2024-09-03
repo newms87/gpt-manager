@@ -20,7 +20,7 @@ const forAllItems: Partial<ActionOptions> = {
 };
 
 const items: ActionOptions[] = [
-	...withDefaultActions("Workflows", WorkflowController),
+	...withDefaultActions(WorkflowController),
 	{
 		name: "copy",
 		label: "Copy",

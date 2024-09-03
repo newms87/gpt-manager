@@ -69,7 +69,8 @@ class WorkflowInputRepository extends ActionRepository
 
     public function updateWorkflowInput(WorkflowInput $workflowInput, array $data): WorkflowInput
     {
-        $workflowInput->update($data);
+        $workflowInput->fill($data)->validate();
+        $workflowInput->save($data);
         $this->syncStoredFiles($workflowInput, $data);
 
         return $workflowInput;

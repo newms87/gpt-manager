@@ -9,7 +9,7 @@ const forAllItems: Partial<ActionOptions> = {
 };
 
 const items: ActionOptions[] = [
-	...withDefaultActions("Directives", dxPromptDirective)
+	...withDefaultActions(dxPromptDirective)
 ];
 
 export const { getAction, getActions, extendAction } = useActions(items, forAllItems);

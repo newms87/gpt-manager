@@ -10,7 +10,7 @@ const forAllItems: Partial<ActionOptions> = {
 };
 
 const items: ActionOptions[] = [
-	...withDefaultActions("Workflow Inputs", WorkflowInputController)
+	...withDefaultActions(WorkflowInputController)
 ];
 
 export const { getAction, getActions } = useActions(items, forAllItems);

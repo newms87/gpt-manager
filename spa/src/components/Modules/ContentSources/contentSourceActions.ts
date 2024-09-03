@@ -10,7 +10,7 @@ const forAllItems: Partial<ActionOptions> = {
 };
 
 const items: ActionOptions[] = [
-	...withDefaultActions("Content Sources", dxContentSource),
+	...withDefaultActions(dxContentSource),
 	{
 		name: "fetch"
 	}

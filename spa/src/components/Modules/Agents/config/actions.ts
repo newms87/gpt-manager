@@ -15,7 +15,7 @@ const forAllItems: Partial<ActionOptions> = {
 };
 
 const items: ActionOptions[] = [
-	...withDefaultActions("Agents", dxAgent),
+	...withDefaultActions(dxAgent),
 	{
 		name: "copy",
 		label: "Copy",

@@ -17,11 +17,13 @@
 		</div>
 
 		<slot name="footer" />
+
+		<ActionVnode />
 	</div>
 </template>
 <script setup lang="ts">
 import { useQuasar } from "quasar";
-import { FlashMessages } from "quasar-ui-danx";
+import { ActionVnode, FlashMessages } from "quasar-ui-danx";
 import { onMounted } from "vue";
 
 onMounted(() => {

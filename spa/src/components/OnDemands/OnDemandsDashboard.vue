@@ -1,17 +1,29 @@
 <template>
 	<div class="h-full p-6 overflow-y-auto">
-		<SelectOrCreateField
-			v-model:editing="isEditingSchema"
-			:selected="activeSchema"
-			show-edit
-			:can-edit="!!activeSchema"
-			:options="dxPromptSchema.pagedItems.value?.data || []"
-			:loading="createAction.isApplying"
-			select-by-object
-			option-label="name"
-			@create="onCreate"
-			@update:selected="onSelectPromptSchema"
-		/>
+		<div class="flex items-stretch flex-nowrap gap-4">
+			<SelectOrCreateField
+				v-model:editing="isEditingSchema"
+				:selected="activeSchema"
+				show-edit
+				:can-edit="!!activeSchema"
+				:options="dxPromptSchema.pagedItems.value?.data || []"
+				:loading="createSchemaAction.isApplying"
+				select-by-object
+				option-label="name"
+				class="w-1/2"
+				@create="onCreate"
+				@update:selected="onSelectPromptSchema"
+			/>
+			<div class="w-1/2 flex justify-end">
+				<QBtn
+					class="px-8 bg-green-900"
+					:loading="createTeamObjectAction.isApplying"
+					@click="createTeamObjectAction.trigger(null, { type: teamObjectType })"
+				>
+					Create {{ teamObjectType }}
+				</QBtn>
+			</div>
+		</div>
 
 		<div v-if="isEditingSchema">
 			<MarkdownEditor
@@ -25,7 +37,7 @@
 		</div>
 
 		<div v-if="activeSchema">
-			<template v-if="teamObjects.length > 0">
+			<template v-if="teamObjects?.length > 0">
 				<TeamObjectCard
 					v-for="teamObject in teamObjects"
 					:key="teamObject.id"
@@ -33,7 +45,7 @@
 					class="mt-4"
 				/>
 			</template>
-			<template v-else-if="isLoading">
+			<template v-else-if="dxTeamObject.isLoadingList">
 				<QSkeleton
 					v-for="i in 3"
 					:key="i"
@@ -42,8 +54,8 @@
 				/>
 			</template>
 			<template v-else>
-				<div v-if="activeSchema.schema.title" class="mt-4">
-					No team objects found for {{ activeSchema.schema.title }}
+				<div v-if="teamObjectType" class="mt-4">
+					No {{ teamObjectType }} objects found. Try creating a new one
 				</div>
 				<div v-else>
 					Please update the schema to include the title property at the top level
@@ -54,9 +66,8 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { dxPromptSchema, type PromptSchemaPagedItems } from "@/components/Modules/Prompts/Schemas/config";
-import { getAction } from "@/components/Modules/Prompts/Schemas/config/actions";
-import { TeamObjectCard, TeamObjectRoutes } from "@/components/Modules/TeamObjects";
+import { dxPromptSchema, getAction as getSchemaAction } from "@/components/Modules/Prompts/Schemas";
+import { dxTeamObject, getAction as getTeamObjectAction, TeamObjectCard } from "@/components/Modules/TeamObjects";
 import { FlashMessages, getItem, SelectOrCreateField, setItem } from "quasar-ui-danx";
 import { computed, nextTick, onMounted, ref } from "vue";
 
@@ -64,19 +75,22 @@ const PROMPT_SCHEMA_STORED_KEY = "dx-prompt-schema";
 
 onMounted(init);
 
-const isLoading = ref(false);
-const createAction = getAction("create");
-const updateDebouncedSchemaAction = getAction("update-debounced");
+const createSchemaAction = getSchemaAction("create");
+const updateDebouncedSchemaAction = getSchemaAction("update-debounced");
+const createTeamObjectAction = getTeamObjectAction("create");
 const isEditingSchema = ref(false);
-const teamObjects = ref([]);
 
 const activeSchema = computed(() => dxPromptSchema.activeItem.value);
+const teamObjectType = computed(() => activeSchema.value?.schema.title);
+const teamObjects = computed(() => dxTeamObject.pagedItems.value?.data);
+
 async function onCreate() {
-	await createAction.trigger(activeSchema.value);
+	await createSchemaAction.trigger(activeSchema.value);
 }
 
 async function init() {
 	dxPromptSchema.initialize();
+	dxTeamObject.initialize();
 	dxPromptSchema.setActiveItem(getItem(PROMPT_SCHEMA_STORED_KEY));
 
 	if (activeSchema.value) {
@@ -93,15 +107,10 @@ async function onSelectPromptSchema(promptSchema) {
 async function loadTeamObjects() {
 	if (!activeSchema.value) return;
 
-	const type = activeSchema.value.schema.title;
-
-	if (!type) {
+	if (!teamObjectType.value) {
 		return nextTick(() => FlashMessages.error("The active schema does not have a title"));
 	}
 
-	isLoading.value = true;
-	const results = await TeamObjectRoutes.list({ filter: { type } }) as PromptSchemaPagedItems;
-	teamObjects.value = results.data;
-	isLoading.value = false;
+	dxTeamObject.setActiveFilter({ type: teamObjectType.value });
 }
 </script>

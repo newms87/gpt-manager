@@ -1,5 +1,5 @@
 import { Agent } from "@/types/agents";
-import { ActionTargetItem } from "quasar-ui-danx";
+import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
 
 export interface PromptSchema extends ActionTargetItem {
 	id: string;
@@ -8,7 +8,7 @@ export interface PromptSchema extends ActionTargetItem {
 	agents_count: number;
 	workflow_jobs_count: number;
 	schema_format: "text" | "json" | "yaml" | "ts";
-	schema: object | object[];
+	schema: AnyObject;
 	response_example: object | object[];
 	agents: Agent[];
 }

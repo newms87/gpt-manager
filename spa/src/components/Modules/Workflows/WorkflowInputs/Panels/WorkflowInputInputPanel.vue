@@ -61,16 +61,21 @@ const workflowForm: Form = {
 		},
 		{
 			name: "team_object_type",
+			enabled: () => WorkflowInputController.getFieldOptions("teamObjectTypes")?.length > 0,
 			vnode: (props) => h(SelectField, {
 				...props,
 				options: WorkflowInputController.getFieldOptions("teamObjectTypes")
 			}),
+			placeholder: "(None)",
+			default_value: "",
+			clearable: true,
 			label: "Team Object Type"
 		},
 		{
 			name: "team_object_id",
+			enabled: () => !!input.value.team_object_type,
 			vnode: (props) => h(IntegerField, { ...props }),
-			label: "Team Object ID"
+			label: "Team Object"
 		}
 	]
 };
