@@ -1,6 +1,5 @@
-import { AuditRequestController } from "@/components/Modules/Audits/auditRequestControls";
-import { dbDateTime, fNumber } from "quasar-ui-danx";
-import { TableColumn } from "quasar-ui-danx";
+import { dbDateTime, fNumber, TableColumn } from "quasar-ui-danx";
+import { controls } from "./controls";
 
 export const columns: TableColumn[] = [
 	{
@@ -9,12 +8,13 @@ export const columns: TableColumn[] = [
 		align: "left",
 		sortable: true,
 		shrink: true,
-		onClick: (target) => AuditRequestController.activatePanel(target, "request")
+		onClick: (target) => controls.activatePanel(target, "request")
 	},
 	{
 		name: "user_name",
 		label: "User",
 		sortable: true,
+		sortBy: "user.name",
 		align: "left"
 	},
 	{
@@ -76,35 +76,35 @@ export const columns: TableColumn[] = [
 		label: "Audits",
 		align: "left",
 		format: fNumber,
-		onClick: (target) => AuditRequestController.activatePanel(target, "audits")
+		onClick: (target) => controls.activatePanel(target, "audits")
 	},
 	{
 		name: "api_logs_count",
 		label: "API Logs",
 		align: "left",
 		format: fNumber,
-		onClick: (target) => AuditRequestController.activatePanel(target, "api-logs")
+		onClick: (target) => controls.activatePanel(target, "api-logs")
 	},
 	{
 		name: "ran_jobs_count",
 		label: "Ran Jobs",
 		align: "left",
 		format: fNumber,
-		onClick: (target) => AuditRequestController.activatePanel(target, "ran-jobs")
+		onClick: (target) => controls.activatePanel(target, "ran-jobs")
 	},
 	{
 		name: "dispatched_jobs_count",
 		label: "Dispatched Jobs",
 		align: "left",
 		format: fNumber,
-		onClick: (target) => AuditRequestController.activatePanel(target, "dispatched-jobs")
+		onClick: (target) => controls.activatePanel(target, "dispatched-jobs")
 	},
 	{
 		name: "errors_count",
 		label: "Errors",
 		align: "left",
 		format: fNumber,
-		onClick: (target) => AuditRequestController.activatePanel(target, "errors")
+		onClick: (target) => controls.activatePanel(target, "errors")
 	},
 	{
 		name: "environment",

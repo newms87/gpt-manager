@@ -8,10 +8,10 @@ import {
 	AuditRequestRequestPanel,
 	AuditRequestResponsePanel
 } from "@/components/Modules/Audits/Panels";
-import { ActionPanel, BadgeTab } from "quasar-ui-danx";
-import { computed, h } from "vue";
+import { BadgeTab } from "quasar-ui-danx";
+import { h } from "vue";
 
-export const panels = computed<ActionPanel[]>(() => [
+export const panels = [
 	{
 		name: "request",
 		label: "Request",
@@ -71,4 +71,4 @@ export const panels = computed<ActionPanel[]>(() => [
 		tabVnode: (auditRequest: AuditRequest) => h(BadgeTab, { count: auditRequest.errors_count }),
 		vnode: (auditRequest: AuditRequest) => h(AuditRequestErrorsPanel, { auditRequest })
 	}
-]);
+];

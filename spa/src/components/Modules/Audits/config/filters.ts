@@ -1,5 +1,5 @@
-import { AuditRequestController } from "@/components/Modules/Audits/auditRequestControls";
 import { computed } from "vue";
+import { controls } from "./controls";
 
 export const filters = computed(() => [
 	{
@@ -23,7 +23,7 @@ export const filters = computed(() => [
 				type: "single-select",
 				name: "url",
 				label: "URL",
-				options: AuditRequestController.getFieldOptions("urls")
+				options: controls.getFieldOptions("urls")
 			}
 		]
 	}
