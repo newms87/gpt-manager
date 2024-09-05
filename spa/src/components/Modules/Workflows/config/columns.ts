@@ -1,5 +1,5 @@
-import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { fDate, fNumber, TableColumn } from "quasar-ui-danx";
+import { controls } from "./controls";
 
 export const columns: TableColumn[] = [
 	{
@@ -7,16 +7,15 @@ export const columns: TableColumn[] = [
 		label: "ID",
 		align: "left",
 		sortable: true,
-		required: true,
 		shrink: true,
-		onClick: (workflowInput) => WorkflowInputController.activatePanel(workflowInput, "edit")
+		onClick: (workflow) => controls.activatePanel(workflow, "edit")
 	},
 	{
 		name: "name",
 		label: "Name",
 		align: "left",
 		sortable: true,
-		onClick: (workflowInput) => WorkflowInputController.activatePanel(workflowInput, "edit")
+		onClick: (workflow) => controls.activatePanel(workflow, "edit")
 	},
 	{
 		name: "description",
@@ -25,18 +24,20 @@ export const columns: TableColumn[] = [
 		align: "left"
 	},
 	{
-		name: "tags",
-		label: "Tags",
-		align: "left",
-		format: v => v.join(", ")
-	},
-	{
-		name: "workflow_runs_count",
-		label: "WorkflowInput Runs",
+		name: "jobs_count",
+		label: "Workflow Jobs",
 		align: "left",
 		format: fNumber,
 		sortable: true,
-		onClick: (workflowInput) => WorkflowInputController.activatePanel(workflowInput, "runs")
+		onClick: (workflow) => controls.activatePanel(workflow, "jobs")
+	},
+	{
+		name: "runs_count",
+		label: "Workflow Runs",
+		align: "left",
+		format: fNumber,
+		sortable: true,
+		onClick: (workflow) => controls.activatePanel(workflow, "runs")
 	},
 	{
 		name: "created_at",

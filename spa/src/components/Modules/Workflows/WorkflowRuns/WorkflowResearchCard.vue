@@ -19,10 +19,10 @@
 </template>
 
 <script setup lang="ts">
-import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
+import { dxWorkflowRun } from "@/components/Modules/Workflows/WorkflowRuns/config";
 import router from "@/router";
-import { WorkflowRunRoutes } from "@/routes/workflowRoutes";
 import { WorkflowRun } from "@/types";
 import { autoRefreshObject, ShowHideButton } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
@@ -36,7 +36,7 @@ onMounted(() => {
 		autoRefreshObject(
 			workflowRun,
 			(wr: WorkflowRun) => props.refresh && wr.status === WORKFLOW_STATUS.RUNNING.value,
-			(wr: WorkflowRun) => WorkflowRunRoutes.details(wr)
+			(wr: WorkflowRun) => dxWorkflowRun.routes.details(wr)
 		);
 	}
 });

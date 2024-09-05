@@ -13,7 +13,7 @@
 			<WorkflowStatusTimerPill
 				:runner="jobRun"
 				restart
-				@restart="restartJobAction.trigger(workflowRun, {workflow_job_run_id: jobRun.id})"
+				@restart="dxWorkflowRun.action('restart-job', workflowRun, {workflow_job_run_id: jobRun.id})"
 			/>
 			<div class="ml-2">
 				<AiTokenUsageButton :usage="jobRun.usage" />
@@ -31,7 +31,7 @@
 </template>
 <script setup lang="ts">
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
-import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
+import { dxWorkflowRun } from "@/components/Modules/Workflows/WorkflowRuns/config";
 import WorkflowTaskCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowTaskCard";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import { WorkflowJobRun, WorkflowRun } from "@/types/workflows";
@@ -43,7 +43,6 @@ defineProps<{
 	jobRun: WorkflowJobRun;
 }>();
 
-const restartJobAction = getAction("restart-job");
 const isShowingTasks = ref(false);
 </script>
 

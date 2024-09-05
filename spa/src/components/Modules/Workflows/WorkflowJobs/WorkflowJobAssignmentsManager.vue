@@ -24,8 +24,8 @@
 </template>
 <script setup lang="ts">
 import { dxAgent } from "@/components/Modules/Agents";
-import { getAction } from "@/components/Modules/Workflows/workflowActions";
-import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
+import { getAction } from "@/components/Modules/Workflows/consts/actions";
+import { controls } from "@/components/Modules/Workflows/consts/controls";
 import WorkflowAssignmentItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowAssignmentItem";
 import { ActionButton } from "@/components/Shared";
 import { WorkflowJob } from "@/types/workflows";
@@ -39,11 +39,11 @@ const props = defineProps<{
 const createAgentAction = dxAgent.extendAction("create", props.job.id, {
 	onFinish: async (result) => {
 		await assignAgentAction.trigger(props.job, { ids: [result.item.id] });
-		await WorkflowController.loadFieldOptions();
+		await controls.loadFieldOptions();
 	}
 });
 const assignAgentAction = getAction("assign-agent");
 const unassignAgentAction = getAction("unassign-agent");
 
-const availableAgents = computed(() => WorkflowController.getFieldOptions("agents").filter(a => !props.job.assignments.find(ja => ja.agent.id === a.value)));
+const availableAgents = computed(() => controls.getFieldOptions("agents").filter(a => !props.job.assignments.find(ja => ja.agent.id === a.value)));
 </script>

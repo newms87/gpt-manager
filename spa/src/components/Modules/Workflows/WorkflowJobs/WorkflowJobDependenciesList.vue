@@ -24,7 +24,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/workflowActions";
+import { getAction } from "@/components/Modules/Workflows/consts/actions";
 import WorkflowJobDependencyItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependencyItem";
 import { Workflow, WorkflowJob } from "@/types/workflows";
 import { SelectField } from "quasar-ui-danx";

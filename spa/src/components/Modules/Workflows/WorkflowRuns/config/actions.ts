@@ -1,8 +1,8 @@
-import { WorkflowRunRoutes } from "@/routes/workflowRoutes";
 import { ActionOptions, ConfirmActionDialog, useActions } from "quasar-ui-danx";
 import { h } from "vue";
+import { routes } from "./routes";
 
-const items: ActionOptions[] = [
+const actions: ActionOptions[] = [
 	{
 		name: "delete",
 		label: "Delete",
@@ -29,4 +29,4 @@ const items: ActionOptions[] = [
 	}
 ];
 
-export const { getAction, getActions } = useActions(items, { routes: WorkflowRunRoutes });
+export const actionControls = useActions(actions, { routes });

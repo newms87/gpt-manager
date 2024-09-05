@@ -11,13 +11,13 @@
 				v-model="showArtifacts"
 				:label="workflowRun.artifacts_count + ' Artifacts'"
 				class="bg-sky-800 text-sky-200 mx-2"
-				@show="WorkflowRunRoutes.relation(props.workflowRun, 'artifacts')"
+				@show="dxWorkflowRun.routes.relation(props.workflowRun, 'artifacts')"
 			/>
 			<ShowHideButton
 				v-model="showJobs"
 				:label="workflowRun.job_runs_count + ' Jobs'"
 				class="bg-slate-600 text-slate-200 mx-2"
-				@show="WorkflowRunRoutes.relation(props.workflowRun, 'workflowJobRuns')"
+				@show="dxWorkflowRun.routes.relation(props.workflowRun, 'workflowJobRuns')"
 			/>
 			<WorkflowStatusTimerPill :runner="workflowRun" />
 			<div class="mx-2">
@@ -68,16 +68,15 @@
 </template>
 <script setup lang="ts">
 import ArtifactCard from "@/components/Modules/Artifacts/ArtifactCard";
-import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import { dxWorkflow } from "@/components/Modules/Workflows/config";
+import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
-import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
-import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
-import { getAction } from "@/components/Modules/Workflows/workflowRunActions";
+import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs/config";
+import { dxWorkflowRun } from "@/components/Modules/Workflows/WorkflowRuns/config";
 import WorkflowJobRunCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowJobRunCard";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import ListLoadingContainer from "@/components/Shared/Containers/ListLoadingContainer";
-import { WorkflowRunRoutes } from "@/routes/workflowRoutes";
 import { WorkflowRun } from "@/types/workflows";
 import { autoRefreshObject, ShowHideButton } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
@@ -90,10 +89,10 @@ const props = defineProps<{
 const showArtifacts = ref(false);
 const showJobs = ref(false);
 
-const removeWorkflowRunAction = getAction("delete");
+const removeWorkflowRunAction = dxWorkflowRun.getAction("delete");
 removeWorkflowRunAction.onFinish = async () => {
-	WorkflowInputController.activeItem.value && await WorkflowInputController.getActiveItemDetails();
-	WorkflowController.activeItem.value && await WorkflowController.getActiveItemDetails();
+	dxWorkflowInput.activeItem.value && await dxWorkflowInput.getActiveItemDetails();
+	dxWorkflow.activeItem.value && await dxWorkflow.getActiveItemDetails();
 };
 
 /********
@@ -103,7 +102,7 @@ onMounted(() => {
 	autoRefreshObject(
 		props.workflowRun,
 		(wr: WorkflowRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(wr.status),
-		(wr: WorkflowRun) => WorkflowRunRoutes.details(wr)
+		(wr: WorkflowRun) => dxWorkflowRun.routes.details(wr)
 	);
 });
 </script>

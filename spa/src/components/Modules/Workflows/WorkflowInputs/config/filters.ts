@@ -1,5 +1,5 @@
-import { WorkflowInputController } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputControls";
 import { computed } from "vue";
+import { controls } from "./controls";
 
 export const filters = computed(() => [
 	{
@@ -26,7 +26,7 @@ export const filters = computed(() => [
 				name: "objectTagTaggables.object_tag_id",
 				label: "Tags",
 				placeholder: "(Select Tags)",
-				options: WorkflowInputController.getFieldOptions("tags")
+				options: controls.getFieldOptions("tags")
 			}
 		]
 	}

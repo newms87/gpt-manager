@@ -27,7 +27,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/workflowActions";
+import { getAction } from "@/components/Modules/Workflows/consts/actions";
 import WorkflowJobCard from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobCard";
 import RenderDiagram from "@/components/Shared/Diagrams/RenderDiagram";
 import { Workflow } from "@/types/workflows";

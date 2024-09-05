@@ -11,10 +11,9 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/WorkflowInputs/workflowInputActions";
+import { getAction } from "@/components/Modules/Workflows/WorkflowInputs/config/actions";
 import { WorkflowInput } from "@/types/workflow-inputs";
-import { RenderedForm, TextField } from "quasar-ui-danx";
-import { Form } from "quasar-ui-danx";
+import { Form, RenderedForm, TextField } from "quasar-ui-danx";
 import { h, ref } from "vue";
 
 const props = defineProps<{

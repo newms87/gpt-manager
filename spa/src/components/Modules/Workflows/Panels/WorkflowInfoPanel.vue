@@ -10,10 +10,9 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/workflowActions";
+import { getAction } from "@/components/Modules/Workflows/consts/actions";
 import { Workflow } from "@/types/workflows";
-import { RenderedForm, TextField } from "quasar-ui-danx";
-import { Form } from "quasar-ui-danx";
+import { Form, RenderedForm, TextField } from "quasar-ui-danx";
 import { h, ref } from "vue";
 
 const props = defineProps<{

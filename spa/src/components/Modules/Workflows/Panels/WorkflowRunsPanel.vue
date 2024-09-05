@@ -52,12 +52,12 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/workflowActions";
+import { getAction } from "@/components/Modules/Workflows/consts/actions";
+import { routes } from "@/components/Modules/Workflows/WorkflowInputs/config/routes";
 import SelectWorkflowInputDialog from "@/components/Modules/Workflows/WorkflowInputs/SelectWorkflowInputDialog";
 import WorkflowInputCard from "@/components/Modules/Workflows/WorkflowInputs/WorkflowInputCard";
 import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 import { ActionButton } from "@/components/Shared";
-import { WorkflowInputRoutes } from "@/routes/workflowInputRoutes";
 import { Workflow, WorkflowInput, WorkflowRun } from "@/types";
 import { FaSolidArrowsRotate as ChangeIcon } from "danx-icon";
 import { storeObject } from "quasar-ui-danx";
@@ -85,6 +85,6 @@ function loadInputFromRun(workflowRun: WorkflowRun) {
 async function onConfirmSelection(input: WorkflowInput) {
 	selectedInput.value = input;
 	showInputDialog.value = false;
-	storeObject(await WorkflowInputRoutes.details(input));
+	storeObject(await routes.details(input));
 }
 </script>

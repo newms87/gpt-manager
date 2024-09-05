@@ -1,8 +1,6 @@
 import { ImportWorkflowDialog } from "@/components/Modules/Workflows/Shared";
-import { WorkflowController } from "@/components/Modules/Workflows/workflowControls";
-import { WorkflowAssignmentRoutes, WorkflowJobRoutes, WorkflowRoutes } from "@/routes/workflowRoutes";
 import { Workflow } from "@/types";
-import { FaSolidCopy as CopyIcon, FaSolidDatabase as ExportJsonIcon } from "danx-icon";
+import { FaSolidDatabase as ExportJsonIcon, FaSolidPlay as RunIcon } from "danx-icon";
 import {
 	ActionOptions,
 	ConfirmActionDialog,
@@ -11,38 +9,26 @@ import {
 	withDefaultActions
 } from "quasar-ui-danx";
 import { h } from "vue";
+import { controls } from "./controls";
+import { routes, WorkflowAssignmentRoutes, WorkflowJobRoutes } from "./routes";
 
-// This is the default action options for all items
-const forAllItems: Partial<ActionOptions> = {
-	onAction: WorkflowRoutes.applyAction,
-	onBatchAction: WorkflowRoutes.batchAction,
-	onBatchSuccess: WorkflowController.clearSelectedRows
-};
-
-const items: ActionOptions[] = [
-	...withDefaultActions("Workflow", WorkflowController),
+export const actions: ActionOptions[] = [
+	...withDefaultActions("Workflow", controls),
 	{
-		name: "copy",
-		label: "Copy",
-		icon: CopyIcon,
-		menu: true,
-		onSuccess: WorkflowController.loadListAndSummary
-	},
-	{
-		name: "run-workflow"
+		name: "run-workflow",
+		icon: RunIcon
 	},
 	{
 		name: "export-json",
 		label: "Export as JSON",
 		icon: ExportJsonIcon,
-		menu: true,
-		onAction: async (action, target: Workflow) => await WorkflowRoutes.exportAsJson(target)
+		onAction: async (action, target: Workflow) => await routes.exportAsJson(target)
 	},
 	{
 		name: "import-json",
 		label: "Import from JSON",
-		onAction: WorkflowRoutes.applyAction,
-		onFinish: WorkflowController.loadListAndSummary,
+		onAction: routes.applyAction,
+		onFinish: controls.loadListAndSummary,
 		vnode: () => h(ImportWorkflowDialog)
 	},
 	{
@@ -67,13 +53,13 @@ const items: ActionOptions[] = [
 		vnode: (target) => h(ConfirmActionDialog, { action: "Delete Job", target, confirmClass: "bg-red-700" }),
 		onAction: async (...params) => {
 			await WorkflowJobRoutes.applyAction(...params);
-			await WorkflowController.getActiveItemDetails();
+			await controls.getActiveItemDetails();
 		}
 	},
 	{
 		name: "set-dependencies",
 		onAction: WorkflowJobRoutes.applyAction,
-		onFinish: WorkflowController.getActiveItemDetails
+		onFinish: controls.getActiveItemDetails
 	},
 	{
 		name: "assign-agent",
@@ -83,8 +69,11 @@ const items: ActionOptions[] = [
 		name: "unassign-agent",
 		alias: "delete",
 		onAction: WorkflowAssignmentRoutes.applyAction,
-		onFinish: WorkflowController.getActiveItemDetails
+		onFinish: controls.getActiveItemDetails
 	}
 ];
 
-export const { getAction, getActions } = useActions(items, forAllItems);
+export const actionControls = useActions(actions, { routes, controls });
+
+export const menuActions = actionControls.getActions(["run-workflow", "export-json", "edit", "copy", "delete"]);
+export const batchActions = actionControls.getActions(["delete"]);

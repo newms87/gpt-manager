@@ -91,7 +91,7 @@
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { dxAgent } from "@/components/Modules/Agents";
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
-import { getAction } from "@/components/Modules/Workflows/workflowActions";
+import { getAction } from "@/components/Modules/Workflows/consts/actions";
 import WorkflowJobAssignmentsManager from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobAssignmentsManager";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
 import { ActionButton } from "@/components/Shared";
