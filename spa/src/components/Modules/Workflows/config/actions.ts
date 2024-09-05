@@ -16,6 +16,7 @@ export const actions: ActionOptions[] = [
 	...withDefaultActions("Workflow", controls),
 	{
 		name: "run-workflow",
+		label: "Run",
 		icon: RunIcon
 	},
 	{

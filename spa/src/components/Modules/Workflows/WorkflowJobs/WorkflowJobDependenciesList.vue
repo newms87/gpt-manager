@@ -24,7 +24,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/consts/actions";
+import { dxWorkflow } from "@/components/Modules/Workflows";
 import WorkflowJobDependencyItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependencyItem";
 import { Workflow, WorkflowJob } from "@/types/workflows";
 import { SelectField } from "quasar-ui-danx";
@@ -35,7 +35,7 @@ const props = defineProps<{
 	workflow: Workflow;
 }>();
 
-const setDependenciesAction = getAction("set-dependencies");
+const setDependenciesAction = dxWorkflow.getAction("set-dependencies");
 
 function isCircularDependency(dependencyJob: WorkflowJob) {
 	if (dependencyJob.id === props.job.id) return true;

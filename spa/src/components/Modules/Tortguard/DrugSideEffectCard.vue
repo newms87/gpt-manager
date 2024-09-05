@@ -81,7 +81,7 @@ import DrugScientificStudiesSection from "@/components/Modules/Tortguard/DrugSci
 import DrugSideEffectSeveritySection from "@/components/Modules/Tortguard/DrugSideEffectSeveritySection";
 import DrugWarningsSection from "@/components/Modules/Tortguard/DrugWarningsSection";
 import { DrugSideEffect } from "@/components/Modules/Tortguard/tortguard";
-import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
 import WorkflowResearchingCard from "@/components/Modules/Workflows/WorkflowRuns/WorkflowResearchCard";
 import LogoImage from "@/components/Shared/Images/LogoImage";
 import { TortguardRoutes } from "@/routes/tortguardRoutes";

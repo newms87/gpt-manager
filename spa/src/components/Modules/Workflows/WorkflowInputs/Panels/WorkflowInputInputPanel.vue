@@ -13,8 +13,7 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { getAction } from "@/components/Modules/Workflows/WorkflowInputs/config/actions";
-import { controls } from "@/components/Modules/Workflows/WorkflowInputs/config/controls";
+import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { Form, IntegerField, MultiFileField, RenderedForm, SelectField } from "quasar-ui-danx";
 import { h, onMounted, ref, watch } from "vue";
@@ -23,7 +22,7 @@ const props = defineProps<{
 	workflowInput: WorkflowInput,
 }>();
 
-const updateAction = getAction("update-debounced");
+const updateAction = dxWorkflowInput.getAction("update-debounced");
 const input = ref({
 	content: props.workflowInput.content,
 	files: props.workflowInput.files,
@@ -42,8 +41,8 @@ watch(() => props.workflowInput.files, () => {
 });
 
 onMounted(() => {
-	if (!controls.getFieldOptions("teamObjectTypes")?.length) {
-		controls.loadFieldOptions();
+	if (!dxWorkflowInput.getFieldOptions("teamObjectTypes")?.length) {
+		dxWorkflowInput.loadFieldOptions();
 	}
 });
 
@@ -61,10 +60,10 @@ const workflowForm: Form = {
 		},
 		{
 			name: "team_object_type",
-			enabled: () => controls.getFieldOptions("teamObjectTypes")?.length > 0,
+			enabled: () => dxWorkflowInput.getFieldOptions("teamObjectTypes")?.length > 0,
 			vnode: (props) => h(SelectField, {
 				...props,
-				options: controls.getFieldOptions("teamObjectTypes")
+				options: dxWorkflowInput.getFieldOptions("teamObjectTypes")
 			}),
 			placeholder: "(None)",
 			default_value: "",

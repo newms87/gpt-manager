@@ -13,7 +13,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/consts/workflows";
+import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
 import { FaSolidArrowsRotate as RestartIcon } from "danx-icon";
 import { computed } from "vue";
 

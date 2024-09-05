@@ -70,6 +70,7 @@
 		<QCardSection v-if="showResponseExample">
 			<h6 class="text-base">Response Example</h6>
 			<SelectOrCreateField
+				class="mt-4"
 				:selected="job.responseSchema?.id"
 				:options="dxAgent.getFieldOptions('promptSchemas')"
 				:loading="createSchemaAction.isApplying"
@@ -91,7 +92,7 @@
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { dxAgent } from "@/components/Modules/Agents";
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
-import { getAction } from "@/components/Modules/Workflows/consts/actions";
+import { dxWorkflow } from "@/components/Modules/Workflows";
 import WorkflowJobAssignmentsManager from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobAssignmentsManager";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
 import { ActionButton } from "@/components/Shared";
@@ -109,11 +110,11 @@ const props = defineProps<{
 const isEditing = ref(false);
 const showTasksExample = ref(false);
 const showResponseExample = ref(false);
-const updateJobAction = getAction("update-job-debounced");
-const updateJobDebouncedAction = getAction("update-job-debounced");
+const updateJobAction = dxWorkflow.getAction("update-job-debounced");
+const updateJobDebouncedAction = dxWorkflow.getAction("update-job-debounced");
 const updatePromptSchemaAction = dxPromptSchema.getAction("update-debounced");
 const createSchemaAction = dxPromptSchema.getAction("create");
-const deleteJobAction = getAction("delete-job");
+const deleteJobAction = dxWorkflow.getAction("delete-job");
 
 onMounted(dxAgent.loadFieldOptions);
 

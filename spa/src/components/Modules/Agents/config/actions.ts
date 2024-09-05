@@ -1,5 +1,5 @@
 import { AgentsBatchUpdateDialog } from "@/components/Modules/Agents/Dialogs";
-import { WorkflowAssignmentRoutes } from "@/components/Modules/Workflows/consts/routes";
+import { WorkflowAssignmentRoutes } from "@/components/Modules/Workflows/config/routes";
 import { FaSolidPencil as EditIcon } from "danx-icon";
 import { ActionOptions, useActions, withDefaultActions } from "quasar-ui-danx";
 import { h } from "vue";

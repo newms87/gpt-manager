@@ -17,7 +17,7 @@
 	</ActionTableLayout>
 </template>
 <script setup lang="ts">
-import { dxWorkflow } from "@/components/Modules/Workflows/config";
+import { dxWorkflow } from "@/components/Modules/Workflows";
 import { FaSolidFileImport as ImportIcon } from "danx-icon";
 import { ActionTableLayout } from "quasar-ui-danx";
 

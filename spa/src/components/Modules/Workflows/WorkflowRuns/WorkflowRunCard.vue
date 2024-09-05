@@ -68,7 +68,7 @@
 </template>
 <script setup lang="ts">
 import ArtifactCard from "@/components/Modules/Artifacts/ArtifactCard";
-import { dxWorkflow } from "@/components/Modules/Workflows/config";
+import { dxWorkflow } from "@/components/Modules/Workflows";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs/config";

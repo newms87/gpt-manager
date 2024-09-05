@@ -27,7 +27,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/consts/actions";
+import { dxWorkflow } from "@/components/Modules/Workflows";
 import WorkflowJobCard from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobCard";
 import RenderDiagram from "@/components/Shared/Diagrams/RenderDiagram";
 import { Workflow } from "@/types/workflows";
@@ -39,7 +39,7 @@ const props = defineProps<{
 	workflow: Workflow,
 }>();
 
-const createJobAction = getAction("create-job");
+const createJobAction = dxWorkflow.getAction("create-job");
 const jobFlowDiagram = computed(() => {
 	if (!props.workflow.jobs) return;
 

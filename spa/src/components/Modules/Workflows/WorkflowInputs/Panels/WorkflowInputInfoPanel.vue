@@ -11,7 +11,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/WorkflowInputs/config/actions";
+import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { Form, RenderedForm, TextField } from "quasar-ui-danx";
 import { h, ref } from "vue";
@@ -20,7 +20,7 @@ const props = defineProps<{
 	workflowInput: WorkflowInput,
 }>();
 
-const updateAction = getAction("update-debounced");
+const updateAction = dxWorkflowInput.getAction("update-debounced");
 const input = ref({
 	name: props.workflowInput.name,
 	description: props.workflowInput.description

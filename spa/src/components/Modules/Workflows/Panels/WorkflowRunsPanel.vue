@@ -21,7 +21,7 @@
 				/>
 			</div>
 			<ActionButton
-				:action="runWorkflowAction"
+				:action="dxWorkflow.getAction('run-workflow')"
 				:target="workflow"
 				:input="actionInput"
 				:disabled="!selectedInput"
@@ -52,8 +52,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/consts/actions";
-import { routes } from "@/components/Modules/Workflows/WorkflowInputs/config/routes";
+import { dxWorkflow } from "@/components/Modules/Workflows";
+import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
 import SelectWorkflowInputDialog from "@/components/Modules/Workflows/WorkflowInputs/SelectWorkflowInputDialog";
 import WorkflowInputCard from "@/components/Modules/Workflows/WorkflowInputs/WorkflowInputCard";
 import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
@@ -71,8 +71,6 @@ const selectedInput = ref<WorkflowInput | null>(null);
 const actionInput = computed(() => ({ workflow_input_id: selectedInput.value?.id }));
 const showInputDialog = ref<boolean>(false);
 
-const runWorkflowAction = getAction("run-workflow");
-
 function loadInputFromRun(workflowRun: WorkflowRun) {
 	const input = storeObject({
 		id: workflowRun.input_id,
@@ -85,6 +83,6 @@ function loadInputFromRun(workflowRun: WorkflowRun) {
 async function onConfirmSelection(input: WorkflowInput) {
 	selectedInput.value = input;
 	showInputDialog.value = false;
-	storeObject(await routes.details(input));
+	storeObject(await dxWorkflowInput.routes.details(input));
 }
 </script>

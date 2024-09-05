@@ -26,7 +26,7 @@
 			:key="workflowRun.id"
 			:workflow-run="workflowRun"
 			class="mb-4"
-			@remove="controls.getActiveItemDetails"
+			@remove="dxWorkflowInput.getActiveItemDetails"
 		>
 			<template #name>
 				<a class="ml-4" @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
@@ -37,9 +37,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/Workflows/consts/actions";
-import { routes } from "@/components/Modules/Workflows/consts/routes";
-import { controls } from "@/components/Modules/Workflows/WorkflowInputs/config/controls";
+import { dxWorkflow } from "@/components/Modules/Workflows";
+import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
 import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { FaSolidCirclePlay as RunIcon } from "danx-icon";
@@ -52,10 +51,10 @@ const props = defineProps<{
 
 const workflowId = ref(null);
 const workflows = shallowRef([]);
-const runWorkflowAction = getAction("run-workflow");
+const runWorkflowAction = dxWorkflow.getAction("run-workflow");
 
 onMounted(async () => {
-	workflows.value = (await routes.list({ page: 1, rowsPerPage: 1000 })).data;
+	workflows.value = (await dxWorkflow.routes.list({ page: 1, rowsPerPage: 1000 })).data;
 });
 
 async function onRunWorkflow() {
@@ -63,6 +62,6 @@ async function onRunWorkflow() {
 		id: workflowId.value,
 		__type: "Workflow"
 	}, { workflow_input_id: props.workflowInput.id });
-	await controls.getActiveItemDetails();
+	await dxWorkflowInput.getActiveItemDetails();
 }
 </script>
