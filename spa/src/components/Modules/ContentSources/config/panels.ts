@@ -1,9 +1,8 @@
 import { ContentSourceApiConfigPanel, ContentSourceInfoPanel } from "@/components/Modules/ContentSources/Panels";
 import { ContentSource } from "@/types/content-sources";
-import { ActionPanel } from "quasar-ui-danx";
-import { computed, h } from "vue";
+import { h } from "vue";
 
-export const panels = computed<ActionPanel[]>(() => [
+export const panels = [
 	{
 		name: "edit",
 		label: "Info",
@@ -14,4 +13,4 @@ export const panels = computed<ActionPanel[]>(() => [
 		label: "API Config",
 		vnode: (contentSource: ContentSource) => h(ContentSourceApiConfigPanel, { contentSource })
 	}
-]);
+];

@@ -42,7 +42,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { getAction } from "@/components/Modules/ContentSources/contentSourceActions";
+import { dxContentSource } from "@/components/Modules/ContentSources";
 import { ContentSource } from "@/types";
 import { fDateTime, NumberField, TextField } from "quasar-ui-danx";
 import { ref } from "vue";
@@ -51,8 +51,8 @@ const props = defineProps<{
 	contentSource: ContentSource,
 }>();
 
-const updateAction = getAction("update-debounced");
-const fetchAction = getAction("fetch");
+const updateAction = dxContentSource.getAction("update-debounced");
+const fetchAction = dxContentSource.getAction("fetch");
 const input = ref({
 	name: props.contentSource.name,
 	url: props.contentSource.url,

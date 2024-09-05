@@ -28,7 +28,7 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
-import { getAction } from "@/components/Modules/ContentSources/contentSourceActions";
+import { dxContentSource } from "@/components/Modules/ContentSources";
 import { ContentSource } from "@/types";
 import { NumberField, SelectField } from "quasar-ui-danx";
 import { ref, watch } from "vue";
@@ -37,7 +37,7 @@ const props = defineProps<{
 	contentSource: ContentSource,
 }>();
 
-const updateAction = getAction("update");
+const updateAction = dxContentSource.getAction("update");
 
 const input = ref({
 	config: mapConfig(props.contentSource.config)

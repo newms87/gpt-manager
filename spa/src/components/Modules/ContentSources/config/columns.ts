@@ -1,6 +1,6 @@
-import { dxContentSource } from "@/components/Modules/ContentSources/contentSourceControls";
 import router from "@/router";
 import { fDate, fNumber, TableColumn } from "quasar-ui-danx";
+import { controls } from "./controls";
 
 export const columns: TableColumn[] = [
 	{
@@ -9,14 +9,14 @@ export const columns: TableColumn[] = [
 		sortable: true,
 		align: "left",
 		shrink: true,
-		onClick: (agent) => dxContentSource.activatePanel(agent, "edit")
+		onClick: (agent) => controls.activatePanel(agent, "edit")
 	},
 	{
 		name: "name",
 		label: "Name",
 		align: "left",
 		sortable: true,
-		onClick: (workflowInput) => dxContentSource.activatePanel(workflowInput, "edit")
+		onClick: (workflowInput) => controls.activatePanel(workflowInput, "edit")
 	},
 	{
 		name: "type",
