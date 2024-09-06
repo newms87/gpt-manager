@@ -19,7 +19,7 @@ abstract class TeamObjectResource extends ActionResource
             ->get()
             ->keyBy('name')
             ->map(fn(TeamObjectAttribute $attribute) => TeamObjectAttributeResource::make($attribute));
-        
+
         // Resolve relationships
         $relations      = $model->relationships()->get();
         $relatedObjects = [];
@@ -31,7 +31,7 @@ abstract class TeamObjectResource extends ActionResource
                 'id'          => $model->id,
                 'name'        => $model->name,
                 'description' => $model->description,
-                'date'        => $model->date,
+                'date'        => $model->date?->toDateTimeString(),
                 'url'         => $model->url,
                 'meta'        => $model->meta,
                 'created_at'  => $model->created_at,

@@ -10,6 +10,7 @@
 				:loading="createSchemaAction.isApplying"
 				select-by-object
 				option-label="name"
+				create-text=""
 				class="w-1/2"
 				@create="onCreate"
 				@update:selected="onSelectPromptSchema"
@@ -20,7 +21,8 @@
 					:loading="createTeamObjectAction.isApplying"
 					@click="createTeamObjectAction.trigger(null, { type: teamObjectType })"
 				>
-					Create {{ teamObjectType }}
+					<CreateIcon class="w-4 mr-2" />
+					{{ teamObjectType }}
 				</QBtn>
 			</div>
 		</div>
@@ -70,6 +72,7 @@ import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
 import { JsonSchema } from "@/types";
+import { FaSolidPlus as CreateIcon } from "danx-icon";
 import { FlashMessages, getItem, SelectOrCreateField, setItem } from "quasar-ui-danx";
 import { computed, nextTick, onMounted, ref } from "vue";
 

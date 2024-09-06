@@ -53,7 +53,8 @@
 					:key="relation.name"
 					:name="relation.name"
 					:title="relation.title"
-					:object="object[relation.name]"
+					:parent="object"
+					:object="object[relation.name][0]"
 					:schema="schema.properties[relation.name]"
 					:level="level + 1"
 				/>
