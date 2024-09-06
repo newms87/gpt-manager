@@ -6,7 +6,16 @@ import { fields } from "./fields";
 import { routes } from "./routes";
 
 export const actions: ActionOptions[] = [
-	...withDefaultActions("Object", controls)
+	...withDefaultActions("Object", controls),
+	{
+		name: "create-relation",
+		vnode: (target, data) => h(RenderedFormDialog, {
+			title: "Create " + data.type + " for " + target.name,
+			contentClass: "w-96",
+			form: { fields }
+		}),
+		onFinish: controls.loadList
+	}
 ];
 
 export const actionControls = useActions(actions, { routes, controls });

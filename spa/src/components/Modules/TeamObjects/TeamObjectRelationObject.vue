@@ -1,7 +1,7 @@
 <template>
 	<div :data-testid="name" class="bg-slate-900 py-2 px-4 rounded-lg">
 		<div class="font-bold">{{ title || name }}</div>
-		<TeamObjectCard v-if="object" :object="object" :schema="schema" />
+		<TeamObjectCard v-if="object" :object="object" :schema="schema" class="bg-slate-900 rounded" />
 		<div v-else>
 			No {{ name }} found. Try creating a new one
 		</div>

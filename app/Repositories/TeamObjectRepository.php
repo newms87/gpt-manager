@@ -11,6 +11,7 @@ use BadFunctionCallException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Log;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -31,6 +32,7 @@ class TeamObjectRepository extends ActionRepository
         return match ($action) {
             'create' => $this->saveTeamObject($type, $name, $data),
             'update' => $this->updateTeamObject($model, $data),
+            'create-relation' => $this->createRelation($model, $data['relationship_name'] ?? null, $type, $name, $data),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -67,6 +69,23 @@ class TeamObjectRepository extends ActionRepository
     function updateTeamObject(TeamObject $teamObject, $input = []): TeamObject
     {
         $teamObject->fill($input)->save();
+
+        return $teamObject;
+    }
+
+    /**
+     * Create a new Team Object record and a relationship to another Team Object record based on type, name and related
+     * object
+     */
+    public function createRelation(TeamObject $teamObject, $relationshipName, $type, $name, $input = []): TeamObject
+    {
+        if (!$relationshipName) {
+            throw new ValidationError("Save Objects requires a relationship_name for each relation");
+        }
+
+        $relatedObject = $this->saveTeamObject($type, $name, $input);
+
+        $this->saveTeamObjectRelationship($teamObject, $relationshipName, $relatedObject);
 
         return $teamObject;
     }

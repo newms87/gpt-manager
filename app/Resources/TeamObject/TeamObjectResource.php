@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Resources\Tortguard;
+namespace App\Resources\TeamObject;
 
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
@@ -14,10 +14,18 @@ abstract class TeamObjectResource extends ActionResource
      */
     public static function data(Model $model): array
     {
+        // Resolve attributes
         $attributes = $model->attributes()
             ->get()
             ->keyBy('name')
             ->map(fn(TeamObjectAttribute $attribute) => TeamObjectAttributeResource::make($attribute));
+        
+        // Resolve relationships
+        $relations      = $model->relationships()->get();
+        $relatedObjects = [];
+        foreach($relations as $relation) {
+            $relatedObjects[$relation->relationship_name][] = TeamObjectResource::make($relation->related);
+        }
 
         return [
                 'id'          => $model->id,
@@ -28,6 +36,6 @@ abstract class TeamObjectResource extends ActionResource
                 'meta'        => $model->meta,
                 'created_at'  => $model->created_at,
                 'updated_at'  => $model->updated_at,
-            ] + $attributes->toArray();
+            ] + $attributes->toArray() + $relatedObjects;
     }
 }

@@ -1,5 +1,5 @@
 <template>
-	<div class="p-3 bg-slate-800 rounded">
+	<div class="p-3">
 		<div class="team-object-header flex items-center flex-nowrap gap-x-4">
 			<div class="flex-grow">
 				<div class="font-bold flex items-center gap-2">
@@ -15,7 +15,13 @@
 					{{ object.description }}
 				</div>
 			</div>
-			<ShowHideButton v-model="isShowing" label="Show" class="py-2 px-6 bg-sky-900" @show="onShow" />
+			<ShowHideButton
+				v-if="hasChildren"
+				v-model="isShowing"
+				label="Show"
+				class="py-2 px-6 bg-sky-900"
+				@show="onShow"
+			/>
 			<QBtn
 				class="p-3 bg-sky-900"
 				:disable="editAction.isApplying"
@@ -49,6 +55,7 @@
 					:title="relation.title"
 					:object="object[relation.name]"
 					:schema="schema.properties[relation.name]"
+					:level="level + 1"
 				/>
 			</div>
 			<div class="mt-5">
@@ -57,8 +64,10 @@
 					:key="relation.name"
 					:name="relation.name"
 					:title="relation.title"
+					:parent="object"
 					:schema="schema.properties[relation.name]?.items"
 					:relations="object[relation.name] || []"
+					:level="level + 1"
 				/>
 			</div>
 		</div>
@@ -75,11 +84,19 @@ import { FaSolidLink as LinkIcon, FaSolidPencil as EditIcon, FaSolidTrash as Del
 import { fDate, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
-const props = defineProps<{ object: TeamObject, schema: JsonSchema }>();
+const props = withDefaults(defineProps<{
+	level?: number,
+	object: TeamObject,
+	schema: JsonSchema
+}>(), {
+	level: 0
+});
 
 const isShowing = ref(false);
 const editAction = dxTeamObject.getAction("edit");
 const deleteAction = dxTeamObject.getAction("delete");
+
+const hasChildren = computed(() => schemaAttributes.value.length > 0 || schemaRelationArrays.value.length > 0 || schemaRelationObjects.value.length > 0);
 
 /**
  * The list of properties that are attributes
@@ -89,7 +106,7 @@ const schemaAttributes = computed(() => {
 	for (let name of Object.keys(props.schema.properties)) {
 		const attr = props.schema.properties[name];
 		// Any scalar types excluding the base attribute types (ie: name, date, etc.) are the attributes of interest for the object
-		if (attr.type === "array" || attr.type === "object" || ["name", "date", "description", "meta"].includes(name)) {
+		if (attr.type === "array" || attr.type === "object" || ["name", "date", "url", "description", "meta"].includes(name)) {
 			continue;
 		}
 		attrs.push({
@@ -106,10 +123,7 @@ const schemaRelationArrays = computed(() => {
 	for (let name of Object.keys(props.schema.properties)) {
 		const attr = props.schema.properties[name];
 		// Any array or object types are the relations of interest for the object
-		if (attr.type !== "array") {
-			continue;
-		}
-		console.log("relation", name, attr);
+		if (attr.type !== "array") continue;
 		relations.push({ name, ...attr });
 	}
 	return relations;
@@ -121,9 +135,7 @@ const schemaRelationObjects = computed(() => {
 	for (let name of Object.keys(props.schema.properties)) {
 		const attr = props.schema.properties[name];
 		// Any array or object types are the relations of interest for the object
-		if (attr.type !== "object") {
-			continue;
-		}
+		if (attr.type !== "object") continue;
 		relations.push({
 			name,
 			...attr

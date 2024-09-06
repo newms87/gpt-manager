@@ -4,6 +4,7 @@ namespace App\Models\TeamObject;
 
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -32,8 +33,13 @@ class TeamObjectRelationship extends Model implements AuditableContract
         }
 
         $this->table = team()->namespace . '__object_relationships';
-        
+
         parent::__construct($attributes);
+    }
+
+    public function related(): TeamObject|BelongsTo
+    {
+        return $this->belongsTo(TeamObject::class, 'related_object_id', 'id');
     }
 
     public function __toString(): string

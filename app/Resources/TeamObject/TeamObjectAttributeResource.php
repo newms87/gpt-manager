@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Resources\Tortguard;
+namespace App\Resources\TeamObject;
 
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Resources\Agent\MessageResource;

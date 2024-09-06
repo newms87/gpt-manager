@@ -43,7 +43,7 @@
 					:key="teamObject.id"
 					:object="teamObject"
 					:schema="activeSchema.schema as JsonSchema"
-					class="mt-4"
+					class="mt-4 bg-slate-800 rounded-lg"
 				/>
 			</template>
 			<template v-else-if="dxTeamObject.isLoadingList">
