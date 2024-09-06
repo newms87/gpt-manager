@@ -1,7 +1,7 @@
 import { ActionController } from "quasar-ui-danx";
 import { actionControls, batchActions, menuActions } from "./actions";
 import { columns } from "./columns";
-import { controls } from "./controls";
+import { controls, PromptSchemaControllerInterface } from "./controls";
 import { fields } from "./fields";
 import { filters } from "./filters";
 import { panels } from "./panels";
@@ -17,4 +17,4 @@ export const dxPromptSchema = {
 	fields,
 	panels,
 	routes
-} as ActionController;
+} as ActionController & PromptSchemaControllerInterface;

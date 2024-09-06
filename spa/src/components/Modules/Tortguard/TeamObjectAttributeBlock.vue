@@ -1,8 +1,8 @@
 <template>
-	<LabelValueBlock :label="label">
+	<LabelValueBlock :label="label || attribute.name">
 		<template #label>
 			<div class="flex items-center flex-nowrap">
-				{{ label }}
+				{{ label || attribute.name }}
 				<div class="ml-1">
 					<HighConfidenceIcon v-if="attribute?.confidence === 'High'" class="text-green-600 w-3" />
 					<MediumConfidenceIcon v-else-if="attribute?.confidence === 'Medium'" class="text-amber-400 w-3" />
@@ -53,7 +53,7 @@
 </template>
 <script setup lang="ts">
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
-import { TeamObjectAttribute } from "@/components/Modules/Tortguard/tortguard";
+import { TeamObjectAttributeBlockProps } from "@/components/Modules/TeamObjects/team-objects";
 import {
 	FaBrandsThreads as ThreadLinkIcon,
 	FaSolidAngleDown as LowConfidenceIcon,
@@ -65,11 +65,7 @@ import {
 import { fBoolean, fDate, fNumber, fShortCurrency, LabelValueBlock } from "quasar-ui-danx";
 import { computed } from "vue";
 
-const props = defineProps<{
-	label: string;
-	attribute?: TeamObjectAttribute;
-	format?: "boolean" | "shortCurrency" | "number" | "date" | "list";
-}>();
+const props = defineProps<TeamObjectAttributeBlockProps>();
 
 const resolvedValue = computed(() => {
 	const value = props.attribute?.value;

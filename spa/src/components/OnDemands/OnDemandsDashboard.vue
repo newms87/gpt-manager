@@ -42,6 +42,7 @@
 					v-for="teamObject in teamObjects"
 					:key="teamObject.id"
 					:object="teamObject"
+					:schema="activeSchema.schema as JsonSchema"
 					class="mt-4"
 				/>
 			</template>
@@ -68,6 +69,7 @@
 import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
+import { JsonSchema } from "@/types";
 import { FlashMessages, getItem, SelectOrCreateField, setItem } from "quasar-ui-danx";
 import { computed, nextTick, onMounted, ref } from "vue";
 

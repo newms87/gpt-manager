@@ -9,6 +9,7 @@ interface TeamObject extends TypedObject {
 	meta?: object | null;
 }
 
+
 interface TeamObjectAttribute {
 	id: string;
 	name: string;
@@ -49,4 +50,15 @@ interface StringArrayAttribute extends TeamObjectAttribute {
 
 interface ObjectArrayAttribute extends TeamObjectAttribute {
 	value: object[] | null;
+}
+
+export interface TeamObjectAttributeBlockProps {
+	label?: string;
+	attribute?: TeamObjectAttribute;
+	format?: "boolean" | "shortCurrency" | "number" | "date" | "list";
+}
+
+export interface TeamObjectAttributeProps extends TeamObjectAttributeBlockProps {
+	name: string;
+	title?: string;
 }
