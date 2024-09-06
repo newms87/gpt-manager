@@ -89,7 +89,7 @@
 	</QCard>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxAgent } from "@/components/Modules/Agents";
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import { dxWorkflow } from "@/components/Modules/Workflows";

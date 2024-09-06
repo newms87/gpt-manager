@@ -94,7 +94,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { dxThreadMessage } from "@/components/Modules/Agents/Threads/ThreadMessage/config";
 import { ActionButton } from "@/components/Shared";

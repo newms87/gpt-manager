@@ -33,6 +33,7 @@ class TeamObjectRepository extends ActionRepository
             'create' => $this->saveTeamObject($type, $name, $data),
             'update' => $this->updateTeamObject($model, $data),
             'create-relation' => $this->createRelation($model, $data['relationship_name'] ?? null, $type, $name, $data),
+            'save-attribute' => $this->saveTeamObjectAttribute($model, $data['name'] ?? null, $data),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -97,11 +98,7 @@ class TeamObjectRepository extends ActionRepository
     public function saveTeamObjectAttribute(
         TeamObject $teamObject,
                    $name,
-                   $value,
-                   $date = null,
-                   $description = null,
-                   $confidence = null,
-                   $sourceUrl = null,
+                   $attribute,
                    $messageIds = [],
         ThreadRun  $threadRun = null
     ): TeamObjectAttribute
@@ -109,6 +106,12 @@ class TeamObjectRepository extends ActionRepository
         if (!$name) {
             throw new BadFunctionCallException("Save Team Object Attribute requires a name");
         }
+
+        $value       = $attribute['value'] ?? null;
+        $date        = $attribute['date'] ?? null;
+        $description = $attribute['description'] ?? null;
+        $confidence  = $attribute['confidence'] ?? null;
+        $sourceUrl   = $attribute['source_url'] ?? null;
 
         $storedFile = null;
 

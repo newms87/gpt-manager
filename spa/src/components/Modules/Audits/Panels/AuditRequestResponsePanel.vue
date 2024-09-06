@@ -11,7 +11,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { AuditRequest } from "@/components/Modules/Audits/audit-requests";
 
 defineProps<{

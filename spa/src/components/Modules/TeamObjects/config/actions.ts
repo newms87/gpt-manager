@@ -1,6 +1,7 @@
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
 import { ActionOptions, RenderedFormDialog, useActions, withDefaultActions } from "quasar-ui-danx";
 import { h } from "vue";
+import { attributeFields } from "./attributeFields";
 import { controls } from "./controls";
 import { fields } from "./fields";
 import { routes } from "./routes";
@@ -15,6 +16,16 @@ export const actions: ActionOptions[] = [
 			form: { fields }
 		}),
 		onFinish: controls.loadList
+	},
+	{
+		name: "edit-attribute",
+		alias: "save-attribute",
+		vnode: (target, data) => h(RenderedFormDialog, {
+			title: "Update " + (data.title || data.name) + " for " + target.name,
+			contentClass: "w-96",
+			modelValue: data,
+			form: { fields: attributeFields }
+		})
 	}
 ];
 

@@ -47,7 +47,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import AgentPanelsDialog from "@/components/Modules/Agents/AgentPanelsDialog";
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";

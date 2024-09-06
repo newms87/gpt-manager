@@ -23,7 +23,7 @@
 			{{ resolvedValue }}
 		</template>
 		<div
-			v-if="attribute?.source || attribute?.sourceMessages"
+			v-if="attribute?.source || attribute?.sourceMessages?.length"
 			class="inline-block ml-2"
 		>
 			<LinkIcon class="w-4 cursor-pointer text-sky-500" />

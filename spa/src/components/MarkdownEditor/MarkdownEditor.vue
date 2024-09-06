@@ -37,7 +37,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MilkdownEditor from "@/components/MardownEditor/MilkdownEditor";
+import MilkdownEditor from "@/components/MarkdownEditor/MilkdownEditor";
 import { MilkdownProvider } from "@milkdown/vue";
 import {
 	FieldLabel,

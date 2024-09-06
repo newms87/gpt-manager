@@ -33,7 +33,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import { ActionButton } from "@/components/Shared";
 import { PromptSchema } from "@/types/prompts";

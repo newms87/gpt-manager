@@ -1,7 +1,7 @@
 import { ThreadMessage } from "@/types";
-import { TypedObject, UploadedFile } from "quasar-ui-danx";
+import { ActionTargetItem, UploadedFile } from "quasar-ui-danx";
 
-interface TeamObject extends TypedObject {
+interface TeamObject extends ActionTargetItem {
 	id: number;
 	name: string;
 	description: string | null;
@@ -61,4 +61,5 @@ export interface TeamObjectAttributeBlockProps {
 export interface TeamObjectAttributeProps extends TeamObjectAttributeBlockProps {
 	name: string;
 	title?: string;
+	object: TeamObject;
 }

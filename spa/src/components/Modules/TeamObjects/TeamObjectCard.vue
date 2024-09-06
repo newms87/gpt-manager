@@ -44,6 +44,7 @@
 					:key="'attribute-' + attr.name"
 					:name="attr.name"
 					:title="attr.title"
+					:object="object"
 					:attribute="object[attr.name]"
 				/>
 			</div>

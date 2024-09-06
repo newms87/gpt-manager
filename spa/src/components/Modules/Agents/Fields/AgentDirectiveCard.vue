@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxAgent } from "@/components/Modules/Agents";
 import { AgentPromptDirective } from "@/types";
 import { FaSolidCircleXmark as RemoveIcon, FaSolidPencil as EditIcon } from "danx-icon";

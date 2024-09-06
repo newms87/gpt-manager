@@ -8,7 +8,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxPromptDirective } from "@/components/Modules/Prompts/Directives";
 import { PromptDirective } from "@/types/prompts";
 import { ActionForm, Form, TextField } from "quasar-ui-danx";

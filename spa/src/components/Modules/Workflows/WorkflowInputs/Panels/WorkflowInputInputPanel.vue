@@ -12,7 +12,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { Form, IntegerField, MultiFileField, RenderedForm, SelectField } from "quasar-ui-danx";

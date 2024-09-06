@@ -27,7 +27,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MardownEditor/MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxContentSource } from "@/components/Modules/ContentSources";
 import { ContentSource } from "@/types";
 import { NumberField, SelectField } from "quasar-ui-danx";
