@@ -44,6 +44,7 @@ class TeamObject extends Model implements AuditableContract
     {
         return [
             'meta' => 'json',
+            'date' => 'datetime',
         ];
     }
 

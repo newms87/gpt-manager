@@ -23,6 +23,7 @@ abstract class TeamObjectResource extends ActionResource
                 'id'          => $model->id,
                 'name'        => $model->name,
                 'description' => $model->description,
+                'date'        => $model->date,
                 'url'         => $model->url,
                 'meta'        => $model->meta,
                 'created_at'  => $model->created_at,

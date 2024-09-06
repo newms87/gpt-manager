@@ -25,11 +25,12 @@ class TeamObjectRepository extends ActionRepository
 
     public function applyAction(string $action, TeamObject|Model|array|null $model = null, ?array $data = null)
     {
-        $type = $data['type'] ?? null;
-        $name = $data['name'] ?? null;
+        $type = $data['type'] ?? $model?->type;
+        $name = $data['name'] ?? $model?->name;
 
         return match ($action) {
-            'create', 'update' => $this->saveTeamObject($type, $name, $data),
+            'create' => $this->saveTeamObject($type, $name, $data),
+            'update' => $this->updateTeamObject($model, $data),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -49,22 +50,23 @@ class TeamObjectRepository extends ActionRepository
             'name' => $name,
         ];
 
-        // If the keys are set for additional fields, update the fields with those values (including null)
-        foreach(['description', 'url', 'meta'] as $key) {
-            if (array_key_exists($key, $input)) {
-                $data[$key] = $input[$key];
-            }
-        }
-
         $teamObject = TeamObject::where('type', $type)
             ->where(fn(Builder $builder) => $builder->where('name', $name)->orWhere('ref', $data['ref']))
             ->first();
 
-        if ($teamObject) {
-            $teamObject->update($data);
-        } else {
-            $teamObject = TeamObject::create($data);
+        if (!$teamObject) {
+            $teamObject = TeamObject::make($data);
         }
+
+        return $this->updateTeamObject($teamObject, $input);
+    }
+
+    /**
+     * Update an existing team object
+     */
+    function updateTeamObject(TeamObject $teamObject, $input = []): TeamObject
+    {
+        $teamObject->fill($input)->save();
 
         return $teamObject;
     }
