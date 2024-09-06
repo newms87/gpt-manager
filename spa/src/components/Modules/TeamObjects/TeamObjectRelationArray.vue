@@ -24,7 +24,7 @@
 					:schema="schema"
 					class="p-3"
 					:class="levelObjectClass"
-					:level="level + 1"
+					:level="level"
 				/>
 
 				<QSeparator v-if="index < relations.length - 1" :class="levelSeparatorClass" />
@@ -60,7 +60,7 @@ const props = withDefaults(defineProps<{
 const isShowing = ref(false);
 const createAction = dxTeamObject.getAction("create-relation");
 
-const levelClass = {
+const levelClassSettings = {
 	0: {
 		object: "bg-sky-950 mt-4",
 		separator: "hidden"
@@ -70,14 +70,16 @@ const levelClass = {
 		separator: "hidden"
 	},
 	2: {
-		object: "",
-		separator: "my-2"
+		object: "mt-1",
+		separator: "mt-1 bg-slate-400"
 	},
 	3: {
 		object: "mt-1",
 		separator: "mt-1 bg-slate-400"
 	}
 };
-const levelObjectClass = computed(() => props.objectClass || levelClass[props.level]?.object);
-const levelSeparatorClass = computed(() => props.separatorClass || levelClass[props.level]?.separator);
+
+const levelClass = computed(() => levelClassSettings[props.level] || levelClassSettings[3]);
+const levelObjectClass = computed(() => props.objectClass || levelClass.value.object);
+const levelSeparatorClass = computed(() => props.separatorClass || levelClass.value.separator);
 </script>

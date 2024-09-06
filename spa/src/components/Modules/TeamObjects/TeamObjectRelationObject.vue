@@ -7,7 +7,7 @@
 				<CreateIcon class="w-4" />
 			</QBtn>
 		</div>
-		<TeamObjectCard v-if="object" :object="object" :schema="schema" class="bg-slate-900 rounded" />
+		<TeamObjectCard v-if="object" :object="object" :schema="schema" :level="level" class="bg-slate-900 rounded" />
 		<div v-else class="mt-2">
 			No {{ name }} found.
 		</div>
@@ -20,6 +20,17 @@ import TeamObjectCard from "@/components/Modules/TeamObjects/TeamObjectCard";
 import { JsonSchema } from "@/types";
 import { FaSolidPlus as CreateIcon } from "danx-icon";
 
-defineProps<{ name: string, title?: string, parent: TeamObject, object?: TeamObject, schema: JsonSchema }>();
+withDefaults(defineProps<{
+	name: string,
+	title?: string,
+	level?: number,
+	parent: TeamObject,
+	object?: TeamObject,
+	schema: JsonSchema
+}>(), {
+	level: 0,
+	object: null,
+	title: ""
+});
 const createAction = dxTeamObject.getAction("create-relation");
 </script>
