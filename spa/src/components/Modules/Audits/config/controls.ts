@@ -1,5 +1,5 @@
 import { routes } from "@/components/Modules/Audits/config/routes";
-import { ListController, PagedItems, useListControls } from "quasar-ui-danx";
+import { ListController, PagedItems, useControls } from "quasar-ui-danx";
 import type { ShallowRef } from "vue";
 import { AuditRequest } from "../audit-requests";
 
@@ -12,7 +12,7 @@ export interface AuditRequestControllerInterface extends ListController {
 	pagedItems: ShallowRef<AuditRequestPagedItems>;
 }
 
-export const controls = useListControls("audit-requests", {
+export const controls = useControls("audit-requests", {
 	label: "Audit Requests",
 	routes: routes
 }) as AuditRequestControllerInterface;

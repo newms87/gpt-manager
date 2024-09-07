@@ -1,5 +1,5 @@
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
-import { ListController, PagedItems, useListControls } from "quasar-ui-danx";
+import { ListController, PagedItems, useControls } from "quasar-ui-danx";
 import type { ShallowRef } from "vue";
 import { routes } from "./routes";
 
@@ -12,7 +12,7 @@ export interface TeamObjectControllerInterface extends ListController {
 	pagedItems: ShallowRef<TeamObjectPagedItems>;
 }
 
-export const controls = useListControls("team-objects", {
+export const controls = useControls("team-objects", {
 	label: "Team Objects",
 	routes
 }) as TeamObjectControllerInterface;

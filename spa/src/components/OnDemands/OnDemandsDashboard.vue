@@ -39,6 +39,8 @@
 		</div>
 
 		<div v-if="activeSchema">
+			{{ dxTeamObject.isLoadingList ? "loading list" : "finished" }}
+
 			<template v-if="teamObjects?.length > 0">
 				<TeamObjectCard
 					v-for="teamObject in teamObjects"

@@ -1,5 +1,5 @@
 import { PromptSchema } from "@/types";
-import { ListController, PagedItems, useListControls } from "quasar-ui-danx";
+import { ListController, PagedItems, useControls } from "quasar-ui-danx";
 import type { ShallowRef } from "vue";
 import { routes } from "./routes";
 
@@ -12,7 +12,7 @@ export interface PromptSchemaControllerInterface extends ListController {
 	pagedItems: ShallowRef<PromptSchemaPagedItems>;
 }
 
-export const controls: PromptSchemaControllerInterface = useListControls("prompts.schemas", {
+export const controls: PromptSchemaControllerInterface = useControls("prompts.schemas", {
 	label: "Prompt Schemas",
 	routes
 }) as PromptSchemaControllerInterface;

@@ -1,5 +1,5 @@
 import { Workflow } from "@/types";
-import { ListController, PagedItems, useListControls } from "quasar-ui-danx";
+import { ListController, PagedItems, useControls } from "quasar-ui-danx";
 import type { ShallowRef } from "vue";
 import { routes } from "./routes";
 
@@ -12,7 +12,7 @@ export interface WorkflowControllerInterface extends ListController {
 	pagedItems: ShallowRef<WorkflowPagedItems>;
 }
 
-export const controls = useListControls("workflows", {
+export const controls = useControls("workflows", {
 	label: "Workflows",
 	routes
 }) as WorkflowControllerInterface;

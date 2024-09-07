@@ -1,5 +1,5 @@
 import { ContentSource } from "@/types";
-import { ListController, PagedItems, useListControls } from "quasar-ui-danx";
+import { ListController, PagedItems, useControls } from "quasar-ui-danx";
 import type { ShallowRef } from "vue";
 import { routes } from "./routes";
 
@@ -13,7 +13,7 @@ export interface ContentSourceControllerInterface extends ListController {
 }
 
 
-export const controls = useListControls("content-sources", {
+export const controls = useControls("content-sources", {
 	label: "Content Sources",
 	routes
 }) as ContentSourceControllerInterface;
