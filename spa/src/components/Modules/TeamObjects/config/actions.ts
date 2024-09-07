@@ -1,16 +1,16 @@
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
-import { ActionOptions, RenderedFormDialog, useActions, withDefaultActions } from "quasar-ui-danx";
+import { ActionController, ActionOptions, RenderedFormDialog, useActions, withDefaultActions } from "quasar-ui-danx";
 import { h } from "vue";
 import { attributeFields } from "./attributeFields";
 import { controls } from "./controls";
 import { fields } from "./fields";
 import { routes } from "./routes";
 
-export const actions: ActionOptions[] = [
+export const actions: ActionOptions<TeamObject>[] = [
 	...withDefaultActions("Object", controls),
 	{
 		name: "create-relation",
-		vnode: (target, data) => h(RenderedFormDialog, {
+		vnode: (target: TeamObject, data) => h(RenderedFormDialog, {
 			title: "Create " + data.type + " for " + target.name,
 			contentClass: "w-96",
 			form: { fields }
@@ -20,7 +20,7 @@ export const actions: ActionOptions[] = [
 	{
 		name: "edit-attribute",
 		alias: "save-attribute",
-		vnode: (target, data) => h(RenderedFormDialog, {
+		vnode: (target: TeamObject, data) => h(RenderedFormDialog, {
 			title: "Update " + (data.title || data.name) + " for " + target.name,
 			contentClass: "w-96",
 			modelValue: data,
@@ -29,7 +29,7 @@ export const actions: ActionOptions[] = [
 	}
 ];
 
-export const actionControls = useActions(actions, { routes, controls });
+export const actionControls = useActions(actions, { routes, controls }) as ActionController<TeamObject>;
 
 actionControls.modifyAction("create", {
 	vnode: (target, data) => h(RenderedFormDialog, {

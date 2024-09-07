@@ -39,8 +39,6 @@
 		</div>
 
 		<div v-if="activeSchema">
-			{{ dxTeamObject.isLoadingList ? "loading list" : "finished" }}
-
 			<template v-if="teamObjects?.length > 0">
 				<TeamObjectCard
 					v-for="teamObject in teamObjects"
@@ -50,7 +48,7 @@
 					class="mt-4 bg-slate-800 rounded-lg"
 				/>
 			</template>
-			<template v-else-if="dxTeamObject.isLoadingList">
+			<template v-else-if="dxTeamObject.isLoadingList.value">
 				<QSkeleton
 					v-for="i in 3"
 					:key="i"

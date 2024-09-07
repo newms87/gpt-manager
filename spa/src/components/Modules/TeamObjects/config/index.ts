@@ -1,3 +1,5 @@
+import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
+import { DanxController } from "quasar-ui-danx";
 import { actionControls } from "./actions";
 import { controls } from "./controls";
 import { fields } from "./fields";
@@ -10,4 +12,4 @@ export const dxTeamObject = {
 	filters,
 	fields,
 	routes
-};
+} as DanxController<TeamObject>;
