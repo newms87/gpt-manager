@@ -55,7 +55,7 @@
 					:name="relation.name"
 					:title="relation.title"
 					:parent="object"
-					:object="object[relation.name][0]"
+					:object="object[relation.name] && object[relation.name][0]"
 					:schema="schema.properties[relation.name]"
 					:level="level + 1"
 				/>

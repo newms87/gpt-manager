@@ -1,7 +1,8 @@
+import { AuditRequest } from "@/components/Modules/Audits/audit-requests";
 import { dbDateTime, fNumber, TableColumn } from "quasar-ui-danx";
 import { controls } from "./controls";
 
-export const columns: TableColumn[] = [
+export const columns: TableColumn<AuditRequest>[] = [
 	{
 		name: "id",
 		label: "ID",
