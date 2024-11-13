@@ -55,7 +55,7 @@ ActionRoute::routes('threads', new ThreadsController);
 ActionRoute::routes('messages', new MessagesController);
 
 // Team Objects
-ActionRoute::routes('team-objects', new TeamObjectsController());
+ActionRoute::routes('team-objects', new TeamObjectsController);
 
 // Audits
 ActionRoute::routes('audit-requests', new AuditRequestsController);

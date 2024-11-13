@@ -53,6 +53,11 @@ class TeamObject extends Model implements AuditableContract
         return $this->hasMany(TeamObjectRelationship::class, 'object_id');
     }
 
+    public function relatedToMe(): HasMany|TeamObject
+    {
+        return $this->hasMany(TeamObjectRelationship::class, 'related_object_id');
+    }
+
     public function relatedObjects($relationshipName): TeamObject|HasManyThrough
     {
         return $this->hasManyThrough(TeamObject::class, TeamObjectRelationship::class, 'object_id', 'id', 'id', 'related_object_id')
@@ -62,6 +67,16 @@ class TeamObject extends Model implements AuditableContract
     public function attributes(): HasMany|TeamObjectAttribute
     {
         return $this->hasMany(TeamObjectAttribute::class, 'object_id');
+    }
+
+
+    public function delete()
+    {
+        $this->attributes()->delete();
+        $this->relationships()->delete();
+        $this->relatedToMe()->delete();
+        
+        return parent::delete();
     }
 
     public function __toString(): string
