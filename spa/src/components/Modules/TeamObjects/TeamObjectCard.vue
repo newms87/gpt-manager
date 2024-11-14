@@ -2,12 +2,16 @@
 	<div class="p-3">
 		<div class="team-object-header flex items-center flex-nowrap gap-x-4">
 			<div class="flex-grow">
-				<div class="font-bold flex items-center gap-2">
-					<div>{{ object.name }}</div>
+				<div class="group font-bold flex items-center gap-2">
+					<EditableDiv
+						:model-value="object.name"
+						content-class="hover:bg-slate-400 focus:bg-slate-400 hover:text-slate-900 focus:text-slate-900 hover:outline-slate-400 focus:outline-slate-400 border-none rounded-sm"
+						@update:model-value="name => updateAction.trigger(object, {name})"
+					/>
 					<div v-if="object.date" class="font-sm text-slate-400">
 						{{ fDate(object.date) }}
 					</div>
-					<a v-if="object.url" target="_blank" :href="object.url">
+					<a target="_blank" :href="object.url" :class="{'opacity-0 group-hover:opacity-1': !object.url}">
 						<LinkIcon class="w-4" />
 					</a>
 				</div>
@@ -22,13 +26,6 @@
 				class="py-2 px-6 bg-sky-900"
 				@show="onShow"
 			/>
-			<QBtn
-				class="p-3 bg-sky-900"
-				:disable="editAction.isApplying"
-				@click="editAction.trigger(object)"
-			>
-				<EditIcon class="w-4" />
-			</QBtn>
 			<QBtn
 				class="p-3 bg-red-900"
 				:disable="deleteAction.isApplying"
@@ -60,17 +57,26 @@
 					:level="level + 1"
 				/>
 			</div>
-			<div class="mt-5">
-				<TeamObjectRelationArray
+			<div>
+				<template
 					v-for="relation in schemaRelationArrays"
 					:key="relation.name"
-					:name="relation.name"
-					:title="relation.title"
-					:parent="object"
-					:schema="schema.properties[relation.name]?.items"
-					:relations="object[relation.name] || []"
-					:level="level + 1"
-				/>
+				>
+					<TeamObjectRelationArray
+						v-if="schema.properties[relation.name]?.items"
+						:name="relation.name"
+						:title="relation.title"
+						:parent="object"
+						:schema="schema.properties[relation.name].items"
+						:relations="object[relation.name] || []"
+						:level="level + 1"
+						class="mt-5"
+					/>
+					<div v-else class="mt-5 p-3 rounded bg-red-200 text-red-900">Missing child schema {{ relation.name }} in
+						schema
+						properties
+					</div>
+				</template>
 			</div>
 		</div>
 	</div>
@@ -82,8 +88,8 @@ import TeamObjectAttribute from "@/components/Modules/TeamObjects/TeamObjectAttr
 import TeamObjectRelationArray from "@/components/Modules/TeamObjects/TeamObjectRelationArray";
 import TeamObjectRelationObject from "@/components/Modules/TeamObjects/TeamObjectRelationObject";
 import { JsonSchema } from "@/types";
-import { FaSolidLink as LinkIcon, FaSolidPencil as EditIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
-import { fDate, ShowHideButton } from "quasar-ui-danx";
+import { FaSolidLink as LinkIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
+import { EditableDiv, fDate, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = withDefaults(defineProps<{
@@ -95,7 +101,7 @@ const props = withDefaults(defineProps<{
 });
 
 const isShowing = ref(false);
-const editAction = dxTeamObject.getAction("edit");
+const updateAction = dxTeamObject.getAction("update");
 const deleteAction = dxTeamObject.getAction("delete");
 
 const hasChildren = computed(() => schemaAttributes.value.length > 0 || schemaRelationArrays.value.length > 0 || schemaRelationObjects.value.length > 0);
