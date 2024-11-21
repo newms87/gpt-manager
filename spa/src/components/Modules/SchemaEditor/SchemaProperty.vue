@@ -9,8 +9,9 @@
 		/>
 		<div class="font-bold text-xs mr-1">:</div>
 		<EditableDiv
-			:model-value="property.title"
+			:model-value="property.title || ''"
 			color="slate-600"
+			placeholder="Enter Property Name..."
 			@update:model-value="title => onUpdate({title})"
 		/>
 	</div>
@@ -26,7 +27,6 @@ const name = defineModel<string>("name");
 
 function onUpdate(input: Partial<JsonSchema>) {
 	property.value = { ...property.value, ...input };
-	console.log("updating property...", name.value, input, property.value);
 	emit("update", { name: name.value, property: property.value });
 }
 </script>
