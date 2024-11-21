@@ -11,6 +11,12 @@ export default {
 		"./src/**/*.{html,js,vue,ts}",
 		"../../quasar-ui-danx/ui/src/**/*.{html,js,vue,ts}"
 	],
+	safelist: [
+		"hover:bg-slate-600",
+		"focus:bg-slate-600",
+		"hover:outline-slate-600",
+		"focus:outline-slate-600"
+	],
 	theme: {
 		extend: {
 			colors

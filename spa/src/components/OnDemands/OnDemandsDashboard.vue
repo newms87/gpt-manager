@@ -27,7 +27,11 @@
 			</div>
 		</div>
 
-		<div v-if="isEditingSchema">
+		<div v-if="isEditingSchema" class="mt-4">
+			<JSONSchemaEditor
+				:model-value="activeSchema.schema"
+				@update:model-value="updateSchemaAction.trigger(activeSchema, { schema: $event })"
+			/>
 			<MarkdownEditor
 				:model-value="activeSchema.schema"
 				sync-model-changes
@@ -70,6 +74,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
+import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
 import { JsonSchema } from "@/types";
 import { FaSolidPlus as CreateIcon } from "danx-icon";
@@ -81,6 +86,7 @@ const PROMPT_SCHEMA_STORED_KEY = "dx-prompt-schema";
 onMounted(init);
 
 const createSchemaAction = dxPromptSchema.getAction("create");
+const updateSchemaAction = dxPromptSchema.getAction("update");
 const updateDebouncedSchemaAction = dxPromptSchema.getAction("update-debounced");
 const createTeamObjectAction = dxTeamObject.getAction("create");
 const isEditingSchema = ref(false);

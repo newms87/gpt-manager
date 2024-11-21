@@ -1,5 +1,6 @@
 export interface JsonSchema {
 	type: string;
+	format?: string;
 	title: string;
 	description?: string;
 	items?: JsonSchema;

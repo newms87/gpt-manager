@@ -5,7 +5,8 @@
 				<div class="group font-bold flex items-center gap-2">
 					<EditableDiv
 						:model-value="object.name"
-						content-class="hover:bg-slate-400 focus:bg-slate-400 hover:text-slate-900 focus:text-slate-900 hover:outline-slate-400 focus:outline-slate-400 border-none rounded-sm"
+						class="rounded-sm"
+						color="slate-800"
 						@update:model-value="name => updateAction.trigger(object, {name})"
 					/>
 					<div v-if="object.date" class="font-sm text-slate-400">

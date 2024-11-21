@@ -24,10 +24,10 @@
 				autogrow
 				@update:model-value="updateContent"
 			/>
-			<div class="markdown-footer flex flex-nowrap items-center justify-end w-full -mt-[1.25rem] relative z-50">
+			<div class="markdown-footer flex flex-nowrap items-center justify-end w-full -mt-4 relative z-50">
 				<div class="px-2 bg-slate-800 flex items-center flex-nowrap rounded-tl">
 					<MaxLengthCounter v-if="maxLength" :length="contentLength" :max-length="maxLength" class="mr-4" />
-					<div class="text-sm">
+					<div class="text-[.7rem]">
 						<a v-if="isRaw" @click="isRaw = false">Markdown</a>
 						<a v-else @click="isRaw = true">raw</a>
 					</div>
