@@ -2,7 +2,9 @@
 	<div class="schema-object flex items-start flex-nowrap">
 		<div class="parent-object bg-slate-700 rounded-lg inline-block w-96">
 			<div class="flex items-center flex-nowrap px-4 py-2 bg-slate-800">
-				<slot name="header" />
+				<div v-if="$slots.header" class="flex-grow">
+					<slot name="header" />
+				</div>
 				<EditableDiv
 					v-if="!hideHeader"
 					:model-value="schemaObject.title || ''"
@@ -29,12 +31,13 @@
 							draggable="false"
 							:model-value="objectProperties[name]"
 							:name="name"
-							class="my-2"
+							class="my-2 ml-1"
 							@update="input => onUpdateProperty(name, input)"
+							@remove="onRemoveProperty(name)"
 						/>
 					</ListItemDraggable>
 				</ListTransition>
-				<div>
+				<div class="pl-5 mt-2">
 					<QBtn class="bg-green-900 text-sm" @click="addProperty">
 						<AddPropertyIcon class="w-3" />
 					</QBtn>
@@ -112,6 +115,11 @@ function addProperty() {
 	}
 	const property = { type: "string" };
 	onUpdate({ [name]: property });
+}
+
+function onRemoveProperty(name) {
+	delete objectProperties.value[name];
+	onUpdate({});
 }
 
 function setPropertyIdsAndPositions() {
