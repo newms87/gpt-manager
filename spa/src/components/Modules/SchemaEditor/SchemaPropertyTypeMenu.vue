@@ -67,12 +67,12 @@ function onUpdate(option: PropertyTypeOption) {
 const typeOptions: PropertyTypeOption[] = [
 	{
 		value: "object",
-		label: "Object",
+		label: "Single",
 		icon: ObjectIcon
 	},
 	{
 		value: "array",
-		label: "Array",
+		label: "Multiple",
 		icon: ArrayIcon
 	},
 	{

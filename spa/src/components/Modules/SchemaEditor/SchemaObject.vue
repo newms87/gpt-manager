@@ -5,30 +5,31 @@
 				<div v-if="$slots.header" class="flex-grow">
 					<slot name="header" />
 				</div>
-				<EditableDiv
-					v-if="!hideHeader"
-					:model-value="schemaObject.title || ''"
-					color="slate-600"
-					class="min-w-20"
-					placeholder="(Enter Title)"
-					@update:model-value="title => onUpdateDebounced({title})"
-				/>
+				<div class="py-1">
+					<EditableDiv
+						v-if="!hideHeader"
+						:model-value="schemaObject.title || ''"
+						color="slate-600"
+						class="min-w-20"
+						placeholder="(Enter Title)"
+						@update:model-value="title => onUpdateDebounced({title})"
+					/>
+				</div>
 			</div>
 			<div class="py-2 px-4">
 				<ListTransition
 					name="fade-down-list"
-					data-drop-zone="top-directives-dz"
+					:data-drop-zone="`custom-props-${schemaObject.id}-dz`"
 				>
 					<ListItemDraggable
 						v-for="name in customPropertyNames"
 						:key="`property-${objectProperties[name].id || name}`"
 						:list-items="customPropertyNames"
-						drop-zone="top-directives-dz"
+						:drop-zone="`custom-props-${schemaObject.id}-dz`"
 						show-handle
 						@update:list-items="items => onListPositionChange(items)"
 					>
 						<SchemaProperty
-							draggable="false"
 							:model-value="objectProperties[name]"
 							:name="name"
 							class="my-2 ml-1"
@@ -37,33 +38,52 @@
 						/>
 					</ListItemDraggable>
 				</ListTransition>
-				<div class="pl-5 mt-2">
-					<QBtn class="bg-green-900 text-sm" @click="addProperty">
-						<AddPropertyIcon class="w-3" />
-					</QBtn>
+				<div class="flex items-center flex-nowrap pl-5 mt-2">
+					<div class="flex-grow">
+						<QBtn class="bg-green-900 text-sm" @click="onAddProperty">
+							<AddPropertyIcon class="w-3" />
+						</QBtn>
+					</div>
+					<div>
+						<QBtn class="bg-green-900 text-sm" @click="onAddProperty('object', 'object')">
+							<AddObjectIcon class="w-3" />
+						</QBtn>
+					</div>
 				</div>
 			</div>
 		</div>
 		<div class="child-objects ml-4">
-			<div
-				v-for="name in childObjectNames"
-				:key="`property-${objectProperties[name].id || name}`"
-				class="mb-4"
+			<ListTransition
+				name="fade-down-list"
+				:data-drop-zone="`child-objects-${schemaObject.id}-dz`"
 			>
-				<SchemaObject
-					:model-value="objectProperties[name]"
-					hide-header
-					@update:model-value="input => onUpdateObject(name, input)"
+				<ListItemDraggable
+					v-for="(name, index) in childObjectNames"
+					:key="`property-${objectProperties[name].id || name}`"
+					:list-items="childObjectNames"
+					:drop-zone="`child-objects-${schemaObject.id}-dz`"
+					show-handle
+					content-class="flex flex-nowrap items-start"
+					handle-class="py-4 px-2"
+					:class="{'mb-8': index < childObjectNames.length - 1}"
+					@update:list-items="items => onListPositionChange(items)"
 				>
-					<template #header>
-						<SchemaProperty
-							:model-value="objectProperties[name]"
-							:name="name"
-							@update="input => onUpdateProperty(name, input)"
-						/>
-					</template>
-				</SchemaObject>
-			</div>
+					<SchemaObject
+						:model-value="objectProperties[name]"
+						hide-header
+						@update:model-value="input => onUpdateObject(name, input)"
+					>
+						<template #header>
+							<SchemaProperty
+								:model-value="objectProperties[name]"
+								:name="name"
+								@update="input => onUpdateProperty(name, input)"
+								@remove="onRemoveProperty(name)"
+							/>
+						</template>
+					</SchemaObject>
+				</ListItemDraggable>
+			</ListTransition>
 		</div>
 	</div>
 </template>
@@ -71,7 +91,7 @@
 import SchemaProperty from "@/components/Modules/SchemaEditor/SchemaProperty";
 import { JsonSchema } from "@/types";
 import { useDebounceFn } from "@vueuse/core";
-import { FaSolidPlus as AddPropertyIcon } from "danx-icon";
+import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } from "danx-icon";
 import { EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
@@ -105,15 +125,14 @@ function onUpdateProperty(propertyName, input) {
 	onUpdate({ [input.name]: input.property });
 }
 
-function addProperty() {
-	const baseName = "prop";
+function onAddProperty(type = "string", baseName = "prop") {
 	let count = 1;
 
 	let name = baseName;
 	while (objectProperties.value[name]) {
 		name = baseName + ("_" + count++);
 	}
-	const property = { type: "string" };
+	const property = { type };
 	onUpdate({ [name]: property });
 }
 

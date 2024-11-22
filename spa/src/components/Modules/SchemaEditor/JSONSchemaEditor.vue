@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div class="overflow-auto pb-8">
 		<SchemaObject v-model="schema" class="min-w-64" />
 	</div>
 </template>
