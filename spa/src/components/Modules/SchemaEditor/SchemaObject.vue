@@ -13,30 +13,48 @@
 				/>
 			</div>
 			<div class="py-2 px-4">
-				<SchemaProperty
-					v-for="name in customPropertyNames"
-					:key="`property-${name}`"
-					:model-value="properties[name]"
-					:name="name"
-					class="my-2"
-					@update="input => onUpdateProperty(name, input)"
-				/>
+				<ListTransition
+					name="fade-down-list"
+					data-drop-zone="top-directives-dz"
+				>
+					<ListItemDraggable
+						v-for="name in customPropertyNames"
+						:key="`property-${objectProperties[name].id || name}`"
+						:list-items="customPropertyNames"
+						drop-zone="top-directives-dz"
+						show-handle
+						@update:list-items="items => onListPositionChange(items)"
+					>
+						<SchemaProperty
+							draggable="false"
+							:model-value="objectProperties[name]"
+							:name="name"
+							class="my-2"
+							@update="input => onUpdateProperty(name, input)"
+						/>
+					</ListItemDraggable>
+				</ListTransition>
+				<div>
+					<QBtn class="bg-green-900 text-sm" @click="addProperty">
+						<AddPropertyIcon class="w-3" />
+					</QBtn>
+				</div>
 			</div>
 		</div>
 		<div class="child-objects ml-4">
 			<div
 				v-for="name in childObjectNames"
-				:key="`property-${name}`"
+				:key="`property-${objectProperties[name].id || name}`"
 				class="mb-4"
 			>
 				<SchemaObject
-					:model-value="properties[name]"
+					:model-value="objectProperties[name]"
 					hide-header
 					@update:model-value="input => onUpdateObject(name, input)"
 				>
 					<template #header>
 						<SchemaProperty
-							:model-value="properties[name]"
+							:model-value="objectProperties[name]"
 							:name="name"
 							@update="input => onUpdateProperty(name, input)"
 						/>
@@ -50,8 +68,9 @@
 import SchemaProperty from "@/components/Modules/SchemaEditor/SchemaProperty";
 import { JsonSchema } from "@/types";
 import { useDebounceFn } from "@vueuse/core";
-import { EditableDiv } from "quasar-ui-danx";
-import { computed } from "vue";
+import { FaSolidPlus as AddPropertyIcon } from "danx-icon";
+import { EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
+import { computed, ref } from "vue";
 
 defineProps<{
 	hideHeader?: boolean
@@ -59,16 +78,14 @@ defineProps<{
 const schemaObject = defineModel<JsonSchema>();
 
 function onUpdate(input: Partial<JsonSchema>) {
+	objectProperties.value = { ...objectProperties.value, ...input };
+	setPropertyIdsAndPositions();
+	const properties = { ...objectProperties.value };
+
 	if (schemaObject.value.type === "array") {
-		schemaObject.value = {
-			...schemaObject.value,
-			items: { ...schemaObject.value.items, properties: { ...schemaObject.value.items.properties, ...input } }
-		};
+		schemaObject.value = { ...schemaObject.value, items: { ...schemaObject.value.items, properties } };
 	} else {
-		schemaObject.value = {
-			...schemaObject.value,
-			properties: { ...schemaObject.value.properties, ...input }
-		};
+		schemaObject.value = { ...schemaObject.value, properties };
 	}
 }
 const onUpdateDebounced = useDebounceFn(onUpdate, 500);
@@ -79,15 +96,48 @@ function onUpdateObject(name, input) {
 
 function onUpdateProperty(propertyName, input) {
 	if (propertyName !== input.name) {
-		if (schemaObject.value.type === "array") {
-			delete schemaObject.value.items.properties[propertyName];
-		} else {
-			delete schemaObject.value.properties[propertyName];
-		}
+		delete objectProperties.value[propertyName];
 	}
+
 	onUpdate({ [input.name]: input.property });
 }
-const properties = computed(() => schemaObject.value.properties || schemaObject.value.items?.properties || {});
-const childObjectNames = computed(() => Object.keys(properties.value).filter(p => p && ["array", "object"].includes(properties.value[p].type)));
-const customPropertyNames = computed(() => Object.keys(properties.value).filter(p => p && !["name", "date", "description", ...childObjectNames.value].includes(p)));
+
+function addProperty() {
+	const baseName = "prop";
+	let count = 1;
+
+	let name = baseName;
+	while (objectProperties.value[name]) {
+		name = baseName + ("_" + count++);
+	}
+	const property = { type: "string" };
+	onUpdate({ [name]: property });
+}
+
+function setPropertyIdsAndPositions() {
+	let id = 0;
+	let position = 0;
+	for (let name of sortedPropertyNames.value) {
+		if (!objectProperties.value[name].id) {
+			objectProperties.value[name].id = id++;
+		} else {
+			id = Math.max(id, objectProperties.value[name].id + 1);
+		}
+		objectProperties.value[name].position = position++;
+	}
+}
+
+function onListPositionChange(items) {
+	let position = 0;
+	for (let name of items) {
+		objectProperties.value[name].position = position++;
+	}
+
+	onUpdate({});
+}
+
+const objectProperties = ref(schemaObject.value.properties || schemaObject.value.items?.properties || {});
+const sortedPropertyNames = computed(() => Object.keys(objectProperties.value).sort((a, b) => objectProperties.value[a].position - objectProperties.value[b].position));
+const childObjectNames = computed(() => sortedPropertyNames.value.filter(p => p && ["array", "object"].includes(objectProperties.value[p].type)));
+const customPropertyNames = computed(() => sortedPropertyNames.value.filter(p => p && !childObjectNames.value.includes(p)));
 </script>
