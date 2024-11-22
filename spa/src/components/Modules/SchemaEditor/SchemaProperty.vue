@@ -27,6 +27,19 @@ const name = defineModel<string>("name");
 
 function onUpdate(input: Partial<JsonSchema>) {
 	property.value = { ...property.value, ...input };
+
+	if (input.type === "array") {
+		property.value = {
+			type: "array",
+			items: { title: "Title", type: "object", properties: property.value.items?.properties || {} }
+		};
+	} else if (input.type === "object") {
+		property.value = property.value.items || {
+			title: "Title",
+			type: "object",
+			properties: {}
+		};
+	}
 	emit("update", { name: name.value, property: property.value });
 }
 </script>

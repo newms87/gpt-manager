@@ -3,7 +3,7 @@
 		<Component :is="selectedTypeOption?.icon" class="w-3" />
 		<QMenu auto-close>
 			<div
-				v-for="type in typeOptions"
+				v-for="type in allowedTypeOptions"
 				:key="type.value"
 				class="flex items-center flex-nowrap space-x-2 py-2 px-4 cursor-pointer hover:bg-slate-700"
 				:class="{ 'bg-slate-600': isType(property, type) }"
@@ -52,7 +52,7 @@ function isType(property: Partial<JsonSchema>, type: PropertyTypeOption) {
 function onUpdate(option: PropertyTypeOption) {
 	let format: string = undefined;
 	let type: string = option.value;
-	
+
 	switch (option.value) {
 		case "date":
 		case "date-time":
@@ -61,7 +61,7 @@ function onUpdate(option: PropertyTypeOption) {
 			break;
 	}
 
-	emit("update", { type, format });
+	emit("update", format ? { type, format } : { type });
 }
 
 const typeOptions: PropertyTypeOption[] = [
@@ -101,4 +101,12 @@ const typeOptions: PropertyTypeOption[] = [
 		icon: DateTimeIcon
 	}
 ];
+
+const allowedTypeOptions = computed(() => {
+	const objectTypes = ["object", "array"];
+	if (objectTypes.includes(props.property.type)) {
+		return typeOptions.filter(option => objectTypes.includes(option.value));
+	}
+	return typeOptions.filter(option => !objectTypes.includes(option.value));
+});
 </script>

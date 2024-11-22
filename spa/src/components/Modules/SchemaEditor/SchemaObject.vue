@@ -79,7 +79,11 @@ function onUpdateObject(name, input) {
 
 function onUpdateProperty(propertyName, input) {
 	if (propertyName !== input.name) {
-		delete schemaObject.value.properties[propertyName];
+		if (schemaObject.value.type === "array") {
+			delete schemaObject.value.items.properties[propertyName];
+		} else {
+			delete schemaObject.value.properties[propertyName];
+		}
 	}
 	onUpdate({ [input.name]: input.property });
 }
