@@ -40,7 +40,7 @@
 				</ListTransition>
 				<div class="flex items-center flex-nowrap pl-5 mt-2">
 					<div class="flex-grow">
-						<QBtn class="bg-green-900 text-sm" @click="onAddProperty">
+						<QBtn class="bg-green-900 text-sm" @click="onAddProperty('string', 'prop')">
 							<AddPropertyIcon class="w-3" />
 						</QBtn>
 					</div>
@@ -125,7 +125,7 @@ function onUpdateProperty(propertyName, input) {
 	onUpdate({ [input.name]: input.property });
 }
 
-function onAddProperty(type = "string", baseName = "prop") {
+function onAddProperty(type: string, baseName: string) {
 	let count = 1;
 
 	let name = baseName;
