@@ -29,6 +29,7 @@
 
 		<div v-if="isEditingSchema" class="mt-4">
 			<JSONSchemaEditor
+				:prompt-schema="activeSchema"
 				:model-value="activeSchema.schema as JsonSchema"
 				:saved-at="activeSchema.updated_at"
 				:saving="updateSchemaAction.isApplying"

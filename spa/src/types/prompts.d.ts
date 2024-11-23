@@ -1,6 +1,6 @@
 import { Agent } from "@/types/agents";
 import { JsonSchema } from "@/types/json-schema";
-import { ActionTargetItem } from "quasar-ui-danx";
+import { ActionTargetItem, ListControlsRoutes } from "quasar-ui-danx";
 
 export interface PromptSchema extends ActionTargetItem {
 	id: string;
@@ -26,4 +26,15 @@ export interface AgentPromptDirective extends ActionTargetItem {
 	directive: PromptDirective;
 	position: number;
 	section: string;
+}
+
+export interface PromptSchemaRevision {
+	id: number;
+	schema: PromptSchema;
+	user_email: string;
+	created_at: string;
+}
+
+export interface PromptSchemaRoutes extends ListControlsRoutes<PromptSchema> {
+	history(target: PromptSchema): Promise<PromptSchemaRevision[]>;
 }

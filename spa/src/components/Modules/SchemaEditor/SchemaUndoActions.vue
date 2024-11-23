@@ -26,8 +26,7 @@ watch(() => schema.value, () => {
 	}
 });
 
-const { undo, redo, canUndo, canRedo, history } = useRefHistory(editableSchema, { deep: true, capacity: 100 });
-watch(() => history.value, () => console.log(history.value.map(h => h.snapshot.properties.name.title)));
+const { undo, redo, canUndo, canRedo } = useRefHistory(editableSchema, { deep: true, capacity: 100 });
 
 const magicKeys = useMagicKeys();
 whenever(magicKeys.ctrl_z, () => {

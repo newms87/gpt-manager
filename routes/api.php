@@ -43,7 +43,9 @@ ActionRoute::routes('workflows', new WorkflowsController, function () {
     Route::get('{workflow}/export-as-json', [WorkflowsController::class, 'exportAsJson'])->name('workflows.export-as-json');
 });
 ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
-ActionRoute::routes('prompt/schemas', new PromptSchemasController);
+ActionRoute::routes('prompt/schemas', new PromptSchemasController, function () {
+    Route::get('{promptSchema}/history', [PromptSchemasController::class, 'history'])->name('prompt.schemas.history');
+});
 ActionRoute::routes('prompt/directives', new PromptDirectivesController);
 ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController);
