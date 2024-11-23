@@ -4910,17 +4910,19 @@ punycode@^2.1.0:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.1.tgz#027422e2faec0b25e1549c3e1bd8309b9133b6e5"
   integrity sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==
 
-quasar-ui-danx@^0.3.34:
-  version "0.3.34"
-  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.3.34.tgz#ab1a6fc1a745b0c88079ea18ea95380cfb12a118"
-  integrity sha512-jdSWthr+8ZALBPiMxuSxQzZH4FJCmXrl/56fYQdTSsv6qgsLgsURKUYwtXu49ZUhJGhpkX0YC63p0pSyd2A2qw==
+quasar-ui-danx@^0.4.30:
+  version "0.4.30"
+  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.4.30.tgz#bb06b0e9856aeee24a2564bbfb9392013b214b72"
+  integrity sha512-Gu/gXOQ+WnSEVZg5T9sRJ7Gni+QN3KzpIiouoAhkKDqCyoUuz+1y54MZ0Ci6S8OQzfqBpF5FhSkhfvb8pUu4aQ==
   dependencies:
     "@heroicons/vue" v1
     "@tinymce/tinymce-vue" "^5.1.1"
     "@vueuse/core" "^10.7.2"
+    danx-icon "^1.0.2"
     exifreader "^4.21.1"
     gsap "^3.12.5"
     luxon "^3.4.4"
+    yaml "^2.4.5"
 
 quasar@^2.15.2:
   version "2.15.2"
