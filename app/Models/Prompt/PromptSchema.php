@@ -73,6 +73,11 @@ class PromptSchema extends Model implements AuditableContract
         return $this->hasMany(WorkflowJob::class, 'response_schema_id');
     }
 
+    public function promptSchemaRevisions(): HasMany|PromptSchemaHistory
+    {
+        return $this->hasMany(PromptSchemaHistory::class);
+    }
+
     public function delete(): bool
     {
         $agentsCount = $this->agents()->count();
@@ -109,6 +114,13 @@ class PromptSchema extends Model implements AuditableContract
     {
         static::creating(function (PromptSchema $promptSchema) {
             $promptSchema->team_id = $promptSchema->team_id ?? team()->id ?? null;
+        });
+
+        static::updated(function (PromptSchema $promptSchema) {
+            // Track Schema History if it was changed and there was a previous version
+            if ($promptSchema->wasChanged('schema')) {
+                PromptSchemaHistory::write(user(), $promptSchema, $promptSchema->getOriginal('schema'));
+            }
         });
     }
 
