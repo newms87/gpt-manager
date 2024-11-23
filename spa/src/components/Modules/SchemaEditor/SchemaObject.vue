@@ -93,23 +93,36 @@ import { JsonSchema } from "@/types";
 import { useDebounceFn } from "@vueuse/core";
 import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } from "danx-icon";
 import { EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 defineProps<{
 	hideHeader?: boolean
 }>();
 const schemaObject = defineModel<JsonSchema>();
+const objectProperties = ref(schemaObject.value.properties || schemaObject.value.items?.properties || {});
+
+watch(() => schemaObject.value, (value) => {
+	objectProperties.value = value.properties || value.items?.properties || {};
+});
 
 function onUpdate(input: Partial<JsonSchema>) {
 	objectProperties.value = { ...objectProperties.value, ...input };
 	setPropertyIdsAndPositions();
 	const properties = { ...objectProperties.value };
+	let newSchemaObject;
 
 	if (schemaObject.value.type === "array") {
-		schemaObject.value = { ...schemaObject.value, items: { ...schemaObject.value.items, properties } };
+		newSchemaObject = { ...schemaObject.value, items: { ...schemaObject.value.items, properties } };
 	} else {
-		schemaObject.value = { ...schemaObject.value, properties };
+		newSchemaObject = { ...schemaObject.value, properties };
 	}
+
+	// Do not update if the schema object has not changed
+	if (JSON.stringify(newSchemaObject) === JSON.stringify(schemaObject.value)) {
+		return;
+	}
+
+	schemaObject.value = newSchemaObject;
 }
 const onUpdateDebounced = useDebounceFn(onUpdate, 500);
 
@@ -163,7 +176,6 @@ function onListPositionChange(items) {
 	onUpdate({});
 }
 
-const objectProperties = ref(schemaObject.value.properties || schemaObject.value.items?.properties || {});
 const sortedPropertyNames = computed(() => Object.keys(objectProperties.value).sort((a, b) => objectProperties.value[a].position - objectProperties.value[b].position));
 const childObjectNames = computed(() => sortedPropertyNames.value.filter(p => p && ["array", "object"].includes(objectProperties.value[p].type)));
 const customPropertyNames = computed(() => sortedPropertyNames.value.filter(p => p && !childObjectNames.value.includes(p)));
