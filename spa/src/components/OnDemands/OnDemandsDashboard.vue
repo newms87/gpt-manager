@@ -15,16 +15,6 @@
 				@create="onCreate"
 				@update:selected="onSelectPromptSchema"
 			/>
-			<div class="w-1/2 flex justify-end">
-				<QBtn
-					class="px-8 bg-green-900"
-					:loading="createTeamObjectAction.isApplying"
-					@click="createTeamObjectAction.trigger(null, { type: teamObjectType })"
-				>
-					<CreateIcon class="w-4 mr-2" />
-					{{ teamObjectType }}
-				</QBtn>
-			</div>
 		</div>
 
 		<div v-if="isEditingSchema" class="mt-4">
@@ -37,7 +27,7 @@
 			/>
 		</div>
 
-		<div v-if="activeSchema">
+		<div v-if="activeSchema && !isEditingSchema">
 			<template v-if="teamObjects?.length > 0">
 				<TeamObjectCard
 					v-for="teamObject in teamObjects"
@@ -46,6 +36,17 @@
 					:schema="activeSchema.schema as JsonSchema"
 					class="mt-4 bg-slate-800 rounded-lg"
 				/>
+
+				<div class="flex mt-4">
+					<QBtn
+						class="px-8 bg-green-900 w-full"
+						:loading="createTeamObjectAction.isApplying"
+						@click="createTeamObjectAction.trigger(null, { type: teamObjectType })"
+					>
+						<CreateIcon class="w-4 mr-2" />
+						{{ teamObjectType }}
+					</QBtn>
+				</div>
 			</template>
 			<template v-else-if="dxTeamObject.isLoadingList.value">
 				<QSkeleton

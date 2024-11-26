@@ -1,5 +1,5 @@
 <template>
-	<div class="p-3">
+	<div class="p-3 group">
 		<div class="team-object-header flex items-center flex-nowrap gap-x-4">
 			<div class="flex-grow">
 				<div class="group font-bold flex items-center gap-2">
@@ -17,7 +17,14 @@
 					</a>
 				</div>
 				<div class="mt-1">
-					{{ object.description }}
+					<EditableDiv
+						:model-value="object.description"
+						class="rounded-sm text-slate-500 transition-all"
+						:class="{'opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100': !object.description}"
+						color="slate-800"
+						placeholder="Enter Description..."
+						@update:model-value="description => updateAction.trigger(object, {description})"
+					/>
 				</div>
 			</div>
 			<ShowHideButton
