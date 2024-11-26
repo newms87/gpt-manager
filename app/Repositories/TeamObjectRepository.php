@@ -7,6 +7,7 @@ use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
 use App\Resources\Agent\MessageResource;
+use App\Resources\TeamObject\TeamObjectResource;
 use BadFunctionCallException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -26,12 +27,14 @@ class TeamObjectRepository extends ActionRepository
 
     public function applyAction(string $action, TeamObject|Model|array|null $model = null, ?array $data = null)
     {
-        $type = $data['type'] ?? $model?->type;
-        $name = $data['name'] ?? $model?->name;
+        $type       = $data['type'] ?? $model?->type;
+        $name       = $data['name'] ?? $model?->name;
+        $topLevelId = $data['top_level_id'] ?? null;
 
         return match ($action) {
             'create' => $this->saveTeamObject($type, $name, $data),
             'update' => $this->updateTeamObject($model, $data),
+            'delete-child' => $this->deleteChildObject(TeamObject::find($topLevelId), $model),
             'create-relation' => $this->createRelation($model, $data['relationship_name'] ?? null, $type, $name, $data),
             'save-attribute' => $this->saveTeamObjectAttribute($model, $data['name'] ?? null, $data),
             default => parent::applyAction($action, $model, $data)
@@ -55,10 +58,13 @@ class TeamObjectRepository extends ActionRepository
 
         $teamObject = TeamObject::where('type', $type)
             ->where(fn(Builder $builder) => $builder->where('name', $name)->orWhere('ref', $data['ref']))
+            ->withTrashed()
             ->first();
 
         if (!$teamObject) {
             $teamObject = TeamObject::make($data);
+        } elseif ($teamObject->deleted_at) {
+            $teamObject->restore();
         }
 
         return $this->updateTeamObject($teamObject, $input);
@@ -72,6 +78,23 @@ class TeamObjectRepository extends ActionRepository
         $teamObject->fill($input)->save();
 
         return $teamObject;
+    }
+
+    /**
+     * Delete a child object from a parent object
+     */
+    function deleteChildObject(?TeamObject $topLevelObject, ?TeamObject $childObject): array
+    {
+        if (!$childObject) {
+            throw new ValidationError("To delete a child object, the child object must be provided");
+        }
+        if (!$topLevelObject) {
+            throw new ValidationError("To delete a child object, the top level object must be provided");
+        }
+
+        $childObject->delete();
+
+        return TeamObjectResource::make($topLevelObject);
     }
 
     /**
@@ -161,11 +184,17 @@ class TeamObjectRepository extends ActionRepository
         }
 
         // Ensure the record is associated
-        TeamObjectRelationship::updateOrCreate([
+        $relatedObject = TeamObjectRelationship::withTrashed()->firstOrNew([
             'relationship_name' => $relationshipName,
             'object_id'         => $teamObject->id,
             'related_object_id' => $relatedObject->id,
         ]);
+
+        if ($relatedObject->deleted_at) {
+            $relatedObject->restore();
+        }
+
+        $relatedObject->save();
     }
 
     /**

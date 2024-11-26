@@ -1,11 +1,12 @@
 <template>
-	<div class="p-3 group">
-		<div class="team-object-header flex items-center flex-nowrap gap-x-4">
-			<div class="flex-grow">
-				<div class="group font-bold flex items-center gap-2">
+	<div class="group rounded overflow-hidden">
+		<div class="team-object-header flex items-stretch flex-nowrap gap-x-4">
+			<div class="bg-slate-950 text-slate-500 px-3 flex items-center rounded-br-lg">{{ schema.title }}</div>
+			<div class="flex space-x-3 items-center flex-grow">
+				<div class="group font-bold flex items-center gap-2 py-2">
 					<EditableDiv
 						:model-value="object.name"
-						class="rounded-sm"
+						class="rounded-sm text-lg"
 						color="slate-800"
 						@update:model-value="name => updateAction.trigger(object, {name})"
 					/>
@@ -16,33 +17,35 @@
 						<LinkIcon class="w-4" />
 					</a>
 				</div>
-				<div class="mt-1">
-					<EditableDiv
-						:model-value="object.description"
-						class="rounded-sm text-slate-500 transition-all"
-						:class="{'opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100': !object.description}"
-						color="slate-800"
-						placeholder="Enter Description..."
-						@update:model-value="description => updateAction.trigger(object, {description})"
-					/>
-				</div>
 			</div>
-			<ShowHideButton
-				v-if="hasChildren"
-				v-model="isShowing"
-				label="Show"
-				class="py-2 px-6 bg-sky-900"
-				@show="onShow"
-			/>
-			<QBtn
-				class="p-3 bg-red-900"
-				:disable="deleteAction.isApplying"
-				@click="deleteAction.trigger(object)"
-			>
-				<DeleteIcon class="w-3.5" />
-			</QBtn>
+			<div class="object-controls flex items-center p-2 space-x-3">
+				<ShowHideButton
+					v-if="hasChildren"
+					v-model="isShowing"
+					label="View"
+					class="py-2 px-6 bg-sky-900"
+					@show="onShow"
+				/>
+				<QBtn
+					class="p-3 bg-red-900"
+					:disable="deleteAction.isApplying"
+					@click="deleteAction.trigger(object, {top_level_id: topLevelObject?.id})"
+				>
+					<DeleteIcon class="w-3.5" />
+				</QBtn>
+			</div>
 		</div>
-		<div v-if="isShowing" class="mt-5">
+		<div class="px-4 py-3">
+			<EditableDiv
+				:model-value="object.description"
+				class="rounded-sm text-slate-500 transition-all"
+				:class="{'opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100': !object.description}"
+				color="slate-800"
+				placeholder="Enter Description..."
+				@update:model-value="description => updateAction.trigger(object, {description})"
+			/>
+		</div>
+		<div v-if="isShowing" class="mt-3 px-4">
 			<div class="grid grid-cols-12">
 				<TeamObjectAttribute
 					v-for="attr in schemaAttributes"
@@ -53,13 +56,14 @@
 					:attribute="object[attr.name]"
 				/>
 			</div>
-			<div class="mt-5">
+			<div class="mt-5 space-y-4">
 				<TeamObjectRelationObject
 					v-for="relation in schemaRelationObjects"
 					:key="relation.name"
 					:name="relation.name"
 					:title="relation.title"
 					:parent="object"
+					:top-level-object="topLevelObject || object"
 					:object="object[relation.name] && object[relation.name][0]"
 					:schema="schema.properties[relation.name]"
 					:level="level + 1"
@@ -75,6 +79,7 @@
 						:name="relation.name"
 						:title="relation.title"
 						:parent="object"
+						:top-level-object="topLevelObject"
 						:schema="schema.properties[relation.name].items"
 						:relations="object[relation.name] || []"
 						:level="level + 1"
@@ -103,14 +108,16 @@ import { computed, ref } from "vue";
 const props = withDefaults(defineProps<{
 	level?: number,
 	object: TeamObject,
+	topLevelObject?: TeamObject,
 	schema: JsonSchema
 }>(), {
-	level: 0
+	level: 0,
+	topLevelObject: null
 });
 
 const isShowing = ref(false);
 const updateAction = dxTeamObject.getAction("update");
-const deleteAction = dxTeamObject.getAction("delete");
+const deleteAction = dxTeamObject.getAction(props.level > 0 ? "delete-child" : "delete");
 
 const hasChildren = computed(() => schemaAttributes.value.length > 0 || schemaRelationArrays.value.length > 0 || schemaRelationObjects.value.length > 0);
 

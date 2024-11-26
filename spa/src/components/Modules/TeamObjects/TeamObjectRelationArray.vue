@@ -22,6 +22,7 @@
 				<TeamObjectCard
 					:object="relation"
 					:schema="schema"
+					:top-level-object="topLevelObject"
 					class="p-3"
 					:class="levelObjectClass"
 					:level="level"
@@ -46,6 +47,7 @@ const props = withDefaults(defineProps<{
 	title?: string,
 	schema: JsonSchema,
 	parent: TeamObject,
+	topLevelObject: TeamObject,
 	relations: TeamObject[],
 	objectClass?: string;
 	separatorClass?: string,

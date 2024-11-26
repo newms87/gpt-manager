@@ -13,6 +13,9 @@ use Newms87\Danx\Traits\AuditableTrait;
  * @property string $relationship_name
  * @property string $object_id
  * @property string $related_object_id
+ * @property string $created_at
+ * @property string $updated_at
+ * @property string $deleted_at
  */
 class TeamObjectRelationship extends Model implements AuditableContract
 {

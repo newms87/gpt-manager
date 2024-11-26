@@ -2,6 +2,7 @@
 
 namespace App\Models\TeamObject;
 
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,6 +18,9 @@ use Newms87\Danx\Traits\AuditableTrait;
  * @property string $description
  * @property string $url
  * @property array  $meta
+ * @property Carbon created_at
+ * @property Carbon updated_at
+ * @property Carbon deleted_at
  */
 class TeamObject extends Model implements AuditableContract
 {
@@ -75,7 +79,7 @@ class TeamObject extends Model implements AuditableContract
         $this->attributes()->delete();
         $this->relationships()->delete();
         $this->relatedToMe()->delete();
-        
+
         return parent::delete();
     }
 

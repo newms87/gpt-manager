@@ -1,16 +1,22 @@
 <template>
-	<div :data-testid="name" class="bg-slate-900 py-2 px-4 rounded-lg">
-		<div class="flex items-center flex-nowrap">
-			<div class="font-bold">{{ title || name }}</div>
-			<div class="flex-grow" />
-			<QBtn v-if="!object" @click="createAction.trigger(parent, {type: schema.title, relationship_name: name})">
-				<CreateIcon class="w-4" />
-			</QBtn>
-		</div>
-		<TeamObjectCard v-if="object" :object="object" :schema="schema" :level="level" class="bg-slate-900 rounded" />
-		<div v-else class="mt-2">
-			No {{ name }} found.
-		</div>
+	<div :data-testid="name" class="bg-slate-900 overflow-hidden rounded-md">
+		<TeamObjectCard
+			v-if="object"
+			:object="object"
+			:top-level-object="topLevelObject"
+			:schema="schema"
+			:level="level"
+			class="bg-slate-900"
+		/>
+		<QBtn
+			v-else
+			class="p-4 w-full text-left"
+			align="left"
+			@click="createAction.trigger(parent, {type: schema.title, relationship_name: name})"
+		>
+			<CreateIcon class="w-4 mr-2" />
+			{{ title || name }}
+		</QBtn>
 	</div>
 </template>
 <script setup lang="ts">
@@ -25,6 +31,7 @@ withDefaults(defineProps<{
 	title?: string,
 	level?: number,
 	parent: TeamObject,
+	topLevelObject: TeamObject,
 	object?: TeamObject,
 	schema: JsonSchema
 }>(), {

@@ -34,12 +34,13 @@
 					:key="teamObject.id"
 					:object="teamObject"
 					:schema="activeSchema.schema as JsonSchema"
-					class="mt-4 bg-slate-800 rounded-lg"
+					class="mt-4 bg-slate-800 rounded"
 				/>
 
 				<div class="flex mt-4">
 					<QBtn
-						class="px-8 bg-green-900 w-full"
+						class="px-8 bg-green-900 w-full py-4"
+						align="left"
 						:loading="createTeamObjectAction.isApplying"
 						@click="createTeamObjectAction.trigger(null, { type: teamObjectType })"
 					>
