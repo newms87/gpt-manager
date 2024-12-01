@@ -27,55 +27,16 @@
 			/>
 		</div>
 
-		<div v-if="activeSchema && !isEditingSchema">
-			<template v-if="teamObjects?.length > 0">
-				<TeamObjectCard
-					v-for="teamObject in teamObjects"
-					:key="teamObject.id"
-					:object="teamObject"
-					:schema="activeSchema.schema as JsonSchema"
-					class="mt-4 bg-slate-800 rounded"
-				/>
-
-				<div class="flex mt-4">
-					<QBtn
-						class="px-8 bg-green-900 w-full py-4"
-						align="left"
-						:loading="createTeamObjectAction.isApplying"
-						@click="createTeamObjectAction.trigger(null, { type: teamObjectType })"
-					>
-						<CreateIcon class="w-4 mr-2" />
-						{{ teamObjectType }}
-					</QBtn>
-				</div>
-			</template>
-			<template v-else-if="dxTeamObject.isLoadingList.value">
-				<QSkeleton
-					v-for="i in 3"
-					:key="i"
-					class="mt-4"
-					height="5em"
-				/>
-			</template>
-			<template v-else>
-				<div v-if="teamObjectType" class="mt-4">
-					No {{ teamObjectType }} objects found. Try creating a new one
-				</div>
-				<div v-else>
-					Please update the schema to include the title property at the top level
-				</div>
-			</template>
-		</div>
+		<TeamObjectsList v-if="activeSchema && !isEditingSchema" :prompt-schema="activeSchema" />
 	</div>
 </template>
 <script setup lang="ts">
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
-import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
+import TeamObjectsList from "@/components/Modules/TeamObjects/TeamObjectsList";
 import { JsonSchema } from "@/types";
-import { FaSolidPlus as CreateIcon } from "danx-icon";
-import { FlashMessages, getItem, SelectOrCreateField, setItem } from "quasar-ui-danx";
-import { computed, nextTick, onMounted, ref } from "vue";
+import { getItem, SelectOrCreateField, setItem } from "quasar-ui-danx";
+import { computed, onMounted, ref } from "vue";
 
 const PROMPT_SCHEMA_STORED_KEY = "dx-prompt-schema";
 
@@ -83,12 +44,9 @@ onMounted(init);
 
 const createSchemaAction = dxPromptSchema.getAction("create");
 const updateSchemaAction = dxPromptSchema.getAction("update");
-const createTeamObjectAction = dxTeamObject.getAction("create");
 const isEditingSchema = ref(false);
 
 const activeSchema = computed(() => dxPromptSchema.activeItem.value);
-const teamObjectType = computed(() => activeSchema.value?.schema.title);
-const teamObjects = computed(() => dxTeamObject.pagedItems.value?.data);
 
 async function onCreate() {
 	await createSchemaAction.trigger(activeSchema.value);
@@ -96,27 +54,11 @@ async function onCreate() {
 
 async function init() {
 	dxPromptSchema.initialize();
-	dxTeamObject.initialize();
 	dxPromptSchema.setActiveItem(getItem(PROMPT_SCHEMA_STORED_KEY));
-
-	if (activeSchema.value) {
-		await loadTeamObjects();
-	}
 }
 
 async function onSelectPromptSchema(promptSchema) {
 	dxPromptSchema.setActiveItem(promptSchema);
 	setItem(PROMPT_SCHEMA_STORED_KEY, promptSchema);
-	await loadTeamObjects();
-}
-
-async function loadTeamObjects() {
-	if (!activeSchema.value) return;
-
-	if (!teamObjectType.value) {
-		return nextTick(() => FlashMessages.error("The active schema does not have a title"));
-	}
-
-	dxTeamObject.setActiveFilter({ type: teamObjectType.value });
 }
 </script>

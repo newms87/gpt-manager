@@ -23,7 +23,6 @@
 					:object="relation"
 					:schema="schema"
 					:top-level-object="topLevelObject"
-					class="p-3"
 					:class="levelObjectClass"
 					:level="level"
 				/>

@@ -69,7 +69,7 @@
 					:level="level + 1"
 				/>
 			</div>
-			<div>
+			<div class="pb-4">
 				<template
 					v-for="relation in schemaRelationArrays"
 					:key="relation.name"
