@@ -92,17 +92,17 @@ import SchemaProperty from "@/components/Modules/SchemaEditor/SchemaProperty";
 import { JsonSchema } from "@/types";
 import { useDebounceFn } from "@vueuse/core";
 import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } from "danx-icon";
-import { EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
+import { cloneDeep, EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
 defineProps<{
 	hideHeader?: boolean
 }>();
 const schemaObject = defineModel<JsonSchema>();
-const objectProperties = ref(schemaObject.value.properties || schemaObject.value.items?.properties || {});
+const objectProperties = ref(cloneDeep(schemaObject.value.properties || schemaObject.value.items?.properties || {}));
 
 watch(() => schemaObject.value, (value) => {
-	objectProperties.value = value.properties || value.items?.properties || {};
+	objectProperties.value = cloneDeep(value.properties || value.items?.properties || {});
 });
 
 function onUpdate(input: Partial<JsonSchema>) {

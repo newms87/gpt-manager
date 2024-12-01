@@ -37,7 +37,7 @@ import SchemaRevisionHistoryMenu from "@/components/Modules/SchemaEditor/SchemaR
 import SchemaUndoActions from "@/components/Modules/SchemaEditor/SchemaUndoActions";
 import { JsonSchema, PromptSchema } from "@/types";
 import { FaSolidCode as RawCodeIcon } from "danx-icon";
-import { SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
+import { cloneDeep, SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
 import { ref, watch } from "vue";
 
 defineProps<{
@@ -49,6 +49,5 @@ const schema = defineModel<JsonSchema>();
 const editableSchema = ref(schema.value);
 const isShowingRaw = ref(false);
 
-// Delay committing saves to the server DB so we don't spam it
-watch(() => editableSchema.value, () => schema.value = editableSchema.value);
+watch(() => editableSchema.value, () => schema.value = cloneDeep(editableSchema.value));
 </script>

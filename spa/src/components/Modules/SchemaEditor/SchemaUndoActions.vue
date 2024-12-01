@@ -25,6 +25,11 @@ watch(() => schema.value, () => {
 		editableSchema.value = schema.value;
 	}
 });
+watch(() => editableSchema.value, () => {
+	if (JSON.stringify(editableSchema.value) !== JSON.stringify(schema.value)) {
+		schema.value = editableSchema.value;
+	}
+});
 
 const { undo, redo, canUndo, canRedo } = useRefHistory(editableSchema, { deep: true, capacity: 100 });
 
