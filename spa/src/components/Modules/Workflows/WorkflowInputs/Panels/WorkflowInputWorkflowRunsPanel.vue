@@ -22,7 +22,7 @@
 		</div>
 
 		<WorkflowRunCard
-			v-for="workflowRun in workflowInput.workflowRuns"
+			v-for="workflowRun in workflowRuns"
 			:key="workflowRun.id"
 			:workflow-run="workflowRun"
 			class="mb-4"
@@ -39,7 +39,7 @@
 <script setup lang="ts">
 import { dxWorkflow } from "@/components/Modules/Workflows";
 import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
-import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
+import { dxWorkflowRun, WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { FaSolidCirclePlay as RunIcon } from "danx-icon";
 import { SelectField } from "quasar-ui-danx";
@@ -51,10 +51,12 @@ const props = defineProps<{
 
 const workflowId = ref(null);
 const workflows = shallowRef([]);
+const workflowRuns = shallowRef([]);
 const runWorkflowAction = dxWorkflow.getAction("run-workflow");
 
-onMounted(async () => {
-	workflows.value = (await dxWorkflow.routes.list({ page: 1, rowsPerPage: 1000 })).data;
+onMounted(() => {
+	loadWorkflows();
+	loadWorkflowRuns();
 });
 
 async function onRunWorkflow() {
@@ -63,5 +65,14 @@ async function onRunWorkflow() {
 		__type: "Workflow"
 	}, { workflow_input_id: props.workflowInput.id });
 	await dxWorkflowInput.getActiveItemDetails();
+	await loadWorkflowRuns();
+}
+
+async function loadWorkflows() {
+	workflows.value = (await dxWorkflow.routes.list({ page: 1, rowsPerPage: 1000 })).data;
+}
+
+async function loadWorkflowRuns() {
+	workflowRuns.value = (await dxWorkflowRun.routes.list({ filter: { workflow_input_id: props.workflowInput.id } })).data;
 }
 </script>

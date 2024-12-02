@@ -59,7 +59,7 @@ import WorkflowInputCard from "@/components/Modules/Workflows/WorkflowInputs/Wor
 import { WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 import { ActionButton } from "@/components/Shared";
 import { Workflow, WorkflowInput, WorkflowRun } from "@/types";
-import { FaSolidArrowsRotate as ChangeIcon } from "danx-icon";
+import { FaSolidMagnifyingGlass as ChangeIcon } from "danx-icon";
 import { storeObject } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 

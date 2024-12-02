@@ -78,8 +78,8 @@ import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import ListLoadingContainer from "@/components/Shared/Containers/ListLoadingContainer";
 import { WorkflowRun } from "@/types/workflows";
-import { autoRefreshObject, ShowHideButton } from "quasar-ui-danx";
-import { onMounted, ref } from "vue";
+import { autoRefreshObject, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
+import { onMounted, onUnmounted, ref } from "vue";
 
 defineEmits(["remove"]);
 const props = defineProps<{
@@ -104,5 +104,9 @@ onMounted(() => {
 		(wr: WorkflowRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(wr.status),
 		(wr: WorkflowRun) => dxWorkflowRun.routes.details(wr)
 	);
+});
+
+onUnmounted(() => {
+	stopAutoRefreshObject(props.workflowRun);
 });
 </script>

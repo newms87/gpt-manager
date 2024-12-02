@@ -3,6 +3,13 @@
 		<div class="team-object-header flex items-stretch flex-nowrap gap-x-4">
 			<div class="bg-slate-950 text-slate-500 px-3 flex items-center rounded-br-lg">{{ schema.title }}</div>
 			<div class="flex space-x-3 items-center flex-grow">
+				<ShowHideButton
+					v-if="hasChildren"
+					v-model="isShowing"
+					label=""
+					class="p-3 bg-sky-900"
+					@show="onShow"
+				/>
 				<div class="group font-bold flex items-center gap-2 py-2">
 					<EditableDiv
 						:model-value="object.name"
@@ -19,13 +26,9 @@
 				</div>
 			</div>
 			<div class="object-controls flex items-center p-2 space-x-3">
-				<ShowHideButton
-					v-if="hasChildren"
-					v-model="isShowing"
-					label="View"
-					class="py-2 px-6 bg-sky-900"
-					@show="onShow"
-				/>
+				<QBtn class="bg-green-900 text-green-300 p-3" @click="$emit('select')">
+					<WorkflowIcon class="w-4" />
+				</QBtn>
 				<QBtn
 					class="p-3 bg-red-900"
 					:disable="deleteAction.isApplying"
@@ -101,10 +104,11 @@ import TeamObjectAttribute from "@/components/Modules/TeamObjects/TeamObjectAttr
 import TeamObjectRelationArray from "@/components/Modules/TeamObjects/TeamObjectRelationArray";
 import TeamObjectRelationObject from "@/components/Modules/TeamObjects/TeamObjectRelationObject";
 import { JsonSchema } from "@/types";
-import { FaSolidLink as LinkIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
+import { FaSolidLink as LinkIcon, FaSolidTrash as DeleteIcon, FaSolidWorm as WorkflowIcon } from "danx-icon";
 import { EditableDiv, fDate, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
+defineEmits(["select"]);
 const props = withDefaults(defineProps<{
 	level?: number,
 	object: TeamObject,

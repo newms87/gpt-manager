@@ -7,6 +7,7 @@
 				:object="teamObject"
 				:schema="promptSchema.schema as JsonSchema"
 				class="mt-4 bg-slate-800 rounded"
+				@select="dxTeamObject.activatePanel(teamObject, 'workflows')"
 			/>
 
 			<div class="flex mt-4">
@@ -37,14 +38,24 @@
 				Please update the schema to include the title property at the top level
 			</div>
 		</template>
+
+		<PanelsDrawer
+			v-if="activeTeamObject"
+			:title="activeTeamObject.name"
+			:model-value="activePanel"
+			:target="activeTeamObject"
+			:panels="dxTeamObject.panels"
+			@update:model-value="panel => dxTeamObject.activatePanel(activeTeamObject, panel)"
+			@close="dxTeamObject.setActiveItem(null)"
+		/>
 	</div>
 </template>
 <script setup lang="ts">
 import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
 import { JsonSchema, PromptSchema } from "@/types";
 import { FaSolidPlus as CreateIcon } from "danx-icon";
-import { FlashMessages } from "quasar-ui-danx";
-import { computed, nextTick, onMounted, watch } from "vue";
+import { FlashMessages, PanelsDrawer } from "quasar-ui-danx";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 const props = defineProps<{ promptSchema: PromptSchema }>();
 
@@ -54,6 +65,8 @@ watch(() => props.promptSchema, loadTeamObjects);
 const createTeamObjectAction = dxTeamObject.getAction("create");
 const teamObjectType = computed(() => props.promptSchema.schema.title);
 const teamObjects = computed(() => dxTeamObject.pagedItems.value?.data);
+const activeTeamObject = computed(() => dxTeamObject.activeItem.value);
+const activePanel = ref("workflows");
 
 async function init() {
 	dxTeamObject.initialize();
