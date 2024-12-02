@@ -37,6 +37,7 @@ abstract class TeamObjectResource extends ActionResource
 
         return [
                 'id'          => $model->id,
+                'type'        => $model->type,
                 'name'        => $model->name,
                 'description' => $model->description,
                 'date'        => $model->date?->toDateTimeString(),

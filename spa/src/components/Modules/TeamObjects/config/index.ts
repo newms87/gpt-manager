@@ -4,12 +4,14 @@ import { actionControls } from "./actions";
 import { controls } from "./controls";
 import { fields } from "./fields";
 import { filters } from "./filters";
+import { panels } from "./panels";
 import { routes } from "./routes";
 
 export const dxTeamObject = {
 	...controls,
 	...actionControls,
-	filters,
 	fields,
+	filters,
+	panels,
 	routes
 } as DanxController<TeamObject>;

@@ -7,6 +7,7 @@ use App\Models\Workflow\WorkflowInput;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
+use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\ActionRepository;
 use Schema;
@@ -59,8 +60,10 @@ class WorkflowInputRepository extends ActionRepository
         $data['team_id'] = team()->id;
         $data['user_id'] = user()->id;
 
-        $workflowInput = WorkflowInput::make()->forceFill($data)->validate();
-        $workflowInput->save();
+        $workflowInput       = WorkflowInput::make()->forceFill($data);
+        $workflowInput->name = ModelHelper::getNextModelName($workflowInput);
+
+        $workflowInput->validate()->save();
 
         $this->syncStoredFiles($workflowInput, $data);
 

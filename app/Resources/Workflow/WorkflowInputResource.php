@@ -22,14 +22,15 @@ class WorkflowInputResource extends ActionResource
      */
     public static function data(Model $model): array
     {
-        $thumbFile = $model->storedFiles()->first();
+        $storedFiles = $model->storedFiles()->get();
 
         return [
             'id'                      => $model->id,
             'name'                    => $model->name,
             'description'             => $model->description,
             'workflow_runs_count'     => $model->workflow_runs_count,
-            'thumb'                   => StoredFileResource::make($thumbFile),
+            'thumb'                   => StoredFileResource::make($storedFiles->first()),
+            'files'                   => StoredFileResource::collection($storedFiles),
             'has_active_workflow_run' => $model->activeWorkflowRuns()->exists(),
             'tags'                    => $model->objectTags()->pluck('name'),
             'team_object_type'        => $model->team_object_type,
