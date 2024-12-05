@@ -1,7 +1,7 @@
 <template>
 	<div class="group rounded overflow-hidden">
 		<div class="team-object-header flex items-stretch flex-nowrap gap-x-4">
-			<div class="bg-slate-950 text-slate-500 px-3 flex items-center rounded-br-lg">{{ schema.title }}</div>
+			<div class="bg-slate-950 text-slate-500 px-3 flex items-center rounded-br-lg">{{ schema?.title }}</div>
 			<div class="flex space-x-3 items-center flex-grow">
 				<ShowHideButton
 					v-if="hasChildren"

@@ -42,9 +42,10 @@ import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
 import { dxWorkflowRun, WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { FaSolidCirclePlay as RunIcon } from "danx-icon";
-import { SelectField, storeObjects } from "quasar-ui-danx";
-import { onMounted, ref, shallowRef } from "vue";
+import { autoRefreshObject, SelectField, stopAutoRefreshObject, storeObjects } from "quasar-ui-danx";
+import { onMounted, onUnmounted, ref, shallowRef } from "vue";
 
+const emit = defineEmits(["run"]);
 const props = defineProps<{
 	workflowInput: WorkflowInput;
 }>();
@@ -57,6 +58,16 @@ const runWorkflowAction = dxWorkflow.getAction("run-workflow");
 onMounted(() => {
 	loadWorkflows();
 	loadWorkflowRuns();
+
+	autoRefreshObject(
+		props.workflowInput,
+		(wi: WorkflowInput) => wi.has_active_workflow_run,
+		(wi: WorkflowInput) => dxWorkflowInput.routes.details(wi)
+	);
+});
+
+onUnmounted(() => {
+	stopAutoRefreshObject(props.workflowInput);
 });
 
 async function onRunWorkflow() {
@@ -66,6 +77,7 @@ async function onRunWorkflow() {
 	}, { workflow_input_id: props.workflowInput.id });
 	await dxWorkflowInput.getActiveItemDetails();
 	await loadWorkflowRuns();
+	emit("run", workflowId.value);
 }
 
 async function loadWorkflows() {

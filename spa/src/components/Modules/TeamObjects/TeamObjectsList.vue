@@ -63,7 +63,7 @@ onMounted(init);
 watch(() => props.promptSchema, loadTeamObjects);
 
 const createTeamObjectAction = dxTeamObject.getAction("create");
-const teamObjectType = computed(() => props.promptSchema.schema.title);
+const teamObjectType = computed(() => props.promptSchema?.schema?.title);
 const teamObjects = computed(() => dxTeamObject.pagedItems.value?.data);
 const activeTeamObject = computed(() => dxTeamObject.activeItem.value);
 const activePanel = ref("workflows");

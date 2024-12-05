@@ -2,7 +2,7 @@ import { Agent, AgentThread } from "@/types/agents";
 import { Artifact } from "@/types/artifacts";
 import { PromptSchema } from "@/types/prompts";
 import { WorkflowInput } from "@/types/workflow-inputs";
-import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
+import { ActionTargetItem, AnyObject, ListControlsRoutes } from "quasar-ui-danx";
 
 export interface Workflow extends ActionTargetItem {
 	id: string;
@@ -96,4 +96,16 @@ export interface WorkflowUsage {
 	input_tokens: number;
 	output_tokens: number;
 	total_cost: number;
+}
+
+export interface WorkflowRunStatuses {
+	total_count: number;
+	completed_count: number;
+	failed_count: number;
+	pending_count: number;
+	running_count: number;
+}
+
+export interface WorkflowRunRoutes extends ListControlsRoutes<WorkflowRun> {
+	runStatuses(filter: AnyObject): Promise<WorkflowRunStatuses>;
 }

@@ -48,7 +48,9 @@ ActionRoute::routes('prompt/schemas', new PromptSchemasController, function () {
 });
 ActionRoute::routes('prompt/directives', new PromptDirectivesController);
 ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
-ActionRoute::routes('workflow-runs', new WorkflowRunsController);
+ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
+    Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');
+});
 ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);
 
 // Agents
