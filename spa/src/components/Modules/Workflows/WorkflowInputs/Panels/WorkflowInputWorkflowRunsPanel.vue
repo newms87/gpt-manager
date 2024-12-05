@@ -11,7 +11,7 @@
 				/>
 			</div>
 			<QBtn
-				class="text-lg bg-lime-800 text-slate-300 px-6"
+				class="bg-lime-800 text-slate-300 px-6"
 				:loading="runWorkflowAction.isApplying"
 				:disable="!workflowId"
 				@click="onRunWorkflow"
@@ -26,7 +26,7 @@
 			:key="workflowRun.id"
 			:workflow-run="workflowRun"
 			class="mb-4"
-			@remove="dxWorkflowInput.getActiveItemDetails"
+			@remove="loadWorkflowRuns"
 		>
 			<template #name>
 				<a class="ml-4" @click="$router.push({name: 'workflows', params: {id: workflowRun.workflow_id}})">
@@ -42,7 +42,7 @@ import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
 import { dxWorkflowRun, WorkflowRunCard } from "@/components/Modules/Workflows/WorkflowRuns";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { FaSolidCirclePlay as RunIcon } from "danx-icon";
-import { SelectField } from "quasar-ui-danx";
+import { SelectField, storeObjects } from "quasar-ui-danx";
 import { onMounted, ref, shallowRef } from "vue";
 
 const props = defineProps<{
@@ -69,10 +69,12 @@ async function onRunWorkflow() {
 }
 
 async function loadWorkflows() {
-	workflows.value = (await dxWorkflow.routes.list({ page: 1, rowsPerPage: 1000 })).data;
+	const pagedWorkflows = await dxWorkflow.routes.list({ page: 1, rowsPerPage: 1000 });
+	workflows.value = storeObjects(pagedWorkflows.data);
 }
 
 async function loadWorkflowRuns() {
-	workflowRuns.value = (await dxWorkflowRun.routes.list({ filter: { workflow_input_id: props.workflowInput.id } })).data;
+	const pagedWorkflowRuns = await dxWorkflowRun.routes.list({ filter: { workflow_input_id: props.workflowInput.id } });
+	workflowRuns.value = storeObjects(pagedWorkflowRuns.data);
 }
 </script>

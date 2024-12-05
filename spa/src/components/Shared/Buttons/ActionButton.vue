@@ -141,9 +141,10 @@ const isSaving = computed(() => {
 function onAction() {
 	if (props.action) {
 		props.action.trigger(props.target, props.input).then(async (response) => {
-			emit("success", await response.json());
-		}).catch(() => {
-			emit("error");
+			emit("success", typeof response.json === "function" ? await response.json() : response);
+		}).catch((e) => {
+			console.error(`Action emitted an error: ${props.action.name}`, e, props.target);
+			emit("error", e);
 		}).finally(() => {
 			emit("always");
 		});
