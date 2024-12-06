@@ -56,7 +56,7 @@
 					:name="attr.name"
 					:title="attr.title"
 					:object="object"
-					:attribute="object[attr.name]"
+					:attribute="object.attributes[attr.name]"
 				/>
 			</div>
 			<div class="mt-5 space-y-4">
@@ -67,7 +67,7 @@
 					:title="relation.title"
 					:parent="object"
 					:top-level-object="topLevelObject || object"
-					:object="object[relation.name] && object[relation.name][0]"
+					:object="object.relations[relation.name] && object.relations[relation.name][0]"
 					:schema="properties[relation.name]"
 					:level="level + 1"
 				/>
@@ -84,7 +84,7 @@
 						:parent="object"
 						:top-level-object="topLevelObject"
 						:schema="properties[relation.name].items"
-						:relations="object[relation.name] || []"
+						:relations="object.relations[relation.name] || [] "
 						:level="level + 1"
 						class="mt-5"
 					/>

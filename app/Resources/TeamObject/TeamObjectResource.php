@@ -36,15 +36,17 @@ abstract class TeamObjectResource extends ActionResource
         }
 
         return [
-                'id'          => $model->id,
-                'type'        => $model->type,
-                'name'        => $model->name,
-                'description' => $model->description,
-                'date'        => $model->date?->toDateTimeString(),
-                'url'         => $model->url,
-                'meta'        => $model->meta,
-                'created_at'  => $model->created_at,
-                'updated_at'  => $model->updated_at,
-            ] + $attributes->toArray() + $relatedObjects;
+            'id'          => $model->id,
+            'type'        => $model->type,
+            'name'        => $model->name,
+            'description' => $model->description,
+            'date'        => $model->date?->toDateTimeString(),
+            'url'         => $model->url,
+            'meta'        => $model->meta,
+            'created_at'  => $model->created_at,
+            'updated_at'  => $model->updated_at,
+            'attributes'  => $attributes->toArray(),
+            'relations'   => $relatedObjects,
+        ];
     }
 }

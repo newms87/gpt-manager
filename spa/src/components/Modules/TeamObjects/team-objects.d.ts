@@ -8,6 +8,12 @@ interface TeamObject extends ActionTargetItem {
 	description: string | null;
 	url: string | null;
 	meta?: object | null;
+	relations: {
+		[key: string]: TeamObject[];
+	};
+	attributes: {
+		[key: string]: TeamObjectAttribute;
+	};
 }
 
 
