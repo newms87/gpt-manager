@@ -1,6 +1,29 @@
 <template>
 	<div>
-		<template v-if="teamObjects?.length > 0">
+		<div v-if="teamObjectType" class="mt-4">
+			<QBtn
+				class="px-4 bg-green-900 text-sm py-3"
+				align="left"
+				:loading="createTeamObjectAction.isApplying"
+				@click="createTeamObjectAction.trigger(null, { type: teamObjectType })"
+			>
+				<CreateIcon class="w-4 mr-2" />
+				{{ teamObjectType }}
+			</QBtn>
+		</div>
+		<QBanner v-else class="bg-red-800 text-slate-300 mt-8">
+			Please update the schema to include the title property at the top level
+		</QBanner>
+
+		<template v-if="dxTeamObject.isLoadingList.value">
+			<QSkeleton
+				v-for="i in 3"
+				:key="i"
+				class="mt-4"
+				height="5em"
+			/>
+		</template>
+		<template v-else-if="teamObjects?.length > 0">
 			<TeamObjectCard
 				v-for="teamObject in teamObjects"
 				:key="teamObject.id"
@@ -9,34 +32,6 @@
 				class="mt-4 bg-slate-800 rounded"
 				@select="dxTeamObject.activatePanel(teamObject, 'workflows')"
 			/>
-
-			<div class="flex mt-4">
-				<QBtn
-					class="px-8 bg-green-900 w-full py-4"
-					align="left"
-					:loading="createTeamObjectAction.isApplying"
-					@click="createTeamObjectAction.trigger(null, { type: teamObjectType })"
-				>
-					<CreateIcon class="w-4 mr-2" />
-					{{ teamObjectType }}
-				</QBtn>
-			</div>
-		</template>
-		<template v-else-if="dxTeamObject.isLoadingList.value">
-			<QSkeleton
-				v-for="i in 3"
-				:key="i"
-				class="mt-4"
-				height="5em"
-			/>
-		</template>
-		<template v-else>
-			<div v-if="teamObjectType" class="mt-4">
-				No {{ teamObjectType }} objects found. Try creating a new one
-			</div>
-			<QBanner v-else class="bg-red-800 text-slate-300 mt-8">
-				Please update the schema to include the title property at the top level
-			</QBanner>
 		</template>
 
 		<PanelsDrawer
@@ -54,8 +49,8 @@
 import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
 import { JsonSchema, PromptSchema } from "@/types";
 import { FaSolidPlus as CreateIcon } from "danx-icon";
-import { FlashMessages, PanelsDrawer } from "quasar-ui-danx";
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { PanelsDrawer } from "quasar-ui-danx";
+import { computed, onMounted, ref, watch } from "vue";
 
 const props = defineProps<{ promptSchema: PromptSchema }>();
 
@@ -69,17 +64,28 @@ const activeTeamObject = computed(() => dxTeamObject.activeItem.value);
 const activePanel = ref("workflows");
 
 async function init() {
-	if (teamObjectType.value) {
-		dxTeamObject.initialize();
-		await loadTeamObjects();
-	}
+	dxTeamObject.setActiveFilter({ type: teamObjectType.value });
+
+	dxTeamObject.initialize({
+		isDetailsEnabled: false,
+		isListEnabled: false,
+		isSummaryEnabled: false,
+		isFieldOptionsEnabled: false
+	});
+
+	await loadTeamObjects();
 }
 
 async function loadTeamObjects() {
+	// If the team object type is not set, do not load any team objects and clear the current results
 	if (!teamObjectType.value) {
-		return nextTick(() => FlashMessages.error("The active schema does not have a title"));
+		dxTeamObject.pagedItems.value = null;
+		dxTeamObject.setOptions({ isListEnabled: false });
+		return;
 	}
 
+	// Trigger loading the new team objects
+	dxTeamObject.setOptions({ isListEnabled: true });
 	dxTeamObject.setActiveFilter({ type: teamObjectType.value });
 }
 </script>
