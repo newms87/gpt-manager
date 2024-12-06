@@ -12,7 +12,8 @@
 						color="slate-600"
 						class="min-w-20"
 						placeholder="(Enter Title)"
-						@update:model-value="title => onUpdateDebounced({title})"
+						:debounce-delay="1000"
+						@update:model-value="title => onUpdate({title})"
 					/>
 				</div>
 			</div>
@@ -33,7 +34,7 @@
 							:model-value="objectProperties[name]"
 							:name="name"
 							class="my-2 ml-1"
-							@update="input => onUpdateProperty(name, input)"
+							@update="input => onUpdateProperty(name, input.name, input.property)"
 							@remove="onRemoveProperty(name)"
 						/>
 					</ListItemDraggable>
@@ -71,13 +72,13 @@
 					<SchemaObject
 						:model-value="objectProperties[name]"
 						hide-header
-						@update:model-value="input => onUpdateObject(name, input)"
+						@update:model-value="input => onUpdateProperty(name, name, input)"
 					>
 						<template #header>
 							<SchemaProperty
 								:model-value="objectProperties[name]"
 								:name="name"
-								@update="input => onUpdateProperty(name, input)"
+								@update="input => onUpdateProperty(name, input.name, input.property)"
 								@remove="onRemoveProperty(name)"
 							/>
 						</template>
@@ -90,7 +91,6 @@
 <script setup lang="ts">
 import SchemaProperty from "@/components/Modules/SchemaEditor/SchemaProperty";
 import { JsonSchema } from "@/types";
-import { useDebounceFn } from "@vueuse/core";
 import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } from "danx-icon";
 import { cloneDeep, EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
@@ -105,8 +105,30 @@ watch(() => schemaObject.value, (value) => {
 	objectProperties.value = cloneDeep(value.properties || value.items?.properties || {});
 });
 
+const sortedPropertyNames = computed(() => Object.keys(objectProperties.value).sort((a, b) => objectProperties.value[a].position - objectProperties.value[b].position));
+const childObjectNames = computed(() => sortedPropertyNames.value.filter(p => p && ["array", "object"].includes(objectProperties.value[p].type)));
+const customPropertyNames = computed(() => sortedPropertyNames.value.filter(p => p && !childObjectNames.value.includes(p)));
+
 function onUpdate(input: Partial<JsonSchema>) {
-	objectProperties.value = { ...objectProperties.value, ...input };
+	const newSchemaObject = { ...schemaObject.value, ...input };
+	if (JSON.stringify(newSchemaObject) === JSON.stringify(schemaObject.value)) {
+		return;
+	}
+
+	schemaObject.value = newSchemaObject;
+}
+
+function onUpdateProperty(originalName, newName, input) {
+	// If originalName is not set, this is probably an add operation, so don't delete an entry
+	if (originalName && originalName !== newName) {
+		delete objectProperties.value[originalName];
+	}
+
+	// If newName is not set, this is probably a delete operation, so don't add a new entry
+	if (newName) {
+		objectProperties.value = { ...objectProperties.value, [newName]: input };
+	}
+
 	setPropertyIdsAndPositions();
 	const properties = { ...objectProperties.value };
 	let newSchemaObject;
@@ -124,19 +146,6 @@ function onUpdate(input: Partial<JsonSchema>) {
 
 	schemaObject.value = newSchemaObject;
 }
-const onUpdateDebounced = useDebounceFn(onUpdate, 500);
-
-function onUpdateObject(name, input) {
-	onUpdate({ [name]: input });
-}
-
-function onUpdateProperty(propertyName, input) {
-	if (propertyName !== input.name) {
-		delete objectProperties.value[propertyName];
-	}
-
-	onUpdate({ [input.name]: input.property });
-}
 
 function onAddProperty(type: string, baseName: string) {
 	let count = 1;
@@ -146,12 +155,11 @@ function onAddProperty(type: string, baseName: string) {
 		name = baseName + ("_" + count++);
 	}
 	const property = { type };
-	onUpdate({ [name]: property });
+	onUpdateProperty(null, name, property);
 }
 
 function onRemoveProperty(name) {
-	delete objectProperties.value[name];
-	onUpdate({});
+	onUpdateProperty(name, null, null);
 }
 
 function setPropertyIdsAndPositions() {
@@ -173,10 +181,7 @@ function onListPositionChange(items) {
 		objectProperties.value[name].position = position++;
 	}
 
-	onUpdate({});
+	// Just trigger the property update as we've already made the necessary changes
+	onUpdateProperty(null, null, null);
 }
-
-const sortedPropertyNames = computed(() => Object.keys(objectProperties.value).sort((a, b) => objectProperties.value[a].position - objectProperties.value[b].position));
-const childObjectNames = computed(() => sortedPropertyNames.value.filter(p => p && ["array", "object"].includes(objectProperties.value[p].type)));
-const customPropertyNames = computed(() => sortedPropertyNames.value.filter(p => p && !childObjectNames.value.includes(p)));
 </script>

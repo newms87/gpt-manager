@@ -119,7 +119,7 @@ class PromptSchema extends Model implements AuditableContract
         static::updated(function (PromptSchema $promptSchema) {
             // Track Schema History if it was changed and there was a previous version
             if ($promptSchema->wasChanged('schema')) {
-                PromptSchemaHistory::write(user(), $promptSchema, $promptSchema->getOriginal('schema'));
+                PromptSchemaHistory::write(user(), $promptSchema, $promptSchema->getOriginal('schema') ?: []);
             }
         });
     }

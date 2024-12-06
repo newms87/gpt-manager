@@ -46,7 +46,7 @@ defineProps<{
 	saving: boolean;
 }>();
 const schema = defineModel<JsonSchema>();
-const editableSchema = ref(schema.value);
+const editableSchema = ref(schema.value || {});
 const isShowingRaw = ref(false);
 
 watch(() => editableSchema.value, () => schema.value = cloneDeep(editableSchema.value));

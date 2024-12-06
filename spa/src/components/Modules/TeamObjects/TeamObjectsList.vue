@@ -5,7 +5,7 @@
 				v-for="teamObject in teamObjects"
 				:key="teamObject.id"
 				:object="teamObject"
-				:schema="promptSchema.schema as JsonSchema"
+				:schema="promptSchema.schema || {} as JsonSchema"
 				class="mt-4 bg-slate-800 rounded"
 				@select="dxTeamObject.activatePanel(teamObject, 'workflows')"
 			/>
@@ -34,9 +34,9 @@
 			<div v-if="teamObjectType" class="mt-4">
 				No {{ teamObjectType }} objects found. Try creating a new one
 			</div>
-			<div v-else>
+			<QBanner v-else class="bg-red-800 text-slate-300 mt-8">
 				Please update the schema to include the title property at the top level
-			</div>
+			</QBanner>
 		</template>
 
 		<PanelsDrawer
@@ -69,8 +69,10 @@ const activeTeamObject = computed(() => dxTeamObject.activeItem.value);
 const activePanel = ref("workflows");
 
 async function init() {
-	dxTeamObject.initialize();
-	await loadTeamObjects();
+	if (teamObjectType.value) {
+		dxTeamObject.initialize();
+		await loadTeamObjects();
+	}
 }
 
 async function loadTeamObjects() {
