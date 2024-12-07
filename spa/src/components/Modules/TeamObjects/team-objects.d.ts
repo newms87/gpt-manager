@@ -17,18 +17,18 @@ interface TeamObject extends ActionTargetItem {
 }
 
 
-interface TeamObjectAttribute {
+interface TeamObjectAttribute extends ActionTargetItem {
 	id: string;
 	name: string;
-	date: Date;
+	date: string;
 	value: object | string | boolean | number | Date | string[] | object[] | null;
 	description: string;
 	confidence: string;
 	source?: UploadedFile;
 	sourceMessages?: ThreadMessage[];
 	thread_url?: string;
-	created_at: Date;
-	updated_at: Date;
+	created_at: string;
+	updated_at: string;
 }
 
 interface BooleanAttribute extends TeamObjectAttribute {

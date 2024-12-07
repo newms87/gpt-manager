@@ -20,9 +20,20 @@
 					<div v-if="object.date" class="font-sm text-slate-400">
 						{{ fDate(object.date) }}
 					</div>
-					<a target="_blank" :href="object.url" :class="{'opacity-0 group-hover:opacity-1': !object.url}">
+					<a
+						v-if="object.url"
+						target="_blank"
+						:href="object.url"
+					>
 						<LinkIcon class="w-4" />
 					</a>
+					<QBtn
+						class="edit-button bg-slate-700"
+						:loading="editAction.isApplying && object.isSaving"
+						@click="editAction.trigger(object)"
+					>
+						<EditIcon class="w-3" />
+					</QBtn>
 				</div>
 			</div>
 			<div class="object-controls flex items-center p-2 space-x-3">
@@ -42,7 +53,6 @@
 			<EditableDiv
 				:model-value="object.description"
 				class="rounded-sm text-slate-500 transition-all"
-				:class="{'opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100': !object.description}"
 				color="slate-800"
 				placeholder="Enter Description..."
 				@update:model-value="description => updateAction.trigger(object, {description})"
@@ -104,7 +114,12 @@ import TeamObjectAttribute from "@/components/Modules/TeamObjects/TeamObjectAttr
 import TeamObjectRelationArray from "@/components/Modules/TeamObjects/TeamObjectRelationArray";
 import TeamObjectRelationObject from "@/components/Modules/TeamObjects/TeamObjectRelationObject";
 import { JsonSchema } from "@/types";
-import { FaSolidLink as LinkIcon, FaSolidTrash as DeleteIcon, FaSolidWorm as WorkflowIcon } from "danx-icon";
+import {
+	FaSolidLink as LinkIcon,
+	FaSolidPencil as EditIcon,
+	FaSolidTrash as DeleteIcon,
+	FaSolidWorm as WorkflowIcon
+} from "danx-icon";
 import { EditableDiv, fDate, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
@@ -121,6 +136,7 @@ const props = withDefaults(defineProps<{
 
 const isShowing = ref(false);
 const updateAction = dxTeamObject.getAction("update");
+const editAction = dxTeamObject.getAction("edit");
 const deleteAction = dxTeamObject.getAction(props.level > 0 ? "delete-child" : "delete");
 
 const properties = computed(() => props.schema.properties || {});
@@ -164,10 +180,7 @@ const schemaRelationObjects = computed(() => {
 		const attr = properties.value[name];
 		// Any array or object types are the relations of interest for the object
 		if (attr.type !== "object") continue;
-		relations.push({
-			name,
-			...attr
-		});
+		relations.push({ name, ...attr });
 	}
 	return relations;
 });
@@ -176,3 +189,18 @@ async function onShow() {
 	await dxTeamObject.routes.detailsAndStore(props.object);
 }
 </script>
+
+<style lang="scss" scoped>
+.team-object-header {
+	.edit-button {
+		transition: all 0.3s;
+		opacity: 0;
+	}
+
+	&:hover {
+		.edit-button {
+			opacity: 1;
+		}
+	}
+}
+</style>

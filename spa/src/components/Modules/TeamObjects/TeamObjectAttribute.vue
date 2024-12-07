@@ -3,13 +3,12 @@
 		<TeamObjectAttributeBlock
 			:label="label || title || name"
 			:format="format"
-			:attribute="attribute"
+			:attribute="editableAttribute as TeamObjectAttribute"
 		/>
 		<div class="-mt-1 ml-1 edit-attribute">
 			<QBtn
-				class="show-on-hover"
 				:loading="editAction.isApplying && object.isSaving"
-				@click="editAction.trigger(object, {name, title, ...attribute})"
+				@click="editAction.trigger(object, {name, title, attribute: editableAttribute})"
 			>
 				<EditIcon class="w-3" />
 			</QBtn>
@@ -18,13 +17,15 @@
 </template>
 <script setup lang="ts">
 import { dxTeamObject } from "@/components/Modules/TeamObjects/config";
-import { TeamObjectAttributeProps } from "@/components/Modules/TeamObjects/team-objects";
+import { TeamObjectAttribute, TeamObjectAttributeProps } from "@/components/Modules/TeamObjects/team-objects";
 import TeamObjectAttributeBlock from "@/components/Modules/Tortguard/TeamObjectAttributeBlock";
 import { FaSolidPencil as EditIcon } from "danx-icon";
+import { storeObject } from "quasar-ui-danx";
 
-defineProps<TeamObjectAttributeProps>();
+const props = defineProps<TeamObjectAttributeProps>();
 
 const editAction = dxTeamObject.getAction("edit-attribute");
+const editableAttribute = storeObject(props.attribute as TeamObjectAttribute);
 </script>
 
 <style scoped lang="scss">

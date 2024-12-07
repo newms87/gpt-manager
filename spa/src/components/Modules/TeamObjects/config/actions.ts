@@ -27,10 +27,12 @@ export const actions: ActionOptions<TeamObject>[] = [
 	{
 		name: "edit-attribute",
 		alias: "save-attribute",
+		useInputFromConfirm: true,
+		optimistic: false,
 		vnode: (target: TeamObject, data) => h(RenderedFormDialog, {
 			title: "Update " + (data.title || data.name) + " for " + target.name,
 			contentClass: "w-96",
-			modelValue: data,
+			modelValue: data.attribute,
 			form: { fields: attributeFields }
 		})
 	},

@@ -7,6 +7,7 @@ use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
 use App\Resources\Agent\MessageResource;
+use App\Resources\TeamObject\TeamObjectAttributeResource;
 use App\Resources\TeamObject\TeamObjectResource;
 use BadFunctionCallException;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,10 +34,10 @@ class TeamObjectRepository extends ActionRepository
 
         return match ($action) {
             'create' => $this->saveTeamObject($type, $name, $data),
-            'update' => $this->updateTeamObject($model, $data),
+            'update' => (bool)$this->updateTeamObject($model, $data),
             'delete-child' => $this->deleteChildObject(TeamObject::find($topLevelId), $model),
             'create-relation' => $this->createRelation($model, $data['relationship_name'] ?? null, $type, $name, $data),
-            'save-attribute' => $this->saveTeamObjectAttribute($model, $data['name'] ?? null, $data),
+            'save-attribute' => TeamObjectAttributeResource::make($this->saveTeamObjectAttribute($model, $data['name'] ?? null, $data)),
             default => parent::applyAction($action, $model, $data)
         };
     }

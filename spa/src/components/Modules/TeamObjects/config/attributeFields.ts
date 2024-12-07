@@ -1,8 +1,14 @@
 import { MarkdownEditor } from "@/components/MarkdownEditor";
-import { DateField, SelectField, TextField } from "quasar-ui-danx";
+import { SelectField, TextField } from "quasar-ui-danx";
 import { h } from "vue";
 
 export const attributeFields = [
+	{
+		name: "name"
+	},
+	{
+		name: "date"
+	},
 	{
 		name: "value",
 		label: "Value",
@@ -18,11 +24,6 @@ export const attributeFields = [
 				{ label: "Low", value: "Low" }
 			]
 		})
-	},
-	{
-		name: "date",
-		label: "Date",
-		vnode: (props) => h(DateField, { ...props })
 	},
 	{
 		name: "description",
