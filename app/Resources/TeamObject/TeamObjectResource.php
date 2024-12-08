@@ -22,8 +22,9 @@ abstract class TeamObjectResource extends ActionResource
             ->map(fn(TeamObjectAttribute $attribute) => TeamObjectAttributeResource::make($attribute));
 
         // Resolve relationships w/ recently deleted included (so we can show the deletion in our response)
-        $relations      = $model->relationships()->withTrashed()->where(fn(Builder $builder) => $builder->where('deleted_at', '>', now()->subMinute())->orWhereNull('deleted_at'))->get();
-        $relatedObjects = [];
+        $deletedAtColumn = $model->relationships()->make()->getQualifiedDeletedAtColumn();
+        $relations       = $model->relationships()->withTrashed()->where(fn(Builder $builder) => $builder->where($deletedAtColumn, '>', now()->subMinute())->orWhereNull($deletedAtColumn))->joinRelation('related')->orderBy('related.name')->get();
+        $relatedObjects  = [];
         foreach($relations as $relation) {
             // Always make sure the relationship name is set if this was recently deleted so FE can identify deleted resources
             if (!isset($relatedObjects[$relation->relationship_name])) {

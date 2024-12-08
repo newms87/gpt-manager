@@ -20,7 +20,7 @@ export const actions: ActionOptions<TeamObject>[] = [
 		vnode: (target: TeamObject, data) => h(RenderedFormDialog, {
 			title: "Update " + (data.title || data.name) + " for " + target.name,
 			contentClass: "w-96",
-			modelValue: data.attribute,
+			modelValue: { name: data.name, ...data.attribute },
 			form: { fields: attributeFields }
 		})
 	}

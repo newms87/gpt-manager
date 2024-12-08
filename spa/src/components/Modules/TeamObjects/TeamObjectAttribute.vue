@@ -20,12 +20,16 @@ import { dxTeamObject } from "@/components/Modules/TeamObjects/config";
 import { TeamObjectAttribute, TeamObjectAttributeProps } from "@/components/Modules/TeamObjects/team-objects";
 import TeamObjectAttributeBlock from "@/components/Modules/Tortguard/TeamObjectAttributeBlock";
 import { FaSolidPencil as EditIcon } from "danx-icon";
-import { storeObject } from "quasar-ui-danx";
+import { shallowRef } from "vue";
 
 const props = defineProps<TeamObjectAttributeProps>();
 
 const editAction = dxTeamObject.getAction("edit-attribute");
-const editableAttribute = storeObject(props.attribute as TeamObjectAttribute);
+const editableAttribute = shallowRef(props.attribute as TeamObjectAttribute);
+
+editAction.onSuccess = (result) => {
+	editableAttribute.value = result.result;
+};
 </script>
 
 <style scoped lang="scss">
