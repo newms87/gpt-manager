@@ -1,12 +1,5 @@
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
-import {
-	ActionController,
-	ActionOptions,
-	ConfirmActionDialog,
-	RenderedFormDialog,
-	useActions,
-	withDefaultActions
-} from "quasar-ui-danx";
+import { ActionController, ActionOptions, RenderedFormDialog, useActions, withDefaultActions } from "quasar-ui-danx";
 import { h } from "vue";
 import { attributeFields } from "./attributeFields";
 import { controls } from "./controls";
@@ -17,11 +10,6 @@ export const actions: ActionOptions<TeamObject>[] = [
 	...withDefaultActions("Object", controls),
 	{
 		name: "create-relation",
-		vnode: (target: TeamObject, data) => h(RenderedFormDialog, {
-			title: "Create " + data.type + " for " + target.name,
-			contentClass: "w-96",
-			form: { fields }
-		}),
 		onFinish: controls.loadList
 	},
 	{
@@ -34,15 +22,6 @@ export const actions: ActionOptions<TeamObject>[] = [
 			contentClass: "w-96",
 			modelValue: data.attribute,
 			form: { fields: attributeFields }
-		})
-	},
-	{
-		name: "delete-child",
-		vnode: (target: TeamObject) => h(ConfirmActionDialog, {
-			action: "Delete",
-			label: `Delete ${target.name}`,
-			target,
-			confirmClass: "bg-red-900"
 		})
 	}
 ];

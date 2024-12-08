@@ -8,13 +8,12 @@ use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
 use App\Resources\Agent\MessageResource;
 use App\Resources\TeamObject\TeamObjectAttributeResource;
-use App\Resources\TeamObject\TeamObjectResource;
 use BadFunctionCallException;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\FileHelper;
+use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\ActionRepository;
@@ -28,14 +27,12 @@ class TeamObjectRepository extends ActionRepository
 
     public function applyAction(string $action, TeamObject|Model|array|null $model = null, ?array $data = null)
     {
-        $type       = $data['type'] ?? $model?->type;
-        $name       = $data['name'] ?? $model?->name;
-        $topLevelId = $data['top_level_id'] ?? null;
+        $type = $data['type'] ?? $model?->type;
+        $name = $data['name'] ?? $model?->name;
 
         return match ($action) {
             'create' => $this->saveTeamObject($type, $name, $data),
             'update' => (bool)$this->updateTeamObject($model, $data),
-            'delete-child' => $this->deleteChildObject(TeamObject::find($topLevelId), $model),
             'create-relation' => $this->createRelation($model, $data['relationship_name'] ?? null, $type, $name, $data),
             'save-attribute' => TeamObjectAttributeResource::make($this->saveTeamObjectAttribute($model, $data['name'] ?? null, $data)),
             default => parent::applyAction($action, $model, $data)
@@ -53,12 +50,11 @@ class TeamObjectRepository extends ActionRepository
 
         $data = [
             'type' => $type,
-            'ref'  => Str::slug($name),
             'name' => $name,
         ];
 
         $teamObject = TeamObject::where('type', $type)
-            ->where(fn(Builder $builder) => $builder->where('name', $name)->orWhere('ref', $data['ref']))
+            ->where('name', $name)
             ->withTrashed()
             ->first();
 
@@ -76,26 +72,9 @@ class TeamObjectRepository extends ActionRepository
      */
     function updateTeamObject(TeamObject $teamObject, $input = []): TeamObject
     {
-        $teamObject->fill($input)->save();
+        $teamObject->fill($input)->validate()->save();
 
         return $teamObject;
-    }
-
-    /**
-     * Delete a child object from a parent object
-     */
-    function deleteChildObject(?TeamObject $topLevelObject, ?TeamObject $childObject): array
-    {
-        if (!$childObject) {
-            throw new ValidationError("To delete a child object, the child object must be provided");
-        }
-        if (!$topLevelObject) {
-            throw new ValidationError("To delete a child object, the top level object must be provided");
-        }
-
-        $childObject->delete();
-
-        return TeamObjectResource::make($topLevelObject);
     }
 
     /**
@@ -108,6 +87,7 @@ class TeamObjectRepository extends ActionRepository
             throw new ValidationError("Save Objects requires a relationship_name for each relation");
         }
 
+        $name          = ModelHelper::getNextModelName(TeamObject::make(['name' => $name]), 'name', ['type' => $type]);
         $relatedObject = $this->saveTeamObject($type, $name, $input);
 
         $this->saveTeamObjectRelationship($teamObject, $relationshipName, $relatedObject);

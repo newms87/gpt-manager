@@ -2,7 +2,6 @@ tables:
   objects:
     fields:
       id: true
-      ref: true
       type:
         type: string
         length: 50
@@ -25,9 +24,6 @@ tables:
       timestamps: true
       softDeletes: true
     indexes:
-      - name: unique_object_type_ref
-        columns: [ type, ref ]
-        unique: true
       - name: unique_object_type_name
         columns: [ type, name ]
         unique: true

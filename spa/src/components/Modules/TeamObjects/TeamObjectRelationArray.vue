@@ -3,7 +3,7 @@
 		<div class="flex items-stretch flex-nowrap gap-4">
 			<ShowHideButton
 				v-model="isShowing"
-				:label="(title || name) + ' ' + relations.length"
+				:label="(title || name) + ': ' + relations.length + ' items'"
 				class="py-2 px-6 bg-sky-900"
 			/>
 			<QBtn
@@ -22,7 +22,6 @@
 				<TeamObjectCard
 					:object="relation"
 					:schema="schema"
-					:top-level-object="topLevelObject"
 					:class="levelObjectClass"
 					:level="level"
 				/>
@@ -46,7 +45,6 @@ const props = withDefaults(defineProps<{
 	title?: string,
 	schema: JsonSchema,
 	parent: TeamObject,
-	topLevelObject: TeamObject,
 	relations: TeamObject[],
 	objectClass?: string;
 	separatorClass?: string,

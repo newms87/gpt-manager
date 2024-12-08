@@ -1,8 +1,10 @@
 <template>
-	<div class="h-full p-6 overflow-hidden">
+	<div class="h-full p-6 overflow-hidden flex flex-col flex-nowrap">
 		<SchemaEditorToolbox v-model:editing="isEditingSchema" />
 
-		<TeamObjectsList v-if="activeSchema && !isEditingSchema" :prompt-schema="activeSchema" />
+		<div class="flex-grow overflow-y-auto overflow-x-hidden">
+			<TeamObjectsList v-if="activeSchema && !isEditingSchema" :prompt-schema="activeSchema" />
+		</div>
 	</div>
 </template>
 <script setup lang="ts">

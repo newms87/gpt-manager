@@ -43,7 +43,7 @@
 				<QBtn
 					class="p-3 bg-red-900"
 					:disable="deleteAction.isApplying"
-					@click="deleteAction.trigger(object, {top_level_id: topLevelObject?.id})"
+					@click="deleteAction.trigger(object)"
 				>
 					<DeleteIcon class="w-3.5" />
 				</QBtn>
@@ -76,7 +76,6 @@
 					:name="relation.name"
 					:title="relation.title"
 					:parent="object"
-					:top-level-object="topLevelObject || object"
 					:object="object.relations[relation.name] && object.relations[relation.name][0]"
 					:schema="properties[relation.name]"
 					:level="level + 1"
@@ -90,9 +89,8 @@
 					<TeamObjectRelationArray
 						v-if="properties[relation.name]?.items"
 						:name="relation.name"
-						:title="relation.title"
+						:title="relation.items?.title || relation.title"
 						:parent="object"
-						:top-level-object="topLevelObject"
 						:schema="properties[relation.name].items"
 						:relations="object.relations[relation.name] || [] "
 						:level="level + 1"
@@ -127,17 +125,15 @@ defineEmits(["select"]);
 const props = withDefaults(defineProps<{
 	level?: number,
 	object: TeamObject,
-	topLevelObject?: TeamObject,
 	schema: JsonSchema
 }>(), {
-	level: 0,
-	topLevelObject: null
+	level: 0
 });
 
 const isShowing = ref(false);
 const updateAction = dxTeamObject.getAction("update");
 const editAction = dxTeamObject.getAction("edit");
-const deleteAction = dxTeamObject.getAction(props.level > 0 ? "delete-child" : "delete");
+const deleteAction = dxTeamObject.getAction("delete");
 
 const properties = computed(() => props.schema.properties || {});
 const hasChildren = computed(() => schemaAttributes.value.length > 0 || schemaRelationArrays.value.length > 0 || schemaRelationObjects.value.length > 0);

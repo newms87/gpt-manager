@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Traits\AuditableTrait;
 
 /**
@@ -81,6 +82,15 @@ class TeamObject extends Model implements AuditableContract
         $this->relatedToMe()->delete();
 
         return parent::delete();
+    }
+
+    public function validate(): static
+    {
+        if (TeamObject::where('type', $this->type)->where('name', $this->name)->where('id', '!=', $this->id)->exists()) {
+            throw new ValidationError("A $this->type with the name $this->name already exists");
+        }
+
+        return $this;
     }
 
     public function __toString(): string

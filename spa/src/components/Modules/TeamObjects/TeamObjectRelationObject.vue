@@ -3,7 +3,6 @@
 		<TeamObjectCard
 			v-if="object"
 			:object="object"
-			:top-level-object="topLevelObject"
 			:schema="schema"
 			:level="level"
 			class="bg-slate-900"
@@ -31,7 +30,6 @@ withDefaults(defineProps<{
 	title?: string,
 	level?: number,
 	parent: TeamObject,
-	topLevelObject: TeamObject,
 	object?: TeamObject,
 	schema: JsonSchema
 }>(), {
