@@ -11,7 +11,7 @@
 			v-else
 			class="p-4 w-full text-left"
 			align="left"
-			@click="createAction.trigger(parent, {type: schema.title, relationship_name: name})"
+			@click="createAction.trigger(parent, {type: schema.title, relationship_name: name, name: title})"
 		>
 			<CreateIcon class="w-4 mr-2" />
 			{{ title || name }}

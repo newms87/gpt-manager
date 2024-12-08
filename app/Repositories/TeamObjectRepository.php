@@ -87,6 +87,8 @@ class TeamObjectRepository extends ActionRepository
             throw new ValidationError("Save Objects requires a relationship_name for each relation");
         }
 
+        unset($input['name']);
+
         $name          = ModelHelper::getNextModelName(TeamObject::make(['name' => $name]), 'name', ['type' => $type]);
         $relatedObject = $this->saveTeamObject($type, $name, $input);
 

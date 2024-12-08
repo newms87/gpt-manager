@@ -9,7 +9,7 @@
 			<QBtn
 				class="bg-green-900 p-2.5"
 				:loading="createAction.isApplying"
-				@click="createAction.trigger(parent, {type: schema.title, relationship_name: name})"
+				@click="createAction.trigger(parent, {type: schema.title, relationship_name: name, name: title})"
 			>
 				<CreateIcon class="w-4" />
 			</QBtn>
