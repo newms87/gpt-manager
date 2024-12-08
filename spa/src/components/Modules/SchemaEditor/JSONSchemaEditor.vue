@@ -1,5 +1,5 @@
 <template>
-	<div class="overflow-auto pb-8">
+	<div class="flex flex-col flex-nowrap h-full pb-8">
 		<div class="flex items-center flex-nowrap space-x-2">
 			<SchemaRevisionHistoryMenu
 				v-if="promptSchema"
@@ -13,7 +13,7 @@
 
 		<QSeparator class="bg-slate-600 my-4" />
 
-		<div>
+		<div class="flex-grow overflow-y-auto h-full pb-8">
 			<SchemaObject
 				v-if="!isShowingRaw"
 				v-model="editableSchema"

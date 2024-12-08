@@ -1,6 +1,6 @@
 <template>
 	<div class="schema-object flex items-start flex-nowrap">
-		<div class="parent-object bg-slate-700 rounded-lg inline-block w-96">
+		<div class="parent-object bg-slate-700 rounded-lg inline-block w-96 flex-shrink-0">
 			<div class="flex items-center flex-nowrap px-4 py-2 bg-slate-800">
 				<div v-if="$slots.header" class="flex-grow">
 					<slot name="header" />

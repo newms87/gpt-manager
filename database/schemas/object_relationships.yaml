@@ -48,7 +48,7 @@ tables:
       softDeletes: true
     indexes:
       - name: unique_related_object_field
-        columns: [ object_id, related_object_id ]
+        columns: [ object_id, relationship_name, related_object_id ]
         unique: true
 
   object_attributes:

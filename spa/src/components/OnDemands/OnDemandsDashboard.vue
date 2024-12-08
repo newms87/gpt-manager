@@ -1,5 +1,5 @@
 <template>
-	<div class="h-full p-6 overflow-y-auto">
+	<div class="h-full p-6 overflow-hidden">
 		<SchemaEditorToolbox v-model:editing="isEditingSchema" />
 
 		<TeamObjectsList v-if="activeSchema && !isEditingSchema" :prompt-schema="activeSchema" />

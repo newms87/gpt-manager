@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div class="flex flex-col flex-nowrap" :class="{'h-full': isEditingSchema}">
 		<SelectOrCreateField
 			v-model:editing="isEditingSchema"
 			:selected="activeSchema"
@@ -15,14 +15,16 @@
 			@update:selected="onSelectPromptSchema"
 		/>
 
-		<JSONSchemaEditor
-			v-if="isEditingSchema" class="mt-4"
-			:prompt-schema="activeSchema"
-			:model-value="activeSchema.schema as JsonSchema"
-			:saved-at="activeSchema.updated_at"
-			:saving="updateSchemaAction.isApplying"
-			@update:model-value="schema => updateSchemaAction.trigger(activeSchema, { schema })"
-		/>
+		<div class="flex-grow pt-4 h-full">
+			<JSONSchemaEditor
+				v-if="isEditingSchema"
+				:prompt-schema="activeSchema"
+				:model-value="activeSchema.schema as JsonSchema"
+				:saved-at="activeSchema.updated_at"
+				:saving="updateSchemaAction.isApplying"
+				@update:model-value="schema => updateSchemaAction.trigger(activeSchema, { schema })"
+			/>
+		</div>
 	</div>
 </template>
 <script setup lang="ts">
