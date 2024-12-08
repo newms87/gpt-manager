@@ -30,7 +30,13 @@
 		<div v-if="isEditing" class="mt-4">
 			<MarkdownEditor
 				:model-value="workflowInput.content"
-				@update:model-value="content => updateAction.trigger(workflowInput, { content })"
+				:max-length="60000"
+				@update:model-value="content => debouncedUpdateAction.trigger(workflowInput, { content })"
+			/>
+			<SaveStateIndicator
+				class="mt-1"
+				:saving="debouncedUpdateAction.isApplying"
+				:saved-at="workflowInput.updated_at"
 			/>
 		</div>
 	</div>
@@ -40,7 +46,7 @@ import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs/config";
 import { WorkflowInput } from "@/types";
 import { FaSolidPencil as EditIcon } from "danx-icon";
-import { EditableDiv, MultiFileField, ShowHideButton } from "quasar-ui-danx";
+import { EditableDiv, MultiFileField, SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineProps<{
@@ -48,5 +54,6 @@ defineProps<{
 }>();
 
 const updateAction = dxWorkflowInput.getAction("update");
+const debouncedUpdateAction = dxWorkflowInput.getAction("update", { debounce: 500 });
 const isEditing = ref(false);
 </script>

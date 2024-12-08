@@ -8,16 +8,18 @@
 		<QSeparator class="bg-slate-400 my-4" />
 
 		<div v-for="workflowInput in workflowInputs" :key="workflowInput.id">
-			<div class="flex items-center flex-nowrap">
+			<div class="flex items-start flex-nowrap">
 				<WorkflowInputCard :workflow-input="workflowInput" class="flex-grow" />
-				<ShowHideButton
-					:model-value="activeWorkflowInput?.id === workflowInput.id"
-					:show-icon="ShowWorkflowIcon"
-					label=""
-					class="bg-green-800 "
-					@update:model-value="isActive => activeWorkflowInput = isActive && workflowInput || null"
-				/>
-				<WorkflowStatusProgressBar class="ml-2" :workflow-input="workflowInput" />
+				<div class="flex items-center flex-nowrap py-6">
+					<ShowHideButton
+						:model-value="activeWorkflowInput?.id === workflowInput.id"
+						:show-icon="ShowWorkflowIcon"
+						label=""
+						class="bg-green-800 "
+						@update:model-value="isActive => activeWorkflowInput = isActive && workflowInput || null"
+					/>
+					<WorkflowStatusProgressBar class="ml-2" :workflow-input="workflowInput" />
+				</div>
 			</div>
 			<div v-if="activeWorkflowInput?.id === workflowInput.id">
 				<WorkflowInputWorkflowRunsPanel
