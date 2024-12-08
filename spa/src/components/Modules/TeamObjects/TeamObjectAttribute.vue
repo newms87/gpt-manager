@@ -1,5 +1,5 @@
 <template>
-	<div :data-testid="name" class="flex items-start flex-nowrap team-object-attribute">
+	<div class="flex items-start flex-nowrap team-object-attribute">
 		<TeamObjectAttributeBlock
 			:label="label || title || name"
 			:format="format"

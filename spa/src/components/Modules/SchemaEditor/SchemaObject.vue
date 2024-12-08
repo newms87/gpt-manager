@@ -24,10 +24,12 @@
 				>
 					<ListItemDraggable
 						v-for="name in customPropertyNames"
-						:key="`property-${objectProperties[name].id || name}`"
+						:key="`property-${objectProperties[name].id}`"
 						:list-items="customPropertyNames"
 						:drop-zone="`custom-props-${schemaObject.id}-dz`"
 						show-handle
+						content-class="flex flex-nowrap items-start"
+						handle-class="py-4 px-1"
 						@update:list-items="items => onListPositionChange(items)"
 					>
 						<SchemaProperty
@@ -60,7 +62,7 @@
 			>
 				<ListItemDraggable
 					v-for="(name, index) in childObjectNames"
-					:key="`property-${objectProperties[name].id || name}`"
+					:key="`property-${objectProperties[name].id}`"
 					:list-items="childObjectNames"
 					:drop-zone="`child-objects-${schemaObject.id}-dz`"
 					show-handle
@@ -119,14 +121,15 @@ function onUpdate(input: Partial<JsonSchema>) {
 }
 
 function onUpdateProperty(originalName, newName, input) {
-	// If originalName is not set, this is probably an add operation, so don't delete an entry
-	if (originalName && originalName !== newName) {
-		delete objectProperties.value[originalName];
+	// If newName is set, use that as the current name and update the object property
+	if (newName) {
+		objectProperties.value[newName] = input || (originalName && objectProperties.value[originalName]) || null;
 	}
 
-	// If newName is not set, this is probably a delete operation, so don't add a new entry
-	if (newName) {
-		objectProperties.value = { ...objectProperties.value, [newName]: input };
+	// If originalName is set and newName does not match, this is either a rename operation or a delete operation if newName is not set.
+	// Either way, we need to remove the original property
+	if (originalName && originalName !== newName) {
+		delete objectProperties.value[originalName];
 	}
 
 	setPropertyIdsAndPositions();

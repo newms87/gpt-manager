@@ -1,24 +1,28 @@
 <template>
-	<div class="flex items-center flex-nowrap group">
-		<div class="flex items-center flex-nowrap flex-grow">
-			<SchemaPropertyTypeMenu :property="property" class="mr-2" @update="onUpdate" />
+	<div class="schema-property">
+		<div class="flex items-center flex-nowrap group">
+			<div class="flex items-center flex-nowrap flex-grow">
+				<SchemaPropertyTypeMenu :property="property" class="mr-2" @update="onUpdate" />
+				<EditableDiv
+					:model-value="property.items?.title || property.title || name"
+					color="slate-600"
+					placeholder="Enter Property Name..."
+					@update:model-value="title => onUpdate({title})"
+				/>
+			</div>
+			<QBtn class="group-hover:opacity-100 opacity-0 transition-all" @click="$emit('remove')">
+				<RemoveIcon class="w-3 text-red-300" />
+			</QBtn>
+		</div>
+		<div class="ml-9">
 			<EditableDiv
-				v-model="name"
+				:model-value="property.items?.description || property.description || ''"
 				color="slate-600"
-				class="text-xs"
-				@update:model-value="onUpdate({})"
-			/>
-			<div class="font-bold text-xs mr-1">:</div>
-			<EditableDiv
-				:model-value="property.items?.title || property.title || ''"
-				color="slate-600"
-				placeholder="Enter Property Name..."
-				@update:model-value="title => onUpdate({title})"
+				class="text-slate-400"
+				placeholder="Enter description..."
+				@update:model-value="description => onUpdate({description})"
 			/>
 		</div>
-		<QBtn class="group-hover:opacity-100 opacity-0 transition-all" @click="$emit('remove')">
-			<RemoveIcon class="w-3 text-red-300" />
-		</QBtn>
 	</div>
 </template>
 <script setup lang="ts">
@@ -29,10 +33,18 @@ import { EditableDiv } from "quasar-ui-danx";
 
 const emit = defineEmits(["update", "remove"]);
 const property = defineModel<JsonSchema>();
-const name = defineModel<string>("name");
+const props = defineProps<{ name: string }>();
 
 function onUpdate(input: Partial<JsonSchema>) {
 	const type = input.type || property.value.type;
+	let name = props.name;
+	const properties = property.value.items?.properties || property.value.properties || {};
+	const object = {
+		title: input.title || property.value.items?.title || property.value.title || "",
+		description: input.description || property.value.items?.description || property.value.description || "",
+		type: "object",
+		properties
+	};
 
 	// Transform from object to array
 	if (type === "array") {
@@ -40,26 +52,28 @@ function onUpdate(input: Partial<JsonSchema>) {
 			id: property.value.id,
 			position: property.value.position,
 			type: "array",
-			items: {
-				title: input.title || property.value.title || "",
-				type: "object",
-				properties: {}
-			}
+			items: object
 		};
 	} else if (type === "object") {
 		// Transform from array to object
 		property.value = {
 			id: property.value.id,
 			position: property.value.position,
-			title: input.title || property.value.items?.title || property.value.title || "",
-			type: "object",
-			properties: property.value.items?.properties || property.value.properties || {}
+			...object
 		};
 	} else {
 		// Standard update for all other types
 		property.value = { ...property.value, ...input };
 	}
 
-	emit("update", { name: name.value, property: property.value });
+	if (input.title) {
+		name = slugName(input.title);
+	}
+
+	emit("update", { name, property: property.value });
+}
+
+function slugName(name: string) {
+	return name.toLowerCase().replace(/[^a-z0-9]/g, "_");
 }
 </script>
