@@ -19,6 +19,13 @@
 						@update:model-value="isActive => activeWorkflowInput = isActive && workflowInput || null"
 					/>
 					<WorkflowStatusProgressBar class="ml-2" :workflow-input="workflowInput" />
+					<ActionButton
+						:action="deleteAction"
+						:target="workflowInput"
+						type="trash"
+						class="ml-4"
+						tooltip="Delete workflow input"
+					/>
 				</div>
 			</div>
 			<div v-if="activeWorkflowInput?.id === workflowInput.id">
@@ -34,9 +41,11 @@
 <script setup lang="ts">
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
 import WorkflowStatusProgressBar from "@/components/Modules/Workflows/Shared/WorkflowStatusProgressBar";
+import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
 import { routes } from "@/components/Modules/Workflows/WorkflowInputs/config/routes";
 import { WorkflowInputWorkflowRunsPanel } from "@/components/Modules/Workflows/WorkflowInputs/Panels";
 import WorkflowInputCard from "@/components/Modules/Workflows/WorkflowInputs/WorkflowInputCard";
+import { ActionButton } from "@/components/Shared";
 import { WorkflowInput } from "@/types";
 import { FaSolidPlus as CreateIcon, FaSolidWorm as ShowWorkflowIcon } from "danx-icon";
 import { FlashMessages, ShowHideButton, storeObjects } from "quasar-ui-danx";
@@ -47,6 +56,8 @@ const props = defineProps<{
 }>();
 
 onMounted(loadWorkflowInputs);
+
+const deleteAction = dxWorkflowInput.getAction("delete", { onSuccess: loadWorkflowInputs });
 
 const workflowInputs: Ref<WorkflowInput[]> = ref([]);
 const activeWorkflowInput = ref<WorkflowInput>(null);

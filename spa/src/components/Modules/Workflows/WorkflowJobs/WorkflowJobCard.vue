@@ -82,7 +82,7 @@
 					v-if="job.responseSchema"
 					:format="job.responseSchema.schema_format"
 					:model-value="job.responseSchema.response_example"
-					@update:model-value="updatePromptSchemaAction.trigger(job.responseSchema, { response_example: $event})"
+					readonly
 				/>
 			</div>
 		</QCardSection>

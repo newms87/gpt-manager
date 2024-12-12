@@ -21,6 +21,7 @@ class WorkflowTimeoutCommand extends Command
                 app(WorkflowRunRepository::class)->taskTimedOut($task);
             }
         }
+
         $this->info("Workflow jobs have been checked for timeouts");
     }
 }

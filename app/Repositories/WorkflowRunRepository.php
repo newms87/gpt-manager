@@ -7,6 +7,7 @@ use App\Models\Workflow\WorkflowTask;
 use App\Services\Workflow\WorkflowService;
 use App\Services\Workflow\WorkflowTaskService;
 use DB;
+use Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -23,20 +24,39 @@ class WorkflowRunRepository extends ActionRepository
         };
     }
 
+    /**
+     * Mark a task as timed out, and update the statuses of the task, its parent job run, and the workflow run
+     */
     public function taskTimedOut(WorkflowTask $task): void
     {
+        Log::debug("Task $task timed out");
+
         $task->failed_at = now();
         $task->computeStatus()->save();
 
-        if (!$task->workflowJobRun->failed_at) {
-            $task->workflowJobRun->failed_at = now();
-            $task->workflowJobRun->computeStatus()->save();
-            $workflowRun            = $task->workflowJobRun->workflowRun()->withTrashed()->first();
+        $workflowJobRun = $task->workflowJobRun;
+
+        // Mark the Workflow Job Run as failed
+        if (!$workflowJobRun->failed_at) {
+            Log::debug("$workflowJobRun failed due to task time out");
+            $workflowJobRun->failed_at = now();
+            $workflowJobRun->computeStatus()->save();
+        }
+
+        // Mark the Workflow Run as failed
+        $workflowRun = $workflowJobRun->workflowRun()->withTrashed()->first();
+
+        if (!$workflowRun->failed_at) {
+            Log::debug("$workflowRun failed due to task time out");
             $workflowRun->failed_at = now();
             $workflowRun->computeStatus()->save();
         }
     }
 
+    /**
+     * Check for any tasks that have timed out, and update their statuses and the statuses of their parent job run and
+     * workflow run
+     */
     public function checkForTimeouts(WorkflowRun $workflowRun): WorkflowRun
     {
         foreach($workflowRun->workflowJobRuns as $workflowJobRun) {
@@ -59,7 +79,7 @@ class WorkflowRunRepository extends ActionRepository
         $pendingStatus   = WorkflowRun::STATUS_PENDING;
         $failedStatus    = WorkflowRun::STATUS_FAILED;
         $runningStatus   = WorkflowRun::STATUS_RUNNING;
-        
+
         return WorkflowRun::filter($filter)->select([
             DB::raw('COUNT(*) as total_count'),
             DB::raw("SUM(IF(status = '$completedStatus', 1, 0)) as completed_count"),
