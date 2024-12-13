@@ -1,4 +1,4 @@
-import { AnyObject } from "quasar-ui-danx";
+import { AnyObject, UploadedFile } from "quasar-ui-danx";
 
 export interface Artifact {
 	id: number;
@@ -7,5 +7,6 @@ export interface Artifact {
 	model: string;
 	content: string;
 	data: AnyObject;
+	files: UploadedFile[];
 	created_at: string;
 }

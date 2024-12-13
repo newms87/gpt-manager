@@ -6,6 +6,18 @@
 			</div>
 			<div>{{ fDateTime(artifact.created_at) }}</div>
 		</div>
+		<div v-if="artifact.files.length > 0">
+			<div class="flex items-stretch justify-start">
+				<FilePreview
+					v-for="file in artifact.files"
+					:key="'file-upload-' + file.id"
+					class="cursor-pointer bg-gray-200 w-16 h-16 m-1"
+					:file="file"
+					:related-files="artifact.files"
+					downloadable
+				/>
+			</div>
+		</div>
 		<div>
 			<MarkdownEditor
 				:model-value="artifact.content || artifact.data"
@@ -18,7 +30,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { Artifact } from "@/types";
-import { fDateTime } from "quasar-ui-danx";
+import { fDateTime, FilePreview } from "quasar-ui-danx";
 
 defineProps<{
 	artifact: Artifact
