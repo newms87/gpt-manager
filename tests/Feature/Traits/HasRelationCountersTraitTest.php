@@ -4,6 +4,8 @@ namespace Feature\Traits;
 
 use App\Models\Agent\Agent;
 use App\Models\User;
+use App\Models\Workflow\Artifact;
+use App\Models\Workflow\WorkflowRun;
 use Tests\TestCase;
 
 class HasRelationCountersTraitTest extends TestCase
@@ -85,5 +87,19 @@ class HasRelationCountersTraitTest extends TestCase
         // Then
         $agent->refresh();
         $this->assertEquals(1, $agent->threads_count);
+    }
+
+    public function test_syncRelatedModels_countsCreateEventForMorphPivotRelation(): void
+    {
+        // Given
+        $wr       = WorkflowRun::factory()->create();
+        $artifact = Artifact::factory()->create();
+
+        // When
+        $wr->artifacts()->syncWithoutDetaching([$artifact->id]);
+
+        // Then
+        $wr->refresh();
+        $this->assertEquals(1, $wr->artifacts_count);
     }
 }

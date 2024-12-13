@@ -4,7 +4,9 @@ namespace App\Resources\Workflow;
 
 use App\Models\Workflow\Artifact;
 use Illuminate\Database\Eloquent\Model;
+use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Resources\ActionResource;
+use Newms87\Danx\Resources\StoredFileResource;
 
 class ArtifactResource extends ActionResource
 {
@@ -31,5 +33,16 @@ class ArtifactResource extends ActionResource
             'content' => $model->content,
             'data'    => $model->data,
         ]);
+    }
+
+    public static function files(Artifact $artifact): array
+    {
+        $artifact->load('storedFiles.transcodes');
+
+        return [
+            'files' => StoredFileResource::collection($artifact->storedFiles, fn(StoredFile $file) => [
+                'transcodes' => StoredFileResource::collection($file->transcodes),
+            ]),
+        ];
     }
 }

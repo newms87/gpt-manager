@@ -56,10 +56,13 @@ class WorkflowRunResource extends ActionResource
 
     public static function artifacts(WorkflowRun $workflowRun): array
     {
+        $workflowRun->load('artifacts.storedFiles.transcodes');
+
         return [
             'artifacts' => ArtifactResource::collection($workflowRun->artifacts, fn(Artifact $artifact) => [
                 'content' => $artifact->content,
                 'data'    => $artifact->data,
+                ...ArtifactResource::files($artifact),
             ]),
         ];
     }

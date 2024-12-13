@@ -96,7 +96,7 @@ class WorkflowRun extends Model implements AuditableContract, ComputedStatusCont
     {
         return $this->workflowJobRuns()->where('status', self::STATUS_FAILED);
     }
-    
+
     public function artifactables(): MorphMany|Artifactable
     {
         return $this->morphMany(Artifactable::class, 'artifactable');

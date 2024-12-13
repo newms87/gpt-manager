@@ -145,7 +145,7 @@ class WorkflowService
         // Save the artifact from the completed task
         $artifacts = $workflowJobRun->artifacts()->get();
         $workflowRun->artifacts()->syncWithoutDetaching($artifacts);
-        Log::debug("$workflowRun attached {$artifacts->count()} artifacts");
+        Log::debug("$workflowRun attached {$artifacts->count()} artifacts: [" . $artifacts->pluck('id')->implode(',') . "]");
 
         // Mark the Workflow Job Run as completed
         $workflowJobRun->completed_at = now();
