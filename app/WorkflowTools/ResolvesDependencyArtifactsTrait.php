@@ -72,6 +72,8 @@ trait ResolvesDependencyArtifactsTrait
         $artifacts = $workflowJobRun->artifacts()->get();
 
         foreach($artifacts as $artifact) {
+            Log::debug("Extracting groups from $artifact");
+
             $artifactData = $artifact->data ?: [];
 
             // If a json encoded string or primitive was set, just treat it like content
@@ -91,43 +93,32 @@ trait ResolvesDependencyArtifactsTrait
                 $artifactData['files'] = $storedFiles->toArray();
             }
 
-            if (!$dependency->group_by) {
-                // Special case for content - only artifacts, just return the content as plain text
-                if (count($artifactData) === 1 && !empty($artifactData['content'])) {
-                    $groups['default'][] = $artifactData['content'];
-                } else {
-                    $data = $artifactData;
+            $includedFields = $dependency->force_schema ? $schemaFields : null;
 
-                    if ($dependency->force_schema) {
-                        $data = ArrayHelper::extractNestedData($data, $schemaFields);
-                    }
+            if ($dependency->group_by) {
+                Log::info("Extracting group by " . json_encode($dependency->group_by));
+                $groupsOfItemSets = ArrayHelper::crossProductExtractData($artifactData, $dependency->group_by);
+
+                foreach($groupsOfItemSets as $itemSet) {
+                    $groupKey = $this->generateGroupKey($itemSet);
+                    $data     = $this->extractGroupsFromArtifactData($artifactData, $itemSet, $includedFields);
 
                     if ($data) {
-                        $groups['default'][] = $data;
+                        Log::debug("Resolved key data $groupKey: " . strlen(json_encode($data)) . " bytes");
+                        $groups[$groupKey][] = $data;
+                    } else {
+                        Log::debug("Skipping $groupKey: No data in group");
                     }
                 }
-                continue;
-            }
+            } else {
+                Log::debug("Extracting default group");
+                $data = $this->extractDefaultGroupFromArtifactData($artifactData, $dependency->force_schema ? $schemaFields : null);
 
-            $groupsOfItemSets = ArrayHelper::crossProductExtractData($artifactData, $dependency->group_by);
-
-            foreach($groupsOfItemSets as $itemSet) {
-                $groupKey     = $this->generateGroupKey($itemSet);
-                $resolvedData = $artifactData;
-
-                foreach($itemSet as $itemIndex => $itemValue) {
-                    $resolvedData = ArrayHelper::filterNestedData($resolvedData, $itemIndex, $itemValue);
-                    if (!$resolvedData) {
-                        Log::debug("$artifact did not have data for $itemIndex. Omitting record " . (is_array($itemValue) ? $this->generateGroupKey($itemValue) : $itemValue));
-                    }
-                }
-
-                if ($dependency->force_schema) {
-                    $resolvedData = ArrayHelper::extractNestedData($resolvedData, $schemaFields);
-                }
-
-                if ($resolvedData) {
-                    $groups[$groupKey][] = $resolvedData;
+                if ($data) {
+                    Log::debug("Resolved default group: " . strlen(json_encode($data)) . " bytes");
+                    $groups['default'][] = $data;
+                } else {
+                    Log::debug("Skipping default group: No data in group");
                 }
             }
         }
@@ -149,6 +140,38 @@ trait ResolvesDependencyArtifactsTrait
         }
 
         return $groups;
+    }
+
+    public function extractDefaultGroupFromArtifactData(array $artifactData, $includedFields = []): array|string|null
+    {
+        // Special case for content - only artifacts, just return the content as plain text
+        if (count($artifactData) === 1 && !empty($artifactData['content'])) {
+            return $artifactData['content'];
+        }
+
+        if ($includedFields) {
+            $artifactData = ArrayHelper::extractNestedData($artifactData, $includedFields);
+        }
+
+        return $artifactData;
+    }
+
+    public function extractGroupsFromArtifactData(array $artifactData, $itemSet, $includedFields = []): array|string|null
+    {
+        foreach($itemSet as $itemIndex => $itemValue) {
+            $artifactData = ArrayHelper::filterNestedData($artifactData, $itemIndex, $itemValue);
+            if (!$artifactData) {
+                Log::debug("No data for item $itemIndex. Omitting record " . (is_array($itemValue) ? $this->generateGroupKey($itemValue) : $itemValue));
+
+                return [];
+            }
+        }
+
+        if ($includedFields) {
+            $artifactData = ArrayHelper::extractNestedData($artifactData, $includedFields);
+        }
+
+        return $artifactData;
     }
 
     /**
