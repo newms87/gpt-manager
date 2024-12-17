@@ -13,7 +13,7 @@ class TeamObjectForAgentsResource
 
         // Format dates
         if ($resolvedObject->has('date')) {
-            $resolvedObject['date'] = $resolvedObject['date']->toDateTimeString();
+            $resolvedObject['date'] = $resolvedObject['date']->toDateString();
         }
 
         // Add all relationships

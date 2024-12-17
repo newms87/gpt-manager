@@ -17,7 +17,7 @@ class MessageFactory extends Factory
             'thread_id' => Thread::factory(),
             'role'      => fake()->randomElement([Message::ROLE_USER, Message::ROLE_ASSISTANT]),
             'title'     => fake()->sentence,
-            'summary'   => fake()->paragraph,
+            'summary'   => '',
             'content'   => fake()->paragraphs(3, true),
         ];
     }

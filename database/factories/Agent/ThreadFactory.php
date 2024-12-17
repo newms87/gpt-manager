@@ -21,8 +21,13 @@ class ThreadFactory extends Factory
             'user_id'  => fn(array $attributes) => User::factory()->recycle(Team::find($attributes['team_id']))->create(),
             'agent_id' => fn(array $attributes) => Agent::factory()->recycle(Team::find($attributes['team_id']))->create(),
             'name'     => fake()->words(3, true),
-            'summary'  => fake()->paragraph,
+            'summary'  => '',
         ];
+    }
+
+    public function withMessage(Message $message)
+    {
+        return $this->afterCreating(fn(Thread $thread) => $thread->messages()->save($message));
     }
 
     public function withMessages($count = 3): ThreadFactory|Factory

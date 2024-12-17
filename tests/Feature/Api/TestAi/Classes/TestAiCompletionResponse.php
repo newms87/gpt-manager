@@ -42,6 +42,17 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function getContent(): ?string
     {
+        foreach($this->messages as $message) {
+            $content = $message['content'] ?? null;
+            if (is_array($content)) {
+                $content = $content[0]['text'] ?? null;
+            }
+
+            if ($content && str_starts_with($content, "Response:")) {
+                return str_replace('Response:', '', $content);
+            }
+        }
+
         return 'Test AI Response Content';
     }
 

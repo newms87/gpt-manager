@@ -5,6 +5,7 @@ namespace App\WorkflowTools;
 use App\Models\Agent\Agent;
 use App\Models\Workflow\WorkflowTask;
 use App\Services\AgentThread\AgentThreadService;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 class RunAgentThreadWorkflowTool extends WorkflowTool
@@ -18,12 +19,21 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
      */
     public function runTask(WorkflowTask $workflowTask): void
     {
-        // Run the thread synchronously
-        $threadRun = app(AgentThreadService::class)->run($workflowTask->thread, dispatch: false);
+        if (!$workflowTask->thread) {
+            throw new Exception("$workflowTask does not have a thread to run");
+        }
 
         // Produce the artifact
         $assignment = $workflowTask->workflowAssignment;
 
+        if (!$assignment) {
+            throw new Exception("$workflowTask does not have a workflow assignment");
+        }
+        
+        // Run the thread synchronously
+        $threadRun = app(AgentThreadService::class)->run($workflowTask->thread, dispatch: false);
+
+        // Product the artifact
         $data    = null;
         $content = null;
 
@@ -37,13 +47,17 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
             }
         }
 
-        $artifact = $workflowTask->artifacts()->create([
-            'name'    => $workflowTask->thread->name,
-            'model'   => $assignment->agent->model,
-            'content' => $content,
-            'data'    => $data,
-        ]);
+        if ($content || $data) {
+            $artifact = $workflowTask->artifacts()->create([
+                'name'    => $workflowTask->thread->name,
+                'model'   => $assignment->agent->model,
+                'content' => $content,
+                'data'    => $data,
+            ]);
 
-        Log::debug("$workflowTask created $artifact");
+            Log::debug("$workflowTask created $artifact");
+        } else {
+            Log::debug("$workflowTask did not produce an artifact");
+        }
     }
 }

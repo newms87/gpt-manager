@@ -3,12 +3,15 @@
 namespace Tests\Feature\Workflow;
 
 use App\Models\Agent\Agent;
+use App\Models\Agent\Message;
+use App\Models\Agent\Thread;
 use App\Models\Prompt\PromptSchema;
 use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowJobDependency;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
+use App\Models\Workflow\WorkflowTask;
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
 use Newms87\Danx\Helpers\ArrayHelper;
 use Tests\AuthenticatedTestCase;
@@ -84,6 +87,32 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+    }
+
+    public function test_runTask_producesArtifact()
+    {
+        // Given
+        $workflowTask = WorkflowTask::factory()->create();
+
+        // When
+        (new RunAgentThreadWorkflowTool)->runTask($workflowTask);
+
+        // Then
+        $this->assertTrue($workflowTask->artifacts()->exists(), 'The artifact was not produced');
+    }
+
+    public function test_runTask_emptyAgentResponseDoesNotProduceArtifact()
+    {
+        // Given
+        $message      = Message::factory()->create(['content' => 'Response:']);
+        $thread       = Thread::factory()->withMessage($message)->create();
+        $workflowTask = WorkflowTask::factory()->create(['thread_id' => $thread]);
+
+        // When
+        (new RunAgentThreadWorkflowTool)->runTask($workflowTask);
+
+        // Then
+        $this->assertFalse($workflowTask->artifacts()->exists(), 'The artifact should not have been produced');
     }
 
     public function test_crossProductExtractData_producesEmptyArrayWhenNoFields(): void
