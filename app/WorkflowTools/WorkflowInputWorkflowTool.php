@@ -8,6 +8,7 @@ use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
 use App\Repositories\TeamObjectRepository;
+use App\Resources\TeamObject\TeamObjectForAgentsResource;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Services\TranscodeFileService;
@@ -66,14 +67,11 @@ class WorkflowInputWorkflowTool extends WorkflowTool
         $workflowInput = $workflowTask->workflowJobRun->workflowRun->workflowInput;
 
         Log::debug(self::$toolName . ": preparing $workflowTask ==> $workflowInput");
-        $files = [];
-
         $artifact = $workflowTask->artifacts()->create([
             'name'    => self::$toolName . ': ' . $workflowInput->name,
             'model'   => '',
             'content' => $workflowInput->content,
             'data'    => [
-                'files'       => $files,
                 'teamObjects' => $this->getTeamObjects($workflowInput),
             ],
         ]);
@@ -102,8 +100,9 @@ class WorkflowInputWorkflowTool extends WorkflowTool
 
         $teamObject = app(TeamObjectRepository::class)->getFullyLoadedTeamObject($workflowInput->team_object_type, $workflowInput->team_object_id);
 
+
         // TODO: For now just one object, but maybe add team_object_filter field to query the team objects required
 
-        return [$teamObject];
+        return [TeamObjectForAgentsResource::make($teamObject)];
     }
 }

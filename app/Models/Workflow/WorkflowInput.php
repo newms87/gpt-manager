@@ -70,11 +70,23 @@ class WorkflowInput extends Model implements AuditableContract
     public function validate(): static
     {
         Validator::make($this->getAttributes(), [
-            'name' => [
+            'name'             => [
                 'required',
                 'max:80',
                 'string',
                 Rule::unique('workflow_inputs')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
+            ],
+            'team_object_id'   => [
+                // If team_object_type is present, team_object_id must be present.
+                'required_with:team_object_type',
+                'nullable',
+                'integer', // Adjust type as needed
+            ],
+            'team_object_type' => [
+                // If team_object_id is present, team_object_type must be present.
+                'required_with:team_object_id',
+                'nullable',
+                'string',
             ],
         ])->validate();
 

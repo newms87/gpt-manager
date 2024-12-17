@@ -45,4 +45,11 @@ class User extends Authenticatable
 
         return parent::delete();
     }
+
+    public function setCurrentTeam($name): static
+    {
+        $this->currentTeam = $name ? $this->teams()->firstWhere('name', $name) : null;
+
+        return $this;
+    }
 }

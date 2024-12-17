@@ -60,7 +60,7 @@ class TeamObjectAttribute extends Model implements AuditableContract
         ];
     }
 
-    public function getValue(): string|array
+    public function getValue(): string|array|null
     {
         return $this->text_value ?? $this->json_value;
     }

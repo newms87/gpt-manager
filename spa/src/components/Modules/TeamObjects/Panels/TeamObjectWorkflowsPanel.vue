@@ -66,8 +66,9 @@ async function createWorkflowInput() {
 	const result = await routes.applyAction("create", null, {
 		name: props.teamObject.name + " Input",
 		team_object_id: props.teamObject.id,
-		team_object_type: props.teamObject.title
+		team_object_type: props.teamObject.type
 	});
+
 
 	if (result.success) {
 		loadWorkflowInputs();

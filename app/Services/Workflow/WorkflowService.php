@@ -56,6 +56,10 @@ class WorkflowService
         $workflowJobRunsByStatus = $workflowRun->workflowJobRuns()->get()->keyBy('workflow_job_id')->groupBy('status');
 
         if ($workflowJobRunsByStatus->has(WorkflowRun::STATUS_FAILED)) {
+            if (!$workflowRun->failed_at) {
+                $workflowRun->failed_at = now();
+                $workflowRun->computeStatus()->save();
+            }
             Log::warning("$workflowRun has failed jobs, stopping dispatch");
 
             return;
@@ -151,20 +155,17 @@ class WorkflowService
         $workflowJobRun->completed_at = now();
         $workflowJobRun->save();
 
-        // If we have completed all Workflow Job Runs in the workflow run, then mark the workflow run as completed
-        if ($workflowRun->remainingJobRuns()->doesntExist()) {
-            if ($workflowRun->failedJobRuns()->exists()) {
-                $workflowRun->failed_at = now();
-                $workflowRun->save();
-                Log::debug("$workflowRun has failed");
-            } else {
-                $workflowRun->completed_at = now();
-                $workflowRun->save();
-                Log::debug("$workflowRun has completed");
-            }
-        }
-
-        if ($workflowRun->isRunning()) {
+        // If the Workflow Run has failed, stop processing
+        if ($workflowRun->failedJobRuns()->exists()) {
+            $workflowRun->failed_at = now();
+            $workflowRun->save();
+            Log::debug("$workflowRun has failed");
+        } elseif ($workflowRun->remainingJobRuns()->doesntExist()) {
+            // If we have completed all Workflow Job Runs in the workflow run, then mark the workflow run as completed
+            $workflowRun->completed_at = now();
+            $workflowRun->save();
+            Log::debug("$workflowRun has completed");
+        } elseif ($workflowRun->isRunning()) {
             Log::debug("$workflowRun dispatching next jobs..");
             // Dispatch the next set of Workflow Job Runs
             WorkflowService::dispatchPendingWorkflowJobs($workflowRun);
