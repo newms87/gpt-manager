@@ -39,6 +39,7 @@ class Agent extends Model implements AuditableContract
         'temperature',
         'response_format',
         'response_schema_id',
+        'save_response_to_db',
         'enable_message_sources',
         'tools',
         'retry_count',
@@ -61,6 +62,7 @@ class Agent extends Model implements AuditableContract
     {
         return [
             'tools'                  => 'json',
+            'save_response_to_db'    => 'boolean',
             'enable_message_sources' => 'boolean',
             'temperature'            => 'float',
         ];

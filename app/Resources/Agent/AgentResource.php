@@ -35,6 +35,7 @@ class AgentResource extends ActionResource
             'temperature'            => $model->temperature,
             'tools'                  => $model->tools ?: [],
             'response_format'        => $model->response_format,
+            'save_response_to_db'    => $model->save_response_to_db,
             'enable_message_sources' => $model->enable_message_sources,
             'retry_count'            => $model->retry_count,
             'threads_count'          => $model->threads_count,
