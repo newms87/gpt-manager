@@ -1,14 +1,17 @@
 <template>
 	<div class="flex flex-col flex-nowrap h-full pb-8">
 		<div class="flex items-center flex-nowrap space-x-2">
-			<SchemaRevisionHistoryMenu
-				v-if="promptSchema"
-				:prompt-schema="promptSchema"
-				@select="revision => editableSchema = revision.schema"
-			/>
-			<SchemaUndoActions v-model="editableSchema" />
-			<ShowHideButton v-model="isShowingRaw" class="bg-slate-700" :show-icon="RawCodeIcon" />
-			<SaveStateIndicator :saving="saving" :saved-at="savedAt" class="ml-2" />
+			<slot name="header" v-bind="{isShowingRaw}" />
+			<div class="flex items-center flex-nowrap space-x-2">
+				<SchemaUndoActions v-model="editableSchema" />
+				<SchemaRevisionHistoryMenu
+					v-if="promptSchema"
+					:prompt-schema="promptSchema"
+					@select="revision => editableSchema = revision.schema"
+				/>
+				<ShowHideButton v-model="isShowingRaw" class="bg-slate-700" :show-icon="RawCodeIcon" />
+				<SaveStateIndicator :saving="saving" :saved-at="savedAt" class="ml-2" />
+			</div>
 		</div>
 
 		<QSeparator class="bg-slate-600 my-4" />
@@ -25,7 +28,7 @@
 				v-model="editableSchema"
 				sync-model-changes
 				label=""
-				format="yaml"
+				:format="promptSchema.schema_format"
 			/>
 		</div>
 	</div>

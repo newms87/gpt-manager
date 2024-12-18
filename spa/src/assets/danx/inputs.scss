@@ -62,6 +62,12 @@
 			}
 		}
 
+		&.dx-select-field-dense {
+			.q-field__native {
+				@apply py-0;
+			}
+		}
+
 		&.q-select--multiple {
 			.q-field__native {
 
