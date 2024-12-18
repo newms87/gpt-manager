@@ -9,7 +9,6 @@
 			:loading="createSchemaAction.isApplying"
 			select-by-object
 			option-label="name"
-			create-text=""
 			class="w-1/2"
 			@create="onCreate"
 			@update:selected="selected => activeSchema = selected as PromptSchema"
@@ -49,8 +48,10 @@
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import { JsonSchema, PromptSchema } from "@/types";
-import { EditableDiv, SelectField, SelectOrCreateField } from "quasar-ui-danx";
+import { EditableDiv, FlashMessages, SelectField, SelectOrCreateField } from "quasar-ui-danx";
+import { onMounted } from "vue";
 
+onMounted(() => dxPromptSchema.initialize());
 const createSchemaAction = dxPromptSchema.getAction("create");
 const updateSchemaAction = dxPromptSchema.getAction("update");
 const activeSchema = defineModel<PromptSchema>();
@@ -63,6 +64,12 @@ const schemaFormatOptions = [
 ];
 
 async function onCreate() {
-	await createSchemaAction.trigger(activeSchema.value);
+	const response = await createSchemaAction.trigger();
+
+	if (!response.result) {
+		return FlashMessages.error("Failed to create schema: " + response.error || "There was a problem communicating with the server");
+	}
+
+	activeSchema.value = response.result;
 }
 </script>

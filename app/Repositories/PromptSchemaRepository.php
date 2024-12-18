@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Agent\Agent;
 use App\Models\Prompt\PromptSchema;
+use App\Resources\Prompt\PromptSchemaResource;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -34,7 +35,7 @@ class PromptSchemaRepository extends ActionRepository
     public function applyAction(string $action, PromptSchema|Model|array|null $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createPromptSchema($data),
+            'create' => PromptSchemaResource::make($this->createPromptSchema($data)),
             'update' => $this->updatePromptSchema($model, $data),
             'generate-example' => $this->generateResponseExample($model),
             default => parent::applyAction($action, $model, $data)
@@ -53,6 +54,10 @@ class PromptSchemaRepository extends ActionRepository
         $input += [
             'type'          => PromptSchema::TYPE_AGENT_RESPONSE,
             'schema_format' => PromptSchema::FORMAT_YAML,
+            'schema'        => [
+                'type'  => 'object',
+                'title' => $input['name'] ?? 'New Schema Object',
+            ],
         ];
 
         return $this->updatePromptSchema($promptSchema, $input);

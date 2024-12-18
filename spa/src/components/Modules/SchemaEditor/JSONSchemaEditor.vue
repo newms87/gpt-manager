@@ -10,7 +10,7 @@
 					@select="revision => editableSchema = revision.schema"
 				/>
 				<ShowHideButton v-model="isShowingRaw" class="bg-slate-700" :show-icon="RawCodeIcon" />
-				<SaveStateIndicator :saving="saving" :saved-at="savedAt" class="ml-2" />
+				<SaveStateIndicator :saving="saving" :saved-at="savedAt" class="ml-2 w-48" />
 			</div>
 		</div>
 
