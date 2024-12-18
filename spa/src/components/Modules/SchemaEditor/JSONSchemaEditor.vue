@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col flex-nowrap h-full pb-8">
+	<div class="flex flex-col flex-nowrap h-full">
 		<div class="flex items-center flex-nowrap space-x-2">
 			<slot name="header" v-bind="{isShowingRaw}" />
 			<div class="flex items-center flex-nowrap space-x-2">
@@ -10,13 +10,14 @@
 					@select="revision => editableSchema = revision.schema"
 				/>
 				<ShowHideButton v-model="isShowingRaw" class="bg-slate-700" :show-icon="RawCodeIcon" />
+				<slot name="actions" />
 				<SaveStateIndicator :saving="saving" :saved-at="savedAt" class="ml-2 w-48" />
 			</div>
 		</div>
 
 		<QSeparator class="bg-slate-600 my-4" />
 
-		<div class="flex-grow overflow-y-auto h-full pb-8">
+		<div v-if="!hideContent" class="flex-grow overflow-y-auto h-full pb-8">
 			<SchemaObject
 				v-if="!isShowingRaw"
 				v-model="editableSchema"
@@ -47,6 +48,7 @@ defineProps<{
 	promptSchema?: PromptSchema;
 	savedAt?: string;
 	saving: boolean;
+	hideContent?: boolean;
 }>();
 const schema = defineModel<JsonSchema>();
 const editableSchema = ref(schema.value || {});

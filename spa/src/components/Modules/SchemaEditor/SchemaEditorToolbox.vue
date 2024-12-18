@@ -1,6 +1,7 @@
 <template>
 	<div class="flex flex-col flex-nowrap" :class="{'h-full': isEditingSchema}">
 		<SelectOrCreateField
+			v-if="canSelect"
 			v-model:editing="isEditingSchema"
 			:selected="activeSchema"
 			show-edit
@@ -9,14 +10,15 @@
 			:loading="createSchemaAction.isApplying"
 			select-by-object
 			option-label="name"
-			class="w-1/2"
+			class="w-1/2 mb-4"
 			@create="onCreate"
 			@update:selected="selected => activeSchema = selected as PromptSchema"
 		/>
 
-		<div class="flex-grow pt-4 h-full">
+		<div class="flex-grow h-full">
 			<JSONSchemaEditor
 				v-if="isEditingSchema"
+				:hide-content="isPreviewingExample"
 				:prompt-schema="activeSchema"
 				:model-value="activeSchema.schema as JsonSchema"
 				:saved-at="activeSchema.updated_at"
@@ -40,22 +42,35 @@
 						/>
 					</div>
 				</template>
+				<template #actions>
+					<ShowHideButton
+						v-model="isPreviewingExample"
+						class="bg-amber-700"
+						tooltip="Preview Example Response"
+					/>
+				</template>
 			</JSONSchemaEditor>
+
+			<SchemaResponseExampleCard v-if="isPreviewingExample" :prompt-schema="activeSchema" />
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
+import SchemaResponseExampleCard from "@/components/Modules/SchemaEditor/SchemaResponseExampleCard";
 import { JsonSchema, PromptSchema } from "@/types";
-import { EditableDiv, FlashMessages, SelectField, SelectOrCreateField } from "quasar-ui-danx";
-import { onMounted } from "vue";
+import { EditableDiv, FlashMessages, SelectField, SelectOrCreateField, ShowHideButton } from "quasar-ui-danx";
+import { onMounted, ref } from "vue";
+
+defineProps<{ canSelect?: boolean }>();
 
 onMounted(() => dxPromptSchema.initialize());
 const createSchemaAction = dxPromptSchema.getAction("create");
 const updateSchemaAction = dxPromptSchema.getAction("update");
 const activeSchema = defineModel<PromptSchema>();
 const isEditingSchema = defineModel<boolean>("editing");
+const isPreviewingExample = ref(false);
 
 const schemaFormatOptions = [
 	{ label: "JSON", value: "json" },

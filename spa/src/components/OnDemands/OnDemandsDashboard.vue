@@ -3,6 +3,7 @@
 		<SchemaEditorToolbox
 			v-model:editing="isEditingSchema"
 			:model-value="activeSchema"
+			can-select
 			@update:model-value="onSelectPromptSchema"
 		/>
 
