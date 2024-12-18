@@ -5,6 +5,8 @@ namespace App\WorkflowTools;
 use App\Models\Agent\Agent;
 use App\Models\Workflow\WorkflowTask;
 use App\Services\AgentThread\AgentThreadService;
+use App\WorkflowTools\Traits\AssignsWorkflowTasksTrait;
+use App\WorkflowTools\Traits\ResolvesDependencyArtifactsTrait;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -29,7 +31,7 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
         if (!$assignment) {
             throw new Exception("$workflowTask does not have a workflow assignment");
         }
-        
+
         // Run the thread synchronously
         $threadRun = app(AgentThreadService::class)->run($workflowTask->thread, dispatch: false);
 

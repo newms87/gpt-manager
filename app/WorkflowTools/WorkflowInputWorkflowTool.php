@@ -9,6 +9,7 @@ use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
 use App\Repositories\TeamObjectRepository;
 use App\Resources\TeamObject\TeamObjectForAgentsResource;
+use App\WorkflowTools\Traits\ResolvesDependencyArtifactsTrait;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Services\TranscodeFileService;
