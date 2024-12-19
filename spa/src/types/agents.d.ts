@@ -1,3 +1,4 @@
+import { SelectionSchema } from "@/types/json-schema";
 import { AgentPromptDirective, PromptSchema } from "@/types/prompts";
 import { WorkflowAssignment } from "@/types/workflows";
 import { ActionTargetItem, AnyObject, UploadedFile } from "quasar-ui-danx";
@@ -15,6 +16,7 @@ export interface Agent extends ActionTargetItem {
 	assignments?: WorkflowAssignment[];
 	response_format: "text" | "json_object" | "json_schema";
 	responseSchema?: PromptSchema;
+	response_sub_selection?: SelectionSchema;
 	directives?: AgentPromptDirective[];
 }
 

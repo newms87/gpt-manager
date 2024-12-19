@@ -23,9 +23,9 @@
 			<SchemaObject
 				v-if="!isShowingRaw"
 				v-model="editableSchema"
+				v-model:sub-selection="subSelection"
 				:readonly="readonly"
 				:selectable="canSubSelect"
-				:sub-selection="subSelection"
 				class="min-w-64"
 			/>
 

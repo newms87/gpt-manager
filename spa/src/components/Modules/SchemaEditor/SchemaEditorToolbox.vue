@@ -34,6 +34,7 @@
 		</div>
 		<div v-if="activeSchema" class="flex-grow h-full">
 			<JSONSchemaEditor
+				v-model:sub-selection="subSelection"
 				:readonly="!isEditingSchema"
 				:hide-content="isPreviewingExample"
 				:prompt-schema="activeSchema"
@@ -41,7 +42,6 @@
 				:saved-at="activeSchema.updated_at"
 				:saving="updateSchemaAction.isApplying"
 				:can-sub-select="isSelectingSubSchema"
-				:sub-selection="subSelection"
 				@update:model-value="schema => updateSchemaAction.trigger(activeSchema, { schema })"
 			>
 				<template #header="{isShowingRaw}">

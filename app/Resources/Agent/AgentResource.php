@@ -55,18 +55,19 @@ class AgentResource extends ActionResource
         $directives  = $model->directives()->orderBy('position')->with('directive')->get();
 
         return static::make($model, [
-            'responseSchema' => PromptSchemaResource::make($model->responseSchema),
-            'directives'     => AgentPromptDirectiveResource::collection($directives, fn(AgentPromptDirective $agentPromptDirective) => [
+            'responseSchema'         => PromptSchemaResource::make($model->responseSchema),
+            'response_sub_selection' => $model->response_sub_selection,
+            'directives'             => AgentPromptDirectiveResource::collection($directives, fn(AgentPromptDirective $agentPromptDirective) => [
                 'directive' => PromptDirectiveResource::make($agentPromptDirective->directive),
             ]),
-            'threads'        => ThreadResource::collection($threads, fn(Thread $thread) => [
+            'threads'                => ThreadResource::collection($threads, fn(Thread $thread) => [
                 'messages' => MessageResource::collection($thread->messages, fn(Message $message) => [
                     'files' => StoredFileResource::collection($message->storedFiles, fn(StoredFile $storedFile) => [
                         'transcodes' => StoredFileResource::collection($storedFile->transcodes),
                     ]),
                 ]),
             ]),
-            'assignments'    => WorkflowAssignmentResource::collection($assignments, fn(WorkflowAssignment $assignment) => [
+            'assignments'            => WorkflowAssignmentResource::collection($assignments, fn(WorkflowAssignment $assignment) => [
                 'workflowJob' => WorkflowJobResource::make($assignment->workflowJob, [
                     'workflow' => WorkflowResource::make($assignment->workflowJob->workflow),
                 ]),
