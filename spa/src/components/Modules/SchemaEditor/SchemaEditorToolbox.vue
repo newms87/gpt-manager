@@ -1,20 +1,27 @@
 <template>
 	<div class="flex flex-col flex-nowrap" :class="{'h-full': isEditingSchema}">
-		<SelectOrCreateField
-			v-if="canSelect"
-			v-model:editing="isEditingSchema"
-			:selected="activeSchema"
-			show-edit
-			:can-edit="!!activeSchema"
-			:options="dxPromptSchema.pagedItems.value?.data || []"
-			:loading="createSchemaAction.isApplying"
-			select-by-object
-			option-label="name"
-			class="w-1/2 mb-4"
-			@create="onCreate"
-			@update:selected="selected => activeSchema = selected as PromptSchema"
-		/>
-
+		<div class="flex items-center flex-nowrap mb-4">
+			<SelectOrCreateField
+				v-if="canSelect"
+				v-model:editing="isEditingSchema"
+				:selected="activeSchema"
+				show-edit
+				:can-edit="!!activeSchema"
+				:options="dxPromptSchema.pagedItems.value?.data || []"
+				:loading="createSchemaAction.isApplying"
+				select-by-object
+				option-label="name"
+				class="w-1/2"
+				@create="onCreate"
+				@update:selected="selected => activeSchema = selected as PromptSchema"
+			/>
+			<ShowHideButton
+				v-model="isSelectingSchema"
+				class="bg-sky-800 !p-3 ml-4"
+				:show-icon="AllSelectedIcon"
+				:label="isSelectingSchema ? 'Done' : 'Edit Selection'"
+			/>
+		</div>
 		<div class="flex-grow h-full">
 			<JSONSchemaEditor
 				:readonly="!isEditingSchema"
@@ -23,6 +30,7 @@
 				:model-value="activeSchema.schema as JsonSchema"
 				:saved-at="activeSchema.updated_at"
 				:saving="updateSchemaAction.isApplying"
+				:selectable="isSelectingSchema"
 				@update:model-value="schema => updateSchemaAction.trigger(activeSchema, { schema })"
 			>
 				<template #header="{isShowingRaw}">
@@ -60,6 +68,7 @@ import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import SchemaResponseExampleCard from "@/components/Modules/SchemaEditor/SchemaResponseExampleCard";
 import { JsonSchema, PromptSchema } from "@/types";
+import { FaSolidListCheck as AllSelectedIcon } from "danx-icon";
 import { EditableDiv, FlashMessages, SelectField, SelectOrCreateField, ShowHideButton } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
 
@@ -70,6 +79,7 @@ const createSchemaAction = dxPromptSchema.getAction("create");
 const updateSchemaAction = dxPromptSchema.getAction("update");
 const activeSchema = defineModel<PromptSchema>();
 const isEditingSchema = defineModel<boolean>("editing");
+const isSelectingSchema = defineModel<boolean>("selecting");
 const isPreviewingExample = ref(false);
 
 const schemaFormatOptions = [

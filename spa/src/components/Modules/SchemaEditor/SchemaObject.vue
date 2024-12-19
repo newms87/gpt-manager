@@ -2,6 +2,13 @@
 	<div class="schema-object flex items-start flex-nowrap">
 		<div class="parent-object bg-slate-700 rounded-lg overflow-hidden inline-block w-96 flex-shrink-0">
 			<div class="flex items-center flex-nowrap px-4 py-2 bg-slate-800">
+				<QCheckbox
+					v-if="selectable && relationName !== 'root'"
+					dense
+					:model-value="isSelected"
+					class="mr-2"
+					@update:model-value="changeSelection"
+				/>
 				<div v-if="$slots.header" class="flex-grow">
 					<slot name="header" />
 				</div>
@@ -78,6 +85,9 @@
 					<SchemaObject
 						:readonly="readonly"
 						:model-value="objectProperties[name]"
+						:relation-name="name"
+						:selectable="selectable"
+						:selected-schema="selectedSchema[relationName]?.children[name]"
 						hide-header
 						@update:model-value="input => onUpdateProperty(name, name, input)"
 					>
@@ -103,12 +113,16 @@ import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } fr
 import { cloneDeep, EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
-defineProps<{
+const props = withDefaults(defineProps<{
 	hideHeader?: boolean;
 	readonly?: boolean;
-	selectionMode?: boolean;
+	relationName?: string;
+	selectable?: boolean;
 	selectedSchema?: SelectionSchema;
-}>();
+}>(), {
+	relationName: "root",
+	selectedSchema: () => ({})
+});
 const schemaObject = defineModel<JsonSchema>();
 const objectProperties = ref(cloneDeep(schemaObject.value.properties || schemaObject.value.items?.properties || {}));
 
@@ -195,5 +209,11 @@ function onListPositionChange(items) {
 
 	// Just trigger the property update as we've already made the necessary changes
 	onUpdateProperty(null, null, null);
+}
+
+const isSelected = computed(() => !!props.selectedSchema[props.relationName]);
+
+function changeSelection() {
+	console.log("toggle", isSelected.value);
 }
 </script>

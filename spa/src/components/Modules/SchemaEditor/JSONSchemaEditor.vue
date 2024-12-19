@@ -24,6 +24,8 @@
 				v-if="!isShowingRaw"
 				v-model="editableSchema"
 				:readonly="readonly"
+				:selectable="selectable"
+				:selected-schema="selectedSchema"
 				class="min-w-64"
 			/>
 
@@ -43,7 +45,7 @@ import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import SchemaObject from "@/components/Modules/SchemaEditor/SchemaObject";
 import SchemaRevisionHistoryMenu from "@/components/Modules/SchemaEditor/SchemaRevisionHistoryMenu";
 import SchemaUndoActions from "@/components/Modules/SchemaEditor/SchemaUndoActions";
-import { JsonSchema, PromptSchema } from "@/types";
+import { JsonSchema, PromptSchema, SelectionSchema } from "@/types";
 import { FaSolidCode as RawCodeIcon } from "danx-icon";
 import { cloneDeep, SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
 import { ref, watch } from "vue";
@@ -54,6 +56,8 @@ defineProps<{
 	saving: boolean;
 	readonly?: boolean;
 	hideContent?: boolean;
+	selectable?: boolean;
+	selectedSchema?: SelectionSchema;
 }>();
 const schema = defineModel<JsonSchema>();
 const editableSchema = ref(schema.value || {});

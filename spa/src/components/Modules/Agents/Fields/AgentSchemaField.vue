@@ -13,6 +13,7 @@
 				<QTab name="json_schema" label="JSON Schema" />
 			</QTabs>
 			<QCheckbox
+				v-if="agent.response_format !== 'text'"
 				:model-value="!!agent.save_response_to_db"
 				class="ml-4"
 				label="Save response to DB"
