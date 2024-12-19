@@ -1,20 +1,26 @@
-import { JsonSchema, SelectionSchema } from "@/types";
+import { JsonSchemaType, SelectionSchema } from "@/types";
 import { computed, Ref } from "vue";
 
-export function useSubSelection(relationName: string, schema: JsonSchema, subSelection: Ref<SelectionSchema>) {
+export function useSubSelection(subSelection: Ref<SelectionSchema>, type: JsonSchemaType) {
 	const isSelected = computed(() => !!subSelection.value);
 
 	function changeSelection() {
-		console.log("toggle", isSelected.value, subSelection.value);
-
 		if (isSelected.value) {
 			subSelection.value = null;
 		} else {
-			subSelection.value = {
-				type: "object",
-				children: {}
-			};
+			if (["object", "array"].includes(type)) {
+				subSelection.value = {
+					type,
+					children: {}
+				};
+			} else {
+				subSelection.value = {
+					type
+				};
+			}
 		}
+
+		console.log("made selection", subSelection.value);
 	}
 
 	function changeChildSelection(childName: string, selection: SelectionSchema | null) {

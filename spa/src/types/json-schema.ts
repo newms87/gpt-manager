@@ -1,6 +1,8 @@
+export type JsonSchemaType = "object" | "array" | "string" | "number" | "boolean" | "null";
+
 export interface JsonSchema {
 	id?: number;
-	type: "object" | "array" | "string" | "number" | "boolean" | "null";
+	type: JsonSchemaType;
 	format?: string;
 	title?: string;
 	description?: string;
@@ -12,7 +14,7 @@ export interface JsonSchema {
 }
 
 export interface SelectionSchema {
-	type: "object" | "array" | "string" | "number" | "boolean" | "null";
+	type: JsonSchemaType;
 	children?: {
 		[key: string]: SelectionSchema;
 	};

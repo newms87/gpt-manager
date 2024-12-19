@@ -1,6 +1,13 @@
 <template>
 	<div class="schema-property">
 		<div class="flex items-center flex-nowrap group">
+			<QCheckbox
+				v-if="selectable"
+				dense
+				:model-value="isSelected"
+				class="mr-2 py-1"
+				@update:model-value="changeSelection"
+			/>
 			<div class="flex items-center flex-nowrap flex-grow">
 				<SchemaPropertyTypeMenu :readonly="readonly" :property="property" class="mr-2" @update="onUpdate" />
 				<EditableDiv
@@ -29,16 +36,22 @@
 </template>
 <script setup lang="ts">
 import SchemaPropertyTypeMenu from "@/components/Modules/SchemaEditor/SchemaPropertyTypeMenu";
-import { JsonSchema } from "@/types";
+import { useSubSelection } from "@/components/Modules/SchemaEditor/subSelection";
+import { JsonSchema, SelectionSchema } from "@/types";
 import { FaSolidTrash as RemoveIcon } from "danx-icon";
 import { EditableDiv } from "quasar-ui-danx";
 import { computed } from "vue";
 
 const emit = defineEmits(["update", "remove"]);
 const property = defineModel<JsonSchema>();
-const props = defineProps<{ name: string, readonly?: boolean }>();
-
+const subSelection = defineModel<SelectionSchema | null>("subSelection");
+const props = defineProps<{ name: string, readonly?: boolean, selectable?: boolean }>();
 const descriptionText = computed(() => property.value.items?.description || property.value.description || "");
+
+const {
+	isSelected,
+	changeSelection
+} = useSubSelection(subSelection, property.value.type);
 
 function onUpdate(input: Partial<JsonSchema>) {
 	const type = input.type || property.value.type;

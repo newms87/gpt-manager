@@ -45,7 +45,10 @@
 							:readonly="readonly"
 							:model-value="objectProperties[name]"
 							:name="name"
+							:selectable="selectable"
+							:sub-selection="subSelection?.children[name]"
 							class="my-2 ml-1"
+							@update:sub-selection="selection => changeChildSelection(name, selection)"
 							@update="input => onUpdateProperty(name, input.name, input.property)"
 							@remove="onRemoveProperty(name)"
 						/>
@@ -90,6 +93,7 @@
 						:sub-selection="subSelection?.children[name]"
 						hide-header
 						@update:sub-selection="selection => changeChildSelection(name, selection)"
+						@update:model-value="input => onUpdateProperty(name, name, input)"
 					>
 						<template #header>
 							<SchemaProperty
@@ -138,7 +142,7 @@ const {
 	isSelected,
 	changeSelection,
 	changeChildSelection
-} = useSubSelection(props.relationName, schemaObject.value, subSelection);
+} = useSubSelection(subSelection, schemaObject.value.type);
 
 function onUpdate(input: Partial<JsonSchema>) {
 	const newSchemaObject = { ...schemaObject.value, ...input };
