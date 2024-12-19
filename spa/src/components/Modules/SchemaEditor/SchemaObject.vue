@@ -1,9 +1,12 @@
 <template>
 	<div class="schema-object flex items-start flex-nowrap">
-		<div class="parent-object bg-slate-700 rounded-lg overflow-hidden inline-block w-96 flex-shrink-0">
+		<div
+			class="parent-object bg-slate-700 rounded-lg overflow-hidden inline-block w-96 flex-shrink-0"
+			:class="(selectable && readonly) ? (isSelected ? selectedClass : notSelectedClass) : ''"
+		>
 			<div class="flex items-start flex-nowrap px-4 py-2 bg-slate-800">
 				<QCheckbox
-					v-if="selectable && relationName !== 'root'"
+					v-if="selectable"
 					dense
 					:model-value="isSelected"
 					class="mr-2 py-1"
@@ -12,9 +15,8 @@
 				<div v-if="$slots.header" class="flex-grow">
 					<slot name="header" />
 				</div>
-				<div class="py-1">
+				<div v-if="!hideHeader" class="py-1">
 					<EditableDiv
-						v-if="!hideHeader"
 						:readonly="readonly"
 						:model-value="schemaObject.title || ''"
 						color="slate-600"
@@ -30,29 +32,33 @@
 					name="fade-down-list"
 					:data-drop-zone="`custom-props-${schemaObject.id}-dz`"
 				>
-					<ListItemDraggable
+					<template
 						v-for="name in customPropertyNames"
 						:key="`property-${objectProperties[name].id}`"
-						:list-items="customPropertyNames"
-						:drop-zone="`custom-props-${schemaObject.id}-dz`"
-						:show-handle="!readonly"
-						:disabled="readonly"
-						content-class="flex flex-nowrap items-start"
-						handle-class="py-4 px-1"
-						@update:list-items="items => onListPositionChange(items)"
 					>
-						<SchemaProperty
-							:readonly="readonly"
-							:model-value="objectProperties[name]"
-							:name="name"
-							:selectable="selectable"
-							:sub-selection="subSelection?.children && subSelection.children[name]"
-							class="my-2 ml-1"
-							@update:sub-selection="selection => changeChildSelection(name, selection)"
-							@update="input => onUpdateProperty(name, input.name, input.property)"
-							@remove="onRemoveProperty(name)"
-						/>
-					</ListItemDraggable>
+						<ListItemDraggable
+							v-if="selectable || !readonly || subSelection?.children[name]"
+							:list-items="customPropertyNames"
+							:drop-zone="`custom-props-${schemaObject.id}-dz`"
+							:show-handle="!readonly"
+							:disabled="readonly"
+							content-class="flex flex-nowrap items-start"
+							handle-class="py-4 px-1"
+							@update:list-items="items => onListPositionChange(items)"
+						>
+							<SchemaProperty
+								:readonly="readonly"
+								:model-value="objectProperties[name]"
+								:name="name"
+								:selectable="selectable"
+								:sub-selection="subSelection?.children && subSelection.children[name]"
+								class="my-2 ml-1"
+								@update:sub-selection="selection => changeChildSelection(name, selection)"
+								@update="input => onUpdateProperty(name, input.name, input.property)"
+								@remove="onRemoveProperty(name)"
+							/>
+						</ListItemDraggable>
+					</template>
 				</ListTransition>
 				<div v-if="!readonly" class="flex items-center flex-nowrap pl-5 mt-2">
 					<div class="flex-grow">
@@ -73,39 +79,43 @@
 				name="fade-down-list"
 				:data-drop-zone="`child-objects-${schemaObject.id}-dz`"
 			>
-				<ListItemDraggable
+				<template
 					v-for="(name, index) in childObjectNames"
 					:key="`property-${objectProperties[name].id}`"
-					:list-items="childObjectNames"
-					:drop-zone="`child-objects-${schemaObject.id}-dz`"
-					show-handle
-					:disabled="readonly"
-					content-class="flex flex-nowrap items-start"
-					handle-class="py-4 px-2"
-					:class="{'mb-8': index < childObjectNames.length - 1}"
-					@update:list-items="items => onListPositionChange(items)"
 				>
-					<SchemaObject
-						:readonly="readonly"
-						:model-value="objectProperties[name]"
-						:relation-name="name"
-						:selectable="selectable"
-						:sub-selection="subSelection?.children && subSelection.children[name]"
-						hide-header
-						@update:sub-selection="selection => changeChildSelection(name, selection)"
-						@update:model-value="input => onUpdateProperty(name, name, input)"
+					<ListItemDraggable
+						v-if="selectable || !readonly || subSelection?.children[name]"
+						:list-items="childObjectNames"
+						:drop-zone="`child-objects-${schemaObject.id}-dz`"
+						show-handle
+						:disabled="readonly"
+						content-class="flex flex-nowrap items-start"
+						handle-class="py-4 px-2"
+						:class="{'mb-8': index < childObjectNames.length - 1}"
+						@update:list-items="items => onListPositionChange(items)"
 					>
-						<template #header>
-							<SchemaProperty
-								:readonly="readonly"
-								:model-value="objectProperties[name]"
-								:name="name"
-								@update="input => onUpdateProperty(name, input.name, input.property)"
-								@remove="onRemoveProperty(name)"
-							/>
-						</template>
-					</SchemaObject>
-				</ListItemDraggable>
+						<SchemaObject
+							:readonly="readonly"
+							:model-value="objectProperties[name]"
+							:relation-name="name"
+							:selectable="selectable"
+							:sub-selection="subSelection?.children && subSelection.children[name]"
+							hide-header
+							@update:sub-selection="selection => changeChildSelection(name, selection)"
+							@update:model-value="input => onUpdateProperty(name, name, input)"
+						>
+							<template #header>
+								<SchemaProperty
+									:readonly="readonly"
+									:model-value="objectProperties[name]"
+									:name="name"
+									@update="input => onUpdateProperty(name, input.name, input.property)"
+									@remove="onRemoveProperty(name)"
+								/>
+							</template>
+						</SchemaObject>
+					</ListItemDraggable>
+				</template>
 			</ListTransition>
 		</div>
 	</div>
@@ -118,13 +128,17 @@ import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } fr
 import { cloneDeep, EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
 	hideHeader?: boolean;
 	readonly?: boolean;
 	relationName?: string;
 	selectable?: boolean;
+	selectedClass?: string;
+	notSelectedClass?: string;
 }>(), {
-	relationName: "root"
+	relationName: "root",
+	selectedClass: "",
+	notSelectedClass: "opacity-50"
 });
 const schemaObject = defineModel<JsonSchema>();
 const subSelection = defineModel<SelectionSchema | null>("subSelection");
