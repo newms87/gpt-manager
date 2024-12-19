@@ -24,8 +24,8 @@
 				v-if="!isShowingRaw"
 				v-model="editableSchema"
 				:readonly="readonly"
-				:selectable="selectable"
-				:selected-schema="selectedSchema"
+				:selectable="canSubSelect"
+				:sub-selection="subSelection"
 				class="min-w-64"
 			/>
 
@@ -56,10 +56,10 @@ defineProps<{
 	saving: boolean;
 	readonly?: boolean;
 	hideContent?: boolean;
-	selectable?: boolean;
-	selectedSchema?: SelectionSchema;
+	canSubSelect?: boolean;
 }>();
 const schema = defineModel<JsonSchema>();
+const subSelection = defineModel<SelectionSchema | null>("subSelection");
 const editableSchema = ref(schema.value || {});
 const isShowingRaw = ref(false);
 

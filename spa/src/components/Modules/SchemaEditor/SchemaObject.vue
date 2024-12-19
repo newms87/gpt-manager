@@ -1,12 +1,12 @@
 <template>
 	<div class="schema-object flex items-start flex-nowrap">
 		<div class="parent-object bg-slate-700 rounded-lg overflow-hidden inline-block w-96 flex-shrink-0">
-			<div class="flex items-center flex-nowrap px-4 py-2 bg-slate-800">
+			<div class="flex items-start flex-nowrap px-4 py-2 bg-slate-800">
 				<QCheckbox
 					v-if="selectable && relationName !== 'root'"
 					dense
 					:model-value="isSelected"
-					class="mr-2"
+					class="mr-2 py-1"
 					@update:model-value="changeSelection"
 				/>
 				<div v-if="$slots.header" class="flex-grow">
@@ -87,9 +87,9 @@
 						:model-value="objectProperties[name]"
 						:relation-name="name"
 						:selectable="selectable"
-						:selected-schema="selectedSchema[relationName]?.children[name]"
+						:sub-selection="subSelection?.children[name]"
 						hide-header
-						@update:model-value="input => onUpdateProperty(name, name, input)"
+						@update:sub-selection="selection => changeChildSelection(name, selection)"
 					>
 						<template #header>
 							<SchemaProperty
@@ -108,6 +108,7 @@
 </template>
 <script setup lang="ts">
 import SchemaProperty from "@/components/Modules/SchemaEditor/SchemaProperty";
+import { useSubSelection } from "@/components/Modules/SchemaEditor/subSelection";
 import { JsonSchema, SelectionSchema } from "@/types";
 import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } from "danx-icon";
 import { cloneDeep, EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
@@ -118,12 +119,11 @@ const props = withDefaults(defineProps<{
 	readonly?: boolean;
 	relationName?: string;
 	selectable?: boolean;
-	selectedSchema?: SelectionSchema;
 }>(), {
-	relationName: "root",
-	selectedSchema: () => ({})
+	relationName: "root"
 });
 const schemaObject = defineModel<JsonSchema>();
+const subSelection = defineModel<SelectionSchema | null>("subSelection");
 const objectProperties = ref(cloneDeep(schemaObject.value.properties || schemaObject.value.items?.properties || {}));
 
 watch(() => schemaObject.value, (value) => {
@@ -133,6 +133,12 @@ watch(() => schemaObject.value, (value) => {
 const sortedPropertyNames = computed(() => Object.keys(objectProperties.value).sort((a, b) => objectProperties.value[a].position - objectProperties.value[b].position));
 const childObjectNames = computed(() => sortedPropertyNames.value.filter(p => p && ["array", "object"].includes(objectProperties.value[p].type)));
 const customPropertyNames = computed(() => sortedPropertyNames.value.filter(p => p && !childObjectNames.value.includes(p)));
+
+const {
+	isSelected,
+	changeSelection,
+	changeChildSelection
+} = useSubSelection(props.relationName, schemaObject.value, subSelection);
 
 function onUpdate(input: Partial<JsonSchema>) {
 	const newSchemaObject = { ...schemaObject.value, ...input };
@@ -209,11 +215,5 @@ function onListPositionChange(items) {
 
 	// Just trigger the property update as we've already made the necessary changes
 	onUpdateProperty(null, null, null);
-}
-
-const isSelected = computed(() => !!props.selectedSchema[props.relationName]);
-
-function changeSelection() {
-	console.log("toggle", isSelected.value);
 }
 </script>

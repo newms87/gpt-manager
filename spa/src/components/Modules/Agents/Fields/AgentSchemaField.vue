@@ -26,6 +26,7 @@
 				v-if="agent.responseSchema"
 				v-model:isEditingSchema="isEditingSchema"
 				can-select
+				can-sub-select
 				:model-value="agent.responseSchema"
 				@update:model-value="promptSchema => updateAction.trigger(props.agent, { response_schema_id: promptSchema.id })"
 			/>

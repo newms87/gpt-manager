@@ -15,14 +15,24 @@
 				@create="onCreate"
 				@update:selected="selected => activeSchema = selected as PromptSchema"
 			/>
-			<ShowHideButton
-				v-model="isSelectingSchema"
-				class="bg-sky-800 !p-3 ml-4"
-				:show-icon="AllSelectedIcon"
-				:label="isSelectingSchema ? 'Done' : 'Edit Selection'"
-			/>
+			<div class="flex items-center flex-nowrap">
+				<ShowHideButton
+					v-if="canSubSelect"
+					v-model="isSelectingSubSchema"
+					class="bg-sky-800 !p-3 mx-4"
+					:show-icon="EditSelectionIcon"
+					:hide-icon="DoneSelectingIcon"
+				/>
+				<div v-if="!subSelection" class="text-green-700 flex items-center flex-nowrap">
+					<FullSchemaIcon class="w-4 mr-2" />
+					Full schema
+				</div>
+				<template v-else>
+					Using {{ subSchemaObjectCount }} objects, {{ subSchemaPropertyCount }} properties
+				</template>
+			</div>
 		</div>
-		<div class="flex-grow h-full">
+		<div v-if="activeSchema" class="flex-grow h-full">
 			<JSONSchemaEditor
 				:readonly="!isEditingSchema"
 				:hide-content="isPreviewingExample"
@@ -30,7 +40,8 @@
 				:model-value="activeSchema.schema as JsonSchema"
 				:saved-at="activeSchema.updated_at"
 				:saving="updateSchemaAction.isApplying"
-				:selectable="isSelectingSchema"
+				:can-sub-select="isSelectingSubSchema"
+				:sub-selection="subSelection"
 				@update:model-value="schema => updateSchemaAction.trigger(activeSchema, { schema })"
 			>
 				<template #header="{isShowingRaw}">
@@ -67,20 +78,28 @@
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import SchemaResponseExampleCard from "@/components/Modules/SchemaEditor/SchemaResponseExampleCard";
-import { JsonSchema, PromptSchema } from "@/types";
-import { FaSolidListCheck as AllSelectedIcon } from "danx-icon";
+import { JsonSchema, PromptSchema, SelectionSchema } from "@/types";
+import {
+	FaSolidCheck as DoneSelectingIcon,
+	FaSolidCircleCheck as FullSchemaIcon,
+	FaSolidListCheck as EditSelectionIcon
+} from "danx-icon";
 import { EditableDiv, FlashMessages, SelectField, SelectOrCreateField, ShowHideButton } from "quasar-ui-danx";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
-defineProps<{ canSelect?: boolean }>();
+const props = defineProps<{ canSelect?: boolean, canSubSelect?: boolean }>();
 
 onMounted(() => dxPromptSchema.initialize());
 const createSchemaAction = dxPromptSchema.getAction("create");
 const updateSchemaAction = dxPromptSchema.getAction("update");
 const activeSchema = defineModel<PromptSchema>();
 const isEditingSchema = defineModel<boolean>("editing");
-const isSelectingSchema = defineModel<boolean>("selecting");
+const isSelectingSubSchema = defineModel<boolean>("selecting");
+const subSelection = defineModel<SelectionSchema | null>("subSelection");
 const isPreviewingExample = ref(false);
+
+const subSchemaObjectCount = computed(() => 4);
+const subSchemaPropertyCount = computed(() => 16);
 
 const schemaFormatOptions = [
 	{ label: "JSON", value: "json" },
