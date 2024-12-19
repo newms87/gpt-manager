@@ -3,14 +3,16 @@
 		<div class="flex items-center flex-nowrap space-x-2">
 			<slot name="header" v-bind="{isShowingRaw}" />
 			<div class="flex items-center flex-nowrap space-x-2">
-				<SchemaUndoActions v-model="editableSchema" />
-				<SchemaRevisionHistoryMenu
-					v-if="promptSchema"
-					:prompt-schema="promptSchema"
-					@select="revision => editableSchema = revision.schema"
-				/>
+				<template v-if="!readonly">
+					<SchemaUndoActions v-model="editableSchema" />
+					<SchemaRevisionHistoryMenu
+						v-if="promptSchema"
+						:prompt-schema="promptSchema"
+						@select="revision => editableSchema = revision.schema"
+					/>
+				</template>
 				<ShowHideButton v-model="isShowingRaw" class="bg-slate-700" :show-icon="RawCodeIcon" />
-				<slot name="actions" />
+				<slot name="actions" v-bind="{readonly}" />
 				<SaveStateIndicator :saving="saving" :saved-at="savedAt" class="ml-2 w-48" />
 			</div>
 		</div>
@@ -21,6 +23,7 @@
 			<SchemaObject
 				v-if="!isShowingRaw"
 				v-model="editableSchema"
+				:readonly="readonly"
 				class="min-w-64"
 			/>
 
@@ -28,6 +31,7 @@
 				v-else
 				v-model="editableSchema"
 				sync-model-changes
+				:readonly="readonly"
 				label=""
 				:format="promptSchema.schema_format"
 			/>
@@ -48,6 +52,7 @@ defineProps<{
 	promptSchema?: PromptSchema;
 	savedAt?: string;
 	saving: boolean;
+	readonly?: boolean;
 	hideContent?: boolean;
 }>();
 const schema = defineModel<JsonSchema>();

@@ -1,7 +1,7 @@
 <template>
 	<QBtn class="bg-sky-800 rounded-lg">
 		<Component :is="selectedTypeOption?.icon" class="w-3" />
-		<QMenu auto-close>
+		<QMenu v-if="!readonly" auto-close>
 			<div
 				v-for="type in allowedTypeOptions"
 				:key="type.value"
@@ -26,12 +26,13 @@ import {
 	FaSolidObjectGroup as ObjectIcon,
 	FaSolidToggleOn as BooleanIcon
 } from "danx-icon";
-import { computed } from "vue";
+import { computed, readonly } from "vue";
 
 export interface PropertyTypeOption {
 	value: string;
 	label: string;
 	icon: object;
+	readonly?: boolean;
 }
 
 const emit = defineEmits(["update"]);

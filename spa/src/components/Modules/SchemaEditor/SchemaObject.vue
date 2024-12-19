@@ -1,6 +1,6 @@
 <template>
 	<div class="schema-object flex items-start flex-nowrap">
-		<div class="parent-object bg-slate-700 rounded-lg inline-block w-96 flex-shrink-0">
+		<div class="parent-object bg-slate-700 rounded-lg overflow-hidden inline-block w-96 flex-shrink-0">
 			<div class="flex items-center flex-nowrap px-4 py-2 bg-slate-800">
 				<div v-if="$slots.header" class="flex-grow">
 					<slot name="header" />
@@ -8,6 +8,7 @@
 				<div class="py-1">
 					<EditableDiv
 						v-if="!hideHeader"
+						:readonly="readonly"
 						:model-value="schemaObject.title || ''"
 						color="slate-600"
 						class="min-w-20"
@@ -17,7 +18,7 @@
 					/>
 				</div>
 			</div>
-			<div class="py-2 px-4">
+			<div v-if="!readonly || customPropertyNames.length > 0" class="py-2 px-4">
 				<ListTransition
 					name="fade-down-list"
 					:data-drop-zone="`custom-props-${schemaObject.id}-dz`"
@@ -27,12 +28,14 @@
 						:key="`property-${objectProperties[name].id}`"
 						:list-items="customPropertyNames"
 						:drop-zone="`custom-props-${schemaObject.id}-dz`"
-						show-handle
+						:show-handle="!readonly"
+						:disabled="readonly"
 						content-class="flex flex-nowrap items-start"
 						handle-class="py-4 px-1"
 						@update:list-items="items => onListPositionChange(items)"
 					>
 						<SchemaProperty
+							:readonly="readonly"
 							:model-value="objectProperties[name]"
 							:name="name"
 							class="my-2 ml-1"
@@ -41,7 +44,7 @@
 						/>
 					</ListItemDraggable>
 				</ListTransition>
-				<div class="flex items-center flex-nowrap pl-5 mt-2">
+				<div v-if="!readonly" class="flex items-center flex-nowrap pl-5 mt-2">
 					<div class="flex-grow">
 						<QBtn class="bg-green-900 text-sm" @click="onAddProperty('string', 'prop')">
 							<AddPropertyIcon class="w-3" />
@@ -55,7 +58,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="child-objects ml-4">
+		<div v-if="!readonly || childObjectNames.length > 0" class="child-objects ml-4">
 			<ListTransition
 				name="fade-down-list"
 				:data-drop-zone="`child-objects-${schemaObject.id}-dz`"
@@ -66,18 +69,21 @@
 					:list-items="childObjectNames"
 					:drop-zone="`child-objects-${schemaObject.id}-dz`"
 					show-handle
+					:disabled="readonly"
 					content-class="flex flex-nowrap items-start"
 					handle-class="py-4 px-2"
 					:class="{'mb-8': index < childObjectNames.length - 1}"
 					@update:list-items="items => onListPositionChange(items)"
 				>
 					<SchemaObject
+						:readonly="readonly"
 						:model-value="objectProperties[name]"
 						hide-header
 						@update:model-value="input => onUpdateProperty(name, name, input)"
 					>
 						<template #header>
 							<SchemaProperty
+								:readonly="readonly"
 								:model-value="objectProperties[name]"
 								:name="name"
 								@update="input => onUpdateProperty(name, input.name, input.property)"
@@ -92,13 +98,16 @@
 </template>
 <script setup lang="ts">
 import SchemaProperty from "@/components/Modules/SchemaEditor/SchemaProperty";
-import { JsonSchema } from "@/types";
+import { JsonSchema, SelectionSchema } from "@/types";
 import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } from "danx-icon";
 import { cloneDeep, EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
 defineProps<{
-	hideHeader?: boolean
+	hideHeader?: boolean;
+	readonly?: boolean;
+	selectionMode?: boolean;
+	selectedSchema?: SelectionSchema;
 }>();
 const schemaObject = defineModel<JsonSchema>();
 const objectProperties = ref(cloneDeep(schemaObject.value.properties || schemaObject.value.items?.properties || {}));

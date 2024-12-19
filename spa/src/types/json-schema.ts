@@ -10,3 +10,9 @@ export interface JsonSchema {
 		[key: string]: JsonSchema;
 	};
 }
+
+export interface SelectionSchema {
+	[key: string]: {
+		children: SelectionSchema[];
+	};
+}

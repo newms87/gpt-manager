@@ -2,21 +2,23 @@
 	<div class="schema-property">
 		<div class="flex items-center flex-nowrap group">
 			<div class="flex items-center flex-nowrap flex-grow">
-				<SchemaPropertyTypeMenu :property="property" class="mr-2" @update="onUpdate" />
+				<SchemaPropertyTypeMenu :readonly="readonly" :property="property" class="mr-2" @update="onUpdate" />
 				<EditableDiv
+					:readonly="readonly"
 					:model-value="property.items?.title || property.title || name"
 					color="slate-600"
 					placeholder="Enter Property Name..."
 					@update:model-value="title => onUpdate({title})"
 				/>
 			</div>
-			<QBtn class="group-hover:opacity-100 opacity-0 transition-all" @click="$emit('remove')">
+			<QBtn v-if="!readonly" class="group-hover:opacity-100 opacity-0 transition-all" @click="$emit('remove')">
 				<RemoveIcon class="w-3 text-red-300" />
 			</QBtn>
 		</div>
-		<div class="ml-9">
+		<div v-if="!readonly || !!descriptionText" class="ml-9">
 			<EditableDiv
-				:model-value="property.items?.description || property.description || ''"
+				:readonly="readonly"
+				:model-value="descriptionText"
 				color="slate-600"
 				class="text-slate-400"
 				placeholder="Enter description..."
@@ -30,10 +32,13 @@ import SchemaPropertyTypeMenu from "@/components/Modules/SchemaEditor/SchemaProp
 import { JsonSchema } from "@/types";
 import { FaSolidTrash as RemoveIcon } from "danx-icon";
 import { EditableDiv } from "quasar-ui-danx";
+import { computed } from "vue";
 
 const emit = defineEmits(["update", "remove"]);
 const property = defineModel<JsonSchema>();
-const props = defineProps<{ name: string }>();
+const props = defineProps<{ name: string, readonly?: boolean }>();
+
+const descriptionText = computed(() => property.value.items?.description || property.value.description || "");
 
 function onUpdate(input: Partial<JsonSchema>) {
 	const type = input.type || property.value.type;

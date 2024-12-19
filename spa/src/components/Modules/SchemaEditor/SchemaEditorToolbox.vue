@@ -17,7 +17,7 @@
 
 		<div class="flex-grow h-full">
 			<JSONSchemaEditor
-				v-if="isEditingSchema"
+				:readonly="!isEditingSchema"
 				:hide-content="isPreviewingExample"
 				:prompt-schema="activeSchema"
 				:model-value="activeSchema.schema as JsonSchema"
