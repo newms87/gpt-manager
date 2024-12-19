@@ -51,7 +51,7 @@ const descriptionText = computed(() => property.value.items?.description || prop
 const {
 	isSelected,
 	changeSelection
-} = useSubSelection(subSelection, property.value.type);
+} = useSubSelection(subSelection, property.value);
 
 function onUpdate(input: Partial<JsonSchema>) {
 	const type = input.type || property.value.type;
@@ -71,14 +71,14 @@ function onUpdate(input: Partial<JsonSchema>) {
 			position: property.value.position,
 			type: "array",
 			items: object
-		};
+		} as JsonSchema;
 	} else if (type === "object") {
 		// Transform from array to object
 		property.value = {
 			id: property.value.id,
 			position: property.value.position,
 			...object
-		};
+		} as JsonSchema;
 	} else {
 		// Standard update for all other types
 		property.value = { ...property.value, ...input };
