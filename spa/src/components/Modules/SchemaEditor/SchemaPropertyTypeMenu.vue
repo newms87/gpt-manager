@@ -26,7 +26,7 @@ import {
 	FaSolidObjectGroup as ObjectIcon,
 	FaSolidToggleOn as BooleanIcon
 } from "danx-icon";
-import { computed, readonly } from "vue";
+import { computed } from "vue";
 
 export interface PropertyTypeOption {
 	value: string;
@@ -36,7 +36,7 @@ export interface PropertyTypeOption {
 }
 
 const emit = defineEmits(["update"]);
-const props = defineProps<{ property: Partial<JsonSchema> }>();
+const props = defineProps<{ property: Partial<JsonSchema>, readonly?: boolean }>();
 
 const selectedTypeOption = computed(() => typeOptions.find(type => isType(props.property, type)));
 

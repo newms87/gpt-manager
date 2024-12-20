@@ -15,12 +15,12 @@
 						<div
 							v-for="revision in history"
 							:key="revision.id"
-							class="flex items-center flex-nowrap space-x-2 py-2 px-4 cursor-pointer my-2 mx-4 rounded-xl"
+							class="flex items-center flex-nowrap py-2 px-4 cursor-pointer my-2 mx-4 rounded-xl"
 							:class="isMatch(revision) ? 'bg-green-900' : 'bg-slate-600 hover:bg-slate-700'"
 							@click="$emit('select', revision)"
 						>
-							<div class="font-bold text-sky-400">{{ fDateTime(revision.created_at) }}</div>
-							<div class="text-xs text-slate-400">{{ revision.user_email }}</div>
+							<div class="font-bold text-sky-400 w-32">{{ fDateTime(revision.created_at) }}</div>
+							<div class="text-xs text-slate-400 whitespace-nowrap">{{ revision.user_email }}</div>
 						</div>
 					</div>
 				</div>
