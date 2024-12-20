@@ -219,8 +219,11 @@ class AgentThreadService
 
         // Ensures all properties (and sub properties) are both required and have no additional properties. It does this recursively.
         foreach($schema as $key => $value) {
-            $childName             = $name . '.' . $key;
-            $formattedSchema[$key] = $this->formatResponseSchemaItem($childName, $value, $depth);
+            $childName     = $name . '.' . $key;
+            $formattedItem = $this->formatResponseSchemaItem($childName, $value, $depth);
+            if ($formattedItem) {
+                $formattedSchema[$key] = $formattedItem;
+            }
         }
 
         if ($depth > 0) {
@@ -233,7 +236,7 @@ class AgentThreadService
             'schema' => [
                 'type'                 => 'object',
                 'additionalProperties' => false,
-                'required'             => array_keys($schema),
+                'required'             => array_keys($formattedSchema),
                 'properties'           => $formattedSchema,
             ],
         ];
@@ -242,7 +245,7 @@ class AgentThreadService
     /**
      * Format the response schema to match the requirements of JSON schema for completions API
      */
-    public function formatResponseSchemaItem($name, $value, $depth = 0): array
+    public function formatResponseSchemaItem($name, $value, $depth = 0): array|null
     {
         $type        = $value['type'] ?? null;
         $description = $value['description'] ?? null;
@@ -256,7 +259,6 @@ class AgentThreadService
             'object' => [
                 'type'                 => $type,
                 'properties'           => $this->formatResponseSchema("$name.properties", $properties, $depth + 1),
-                'required'             => array_keys($properties),
                 'additionalProperties' => false,
             ],
             'array' => [
@@ -266,6 +268,16 @@ class AgentThreadService
             'string', 'number', 'integer', 'boolean', 'null' => ['type' => $type],
             default => throw new Exception("Unknown type at path $name: " . $type),
         };
+
+        // If the type is an object with no properties, it is an empty object and can be ignored
+        if ($resolvedType === 'array' && !$item['items'] ||
+            $resolvedType === 'object' && !$item['properties']) {
+            return null;
+        }
+
+        if ($resolvedType === 'object') {
+            $item['required'] = array_keys($item['properties']);
+        }
 
         if ($description) {
             $item['description'] = $description;

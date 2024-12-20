@@ -184,7 +184,7 @@ function onUpdateProperty(originalName, newName, input) {
 	let newSchemaObject;
 
 	if (schemaObject.value.type === "array") {
-		newSchemaObject = { ...schemaObject.value, items: { ...schemaObject.value.items, properties } };
+		newSchemaObject = { ...schemaObject.value, items: { ...schemaObject.value.items, properties, type: "object" } };
 	} else {
 		newSchemaObject = { ...schemaObject.value, properties };
 	}
