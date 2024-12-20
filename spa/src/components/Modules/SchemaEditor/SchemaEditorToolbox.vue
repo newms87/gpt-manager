@@ -27,9 +27,16 @@
 					<FullSchemaIcon class="w-4 mr-2" />
 					Full schema
 				</div>
-				<template v-else>
-					Using {{ subSchemaObjectCount }} objects, {{ subSchemaPropertyCount }} properties
-				</template>
+				<div v-else class="text-slate-500">
+					<div class="flex items-center flex-nowrap">
+						<ObjectIcon class="w-4 text-green-700 mr-2" />
+						{{ selectedObjectCount }} objects
+					</div>
+					<div class="flex items-center flex-nowrap">
+						<PropertyIcon class="w-4 h-4 text-green-700 mr-2" />
+						{{ selectedPropertyCount }} properties
+					</div>
+				</div>
 			</div>
 		</div>
 		<div v-if="activeSchema" class="flex-grow h-full">
@@ -78,16 +85,19 @@
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import SchemaResponseExampleCard from "@/components/Modules/SchemaEditor/SchemaResponseExampleCard";
+import { useSubSelection } from "@/components/Modules/SchemaEditor/subSelection";
 import { JsonSchema, PromptSchema, SelectionSchema } from "@/types";
 import {
+	FaSolidA as PropertyIcon,
 	FaSolidCheck as DoneSelectingIcon,
 	FaSolidCircleCheck as FullSchemaIcon,
-	FaSolidListCheck as EditSelectionIcon
+	FaSolidListCheck as EditSelectionIcon,
+	FaSolidObjectGroup as ObjectIcon
 } from "danx-icon";
 import { EditableDiv, FlashMessages, SelectField, SelectOrCreateField, ShowHideButton } from "quasar-ui-danx";
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 
-const props = defineProps<{ canSelect?: boolean, canSubSelect?: boolean }>();
+defineProps<{ canSelect?: boolean, canSubSelect?: boolean }>();
 
 onMounted(() => dxPromptSchema.initialize());
 const createSchemaAction = dxPromptSchema.getAction("create");
@@ -98,8 +108,7 @@ const isSelectingSubSchema = defineModel<boolean>("selecting");
 const subSelection = defineModel<SelectionSchema | null>("subSelection");
 const isPreviewingExample = ref(false);
 
-const subSchemaObjectCount = computed(() => 4);
-const subSchemaPropertyCount = computed(() => 16);
+const { selectedObjectCount, selectedPropertyCount } = useSubSelection(subSelection, activeSchema.value.schema);
 
 const schemaFormatOptions = [
 	{ label: "JSON", value: "json" },

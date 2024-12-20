@@ -4,6 +4,8 @@ import { computed, Ref } from "vue";
 export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: JsonSchema) {
 	const type = schema.type;
 	const isSelected = computed(() => !!subSelection.value);
+	const selectedObjectCount = computed(() => recursiveSelectedObjectCount(subSelection.value));
+	const selectedPropertyCount = computed(() => recursiveSelectedPropertyCount(subSelection.value));
 
 	function changeSelection() {
 		if (isSelected.value) {
@@ -106,11 +108,51 @@ export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: Json
 		);
 	}
 
+	/**
+	 * Recursively counts the number of objects / arrays that are selected in the current selection
+	 */
+	function recursiveSelectedObjectCount(selection: SelectionSchema) {
+		if (!selection) return 0;
+
+		let count = 1;
+		for (const key of Object.keys(selection.children)) {
+			const childSchema = selection.children[key];
+
+			if (["object", "array"].includes(childSchema.type)) {
+				count += recursiveSelectedObjectCount(childSchema);
+			}
+		}
+		return count;
+	}
+
+	/**
+	 * Recursively counts the number of properties that are selected in the current selection
+	 */
+	function recursiveSelectedPropertyCount(selection: SelectionSchema) {
+		if (!selection) return 0;
+
+		let count = 0;
+		for (const key of Object.keys(selection.children)) {
+			const childSchema = selection.children[key];
+
+			if (["object", "array"].includes(childSchema.type)) {
+				count += recursiveSelectedPropertyCount(childSchema);
+			} else {
+				count++;
+			}
+		}
+		return count;
+	}
+
 	return {
 		changeSelection,
 		changeChildSelection,
 		selectAllChildren,
 		selectAllProperties,
+		recursiveSelectedObjectCount,
+		recursiveSelectedPropertyCount,
+		selectedObjectCount,
+		selectedPropertyCount,
 		isSelected
 	};
 }
