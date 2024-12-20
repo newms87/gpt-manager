@@ -8,6 +8,7 @@ use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use App\Services\AgentThread\AgentThreadService;
+use App\Services\JsonSchema\JsonSchemaService;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -162,7 +163,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = app(AgentThreadService::class)->formatResponseSchema($name, $response);
+        $formattedResponse = JsonSchemaService::formatAndCleanSchema($name, $response);
 
         // Then
         $this->assertEquals([
@@ -205,7 +206,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = app(AgentThreadService::class)->formatResponseSchema($name, $response);
+        $formattedResponse = JsonSchemaService::formatAndCleanSchema($name, $response);
 
         // Then
         $this->assertEquals([
@@ -268,7 +269,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = app(AgentThreadService::class)->formatResponseSchema($name, $response);
+        $formattedResponse = JsonSchemaService::formatAndCleanSchema($name, $response);
 
         // Then
         $this->assertEquals([
@@ -319,7 +320,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = app(AgentThreadService::class)->formatResponseSchema($name, $response);
+        $formattedResponse = JsonSchemaService::formatAndCleanSchema($name, $response);
 
         // Then
         $this->assertEquals([
@@ -351,7 +352,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = app(AgentThreadService::class)->formatResponseSchema($name, $response);
+        $formattedResponse = JsonSchemaService::formatAndCleanSchema($name, $response);
 
         // Then
         $this->assertEquals([
@@ -366,6 +367,288 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
                     ],
                 ],
                 'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatResponseSchemaForAgent_onlySelectedPropertyIsReturned(): void
+    {
+        // Given
+        $schema       = [
+            'type'        => 'object',
+            'title'       => 'Person',
+            'description' => 'The important person',
+            'properties'  => [
+                'name' => [
+                    'type'        => 'string',
+                    'description' => 'Name of the person',
+                ],
+                'dob'  => [
+                    'type' => 'string',
+                ],
+            ],
+        ];
+        $subSelection = [
+            'type'     => 'object',
+            'children' => [
+                'name' => [
+                    'type' => 'string',
+                ],
+            ],
+        ];
+        $agent        = Agent::factory()->forResponseSchema(['schema' => $schema])->create([
+            'response_sub_selection' => $subSelection,
+        ]);
+
+        // When
+        $formattedResponse = app(AgentThreadService::class)->formatResponseSchemaForAgent($agent);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $formattedResponse['name'],
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'title'                => 'Person',
+                'description'          => 'The important person',
+                'properties'           => [
+                    'name' => [
+                        'type'        => 'string',
+                        'description' => 'Name of the person',
+                    ],
+                ],
+                'required'             => ['name'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatResponseSchemaForAgent_onlySelectedObjectsAreReturned(): void
+    {
+        // Given
+        $schema       = [
+            'type'       => 'object',
+            'title'      => 'Person',
+            'properties' => [
+                'name'    => [
+                    'type' => 'string',
+                ],
+                'dob'     => [
+                    'type' => 'string',
+                ],
+                'job'     => [
+                    'type'       => 'object',
+                    'title'      => 'Job',
+                    'properties' => [
+                        'title' => [
+                            'type' => 'string',
+                        ],
+                    ],
+                ],
+                'address' => [
+                    'type'       => 'object',
+                    'title'      => 'Address',
+                    'properties' => [
+                        'street' => [
+                            'type' => 'string',
+                        ],
+                        'city'   => [
+                            'type' => 'string',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $subSelection = [
+            'type'     => 'object',
+            'children' => [
+                'address' => [
+                    'type'     => 'object',
+                    'children' => [
+                        'city' => [
+                            'type' => 'string',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $agent        = Agent::factory()->forResponseSchema(['schema' => $schema])->create([
+            'response_sub_selection' => $subSelection,
+        ]);
+
+        // When
+        $formattedResponse = app(AgentThreadService::class)->formatResponseSchemaForAgent($agent);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $formattedResponse['name'],
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'title'                => 'Person',
+                'properties'           => [
+                    'address' => [
+                        'type'                 => 'object',
+                        'title'                => 'Address',
+                        'properties'           => [
+                            'city' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                        'required'             => ['city'],
+                        'additionalProperties' => false,
+                    ],
+                ],
+                'required'             => ['address'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatResponseSchemaForAgent_selectedObjectSkippedWhenNoPropertiesSelected(): void
+    {
+        // Given
+        $schema       = [
+            'type'       => 'object',
+            'title'      => 'Person',
+            'properties' => [
+                'name'    => [
+                    'type' => 'string',
+                ],
+                'address' => [
+                    'type'       => 'object',
+                    'title'      => 'Address',
+                    'properties' => [
+                        'street' => [
+                            'type' => 'string',
+                        ],
+                        'city'   => [
+                            'type' => 'string',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $subSelection = [
+            'type'     => 'object',
+            'children' => [
+                'name'    => [
+                    'type' => 'string',
+                ],
+                'address' => [
+                    'type' => 'object',
+                ],
+            ],
+        ];
+        $agent        = Agent::factory()->forResponseSchema(['schema' => $schema])->create([
+            'response_sub_selection' => $subSelection,
+        ]);
+
+        // When
+        $formattedResponse = app(AgentThreadService::class)->formatResponseSchemaForAgent($agent);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $formattedResponse['name'],
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'title'                => 'Person',
+                'properties'           => [
+                    'name' => [
+                        'type' => 'string',
+                    ],
+                ],
+                'required'             => ['name'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatResponseSchemaForAgent_onlySelectedArraysAreReturned(): void
+    {
+        // Given
+        $schema       = [
+            'type'       => 'object',
+            'title'      => 'Person',
+            'properties' => [
+                'name'      => [
+                    'type' => 'string',
+                ],
+                'dob'       => [
+                    'type' => 'string',
+                ],
+                'job'       => [
+                    'type'       => 'object',
+                    'title'      => 'Job',
+                    'properties' => [
+                        'title' => [
+                            'type' => 'string',
+                        ],
+                    ],
+                ],
+                'addresses' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'title'      => 'Address',
+                        'properties' => [
+                            'street' => [
+                                'type' => 'string',
+                            ],
+                            'city'   => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $subSelection = [
+            'type'     => 'object',
+            'children' => [
+                'addresses' => [
+                    'type'     => 'array',
+                    'children' => [
+                        'city' => [
+                            'type' => 'string',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $agent        = Agent::factory()->forResponseSchema(['schema' => $schema])->create([
+            'response_sub_selection' => $subSelection,
+        ]);
+
+        // When
+        $formattedResponse = app(AgentThreadService::class)->formatResponseSchemaForAgent($agent);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $formattedResponse['name'],
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'title'                => 'Person',
+                'properties'           => [
+                    'addresses' => [
+                        'type'  => 'array',
+                        'items' => [
+                            'type'                 => 'object',
+                            'title'                => 'Address',
+                            'properties'           => [
+                                'city' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                            'required'             => ['city'],
+                            'additionalProperties' => false,
+                        ],
+                    ],
+                ],
+                'required'             => ['addresses'],
                 'additionalProperties' => false,
             ],
         ], $formattedResponse);
