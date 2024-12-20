@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col flex-nowrap h-full">
+	<div class="flex flex-col flex-nowrap" :class="{'h-full': !hideContent}">
 		<div class="flex items-center flex-nowrap space-x-2">
 			<slot name="header" v-bind="{isShowingRaw}" />
 			<div class="flex items-center flex-nowrap space-x-2">

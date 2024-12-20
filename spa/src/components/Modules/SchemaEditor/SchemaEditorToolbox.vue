@@ -38,7 +38,7 @@
 				</div>
 			</div>
 		</div>
-		<div v-if="activeSchema" class="flex-grow h-full">
+		<div v-if="activeSchema && (isSelectingSubSchema || isEditingSchema || showPreview)" class="flex-grow h-full">
 			<JSONSchemaEditor
 				v-model:sub-selection="subSelection"
 				:readonly="!isEditingSchema"
@@ -96,7 +96,7 @@ import {
 import { EditableDiv, FlashMessages, SelectField, SelectOrCreateField, ShowHideButton } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
 
-defineProps<{ canSelect?: boolean, canSubSelect?: boolean }>();
+defineProps<{ canSelect?: boolean, canSubSelect?: boolean, showPreview?: boolean }>();
 
 onMounted(() => dxPromptSchema.initialize());
 const createSchemaAction = dxPromptSchema.getAction("create");

@@ -27,6 +27,7 @@
 				v-model:isEditingSchema="isEditingSchema"
 				can-select
 				can-sub-select
+				show-preview
 				:sub-selection="agent.response_sub_selection"
 				:model-value="agent.responseSchema"
 				@update:model-value="promptSchema => updateAction.trigger(props.agent, { response_schema_id: promptSchema.id })"
