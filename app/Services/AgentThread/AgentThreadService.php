@@ -12,6 +12,7 @@ use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use App\Repositories\AgentRepository;
+use App\Services\JsonSchema\JsonSchemaService;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ApiRequestException;
@@ -191,103 +192,14 @@ class AgentThreadService
         if (is_array($responseSchema)) {
             $name = $agent->name . ':' . substr(md5(json_encode($responseSchema)), 0, 7);
 
-            return $this->formatResponseSchema(Str::slug($name), $responseSchema);
+            if ($agent->response_sub_selection) {
+                $responseSchema = JsonSchemaService::filterSchemaBySubSelection($responseSchema, $agent->response_sub_selection);
+            }
+
+            return JsonSchemaService::formatAndCleanSchema(Str::slug($name), $responseSchema);
         }
 
         return $responseSchema;
-    }
-
-    /**
-     * Format the response schema for the AI model
-     * @param string $name   The name for this version of the schema
-     * @param array  $schema The schema to format. The schema should be properly formatted JSON schema (starting with
-     *                       properties of an object as they will be nested inside the main schema)
-     * @param int    $depth  The depth of the schema (used for recursion)
-     * @return array
-     * @throws Exception
-     */
-    public function formatResponseSchema(string $name, array $schema, int $depth = 0): array
-    {
-        if (!$schema) {
-            return [];
-        }
-
-        $formattedSchema = [];
-
-        // If the Schema has defined properties at the top level, we need to move into the properties key
-        $schema = $schema['properties'] ?? $schema;
-
-        // Ensures all properties (and sub properties) are both required and have no additional properties. It does this recursively.
-        foreach($schema as $key => $value) {
-            $childName     = $name . '.' . $key;
-            $formattedItem = $this->formatResponseSchemaItem($childName, $value, $depth);
-            if ($formattedItem) {
-                $formattedSchema[$key] = $formattedItem;
-            }
-        }
-
-        if ($depth > 0) {
-            return $formattedSchema;
-        }
-
-        return [
-            'name'   => $name,
-            'strict' => true,
-            'schema' => [
-                'type'                 => 'object',
-                'additionalProperties' => false,
-                'required'             => array_keys($formattedSchema),
-                'properties'           => $formattedSchema,
-            ],
-        ];
-    }
-
-    /**
-     * Format the response schema to match the requirements of JSON schema for completions API
-     */
-    public function formatResponseSchemaItem($name, $value, $depth = 0): array|null
-    {
-        $type        = $value['type'] ?? null;
-        $description = $value['description'] ?? null;
-        $enum        = $value['enum'] ?? null;
-        $properties  = $value['properties'] ?? [];
-        $items       = $value['items'] ?? [];
-
-        $resolvedType = is_array($type) ? $type[0] : $type;
-
-        $item = match ($resolvedType) {
-            'object' => [
-                'type'                 => $type,
-                'properties'           => $this->formatResponseSchema("$name.properties", $properties, $depth + 1),
-                'additionalProperties' => false,
-            ],
-            'array' => [
-                'type'  => $type,
-                'items' => $this->formatResponseSchemaItem("$name.items", $items, $depth + 1),
-            ],
-            'string', 'number', 'integer', 'boolean', 'null' => ['type' => $type],
-            default => throw new Exception("Unknown type at path $name: " . $type),
-        };
-
-        // If the type is an object with no properties, it is an empty object and can be ignored
-        if ($resolvedType === 'array' && !$item['items'] ||
-            $resolvedType === 'object' && !$item['properties']) {
-            return null;
-        }
-
-        if ($resolvedType === 'object') {
-            $item['required'] = array_keys($item['properties']);
-        }
-
-        if ($description) {
-            $item['description'] = $description;
-        }
-
-        if ($enum) {
-            $item['enum'] = $enum;
-        }
-
-        return $item;
     }
 
     /**
