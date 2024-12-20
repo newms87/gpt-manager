@@ -15,9 +15,8 @@
 				@create="onCreate"
 				@update:selected="selected => activeSchema = selected as PromptSchema"
 			/>
-			<div class="flex items-center flex-nowrap">
+			<div v-if="canSubSelect" class="flex items-center flex-nowrap">
 				<ShowHideButton
-					v-if="canSubSelect"
 					v-model="isSelectingSubSchema"
 					class="bg-sky-800 !p-3 mx-4"
 					:show-icon="EditSelectionIcon"
@@ -108,7 +107,7 @@ const isSelectingSubSchema = defineModel<boolean>("selecting");
 const subSelection = defineModel<SelectionSchema | null>("subSelection");
 const isPreviewingExample = ref(false);
 
-const { selectedObjectCount, selectedPropertyCount } = useSubSelection(subSelection, activeSchema.value.schema);
+const { selectedObjectCount, selectedPropertyCount } = useSubSelection(subSelection, activeSchema.value?.schema);
 
 const schemaFormatOptions = [
 	{ label: "JSON", value: "json" },

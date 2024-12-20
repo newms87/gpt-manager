@@ -157,5 +157,5 @@ const deleteAction = dxThreadMessage.getAction("delete");
 const resetToMessageAction = dxAgentThread.getAction("reset-to-message");
 const updateAction = dxThreadMessage.getAction("update");
 const saveFilesAction = dxThreadMessage.getAction("save-files");
-const updateDebouncedAction = dxThreadMessage.getAction("updateDebounced");
+const updateDebouncedAction = dxThreadMessage.getAction("update-debounced");
 </script>

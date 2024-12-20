@@ -1,8 +1,8 @@
 import { JsonSchema, SelectionSchema } from "@/types";
 import { computed, Ref } from "vue";
 
-export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: JsonSchema) {
-	const type = schema.type;
+export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: JsonSchema | null) {
+	const type = schema?.type;
 	const isSelected = computed(() => !!subSelection.value);
 	const selectedObjectCount = computed(() => recursiveSelectedObjectCount(subSelection.value));
 	const selectedPropertyCount = computed(() => recursiveSelectedPropertyCount(subSelection.value));

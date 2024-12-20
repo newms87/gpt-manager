@@ -209,7 +209,7 @@ class AgentThreadService
     public function formatResponseSchema(string $name, array $schema, int $depth = 0): array
     {
         if (!$schema) {
-            throw new Exception("$name in schema is empty");
+            return [];
         }
 
         $formattedSchema = [];
