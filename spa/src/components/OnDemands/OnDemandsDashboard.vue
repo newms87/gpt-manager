@@ -16,10 +16,11 @@
 import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
 import TeamObjectsList from "@/components/Modules/TeamObjects/TeamObjectsList";
+import { until } from "@vueuse/core";
 import { getItem, setItem } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 
-const PROMPT_SCHEMA_STORED_KEY = "dx-prompt-schema";
+const PROMPT_SCHEMA_STORED_KEY = "dx-prompt-schema-id";
 
 onMounted(init);
 
@@ -28,11 +29,16 @@ const activeSchema = computed(() => dxPromptSchema.activeItem.value);
 
 async function init() {
 	dxPromptSchema.initialize();
-	dxPromptSchema.setActiveItem(getItem(PROMPT_SCHEMA_STORED_KEY));
+	const storedPromptSchemaId = getItem(PROMPT_SCHEMA_STORED_KEY);
+
+	if (storedPromptSchemaId) {
+		await until(dxPromptSchema.pagedItems).toMatch(pi => pi?.data.length > 0);
+		dxPromptSchema.setActiveItem(dxPromptSchema.pagedItems.value.data.find(ps => ps.id === storedPromptSchemaId));
+	}
 }
 
 async function onSelectPromptSchema(promptSchema) {
 	dxPromptSchema.setActiveItem(promptSchema);
-	setItem(PROMPT_SCHEMA_STORED_KEY, promptSchema);
+	setItem(PROMPT_SCHEMA_STORED_KEY, promptSchema.id);
 }
 </script>
