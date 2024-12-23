@@ -120,7 +120,10 @@ class AgentThreadService
             ];
 
             if ($threadRun->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA) {
-                $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = $this->formatResponseSchemaForAgent($agent);
+                // Configure the JSON schema service to require the name and id fields, and use citations for each property
+                $jsonSchemaService = app(JsonSchemaService::class)->useCitations()->requireName()->requireId();
+
+                $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = $this->formatResponseSchemaForAgent($agent, $jsonSchemaService);
             }
 
             $tools = $agent->formatTools();
@@ -186,17 +189,21 @@ class AgentThreadService
     /**
      * Format the response schema for the AI model based on the agent's name and responseSchema
      */
-    public function formatResponseSchemaForAgent(Agent $agent): array|string
+    public function formatResponseSchemaForAgent(Agent $agent, JsonSchemaService $jsonSchemaService = null): array|string
     {
+        if (!$jsonSchemaService) {
+            $jsonSchemaService = app(JsonSchemaService::class);
+        }
+
         $responseSchema = $agent->responseSchema?->schema ?? '';
         if (is_array($responseSchema)) {
             $name = $agent->name . ':' . substr(md5(json_encode($responseSchema)), 0, 7);
 
             if ($agent->response_sub_selection) {
-                $responseSchema = JsonSchemaService::filterSchemaBySubSelection($responseSchema, $agent->response_sub_selection);
+                $responseSchema = $jsonSchemaService->filterSchemaBySubSelection($responseSchema, $agent->response_sub_selection);
             }
 
-            return JsonSchemaService::formatAndCleanSchema(Str::slug($name), $responseSchema);
+            return $jsonSchemaService->formatAndCleanSchema(Str::slug($name), $responseSchema);
         }
 
         return $responseSchema;

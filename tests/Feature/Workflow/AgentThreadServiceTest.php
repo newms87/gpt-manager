@@ -163,7 +163,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = JsonSchemaService::formatAndCleanSchema($name, $response);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
 
         // Then
         $this->assertEquals([
@@ -206,7 +206,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = JsonSchemaService::formatAndCleanSchema($name, $response);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
 
         // Then
         $this->assertEquals([
@@ -269,7 +269,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = JsonSchemaService::formatAndCleanSchema($name, $response);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
 
         // Then
         $this->assertEquals([
@@ -320,7 +320,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = JsonSchemaService::formatAndCleanSchema($name, $response);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
 
         // Then
         $this->assertEquals([
@@ -352,7 +352,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = JsonSchemaService::formatAndCleanSchema($name, $response);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
 
         // Then
         $this->assertEquals([
