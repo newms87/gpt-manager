@@ -14,11 +14,11 @@ class JsonSchemaService
     protected bool $requireName = false;
 
     static array $citationDef = [
-        'type'       => 'object',
-        'properties' => [
+        'type'                 => 'object',
+        'properties'           => [
             'date'       => [
-                'type'        => 'string',
-                'description' => "The date (yyyy-mm-dd) and time (00:00:00 if time n/a) of the attribute's value (if data changes over time). Format should always be full date (no partial dates)!",
+                'type'        => ['string', 'null'],
+                'description' => "The date (yyyy-mm-dd) and time (00:00:00 if time n/a) of the attribute's value (ONLY if data changes over time, otherwise null). Format should always be full date (no partial dates)!",
             ],
             'confidence' => [
                 'type'        => 'string',
@@ -28,17 +28,14 @@ class JsonSchemaService
                 'type'        => 'string',
                 'description' => 'A brief explanation of why the value was chosen and why the confidence level was set to what it was',
             ],
-            'value'      => [
-                'type' => ['string', 'number', 'boolean'],
-            ],
             'sources'    => [
                 'type'        => 'array',
                 'description' => 'The source of the attribute value. Cite any URLs, Messages IDs from the thread or files. Make sure you include all relevant URLs, Message IDs, or file IDs that contain the value (more than 1 source if others are applicable)',
                 'items'       => [
                     'anyOf' => [
                         [
-                            'type'       => 'object',
-                            'properties' => [
+                            'type'                 => 'object',
+                            'properties'           => [
                                 'url'         => [
                                     'type'        => 'string',
                                     'description' => 'A URL the contains the chosen value',
@@ -48,10 +45,12 @@ class JsonSchemaService
                                     'description' => 'A brief explanation of how you know this source contains the value',
                                 ],
                             ],
+                            'additionalProperties' => false,
+                            'required'             => ['url', 'explanation'],
                         ],
                         [
-                            'type'       => 'object',
-                            'properties' => [
+                            'type'                 => 'object',
+                            'properties'           => [
                                 'message_id'  => [
                                     'type'        => 'string',
                                     'description' => "A message ID that the attribute was sourced from. If a user message is wrapped with <AgentMessage id='message_id'>...</AgentMessage>, it contains info leading you to the answer you gave for the attribute, provide the message ID as a source. If no <AgentMessage> tags are present, omit this field",
@@ -61,11 +60,15 @@ class JsonSchemaService
                                     'description' => 'A brief explanation of how you know this source contains the value',
                                 ],
                             ],
+                            'additionalProperties' => false,
+                            'required'             => ['message_id', 'explanation'],
                         ],
                     ],
                 ],
             ],
         ],
+        'additionalProperties' => false,
+        'required'             => ['date', 'confidence', 'reason', 'sources'],
     ];
 
     public function requireId(bool $requireId = true): self
@@ -240,7 +243,15 @@ class JsonSchemaService
                 'type'  => $type,
                 'items' => $this->formatAndCleanSchemaItem("$name.items", $items, $depth + 1),
             ],
-            'string', 'number', 'integer', 'boolean', 'null' => $this->useCitations ? ['$ref' => '#/$defs/citation'] : ['type' => $type],
+            'string', 'number', 'integer', 'boolean', 'null' => $this->useCitations ? [
+                'type'                 => 'object',
+                'properties'           => [
+                    'value'    => ['type' => $type],
+                    'citation' => ['$ref' => '#/$defs/citation'],
+                ],
+                'additionalProperties' => false,
+                'required'             => ['value', 'citation'],
+            ] : ['type' => $type],
             default => throw new Exception("Unknown type at path $name: " . $type),
         };
 

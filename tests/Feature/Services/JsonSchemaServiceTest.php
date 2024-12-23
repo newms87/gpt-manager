@@ -35,8 +35,28 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
 				'type'                 => 'object',
 				'title'                => 'Person',
 				'properties'           => [
-					'name' => ['$ref' => '#/$defs/citation'],
-					'dob'  => ['$ref' => '#/$defs/citation'],
+					'name' => [
+						'type'                 => 'object',
+						'properties'           => [
+							'value'    => [
+								'type' => 'string',
+							],
+							'citation' => ['$ref' => '#/$defs/citation'],
+						],
+						'additionalProperties' => false,
+						'required'             => ['value', 'citation'],
+					],
+					'dob'  => [
+						'type'                 => 'object',
+						'properties'           => [
+							'value'    => [
+								'type' => 'string',
+							],
+							'citation' => ['$ref' => '#/$defs/citation'],
+						],
+						'additionalProperties' => false,
+						'required'             => ['value', 'citation'],
+					],
 				],
 				'$defs'                => ['citation' => JsonSchemaService::$citationDef],
 				'required'             => ['name', 'dob'],
