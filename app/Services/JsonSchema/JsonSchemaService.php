@@ -13,7 +13,7 @@ class JsonSchemaService
     /** @var bool  Make sure each object includes the name property */
     protected bool $requireName = false;
 
-    static array $citedValue = [
+    static array $citationDef = [
         'type'       => 'object',
         'properties' => [
             'date'       => [
@@ -205,6 +205,10 @@ class JsonSchemaService
             $formattedSchema['description'] = $schema['description'];
         }
 
+        if ($this->useCitations) {
+            $formattedSchema['$defs']['citation'] = static::$citationDef;
+        }
+
         return [
             'name'   => $name,
             'strict' => true,
@@ -236,7 +240,7 @@ class JsonSchemaService
                 'type'  => $type,
                 'items' => $this->formatAndCleanSchemaItem("$name.items", $items, $depth + 1),
             ],
-            'string', 'number', 'integer', 'boolean', 'null' => $this->useCitations ? static::$citedValue : ['type' => $type],
+            'string', 'number', 'integer', 'boolean', 'null' => $this->useCitations ? ['$ref' => '#/$defs/citation'] : ['type' => $type],
             default => throw new Exception("Unknown type at path $name: " . $type),
         };
 
