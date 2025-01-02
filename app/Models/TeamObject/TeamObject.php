@@ -16,6 +16,7 @@ use Newms87\Danx\Traits\AuditableTrait;
  * @property int    $id
  * @property string $type
  * @property string $name
+ * @property Carbon $date
  * @property string $description
  * @property string $url
  * @property array  $meta

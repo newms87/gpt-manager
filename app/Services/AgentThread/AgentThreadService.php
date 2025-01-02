@@ -12,6 +12,7 @@ use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use App\Repositories\AgentRepository;
+use App\Repositories\TeamObjectRepository;
 use App\Services\JsonSchema\JsonSchemaService;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -280,6 +281,10 @@ class AgentThreadService
             $responseMessage .= "\n\nExample Response:\n" . json_encode($agent->responseSchema->response_example);
         }
 
+        if ($agent->save_response_to_db) {
+            $responseMessage .= "\n\nAlways set the id for each object in the response schema to the given id from teamObjects. If teamObjects is not present or no id is present for the object, then set id to null. Match object to id by name. Similar names like Johnson and Johnson vs Johnson & Johnson should use the same id.";
+        }
+
         if ($agent->response_format !== 'text') {
             $responseMessage .= "\n\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT";
         }
@@ -356,6 +361,10 @@ class AgentThreadService
 
         if ($lastMessage->content) {
             $jsonData = $lastMessage->getJsonContent();
+
+            if ($threadRun->thread->agent->save_response_to_db) {
+                app(TeamObjectRepository::class)->saveTeamObjectFromResponseSchema($threadRun->thread->agent->responseSchema->schema, $jsonData);
+            }
 
             $responseTools = $jsonData['response_tools'] ?? [];
 

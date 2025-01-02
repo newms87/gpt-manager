@@ -7,14 +7,17 @@ use App\Models\Agent\Message;
 use App\Models\TeamObject\TeamObject;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
+use Tests\Traits\SetUpTeamTrait;
 
 class SaveTeamObjectsAiToolTest extends AuthenticatedTestCase
 {
+    use SetUpTeamTrait;
+
     public function setUp(): void
     {
         parent::setUp();
 
-        $this->user->currentTeam->update(['namespace' => 'testing']);
+        $this->setUpTeam();
     }
 
     public function test_execute_objectCreated(): void

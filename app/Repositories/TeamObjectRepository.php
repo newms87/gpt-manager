@@ -181,6 +181,19 @@ class TeamObjectRepository extends ActionRepository
     }
 
     /**
+     * Create or Update a Team Object record based on a response schema and object
+     */
+    public function saveTeamObjectFromResponseSchema(array $schema, array $object): TeamObject
+    {
+        $type = $schema['title'] ?? null;
+        $name = $object['name'] ?? null;
+
+        $teamObject = $this->saveTeamObject($type, $name, $object);
+
+        return $teamObject;
+    }
+
+    /**
      * Load a Team Object record based on type and ID
      */
     public function loadTeamObject($type, $id): ?TeamObject
