@@ -18,7 +18,7 @@ abstract class TeamObjectAttributeSourceResource extends ActionResource
         return [
             'id'            => $model->id,
             'source_type'   => $model->source_type,
-            'source'        => $model->source,
+            'source_id'     => $model->source_id,
             'location'      => $model->location,
             'explanation'   => $model->explanation,
             'sourceFile'    => StoredFileResource::make($model->sourceFile),

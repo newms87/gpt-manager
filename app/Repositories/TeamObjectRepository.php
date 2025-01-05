@@ -149,6 +149,7 @@ class TeamObjectRepository extends ActionRepository
     {
         $sourceUrl       = $source['url'] ?? null;
         $sourceMessageId = $source['message_id'] ?? null;
+        $storedFile      = null;
 
         if ($sourceUrl) {
             $sourceUrl  = FileHelper::normalizeUrl($sourceUrl);
@@ -160,7 +161,7 @@ class TeamObjectRepository extends ActionRepository
             }
 
             Log::debug("Stored File $storedFile->id references source URL $sourceUrl");
-            $sourceId   = $storedFile->id;
+            $sourceId   = $sourceUrl;
             $sourceType = 'file';
         } elseif ($sourceMessageId) {
             $sourceId   = $sourceMessageId;
@@ -173,8 +174,10 @@ class TeamObjectRepository extends ActionRepository
             'source_type' => $sourceType,
             'source_id'   => $sourceId,
         ], [
-            'explanation' => $source['explanation'] ?? null,
-            'location'    => $source['location'] ?? null,
+            'explanation'    => $source['explanation'] ?? null,
+            'location'       => $source['location'] ?? '',
+            'message_id'     => $sourceMessageId,
+            'stored_file_id' => $storedFile?->id,
         ]);
     }
 
@@ -203,12 +206,16 @@ class TeamObjectRepository extends ActionRepository
 
     /**
      * Create or Update multiple Team Object records based on a response schema and objects
+     * @return TeamObject[]
      */
-    public function saveTeamObjectsUsingSchema(array $schema, array $objects): void
+    public function saveTeamObjectsUsingSchema(array $schema, array $objects): array
     {
+        $teamObjects = [];
         foreach($objects as $object) {
-            $this->saveTeamObjectUsingSchema($schema, $object);
+            $teamObjects[] = $this->saveTeamObjectUsingSchema($schema, $object);
         }
+
+        return $teamObjects;
     }
 
     /**
@@ -235,11 +242,17 @@ class TeamObjectRepository extends ActionRepository
 
             $propertyValue = $object[$propertyName];
 
-            match ($type) {
-                'array' => $this->saveTeamObjectsUsingSchema($property['items'], $propertyValue),
-                'object' => $this->saveTeamObjectUsingSchema($property, $propertyValue),
-                default => $this->saveTeamObjectAttribute($teamObject, $propertyName, ['value' => $propertyValue])
-            };
+            if ($type === 'array') {
+                $relatedObjects = $this->saveTeamObjectsUsingSchema($property['items'], $propertyValue);
+                foreach($relatedObjects as $relatedObject) {
+                    $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
+                }
+            } elseif ($type === 'object') {
+                $relatedObject = $this->saveTeamObjectUsingSchema($property, $propertyValue);
+                $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
+            } else {
+                $this->saveTeamObjectAttribute($teamObject, $propertyName, ['value' => $propertyValue]);
+            }
         }
 
         return $teamObject;
@@ -279,6 +292,12 @@ class TeamObjectRepository extends ActionRepository
 
         foreach($attributes as $attribute) {
             $currentValue = $teamObject->getAttribute($attribute->name) ?: [];
+
+            // If the current value is not an array, then we have a attribute collision with the team__object_attributes table properties such as name, date, reason, etc.
+            // This is safe to ignore since we are only interested in the attribute values
+            if (!is_array($currentValue)) {
+                $currentValue = [];
+            }
 
             // If date is not set OR this is the primary attribute (overwrite it)
             if (!$currentValue || !$attribute->date) {
