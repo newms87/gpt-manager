@@ -175,6 +175,50 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertEquals('Metropolis', $workAddress->attributes()->firstWhere('name', 'city')?->getValue());
     }
 
+    public function test_saveTeamObjectUsingSchema_withAttributeSource_savesAttributeValueAndSource(): void
+    {
+        // Given
+        $response = [
+            'name' => 'Alice',
+            'dob'  => [
+                'value'    => '1990-05-05',
+                'citation' => [
+                    'date'       => '2020-01-01',
+                    'reason'     => 'Test Reason',
+                    'confidence' => 100,
+                    'sources'    => [
+                        ['url' => 'http://example.com', 'explanation' => 'Source Explanation'],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $person = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
+
+        // Then
+        $person->refresh();
+        $this->assertNotNull($person->id, "The parent object should have been created");
+
+        // The attribute should have been created
+        $dobAttribute         = $person->attributes()->firstWhere('name', 'dob');
+        $expectedDobAttribute = $response['dob'];
+        $this->assertNotNull($dobAttribute, "The 'dob' attribute should have been created");
+        $this->assertEquals($expectedDobAttribute['value'], $dobAttribute->getValue(), "The 'dob' attribute should have the correct value");
+        $this->assertEquals($expectedDobAttribute['citation']['date'], $dobAttribute->date->toDateString(), "The 'dob' attribute should have the correct date");
+        $this->assertEquals($expectedDobAttribute['citation']['reason'], $dobAttribute->reason, "The 'dob' attribute should have the correct reason");
+        $this->assertEquals($expectedDobAttribute['citation']['confidence'], $dobAttribute->confidence, "The 'dob' attribute should have the correct confidence");
+
+        // The source should have been created
+        $source         = $dobAttribute->sources()->first();
+        $expectedSource = $response['dob']['citation']['sources'][0];
+        $this->assertNotNull($source, "The source should have been created");
+        $this->assertEquals($expectedSource['url'], $source->source_id, "The source should have the correct URL");
+        $this->assertNotNull($source->sourceFile()->first(), "The source should have a source file");
+        $this->assertEquals($expectedSource['url'], $source->sourceFile->url, "The source file should have the correct URL");
+        $this->assertEquals($expectedSource['explanation'], $source->explanation, "The source should have the correct explanation");
+    }
+
     /**
      * Test saveTeamObjectAttribute – ensures an attribute can be saved, including sources.
      */

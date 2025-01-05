@@ -17,7 +17,7 @@ use Newms87\Danx\Traits\AuditableTrait;
  * @property string    $object_id
  * @property string    $name
  * @property Carbon    $date
- * @property string    $description
+ * @property string    $reason
  * @property string    $confidence
  * @property string    $text_value
  * @property array     $json_value

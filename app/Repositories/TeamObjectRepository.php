@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Agent\ThreadRun;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectAttributeSource;
@@ -72,6 +73,16 @@ class TeamObjectRepository extends ActionRepository
      */
     function updateTeamObject(TeamObject $teamObject, $input = []): TeamObject
     {
+        $fillableProps = ['name', 'date', 'description', 'url'];
+
+        // Sometimes a user will choose to explicitly set these object properties as attributes to the object. In this case we want to convert from an object attribute to a string property so we can save it directly on the object.
+        // NOTE: The attribute will still be saved as an object attribute related to the object, so this is duplicated information, but easier to access directly on the object, instead of as an object attribute.
+        foreach($fillableProps as $propName) {
+            if (!empty($input[$propName]) && is_array($input[$propName])) {
+                $input[$propName] = $input[$propName]['value'] ?? '';
+            }
+        }
+
         $teamObject->fill($input)->validate()->save();
 
         return $teamObject;
@@ -208,11 +219,11 @@ class TeamObjectRepository extends ActionRepository
      * Create or Update multiple Team Object records based on a response schema and objects
      * @return TeamObject[]
      */
-    public function saveTeamObjectsUsingSchema(array $schema, array $objects): array
+    public function saveTeamObjectsUsingSchema(array $schema, array $objects, ThreadRun $threadRun = null): array
     {
         $teamObjects = [];
         foreach($objects as $object) {
-            $teamObjects[] = $this->saveTeamObjectUsingSchema($schema, $object);
+            $teamObjects[] = $this->saveTeamObjectUsingSchema($schema, $object, $threadRun);
         }
 
         return $teamObjects;
@@ -221,7 +232,7 @@ class TeamObjectRepository extends ActionRepository
     /**
      * Create or Update a Team Object record based on a response schema and object
      */
-    public function saveTeamObjectUsingSchema(array $schema, array $object): TeamObject
+    public function saveTeamObjectUsingSchema(array $schema, array $object, ThreadRun $threadRun = null): TeamObject
     {
         $type = $schema['title'] ?? null;
         $name = $object['name'] ?? null;
@@ -243,15 +254,28 @@ class TeamObjectRepository extends ActionRepository
             $propertyValue = $object[$propertyName];
 
             if ($type === 'array') {
-                $relatedObjects = $this->saveTeamObjectsUsingSchema($property['items'], $propertyValue);
+                // If the property is an array, then save each item in the array as a related object
+                $relatedObjects = $this->saveTeamObjectsUsingSchema($property['items'], $propertyValue, $threadRun);
                 foreach($relatedObjects as $relatedObject) {
                     $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
                 }
             } elseif ($type === 'object') {
-                $relatedObject = $this->saveTeamObjectUsingSchema($property, $propertyValue);
+                // If the property is an object, then save the object as a related object
+                $relatedObject = $this->saveTeamObjectUsingSchema($property, $propertyValue, $threadRun);
                 $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
             } else {
-                $this->saveTeamObjectAttribute($teamObject, $propertyName, ['value' => $propertyValue]);
+                // If saving a primitive value type, then convert it to an array with a value key
+                if (!is_array($propertyValue) || !array_key_exists('value', $propertyValue)) {
+                    $propertyValue = ['value' => $propertyValue];
+                }
+
+                // Save the attribute
+                $objectAttribute = $this->saveTeamObjectAttribute($teamObject, $propertyName, $propertyValue);
+
+                // Associate the thread run if it is set
+                if ($threadRun) {
+                    $objectAttribute->threadRun()->associate($threadRun)->save();
+                }
             }
         }
 

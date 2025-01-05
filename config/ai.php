@@ -37,7 +37,22 @@ return [
             ],
         ],
         OpenAiApi::$serviceName       => [
-            'gpt-4o-mini'       => [
+            'o1'          => [
+                'input'   => 15 / $million,
+                'output'  => 60 / $million,
+                'context' => 200000,
+                'image'   => [
+                    'tokens' => 150,
+                    'base'   => 75,
+                    'tile'   => '512x512',
+                ],
+            ],
+            'o1-mini'     => [
+                'input'   => 3 / $million,
+                'output'  => 12 / $million,
+                'context' => 128000,
+            ],
+            'gpt-4o-mini' => [
                 'input'   => .15 / $million,
                 'output'  => .60 / $million,
                 'context' => 128000,
@@ -47,17 +62,7 @@ return [
                     'tile'   => '512x512',
                 ],
             ],
-            'gpt-4o'            => [
-                'input'   => 5 / $million,
-                'output'  => 15 / $million,
-                'context' => 128000,
-                'image'   => [
-                    'tokens' => 170,
-                    'base'   => 85,
-                    'tile'   => '512x512',
-                ],
-            ],
-            'gpt-4o-2024-08-06' => [
+            'gpt-4o'      => [
                 'input'   => 2.5 / $million,
                 'output'  => 10 / $million,
                 'context' => 128000,

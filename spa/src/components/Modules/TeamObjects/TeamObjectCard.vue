@@ -77,7 +77,7 @@
 					:title="relation.title"
 					:parent="object"
 					:object="object.relations[relation.name] && object.relations[relation.name][0]"
-					:schema="properties[relation.name]"
+					:schema="schemaProperties[relation.name]"
 					:level="level + 1"
 				/>
 			</div>
@@ -87,11 +87,11 @@
 					:key="relation.name"
 				>
 					<TeamObjectRelationArray
-						v-if="properties[relation.name]?.items"
+						v-if="schemaProperties[relation.name]?.items"
 						:name="relation.name"
 						:title="relation.items?.title || relation.title"
 						:parent="object"
-						:schema="properties[relation.name].items"
+						:schema="schemaProperties[relation.name].items"
 						:relations="object.relations[relation.name] || [] "
 						:level="level + 1"
 						class="mt-5"
@@ -135,7 +135,7 @@ const updateAction = dxTeamObject.getAction("update");
 const editAction = dxTeamObject.getAction("edit");
 const deleteAction = dxTeamObject.getAction("delete");
 
-const properties = computed(() => props.schema.properties || {});
+const schemaProperties = computed(() => props.schema.properties || {});
 const hasChildren = computed(() => schemaAttributes.value.length > 0 || schemaRelationArrays.value.length > 0 || schemaRelationObjects.value.length > 0);
 
 /**
@@ -143,10 +143,10 @@ const hasChildren = computed(() => schemaAttributes.value.length > 0 || schemaRe
  */
 const schemaAttributes = computed(() => {
 	const attrs = [];
-	for (let name of Object.keys(properties.value)) {
-		const attr = properties.value[name];
+	for (let name of Object.keys(schemaProperties.value)) {
+		const attr = schemaProperties.value[name];
 		// Any scalar types excluding the base attribute types (ie: name, date, etc.) are the attributes of interest for the object
-		if (attr.type === "array" || attr.type === "object" || ["name", "date", "url", "description", "meta"].includes(name)) {
+		if (attr.type === "array" || attr.type === "object") {
 			continue;
 		}
 		attrs.push({
@@ -160,8 +160,8 @@ const schemaAttributes = computed(() => {
 /** The list of properties that are relations */
 const schemaRelationArrays = computed(() => {
 	const relations = [];
-	for (let name of Object.keys(properties.value)) {
-		const attr = properties.value[name];
+	for (let name of Object.keys(schemaProperties.value)) {
+		const attr = schemaProperties.value[name];
 		// Any array or object types are the relations of interest for the object
 		if (attr.type !== "array") continue;
 		relations.push({ name, ...attr });
@@ -172,8 +172,8 @@ const schemaRelationArrays = computed(() => {
 /** The list of properties that are relations */
 const schemaRelationObjects = computed(() => {
 	const relations = [];
-	for (let name of Object.keys(properties.value)) {
-		const attr = properties.value[name];
+	for (let name of Object.keys(schemaProperties.value)) {
+		const attr = schemaProperties.value[name];
 		// Any array or object types are the relations of interest for the object
 		if (attr.type !== "object") continue;
 		relations.push({ name, ...attr });
