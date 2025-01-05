@@ -1,7 +1,6 @@
 <?php
 
 use App\AiTools\GoogleSerp\GoogleSerpAiTool;
-use App\AiTools\SaveTeamObjects\SaveTeamObjectsAiTool;
 use App\AiTools\Summarizer\SummarizerAiTool;
 use App\AiTools\UrlToImage\UrlToImageAiTool;
 use App\AiTools\UrlToMarkdown\UrlToMarkdownAiTool;
@@ -86,12 +85,6 @@ return [
             'name'        => UrlToMarkdownAiTool::$name,
             'description' => UrlToMarkdownAiTool::description(),
             'parameters'  => UrlToMarkdownAiTool::parameters(),
-        ],
-        [
-            'class'       => SaveTeamObjectsAiTool::class,
-            'name'        => SaveTeamObjectsAiTool::$name,
-            'description' => SaveTeamObjectsAiTool::description(),
-            'parameters'  => SaveTeamObjectsAiTool::parameters(),
         ],
         [
             'class'       => SummarizerAiTool::class,
