@@ -2,9 +2,9 @@
 
 namespace App\Repositories;
 
-use App\Models\Agent\ThreadRun;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
+use App\Models\TeamObject\TeamObjectAttributeSource;
 use App\Models\TeamObject\TeamObjectRelationship;
 use App\Resources\TeamObject\TeamObjectAttributeResource;
 use App\Resources\TeamObject\TeamObjectAttributeSourceResource;
@@ -104,22 +104,51 @@ class TeamObjectRepository extends ActionRepository
     public function saveTeamObjectAttribute(
         TeamObject $teamObject,
                    $name,
-                   $attribute,
-                   $messageIds = [],
-        ThreadRun  $threadRun = null
+                   $attribute
     ): TeamObjectAttribute
     {
         if (!$name) {
             throw new BadFunctionCallException("Save Team Object Attribute requires a name");
         }
 
-        $value       = $attribute['value'] ?? null;
-        $date        = $attribute['date'] ?? null;
-        $description = $attribute['description'] ?? null;
-        $confidence  = $attribute['confidence'] ?? null;
-        $sourceUrl   = $attribute['source_url'] ?? null;
+        $value      = $attribute['value'] ?? null;
+        $citation   = $attribute['citation'] ?? null;
+        $date       = $citation['date'] ?? null;
+        $reason     = $citation['reason'] ?? null;
+        $confidence = $citation['confidence'] ?? null;
+        $sources    = $citation['sources'] ?? [];
 
-        $storedFile = null;
+        $jsonValue = StringHelper::safeJsonDecode($value, maxEntrySize: 100000, forceJson: false);
+
+        $teamObjectAttribute = TeamObjectAttribute::updateOrCreate([
+            'object_id' => $teamObject->id,
+            'name'      => $name,
+            'date'      => $date,
+        ], [
+            'text_value' => $jsonValue ? null : $value,
+            'json_value' => $jsonValue ?: null,
+            'reason'     => $reason,
+            'confidence' => $confidence,
+        ]);
+
+        // Clear out the old sources
+        if ($sources) {
+            $teamObjectAttribute->sources()->delete();
+        }
+        foreach($sources as $source) {
+            $this->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
+        }
+
+        return $teamObjectAttribute;
+    }
+
+    /**
+     * Create or Update a Team Object Attribute Source record based on team object attribute and source
+     */
+    public function saveTeamObjectAttributeSource(TeamObjectAttribute $teamObjectAttribute, array $source): TeamObjectAttributeSource
+    {
+        $sourceUrl       = $source['url'] ?? null;
+        $sourceMessageId = $source['message_id'] ?? null;
 
         if ($sourceUrl) {
             $sourceUrl  = FileHelper::normalizeUrl($sourceUrl);
@@ -131,30 +160,22 @@ class TeamObjectRepository extends ActionRepository
             }
 
             Log::debug("Stored File $storedFile->id references source URL $sourceUrl");
+            $sourceId   = $storedFile->id;
+            $sourceType = 'file';
+        } elseif ($sourceMessageId) {
+            $sourceId   = $sourceMessageId;
+            $sourceType = 'message';
+        } else {
+            throw new BadFunctionCallException("Save Team Object Attribute Source requires a URL or Message ID");
         }
 
-        $jsonValue = StringHelper::safeJsonDecode($value, maxEntrySize: 100000, forceJson: false);
-
-        $teamObjectAttribute = TeamObjectAttribute::updateOrCreate([
-            'object_id' => $teamObject->id,
-            'name'      => $name,
-            'date'      => $date,
+        return $teamObjectAttribute->sources()->updateOrCreate([
+            'source_type' => $sourceType,
+            'source_id'   => $sourceId,
         ], [
-            'text_value'            => $jsonValue ? null : $value,
-            'json_value'            => $jsonValue ?: null,
-            'description'           => $description,
-            'confidence'            => $confidence,
-            'source_stored_file_id' => $storedFile?->id,
-            'thread_run_id'         => $threadRun?->id,
+            'explanation' => $source['explanation'] ?? null,
+            'location'    => $source['location'] ?? null,
         ]);
-
-        if ($messageIds) {
-            // Filter out empty / null values from message ids
-            $messageIds = array_filter($messageIds);
-            $teamObjectAttribute->sourceMessages()->syncWithoutDetaching($messageIds);
-        }
-
-        return $teamObjectAttribute;
     }
 
     /**

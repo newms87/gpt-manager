@@ -92,7 +92,7 @@ tables:
       source_type:
         type: string
         length: 255
-      source:
+      source_id:
         type: string
         length: 255
       location:

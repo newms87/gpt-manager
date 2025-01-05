@@ -65,7 +65,7 @@ class TeamObjectAttribute extends Model implements AuditableContract
 
     public function sources(): HasMany|TeamObjectAttributeSource
     {
-        return $this->hasMany(TeamObjectAttributeSource::class);
+        return $this->hasMany(TeamObjectAttributeSource::class, 'object_attribute_id');
     }
 
     public function threadRun(): BelongsTo|ThreadRun

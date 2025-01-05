@@ -16,7 +16,7 @@ use Newms87\Danx\Traits\AuditableTrait;
  * @property int         $id
  * @property int         $object_attribute_id
  * @property string      $source_type
- * @property string      $source
+ * @property string      $source_id
  * @property string      $location
  * @property string|null $explanation
  * @property string      $stored_file_id
