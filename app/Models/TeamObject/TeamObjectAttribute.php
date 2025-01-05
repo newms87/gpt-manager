@@ -2,16 +2,14 @@
 
 namespace App\Models\TeamObject;
 
-use App\Models\Agent\Message;
 use App\Models\Agent\ThreadRun;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\AuditableTrait;
 
 /**
@@ -65,14 +63,9 @@ class TeamObjectAttribute extends Model implements AuditableContract
         return $this->text_value ?? $this->json_value;
     }
 
-    public function sourceFile(): BelongsTo|StoredFile
+    public function sources(): HasMany|TeamObjectAttributeSource
     {
-        return $this->belongsTo(StoredFile::class, 'source_stored_file_id');
-    }
-
-    public function sourceMessages(): MorphToMany|Message
-    {
-        return $this->morphToMany(Message::class, 'messageable', 'messageables')->withTimestamps();
+        return $this->hasMany(TeamObjectAttributeSource::class);
     }
 
     public function threadRun(): BelongsTo|ThreadRun

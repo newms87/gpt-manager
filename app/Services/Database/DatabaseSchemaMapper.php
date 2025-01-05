@@ -130,6 +130,13 @@ class DatabaseSchemaMapper
 
         foreach($existingColumns as $existingColumn) {
             if (!in_array($existingColumn, $definedColumns)) {
+                // First drop any FK constraints on the column
+                $fks = $this->schema->getForeignKeys($table->getTable());
+                foreach($fks as $fk) {
+                    if (in_array($existingColumn, $fk['columns'])) {
+                        $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->dropForeign($fk['name']));
+                    }
+                }
                 $table->dropColumn($existingColumn);
             }
         }

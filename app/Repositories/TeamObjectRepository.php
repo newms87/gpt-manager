@@ -6,9 +6,10 @@ use App\Models\Agent\ThreadRun;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
-use App\Resources\Agent\MessageResource;
 use App\Resources\TeamObject\TeamObjectAttributeResource;
+use App\Resources\TeamObject\TeamObjectAttributeSourceResource;
 use BadFunctionCallException;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Log;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -18,7 +19,6 @@ use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\ActionRepository;
 use Newms87\Danx\Repositories\FileRepository;
-use Newms87\Danx\Resources\StoredFileResource;
 use Str;
 
 class TeamObjectRepository extends ActionRepository
@@ -181,14 +181,45 @@ class TeamObjectRepository extends ActionRepository
     }
 
     /**
+     * Create or Update multiple Team Object records based on a response schema and objects
+     */
+    public function saveTeamObjectsUsingSchema(array $schema, array $objects): void
+    {
+        foreach($objects as $object) {
+            $this->saveTeamObjectUsingSchema($schema, $object);
+        }
+    }
+
+    /**
      * Create or Update a Team Object record based on a response schema and object
      */
-    public function saveTeamObjectFromResponseSchema(array $schema, array $object): TeamObject
+    public function saveTeamObjectUsingSchema(array $schema, array $object): TeamObject
     {
         $type = $schema['title'] ?? null;
         $name = $object['name'] ?? null;
 
         $teamObject = $this->saveTeamObject($type, $name, $object);
+
+        foreach($schema['properties'] as $propertyName => $property) {
+            $type = $property['type'] ?? null;
+
+            if (!$type) {
+                throw new Exception("Invalid JSON Schema at: $propertyName");
+            }
+
+            // If there is no value set for this property on the object, then skip it
+            if (!array_key_exists($propertyName, $object)) {
+                continue;
+            }
+
+            $propertyValue = $object[$propertyName];
+
+            match ($type) {
+                'array' => $this->saveTeamObjectsUsingSchema($property['items'], $propertyValue),
+                'object' => $this->saveTeamObjectUsingSchema($property, $propertyValue),
+                default => $this->saveTeamObjectAttribute($teamObject, $propertyName, ['value' => $propertyValue])
+            };
+        }
 
         return $teamObject;
     }
@@ -223,31 +254,21 @@ class TeamObjectRepository extends ActionRepository
      */
     public function loadTeamObjectAttributes(TeamObject $teamObject): void
     {
-        $attributes = TeamObjectAttribute::where('object_id', $teamObject->id)->with('sourceFile', 'sourceMessages')->get();
+        $attributes = TeamObjectAttribute::where('object_id', $teamObject->id)->with('sources.sourceFile', 'sources.sourceMessage')->get();
 
         foreach($attributes as $attribute) {
-            $currentValue = $teamObject->getAttribute($attribute->name);
-            if (!$currentValue) {
-                $currentValue = [
-                    'id'             => $attribute->id,
-                    'name'           => $attribute->name,
-                    'date'           => $attribute->date,
-                    'value'          => $attribute->getValue(),
-                    'source'         => StoredFileResource::make($attribute->sourceFile),
-                    'sourceMessages' => MessageResource::collection($attribute->sourceMessages),
-                    'dates'          => [],
-                    'created_at'     => $attribute->created_at,
-                    'updated_at'     => $attribute->updated_at,
-                ];
-            } elseif (!$attribute->date) {
-                // If date is not set, this is the primary attribute (overwrite it)
-                $currentValue['id']             = $attribute->id;
-                $currentValue['date']           = null;
-                $currentValue['value']          = $attribute->getValue();
-                $currentValue['source']         = StoredFileResource::make($attribute->sourceFile);
-                $currentValue['sourceMessages'] = MessageResource::collection($attribute->sourceMessages);
-                $currentValue['created_at']     = $attribute->created_at;
-                $currentValue['updated_at']     = $attribute->updated_at;
+            $currentValue = $teamObject->getAttribute($attribute->name) ?: [];
+
+            // If date is not set OR this is the primary attribute (overwrite it)
+            if (!$currentValue || !$attribute->date) {
+                $currentValue['id']         = $attribute->id;
+                $currentValue['name']       = $attribute->name;
+                $currentValue['date']       = $attribute->date;
+                $currentValue['value']      = $attribute->getValue();
+                $currentValue['sources']    = TeamObjectAttributeSourceResource::collection($attribute->sources);
+                $currentValue['dates']      = $currentValue['dates'] ?? [];
+                $currentValue['created_at'] = $attribute->created_at;
+                $currentValue['updated_at'] = $attribute->updated_at;
             }
 
             if ($attribute->date) {

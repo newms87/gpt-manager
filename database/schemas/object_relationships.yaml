@@ -65,21 +65,11 @@ tables:
       json_value:
         type: json
         nullable: true
-      description:
+      reason:
         type: text
         nullable: true
       confidence:
         type: string
-        nullable: true
-      message_id:
-        type: foreignId
-        foreign_key: messages.id
-        foreign_prefix: ''
-        nullable: true
-      source_stored_file_id:
-        type: foreignUuid
-        foreign_key: stored_files.id
-        foreign_prefix: ''
         nullable: true
       thread_run_id:
         type: foreignId
@@ -92,3 +82,34 @@ tables:
       - name: unique_object_attribute_name_field
         columns: [ object_id, name, date ]
         unique: true
+
+  object_attribute_sources:
+    fields:
+      id: true
+      object_attribute_id:
+        type: foreignId
+        foreign_key: object_attributes.id
+      source_type:
+        type: string
+        length: 255
+      source:
+        type: string
+        length: 255
+      location:
+        type: string
+        length: 255
+      explanation:
+        type: text
+        nullable: true
+      stored_file_id:
+        type: foreignUuid
+        foreign_key: stored_files.id
+        foreign_prefix: ''
+        nullable: true
+      message_id:
+        type: foreignId
+        foreign_key: messages.id
+        foreign_prefix: ''
+        nullable: true
+      timestamps: true
+      softDeletes: true

@@ -3,10 +3,8 @@
 namespace App\Resources\TeamObject;
 
 use App\Models\TeamObject\TeamObjectAttribute;
-use App\Resources\Agent\MessageResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
-use Newms87\Danx\Resources\StoredFileResource;
 
 abstract class TeamObjectAttributeResource extends ActionResource
 {
@@ -23,17 +21,16 @@ abstract class TeamObjectAttributeResource extends ActionResource
         }
 
         return [
-            'id'             => $model->id,
-            'name'           => $model->name,
-            'date'           => $model->date,
-            'value'          => $model->json_value ?? $model->text_value,
-            'confidence'     => $model->confidence,
-            'description'    => $model->description,
-            'source'         => StoredFileResource::make($model->sourceFile),
-            'sourceMessages' => MessageResource::collection($model->sourceMessages),
-            'thread_url'     => $threadUrl,
-            'created_at'     => $model->created_at,
-            'updated_at'     => $model->updated_at,
+            'id'          => $model->id,
+            'name'        => $model->name,
+            'date'        => $model->date,
+            'value'       => $model->json_value ?? $model->text_value,
+            'confidence'  => $model->confidence,
+            'description' => $model->description,
+            'sources'     => TeamObjectAttributeSourceResource::collection($model->sources),
+            'thread_url'  => $threadUrl,
+            'created_at'  => $model->created_at,
+            'updated_at'  => $model->updated_at,
         ];
     }
 }

@@ -60,15 +60,38 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $response = [
             'name' => 'Dan',
             'date' => '1987-11-18',
+            'meta' => [
+                'foo' => 'bar',
+            ],
         ];
 
         // When
-        $teamObject = app(TeamObjectRepository::class)->saveTeamObjectFromResponseSchema(static::$schema, $response);
+        $teamObject = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
 
         // Then
         $teamObject->refresh();
         $this->assertNotNull($teamObject->id, "The team object should have been created");
         $this->assertEquals($response['name'], $teamObject->name, "The name should have been saved");
         $this->assertEquals($response['date'], $teamObject->date->toDateString(), "The date should have been saved");
+        $this->assertEquals($response['meta'], $teamObject->meta, "The meta data should have been saved");
+    }
+
+    public function test_saveTeamObjectFromResponseSchema_savesAttributesOfTopLevelObject(): void
+    {
+        // Given
+        $response = [
+            'name' => 'Dan',
+
+        ];
+
+        // When
+        $teamObject = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
+
+        // Then
+        $teamObject->refresh();
+        $this->assertNotNull($teamObject->id, "The team object should have been created");
+        $this->assertEquals($response['name'], $teamObject->name, "The name should have been saved");
+        $this->assertEquals($response['date'], $teamObject->date->toDateString(), "The date should have been saved");
+        $this->assertEquals($response['meta'], $teamObject->meta, "The meta data should have been saved");
     }
 }

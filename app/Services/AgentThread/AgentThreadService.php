@@ -363,7 +363,7 @@ class AgentThreadService
             $jsonData = $lastMessage->getJsonContent();
 
             if ($threadRun->thread->agent->save_response_to_db) {
-                app(TeamObjectRepository::class)->saveTeamObjectFromResponseSchema($threadRun->thread->agent->responseSchema->schema, $jsonData);
+                app(TeamObjectRepository::class)->saveTeamObjectUsingSchema($threadRun->thread->agent->responseSchema->schema, $jsonData);
             }
 
             $responseTools = $jsonData['response_tools'] ?? [];
