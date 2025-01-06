@@ -18,15 +18,15 @@ class JsonSchemaService
         'properties'           => [
             'date'       => [
                 'type'        => ['string', 'null'],
-                'description' => "The date (yyyy-mm-dd) and time (00:00:00 if time n/a) of the attribute's value (ONLY if data changes over time, otherwise null). Format should always be full date (no partial dates)!",
+                'description' => "The date (yyyy-mm-dd) and time (00:00:00 if time n/a) of the attribute's value (ONLY if data changes over time, otherwise null). ONLY set this value if it makes sense to plot in a time series! Leave null for names, descriptions, static properties, etc. Only set date if there is an obvious date related to the value. Format should always be full date (and time if available). NO PARTIAL DATES!",
             ],
             'confidence' => [
                 'type'        => 'string',
-                'description' => 'The confidence level of the attribute value. Must be one of the following: "High", "Medium", "Low"',
+                'description' => 'The confidence level of the attribute value. Must be one of the following: "High", "Medium", "Low", "" (empty string). Leave blank if property value is null',
             ],
             'reason'     => [
                 'type'        => 'string',
-                'description' => 'A brief explanation of why the value was chosen and why the confidence level was set to what it was',
+                'description' => 'A brief explanation of why the value was chosen and why the confidence level was set to what it was. Leave blank if property value is null',
             ],
             'sources'    => [
                 'type'        => 'array',
@@ -40,13 +40,17 @@ class JsonSchemaService
                                     'type'        => 'string',
                                     'description' => 'A URL the contains the chosen value',
                                 ],
+                                'location'    => [
+                                    'type'        => 'string',
+                                    'description' => 'A value such as "In the first paragraph", "In the title", "In the image caption", "Page 2", etc. to describe where in the source content the attribute was derived. NEVER SET THIS TO ACTUAL CONTENT OF THE SOURCE JUST A QUICK HINT OF WHERE TO LOOK IN THE SOURCE. If source content is very short (ie 1 paragraph, etc) just leave this blank.',
+                                ],
                                 'explanation' => [
                                     'type'        => 'string',
                                     'description' => 'A brief explanation of how you know this source contains the value',
                                 ],
                             ],
                             'additionalProperties' => false,
-                            'required'             => ['url', 'explanation'],
+                            'required'             => ['url', 'location', 'explanation'],
                         ],
                         [
                             'type'                 => 'object',
@@ -55,13 +59,17 @@ class JsonSchemaService
                                     'type'        => 'string',
                                     'description' => "A message ID that the attribute was sourced from. If a user message is wrapped with <AgentMessage id='message_id'>...</AgentMessage>, it contains info leading you to the answer you gave for the attribute, provide the message ID as a source. If no <AgentMessage> tags are present, omit this field",
                                 ],
+                                'location'    => [
+                                    'type'        => 'string',
+                                    'description' => 'A value such as "First paragraph", "In Title", "Towards the end", etc. to describe where in the source content the attribute was derived. NEVER SET THIS TO ACTUAL CONTENT OF THE SOURCE JUST A QUICK HINT OF WHERE TO LOOK IN THE SOURCE. If source content is very short (ie 1 paragraph, etc) just leave this blank.',
+                                ],
                                 'explanation' => [
                                     'type'        => 'string',
                                     'description' => 'A brief explanation of how you know this source contains the value',
                                 ],
                             ],
                             'additionalProperties' => false,
-                            'required'             => ['message_id', 'explanation'],
+                            'required'             => ['message_id', 'location', 'explanation'],
                         ],
                     ],
                 ],
@@ -171,7 +179,7 @@ class JsonSchemaService
         // Ensures all properties (and sub properties) are both required and have no additional properties. It does this recursively.
         foreach($properties as $key => $value) {
             $childName     = $name . '.' . $key;
-            $formattedItem = $this->formatAndCleanSchemaItem($childName, $value, $depth);
+            $formattedItem = $this->formatAndCleanSchemaItem($childName, $value, $depth, $key === 'name');
             if ($formattedItem) {
                 $formattedSchema[$key] = $formattedItem;
             }
@@ -222,7 +230,7 @@ class JsonSchemaService
     /**
      * Format and clean the schema property entry or array item to match the requirements of a strict JSON schema
      */
-    public function formatAndCleanSchemaItem($name, $value, $depth = 0): array|null
+    public function formatAndCleanSchemaItem($name, $value, $depth = 0, $required = false): array|null
     {
         $type        = $value['type'] ?? null;
         $title       = $value['title'] ?? null;
@@ -233,6 +241,9 @@ class JsonSchemaService
 
         $resolvedType = is_array($type) ? $type[0] : $type;
 
+        // The type should always be allowed to be null except when it is a required field
+        $typeList = $required ? $type : [$type, 'null'];
+
         $item = match ($resolvedType) {
             'object' => [
                 'type'                 => $type,
@@ -241,17 +252,17 @@ class JsonSchemaService
             ],
             'array' => [
                 'type'  => $type,
-                'items' => $this->formatAndCleanSchemaItem("$name.items", $items, $depth + 1),
+                'items' => $this->formatAndCleanSchemaItem("$name.items", $items, $depth + 1, $required),
             ],
             'string', 'number', 'integer', 'boolean', 'null' => $this->useCitations ? [
                 'type'                 => 'object',
                 'properties'           => [
-                    'value'    => ['type' => [$type, 'null']],
+                    'value'    => ['type' => $typeList],
                     'citation' => ['$ref' => '#/$defs/citation'],
                 ],
                 'additionalProperties' => false,
                 'required'             => ['value', 'citation'],
-            ] : ['type' => [$type, 'null']],
+            ] : ['type' => $typeList],
             default => throw new Exception("Unknown type at path $name: " . $type),
         };
 

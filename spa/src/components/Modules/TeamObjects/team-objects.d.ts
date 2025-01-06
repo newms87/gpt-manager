@@ -22,13 +22,23 @@ interface TeamObjectAttribute extends ActionTargetItem {
 	name: string;
 	date: string;
 	value: object | string | boolean | number | Date | string[] | object[] | null;
-	description: string;
 	confidence: string;
-	source?: UploadedFile;
-	sourceMessages?: ThreadMessage[];
+	reason: string;
+	sources?: TeamObjectAttributeSource[];
 	thread_url?: string;
 	created_at: string;
 	updated_at: string;
+}
+
+interface TeamObjectAttributeSource {
+	id: number;
+	source_type: string;
+	source_id: string;
+	location: string;
+	explanation: string;
+	sourceFile?: UploadedFile;
+	sourceMessage?: ThreadMessage;
+	created_at: string;
 }
 
 interface BooleanAttribute extends TeamObjectAttribute {
@@ -62,11 +72,15 @@ interface ObjectArrayAttribute extends TeamObjectAttribute {
 export interface TeamObjectAttributeBlockProps {
 	label?: string;
 	attribute?: TeamObjectAttribute;
-	format?: "boolean" | "shortCurrency" | "number" | "date" | "list";
+	format?: "boolean" | "shortCurrency" | "number" | "date" | "list" | "date-time" | "string";
 }
 
 export interface TeamObjectAttributeProps extends TeamObjectAttributeBlockProps {
 	name: string;
 	title?: string;
 	object: TeamObject;
+}
+
+export interface TeamObjectAttributeSourceCardProps {
+	source: TeamObjectAttributeSource;
 }

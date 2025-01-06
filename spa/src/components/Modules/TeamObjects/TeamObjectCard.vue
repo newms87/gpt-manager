@@ -67,6 +67,7 @@
 					:title="attr.title"
 					:object="object"
 					:attribute="object.attributes[attr.name]"
+					:format="attr.format || attr.type"
 				/>
 			</div>
 			<div class="mt-5 space-y-4">

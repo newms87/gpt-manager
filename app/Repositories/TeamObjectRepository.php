@@ -79,7 +79,11 @@ class TeamObjectRepository extends ActionRepository
         // NOTE: The attribute will still be saved as an object attribute related to the object, so this is duplicated information, but easier to access directly on the object, instead of as an object attribute.
         foreach($fillableProps as $propName) {
             if (!empty($input[$propName]) && is_array($input[$propName])) {
-                $input[$propName] = $input[$propName]['value'] ?? '';
+                $input[$propName] = $input[$propName]['value'] ?? null;
+            }
+
+            if (array_key_exists($propName, $input) && $input[$propName] === null) {
+                unset($input[$propName]);
             }
         }
 
@@ -237,10 +241,15 @@ class TeamObjectRepository extends ActionRepository
         $type = $schema['title'] ?? null;
         $name = $object['name'] ?? null;
 
+        if (is_array($name)) {
+            $name = $name['value'] ?? null;
+        }
+
         $teamObject = $this->saveTeamObject($type, $name, $object);
 
         foreach($schema['properties'] as $propertyName => $property) {
-            $type = $property['type'] ?? null;
+            $type   = $property['type'] ?? null;
+            $format = $property['format'] ?? null;
 
             if (!$type) {
                 throw new Exception("Invalid JSON Schema at: $propertyName");
@@ -274,6 +283,8 @@ class TeamObjectRepository extends ActionRepository
                     continue;
                 }
 
+                $propertyValue['value'] = $this->formatPropertyValue($type, $format, $propertyValue['value']);
+
                 // Save the attribute
                 $objectAttribute = $this->saveTeamObjectAttribute($teamObject, $propertyName, $propertyValue);
 
@@ -285,6 +296,19 @@ class TeamObjectRepository extends ActionRepository
         }
 
         return $teamObject;
+    }
+
+    public function formatPropertyValue($type, $format, $value): string|int|bool|float
+    {
+        return match ($format || $type) {
+            'string' => (string)$value,
+            'number' => (float)$value,
+            'integer' => (int)$value,
+            'boolean' => (bool)$value,
+            'date' => carbon($value)->toDateString(),
+            'date-time' => carbon($value)->toDateTimeString(),
+            default => $value,
+        };
     }
 
     /**
