@@ -282,6 +282,8 @@ class AgentThreadService
 
         if ($agent->save_response_to_db) {
             $responseMessage .= "\n\nALWAYS set the name attribute for ALL objects (use the best of your ability to determine what the name should be). Provide values to the attributes in the schema when possible. DO NOT provide a value if it is not given in the source content (use null when value is unknown) and NEVER make up values for an attribute. Always set the id for each object in the response schema to the given id from teamObjects. If teamObjects is not present or no id is present for the object, then set id to null. Match object to id by name. Similar names like Johnson and Johnson vs Johnson & Johnson should use the same id.";
+
+            $responseMessage .= "\n\nWhen making citations for attributes, always use the message type w/ message id if <AgentMessage> tags are present around the content. Only use URL if no <AgentMessage> tag is wrapping the content you are referencing AND there is a real/valid url given. Otherwise, DO NOT make a citation.";
         }
 
         if ($agent->response_format !== 'text') {

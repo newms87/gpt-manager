@@ -1,16 +1,24 @@
 <template>
-	<div>
-		<div v-if="source.location">
-			{{ source.location }}
-		</div>
-		<div v-if="source.explanation" class="px-4 py-2 bg-slate-900 rounded-lg text-slate-400 text-base">
-			{{ source.explanation }}
-		</div>
-		<div>
-			<a v-if="source.sourceFile" :href="source.sourceFile.url" target="_blank">{{ source.sourceFile.name }}</a>
+	<div class="space-y-2">
+		<LabelValuePillWidget
+			v-if="source.location"
+			class="flex items-stretch"
+			label="Location"
+			:value="source.location"
+			label-class="w-20"
+		/>
+		<LabelValuePillWidget
+			v-if="source.explanation"
+			class="flex items-stretch"
+			label="Explanation"
+			label-class="w-20"
+			:value="source.explanation"
+		/>
+		<div v-if="source.sourceFile">
+			<a :href="source.sourceFile.url" target="_blank">{{ source.sourceFile.name }}</a>
 		</div>
 
-		<div v-if="source.sourceMessage" class="mt-4 space-y-4">
+		<div v-if="source.sourceMessage" class="space-y-4">
 			<ThreadMessageCard
 				readonly
 				:message="source.sourceMessage"
@@ -21,6 +29,7 @@
 <script setup lang="ts">
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import { TeamObjectAttributeSourceCardProps } from "@/components/Modules/TeamObjects/team-objects";
+import LabelValuePillWidget from "@/components/Shared/Widgets/LabelValuePillWidget";
 
 const props = defineProps<TeamObjectAttributeSourceCardProps>();
 

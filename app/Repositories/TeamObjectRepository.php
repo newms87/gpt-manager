@@ -116,11 +116,7 @@ class TeamObjectRepository extends ActionRepository
      * Create or Update the value, date, confidence and sources for a Team Object Attribute record based on team object
      * and attribute name
      */
-    public function saveTeamObjectAttribute(
-        TeamObject $teamObject,
-                   $name,
-                   $attribute
-    ): TeamObjectAttribute
+    public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $attribute): TeamObjectAttribute
     {
         if (!$name) {
             throw new BadFunctionCallException("Save Team Object Attribute requires a name");
@@ -166,6 +162,8 @@ class TeamObjectRepository extends ActionRepository
         $sourceMessageId = $source['message_id'] ?? null;
         $storedFile      = null;
 
+        Log::debug("Saving citation: " . $teamObjectAttribute->name . ($sourceUrl ? " URL: $sourceUrl" : '') . ($sourceMessageId ? " Message ID: $sourceMessageId" : ''));
+
         if ($sourceUrl) {
             $sourceUrl  = FileHelper::normalizeUrl($sourceUrl);
             $storedFile = StoredFile::firstWhere('url', $sourceUrl);
@@ -185,7 +183,7 @@ class TeamObjectRepository extends ActionRepository
             throw new BadFunctionCallException("Save Team Object Attribute Source requires a URL or Message ID");
         }
 
-        return $teamObjectAttribute->sources()->updateOrCreate([
+        $attributeSource = $teamObjectAttribute->sources()->updateOrCreate([
             'source_type' => $sourceType,
             'source_id'   => $sourceId,
         ], [
@@ -194,6 +192,10 @@ class TeamObjectRepository extends ActionRepository
             'message_id'     => $sourceMessageId,
             'stored_file_id' => $storedFile?->id,
         ]);
+
+        Log::debug("$attributeSource was " . ($attributeSource->wasRecentlyCreated ? 'created' : 'updated'));
+
+        return $attributeSource;
     }
 
     /**
@@ -225,6 +227,8 @@ class TeamObjectRepository extends ActionRepository
      */
     public function saveTeamObjectsUsingSchema(array $schema, array $objects, ThreadRun $threadRun = null): array
     {
+        Log::debug("Saving array of TeamObjects: " . count($objects));
+
         $teamObjects = [];
         foreach($objects as $object) {
             $teamObjects[] = $this->saveTeamObjectUsingSchema($schema, $object, $threadRun);
@@ -239,15 +243,14 @@ class TeamObjectRepository extends ActionRepository
     public function saveTeamObjectUsingSchema(array $schema, array $object, ThreadRun $threadRun = null): TeamObject
     {
         $type = $schema['title'] ?? null;
-        $name = $object['name'] ?? null;
+        $name = $object['name']['value'] ?? $object['name'] ?? null;
 
-        if (is_array($name)) {
-            $name = $name['value'] ?? null;
-        }
+        Log::debug("Saving TeamObject: $type $name");
 
         $teamObject = $this->saveTeamObject($type, $name, $object);
 
         foreach($schema['properties'] as $propertyName => $property) {
+            $title  = $property['title'] ?? $propertyName;
             $type   = $property['type'] ?? null;
             $format = $property['format'] ?? null;
 
@@ -259,6 +262,8 @@ class TeamObjectRepository extends ActionRepository
             if (!array_key_exists($propertyName, $object)) {
                 continue;
             }
+
+            Log::debug("Saving Property: $title ($type" . ($format ? " [$format]" : '') . ')');
 
             $propertyValue = $object[$propertyName];
 
@@ -280,6 +285,7 @@ class TeamObjectRepository extends ActionRepository
 
                 // Skip saving this property if the value is null
                 if ($propertyValue['value'] === null) {
+                    Log::debug("Skipping null value for $propertyName");
                     continue;
                 }
 
@@ -298,6 +304,9 @@ class TeamObjectRepository extends ActionRepository
         return $teamObject;
     }
 
+    /**
+     * Format a property value based on the type and format
+     */
     public function formatPropertyValue($type, $format, $value): string|int|bool|float
     {
         return match ($format || $type) {
