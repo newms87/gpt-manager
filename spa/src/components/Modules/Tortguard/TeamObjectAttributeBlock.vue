@@ -1,8 +1,8 @@
 <template>
-	<LabelValueBlock :label="label || attribute.name">
+	<LabelValueBlock :label="resolvedLabel">
 		<template #label>
 			<div class="flex items-center flex-nowrap">
-				{{ label || attribute.name }}
+				{{ resolvedLabel }}
 				<div class="ml-1">
 					<HighConfidenceIcon v-if="attribute?.confidence === 'High'" class="text-green-600 w-3" />
 					<MediumConfidenceIcon v-else-if="attribute?.confidence === 'Medium'" class="text-amber-400 w-3" />
@@ -22,50 +22,24 @@
 		<template v-else>
 			{{ resolvedValue }}
 		</template>
-		<div
-			v-if="attribute?.source || attribute?.sourceMessages?.length"
-			class="inline-block ml-2"
-		>
-			<LinkIcon class="w-4 cursor-pointer text-sky-500" />
-			<QMenu class="p-4 mt-4 bg-slate-600">
-				<div class="flex flex-nowrap">
-					<div class="flex-grow">
-						<a v-if="attribute.source" :href="attribute.source.url" target="_blank">{{ attribute.source.url }}</a>
-					</div>
-					<div class="ml-4">
-						<a :href="attribute.thread_url" target="_blank">
-							<ThreadLinkIcon class="w-4" />
-						</a>
-					</div>
-				</div>
-				<div v-if="attribute.description" class="my-4 px-6 p-2 bg-slate-900 text-slate-400 rounded-full text-base">
-					{{ attribute.description }}
-				</div>
-				<div v-if="attribute.sourceMessages?.length" class="mt-4 space-y-4">
-					<ThreadMessageCard
-						v-for="message in attribute.sourceMessages" :key="message.id" readonly
-						:message="message"
-					/>
-				</div>
-			</QMenu>
-		</div>
+		<TeamObjectAttributeSourcesMenu v-if="attribute" :attribute="attribute" />
 	</LabelValueBlock>
 </template>
 <script setup lang="ts">
-import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import { TeamObjectAttributeBlockProps } from "@/components/Modules/TeamObjects/team-objects";
+import TeamObjectAttributeSourcesMenu from "@/components/Modules/Tortguard/TeamObjectAttributeSourcesMenu";
 import {
-	FaBrandsThreads as ThreadLinkIcon,
 	FaSolidAngleDown as LowConfidenceIcon,
 	FaSolidAnglesDown as NoConfidenceIcon,
 	FaSolidAnglesUp as HighConfidenceIcon,
-	FaSolidAngleUp as MediumConfidenceIcon,
-	FaSolidLink as LinkIcon
+	FaSolidAngleUp as MediumConfidenceIcon
 } from "danx-icon";
-import { fBoolean, fDate, fNumber, fShortCurrency, LabelValueBlock } from "quasar-ui-danx";
+import { fBoolean, fDate, fDateTime, fNumber, fShortCurrency, LabelValueBlock } from "quasar-ui-danx";
 import { computed } from "vue";
 
 const props = defineProps<TeamObjectAttributeBlockProps>();
+
+const resolvedLabel = computed(() => props.label || props.attribute?.name);
 
 const resolvedValue = computed(() => {
 	const value = props.attribute?.value;
@@ -85,6 +59,9 @@ const resolvedValue = computed(() => {
 
 		case "date":
 			return fDate(value as string);
+
+		case "date-time":
+			return fDateTime(value as string);
 
 		case "list":
 			return (value as string[]).join(", ");
