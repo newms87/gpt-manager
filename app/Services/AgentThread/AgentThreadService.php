@@ -5,7 +5,6 @@ namespace App\Services\AgentThread;
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
 use App\Api\OpenAi\Classes\OpenAiToolCaller;
-use App\Api\OpenAi\OpenAiApi;
 use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\Agent;
 use App\Models\Agent\Message;
@@ -276,23 +275,17 @@ class AgentThreadService
             $responseMessage .= "\n\nResponse Schema:\n" . json_encode($this->formatResponseSchemaForAgent($agent));
         }
 
-        // Include the Example response
-        if ($agent->responseSchema?->response_example) {
+        // Include the Example response if we're in JSON object mode to help the agent understand the correct response format
+        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_OBJECT && $agent->responseSchema?->response_example) {
             $responseMessage .= "\n\nExample Response:\n" . json_encode($agent->responseSchema->response_example);
         }
 
         if ($agent->save_response_to_db) {
-            $responseMessage .= "\n\nAlways set the id for each object in the response schema to the given id from teamObjects. If teamObjects is not present or no id is present for the object, then set id to null. Match object to id by name. Similar names like Johnson and Johnson vs Johnson & Johnson should use the same id.";
+            $responseMessage .= "\n\nProvide values to the attributes in the schema when possible. DO NOT provide a value if it is not given in the source content (use null when value is unknown) and NEVER make up values for an attribute. Always set the id for each object in the response schema to the given id from teamObjects. If teamObjects is not present or no id is present for the object, then set id to null. Match object to id by name. Similar names like Johnson and Johnson vs Johnson & Johnson should use the same id.";
         }
 
         if ($agent->response_format !== 'text') {
             $responseMessage .= "\n\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT";
-        }
-
-        // XXX: Open AI has a bug that causes the completion API to call a non-documented tools call
-        // This encourages the model to avoid that
-        if ($agent->api === OpenAiApi::$serviceName) {
-            $responseMessage .= "\n\nmulti_tool_use.parallel IS NOT A VALID FUNCTION CALL. DO NOT USE!";
         }
 
         return $responseMessage;

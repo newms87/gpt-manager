@@ -246,12 +246,12 @@ class JsonSchemaService
             'string', 'number', 'integer', 'boolean', 'null' => $this->useCitations ? [
                 'type'                 => 'object',
                 'properties'           => [
-                    'value'    => ['type' => $type],
+                    'value'    => ['type' => [$type, 'null']],
                     'citation' => ['$ref' => '#/$defs/citation'],
                 ],
                 'additionalProperties' => false,
                 'required'             => ['value', 'citation'],
-            ] : ['type' => $type],
+            ] : ['type' => [$type, 'null']],
             default => throw new Exception("Unknown type at path $name: " . $type),
         };
 

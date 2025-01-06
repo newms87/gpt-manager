@@ -100,6 +100,24 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertEquals($response['dob'], $dobAttribute->getValue(), "The dob should have been saved");
     }
 
+    public function test_saveTeamObjectUsingSchema_withNullScalarValue_doesNotSaveAttribute(): void
+    {
+        // Given
+        $response = [
+            'name' => 'Dan',
+            'dob'  => null,
+        ];
+
+        // When
+        $teamObject = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
+
+        // Then
+        $teamObject->refresh();
+        $this->assertEquals(1, $teamObject->attributes()->count(), "Exactly 1 team object attribute should have been created (dob should have been skipped)");
+        $nameAttribute = $teamObject->attributes()->firstWhere('name', 'name');
+        $this->assertNotNull($nameAttribute, "The name attribute should have been created");
+    }
+
     /**
      * Test saving a nested object (e.g. 'job') via the JSON schema.
      */

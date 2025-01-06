@@ -1,4 +1,4 @@
-import { BooleanField, NumberField, SelectField, SliderNumberField, TextField } from "quasar-ui-danx";
+import { NumberField, SelectField, SliderNumberField, TextField } from "quasar-ui-danx";
 import { h } from "vue";
 import { controls } from "./controls";
 
@@ -34,11 +34,6 @@ export const fields = [
 		}),
 		label: "Temperature",
 		required: true
-	},
-	{
-		name: "enable_message_sources",
-		label: "Enable Message Sources?",
-		vnode: (props) => h(BooleanField, { ...props })
 	},
 	{
 		name: "retry_count",

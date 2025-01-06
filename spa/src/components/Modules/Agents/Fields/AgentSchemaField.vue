@@ -12,13 +12,20 @@
 				<QTab name="json_object" label="JSON Object" />
 				<QTab name="json_schema" label="JSON Schema" />
 			</QTabs>
-			<QCheckbox
-				v-if="agent.response_format !== 'text'"
-				:model-value="!!agent.save_response_to_db"
-				class="ml-4"
-				label="Save response to DB"
-				@update:model-value="save_response_to_db => updateAction.trigger(agent, {save_response_to_db})"
-			/>
+			<template v-if="agent.response_format !== 'text'">
+				<QCheckbox
+					:model-value="!!agent.save_response_to_db"
+					class="ml-4"
+					label="Save response to DB"
+					@update:model-value="save_response_to_db => updateAction.trigger(agent, {save_response_to_db})"
+				/>
+				<QCheckbox
+					:model-value="!!agent.enable_message_sources"
+					class="ml-4"
+					label="Enable Message Sources"
+					@update:model-value="enable_message_sources => updateAction.trigger(agent, {enable_message_sources})"
+				/>
+			</template>
 		</div>
 
 		<div v-if="agent.response_format !== 'text'" class="mt-4">

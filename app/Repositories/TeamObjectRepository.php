@@ -269,6 +269,11 @@ class TeamObjectRepository extends ActionRepository
                     $propertyValue = ['value' => $propertyValue];
                 }
 
+                // Skip saving this property if the value is null
+                if ($propertyValue['value'] === null) {
+                    continue;
+                }
+
                 // Save the attribute
                 $objectAttribute = $this->saveTeamObjectAttribute($teamObject, $propertyName, $propertyValue);
 
