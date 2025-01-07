@@ -99,11 +99,11 @@ class WorkflowInputWorkflowTool extends WorkflowTool
             return [];
         }
 
-        $teamObjectArr = app(TeamObjectRepository::class)->getFullyLoadedTeamObject($workflowInput->team_object_type, $workflowInput->team_object_id);
+        $teamObject = app(TeamObjectRepository::class)->loadTeamObject($workflowInput->team_object_type, $workflowInput->team_object_id);
 
 
         // TODO: For now just one object, but maybe add team_object_filter field to query the team objects required
 
-        return [TeamObjectForAgentsResource::make($teamObjectArr)];
+        return [TeamObjectForAgentsResource::make($teamObject)];
     }
 }

@@ -314,48 +314,6 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     }
 
     /**
-     * Test getFullyLoadedTeamObject – ensures attributes and relationships are recursively loaded.
-     */
-    public function test_getFullyLoadedTeamObject_recursivelyLoadsData(): void
-    {
-        // Given
-        $repo = app(TeamObjectRepository::class);
-
-        // Create a parent object
-        $parent = TeamObject::create([
-            'type' => 'ParentType',
-            'name' => 'ParentName',
-        ]);
-
-        // Create child relationship
-        $child = TeamObject::create([
-            'type' => 'ChildType',
-            'name' => 'ChildName',
-        ]);
-
-        // Attach relationship
-        $repo->saveTeamObjectRelationship($parent, 'child', $child);
-
-        // Add an attribute to the parent and the child
-        $repo->saveTeamObjectAttribute($parent, 'parent_attribute', ['value' => 'ParentVal']);
-        $repo->saveTeamObjectAttribute($child, 'child_attribute', ['value' => 'ChildVal']);
-
-        // When
-        $loaded = $repo->getFullyLoadedTeamObject('ParentType', $parent->id);
-
-        // Then
-        $this->assertNotNull($loaded, "Should load the parent object");
-        $this->assertNotNull($loaded['parent_attribute'] ?? null, "Should have loaded the parent's attribute");
-        $this->assertEquals('ParentVal', $loaded['parent_attribute']['value'] ?? null);
-
-        // Relationship should be loaded
-        $childRelation = $loaded['child'] ?? null;
-        $this->assertNotNull($childRelation, "The child relationship should be loaded");
-        $this->assertEquals($child->id, $childRelation['id'], "The child object should be attached");
-        $this->assertEquals('ChildVal', $childRelation['child_attribute']['value'] ?? null);
-    }
-
-    /**
      * Test exception-handling scenarios for better coverage.
      */
     public function test_saveTeamObject_throwsBadFunctionCallExceptionIfNoTypeOrName(): void
@@ -382,39 +340,5 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // When
         $repo->createRelation($parent, null, 'SomeType', 'SomeName');
-    }
-
-    public function test_loadTeamObjectAttributes_loadsAttributesAndSources(): void
-    {
-        // Given
-        $repo       = app(TeamObjectRepository::class);
-        $teamObject = TeamObject::create([
-            'type' => 'TestType',
-            'name' => 'TestName',
-        ]);
-        $repo->saveTeamObjectAttribute($teamObject, 'test_attr', [
-            'value'    => 'some val',
-            'citation' => [
-                'date'       => '2022-12-01',
-                'reason'     => 'test reason',
-                'confidence' => 80,
-                'sources'    => [
-                    ['url' => 'http://example.com/test'],
-                ],
-            ],
-        ]);
-
-        // Make sure the object is fresh
-        $teamObject->refresh();
-
-        // When
-        $loadedAttributes = $repo->loadTeamObjectAttributes($teamObject);
-
-        // Then
-        $loadedAttr = $loadedAttributes['test_attr'] ?? null;
-        $this->assertNotNull($loadedAttr, "Attribute should be loaded into the object's attributes array");
-        $this->assertEquals('some val', $loadedAttr['value']);
-        $this->assertCount(1, $loadedAttr['sources'], 'It should load sources as well');
-        $this->assertEquals('http://example.com/test', $loadedAttr['sources'][0]['source_id']);
     }
 }
