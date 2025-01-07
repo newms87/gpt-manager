@@ -331,7 +331,7 @@ class TeamObjectRepository extends ActionRepository
     /**
      * Load a Team Object record based on type and name and load all attributes and relationships (recursively)
      */
-    public function getFullyLoadedTeamObject($type, $id): ?TeamObject
+    public function getFullyLoadedTeamObject($type, $id): ?array
     {
         $object = $this->loadTeamObject($type, $id);
 
@@ -339,21 +339,25 @@ class TeamObjectRepository extends ActionRepository
             return null;
         }
 
-        $this->loadTeamObjectAttributes($object);
-        $this->recursivelyLoadTeamObjectRelations($object);
+        $loadedObject = collect($object->toArray())->except(['created_at', 'updated_at', 'deleted_at'])->toArray();
 
-        return $object;
+        $loadedAttributes    = $this->loadTeamObjectAttributes($object);
+        $loadedRelationships = $this->recursivelyLoadTeamObjectRelations($object);
+
+        return $loadedAttributes + $loadedRelationships + $loadedObject;
     }
 
     /**
      * Load all attributes for a Team Object record
      */
-    public function loadTeamObjectAttributes(TeamObject $teamObject): void
+    public function loadTeamObjectAttributes(TeamObject $teamObject): array
     {
         $attributes = TeamObjectAttribute::where('object_id', $teamObject->id)->with('sources.sourceFile', 'sources.sourceMessage')->get();
 
+        $loadedAttributes = [];
+
         foreach($attributes as $attribute) {
-            $currentValue = $teamObject->getAttribute($attribute->name) ?: [];
+            $currentValue = $loadedAttributes[$attribute->name] ?? [];
 
             // If the current value is not an array, then we have a attribute collision with the team__object_attributes table properties such as name, date, reason, etc.
             // This is safe to ignore since we are only interested in the attribute values
@@ -363,65 +367,73 @@ class TeamObjectRepository extends ActionRepository
 
             // If date is not set OR this is the primary attribute (overwrite it)
             if (!$currentValue || !$attribute->date) {
-                $currentValue['id']         = $attribute->id;
-                $currentValue['name']       = $attribute->name;
-                $currentValue['date']       = $attribute->date;
-                $currentValue['value']      = $attribute->getValue();
-                $currentValue['sources']    = TeamObjectAttributeSourceResource::collection($attribute->sources);
-                $currentValue['dates']      = $currentValue['dates'] ?? [];
-                $currentValue['created_at'] = $attribute->created_at;
-                $currentValue['updated_at'] = $attribute->updated_at;
+                $currentValue['id']      = $attribute->id;
+                $currentValue['name']    = $attribute->name;
+                $currentValue['date']    = $attribute->date?->toDateTimeString();
+                $currentValue['value']   = $attribute->getValue();
+                $currentValue['sources'] = TeamObjectAttributeSourceResource::collection($attribute->sources);
+                $currentValue['dates']   = $currentValue['dates'] ?? [];
             }
 
             if ($attribute->date) {
                 $currentValue['dates'][] = [
-                    'date'  => $attribute->date,
+                    'date'  => $attribute->date?->toDateTimeString(),
                     'value' => $attribute->getValue(),
                 ];
             }
 
-            $teamObject->setAttribute($attribute->name, $currentValue);
+            $loadedAttributes[$attribute->name] = $currentValue;
         }
+
+        return $loadedAttributes;
     }
 
     /**
      * Load all relationships for a Team Object record and recursively load all attributes and relationships
      */
-    protected function recursivelyLoadTeamObjectRelations(TeamObject $teamObject, $maxDepth = 10): void
+    protected function recursivelyLoadTeamObjectRelations(TeamObject $teamObject, $maxDepth = 10): array
     {
         $relationships = TeamObjectRelationship::where('object_id', $teamObject->id)->get();
 
-        foreach($relationships as $relationship) {
-            $object = TeamObject::find($relationship->related_object_id);
+        $loadedRelationships = [];
 
-            if (!$object) {
+        foreach($relationships as $relationship) {
+            $relatedObject = TeamObject::find($relationship->related_object_id);
+
+            if (!$relatedObject) {
                 Log::warning("Could not find related object with ID: $relationship->related_object_id");
                 continue;
             }
 
-            $this->loadTeamObjectAttributes($object);
-
-            // Otherwise set the object as the relationship
-            $currentRelation = $object;
-
-            // If the relationship is plural, add the object to the relationship array
-            if (Str::plural($relationship->relationship_name) === $relationship->relationship_name) {
-                if ($teamObject->relationLoaded($relationship->relationship_name)) {
-                    $currentRelation = $teamObject->getRelation($relationship->relationship_name);
-                    $currentRelation->push($object);
-                } else {
-                    $currentRelation = collect([$object]);
-                }
-            }
-
-            $teamObject->setRelation($relationship->relationship_name, $currentRelation);
+            $arrayRelatedObject   = collect($relatedObject->toArray())->except(['created_at', 'updated_at', 'deleted_at'])->toArray();
+            $relatedRelationships = [];
+            $relatedAttributes    = $this->loadTeamObjectAttributes($relatedObject);
 
             // Keep loading recursively if we haven't reached the max depth
             if ($maxDepth > 0) {
-                $this->recursivelyLoadTeamObjectRelations($object, $maxDepth - 1);
+                $relatedRelationships = $this->recursivelyLoadTeamObjectRelations($relatedObject, $maxDepth - 1);
             } else {
                 Log::warning("Max depth reached for object with ID: $teamObject->id");
             }
+
+            $arrayRelatedObject = $relatedAttributes + $relatedRelationships + $arrayRelatedObject;
+
+            // Assuming the relationship is singular initially, set the object as the relationship directly
+            $currentRelation = $arrayRelatedObject;
+
+            // If the relationship is plural, add the object to the relationship array
+            if (Str::plural($relationship->relationship_name) === $relationship->relationship_name) {
+                if (isset($loadedRelationships[$relationship->relationship_name])) {
+                    $currentRelation   = $loadedRelationships[$relationship->relationship_name];
+                    $currentRelation[] = $arrayRelatedObject;
+                } else {
+                    $currentRelation = [$arrayRelatedObject];
+                }
+            }
+
+            $loadedRelationships[$relationship->relationship_name] = $currentRelation;
         }
+
+        return $loadedRelationships;
     }
 }

@@ -345,13 +345,14 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $this->assertNotNull($loaded, "Should load the parent object");
-        $this->assertNotNull($loaded->getAttribute('parent_attribute'), "Should have loaded the parent's attribute");
-        $this->assertEquals('ParentVal', $loaded->getAttribute('parent_attribute')['value']);
+        $this->assertNotNull($loaded['parent_attribute'] ?? null, "Should have loaded the parent's attribute");
+        $this->assertEquals('ParentVal', $loaded['parent_attribute']['value'] ?? null);
 
         // Relationship should be loaded
-        $this->assertTrue($loaded->relationLoaded('child'), "The child relationship should be loaded");
-        $this->assertEquals($child->id, $loaded->child->id, "The child object should be attached");
-        $this->assertEquals('ChildVal', $loaded->child->getAttribute('child_attribute')['value']);
+        $childRelation = $loaded['child'] ?? null;
+        $this->assertNotNull($childRelation, "The child relationship should be loaded");
+        $this->assertEquals($child->id, $childRelation['id'], "The child object should be attached");
+        $this->assertEquals('ChildVal', $childRelation['child_attribute']['value'] ?? null);
     }
 
     /**
@@ -407,10 +408,10 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $teamObject->refresh();
 
         // When
-        $repo->loadTeamObjectAttributes($teamObject);
+        $loadedAttributes = $repo->loadTeamObjectAttributes($teamObject);
 
         // Then
-        $loadedAttr = $teamObject->getAttribute('test_attr');
+        $loadedAttr = $loadedAttributes['test_attr'] ?? null;
         $this->assertNotNull($loadedAttr, "Attribute should be loaded into the object's attributes array");
         $this->assertEquals('some val', $loadedAttr['value']);
         $this->assertCount(1, $loadedAttr['sources'], 'It should load sources as well');

@@ -414,7 +414,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
                 'description'          => 'The important person',
                 'properties'           => [
                     'name' => [
-                        'type'        => ['string', 'null'],
+                        'type'        => 'string',
                         'description' => 'Name of the person',
                     ],
                 ],
@@ -557,7 +557,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
                 'title'                => 'Person',
                 'properties'           => [
                     'name' => [
-                        'type' => ['string', 'null'],
+                        'type' => 'string',
                     ],
                 ],
                 'required'             => ['name'],

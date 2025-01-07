@@ -287,16 +287,17 @@ class AgentThreadService
         }
 
         if ($agent->save_response_to_db) {
-            $responseMessage .= "\n\nALWAYS set the name attribute for ALL objects (use the best of your ability to determine what the name should be). " .
-                "Provide values to the attributes in the schema when possible. " .
-                "DO NOT provide a value if it is not given in the source content (use null when value is unknown) and NEVER make up values for an attribute. " .
-                "Always set the id for each object in the response schema to the given id from teamObjects. " .
+            $responseMessage .= "\n\nYour response will be saved to the DB. In order to save correctly, the name attribute must be set as the unique identifier for the object type. " .
+                "Your goal is to investigate and decide the best value for each attribute of every object in the response schema. " .
+                "Set an attribute value to null if it is not given in the source content. NEVER make up values for an attribute. " .
+                "If teamObjects is present and the object attribute has an id, provide the id in your response to update an existing attribute. " .
                 "If teamObjects is not present or no id is present for the object, then set id to null. " .
-                "Match object to id by name. " .
-                "Similar names like Johnson and Johnson vs Johnson & Johnson should use the same id. " .
-                "If the attribute was found in the teamObjects and you do not have a new / different value provided by the source content, set the value of that attribute to null. Just defer to keeping the teamObject value. Setting the attribute in the response to a non null value will overwrite what already exists in the teamObjects.";
+                "Similar names like Johnson and Johnson vs Johnson & Johnson should use the same id. Try to avoid creating duplicate records. " .
+                "Only update an attribute if you have a new / better value otherwise leave the attribute value null to avoid updating.";
 
-            $responseMessage .= "\n\nWhen making citations for attributes, always use the message type w/ message id if <AgentMessage> tags are present around the content where the attribute was found. IF a URL or image is given and the attribute was found there, use the url instead of the message_id. If the attribute was found outside of the <AgentMessage> tag and not in the given URL/images, DO NOT make a citation.";
+            $responseMessage .= "\n\nWhen making citations for attributes, always use the message type w/ message_id if <AgentMessage> tags are present around the content where the attribute was found. " .
+                "IF a URL or image is given and the attribute was found there, use the url instead of the message_id. " .
+                "If the attribute was found outside of the <AgentMessage> tag and not in the given URL/images, DO NOT make a citation.";
         }
 
         if ($agent->response_format !== 'text') {

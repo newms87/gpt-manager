@@ -30,7 +30,6 @@
 
 		<div v-if="agent.response_format !== 'text'" class="mt-4">
 			<SchemaEditorToolbox
-				v-if="agent.responseSchema"
 				v-model:isEditingSchema="isEditingSchema"
 				can-select
 				can-sub-select

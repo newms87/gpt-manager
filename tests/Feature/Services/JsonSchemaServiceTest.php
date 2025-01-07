@@ -39,7 +39,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                         'type'                 => 'object',
                         'properties'           => [
                             'value'    => [
-                                'type' => ['string', 'null'],
+                                'type' => 'string',
                             ],
                             'citation' => ['$ref' => '#/$defs/citation'],
                         ],

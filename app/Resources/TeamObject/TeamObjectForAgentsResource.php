@@ -2,24 +2,12 @@
 
 namespace App\Resources\TeamObject;
 
-use App\Models\TeamObject\TeamObject;
-
 class TeamObjectForAgentsResource
 {
-    public static function make(TeamObject $teamObject): array
+    public static function make(array $teamObject): array
     {
         // Filter out only desired and non-empty attributes
-        $resolvedObject = collect($teamObject->only(['type', 'name', 'description', 'value', 'date', 'url', 'meta']))->filter();
-
-        // Format dates
-        if ($resolvedObject->has('date')) {
-            $resolvedObject['date'] = $resolvedObject['date']->toDateString();
-        }
-
-        // Add all relationships
-        foreach($teamObject->relationships as $relationship) {
-            $resolvedObject[$relationship->relationship_name] = static::make($relationship->related);
-        }
+        $resolvedObject = collect(collect($teamObject)->only(['type', 'name', 'description', 'value', 'date', 'url', 'meta']))->filter();
 
         return $resolvedObject->toArray();
     }
