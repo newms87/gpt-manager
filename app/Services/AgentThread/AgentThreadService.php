@@ -127,7 +127,7 @@ class AgentThreadService
 
             if ($threadRun->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA) {
                 // Configure the JSON schema service to require the name and id fields, and use citations for each property
-                $jsonSchemaService = app(JsonSchemaService::class)->useCitations()->requireName()->requireId();
+                $jsonSchemaService = app(JsonSchemaService::class)->useCitations()->requireName()->useId();
 
                 $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = $this->formatResponseSchemaForAgent($agent, $jsonSchemaService);
             }
@@ -286,16 +286,16 @@ class AgentThreadService
             $responseMessage .= "\n\nExample Response:\n" . json_encode($agent->responseSchema->response_example);
         }
 
-        if ($agent->save_response_to_db) {
+        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA) {
             $responseMessage .= "\n\nYour response will be saved to the DB. In order to save correctly, the name attribute must be set as the unique identifier for the object type. " .
                 "Your goal is to investigate and decide the best value for each attribute of every object in the response schema. " .
                 "Set an attribute value to null if it is not given in the source content. NEVER make up values for an attribute. " .
-                "If teamObjects is present and the object attribute has an id, provide the id in your response to update an existing attribute. " .
-                "If teamObjects is not present or no id is present for the object, then set id to null. " .
-                "Similar names like Johnson and Johnson vs Johnson & Johnson should use the same id. Try to avoid creating duplicate records. " .
-                "Only update an attribute if you have a new / better value otherwise leave the attribute value null to avoid updating.";
+                "If teamObjects is present, it is provided as a source of reference for what is already saved in the DB. " .
+                "Similar names like Johnson and Johnson vs Johnson & Johnson should resolve to the same object. Try to avoid creating duplicate records. " .
+                "Only update an attribute if you have a new / better value than what is already in teamObjects by ingesting additional content  (ie: images / files, URLs leading to web pages, additionally provided content, etc.), otherwise leave the attribute value null to avoid updating.";
 
             $responseMessage .= "\n\nWhen making citations for attributes, always use the message type w/ message_id if <AgentMessage> tags are present around the content where the attribute was found. " .
+                "NEVER cite a message_id if it contains teamObjects data. " .
                 "IF a URL or image is given and the attribute was found there, use the url instead of the message_id. " .
                 "If the attribute was found outside of the <AgentMessage> tag and not in the given URL/images, DO NOT make a citation.";
         }

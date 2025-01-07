@@ -9,12 +9,23 @@ class JsonSchemaService
     /** @var bool  Whether to use citations for the schema. NOTE: This will modify the output so that */
     protected bool $useCitations = false;
     /** @var bool  Make sure each object includes the ID property */
-    protected bool $requireId = false;
+    protected bool $useId = false;
     /** @var bool  Make sure each object includes the name property */
     protected bool $requireName = false;
 
+    static array $idDef = [
+        'type'        => ['number', 'null'],
+        'description' => 'Set the ID if the value was derived from the DB (ie: teamObjects). Otherwise this should be null. NOTE: You can update the value in the DB by providing the ID and a new value.',
+    ];
+
+    static array $saveDef = [
+        'type'        => 'boolean',
+        'description' => 'Set to true if the value was NOT derived from the DB (ie: teamObjects). The value will be created or updated for the attribute in the DB. If set to false, citation must be null',
+    ];
+
     static array $citationDef = [
-        'type'                 => 'object',
+        'type'                 => ['object', 'null'],
+        'description'          => 'Set citation to null if the value was set to null or the value was derived from the DB (ie: teamObjects) or is the same as that already in the DB. If you set save to false, citation must be null. If the value was given in a message or via a URL AND is a better answer than what is in the DB, cite the source(s).',
         'properties'           => [
             'date'       => [
                 'type'        => ['string', 'null'],
@@ -38,7 +49,7 @@ class JsonSchemaService
                             'properties'           => [
                                 'url'         => [
                                     'type'        => 'string',
-                                    'description' => 'A URL the contains the chosen value',
+                                    'description' => 'A URL that contains the chosen value. If an image/file is provided, use the URL given in image_url (DO NOT USE THE FILENAME)',
                                 ],
                                 'location'    => [
                                     'type'        => 'string',
@@ -79,9 +90,9 @@ class JsonSchemaService
         'required'             => ['date', 'confidence', 'reason', 'sources'],
     ];
 
-    public function requireId(bool $requireId = true): self
+    public function useId(bool $useId = true): self
     {
-        $this->requireId = $requireId;
+        $this->useId = $useId;
 
         return $this;
     }
@@ -191,9 +202,9 @@ class JsonSchemaService
             ];
         }
 
-        if ($this->requireId && !isset($formattedSchema['id'])) {
+        if ($this->useId) {
             $formattedSchema['id'] = [
-                'type' => ['number', 'null'],
+                '$ref' => '#/$defs/id',
             ];
         }
 
@@ -201,6 +212,14 @@ class JsonSchemaService
             return $formattedSchema;
         }
 
+        return $this->formatRootSchemaObject($name, $schema, $formattedSchema);
+    }
+
+    /**
+     * Format the root schema object with the required properties and definitions
+     */
+    public function formatRootSchemaObject($name, $schema, $formattedSchema): array
+    {
         $formattedSchema = [
             'type'                 => 'object',
             'additionalProperties' => false,
@@ -218,6 +237,11 @@ class JsonSchemaService
 
         if ($this->useCitations) {
             $formattedSchema['$defs']['citation'] = static::$citationDef;
+        }
+
+        if ($this->useId) {
+            $formattedSchema['$defs']['id']   = static::$idDef;
+            $formattedSchema['$defs']['save'] = static::$saveDef;
         }
 
         return [
@@ -254,15 +278,7 @@ class JsonSchemaService
                 'type'  => $type,
                 'items' => $this->formatAndCleanSchemaItem("$name.items", $items, $depth + 1, $required),
             ],
-            'string', 'number', 'integer', 'boolean', 'null' => $this->useCitations ? [
-                'type'                 => 'object',
-                'properties'           => [
-                    'value'    => ['type' => $typeList],
-                    'citation' => ['$ref' => '#/$defs/citation'],
-                ],
-                'additionalProperties' => false,
-                'required'             => ['value', 'citation'],
-            ] : ['type' => $typeList],
+            'string', 'number', 'integer', 'boolean', 'null' => $this->getAttributeSchema($typeList),
             default => throw new Exception("Unknown type at path $name: " . $type),
         };
 
@@ -289,5 +305,41 @@ class JsonSchemaService
         }
 
         return $item;
+    }
+
+    /**
+     * Get the attribute schema for a property including optionally adding citations and IDs.
+     *
+     * If citations are enabled, the schema will require a citation object with a date, confidence, reason, and sources.
+     * If IDs are enabled, the schema will require an ID property.
+     * If neither are enabled, the schema will only require the value using the value's type as the schema.
+     */
+    public function getAttributeSchema($type): array
+    {
+        if (!$this->useCitations && !$this->useId) {
+            return ['type' => $type];
+        }
+
+        $schema = [
+            'type'                 => 'object',
+            'properties'           => [
+                'value' => ['type' => $type],
+            ],
+            'additionalProperties' => false,
+            'required'             => ['value'],
+        ];
+
+        if ($this->useCitations) {
+            $schema['properties']['citation'] = ['$ref' => '#/$defs/citation'];
+            $schema['required'][]             = 'citation';
+        }
+
+        // Indicate that this property
+        if ($this->useId) {
+            $schema['properties']['save'] = ['$ref' => '#/$defs/save'];
+            $schema['required'][]         = 'save';
+        }
+
+        return $schema;
     }
 }

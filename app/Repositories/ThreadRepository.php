@@ -75,15 +75,15 @@ class ThreadRepository extends ActionRepository
 
                 foreach($storedFiles as $index => $storedFile) {
                     if ($storedFile instanceof StoredFile) {
-                        $fileId   = $storedFile->id;
-                        $filename = $storedFile->filename;
+                        $fileId  = $storedFile->id;
+                        $fileUrl = $storedFile->url;
                     } else {
-                        $fileId   = ($storedFile['id'] ?? null);
-                        $filename = ($storedFile['name'] ?? $storedFile['filename'] ?? '');
+                        $fileId  = ($storedFile['id'] ?? null);
+                        $fileUrl = ($storedFile['url'] ?? null);
                     }
                     if ($fileId) {
                         $fileIds[]     = $fileId;
-                        $contentString .= ($contentString ? "\n" : "") . "Filename: $filename";
+                        $contentString .= ($contentString ? "\n" : "") . "File URL: $fileUrl";
                     }
                 }
             }

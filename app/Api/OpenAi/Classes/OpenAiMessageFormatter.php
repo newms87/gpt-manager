@@ -120,10 +120,12 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
         $filesContent = [];
 
         foreach($storedFiles as $storedFile) {
+            $url = $storedFile instanceof StoredFile ? $storedFile->url : $storedFile['url'];
+
             $filesContent[] = [
                 'type'      => 'image_url',
                 'image_url' => [
-                    'url'    => $storedFile instanceof StoredFile ? $storedFile->url : $storedFile['url'],
+                    'url'    => $url,
                     'detail' => $detail,
                 ],
             ];
