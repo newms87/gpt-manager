@@ -15,7 +15,7 @@
 			Please update the schema to include the title property at the top level
 		</QBanner>
 
-		<template v-if="dxTeamObject.isLoadingList.value">
+		<template v-if="dxTeamObject.isLoadingList.value && !teamObjects?.length">
 			<QSkeleton
 				v-for="i in 3"
 				:key="i"

@@ -22,7 +22,7 @@ abstract class TeamObjectAttributeSourceResource extends ActionResource
             'location'      => $model->location,
             'explanation'   => $model->explanation,
             'sourceFile'    => StoredFileResource::make($model->sourceFile),
-            'sourceMessage' => MessageResource::make($model->sourceMessage),
+            'sourceMessage' => MessageResource::details($model->sourceMessage),
             'created_at'    => $model->created_at,
         ];
     }

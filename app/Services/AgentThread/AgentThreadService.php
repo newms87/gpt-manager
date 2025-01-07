@@ -19,6 +19,7 @@ use Newms87\Danx\Exceptions\ApiRequestException;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Helpers\StringHelper;
+use Newms87\Danx\Jobs\Job;
 use Str;
 use Throwable;
 
@@ -58,6 +59,11 @@ class AgentThreadService
             $threadRun->job_dispatch_id = $job->getJobDispatch()?->id;
             $threadRun->save();
         } else {
+            // If we are currently in a running job, attach the job dispatch ID to the thread run
+            if (Job::$runningJob) {
+                $threadRun->job_dispatch_id = Job::$runningJob->id;
+                $threadRun->save();
+            }
             $this->executeThreadRun($threadRun);
         }
 
@@ -281,9 +287,16 @@ class AgentThreadService
         }
 
         if ($agent->save_response_to_db) {
-            $responseMessage .= "\n\nALWAYS set the name attribute for ALL objects (use the best of your ability to determine what the name should be). Provide values to the attributes in the schema when possible. DO NOT provide a value if it is not given in the source content (use null when value is unknown) and NEVER make up values for an attribute. Always set the id for each object in the response schema to the given id from teamObjects. If teamObjects is not present or no id is present for the object, then set id to null. Match object to id by name. Similar names like Johnson and Johnson vs Johnson & Johnson should use the same id.";
+            $responseMessage .= "\n\nALWAYS set the name attribute for ALL objects (use the best of your ability to determine what the name should be). " .
+                "Provide values to the attributes in the schema when possible. " .
+                "DO NOT provide a value if it is not given in the source content (use null when value is unknown) and NEVER make up values for an attribute. " .
+                "Always set the id for each object in the response schema to the given id from teamObjects. " .
+                "If teamObjects is not present or no id is present for the object, then set id to null. " .
+                "Match object to id by name. " .
+                "Similar names like Johnson and Johnson vs Johnson & Johnson should use the same id. " .
+                "If the attribute was found in the teamObjects and you do not have a new / different value provided by the source content, set the value of that attribute to null. Just defer to keeping the teamObject value. Setting the attribute in the response to a non null value will overwrite what already exists in the teamObjects.";
 
-            $responseMessage .= "\n\nWhen making citations for attributes, always use the message type w/ message id if <AgentMessage> tags are present around the content. Only use URL if no <AgentMessage> tag is wrapping the content you are referencing AND there is a real/valid url given. Otherwise, DO NOT make a citation.";
+            $responseMessage .= "\n\nWhen making citations for attributes, always use the message type w/ message id if <AgentMessage> tags are present around the content where the attribute was found. IF a URL or image is given and the attribute was found there, use the url instead of the message_id. If the attribute was found outside of the <AgentMessage> tag and not in the given URL/images, DO NOT make a citation.";
         }
 
         if ($agent->response_format !== 'text') {
