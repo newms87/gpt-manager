@@ -25,7 +25,20 @@ class JsonSchemaService
 
     static array $citationDef = [
         'type'                 => ['object', 'null'],
-        'description'          => 'Set citation to null if the value was set to null or the value was derived from the DB (ie: teamObjects) or is the same as that already in the DB. If you set save to false, citation must be null. If the value was given in a message or via a URL AND is a better answer than what is in the DB, cite the source(s).',
+        'description'          => <<<TEXT
+Set citation to null if:
+  * The value was explicitly set to null.
+  * The value was derived directly from the database (e.g., teamObjects).
+  * The value matches what is already stored in the database.
+
+When save is false:
+  * citation must always be null.
+
+If the value originates from a message or a URL and provides a better (and different) answer than the database value:
+  * Set citation to reference the source(s) and set save to true.
+  * ALWAYS defer to the DB and set citation to null unless you are very confident the new value is better than the original.
+TEXT
+        ,
         'properties'           => [
             'date'       => [
                 'type'        => ['string', 'null'],

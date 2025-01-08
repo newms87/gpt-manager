@@ -114,14 +114,21 @@ class TeamObjectRepository extends ActionRepository
      * Create or Update the value, date, confidence and sources for a Team Object Attribute record based on team object
      * and attribute name
      */
-    public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $attribute): TeamObjectAttribute
+    public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $attribute): ?TeamObjectAttribute
     {
         if (!$name) {
             throw new BadFunctionCallException("Save Team Object Attribute requires a name");
         }
 
-        $value      = $attribute['value'] ?? null;
-        $citation   = $attribute['citation'] ?? null;
+        $value    = $attribute['value'] ?? null;
+        $citation = $attribute['citation'] ?? null;
+        $save     = $attribute['save'] ?? true;
+
+        // Attribute should not be saved
+        if ($save === false) {
+            return null;
+        }
+
         $date       = $citation['date'] ?? null;
         $reason     = $citation['reason'] ?? null;
         $confidence = $citation['confidence'] ?? null;
@@ -293,7 +300,7 @@ class TeamObjectRepository extends ActionRepository
                 $objectAttribute = $this->saveTeamObjectAttribute($teamObject, $propertyName, $propertyValue);
 
                 // Associate the thread run if it is set
-                if ($threadRun) {
+                if ($objectAttribute && $threadRun) {
                     $objectAttribute->threadRun()->associate($threadRun)->save();
                 }
             }
