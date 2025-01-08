@@ -35,7 +35,5 @@ import { TeamObjectAttributeSourceCardProps } from "@/components/Modules/TeamObj
 import LabelValuePillWidget from "@/components/Shared/Widgets/LabelValuePillWidget";
 import { FilePreview } from "quasar-ui-danx";
 
-const props = defineProps<TeamObjectAttributeSourceCardProps>();
-
-console.log("attribute source", props.source);
+defineProps<TeamObjectAttributeSourceCardProps>();
 </script>

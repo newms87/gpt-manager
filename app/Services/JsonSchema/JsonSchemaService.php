@@ -3,6 +3,7 @@
 namespace App\Services\JsonSchema;
 
 use Exception;
+use Newms87\Danx\Helpers\FileHelper;
 
 class JsonSchemaService
 {
@@ -16,91 +17,6 @@ class JsonSchemaService
     static array $idDef = [
         'type'        => ['number', 'null'],
         'description' => 'Set the ID if the value was derived from the DB (ie: teamObjects). Otherwise this should be null. NOTE: You can update the value in the DB by providing the ID and a new value.',
-    ];
-
-    static array $saveDef = [
-        'type'        => 'boolean',
-        'description' => 'Set to true if the value was NOT derived from the DB (ie: teamObjects). The value will be created or updated for the attribute in the DB. If set to false, citation must be null',
-    ];
-
-    static array $citationDef = [
-        'type'                 => ['object', 'null'],
-        'description'          => <<<TEXT
-Set citation to null if:
-  * The value was explicitly set to null.
-  * The value was derived directly from the database (e.g., teamObjects).
-  * The value matches what is already stored in the database.
-
-When save is false:
-  * citation must always be null.
-
-If the value originates from a message or a URL and provides a better (and different) answer than the database value:
-  * Set citation to reference the source(s) and set save to true.
-  * ALWAYS defer to the DB and set citation to null unless you are very confident the new value is better than the original.
-TEXT
-        ,
-        'properties'           => [
-            'date'       => [
-                'type'        => ['string', 'null'],
-                'description' => "The date (yyyy-mm-dd) and time (00:00:00 if time n/a) of the attribute's value (ONLY if data changes over time, otherwise null). ONLY set this value if it makes sense to plot in a time series! Leave null for names, descriptions, static properties, etc. Only set date if there is an obvious date related to the value. Format should always be full date (and time if available). NO PARTIAL DATES!",
-            ],
-            'confidence' => [
-                'type'        => 'string',
-                'description' => 'The confidence level of the attribute value. Must be one of the following: "High", "Medium", "Low", "" (empty string). Leave blank if property value is null',
-            ],
-            'reason'     => [
-                'type'        => 'string',
-                'description' => 'A brief explanation of why the value was chosen and why the confidence level was set to what it was. Leave blank if property value is null',
-            ],
-            'sources'    => [
-                'type'        => 'array',
-                'description' => 'The source of the attribute value. Cite any URLs, Messages IDs from the thread or files. Make sure you include all relevant URLs, Message IDs, or file IDs that contain the value (more than 1 source if others are applicable)',
-                'items'       => [
-                    'anyOf' => [
-                        [
-                            'type'                 => 'object',
-                            'properties'           => [
-                                'url'         => [
-                                    'type'        => 'string',
-                                    'description' => 'A URL that contains the chosen value. If an image/file is provided, use the URL given in image_url (DO NOT USE THE FILENAME)',
-                                ],
-                                'location'    => [
-                                    'type'        => 'string',
-                                    'description' => 'A value such as "In the first paragraph", "In the title", "In the image caption", "Page 2", etc. to describe where in the source content the attribute was derived. NEVER SET THIS TO ACTUAL CONTENT OF THE SOURCE JUST A QUICK HINT OF WHERE TO LOOK IN THE SOURCE. If source content is very short (ie 1 paragraph, etc) just leave this blank.',
-                                ],
-                                'explanation' => [
-                                    'type'        => 'string',
-                                    'description' => 'A brief explanation of how you know this source contains the value',
-                                ],
-                            ],
-                            'additionalProperties' => false,
-                            'required'             => ['url', 'location', 'explanation'],
-                        ],
-                        [
-                            'type'                 => 'object',
-                            'properties'           => [
-                                'message_id'  => [
-                                    'type'        => 'string',
-                                    'description' => "A message ID that the attribute was sourced from. If a user message is wrapped with <AgentMessage id='message_id'>...</AgentMessage>, it contains info leading you to the answer you gave for the attribute, provide the message ID as a source. If no <AgentMessage> tags are present, omit this field",
-                                ],
-                                'location'    => [
-                                    'type'        => 'string',
-                                    'description' => 'A value such as "First paragraph", "In Title", "Towards the end", etc. to describe where in the source content the attribute was derived. NEVER SET THIS TO ACTUAL CONTENT OF THE SOURCE JUST A QUICK HINT OF WHERE TO LOOK IN THE SOURCE. If source content is very short (ie 1 paragraph, etc) just leave this blank.',
-                                ],
-                                'explanation' => [
-                                    'type'        => 'string',
-                                    'description' => 'A brief explanation of how you know this source contains the value',
-                                ],
-                            ],
-                            'additionalProperties' => false,
-                            'required'             => ['message_id', 'location', 'explanation'],
-                        ],
-                    ],
-                ],
-            ],
-        ],
-        'additionalProperties' => false,
-        'required'             => ['date', 'confidence', 'reason', 'sources'],
     ];
 
     public function useId(bool $useId = true): self
@@ -195,7 +111,7 @@ TEXT
             return [];
         }
 
-        $formattedSchema = [];
+        $propertiesSchema = [];
 
         // Resolve the properties of the schema. It's possible the schema is an array of properties already, so just parse from the array instead.
         $properties = $schema['properties'] ?? $schema;
@@ -205,40 +121,51 @@ TEXT
             $childName     = $name . '.' . $key;
             $formattedItem = $this->formatAndCleanSchemaItem($childName, $value, $depth, $key === 'name');
             if ($formattedItem) {
-                $formattedSchema[$key] = $formattedItem;
+                $propertiesSchema[$key] = $formattedItem;
             }
         }
 
-        if ($this->requireName && !isset($formattedSchema['name'])) {
-            $formattedSchema['name'] = [
+        if ($this->requireName && !isset($propertiesSchema['name'])) {
+            $propertiesSchema['name'] = [
                 'type' => 'string',
             ];
         }
 
         if ($this->useId) {
-            $formattedSchema['id'] = [
+            $propertiesSchema['id'] = [
                 '$ref' => '#/$defs/id',
             ];
         }
 
         if ($depth > 0) {
-            return $formattedSchema;
+            return $propertiesSchema;
         }
 
-        return $this->formatRootSchemaObject($name, $schema, $formattedSchema);
+        return $this->formatRootSchemaObject($name, $schema, $propertiesSchema);
     }
 
     /**
      * Format the root schema object with the required properties and definitions
      */
-    public function formatRootSchemaObject($name, $schema, $formattedSchema): array
+    public function formatRootSchemaObject($name, $schema, $propertiesSchema): array
     {
+        // Inject the attribute meta definition into the schema
+        $attributeMetaDef = FileHelper::parseYamlFile(app_path('Services/JsonSchema/attribute_meta.def.yaml'));
+
+        // If citations are not required, then remove the citation property of the attribute meta def
+        if (!$this->useCitations) {
+            unset($attributeMetaDef['properties']['citation']);
+        }
+
+        $propertiesSchema['attribute_meta'] = $attributeMetaDef;
+
         $formattedSchema = [
             'type'                 => 'object',
             'additionalProperties' => false,
-            'required'             => array_keys($formattedSchema),
-            'properties'           => $formattedSchema,
+            'required'             => array_keys($propertiesSchema),
+            'properties'           => $propertiesSchema,
         ];
+
 
         if (array_key_exists('title', $schema)) {
             $formattedSchema['title'] = $schema['title'];
@@ -248,13 +175,8 @@ TEXT
             $formattedSchema['description'] = $schema['description'];
         }
 
-        if ($this->useCitations) {
-            $formattedSchema['$defs']['citation'] = static::$citationDef;
-        }
-
         if ($this->useId) {
-            $formattedSchema['$defs']['id']   = static::$idDef;
-            $formattedSchema['$defs']['save'] = static::$saveDef;
+            $formattedSchema['$defs']['id'] = static::$idDef;
         }
 
         return [
@@ -291,7 +213,7 @@ TEXT
                 'type'  => $type,
                 'items' => $this->formatAndCleanSchemaItem("$name.items", $items, $depth + 1, $required),
             ],
-            'string', 'number', 'integer', 'boolean', 'null' => $this->getAttributeSchema($typeList),
+            'string', 'number', 'integer', 'boolean', 'null' => ['type' => $typeList],
             default => throw new Exception("Unknown type at path $name: " . $type),
         };
 
@@ -318,41 +240,5 @@ TEXT
         }
 
         return $item;
-    }
-
-    /**
-     * Get the attribute schema for a property including optionally adding citations and IDs.
-     *
-     * If citations are enabled, the schema will require a citation object with a date, confidence, reason, and sources.
-     * If IDs are enabled, the schema will require an ID property.
-     * If neither are enabled, the schema will only require the value using the value's type as the schema.
-     */
-    public function getAttributeSchema($type): array
-    {
-        if (!$this->useCitations && !$this->useId) {
-            return ['type' => $type];
-        }
-
-        $schema = [
-            'type'                 => 'object',
-            'properties'           => [
-                'value' => ['type' => $type],
-            ],
-            'additionalProperties' => false,
-            'required'             => ['value'],
-        ];
-
-        if ($this->useCitations) {
-            $schema['properties']['citation'] = ['$ref' => '#/$defs/citation'];
-            $schema['required'][]             = 'citation';
-        }
-
-        // Indicate that this property
-        if ($this->useId) {
-            $schema['properties']['save'] = ['$ref' => '#/$defs/save'];
-            $schema['required'][]         = 'save';
-        }
-
-        return $schema;
     }
 }

@@ -7,7 +7,7 @@ use Tests\AuthenticatedTestCase;
 
 class JsonSchemaServiceTest extends AuthenticatedTestCase
 {
-    public function test_formatAndCleanSchema_citedValuesAddedToSchema(): void
+    public function test_formatAndCleanSchema_withAdditionalObjectProperty_additionalPropertyShouldBeOptional(): void
     {
         // Given
         $name   = 'person';
@@ -25,43 +25,122 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedResponse = app(JsonSchemaService::class)->useCitations()->formatAndCleanSchema($name, $schema);
+        $formattedSchema = app(JsonSchemaService::class)->formatAndCleanSchema($name, $schema);
 
         // Then
-        $this->assertEquals([
-            'name'   => $name,
-            'strict' => true,
-            'schema' => [
-                'type'                 => 'object',
-                'title'                => 'Person',
-                'properties'           => [
-                    'name' => [
-                        'type'                 => 'object',
-                        'properties'           => [
-                            'value'    => [
-                                'type' => 'string',
-                            ],
-                            'citation' => ['$ref' => '#/$defs/citation'],
-                        ],
-                        'additionalProperties' => false,
-                        'required'             => ['value', 'citation'],
-                    ],
-                    'dob'  => [
-                        'type'                 => 'object',
-                        'properties'           => [
-                            'value'    => [
-                                'type' => ['string', 'null'],
-                            ],
-                            'citation' => ['$ref' => '#/$defs/citation'],
-                        ],
-                        'additionalProperties' => false,
-                        'required'             => ['value', 'citation'],
-                    ],
+        $objectSchema = $formattedSchema['schema'];
+        $this->assertEquals(['type' => ['string', 'null']], $objectSchema['properties']['dob'] ?? null, 'The DOB property should have null type added to indicate it is optional');
+    }
+
+    public function test_formatAndCleanSchema_allPropertiesShouldBeInRequiredList(): void
+    {
+        // Given
+        $name   = 'person';
+        $schema = [
+            'type'       => 'object',
+            'title'      => 'Person',
+            'properties' => [
+                'name' => [
+                    'type' => 'string',
                 ],
-                '$defs'                => ['citation' => JsonSchemaService::$citationDef],
-                'required'             => ['name', 'dob'],
-                'additionalProperties' => false,
+                'dob'  => [
+                    'type' => 'string',
+                ],
             ],
-        ], $formattedResponse);
+        ];
+
+        // When
+        $formattedSchema = app(JsonSchemaService::class)->formatAndCleanSchema($name, $schema);
+
+        // Then
+        $objectSchema = $formattedSchema['schema'];
+        $this->assertEquals(['name', 'dob', 'attribute_meta'], $objectSchema['required'] ?? null, 'The name, dob and attribute_meta properties should have been added to the required list');
+    }
+
+    public function test_formatAndCleanSchema_useIdEnabled_idShouldBeAddedToPropertiesAndRequiredList(): void
+    {
+        // Given
+        $name   = 'person';
+        $schema = [
+            'type'       => 'object',
+            'title'      => 'Person',
+            'properties' => [
+                'name' => [
+                    'type' => 'string',
+                ],
+                'dob'  => [
+                    'type' => 'string',
+                ],
+            ],
+        ];
+
+        // When
+        $formattedSchema = app(JsonSchemaService::class)->useId()->formatAndCleanSchema($name, $schema);
+
+        // Then
+        $objectSchema = $formattedSchema['schema'];
+        $this->assertNotNull($objectSchema['properties']['id'] ?? null, 'The id should also be added list');
+        $this->assertEquals(['name', 'dob', 'id', 'attribute_meta'], $objectSchema['required'] ?? null, 'The id should also be in the required list');
+    }
+
+    public function test_formatAndCleanSchema_attributeMetaShouldBeAddedToSchema(): void
+    {
+        // Given
+        $name   = 'person';
+        $schema = [
+            'type'       => 'object',
+            'title'      => 'Person',
+            'properties' => [
+                'name' => [
+                    'type' => 'string',
+                ],
+                'dob'  => [
+                    'type' => 'string',
+                ],
+            ],
+        ];
+
+        // When
+        $formattedSchema = app(JsonSchemaService::class)->useCitations()->formatAndCleanSchema($name, $schema);
+
+        // Then
+        $objectSchema = $formattedSchema['schema'];
+        $this->assertNotNull($objectSchema['properties']['attribute_meta'] ?? null, 'attribute_meta should be added to the schema');
+    }
+
+    public function test_formatAndCleanSchema_withoutCitations_citedValuesMissingFromAttributeMeta(): void
+    {
+        // Given
+        $name   = 'person';
+        $schema = [
+            'type'       => 'object',
+            'title'      => 'Person',
+            'properties' => [],
+        ];
+
+        // When
+        $formattedSchema = app(JsonSchemaService::class)->formatAndCleanSchema($name, $schema);
+
+        // Then
+        $objectSchema = $formattedSchema['schema'];
+        $this->assertNull($objectSchema['properties']['attribute_meta']['properties']['citation'] ?? null, 'citation should not be added to the schema');
+    }
+
+    public function test_formatAndCleanSchema_citedValuesAddedToSchema(): void
+    {
+        // Given
+        $name   = 'person';
+        $schema = [
+            'type'       => 'object',
+            'title'      => 'Person',
+            'properties' => [],
+        ];
+
+        // When
+        $formattedSchema = app(JsonSchemaService::class)->useCitations()->formatAndCleanSchema($name, $schema);
+
+        // Then
+        $objectSchema = $formattedSchema['schema'];
+        $this->assertNotNull($objectSchema['properties']['attribute_meta']['properties']['citation'] ?? null, 'citation should be added to the schema');
     }
 }
