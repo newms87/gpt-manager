@@ -45,9 +45,14 @@ const jobFlowDiagram = computed(() => {
 
 	let diagram = "";
 	for (const job of props.workflow.jobs) {
-		const taskCount = Object.keys(job.tasks_preview).length;
-		const tasksStr = job.tasks_preview ? `\n${taskCount} ${taskCount === 1 ? "task" : "tasks"}` : "";
-		diagram += `${job.id}(${job.name + tasksStr})\n`;
+		const groups = [];
+		for (let dependency of job.dependencies) {
+			if (dependency.group_by?.length > 0) {
+				groups.push(dependency.group_by.join(","));
+			}
+		}
+		const groupStr = groups.length > 0 ? `#40;${groups.join(" x ")}#41; #8712; #8756;` : "#8756; #8715; #8901;";
+		diagram += `${job.id}(${job.name + "\n" + groupStr})\n`;
 	}
 
 	for (const job of props.workflow.jobs) {
