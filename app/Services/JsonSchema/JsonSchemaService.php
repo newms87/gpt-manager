@@ -216,12 +216,12 @@ class JsonSchemaService
 
         $item = match ($resolvedType) {
             'object' => [
-                'type'                 => $type,
+                'type'                 => $typeList,
                 'properties'           => $this->formatAndCleanSchema("$name.properties", $properties, $depth + 1),
                 'additionalProperties' => false,
             ],
             'array' => [
-                'type'  => $type,
+                'type'  => $typeList,
                 'items' => $this->formatAndCleanSchemaItem("$name.items", $items, $depth + 1, $required),
             ],
             'string', 'number', 'integer', 'boolean', 'null' => ['type' => $typeList],
@@ -265,7 +265,7 @@ class JsonSchemaService
             if ($agent->response_sub_selection) {
                 $responseSchema = $this->applySubSelection($responseSchema, $agent->response_sub_selection);
             }
-            
+
             // Name the response schema result based on the agent's name and a hash of the schema after applying sub selection
             $name = $agent->name . ':' . substr(md5(json_encode($responseSchema)), 0, 7);
 

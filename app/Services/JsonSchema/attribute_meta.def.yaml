@@ -1,6 +1,9 @@
 type: array
 description: |
-  A list of meta data for the objects' property values being saved in the schema. A new meta entry MUST be created for each scalar property of every object.
+  A list of meta data for the objects' property values being saved in the schema.
+    * A new meta entry MUST be created for each scalar property with a non-null value
+    * You can create a single entry for an entire object by providing the object property name instead of the individual child property names
+    * If the value is null, DO NOT add a meta entry for that property
 items:
   type: object
   additionalProperties: false
@@ -14,19 +17,19 @@ items:
     object_type:
       type: string
       description: |
-        The type of object defined by the object's title property.
+        The type (defined by the title) of the direct parent object
     object_id:
       type: string
       description: |
-        The id of the object if given, otherwise the name of the object
+        The id of the direct parent object if given, otherwise the name of the direct parent object
     property_name:
       type: string
       description: |
-        The name of the property this meta entry references (ie: name, date, age, etc)
+        The name of the property this meta entry references (ie: name, date, age, address, etc). DO NOT USE dot notation. This will never be a path like "team.name" or "teams[0].address.zip". ALWAYS use the direct property name (as the object_type/object_id will always be the direct parent).
     save_to_db:
       type: boolean
       description: |
-        Set to true if the value was NOT derived from the DB (ie: teamObjects). The value will be created or updated for the attribute in the DB. If set to false, citation must be null
+        Set to true if the value is non-null and was NOT derived from the DB (ie: teamObjects). Indicates to create or update property in DB. If set to false, citation must be set to null
     citation:
       type:
         - object
@@ -38,12 +41,14 @@ items:
         - reason
         - sources
       description: |-
+        A citation of the source(s) of the property's value or the objects' child properties' values.
+
         Set citation to null if:
           * The value was explicitly set to null.
           * The value was derived directly from the database (e.g., teamObjects).
           * The value matches what is already stored in the database.
 
-        When save is false:
+        When save_to_db is false:
           * citation must always be null.
 
         If the value originates from a message or a URL and provides a better (and different) answer than the database value:
@@ -54,16 +59,16 @@ items:
           type:
             - string
             - 'null'
-          description: The date (yyyy-mm-dd) and time (00:00:00 if time n/a) of the attribute's
+          description: The date (in format YYYY-MM-dd OR YYYY-MM-dd hh:mm:ss) related to the attribute's
             value (ONLY if data changes over time, otherwise null). ONLY set this value
             if it makes sense to plot in a time series! Leave null for names, descriptions,
-            static properties, etc. Only set date if there is an obvious date related to
+            static properties, etc. Only set if there is an obvious date related to
             the value. Format should always be full date (and time if available). NO PARTIAL
             DATES!
         reason:
           type: string
           description: A brief explanation of why the value was chosen and why the confidence
-            level was set to what it was. Leave blank if property value is null
+            level was set to what it was. Try to include the context for the value (ie was mentioned in a section titled ... OR the name was mentioned, but unclear if it related to subject or something else).
         confidence:
           type: string
           description: 'The confidence level of the attribute value. Must be one of the
@@ -93,7 +98,7 @@ items:
                   explanation:
                     type: string
                     description: A brief explanation of how you know this source contains
-                      the value
+                      the value. Give some context about what the part of the source was referring to that you found the value.
                 additionalProperties: false
               - type: object
                 required:
@@ -118,7 +123,7 @@ items:
                   explanation:
                     type: string
                     description: A brief explanation of how you know this source contains
-                      the value
+                      the value. Give some context about what the part of the source was referring to that you found the value.
                 additionalProperties: false
           description: The source of the attribute value. Cite any URLs, Messages IDs from
             the thread or files. Make sure you include all relevant URLs, Message IDs, or
