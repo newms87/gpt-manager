@@ -17,7 +17,6 @@ use Newms87\Danx\Traits\AuditableTrait;
  * @property int         $object_attribute_id
  * @property string      $source_type
  * @property string      $source_id
- * @property string      $location
  * @property string|null $explanation
  * @property string      $stored_file_id
  * @property int         $message_id
@@ -63,7 +62,7 @@ class TeamObjectAttributeSource extends Model implements AuditableContract
 
     public function __toString(): string
     {
-        return "<TeamObjectAttributeSource object_attribute_id='$this->object_attribute_id' source_type='$this->source_type' source_id='$this->source_id' location='$this->location' />";
+        return "<TeamObjectAttributeSource object_attribute_id='$this->object_attribute_id' source_type='$this->source_type' source_id='$this->source_id' />";
     }
 
 }

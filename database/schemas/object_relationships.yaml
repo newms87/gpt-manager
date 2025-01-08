@@ -95,9 +95,6 @@ tables:
       source_id:
         type: string
         length: 255
-      location:
-        type: string
-        length: 255
       explanation:
         type: text
         nullable: true

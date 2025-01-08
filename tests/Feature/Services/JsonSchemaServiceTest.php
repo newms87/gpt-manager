@@ -81,7 +81,41 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         // Then
         $objectSchema = $formattedSchema['schema'];
         $this->assertNotNull($objectSchema['properties']['id'] ?? null, 'The id should also be added list');
-        $this->assertEquals(['name', 'dob', 'id', 'attribute_meta'], $objectSchema['required'] ?? null, 'The id should also be in the required list');
+        $this->assertEquals(['name', 'dob', 'id'], $objectSchema['required'] ?? null, 'The id should also be in the required list');
+    }
+
+    public function test_formatAndCleanSchema_useAttributeMetaEnabled_attributeMetaShouldBeAddedToPropertiesAndRequiredList(): void
+    {
+        // Given
+        $name   = 'person';
+        $schema = [
+            'type'       => 'object',
+            'title'      => 'Person',
+            'properties' => [
+                'name'    => [
+                    'type' => 'string',
+                ],
+                'address' => [
+                    'type'       => 'object',
+                    'title'      => 'Address',
+                    'properties' => [
+                        'street' => [
+                            'type' => 'string',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $formattedSchema = app(JsonSchemaService::class)->useAttributeMeta()->formatAndCleanSchema($name, $schema);
+
+        // Then
+        $objectSchema = $formattedSchema['schema'];
+        $this->assertNotNull($objectSchema['properties']['attribute_meta'] ?? null, 'The attribute_meta should also be added to the properties');
+        $this->assertNotNull($objectSchema['$defs']['attribute_meta'] ?? null, 'The attribute_meta should also be added to the definitions');
+        $this->assertEquals(['name', 'address', 'attribute_meta'], $objectSchema['required'] ?? null, 'The id should also be in the required list');
+        $this->assertNotNull($objectSchema['properties']['address']['properties']['attribute_meta'] ?? null, 'The attribute_meta should also be added to the properties of the address object');
     }
 
     public function test_formatAndCleanSchema_attributeMetaShouldBeAddedToSchema(): void
@@ -124,7 +158,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
 
         // Then
         $objectSchema = $formattedSchema['schema'];
-        $this->assertNull($objectSchema['properties']['attribute_meta']['properties']['citation'] ?? null, 'citation should not be added to the schema');
+        $this->assertNull($objectSchema['$defs']['attribute_meta']['items']['properties']['citation'] ?? null, 'citation should not be added to the schema');
     }
 
     public function test_formatAndCleanSchema_citedValuesAddedToSchema(): void
@@ -142,7 +176,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
 
         // Then
         $objectSchema = $formattedSchema['schema'];
-        $this->assertNotNull($objectSchema['properties']['attribute_meta']['items']['properties']['citation'] ?? null, 'citation should be added to the schema');
+        $this->assertNotNull($objectSchema['$defs']['attribute_meta']['items']['properties']['citation'] ?? null, 'citation should be added to the schema');
     }
 
     public function test_formatAgentResponseSchema_onlySelectedPropertyIsReturned(): void
@@ -262,7 +296,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 'title'                => 'Person',
                 'properties'           => [
                     'address' => [
-                        'type'                 => 'object',
+                        'type'                 => ['object', 'null'],
                         'title'                => 'Address',
                         'properties'           => [
                             'city' => [
@@ -407,9 +441,9 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 'title'                => 'Person',
                 'properties'           => [
                     'addresses' => [
-                        'type'  => 'array',
+                        'type'  => ['array', 'null'],
                         'items' => [
-                            'type'                 => 'object',
+                            'type'                 => ['object', 'null'],
                             'title'                => 'Address',
                             'properties'           => [
                                 'city' => [

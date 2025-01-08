@@ -271,11 +271,6 @@ class AgentThreadService
                 "If teamObjects is present, it is provided as a source of reference for what is already saved in the DB. " .
                 "Similar names like Johnson and Johnson vs Johnson & Johnson should resolve to the same object. Try to avoid creating duplicate records. " .
                 "Only update an attribute if you have a new / better value than what is already in teamObjects by ingesting additional content  (ie: images / files, URLs leading to web pages, additionally provided content, etc.), otherwise leave the attribute value null to avoid updating.";
-
-            $responseMessage .= "\n\nWhen making citations for attributes, always use the message type w/ message_id if <AgentMessage> tags are present around the content where the attribute was found. " .
-                "NEVER cite a message_id if it contains teamObjects data. " .
-                "IF a URL or image is given and the attribute was found there, use the url instead of the message_id. " .
-                "If the attribute was found outside of the <AgentMessage> tag and not in the given URL/images, DO NOT make a citation.";
         }
 
         if ($agent->response_format !== 'text') {

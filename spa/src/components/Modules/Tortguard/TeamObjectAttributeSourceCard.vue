@@ -1,13 +1,6 @@
 <template>
 	<div class="space-y-2">
 		<LabelValuePillWidget
-			v-if="source.location"
-			class="flex items-stretch"
-			label="Location"
-			:value="source.location"
-			label-class="w-20"
-		/>
-		<LabelValuePillWidget
 			v-if="source.explanation"
 			class="flex items-stretch"
 			label="Explanation"

@@ -8,24 +8,17 @@ items:
   type: object
   additionalProperties: false
   required:
-    - object_type
-    - object_id
     - property_name
     - save_to_db
     - citation
   properties:
-    object_type:
-      type: string
-      description: |
-        The type (defined by the title) of the direct parent object
-    object_id:
-      type: string
-      description: |
-        The id of the direct parent object if given, otherwise the name of the direct parent object
     property_name:
       type: string
       description: |
-        The name of the property this meta entry references (ie: name, date, age, address, etc). DO NOT USE dot notation. This will never be a path like "team.name" or "teams[0].address.zip". ALWAYS use the direct property name (as the object_type/object_id will always be the direct parent).
+        The name of the child property this meta entry references (ie: name, date, age, etc).
+        DO NOT USE dot notation. This will never be a path like "team.name" or "teams[0].address.zip".
+        ALWAYS set to a direct child property name.
+        DO NOT reference child properties that are array or object types (scalar property types only)
     save_to_db:
       type: boolean
       description: |
@@ -76,55 +69,40 @@ items:
             value is null'
         sources:
           type: array
+          description: |
+            The source of the child property value.
+            * Cite URLs or files via the url property.
+            * Message IDs are ONLY found from <AgentMessage id="message_id"> tags in the thread. If no <AgentMessage> tags are present, DO NOT create a source w/ message_id property. These message sources apply ONLY to values found inside the <AgentMessage /> tags.
+              * NEVER cite a message_id if it contains teamObjects data.
+            * Make sure you include all relevant sources (more than if others apply).
+            * If the attribute was found outside of the <AgentMessage> tag and not in the given URL/images, DO NOT add a source entry for it.
           items:
             anyOf:
               - type: object
                 required:
                   - url
-                  - location
                   - explanation
                 properties:
                   url:
                     type: string
                     description: A URL that contains the chosen value. If an image/file is
                       provided, use the URL given in image_url (DO NOT USE THE FILENAME)
-                  location:
-                    type: string
-                    description: A value such as "In the first paragraph", "In the title",
-                      "In the image caption", "Page 2", etc. to describe where in the source
-                      content the attribute was derived. NEVER SET THIS TO ACTUAL CONTENT
-                      OF THE SOURCE JUST A QUICK HINT OF WHERE TO LOOK IN THE SOURCE. If source
-                      content is very short (ie 1 paragraph, etc) just leave this blank.
                   explanation:
                     type: string
-                    description: A brief explanation of how you know this source contains
-                      the value. Give some context about what the part of the source was referring to that you found the value.
+                    description: A brief explanation of how you know this source contains the value. Give some context about what the part of the source was referring to that you found the value. And the location in the source to look for the value (provide context like top of page, in this section, quoted by, etc.)
                 additionalProperties: false
               - type: object
                 required:
                   - message_id
-                  - location
                   - explanation
                 properties:
-                  location:
-                    type: string
-                    description: A value such as "First paragraph", "In Title", "Towards the
-                      end", etc. to describe where in the source content the attribute was
-                      derived. NEVER SET THIS TO ACTUAL CONTENT OF THE SOURCE JUST A QUICK
-                      HINT OF WHERE TO LOOK IN THE SOURCE. If source content is very short
-                      (ie 1 paragraph, etc) just leave this blank.
                   message_id:
                     type: string
                     description: A message ID that the attribute was sourced from. If a user
                       message is wrapped with <AgentMessage id='message_id'>...</AgentMessage>,
                       it contains info leading you to the answer you gave for the attribute,
-                      provide the message ID as a source. If no <AgentMessage> tags are present,
-                      omit this field
+                      provide the message ID as a source.
                   explanation:
                     type: string
-                    description: A brief explanation of how you know this source contains
-                      the value. Give some context about what the part of the source was referring to that you found the value.
+                    description: A brief explanation of how you know this source contains the value. Give some context about what the part of the source was referring to that you found the value. And the location in the source to look for the value (provide context like top of page, in this section, quoted by, etc.)
                 additionalProperties: false
-          description: The source of the attribute value. Cite any URLs, Messages IDs from
-            the thread or files. Make sure you include all relevant URLs, Message IDs, or
-            file IDs that contain the value (more than 1 source if others are applicable)

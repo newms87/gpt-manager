@@ -13,6 +13,8 @@ class JsonSchemaService
     protected bool $useCitations = false;
     /** @var bool  Make sure each object includes the ID property */
     protected bool $useId = false;
+    /** @var bool  Include the attribute meta property */
+    protected bool $useAttributeMeta = false;
     /** @var bool  Make sure each object includes the name property */
     protected bool $requireName = false;
 
@@ -20,6 +22,8 @@ class JsonSchemaService
         'type'        => ['number', 'null'],
         'description' => 'Set the ID if the value was derived from the DB (ie: teamObjects). Otherwise this should be null. NOTE: You can update the value in the DB by providing the ID and a new value.',
     ];
+
+    protected array $attributeMetaDef = [];
 
     public function useId(bool $useId = true): self
     {
@@ -39,7 +43,36 @@ class JsonSchemaService
     {
         $this->useCitations = $useCitations;
 
+        if ($useCitations) {
+            $this->useAttributeMeta = true;
+        }
+
         return $this;
+    }
+
+    public function useAttributeMeta(bool $useAttributeMeta = true): self
+    {
+        $this->useAttributeMeta = $useAttributeMeta;
+
+        return $this;
+    }
+
+    /**
+     * Get the attribute meta definition for the schema
+     */
+    public function getAttributeMeta(): array
+    {
+        if (!$this->attributeMetaDef) {
+            // Inject the attribute meta definition into the schema
+            $this->attributeMetaDef = FileHelper::parseYamlFile(app_path('Services/JsonSchema/attribute_meta.def.yaml'));
+
+            // If citations are not required, then remove the citation property of the attribute meta def
+            if (!$this->useCitations) {
+                unset($this->attributeMetaDef['properties']['citation']);
+            }
+        }
+
+        return $this->attributeMetaDef;
     }
 
     /**
@@ -145,6 +178,12 @@ class JsonSchemaService
             ];
         }
 
+        if ($this->useAttributeMeta) {
+            $propertiesSchema['attribute_meta'] = [
+                '$ref' => '#/$defs/attribute_meta',
+            ];
+        }
+
         if ($depth > 0) {
             return $propertiesSchema;
         }
@@ -157,19 +196,6 @@ class JsonSchemaService
      */
     public function formatRootSchemaObject($name, $schema, $propertiesSchema): array
     {
-        if ($this->useCitations || $this->useId) {
-            // Inject the attribute meta definition into the schema
-            $attributeMetaDef = FileHelper::parseYamlFile(app_path('Services/JsonSchema/attribute_meta.def.yaml'));
-
-            // If citations are not required, then remove the citation property of the attribute meta def
-            if (!$this->useCitations) {
-                unset($attributeMetaDef['properties']['citation']);
-            }
-
-
-            $propertiesSchema['attribute_meta'] = $attributeMetaDef;
-        }
-
         $formattedSchema = [
             'type'                 => 'object',
             'additionalProperties' => false,
@@ -188,6 +214,10 @@ class JsonSchemaService
 
         if ($this->useId) {
             $formattedSchema['$defs']['id'] = static::$idDef;
+        }
+
+        if ($this->useAttributeMeta) {
+            $formattedSchema['$defs']['attribute_meta'] = $this->getAttributeMeta();
         }
 
         return [

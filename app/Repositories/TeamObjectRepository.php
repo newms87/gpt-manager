@@ -193,7 +193,6 @@ class TeamObjectRepository extends ActionRepository
             'source_id'   => $sourceId,
         ], [
             'explanation'    => $source['explanation'] ?? null,
-            'location'       => $source['location'] ?? '',
             'message_id'     => $sourceMessageId,
             'stored_file_id' => $storedFile?->id,
         ]);

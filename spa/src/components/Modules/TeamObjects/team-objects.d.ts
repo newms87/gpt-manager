@@ -34,7 +34,6 @@ interface TeamObjectAttributeSource {
 	id: number;
 	source_type: string;
 	source_id: string;
-	location: string;
 	explanation: string;
 	sourceFile?: UploadedFile;
 	sourceMessage?: ThreadMessage;
