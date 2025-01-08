@@ -24,7 +24,7 @@ import { TeamObjectAttribute } from "@/components/Modules/TeamObjects/team-objec
 import TeamObjectAttributeSourceCard from "@/components/Modules/Tortguard/TeamObjectAttributeSourceCard";
 import { FaSolidLink as LinkIcon, FaSolidMessage as ThreadLinkIcon } from "danx-icon";
 
-const props = defineProps<{
+defineProps<{
 	attribute: TeamObjectAttribute
 }>();
 </script>

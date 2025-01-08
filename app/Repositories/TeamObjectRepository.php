@@ -175,7 +175,7 @@ class TeamObjectRepository extends ActionRepository
 
             if (!$storedFile) {
                 Log::debug("Creating Stored File for source URL");
-                $storedFile = app(FileRepository::class)->createFileWithUrl($sourceUrl, $sourceUrl, ['disk' => 'web', 'mime' => StoredFile::MIME_HTML]);
+                $storedFile = app(FileRepository::class)->createFileWithUrl($sourceUrl, $sourceUrl, ['disk' => 'web', 'mime' => FileHelper::getMimeFromExtension($sourceUrl)]);
             }
 
             Log::debug("Stored File $storedFile->id references source URL $sourceUrl");
