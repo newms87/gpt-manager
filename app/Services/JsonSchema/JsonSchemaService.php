@@ -2,8 +2,10 @@
 
 namespace App\Services\JsonSchema;
 
+use App\Models\Agent\Agent;
 use Exception;
 use Newms87\Danx\Helpers\FileHelper;
+use Str;
 
 class JsonSchemaService
 {
@@ -43,7 +45,7 @@ class JsonSchemaService
     /**
      * Recursively filters a JSON schema by a sub-selection of properties
      */
-    public function filterSchemaBySubSelection(array $schema, array $subSelection = null): array
+    public function applySubSelection(array $schema, array $subSelection = null): array
     {
         if (!$subSelection) {
             return $schema;
@@ -61,24 +63,30 @@ class JsonSchemaService
                 throw new Exception("Sub-selection must have a type: $selectedKey: " . json_encode($selectedProperty));
             }
 
+            $schemaProperty = $properties[$selectedKey] ?? null;
+
             // Skip if the property is not in the schema
             // NOTE: We do not throw an error here because sub selections are not directly tied to schemas. They are loosely correlated, but schemas may change while selections remain the same.
-            if (empty($properties[$selectedKey])) {
+            if (!$schemaProperty) {
                 continue;
             }
 
+            if (!empty($schemaProperty['type']) && $schemaProperty['type'] !== $selectedProperty['type']) {
+                throw new Exception("Sub-selection type mismatch: $selectedKey: Schema Type $schemaProperty[type] is not $selectedProperty[type]");
+            }
+
             if ($selectedProperty['type'] === 'object') {
-                $result = $this->filterSchemaBySubSelection($properties[$selectedKey], $selectedProperty);
+                $result = $this->applySubSelection($schemaProperty, $selectedProperty);
             } elseif ($selectedProperty['type'] === 'array') {
-                $result = $this->filterSchemaBySubSelection($properties[$selectedKey]['items'], $selectedProperty);
+                $result = $this->applySubSelection($schemaProperty['items'], $selectedProperty);
             } else {
-                $result = $properties[$selectedKey];
+                $result = $schemaProperty;
             }
 
             if ($result) {
                 if ($selectedProperty['type'] === 'array') {
                     $filtered[$selectedKey] = [
-                        ...$properties[$selectedKey],
+                        ...$schemaProperty,
                         'type'  => 'array',
                         'items' => $result,
                     ];
@@ -149,15 +157,18 @@ class JsonSchemaService
      */
     public function formatRootSchemaObject($name, $schema, $propertiesSchema): array
     {
-        // Inject the attribute meta definition into the schema
-        $attributeMetaDef = FileHelper::parseYamlFile(app_path('Services/JsonSchema/attribute_meta.def.yaml'));
+        if ($this->useCitations || $this->useId) {
+            // Inject the attribute meta definition into the schema
+            $attributeMetaDef = FileHelper::parseYamlFile(app_path('Services/JsonSchema/attribute_meta.def.yaml'));
 
-        // If citations are not required, then remove the citation property of the attribute meta def
-        if (!$this->useCitations) {
-            unset($attributeMetaDef['properties']['citation']);
+            // If citations are not required, then remove the citation property of the attribute meta def
+            if (!$this->useCitations) {
+                unset($attributeMetaDef['properties']['citation']);
+            }
+
+
+            $propertiesSchema['attribute_meta'] = $attributeMetaDef;
         }
-
-        $propertiesSchema['attribute_meta'] = $attributeMetaDef;
 
         $formattedSchema = [
             'type'                 => 'object',
@@ -240,5 +251,27 @@ class JsonSchemaService
         }
 
         return $item;
+    }
+
+    /**
+     * Format the schema for an AI Agent based on the settings for the agent.
+     * The unique name is based on the agent's name and responseSchema overall structure
+     */
+    public function formatAgentResponseSchema(Agent $agent): array|string
+    {
+        $responseSchema = $agent->responseSchema?->schema ?? '';
+
+        if (is_array($responseSchema)) {
+            if ($agent->response_sub_selection) {
+                $responseSchema = $this->applySubSelection($responseSchema, $agent->response_sub_selection);
+            }
+            
+            // Name the response schema result based on the agent's name and a hash of the schema after applying sub selection
+            $name = $agent->name . ':' . substr(md5(json_encode($responseSchema)), 0, 7);
+
+            return $this->formatAndCleanSchema(Str::slug($name), $responseSchema);
+        }
+
+        return $responseSchema;
     }
 }

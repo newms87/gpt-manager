@@ -20,7 +20,6 @@ use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Jobs\Job;
-use Str;
 use Throwable;
 
 class AgentThreadService
@@ -127,9 +126,11 @@ class AgentThreadService
 
             if ($threadRun->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA) {
                 // Configure the JSON schema service to require the name and id fields, and use citations for each property
-                $jsonSchemaService = app(JsonSchemaService::class)->useCitations()->requireName()->useId();
-
-                $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = $this->formatResponseSchemaForAgent($agent, $jsonSchemaService);
+                $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = app(JsonSchemaService::class)
+                    ->useCitations()
+                    ->requireName()
+                    ->useId()
+                    ->formatAgentResponseSchema($agent);
             }
 
             $tools = $agent->formatTools();
@@ -190,29 +191,6 @@ class AgentThreadService
             $threadRun->save();
             throw $throwable;
         }
-    }
-
-    /**
-     * Format the response schema for the AI model based on the agent's name and responseSchema
-     */
-    public function formatResponseSchemaForAgent(Agent $agent, JsonSchemaService $jsonSchemaService = null): array|string
-    {
-        if (!$jsonSchemaService) {
-            $jsonSchemaService = app(JsonSchemaService::class);
-        }
-
-        $responseSchema = $agent->responseSchema?->schema ?? '';
-        if (is_array($responseSchema)) {
-            $name = $agent->name . ':' . substr(md5(json_encode($responseSchema)), 0, 7);
-
-            if ($agent->response_sub_selection) {
-                $responseSchema = $jsonSchemaService->filterSchemaBySubSelection($responseSchema, $agent->response_sub_selection);
-            }
-
-            return $jsonSchemaService->formatAndCleanSchema(Str::slug($name), $responseSchema);
-        }
-
-        return $responseSchema;
     }
 
     /**
@@ -278,7 +256,7 @@ class AgentThreadService
         // and provide a message so the agent can see the schema (simulating response schema format)
         // XXX: NOTE this is a hack for Perplexity AI, which does support JSON Schema, but does not seem to respond to it for their online models
         elseif ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && !$apiFormatter->acceptsJsonSchema()) {
-            $responseMessage .= "\n\nResponse Schema:\n" . json_encode($this->formatResponseSchemaForAgent($agent));
+            $responseMessage .= "\n\nResponse Schema:\n" . json_encode(app(JsonSchemaService::class)->formatAgentResponseSchema($agent));
         }
 
         // Include the Example response if we're in JSON object mode to help the agent understand the correct response format
