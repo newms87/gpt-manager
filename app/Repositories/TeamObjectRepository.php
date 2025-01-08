@@ -114,21 +114,25 @@ class TeamObjectRepository extends ActionRepository
      * Create or Update the value, date, confidence and sources for a Team Object Attribute record based on team object
      * and attribute name
      */
-    public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $attribute): ?TeamObjectAttribute
+    public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $attribute, ?array $meta = []): ?TeamObjectAttribute
     {
         if (!$name) {
             throw new BadFunctionCallException("Save Team Object Attribute requires a name");
         }
 
-        $value    = $attribute['value'] ?? null;
-        $citation = $attribute['citation'] ?? null;
-        $save     = $attribute['save'] ?? true;
+        $value = $attribute['value'] ?? null;
 
-        // Attribute should not be saved
-        if ($save === false) {
+        $attributeMeta = collect($meta)->firstWhere('property_name', $name);
+
+        $saveToDb = $attributeMeta['save_to_db'] ?? true;
+
+        if (!$saveToDb) {
+            Log::debug("Skipping save to DB for $name");
+
             return null;
         }
 
+        $citation   = $attributeMeta['citation'] ?? null;
         $date       = $citation['date'] ?? null;
         $reason     = $citation['reason'] ?? null;
         $confidence = $citation['confidence'] ?? null;
@@ -246,8 +250,9 @@ class TeamObjectRepository extends ActionRepository
      */
     public function saveTeamObjectUsingSchema(array $schema, array $object, ThreadRun $threadRun = null): TeamObject
     {
-        $type = $schema['title'] ?? null;
-        $name = $object['name']['value'] ?? $object['name'] ?? null;
+        $type          = $schema['title'] ?? null;
+        $name          = $object['name']['value'] ?? $object['name'] ?? null;
+        $attributeMeta = $object['attribute_meta'] ?? null;
 
         Log::debug("Saving TeamObject: $type $name");
 
@@ -296,7 +301,7 @@ class TeamObjectRepository extends ActionRepository
                 $propertyValue['value'] = $this->formatPropertyValue($type, $format, $propertyValue['value']);
 
                 // Save the attribute
-                $objectAttribute = $this->saveTeamObjectAttribute($teamObject, $propertyName, $propertyValue);
+                $objectAttribute = $this->saveTeamObjectAttribute($teamObject, $propertyName, $propertyValue, $attributeMeta);
 
                 // Associate the thread run if it is set
                 if ($objectAttribute && $threadRun) {

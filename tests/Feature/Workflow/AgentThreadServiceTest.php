@@ -216,13 +216,13 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
                 'type'                 => 'object',
                 'properties'           => [
                     'key' => [
-                        'type'                 => 'object',
+                        'type'                 => ['object', 'null'],
                         'properties'           => [
                             'nested_a' => [
                                 'type' => ['string', 'null'],
                             ],
                             'nested_b' => [
-                                'type'                 => 'object',
+                                'type'                 => ['object', 'null'],
                                 'properties'           => [
                                     'nested-key' => [
                                         'type' => ['string', 'null'],
@@ -279,15 +279,15 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
                 'type'                 => 'object',
                 'properties'           => [
                     'key' => [
-                        'type'  => 'array',
+                        'type'  => ['array', 'null'],
                         'items' => [
-                            'type'                 => 'object',
+                            'type'                 => ['object', 'null'],
                             'properties'           => [
                                 'nested_a' => [
                                     'type' => ['string', 'null'],
                                 ],
                                 'nested_b' => [
-                                    'type'                 => 'object',
+                                    'type'                 => ['object', 'null'],
                                     'properties'           => [
                                         'nested-key' => [
                                             'type' => ['string', 'null'],
