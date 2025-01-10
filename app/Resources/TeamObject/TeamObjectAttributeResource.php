@@ -3,34 +3,30 @@
 namespace App\Resources\TeamObject;
 
 use App\Models\TeamObject\TeamObjectAttribute;
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
 abstract class TeamObjectAttributeResource extends ActionResource
 {
-    /**
-     * @param TeamObjectAttribute $model
-     */
-    public static function data(Model $model): array
+    public static function data(TeamObjectAttribute $teamObjectAttribute): array
     {
         $threadUrl = null;
-        $thread    = $model->threadRun?->thread;
+        $thread    = $teamObjectAttribute->threadRun?->thread;
 
         if ($thread) {
             $threadUrl = app_url("agents/$thread->agent_id/threads/$thread->id");
         }
 
         return [
-            'id'         => $model->id,
-            'name'       => $model->name,
-            'date'       => $model->date,
-            'value'      => $model->json_value ?? $model->text_value,
-            'confidence' => $model->confidence,
-            'reason'     => $model->reason,
-            'sources'    => TeamObjectAttributeSourceResource::collection($model->sources),
+            'id'         => $teamObjectAttribute->id,
+            'name'       => $teamObjectAttribute->name,
+            'date'       => $teamObjectAttribute->date,
+            'value'      => $teamObjectAttribute->json_value ?? $teamObjectAttribute->text_value,
+            'confidence' => $teamObjectAttribute->confidence,
+            'reason'     => $teamObjectAttribute->reason,
+            'sources'    => TeamObjectAttributeSourceResource::collection($teamObjectAttribute->sources),
             'thread_url' => $threadUrl,
-            'created_at' => $model->created_at,
-            'updated_at' => $model->updated_at,
+            'created_at' => $teamObjectAttribute->created_at,
+            'updated_at' => $teamObjectAttribute->updated_at,
         ];
     }
 }

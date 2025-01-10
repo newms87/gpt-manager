@@ -2,52 +2,40 @@
 
 namespace App\Resources\Audit;
 
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Models\Audit\AuditRequest;
 use Newms87\Danx\Resources\ActionResource;
 
 class AuditRequestResource extends ActionResource
 {
-    /**
-     * @param AuditRequest $model
-     */
-    public static function data(Model $model): array
+    public static function data(AuditRequest $auditRequest): array
     {
         return [
-            'id'                    => $model->id,
-            'session_id'            => $model->session_id,
-            'user_name'             => $model->user ? $model->user->email . ' (' . $model->user_id . ')' : 'N/A',
-            'environment'           => $model->environment,
-            'http_method'           => $model->requestMethod(),
-            'http_status_code'      => $model->statusCode(),
-            'url'                   => $model->url,
-            'request'               => $model->request,
-            'response'              => $model->response,
-            'response_length'       => $model->response ? $model->response['length'] : 0,
-            'max_memory'            => $model->response ? $model->response['max_memory_used'] : 0,
-            'logs'                  => $model->logs,
-            'time'                  => $model->time,
-            'audits_count'          => $model->audits()->count(),
-            'api_logs_count'        => $model->apiLogs()->count(),
-            'ran_jobs_count'        => $model->ranJobs()->count(),
-            'dispatched_jobs_count' => $model->dispatchedJobs()->count(),
-            'errors_count'          => $model->errorLogEntries()->count(),
-            'created_at'            => $model->created_at,
-            'updated_at'            => $model->updated_at,
-        ];
-    }
+            'id'                    => $auditRequest->id,
+            'session_id'            => $auditRequest->session_id,
+            'user_name'             => $auditRequest->user ? $auditRequest->user->email . ' (' . $auditRequest->user_id . ')' : 'N/A',
+            'environment'           => $auditRequest->environment,
+            'http_method'           => $auditRequest->requestMethod(),
+            'http_status_code'      => $auditRequest->statusCode(),
+            'url'                   => $auditRequest->url,
+            'request'               => $auditRequest->request,
+            'response'              => $auditRequest->response,
+            'response_length'       => $auditRequest->response ? $auditRequest->response['length'] : 0,
+            'max_memory'            => $auditRequest->response ? $auditRequest->response['max_memory_used'] : 0,
+            'logs'                  => $auditRequest->logs,
+            'time'                  => $auditRequest->time,
+            'audits_count'          => $auditRequest->audits()->count(),
+            'api_logs_count'        => $auditRequest->apiLogs()->count(),
+            'ran_jobs_count'        => $auditRequest->ranJobs()->count(),
+            'dispatched_jobs_count' => $auditRequest->dispatchedJobs()->count(),
+            'errors_count'          => $auditRequest->errorLogEntries()->count(),
+            'created_at'            => $auditRequest->created_at,
+            'updated_at'            => $auditRequest->updated_at,
 
-    /**
-     * @param AuditRequest $model
-     */
-    public static function details(Model $model): array
-    {
-        return static::make($model, [
-            'audits'          => AuditResource::collection($model->audits),
-            'api_logs'        => ApiLogResource::collection($model->apiLogs),
-            'ran_jobs'        => JobDispatchResource::collection($model->ranJobs),
-            'dispatched_jobs' => JobDispatchResource::collection($model->dispatchedJobs),
-            'errors'          => ErrorLogEntryResource::collection($model->errorLogEntries),
-        ]);
+            'audits'          => fn() => AuditResource::collection($auditRequest->audits),
+            'api_logs'        => fn() => ApiLogResource::collection($auditRequest->apiLogs),
+            'ran_jobs'        => fn() => JobDispatchResource::collection($auditRequest->ranJobs),
+            'dispatched_jobs' => fn() => JobDispatchResource::collection($auditRequest->dispatchedJobs),
+            'errors'          => fn() => ErrorLogEntryResource::collection($auditRequest->errorLogEntries),
+        ];
     }
 }

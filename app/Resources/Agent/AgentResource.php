@@ -3,75 +3,49 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\Agent;
-use App\Models\Agent\Message;
-use App\Models\Agent\Thread;
-use App\Models\Prompt\AgentPromptDirective;
-use App\Models\Workflow\WorkflowAssignment;
 use App\Resources\Prompt\AgentPromptDirectiveResource;
-use App\Resources\Prompt\PromptDirectiveResource;
 use App\Resources\Prompt\PromptSchemaResource;
 use App\Resources\Workflow\WorkflowAssignmentResource;
-use App\Resources\Workflow\WorkflowJobResource;
-use App\Resources\Workflow\WorkflowResource;
 use Illuminate\Database\Eloquent\Model;
-use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Resources\ActionResource;
-use Newms87\Danx\Resources\StoredFileResource;
 
 class AgentResource extends ActionResource
 {
-    /**
-     * @param Agent $model
-     */
-    public static function data(Model $model): array
+    public static function data(Agent $agent): array
     {
         return [
-            'id'                     => $model->id,
-            'knowledge_name'         => $model->knowledge?->name,
-            'name'                   => $model->name,
-            'description'            => $model->description,
-            'api'                    => $model->api,
-            'model'                  => $model->model,
-            'temperature'            => $model->temperature,
-            'tools'                  => $model->tools ?: [],
-            'response_format'        => $model->response_format,
-            'save_response_to_db'    => $model->save_response_to_db,
-            'enable_message_sources' => $model->enable_message_sources,
-            'retry_count'            => $model->retry_count,
-            'threads_count'          => $model->threads_count,
-            'assignments_count'      => $model->assignments_count,
-            'created_at'             => $model->created_at,
-            'updated_at'             => $model->updated_at,
+            'id'                     => $agent->id,
+            'knowledge_name'         => $agent->knowledge?->name,
+            'name'                   => $agent->name,
+            'description'            => $agent->description,
+            'api'                    => $agent->api,
+            'model'                  => $agent->model,
+            'temperature'            => $agent->temperature,
+            'tools'                  => $agent->tools ?: [],
+            'response_format'        => $agent->response_format,
+            'save_response_to_db'    => $agent->save_response_to_db,
+            'enable_message_sources' => $agent->enable_message_sources,
+            'retry_count'            => $agent->retry_count,
+            'threads_count'          => $agent->threads_count,
+            'assignments_count'      => $agent->assignments_count,
+            'created_at'             => $agent->created_at,
+            'updated_at'             => $agent->updated_at,
+
+            'responseSchema'         => fn($fields) => PromptSchemaResource::make($agent->responseSchema, $fields),
+            'response_sub_selection' => fn() => $agent->response_sub_selection,
+            'directives'             => fn($fields) => AgentPromptDirectiveResource::collection($agent->directives->load('directive'), $fields),
+            'threads'                => fn($fields) => ThreadResource::collection($agent->threads()->orderByDesc('updated_at')->with('sortedMessages.storedFiles.transcodes')->limit(20)->get(), $fields),
+            'assignments'            => fn($fields) => WorkflowAssignmentResource::collection($agent->assignments()->with('workflowJob.workflow')->limit(20)->get(), $fields),
         ];
     }
 
-    /**
-     * @param Agent $model
-     */
     public static function details(Model $model): array
     {
-        $threads     = $model->threads()->orderByDesc('updated_at')->with('messages.storedFiles.transcodes')->limit(20)->get();
-        $assignments = $model->assignments()->with('workflowJob.workflow')->limit(20)->get();
-        $directives  = $model->directives()->orderBy('position')->with('directive')->get();
-
         return static::make($model, [
-            'responseSchema'         => PromptSchemaResource::make($model->responseSchema),
-            'response_sub_selection' => $model->response_sub_selection,
-            'directives'             => AgentPromptDirectiveResource::collection($directives, fn(AgentPromptDirective $agentPromptDirective) => [
-                'directive' => PromptDirectiveResource::make($agentPromptDirective->directive),
-            ]),
-            'threads'                => ThreadResource::collection($threads, fn(Thread $thread) => [
-                'messages' => MessageResource::collection($thread->messages, fn(Message $message) => [
-                    'files' => StoredFileResource::collection($message->storedFiles, fn(StoredFile $storedFile) => [
-                        'transcodes' => StoredFileResource::collection($storedFile->transcodes),
-                    ]),
-                ]),
-            ]),
-            'assignments'            => WorkflowAssignmentResource::collection($assignments, fn(WorkflowAssignment $assignment) => [
-                'workflowJob' => WorkflowJobResource::make($assignment->workflowJob, [
-                    'workflow' => WorkflowResource::make($assignment->workflowJob->workflow),
-                ]),
-            ]),
+            '*'           => true,
+            'directives'  => ['directive' => true],
+            'threads'     => ['messages' => ['files' => ['transcodes' => true]]],
+            'assignments' => ['workflowJob' => ['workflow' => true]],
         ]);
     }
 }

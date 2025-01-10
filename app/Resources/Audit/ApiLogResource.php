@@ -2,29 +2,25 @@
 
 namespace App\Resources\Audit;
 
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Models\Audit\ApiLog;
 use Newms87\Danx\Resources\ActionResource;
 
 class ApiLogResource extends ActionResource
 {
-    /**
-     * @param ApiLog $model
-     */
-    public static function data(Model $model): array
+    public static function data(ApiLog $apiLog): array
     {
         return [
-            'id'               => $model->id,
-            'api_class'        => $model->api_class,
-            'service_name'     => $model->service_name,
-            'status_code'      => $model->status_code,
-            'method'           => $model->method,
-            'url'              => $model->full_url,
-            'request'          => $model->request,
-            'response'         => $model->response,
-            'request_headers'  => $model->request_headers,
-            'response_headers' => $model->response_headers,
-            'created_at'       => $model->created_at,
+            'id'               => $apiLog->id,
+            'api_class'        => $apiLog->api_class,
+            'service_name'     => $apiLog->service_name,
+            'status_code'      => $apiLog->status_code,
+            'method'           => $apiLog->method,
+            'url'              => $apiLog->full_url,
+            'request'          => $apiLog->request,
+            'response'         => $apiLog->response,
+            'request_headers'  => $apiLog->request_headers,
+            'response_headers' => $apiLog->response_headers,
+            'created_at'       => $apiLog->created_at,
         ];
     }
 }

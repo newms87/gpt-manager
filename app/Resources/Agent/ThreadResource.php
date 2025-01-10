@@ -3,35 +3,23 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\Thread;
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
 class ThreadResource extends ActionResource
 {
-    /**
-     * @param Thread $model
-     */
-    public static function data(Model $model): array
+    public static function data(Thread $thread): array
     {
         return [
-            'id'               => $model->id,
-            'name'             => $model->name,
-            'summary'          => $model->summary,
-            'is_running'       => $model->isRunning(),
-            'logs'             => $model->lastRun?->jobDispatch?->runningAuditRequest?->logs ?? '',
-            'usage'            => $model->getUsage(),
-            'audit_request_id' => $model->lastRun?->jobDispatch?->running_audit_request_id,
-            'timestamp'        => $model->updated_at,
-        ];
-    }
+            'id'               => $thread->id,
+            'name'             => $thread->name,
+            'summary'          => $thread->summary,
+            'is_running'       => $thread->isRunning(),
+            'logs'             => $thread->lastRun?->jobDispatch?->runningAuditRequest?->logs ?? '',
+            'usage'            => $thread->getUsage(),
+            'audit_request_id' => $thread->lastRun?->jobDispatch?->running_audit_request_id,
+            'timestamp'        => $thread->updated_at,
 
-    /**
-     * @param Thread $model
-     */
-    public static function details(Model $model): array
-    {
-        return static::make($model, [
-            'messages' => MessageResource::collection($model->messages()->orderBy('id')->get()),
-        ]);
+            'messages' => fn($fields) => MessageResource::collection($thread->sortedMessages, $fields),
+        ];
     }
 }

@@ -3,35 +3,22 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\ThreadRun;
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
 class ThreadRunResource extends ActionResource
 {
-    /**
-     * @param ThreadRun $model
-     */
-    public static function data(Model $model): array
+    public static function data(ThreadRun $threadRun): array
     {
         return [
-            'id'            => $model->id,
-            'status'        => $model->status,
-            'started_at'    => $model->started_at,
-            'completed_at'  => $model->completed_at,
-            'failed_at'     => $model->failed_at,
-            'refreshed_at'  => $model->refreshed_at,
-            'input_tokens'  => $model->input_tokens,
-            'output_tokens' => $model->output_tokens,
+            'id'            => $threadRun->id,
+            'status'        => $threadRun->status,
+            'started_at'    => $threadRun->started_at,
+            'completed_at'  => $threadRun->completed_at,
+            'failed_at'     => $threadRun->failed_at,
+            'refreshed_at'  => $threadRun->refreshed_at,
+            'input_tokens'  => $threadRun->input_tokens,
+            'output_tokens' => $threadRun->output_tokens,
+            'thread'        => fn($fields) => ThreadResource::make($threadRun->thread, $fields),
         ];
-    }
-
-    /**
-     * @param ThreadRun $model
-     */
-    public static function details(Model $model): array
-    {
-        return static::make($model, [
-            'thread' => ThreadResource::make($model->thread),
-        ]);
     }
 }

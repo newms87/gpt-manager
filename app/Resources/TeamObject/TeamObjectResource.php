@@ -4,28 +4,24 @@ namespace App\Resources\TeamObject;
 
 use App\Models\TeamObject\TeamObject;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
 abstract class TeamObjectResource extends ActionResource
 {
-    /**
-     * @param TeamObject $model
-     */
-    public static function data(Model $model): array
+    public static function data(TeamObject $teamObject): array
     {
         return [
-            'id'          => $model->id,
-            'type'        => $model->type,
-            'name'        => $model->name,
-            'description' => $model->description,
-            'date'        => $model->date?->toDateTimeString(),
-            'url'         => $model->url,
-            'meta'        => $model->meta,
-            'created_at'  => $model->created_at,
-            'updated_at'  => $model->updated_at,
-            'attributes'  => static::loadAttributes($model),
-            'relations'   => static::loadRelations($model),
+            'id'          => $teamObject->id,
+            'type'        => $teamObject->type,
+            'name'        => $teamObject->name,
+            'description' => $teamObject->description,
+            'date'        => $teamObject->date?->toDateTimeString(),
+            'url'         => $teamObject->url,
+            'meta'        => $teamObject->meta,
+            'created_at'  => $teamObject->created_at,
+            'updated_at'  => $teamObject->updated_at,
+            'attributes'  => static::loadAttributes($teamObject),
+            'relations'   => static::loadRelations($teamObject),
         ];
     }
 

@@ -49,6 +49,11 @@ class Thread extends Model implements AuditableContract
         return $this->hasMany(Message::class);
     }
 
+    public function sortedMessages(): HasMany|Message
+    {
+        return $this->messages()->orderBy('id');
+    }
+
     public function agent(): BelongsTo|Agent
     {
         return $this->belongsTo(Agent::class);

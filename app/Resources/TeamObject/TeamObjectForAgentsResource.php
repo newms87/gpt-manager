@@ -5,16 +5,12 @@ namespace App\Resources\TeamObject;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Log;
 
 class TeamObjectForAgentsResource
 {
-    /**
-     * @param TeamObject $teamObject
-     */
-    public static function make(Model $teamObject): array
+    public static function make(TeamObject $teamObject): array
     {
         // Filter out only desired and non-empty attributes
         $loadedObject = collect($teamObject->toArray())->except(['created_at', 'updated_at', 'deleted_at'])->toArray();

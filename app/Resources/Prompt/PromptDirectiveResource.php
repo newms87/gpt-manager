@@ -3,23 +3,19 @@
 namespace App\Resources\Prompt;
 
 use App\Models\Prompt\PromptDirective;
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
 class PromptDirectiveResource extends ActionResource
 {
-    /**
-     * @param PromptDirective $model
-     */
-    public static function data(Model $model): array
+    public static function data(PromptDirective $promptDirective): array
     {
         return [
-            'id'             => $model->id,
-            'name'           => $model->name,
-            'directive_text' => $model->directive_text,
-            'agents_count'   => $model->agents_count,
-            'created_at'     => $model->created_at,
-            'updated_at'     => $model->updated_at,
+            'id'             => $promptDirective->id,
+            'name'           => $promptDirective->name,
+            'directive_text' => $promptDirective->directive_text,
+            'agents_count'   => $promptDirective->agents_count,
+            'created_at'     => $promptDirective->created_at,
+            'updated_at'     => $promptDirective->updated_at,
         ];
     }
 }

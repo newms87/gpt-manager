@@ -2,29 +2,25 @@
 
 namespace App\Resources\Audit;
 
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Models\Audit\ErrorLogEntry;
 use Newms87\Danx\Resources\ActionResource;
 
 class ErrorLogEntryResource extends ActionResource
 {
-    /**
-     * @param ErrorLogEntry $model
-     */
-    public static function data(Model $model): array
+    public static function data(ErrorLogEntry $errorLogEntry): array
     {
         return [
-            'id'           => $model->id,
-            'error_class'  => $model->errorLog->error_class,
-            'code'         => $model->errorLog->code,
-            'level'        => $model->errorLog->level,
-            'last_seen_at' => $model->errorLog->last_seen_at,
-            'file'         => $model->errorLog->file,
-            'line'         => $model->errorLog->line,
-            'message'      => $model->full_message,
-            'data'         => $model->data,
-            'stack_trace'  => $model->errorLog->stack_trace,
-            'created_at'   => $model->created_at,
+            'id'           => $errorLogEntry->id,
+            'error_class'  => $errorLogEntry->errorLog->error_class,
+            'code'         => $errorLogEntry->errorLog->code,
+            'level'        => $errorLogEntry->errorLog->level,
+            'last_seen_at' => $errorLogEntry->errorLog->last_seen_at,
+            'file'         => $errorLogEntry->errorLog->file,
+            'line'         => $errorLogEntry->errorLog->line,
+            'message'      => $errorLogEntry->full_message,
+            'data'         => $errorLogEntry->data,
+            'stack_trace'  => $errorLogEntry->errorLog->stack_trace,
+            'created_at'   => $errorLogEntry->created_at,
         ];
     }
 }

@@ -4,45 +4,33 @@ namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowTask;
 use App\Resources\Agent\ThreadResource;
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
 class WorkflowTaskResource extends ActionResource
 {
-    /**
-     * @param WorkflowTask $model
-     */
-    public static function data(Model $model): array
+    public static function data(WorkflowTask $workflowTask): array
     {
         return [
-            'id'           => $model->id,
-            'job_name'     => $model->workflowJob?->name,
-            'group'        => $model->group,
-            'agent_id'     => $model->workflowAssignment?->agent->id,
-            'agent_name'   => $model->workflowAssignment?->agent->name,
-            'model'        => $model->thread?->runs()->first()?->agent_model ?? $model->thread?->agent?->model,
-            'status'       => $model->status,
-            'started_at'   => $model->started_at,
-            'completed_at' => $model->completed_at,
-            'failed_at'    => $model->failed_at,
-            'created_at'   => $model->created_at,
+            'id'           => $workflowTask->id,
+            'job_name'     => $workflowTask->workflowJob?->name,
+            'group'        => $workflowTask->group,
+            'agent_id'     => $workflowTask->workflowAssignment?->agent->id,
+            'agent_name'   => $workflowTask->workflowAssignment?->agent->name,
+            'model'        => $workflowTask->thread?->runs()->first()?->agent_model ?? $workflowTask->thread?->agent?->model,
+            'status'       => $workflowTask->status,
+            'started_at'   => $workflowTask->started_at,
+            'completed_at' => $workflowTask->completed_at,
+            'failed_at'    => $workflowTask->failed_at,
+            'created_at'   => $workflowTask->created_at,
             'usage'        => [
-                'input_tokens'  => $model->getTotalInputTokens(),
-                'output_tokens' => $model->getTotalOutputTokens(),
-                'total_cost'    => $model->getTotalCost(),
+                'input_tokens'  => $workflowTask->getTotalInputTokens(),
+                'output_tokens' => $workflowTask->getTotalOutputTokens(),
+                'total_cost'    => $workflowTask->getTotalCost(),
             ],
-        ];
-    }
 
-    /**
-     * @param WorkflowTask $model
-     */
-    public static function details(Model $model): array
-    {
-        return static::make($model, [
-            'audit_request_id' => $model->jobDispatch?->runningAuditRequest?->id,
-            'logs'             => $model->jobDispatch?->runningAuditRequest?->logs,
-            'thread'           => ThreadResource::make($model->thread),
-        ]);
+            'audit_request_id' => fn() => $workflowTask->jobDispatch?->runningAuditRequest?->id,
+            'logs'             => fn() => $workflowTask->jobDispatch?->runningAuditRequest?->logs,
+            'thread'           => fn($fields) => ThreadResource::make($workflowTask->thread, $fields),
+        ];
     }
 }

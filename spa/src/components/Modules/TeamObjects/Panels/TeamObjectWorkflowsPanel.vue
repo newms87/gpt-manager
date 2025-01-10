@@ -78,7 +78,10 @@ async function createWorkflowInput() {
 }
 
 async function loadWorkflowInputs() {
-	const result = await routes.list({ filter: { team_object_id: props.teamObject.id } });
+	const result = await routes.list({
+		filter: { team_object_id: props.teamObject.id },
+		fields: { files: { transcodes: true, thumb: true }, content: true }
+	});
 	workflowInputs.value = storeObjects(result.data) as WorkflowInput[];
 }
 </script>

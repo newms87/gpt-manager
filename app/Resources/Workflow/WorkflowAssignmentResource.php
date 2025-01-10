@@ -3,21 +3,19 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowAssignment;
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
 class WorkflowAssignmentResource extends ActionResource
 {
-    /**
-     * @param WorkflowAssignment $model
-     */
-    public static function data(Model $model): array
+    public static function data(WorkflowAssignment $workflowAssignment): array
     {
         return [
-            'id'           => $model->id,
-            'is_required'  => $model->is_required,
-            'max_attempts' => $model->max_attempts,
-            'created_at'   => $model->created_at,
+            'id'           => $workflowAssignment->id,
+            'is_required'  => $workflowAssignment->is_required,
+            'max_attempts' => $workflowAssignment->max_attempts,
+            'created_at'   => $workflowAssignment->created_at,
+
+            'workflowJob' => fn($fields) => WorkflowJobResource::make($workflowAssignment->workflowJob, $fields),
         ];
     }
 }

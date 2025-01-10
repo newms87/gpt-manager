@@ -3,40 +3,28 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowJobRun;
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
 class WorkflowJobRunResource extends ActionResource
 {
-    /**
-     * @param WorkflowJobRun $model
-     */
-    public static function data(Model $model): array
+    public static function data(WorkflowJobRun $workflowJobRun): array
     {
         return [
-            'id'           => $model->id,
-            'name'         => $model->workflowJob?->name . ' (' . $model->id . ')',
-            'status'       => $model->status,
-            'started_at'   => $model->started_at,
-            'completed_at' => $model->completed_at,
-            'failed_at'    => $model->failed_at,
-            'created_at'   => $model->created_at,
+            'id'           => $workflowJobRun->id,
+            'name'         => $workflowJobRun->workflowJob?->name . ' (' . $workflowJobRun->id . ')',
+            'status'       => $workflowJobRun->status,
+            'started_at'   => $workflowJobRun->started_at,
+            'completed_at' => $workflowJobRun->completed_at,
+            'failed_at'    => $workflowJobRun->failed_at,
+            'created_at'   => $workflowJobRun->created_at,
             'usage'        => [
-                'input_tokens'  => $model->getTotalInputTokens(),
-                'output_tokens' => $model->getTotalOutputTokens(),
-                'total_cost'    => $model->getTotalCost(),
+                'input_tokens'  => $workflowJobRun->getTotalInputTokens(),
+                'output_tokens' => $workflowJobRun->getTotalOutputTokens(),
+                'total_cost'    => $workflowJobRun->getTotalCost(),
             ],
+            'depth'        => fn() => $workflowJobRun->workflowJob?->dependency_level,
+            'workflowJob'  => fn($fields) => WorkflowJobResource::make($workflowJobRun->workflowJob, $fields),
+            'tasks'        => fn($fields) => WorkflowTaskResource::collection($workflowJobRun->tasks, $fields),
         ];
-    }
-
-    /**
-     * @param WorkflowJobRun $model
-     */
-    public static function details(Model $model): array
-    {
-        return static::make($model, [
-            'workflowJob' => WorkflowJobResource::make($model->workflowJob),
-            'tasks'       => WorkflowTaskResource::collection($model->tasks),
-        ]);
     }
 }
