@@ -23,9 +23,9 @@ class ArtifactResource extends ActionResource
         ];
     }
 
-    public static function details(Model $model): array
+    public static function details(Model $model, ?array $includeFields = null): array
     {
-        return static::make($model, [
+        return static::make($model, $includeFields ?? [
             '*'     => true,
             'files' => false,
         ]);

@@ -11,7 +11,7 @@
 				v-model="showArtifacts"
 				:label="workflowRun.artifacts_count + ' Artifacts'"
 				class="bg-sky-800 text-sky-200 mx-2"
-				@show="dxWorkflowRun.routes.relation(props.workflowRun, 'artifacts')"
+				@show="dxWorkflowRun.routes.detailsAndStore(props.workflowRun, 'artifacts')"
 			/>
 			<ShowHideButton
 				v-model="showJobs"
