@@ -133,6 +133,17 @@ class Agent extends Model implements AuditableContract
         return $tools;
     }
 
+    public function getModelConfig($key = null, $default = null): ?array
+    {
+        $config = config('ai.models')[$this->api][$this->model] ?? [];
+
+        if ($key) {
+            return $config[$key] ?? $default;
+        }
+
+        return $config;
+    }
+
     public function getModelApi(): AgentApiContract
     {
         $apiClass = config('ai.apis')[$this->api] ?? null;

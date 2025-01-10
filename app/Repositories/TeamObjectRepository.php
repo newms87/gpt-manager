@@ -85,6 +85,11 @@ class TeamObjectRepository extends ActionRepository
             }
         }
 
+        // Cleanup date inputs in case they are in an unexpected format
+        if (!empty($input['date'])) {
+            $input['date'] = carbon($input['date']);
+        }
+
         $teamObject->fill($input)->validate()->save();
 
         return $teamObject;
@@ -275,6 +280,11 @@ class TeamObjectRepository extends ActionRepository
             Log::debug("Saving Property: $title ($type" . ($format ? " [$format]" : '') . ')');
 
             $propertyValue = $object[$propertyName];
+
+            if ($propertyValue === null) {
+                Log::debug("Skipping null entry for value of $propertyName");
+                continue;
+            }
 
             if ($type === 'array') {
                 // If the property is an array, then save each item in the array as a related object

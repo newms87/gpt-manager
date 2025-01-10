@@ -1,4 +1,4 @@
-import { JsonSchema, SelectionSchema } from "@/types";
+import { JsonSchema, JsonSchemaType, SelectionSchema } from "@/types";
 import { computed, Ref } from "vue";
 
 export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: JsonSchema | null) {
@@ -26,7 +26,7 @@ export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: Json
 	 *  If the selection is not null, this will add/replace the entry for the child in the selection set
 	 *  If the selection is null, this will remove the entry of the child from the selection set.
 	 */
-	function changeChildSelection(childName: string, type: string, selection: SelectionSchema | null) {
+	function changeChildSelection(childName: string, type: JsonSchemaType, selection: SelectionSchema | null) {
 		const children = { ...subSelection.value?.children };
 
 		if (selection) {

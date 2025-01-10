@@ -48,9 +48,12 @@ return [
                 ],
             ],
             'o1-mini'     => [
-                'input'   => 3 / $million,
-                'output'  => 12 / $million,
-                'context' => 128000,
+                'input'            => 3 / $million,
+                'output'           => 12 / $million,
+                'context'          => 128000,
+                'excluded_options' => [
+                    'temperature',
+                ],
             ],
             'gpt-4o-mini' => [
                 'input'   => .15 / $million,

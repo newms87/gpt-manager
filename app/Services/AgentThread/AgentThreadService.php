@@ -157,6 +157,12 @@ class AgentThreadService
                 Log::debug("$thread running with $messageCount messages for $agent");
 
                 try {
+                    // Filter out excluded options from the agent configuration
+                    $excludedOptions = $agent->getModelConfig('excluded_options');
+                    if ($excludedOptions) {
+                        $options = array_diff_key($options, array_combine($excludedOptions, $excludedOptions));
+                    }
+
                     $response = $agent->getModelApi()->complete(
                         $agent->model,
                         $messages,
