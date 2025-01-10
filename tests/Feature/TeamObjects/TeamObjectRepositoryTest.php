@@ -122,11 +122,11 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $response = [
-            'name'           => 'Dan',
-            'dob'            => [
+            'name'          => 'Dan',
+            'dob'           => [
                 'value' => '1987-11-18',
             ],
-            'attribute_meta' => [
+            'property_meta' => [
                 [
                     'property_name' => 'dob',
                     'save_to_db'    => false,
@@ -223,11 +223,11 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $response = [
-            'name'           => 'Alice',
-            'dob'            => [
+            'name'          => 'Alice',
+            'dob'           => [
                 'value' => '1990-05-05',
             ],
-            'attribute_meta' => [
+            'property_meta' => [
                 [
                     'property_name' => 'dob',
                     'citation'      => [
@@ -250,17 +250,17 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertNotNull($person->id, "The parent object should have been created");
 
         // The attribute should have been created
-        $dobAttribute          = $person->attributes()->firstWhere('name', 'dob');
-        $expectedAttributeMeta = $response['attribute_meta'][0];
+        $dobAttribute         = $person->attributes()->firstWhere('name', 'dob');
+        $expectedPropertyMeta = $response['property_meta'][0];
         $this->assertNotNull($dobAttribute, "The 'dob' attribute should have been created");
         $this->assertEquals($response['dob']['value'], $dobAttribute->getValue(), "The 'dob' attribute should have the correct value");
-        $this->assertEquals($expectedAttributeMeta['citation']['date'], $dobAttribute->date?->toDateString(), "The 'dob' attribute should have the correct date");
-        $this->assertEquals($expectedAttributeMeta['citation']['reason'], $dobAttribute->reason, "The 'dob' attribute should have the correct reason");
-        $this->assertEquals($expectedAttributeMeta['citation']['confidence'], $dobAttribute->confidence, "The 'dob' attribute should have the correct confidence");
+        $this->assertEquals($expectedPropertyMeta['citation']['date'], $dobAttribute->date?->toDateString(), "The 'dob' attribute should have the correct date");
+        $this->assertEquals($expectedPropertyMeta['citation']['reason'], $dobAttribute->reason, "The 'dob' attribute should have the correct reason");
+        $this->assertEquals($expectedPropertyMeta['citation']['confidence'], $dobAttribute->confidence, "The 'dob' attribute should have the correct confidence");
 
         // The source should have been created
         $source         = $dobAttribute->sources()->first();
-        $expectedSource = $expectedAttributeMeta['citation']['sources'][0];
+        $expectedSource = $expectedPropertyMeta['citation']['sources'][0];
         $this->assertNotNull($source, "The source should have been created");
         $this->assertEquals($expectedSource['url'], $source->source_id, "The source should have the correct URL");
         $this->assertNotNull($source->sourceFile()->first(), "The source should have a source file");
@@ -274,15 +274,15 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     public function test_saveTeamObjectAttribute_savesAttributeAndSources(): void
     {
         // Given
-        $teamObject    = TeamObject::create([
+        $teamObject   = TeamObject::create([
             'type' => 'TestType',
             'name' => 'TestName',
         ]);
-        $data          = [
+        $data         = [
             'name'  => 'test_attribute',
             'value' => 'Test Value',
         ];
-        $attributeMeta = [
+        $propertyMeta = [
             [
                 'property_name' => $data['name'],
                 'citation'      => [
@@ -297,10 +297,10 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         ];
 
         // When
-        $attribute = app(TeamObjectRepository::class)->saveTeamObjectAttribute($teamObject, $data['name'], $data, $attributeMeta);
+        $attribute = app(TeamObjectRepository::class)->saveTeamObjectAttribute($teamObject, $data['name'], $data, $propertyMeta);
 
         // Then
-        $citation = $attributeMeta[0]['citation'];
+        $citation = $propertyMeta[0]['citation'];
         $this->assertInstanceOf(TeamObjectAttribute::class, $attribute);
         $this->assertEquals($data['name'], $attribute->name);
         $this->assertEquals($data['value'], $attribute->getValue());

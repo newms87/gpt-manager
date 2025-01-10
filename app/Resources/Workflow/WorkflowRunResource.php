@@ -30,7 +30,7 @@ class WorkflowRunResource extends ActionResource
             ],
             'workflowInput'   => fn($fields) => WorkflowInputResource::make($workflowRun->workflowInput, $fields),
             'artifacts'       => fn() => ArtifactResource::collection($workflowRun->artifacts->load('storedFiles.transcodes'), ['*' => true]),
-            'workflowJobRuns' => fn($fields) => WorkflowJobRunResource::collection($workflowRun->sortedWorkflowJobRuns->load(['workflowJob', 'tasks.jobDispatch.runningAuditRequest', 'tasks.thread.messages.storedFiles.transcodes']), $fields),
+            'workflowJobRuns' => fn($fields) => WorkflowJobRunResource::collection($workflowRun->sortedWorkflowJobRuns->load(['workflowJob', 'tasks.jobDispatch.runningAuditRequest', 'tasks.thread.sortedMessages.storedFiles.transcodes']), $fields),
         ];
     }
 

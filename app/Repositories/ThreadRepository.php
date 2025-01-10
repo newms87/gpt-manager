@@ -62,8 +62,14 @@ class ThreadRepository extends ActionRepository
                 $contentString = (string)$content;
             } else {
                 // files is a special key that holds our file IDs
-                $storedFiles = $content['files'] ?? [];
-                unset($content['files']);
+                $contentFiles = $this->formatContentFiles($content['files'] ?? []);
+
+                if ($contentFiles) {
+                    $content['files'] = $contentFiles;
+                    $fileIds          = array_unique(array_merge($fileIds, array_column($contentFiles, 'id')));
+                } else {
+                    unset($content['files']);
+                }
 
                 // If the content is a single key with a scalar value, just use that as the content string
                 if (!empty($content['content']) && count($content) === 1) {
@@ -71,20 +77,6 @@ class ThreadRepository extends ActionRepository
                 } else {
                     // Otherwise convert the content to a JSON string
                     $contentString = $content ? json_encode($content) : '';
-                }
-
-                foreach($storedFiles as $index => $storedFile) {
-                    if ($storedFile instanceof StoredFile) {
-                        $fileId  = $storedFile->id;
-                        $fileUrl = $storedFile->url;
-                    } else {
-                        $fileId  = ($storedFile['id'] ?? null);
-                        $fileUrl = ($storedFile['url'] ?? null);
-                    }
-                    if ($fileId) {
-                        $fileIds[]     = $fileId;
-                        $contentString .= ($contentString ? "\n" : "") . "File URL: $fileUrl";
-                    }
                 }
             }
 
@@ -99,6 +91,27 @@ class ThreadRepository extends ActionRepository
         }
 
         return $thread;
+    }
+
+    public function formatContentFiles($files)
+    {
+        $formatted = [];
+
+        foreach($files as $index => $file) {
+            if ($file instanceof StoredFile) {
+                $formatted[] = [
+                    'id'  => $file->id,
+                    'url' => $file->url,
+                ];
+            } else {
+                $formatted[] = [
+                    'id'  => ($file['id'] ?? null),
+                    'url' => ($file['url'] ?? null),
+                ];
+            }
+        }
+
+        return $formatted;
     }
 
     /**

@@ -13,8 +13,8 @@ class JsonSchemaService
     protected bool $useCitations = false;
     /** @var bool  Make sure each object includes the ID property */
     protected bool $useId = false;
-    /** @var bool  Include the attribute meta property */
-    protected bool $useAttributeMeta = false;
+    /** @var bool  Include the property_meta definition */
+    protected bool $usePropertyMeta = false;
     /** @var bool  Make sure each object includes the name property */
     protected bool $requireName = false;
 
@@ -23,56 +23,56 @@ class JsonSchemaService
         'description' => 'Set the ID if the value was derived from the DB (ie: teamObjects). Otherwise this should be null. NOTE: You can update the value in the DB by providing the ID and a new value.',
     ];
 
-    protected array $attributeMetaDef = [];
+    protected array $propertyMetaDef = [];
 
-    public function useId(bool $useId = true): self
+    public function useId(bool $use = true): self
     {
-        $this->useId = $useId;
+        $this->useId = $use;
 
         return $this;
     }
 
-    public function requireName(bool $requireName = true): self
+    public function requireName(bool $require = true): self
     {
-        $this->requireName = $requireName;
+        $this->requireName = $require;
 
         return $this;
     }
 
-    public function useCitations(bool $useCitations = true): self
+    public function useCitations(bool $use = true): self
     {
-        $this->useCitations = $useCitations;
+        $this->useCitations = $use;
 
-        if ($useCitations) {
-            $this->useAttributeMeta = true;
+        if ($use) {
+            $this->usePropertyMeta = true;
         }
 
         return $this;
     }
 
-    public function useAttributeMeta(bool $useAttributeMeta = true): self
+    public function usePropertyMeta(bool $use = true): self
     {
-        $this->useAttributeMeta = $useAttributeMeta;
+        $this->usePropertyMeta = $use;
 
         return $this;
     }
 
     /**
-     * Get the attribute meta definition for the schema
+     * Get the property meta definition for the schema
      */
-    public function getAttributeMeta(): array
+    public function getPropertyMeta(): array
     {
-        if (!$this->attributeMetaDef) {
-            // Inject the attribute meta definition into the schema
-            $this->attributeMetaDef = FileHelper::parseYamlFile(app_path('Services/JsonSchema/attribute_meta.def.yaml'));
+        if (!$this->propertyMetaDef) {
+            // Inject the property meta definition into the schema
+            $this->propertyMetaDef = FileHelper::parseYamlFile(app_path('Services/JsonSchema/property_meta.def.yaml'));
 
-            // If citations are not required, then remove the citation property of the attribute meta def
+            // If citations are not required, then remove the citation property of the property meta def
             if (!$this->useCitations) {
-                unset($this->attributeMetaDef['properties']['citation']);
+                unset($this->propertyMetaDef['properties']['citation']);
             }
         }
 
-        return $this->attributeMetaDef;
+        return $this->propertyMetaDef;
     }
 
     /**
@@ -178,9 +178,9 @@ class JsonSchemaService
             ];
         }
 
-        if ($this->useAttributeMeta) {
-            $propertiesSchema['attribute_meta'] = [
-                '$ref' => '#/$defs/attribute_meta',
+        if ($this->usePropertyMeta) {
+            $propertiesSchema['property_meta'] = [
+                '$ref' => '#/$defs/property_meta',
             ];
         }
 
@@ -216,8 +216,13 @@ class JsonSchemaService
             $formattedSchema['$defs']['id'] = static::$idDef;
         }
 
-        if ($this->useAttributeMeta) {
-            $formattedSchema['$defs']['attribute_meta'] = $this->getAttributeMeta();
+        if ($this->usePropertyMeta) {
+            $propertyMeta                              = $this->getPropertyMeta();
+            $formattedSchema['$defs']['property_meta'] = $propertyMeta;
+
+            // collapse all defs up to top level
+            $formattedSchema['$defs'] += $propertyMeta['$defs'];
+            unset($propertyMeta['$defs']);
         }
 
         return [

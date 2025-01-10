@@ -17,7 +17,7 @@
 				v-model="showJobs"
 				:label="workflowRun.job_runs_count + ' Jobs'"
 				class="bg-slate-600 text-slate-200 mx-2"
-				@show="dxWorkflowRun.routes.detailsAndStore(props.workflowRun, {'*': false, workflowJobRuns: {'*': {'*':{threads: {messages: {files: {transcodes: true}}}}}}})"
+				@show="dxWorkflowRun.routes.detailsAndStore(props.workflowRun, {'*': false, workflowJobRuns: {'*': true, tasks: {thread: {messages: {files: {transcodes: true}}}}}})"
 			/>
 			<WorkflowStatusTimerPill :runner="workflowRun" />
 			<div class="mx-2">

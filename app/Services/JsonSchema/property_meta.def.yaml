@@ -1,0 +1,122 @@
+type: [ array, 'null' ]
+title: Property Meta
+description: |
+  A list of metadata for the objects' property values saved in the schema.
+      * Each scalar property that should be saved to the DB MUST have an entry.
+      * You may create one entry for an entire object by specifying the object property name (all properties will be saved and share the same citations)
+      * Adding a meta entry to a null value will delete the value from the DB
+      * Set to null if there are no property values to cite / save to DB
+items:
+  type: object
+  additionalProperties: false
+  required:
+    - property_name
+    - citation
+  properties:
+    property_name:
+      type: string
+      description: |
+        The name of the property that should be saved to the DB (e.g., name, date, age, address, etc).
+         * DO NOT use dot notation or paths like "team.name" or "teams[0].address.zip".
+         * MUST refer to a direct child property.
+    citation:
+      type: [ object, 'null' ]
+      title: Citation
+      additionalProperties: false
+      required:
+        - date
+        - confidence
+        - reason
+        - sources
+      description: |-
+        Citation of the source(s) for the property's value.
+          * Set to `null` if:
+            - The value is explicitly `null`.
+            - The value is derived from the database (e.g., teamObjects).
+            - The value matches what is already stored in the database.
+          * If the value is sourced from a message, file or URL and improves upon the database value:
+            - Reference the source(s) in the citation
+            - Default to the database value unless confidence is high the new value is better.
+      properties:
+        date:
+          title: Date in Time Series
+          type: [ string, 'null' ]
+          description: The date (in format YYYY-MM-dd OR YYYY-MM-dd hh:mm:ss) related to the property's value (ONLY if data changes over time / should be plotted in time-series, otherwise null).
+        reason:
+          title: Reason
+          type: string
+          description: |-
+            A concise explanation of why this value was selected and how the confidence level was determined.
+            Provide context for the decision, such as:
+              * Where the value was mentioned (e.g., "Found in a section titled X").
+              * Any ambiguities or uncertainties (e.g., "The name was mentioned, but it was unclear if it referred to the subject or something else").
+              * Aim to clearly justify both the value and the assigned confidence level.
+        confidence:
+          title: Confidence Level
+          type: string
+          description: |-
+            The confidence level of the property value. Must be one of the following: "High", "Medium", "Low", "" (empty string). Leave blank if property value is null
+        sources:
+          title: Property Value Sources
+          type: [ array, 'null' ]
+          description: |
+            The source of the child property value.
+            * Always use file_id if it is present instead of the URL (if you are sure the value came from the file)
+            * Message IDs are ONLY found from <AgentMessage id="message_id"> tags in the thread. If no <AgentMessage> tags are present, DO NOT create a source w/ message_id property. These message sources apply ONLY to values found inside the <AgentMessage /> tags.
+              * NEVER cite a message_id if it contains teamObjects data.
+            * Use URL as a last resort to cite a source if message / file is not present
+            * Make sure you include all relevant sources (more than one if others apply).
+            * Set to null if property value was found outside of the <AgentMessage> tag and not in a URL / image / file, DO NOT add a source entry for it.
+          items:
+            anyOf:
+              - $ref: "#/$defs/urlSource"
+              - $ref: "#/$defs/fileSource"
+              - $ref: "#/$defs/messageSource"
+$defs:
+  explanation:
+    type: string
+    description: |-
+      A concise explanation of why this source is reliable for the value provided.
+      Include context about the relevant section or element within the source that supports the value (e.g., "top of the page," "section titled X," "quoted by Y").
+      If applicable, specify the exact location or any identifying details to help locate the information quickly.
+
+  urlSource:
+    type: object
+    required:
+      - url
+      - explanation
+    properties:
+      url:
+        type: string
+        description: A URL that contains the chosen value. If no file_id is given for a URL and you extracted information from a URL using a tool, provide the URL here.
+      explanation:
+        $ref: "#/$defs/explanation"
+    additionalProperties: false
+
+  fileSource:
+    type: object
+    required:
+      - file_id
+      - explanation
+    properties:
+      file_id:
+        type: string
+        description: A file ID for a file / image that provided the chosen value. ALWAYS use a file_id instead of a URL if it is available.
+      explanation:
+        $ref: "#/$defs/explanation"
+    additionalProperties: false
+
+  messageSource:
+    type: object
+    required:
+      - message_id
+      - explanation
+    properties:
+      message_id:
+        type: string
+        description: |-
+          A message ID that the property value was sourced from.
+          If a user message is wrapped with <AgentMessage id='message_id'>...</AgentMessage>, and it contains info leading you to the answer you gave for the property value, provide the message ID as a source.
+      explanation:
+        $ref: "#/$defs/explanation"
+    additionalProperties: false

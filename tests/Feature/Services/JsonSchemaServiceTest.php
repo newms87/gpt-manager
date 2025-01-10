@@ -55,7 +55,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
 
         // Then
         $objectSchema = $formattedSchema['schema'];
-        $this->assertEquals(['name', 'dob'], $objectSchema['required'] ?? null, 'The name, dob and attribute_meta properties should have been added to the required list');
+        $this->assertEquals(['name', 'dob'], $objectSchema['required'] ?? null, 'The name, dob and property_meta properties should have been added to the required list');
     }
 
     public function test_formatAndCleanSchema_useIdEnabled_idShouldBeAddedToPropertiesAndRequiredList(): void
@@ -84,7 +84,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         $this->assertEquals(['name', 'dob', 'id'], $objectSchema['required'] ?? null, 'The id should also be in the required list');
     }
 
-    public function test_formatAndCleanSchema_useAttributeMetaEnabled_attributeMetaShouldBeAddedToPropertiesAndRequiredList(): void
+    public function test_formatAndCleanSchema_usePropertyMetaEnabled_propertyMetaShouldBeAddedToPropertiesAndRequiredList(): void
     {
         // Given
         $name   = 'person';
@@ -108,17 +108,17 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $formattedSchema = app(JsonSchemaService::class)->useAttributeMeta()->formatAndCleanSchema($name, $schema);
+        $formattedSchema = app(JsonSchemaService::class)->usePropertyMeta()->formatAndCleanSchema($name, $schema);
 
         // Then
         $objectSchema = $formattedSchema['schema'];
-        $this->assertNotNull($objectSchema['properties']['attribute_meta'] ?? null, 'The attribute_meta should also be added to the properties');
-        $this->assertNotNull($objectSchema['$defs']['attribute_meta'] ?? null, 'The attribute_meta should also be added to the definitions');
-        $this->assertEquals(['name', 'address', 'attribute_meta'], $objectSchema['required'] ?? null, 'The id should also be in the required list');
-        $this->assertNotNull($objectSchema['properties']['address']['properties']['attribute_meta'] ?? null, 'The attribute_meta should also be added to the properties of the address object');
+        $this->assertNotNull($objectSchema['properties']['property_meta'] ?? null, 'The property_meta should also be added to the properties');
+        $this->assertNotNull($objectSchema['$defs']['property_meta'] ?? null, 'The property_meta should also be added to the definitions');
+        $this->assertEquals(['name', 'address', 'property_meta'], $objectSchema['required'] ?? null, 'The id should also be in the required list');
+        $this->assertNotNull($objectSchema['properties']['address']['properties']['property_meta'] ?? null, 'The property_meta should also be added to the properties of the address object');
     }
 
-    public function test_formatAndCleanSchema_attributeMetaShouldBeAddedToSchema(): void
+    public function test_formatAndCleanSchema_propertyMetaShouldBeAddedToSchema(): void
     {
         // Given
         $name   = 'person';
@@ -140,10 +140,10 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
 
         // Then
         $objectSchema = $formattedSchema['schema'];
-        $this->assertNotNull($objectSchema['properties']['attribute_meta'] ?? null, 'attribute_meta should be added to the schema');
+        $this->assertNotNull($objectSchema['properties']['property_meta'] ?? null, 'property_meta should be added to the schema');
     }
 
-    public function test_formatAndCleanSchema_withoutCitations_citedValuesMissingFromAttributeMeta(): void
+    public function test_formatAndCleanSchema_withoutCitations_citedValuesMissingFromPropertyMeta(): void
     {
         // Given
         $name   = 'person';
@@ -158,7 +158,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
 
         // Then
         $objectSchema = $formattedSchema['schema'];
-        $this->assertNull($objectSchema['$defs']['attribute_meta']['items']['properties']['citation'] ?? null, 'citation should not be added to the schema');
+        $this->assertNull($objectSchema['$defs']['property_meta']['items']['properties']['citation'] ?? null, 'citation should not be added to the schema');
     }
 
     public function test_formatAndCleanSchema_citedValuesAddedToSchema(): void
@@ -176,7 +176,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
 
         // Then
         $objectSchema = $formattedSchema['schema'];
-        $this->assertNotNull($objectSchema['$defs']['attribute_meta']['items']['properties']['citation'] ?? null, 'citation should be added to the schema');
+        $this->assertNotNull($objectSchema['$defs']['property_meta']['items']['properties']['citation'] ?? null, 'citation should be added to the schema');
     }
 
     public function test_formatAgentResponseSchema_onlySelectedPropertyIsReturned(): void

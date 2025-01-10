@@ -117,7 +117,7 @@ class TeamObjectRepository extends ActionRepository
 
     /**
      * Create or Update the value, date, confidence and sources for a Team Object Attribute record based on team object
-     * and attribute name
+     * and property name
      */
     public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $attribute, ?array $meta = []): ?TeamObjectAttribute
     {
@@ -127,17 +127,15 @@ class TeamObjectRepository extends ActionRepository
 
         $value = $attribute['value'] ?? null;
 
-        $attributeMeta = collect($meta)->firstWhere('property_name', $name);
+        $propertyMeta = collect($meta)->firstWhere('property_name', $name);
 
-        $saveToDb = $attributeMeta['save_to_db'] ?? true;
-
-        if (!$saveToDb) {
+        if (!$propertyMeta) {
             Log::debug("Skipping save to DB for $name");
 
             return null;
         }
 
-        $citation   = $attributeMeta['citation'] ?? null;
+        $citation   = $propertyMeta['citation'] ?? null;
         $date       = $citation['date'] ?? null;
         $reason     = $citation['reason'] ?? null;
         $confidence = $citation['confidence'] ?? null;
@@ -255,9 +253,9 @@ class TeamObjectRepository extends ActionRepository
      */
     public function saveTeamObjectUsingSchema(array $schema, array $object, ThreadRun $threadRun = null): TeamObject
     {
-        $type          = $schema['title'] ?? null;
-        $name          = $object['name']['value'] ?? $object['name'] ?? null;
-        $attributeMeta = $object['attribute_meta'] ?? null;
+        $type         = $schema['title'] ?? null;
+        $name         = $object['name']['value'] ?? $object['name'] ?? null;
+        $propertyMeta = $object['property_meta'] ?? null;
 
         Log::debug("Saving TeamObject: $type $name");
 
@@ -297,6 +295,11 @@ class TeamObjectRepository extends ActionRepository
                 $relatedObject = $this->saveTeamObjectUsingSchema($property, $propertyValue, $threadRun);
                 $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
             } else {
+                if (!$propertyMeta) {
+                    Log::debug("Property meta was null: Skipping save to DB for $propertyName");
+                    continue;
+                }
+
                 // If saving a primitive value type, then convert it to an array with a value key
                 if (!is_array($propertyValue) || !array_key_exists('value', $propertyValue)) {
                     $propertyValue = ['value' => $propertyValue];
@@ -311,7 +314,7 @@ class TeamObjectRepository extends ActionRepository
                 $propertyValue['value'] = $this->formatPropertyValue($type, $format, $propertyValue['value']);
 
                 // Save the attribute
-                $objectAttribute = $this->saveTeamObjectAttribute($teamObject, $propertyName, $propertyValue, $attributeMeta);
+                $objectAttribute = $this->saveTeamObjectAttribute($teamObject, $propertyName, $propertyValue, $propertyMeta);
 
                 // Associate the thread run if it is set
                 if ($objectAttribute && $threadRun) {
