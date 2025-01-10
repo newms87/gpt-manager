@@ -93,11 +93,14 @@ class ThreadRepository extends ActionRepository
         return $thread;
     }
 
-    public function formatContentFiles($files)
+    /**
+     * Format the content files for a message to an LLM agent
+     */
+    public function formatContentFiles($files): array
     {
         $formatted = [];
 
-        foreach($files as $index => $file) {
+        foreach($files as $file) {
             if ($file instanceof StoredFile) {
                 $formatted[] = [
                     'id'  => $file->id,

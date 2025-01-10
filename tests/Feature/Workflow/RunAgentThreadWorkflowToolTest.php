@@ -1122,8 +1122,9 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
 
         $this->assertEquals(1, $thread->messages()->count());
 
-        $message = $thread->messages()->first();
-        $this->assertEquals($inputContent . "\nFile URL: /storage/test.jpg", $message->content);
+        $message    = $thread->messages()->first();
+        $storedFile = $artifact->storedFiles->first();
+        $this->assertEquals(json_encode(['content' => $inputContent, 'files' => [['id' => $storedFile->id, 'url' => $storedFile->url]]]), $message->content);
         $this->assertEquals($artifact->storedFiles()->first()->id, $message->storedFiles()->first()->id);
     }
 

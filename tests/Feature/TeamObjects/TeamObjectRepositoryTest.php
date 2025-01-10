@@ -84,8 +84,12 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $response = [
-            'name' => 'Dan',
-            'dob'  => '1987-11-18',
+            'name'          => 'Dan',
+            'dob'           => '1987-11-18',
+            'property_meta' => [
+                ['property_name' => 'name'],
+                ['property_name' => 'dob'],
+            ],
         ];
 
         // When
@@ -104,8 +108,11 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $response = [
-            'name' => 'Dan',
-            'dob'  => null,
+            'name'          => 'Dan',
+            'dob'           => null,
+            'property_meta' => [
+                ['property_name' => 'name'],
+            ],
         ];
 
         // When
@@ -118,7 +125,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertNotNull($nameAttribute, "The name attribute should have been created");
     }
 
-    public function test_saveTeamObjectUsingSchema_withSaveSetToFalse_doesNotSaveScalarAttribute(): void
+    public function test_saveTeamObjectUsingSchema_withoutPropertyMetaEntry_doesNotSaveScalarAttribute(): void
     {
         // Given
         $response = [
@@ -127,10 +134,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
                 'value' => '1987-11-18',
             ],
             'property_meta' => [
-                [
-                    'property_name' => 'dob',
-                    'save_to_db'    => false,
-                ],
+                ['property_name' => 'name'],
             ],
         ];
 
@@ -154,8 +158,12 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
             'name' => 'Alice',
             'job'  => [
                 // The repository will expect a "name" here to avoid throwing an exception
-                'name'  => 'MyFirstJob',
-                'title' => 'Developer',
+                'name'          => 'MyFirstJob',
+                'title'         => 'Developer',
+                'property_meta' => [
+                    ['property_name' => 'name'],
+                    ['property_name' => 'title'],
+                ],
             ],
         ];
 
@@ -186,14 +194,24 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
             'dob'       => '1990-05-05',
             'addresses' => [
                 [
-                    'name'   => 'Home',
-                    'street' => '123 Main St',
-                    'city'   => 'Springfield',
+                    'name'          => 'Home',
+                    'street'        => '123 Main St',
+                    'city'          => 'Springfield',
+                    'property_meta' => [
+                        ['property_name' => 'name'],
+                        ['property_name' => 'street'],
+                        ['property_name' => 'city'],
+                    ],
                 ],
                 [
-                    'name'   => 'Work',
-                    'street' => '456 Business Rd',
-                    'city'   => 'Metropolis',
+                    'name'          => 'Work',
+                    'street'        => '456 Business Rd',
+                    'city'          => 'Metropolis',
+                    'property_meta' => [
+                        ['property_name' => 'name'],
+                        ['property_name' => 'street'],
+                        ['property_name' => 'city'],
+                    ],
                 ],
             ],
         ];

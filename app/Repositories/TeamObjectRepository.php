@@ -129,12 +129,6 @@ class TeamObjectRepository extends ActionRepository
 
         $propertyMeta = collect($meta)->firstWhere('property_name', $name);
 
-        if (!$propertyMeta) {
-            Log::debug("Skipping save to DB for $name");
-
-            return null;
-        }
-
         $citation   = $propertyMeta['citation'] ?? null;
         $date       = $citation['date'] ?? null;
         $reason     = $citation['reason'] ?? null;
@@ -295,7 +289,7 @@ class TeamObjectRepository extends ActionRepository
                 $relatedObject = $this->saveTeamObjectUsingSchema($property, $propertyValue, $threadRun);
                 $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
             } else {
-                if (!$propertyMeta) {
+                if (!$propertyMeta || !array_filter($propertyMeta, fn($meta) => $meta['property_name'] === $propertyName)) {
                     Log::debug("Property meta was null: Skipping save to DB for $propertyName");
                     continue;
                 }
