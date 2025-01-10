@@ -14,7 +14,6 @@ use App\Http\Controllers\Ai\WorkflowRunsController;
 use App\Http\Controllers\Ai\WorkflowsController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
-use App\Teams\TortGuard\TortguardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Newms87\Danx\Http\Routes\ActionRoute;
@@ -63,10 +62,3 @@ ActionRoute::routes('team-objects', new TeamObjectsController);
 
 // Audits
 ActionRoute::routes('audit-requests', new AuditRequestsController);
-
-Route::get('/tortguard/search', [TortguardController::class, 'search'])->name('api.tortguard.search');
-Route::post('/tortguard/research', [TortguardController::class, 'research'])->name('api.tortguard.research');
-Route::get('/tortguard/drug-side-effect/{id}', [TortguardController::class, 'getDrugSideEffect'])->name('api.tortguard.drug-side-effect');
-
-// Tortguard
-Route::get('/tortguard/dashboard', [TortguardController::class, 'getDashboardData'])->name('api.tortguard');
