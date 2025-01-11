@@ -166,6 +166,7 @@ class TeamObjectRepository extends ActionRepository
     {
         $sourceUrl       = $source['url'] ?? null;
         $sourceMessageId = $source['message_id'] ?? null;
+        $fileId          = $source['file_id'] ?? [];
         $storedFile      = null;
 
         Log::debug("Saving citation: " . $teamObjectAttribute->name . ($sourceUrl ? " URL: $sourceUrl" : '') . ($sourceMessageId ? " Message ID: $sourceMessageId" : ''));
@@ -185,8 +186,16 @@ class TeamObjectRepository extends ActionRepository
         } elseif ($sourceMessageId) {
             $sourceId   = $sourceMessageId;
             $sourceType = 'message';
+        } elseif ($fileId) {
+            $storedFile = StoredFile::find($fileId);
+
+            if (!$storedFile) {
+                throw new BadFunctionCallException("Attribute source requires a valid file_id: Stored File Not Found: $fileId");
+            }
+            $sourceId   = $fileId;
+            $sourceType = 'file';
         } else {
-            throw new BadFunctionCallException("Save Team Object Attribute Source requires a URL or Message ID");
+            throw new BadFunctionCallException("Save Team Object Attribute Source requires a File, URL or Message ID");
         }
 
         $attributeSource = $teamObjectAttribute->sources()->updateOrCreate([

@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\TeamObjects;
 
+use App\Models\Agent\Message;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Repositories\TeamObjectRepository;
 use BadFunctionCallException;
 use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -333,6 +335,58 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertNotNull($savedSource->sourceFile()->first());
         $this->assertEquals($citation['sources'][0]['url'], $savedSource->sourceFile->url);
         $this->assertEquals($citation['sources'][0]['explanation'], $savedSource->explanation);
+    }
+
+    public function test_saveTeamObjectAttributeSource_savesUrl(): void
+    {
+        // Given
+        $teamObjectAttribute = TeamObjectAttribute::factory()->create();
+        $source              = ['url' => 'http://example.com', 'explanation' => 'Source Explanation'];
+
+        // When
+        $attributeSource = app(TeamObjectRepository::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
+
+        // Then
+        $this->assertNotNull($attributeSource->stored_file_id, 'StoredFile should have been created and associated');
+        $this->assertNull($attributeSource->message_id, 'Message ID should be null');
+        $this->assertEquals($source['url'], $attributeSource->source_id, 'Source ID should be set to the URL');
+        $this->assertEquals($source['url'], $attributeSource->sourceFile->url);
+        $this->assertEquals($source['explanation'], $attributeSource->explanation);
+    }
+
+    public function test_saveTeamObjectAttributeSource_savesMessage(): void
+    {
+        // Given
+        $teamObjectAttribute = TeamObjectAttribute::factory()->create();
+        $message             = Message::factory()->create();
+        $source              = ['message_id' => $message->id, 'explanation' => 'Source Explanation'];
+
+        // When
+        $attributeSource = app(TeamObjectRepository::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
+
+        // Then
+        $this->assertNotNull($attributeSource->message_id);
+        $this->assertNull($attributeSource->stored_file_id, 'No source file was given');
+        $this->assertEquals($source['message_id'], $attributeSource->source_id);
+        $this->assertEquals($source['explanation'], $attributeSource->explanation);
+    }
+
+    public function test_saveTeamObjectAttributeSource_savesFile(): void
+    {
+        // Given
+        $teamObjectAttribute = TeamObjectAttribute::factory()->create();
+        $storedFile          = StoredFile::factory()->create();
+        $source              = ['file_id' => $storedFile->id, 'explanation' => 'Source Explanation'];
+
+        // When
+        $attributeSource = app(TeamObjectRepository::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
+
+        // Then
+        $this->assertNull($attributeSource->message_id, 'No message was given');
+        $this->assertNotNull($attributeSource->stored_file_id);
+        $this->assertEquals($storedFile->id, $attributeSource->source_id, 'Source ID should be set to the File ID');
+        $this->assertEquals($storedFile->id, $attributeSource->stored_file_id);
+        $this->assertEquals($source['explanation'], $attributeSource->explanation);
     }
 
     /**

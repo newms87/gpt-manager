@@ -3,6 +3,7 @@
 namespace App\Models\TeamObject;
 
 use Exception;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -19,7 +20,7 @@ use Newms87\Danx\Traits\AuditableTrait;
  */
 class TeamObjectRelationship extends Model implements AuditableContract
 {
-    use AuditableTrait, SoftDeletes;
+    use AuditableTrait, HasFactory, SoftDeletes;
 
     protected $table   = 'team__object_relationships';
     protected $guarded = [

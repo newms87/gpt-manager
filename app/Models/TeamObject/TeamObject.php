@@ -4,6 +4,7 @@ namespace App\Models\TeamObject;
 
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -26,7 +27,7 @@ use Newms87\Danx\Traits\AuditableTrait;
  */
 class TeamObject extends Model implements AuditableContract
 {
-    use AuditableTrait, SoftDeletes;
+    use AuditableTrait, HasFactory, SoftDeletes;
 
     protected $table   = 'team__objects';
     protected $guarded = [

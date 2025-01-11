@@ -5,6 +5,7 @@ namespace App\Models\TeamObject;
 use App\Models\Agent\ThreadRun;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,7 +30,7 @@ use Newms87\Danx\Traits\AuditableTrait;
  */
 class TeamObjectAttribute extends Model implements AuditableContract
 {
-    use AuditableTrait, SoftDeletes;
+    use AuditableTrait, HasFactory, SoftDeletes;
 
     protected $table   = 'team__object_attributes';
     protected $guarded = [
