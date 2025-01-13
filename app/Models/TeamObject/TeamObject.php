@@ -2,10 +2,12 @@
 
 namespace App\Models\TeamObject;
 
+use App\Models\Prompt\PromptSchema;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,6 +17,8 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 /**
  * @property int    $id
+ * @property int    prompt_schema_id
+ * @property int    root_object_id
  * @property string $type
  * @property string $name
  * @property Carbon $date
@@ -55,6 +59,16 @@ class TeamObject extends Model implements AuditableContract
         ];
     }
 
+    public function promptSchema(): BelongsTo|PromptSchema
+    {
+        return $this->belongsTo(PromptSchema::class, 'prompt_schema_id');
+    }
+
+    public function rootObject(): BelongsTo|TeamObject
+    {
+        return $this->belongsTo(TeamObject::class, 'root_object_id');
+    }
+
     public function relationships(): HasMany|TeamObjectRelationship
     {
         return $this->hasMany(TeamObjectRelationship::class, 'object_id');
@@ -88,7 +102,17 @@ class TeamObject extends Model implements AuditableContract
 
     public function validate(): static
     {
-        if (TeamObject::where('type', $this->type)->where('name', $this->name)->where('id', '!=', $this->id)->exists()) {
+        $query = TeamObject::where('type', $this->type)->where('name', $this->name)->where('id', '!=', $this->id);
+
+        // If a prompt schema is set, only allow one object with the same name and schema,
+        // Otherwise, there should be only 1 w/ a null prompt schema (aka: belongs to global namespace)
+        if ($this->prompt_schema_id) {
+            $query->where('prompt_schema_id', $this->prompt_schema_id);
+        } else {
+            $query->whereNull('prompt_schema_id');
+        }
+
+        if ($query->exists()) {
             throw new ValidationError("A $this->type with the name $this->name already exists");
         }
 

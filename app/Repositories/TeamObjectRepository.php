@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Agent\ThreadRun;
+use App\Models\Prompt\PromptSchema;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectAttributeSource;
@@ -30,7 +31,7 @@ class TeamObjectRepository extends ActionRepository
         $name = $data['name'] ?? $model?->name;
 
         return match ($action) {
-            'create' => $this->saveTeamObject($type, $name, $data),
+            'create' => $this->createTeamObject($type, $name, $data),
             'update' => (bool)$this->updateTeamObject($model, $data),
             'create-relation' => $this->createRelation($model, $data['relationship_name'] ?? null, $type, $name, $data),
             'save-attribute' => TeamObjectAttributeResource::make($this->saveTeamObjectAttribute($model, $data['name'] ?? null, $data)),
@@ -38,29 +39,69 @@ class TeamObjectRepository extends ActionRepository
         };
     }
 
-    /**
-     * Create or Update a Team Object record based on type and name
-     */
-    public function saveTeamObject($type, $name, $input = []): TeamObject
+    public function resolveTeamObject($type, $name, $input = []): ?TeamObject
     {
         if (!$type || !$name) {
-            throw new BadFunctionCallException("Save Objects requires a type and name for each object: \n\nType: $type\nName: $name\nInput:\n" . json_encode($input));
+            throw new BadFunctionCallException("Team Objects requires a type and name for each object: \n\nType: $type\nName: $name\nInput:\n" . json_encode($input));
         }
 
-        $data = [
-            'type' => $type,
-            'name' => $name,
-        ];
+        $promptSchema = null;
+        $rootObject   = null;
 
-        $teamObject = TeamObject::where('type', $type)
+        if (isset($input['prompt_schema_id'])) {
+            $promptSchema = PromptSchema::find($input['prompt_schema_id']);
+
+            if (!$promptSchema) {
+                throw new ValidationError("Resolve Team Object ($type) $name failed: Prompt Schema not found: $input[prompt_schema_id]");
+            }
+        }
+
+        if (isset($input['root_object_id'])) {
+            $rootObject = TeamObject::find($input['root_object_id']);
+
+            if (!$rootObject) {
+                throw new ValidationError("Resolve Team Object ($type) $name failed: Root Object not found: $input[root_object_id]");
+            }
+        }
+
+        $teamObjectQuery = TeamObject::where('type', $type)
             ->where('name', $name)
-            ->withTrashed()
-            ->first();
+            ->withTrashed();
 
-        if (!$teamObject) {
-            $teamObject = TeamObject::make($data);
-        } elseif ($teamObject->deleted_at) {
-            $teamObject->restore();
+        if ($promptSchema) {
+            $teamObjectQuery->where('prompt_schema_id', $promptSchema->id);
+        } else {
+            $teamObjectQuery->whereNull('prompt_schema_id');
+        }
+
+        if ($rootObject) {
+            $teamObjectQuery->where('root_object_id', $rootObject->id);
+        } else {
+            $teamObjectQuery->whereNull('root_object_id');
+        }
+
+        return $teamObjectQuery->first();
+    }
+
+    /**
+     * Create a new Team Object record based on type, name and input
+     */
+    public function createTeamObject($type, $name, $input = []): TeamObject
+    {
+        $teamObject = $this->resolveTeamObject($type, $name, $input);
+
+        if ($teamObject) {
+            // If this object was deleted, then restore the object so we can re-use the deleted object instead of creating a new one
+            if ($teamObject->deleted_at) {
+                $teamObject->restore();
+            } else {
+                throw new ValidationError("Team Object of type $type already exists: $name");
+            }
+        } else {
+            $teamObject = TeamObject::make([
+                'type' => $type,
+                'name' => $name,
+            ]);
         }
 
         return $this->updateTeamObject($teamObject, $input);
@@ -108,7 +149,7 @@ class TeamObjectRepository extends ActionRepository
         unset($input['name']);
 
         $name          = ModelHelper::getNextModelName(TeamObject::make(['name' => $name]), 'name', ['type' => $type]);
-        $relatedObject = $this->saveTeamObject($type, $name, $input);
+        $relatedObject = $this->createTeamObject($type, $name, $input);
 
         $this->saveTeamObjectRelationship($teamObject, $relationshipName, $relatedObject);
 
@@ -256,14 +297,33 @@ class TeamObjectRepository extends ActionRepository
      */
     public function saveTeamObjectUsingSchema(array $schema, array $object, ThreadRun $threadRun = null): TeamObject
     {
+        $id           = $object['id'] ?? null;
         $type         = $schema['title'] ?? null;
         $name         = $object['name']['value'] ?? $object['name'] ?? null;
         $propertyMeta = $object['property_meta'] ?? null;
 
         Log::debug("Saving TeamObject: $type $name");
 
-        $teamObject = $this->saveTeamObject($type, $name, $object);
+        // If an ID is set, resolve the existing team object
+        if ($id) {
+            $teamObject = TeamObject::find($id);
 
+            if (!$teamObject) {
+                throw new ValidationError("Failed to save Team Object ($type) $name: Object w/ ID $id not found");
+            }
+            $this->updateTeamObject($teamObject, $object);
+        } else {
+            // If no ID is set, then validate a duplicate object doesn't exist and create a new object
+            $teamObject = $this->resolveTeamObject($type, $name, $object);
+
+            if ($teamObject) {
+                throw new ValidationError("Failed to save Team Object ($type) $name: Object already exists");
+            }
+
+            $teamObject = $this->createTeamObject($type, $name, $object);
+        }
+
+        // Save the properties to the resolved team object
         foreach($schema['properties'] as $propertyName => $property) {
             $title  = $property['title'] ?? $propertyName;
             $type   = $property['type'] ?? null;

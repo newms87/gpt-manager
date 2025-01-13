@@ -2,6 +2,15 @@ tables:
   objects:
     fields:
       id: true
+      prompt_schema_id:
+        type: foreignId
+        foreign_key: prompt_schemas.id
+        foreign_prefix: ''
+        nullable: true
+      root_object_id:
+        type: foreignId
+        foreign_key: objects.id
+        nullable: true
       type:
         type: string
         length: 50
@@ -24,9 +33,8 @@ tables:
       timestamps: true
       softDeletes: true
     indexes:
-      - name: unique_object_type_name
+      - name: index_object_type_name
         columns: [ type, name ]
-        unique: true
 
   object_relationships:
     fields:

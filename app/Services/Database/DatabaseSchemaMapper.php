@@ -134,7 +134,7 @@ class DatabaseSchemaMapper
                 $fks = $this->schema->getForeignKeys($table->getTable());
                 foreach($fks as $fk) {
                     if (in_array($existingColumn, $fk['columns'])) {
-                        $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->dropForeign($fk['name']));
+                        $this->dropForeignKey($table, $fk['name']);
                     }
                 }
                 $table->dropColumn($existingColumn);
@@ -224,6 +224,32 @@ class DatabaseSchemaMapper
         foreach($indexes as $index) {
             $this->updateIndex($table, $index);
         }
+
+        $existingIndexes = $this->schema->getIndexes($table->getTable());
+        $fks             = $this->schema->getForeignKeys($table->getTable());
+
+        foreach($existingIndexes as $existingIndex) {
+            if ($existingIndex['primary'] ?? false) {
+                continue;
+            }
+
+            foreach($indexes as $index) {
+                $name = $index['name'] ?? 'index_' . implode('_', $index['columns'] ?? []);
+
+                if ($existingIndex['name'] === $name) {
+                    continue 2;
+                }
+            }
+
+            // Check if the index is a FK constraint, ignore if so (only want to drop declared indexes, not FKs)
+            foreach($fks as $fk) {
+                if ($fk['name'] === $existingIndex['name']) {
+                    continue 2;
+                }
+            }
+
+            $this->dropIndex($table, $existingIndex['name']);
+        }
     }
 
     protected function addIndex(Blueprint $table, $index)
@@ -235,7 +261,7 @@ class DatabaseSchemaMapper
 
         $name = $index['name'] ?? 'index_' . implode('_', $columns);
 
-        if ($index['unique']) {
+        if ($index['unique'] ?? false) {
             $table->unique($columns, $name);
         } else {
             $table->index($columns, $name);
@@ -265,7 +291,7 @@ class DatabaseSchemaMapper
                     // check if any of the FK columns are in the index
                     if (array_intersect($fkColumns, $columns)) {
                         $droppedFks[] = $fk;
-                        $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->dropForeign($fk['name']));
+                        $this->dropForeignKey($table, $fk['name']);
                     }
                 }
                 $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->dropIndex($name));
@@ -279,6 +305,16 @@ class DatabaseSchemaMapper
         } else {
             $this->addIndex($table, $index);
         }
+    }
+
+    protected function dropIndex($table, $name)
+    {
+        $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->dropIndex($name));
+    }
+
+    protected function dropForeignKey($table, $name)
+    {
+        $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->dropForeign($name));
     }
 
     protected function getIndex($table, $name)

@@ -354,32 +354,40 @@ class AgentThreadService
                 app(TeamObjectRepository::class)->saveTeamObjectUsingSchema($threadRun->thread->agent->responseSchema->schema, $jsonData, $threadRun);
             }
 
+            // Call the response tools if they are set
             $responseTools = $jsonData['response_tools'] ?? [];
-
             if ($responseTools) {
-                Log::debug("Finishing thread response with " . count($responseTools) . " response tools");
-
-                foreach($responseTools as $tool) {
-                    $toolName = $tool['name'] ?? null;
-
-                    if (!$toolName) {
-                        throw new Exception("Response tool name is required: \n" . json_encode($tool));
-                    }
-
-                    Log::debug("Handling tool call: " . $toolName);
-
-                    $toolCaller = new OpenAiToolCaller(
-                        '',
-                        $tool['name'],
-                        json_decode($tool['arguments'], true)
-                    );
-
-                    $toolCaller->call($threadRun);
-                }
+                $this->callResponseTools($threadRun, $responseTools);
             }
         }
 
         Log::debug("Thread response is finished");
+    }
+
+    /**
+     * Call the response tools for the thread run
+     */
+    public function callResponseTools(ThreadRun $threadRun, array $responseTools): void
+    {
+        Log::debug("Finishing thread response with " . count($responseTools) . " response tools");
+
+        foreach($responseTools as $tool) {
+            $toolName = $tool['name'] ?? null;
+
+            if (!$toolName) {
+                throw new Exception("Response tool name is required: \n" . json_encode($tool));
+            }
+
+            Log::debug("Handling tool call: " . $toolName);
+
+            $toolCaller = new OpenAiToolCaller(
+                '',
+                $tool['name'],
+                json_decode($tool['arguments'], true)
+            );
+
+            $toolCaller->call($threadRun);
+        }
     }
 
     /**

@@ -13,12 +13,14 @@ class TeamObjectFactory extends Factory
     public function definition(): array
     {
         return [
-            'type'        => fake()->unique()->colorName(),
-            'name'        => fake()->unique()->company,
-            'date'        => null,
-            'description' => fake()->sentence(),
-            'url'         => null,
-            'meta'        => null,
+            'prompt_schema_id' => null,
+            'root_object_id'   => null,
+            'type'             => fake()->unique()->colorName(),
+            'name'             => fake()->unique()->company,
+            'date'             => null,
+            'description'      => fake()->sentence(),
+            'url'              => null,
+            'meta'             => null,
         ];
     }
 }

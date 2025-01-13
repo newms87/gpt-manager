@@ -3,6 +3,7 @@
 namespace App\WorkflowTools;
 
 use App\Models\Agent\Agent;
+use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowTask;
 use App\Services\AgentThread\AgentThreadService;
 use App\WorkflowTools\Traits\AssignsWorkflowTasksTrait;
@@ -57,9 +58,42 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
                 'data'    => $data,
             ]);
 
+            $this->attachCitedSourceFilesToArtifact($artifact);
+
             Log::debug("$workflowTask created $artifact");
         } else {
             Log::debug("$workflowTask did not produce an artifact");
         }
+    }
+
+    /**
+     * Attach any source files cited in the artifact data to the artifact
+     */
+    public function attachCitedSourceFilesToArtifact(Artifact $artifact): void
+    {
+        $sourceFileIds = $this->flattenSourceFiles($artifact->data);
+        $artifact->storedFiles()->syncWithoutDetaching($sourceFileIds);
+    }
+
+    /**
+     * Flatten the data structure to find all file IDs
+     */
+    private function flattenSourceFiles($data): array
+    {
+        if (!is_array($data)) {
+            return [];
+        }
+
+        $fileIds = [];
+
+        foreach($data as $key => $value) {
+            if (is_array($value)) {
+                $fileIds = array_merge($fileIds, $this->flattenSourceFiles($value));
+            } elseif ($key === 'file_id') {
+                $fileIds[] = $value;
+            }
+        }
+
+        return $fileIds;
     }
 }

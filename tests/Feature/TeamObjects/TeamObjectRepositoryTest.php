@@ -3,6 +3,7 @@
 namespace Tests\Feature\TeamObjects;
 
 use App\Models\Agent\Message;
+use App\Models\Prompt\PromptSchema;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Repositories\TeamObjectRepository;
@@ -58,6 +59,172 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         parent::setUp();
 
         $this->setUpTeam();
+    }
+
+    public function test_resolveTeamObject_withSameTypeNameAndPromptSchema_resolvesExistingObject(): void
+    {
+        // Given
+        $teamObject = TeamObject::factory()->forPromptSchema()->create();
+        $input      = [
+            'prompt_schema_id' => $teamObject->prompt_schema_id,
+        ];
+
+        // When
+        $resolvedTeamObject = app(TeamObjectRepository::class)->resolveTeamObject($teamObject->type, $teamObject->name, $input);
+
+        // Then
+        $this->assertNotNull($resolvedTeamObject);
+        $this->assertEquals($teamObject->id, $resolvedTeamObject->id, "The resolved object should match the original");
+    }
+
+    public function test_resolvedTeamObject_withSameTypeNameButNullPromptSchema_doesNotResolveObject(): void
+    {
+        // Given
+        $teamObject = TeamObject::factory()->forPromptSchema()->create();
+        $input      = [];
+
+        // When
+        $resolvedObject = app(TeamObjectRepository::class)->resolveTeamObject($teamObject->type, $teamObject->name, $input);
+
+        // Then
+        $this->assertNull($resolvedObject);
+    }
+
+    public function test_resolvedTeamObject_withSameTypeNameButDifferentPromptSchema_doesNotResolveObject(): void
+    {
+        // Given
+        $teamObject = TeamObject::factory()->forPromptSchema()->create();
+        $input      = [
+            'prompt_schema_id' => PromptSchema::factory()->create()->id,
+        ];
+
+        // When
+        $resolvedObject = app(TeamObjectRepository::class)->resolveTeamObject($teamObject->type, $teamObject->name, $input);
+
+        // Then
+        $this->assertNull($resolvedObject);
+    }
+
+    public function test_resolveTeamObject_withSameTypeNameAndRootObject_resolvesExistingObject(): void
+    {
+        // Given
+        $teamObject = TeamObject::factory()->forRootObject()->create();
+        $input      = [
+            'root_object_id' => $teamObject->root_object_id,
+        ];
+
+        // When
+        $resolvedTeamObject = app(TeamObjectRepository::class)->resolveTeamObject($teamObject->type, $teamObject->name, $input);
+
+        // Then
+        $this->assertNotNull($resolvedTeamObject);
+        $this->assertEquals($teamObject->id, $resolvedTeamObject->id, "The resolved object should match the original");
+    }
+
+    public function test_resolvedTeamObject_withSameTypeNameButNullRootObject_doesNotResolveObject(): void
+    {
+        // Given
+        $teamObject = TeamObject::factory()->forRootObject()->create();
+        $input      = [];
+
+        // When
+        $resolvedObject = app(TeamObjectRepository::class)->resolveTeamObject($teamObject->type, $teamObject->name, $input);
+
+        // Then
+        $this->assertNull($resolvedObject);
+    }
+
+    public function test_resolvedTeamObject_withSameTypeNameButDifferentRootObject_doesNotResolveObject(): void
+    {
+        // Given
+        $teamObject = TeamObject::factory()->forRootObject()->create();
+        $input      = [
+            'root_object_id' => TeamObject::factory()->create()->id,
+        ];
+
+        // When
+        $resolvedObject = app(TeamObjectRepository::class)->resolveTeamObject($teamObject->type, $teamObject->name, $input);
+
+        // Then
+        $this->assertNull($resolvedObject);
+    }
+
+    public function test_resolvedTeamObject_withSameTypeNameRootObjectAndPromptSchema_resolvesObject(): void
+    {
+        // Given
+        $teamObject = TeamObject::factory()->forRootObject()->create();
+        $input      = [
+            'prompt_schema_id' => $teamObject->prompt_schema_id,
+            'root_object_id'   => $teamObject->root_object_id,
+        ];
+
+        // When
+        $resolvedObject = app(TeamObjectRepository::class)->resolveTeamObject($teamObject->type, $teamObject->name, $input);
+
+        // Then
+        $this->assertNotNull($resolvedObject);
+        $this->assertEquals($teamObject->id, $resolvedObject->id, "The resolved object should match the original");
+    }
+
+    public function test_resolvedTeamObject_withSameTypeNameRootObjectButNullPromptSchema_doesNotResolvesObject(): void
+    {
+        // Given
+        $teamObject = TeamObject::factory()->forPromptSchema()->forRootObject()->create();
+        $input      = [
+            'root_object_id' => $teamObject->root_object_id,
+        ];
+
+        // When
+        $resolvedObject = app(TeamObjectRepository::class)->resolveTeamObject($teamObject->type, $teamObject->name, $input);
+
+        // Then
+        $this->assertNull($resolvedObject);
+    }
+
+    public function test_resolvedTeamObject_withSameTypeNamePromptSchemaButNullRootObject_doesNotResolvesObject(): void
+    {
+        // Given
+        $teamObject = TeamObject::factory()->forPromptSchema()->forRootObject()->create();
+        $input      = [
+            'prompt_schema_id' => $teamObject->prompt_schema_id,
+        ];
+
+        // When
+        $resolvedObject = app(TeamObjectRepository::class)->resolveTeamObject($teamObject->type, $teamObject->name, $input);
+
+        // Then
+        $this->assertNull($resolvedObject);
+    }
+
+    public function test_createTeamObject_withSameTypeNameAndDifferentPromptSchema_createsNewObject(): void
+    {
+        // Given
+        $teamObject = TeamObject::factory()->forPromptSchema()->create();
+        $input      = [
+            'prompt_schema_id' => PromptSchema::factory()->create()->id,
+        ];
+
+        // When
+        $updatedTeamObject = app(TeamObjectRepository::class)->createTeamObject($teamObject->type, $teamObject->name, $input);
+
+        // Then
+        $this->assertEquals(2, TeamObject::where('type', $teamObject->type)->where('name', $teamObject->name)->count(), "There should be 2 of the same type + name");
+        $this->assertNotEquals($teamObject->id, $updatedTeamObject->id, "The existing object and updated object should be different");
+    }
+
+    /**
+     * Test exception-handling scenarios for better coverage.
+     */
+    public function test_createTeamObject_throwsBadFunctionCallExceptionIfNoTypeOrName(): void
+    {
+        // Given
+        $repo = app(TeamObjectRepository::class);
+
+        // Then
+        $this->expectException(BadFunctionCallException::class);
+
+        // When
+        $repo->createTeamObject(null, null, []);
     }
 
     public function test_saveTeamObjectUsingSchema_savesPropertiesOfTopLevelObject(): void
@@ -420,21 +587,6 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         // Then
         $this->assertNotNull($loaded, "Should load the object if it exists");
         $this->assertEquals($teamObject->id, $loaded->id);
-    }
-
-    /**
-     * Test exception-handling scenarios for better coverage.
-     */
-    public function test_saveTeamObject_throwsBadFunctionCallExceptionIfNoTypeOrName(): void
-    {
-        // Given
-        $repo = app(TeamObjectRepository::class);
-
-        // Then
-        $this->expectException(BadFunctionCallException::class);
-
-        // When
-        $repo->saveTeamObject(null, null, []);
     }
 
     public function test_createRelation_throwsValidationErrorIfNoRelationshipName(): void

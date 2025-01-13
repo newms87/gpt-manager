@@ -5,7 +5,7 @@
 				class="px-4 bg-green-900 text-sm py-3"
 				align="left"
 				:loading="createTeamObjectAction.isApplying"
-				@click="createTeamObjectAction.trigger(null, { type: teamObjectType })"
+				@click="createTeamObjectAction.trigger(null, { type: teamObjectType, prompt_schema_id: promptSchema.id })"
 			>
 				<CreateIcon class="w-4 mr-2" />
 				{{ teamObjectType }}
