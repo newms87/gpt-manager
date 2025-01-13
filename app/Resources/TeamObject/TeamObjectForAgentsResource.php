@@ -13,7 +13,7 @@ class TeamObjectForAgentsResource
     public static function make(TeamObject $teamObject): array
     {
         // Filter out only desired and non-empty attributes
-        $loadedObject = collect($teamObject->toArray())->except(['created_at', 'updated_at', 'deleted_at'])->toArray();
+        $loadedObject = collect($teamObject->toArray())->only(['id', 'url', 'date', 'type', 'name', 'meta', 'description'])->toArray();
 
         $loadedAttributes    = static::loadTeamObjectAttributes($teamObject);
         $loadedRelationships = static::recursivelyLoadTeamObjectRelations($teamObject);

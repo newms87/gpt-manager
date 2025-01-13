@@ -352,6 +352,10 @@ class AgentThreadService
 
             if ($threadRun->thread->agent->save_response_to_db) {
                 app(TeamObjectRepository::class)->saveTeamObjectUsingSchema($threadRun->thread->agent->responseSchema->schema, $jsonData, $threadRun);
+
+                // Update the last message to include the saved ids for each object
+                $lastMessage->content = json_encode($jsonData);
+                $lastMessage->save();
             }
 
             // Call the response tools if they are set

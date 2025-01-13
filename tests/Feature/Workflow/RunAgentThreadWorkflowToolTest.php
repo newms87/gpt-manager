@@ -13,7 +13,6 @@ use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
-use Newms87\Danx\Helpers\ArrayHelper;
 use Tests\AuthenticatedTestCase;
 use Tests\Feature\MockData\AiMockData;
 
@@ -113,113 +112,6 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
 
         // Then
         $this->assertFalse($workflowTask->artifacts()->exists(), 'The artifact should not have been produced');
-    }
-
-    public function test_crossProductExtractData_producesEmptyArrayWhenNoFields(): void
-    {
-        // Given
-        $data   = [];
-        $fields = [];
-
-        // When
-        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
-
-        // Then
-        $this->assertEquals([], $crossProduct);
-    }
-
-    public function test_crossProductExtractData_producesSingleEntryForScalar(): void
-    {
-        // Given
-        $data   = [
-            'name' => 'Dan Newman',
-        ];
-        $fields = ['name'];
-
-        // When
-        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
-
-        // Then
-        $this->assertEquals([['name' => 'Dan Newman']], $crossProduct);
-    }
-
-    public function test_crossProductExtractData_producesMultipleEntriesForArray(): void
-    {
-        // Given
-        $data   = [
-            'name'    => 'Dan Newman',
-            'aliases' => ['The Hammer', 'Daniel'],
-        ];
-        $fields = ['aliases'];
-
-        // When
-        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
-
-        // Then
-        $this->assertEquals([['aliases' => 'The Hammer'], ['aliases' => 'Daniel']], $crossProduct);
-    }
-
-    public function test_crossProductExtractData_producesMultipleEntriesForArrayCrossScalar(): void
-    {
-        // Given
-        $data   = [
-            'name'    => 'Dan Newman',
-            'aliases' => ['The Hammer', 'Daniel'],
-        ];
-        $fields = ['aliases', 'name'];
-
-        // When
-        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
-
-        // Then
-        $this->assertEquals([
-            ['aliases' => 'The Hammer', 'name' => 'Dan Newman'],
-            ['aliases' => 'Daniel', 'name' => 'Dan Newman'],
-        ], $crossProduct);
-    }
-
-    public function test_crossProductExtractData_producesMultipleEntriesForArrayCrossArray(): void
-    {
-        // Given
-        $data   = [
-            'name'    => 'Dan Newman',
-            'aliases' => ['The Hammer', 'Daniel'],
-            'powers'  => ['Hammer', 'Code'],
-        ];
-        $fields = ['aliases', 'powers'];
-
-        // When
-        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
-
-        // Then
-        $this->assertEquals([
-            ['aliases' => 'The Hammer', 'powers' => 'Hammer'],
-            ['aliases' => 'Daniel', 'powers' => 'Hammer'],
-            ['aliases' => 'The Hammer', 'powers' => 'Code'],
-            ['aliases' => 'Daniel', 'powers' => 'Code'],
-        ], $crossProduct);
-    }
-
-    public function test_crossProductExtractData_producesMultipleEntriesForArrayOfObjectsCrossArray(): void
-    {
-        // Given
-        $data   = [
-            'name'    => 'Dan Newman',
-            'aliases' => ['The Hammer', 'Daniel'],
-            'powers'  => [['name' => 'Hammer', 'power' => 50], ['name' => 'Code', 'power' => 80]],
-        ];
-        $fields = ['aliases', 'powers.*.name'];
-
-        // When
-        $crossProduct = ArrayHelper::crossProductExtractData($data, $fields);
-
-        // Then
-        $this->assertEquals([
-            ['aliases' => 'The Hammer', 'powers.*.name' => 'Hammer'],
-            ['aliases' => 'Daniel', 'powers.*.name' => 'Hammer'],
-            ['aliases' => 'The Hammer', 'powers.*.name' => 'Code'],
-            ['aliases' => 'Daniel', 'powers.*.name' => 'Code'],
-        ], $crossProduct);
     }
 
     public function test_getArtifactGroups_returnsDefaultArtifactGroupGivenEmptyGroupAndIncludes(): void

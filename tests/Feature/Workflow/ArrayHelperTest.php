@@ -321,7 +321,6 @@ class ArrayHelperTest extends AuthenticatedTestCase
         ], $crossProduct);
     }
 
-
     /*****************************
      * filterNestedData Tests
      *****************************/

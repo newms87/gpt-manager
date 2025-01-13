@@ -59,7 +59,7 @@
 			/>
 		</div>
 		<div v-if="isShowing" class="mt-3 px-4">
-			<div class="grid grid-cols-12">
+			<div class="grid grid-cols-12 space-y-4">
 				<TeamObjectAttribute
 					v-for="attr in schemaAttributes"
 					:key="'attribute-' + attr.name"

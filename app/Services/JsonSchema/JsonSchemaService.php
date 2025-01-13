@@ -20,7 +20,7 @@ class JsonSchemaService
 
     static array $idDef = [
         'type'        => ['number', 'null'],
-        'description' => 'Set the ID if the value was derived from the DB (ie: teamObjects). Otherwise this should be null. NOTE: You can update the value in the DB by providing the ID and a new value.',
+        'description' => 'Always set id for an object matching the one found in teamObjects for the object you are updating. Setting id to null will create a new record in the DB.',
     ];
 
     protected array $propertyMetaDef = [];

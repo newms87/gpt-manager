@@ -244,6 +244,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         // Then
         $teamObject->refresh();
         $this->assertNotNull($teamObject->id, "The team object should have been created");
+        $this->assertEquals($teamObject->id, $response['id'] ?? null, "The ID should have been set in the passed by ref object");
         $this->assertEquals($response['name'], $teamObject->name, "The name should have been saved");
         $this->assertEquals($response['date'], $teamObject->date->toDateString(), "The date should have been saved");
         $this->assertEquals($response['meta'], $teamObject->meta, "The meta data should have been saved");
@@ -347,6 +348,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $childObjectQuery = $parentObject->relatedObjects('job');
         $this->assertEquals(1, $childObjectQuery->count(), "Exactly 1 nested 'Job' team object should have been created");
         $childObject = $childObjectQuery->first();
+        $this->assertEquals($childObject->id, $response['job']['id'] ?? null, "The ID should have been set in the passed by ref object");
         $this->assertEquals('Job', $childObject->type, "The child object should have type 'Job'");
         $this->assertEquals('MyFirstJob', $childObject->name, "The child object should have name 'MyFirstJob'");
         $this->assertEquals('Developer', $childObject->attributes()->firstWhere('name', 'title')?->getValue());
@@ -395,12 +397,14 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         // The child objects should have been created
         $homeAddress = $person->relatedObjects('addresses')->firstWhere('name', 'Home');
         $this->assertNotNull($homeAddress, "The 'Home' address object should have been created");
+        $this->assertEquals($homeAddress->id, $response['addresses'][0]['id'] ?? null, "The ID should have been set in the passed by ref object");
         $this->assertEquals('Home', $homeAddress->name, "The 'Home' address object should have name 'Home'");
         $this->assertEquals('123 Main St', $homeAddress->attributes()->firstWhere('name', 'street')?->getValue());
         $this->assertEquals('Springfield', $homeAddress->attributes()->firstWhere('name', 'city')?->getValue());
 
         $workAddress = $person->relatedObjects('addresses')->firstWhere('name', 'Work');
         $this->assertNotNull($workAddress, "The 'Work' address object should have been created");
+        $this->assertEquals($workAddress->id, $response['addresses'][1]['id'] ?? null, "The ID should have been set in the passed by ref object");
         $this->assertEquals('Work', $workAddress->name, "The 'Work' address object should have name 'Work'");
         $this->assertEquals('456 Business Rd', $workAddress->attributes()->firstWhere('name', 'street')?->getValue());
         $this->assertEquals('Metropolis', $workAddress->attributes()->firstWhere('name', 'city')?->getValue());
