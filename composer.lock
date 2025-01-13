@@ -3151,16 +3151,16 @@
         },
         {
             "name": "newms87/danx",
-            "version": "1.2.37",
+            "version": "1.2.44",
             "source": {
                 "type": "git",
                 "url": "https://github.com/newms87/danx.git",
-                "reference": "38521580442f002e55816f2c14d9cf5c947bf9a6"
+                "reference": "d2456cfe77193d044b4e05ec01f492d68b3a671e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/newms87/danx/zipball/38521580442f002e55816f2c14d9cf5c947bf9a6",
-                "reference": "38521580442f002e55816f2c14d9cf5c947bf9a6",
+                "url": "https://api.github.com/repos/newms87/danx/zipball/d2456cfe77193d044b4e05ec01f492d68b3a671e",
+                "reference": "d2456cfe77193d044b4e05ec01f492d68b3a671e",
                 "shasum": ""
             },
             "require": {
@@ -3190,6 +3190,7 @@
             },
             "require-dev": {
                 "beyondcode/tinkerwell": "dev-main",
+                "fakerphp/faker": "^1.24",
                 "phpunit/phpunit": "^9.3"
             },
             "type": "library",
@@ -3203,7 +3204,8 @@
             "autoload": {
                 "psr-4": {
                     "Tests\\": "tests/",
-                    "Newms87\\Danx\\": "src/"
+                    "Newms87\\Danx\\": "src/",
+                    "Database\\Factories\\": "database/factories/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -3213,9 +3215,9 @@
             "description": "Danx Auditing, Logging, and Helpers",
             "support": {
                 "issues": "https://github.com/newms87/danx/issues",
-                "source": "https://github.com/newms87/danx/tree/1.2.37"
+                "source": "https://github.com/newms87/danx/tree/1.2.44"
             },
-            "time": "2025-01-11T00:25:55+00:00"
+            "time": "2025-01-13T21:51:49+00:00"
         },
         {
             "name": "nikic/php-parser",
