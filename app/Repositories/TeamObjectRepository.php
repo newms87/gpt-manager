@@ -290,13 +290,13 @@ class TeamObjectRepository extends ActionRepository
      *
      * @return TeamObject[]
      */
-    public function saveTeamObjectsUsingSchema(array $schema, array &$objects, ThreadRun $threadRun = null): array
+    public function saveTeamObjectsUsingSchema(array $schema, array &$objects, TeamObject $parentObject = null, ThreadRun $threadRun = null): array
     {
         Log::debug("Saving array of TeamObjects: " . count($objects));
 
         $teamObjects = [];
         foreach($objects as &$object) {
-            $teamObjects[] = $this->saveTeamObjectUsingSchema($schema, $object, $threadRun);
+            $teamObjects[] = $this->saveTeamObjectUsingSchema($schema, $object, $parentObject, $threadRun);
         }
 
         return $teamObjects;
@@ -307,7 +307,7 @@ class TeamObjectRepository extends ActionRepository
      *
      * NOTE: object is passed as reference so we can update the ID after creating the object
      */
-    public function saveTeamObjectUsingSchema(array $schema, array &$object, ThreadRun $threadRun = null): TeamObject
+    public function saveTeamObjectUsingSchema(array $schema, array &$object, TeamObject $parentObject = null, ThreadRun $threadRun = null): TeamObject
     {
         $id           = $object['id'] ?? null;
         $type         = $schema['title'] ?? null;
@@ -332,11 +332,16 @@ class TeamObjectRepository extends ActionRepository
                 throw new ValidationError("Failed to save Team Object ($type) $name: Object already exists");
             }
 
+            // Inherit the prompt schema and root object from the parent object to ensure correct cardinality in DB
+            if ($parentObject) {
+                $object['prompt_schema_id'] = $parentObject->prompt_schema_id;
+                $object['root_object_id']   = $parentObject->root_object_id;
+            }
+
             $teamObject                     = $this->createTeamObject($type, $name, $object);
             $object['id']                   = $teamObject->id;
             $object['was_recently_created'] = true;
         }
-
 
         // Save the properties to the resolved team object
         foreach($schema['properties'] as $propertyName => $property) {
@@ -363,13 +368,13 @@ class TeamObjectRepository extends ActionRepository
 
             if ($type === 'array') {
                 // If the property is an array, then save each item in the array as a related object
-                $relatedObjects = $this->saveTeamObjectsUsingSchema($property['items'], $object[$propertyName], $threadRun);
+                $relatedObjects = $this->saveTeamObjectsUsingSchema($property['items'], $object[$propertyName], $teamObject, $threadRun);
                 foreach($relatedObjects as $relatedObject) {
                     $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
                 }
             } elseif ($type === 'object') {
                 // If the property is an object, then save the object as a related object
-                $relatedObject = $this->saveTeamObjectUsingSchema($property, $object[$propertyName], $threadRun);
+                $relatedObject = $this->saveTeamObjectUsingSchema($property, $object[$propertyName], $teamObject, $threadRun);
                 $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
             } else {
                 if (!$propertyMeta || !array_filter($propertyMeta, fn($meta) => $meta['property_name'] === $propertyName)) {

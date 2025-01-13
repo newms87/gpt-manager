@@ -351,7 +351,7 @@ class AgentThreadService
             $jsonData = $lastMessage->getJsonContent();
 
             if ($threadRun->thread->agent->save_response_to_db) {
-                app(TeamObjectRepository::class)->saveTeamObjectUsingSchema($threadRun->thread->agent->responseSchema->schema, $jsonData, $threadRun);
+                app(TeamObjectRepository::class)->saveTeamObjectUsingSchema($threadRun->thread->agent->responseSchema->schema, $jsonData, null, $threadRun);
 
                 // Update the last message to include the saved ids for each object
                 $lastMessage->content = json_encode($jsonData);

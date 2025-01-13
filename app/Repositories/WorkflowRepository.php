@@ -129,6 +129,8 @@ class WorkflowRepository extends ActionRepository
                                 'response_format'        => $agent->response_format,
                                 'enable_message_sources' => $agent->enable_message_sources,
                                 'retry_count'            => $agent->retry_count,
+                                'save_response_to_db'    => $agent->save_response_to_db,
+                                'response_sub_selection' => $agent->response_sub_selection,
                                 'directives'             => $agent->directives->map(function (AgentPromptDirective $directive) {
                                     return [
                                         'section'   => $directive->section,
