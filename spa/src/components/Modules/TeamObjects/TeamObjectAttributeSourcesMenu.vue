@@ -21,7 +21,7 @@
 </template>
 <script setup lang="ts">
 import { TeamObjectAttribute } from "@/components/Modules/TeamObjects/team-objects";
-import TeamObjectAttributeSourceCard from "@/components/Modules/Tortguard/TeamObjectAttributeSourceCard";
+import TeamObjectAttributeSourceCard from "@/components/Modules/TeamObjects/TeamObjectAttributeSourceCard";
 import { FaSolidLink as LinkIcon, FaSolidMessage as ThreadLinkIcon } from "danx-icon";
 
 defineProps<{

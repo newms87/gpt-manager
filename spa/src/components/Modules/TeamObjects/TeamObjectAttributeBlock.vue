@@ -27,7 +27,7 @@
 </template>
 <script setup lang="ts">
 import { TeamObjectAttributeBlockProps } from "@/components/Modules/TeamObjects/team-objects";
-import TeamObjectAttributeSourcesMenu from "@/components/Modules/Tortguard/TeamObjectAttributeSourcesMenu";
+import TeamObjectAttributeSourcesMenu from "@/components/Modules/TeamObjects/TeamObjectAttributeSourcesMenu";
 import {
 	FaSolidAngleDown as LowConfidenceIcon,
 	FaSolidAnglesDown as NoConfidenceIcon,
