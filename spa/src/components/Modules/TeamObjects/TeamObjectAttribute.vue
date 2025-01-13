@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { dxTeamObject } from "@/components/Modules/TeamObjects/config";
 import { TeamObjectAttribute, TeamObjectAttributeProps } from "@/components/Modules/TeamObjects/team-objects";
-import TeamObjectAttributeBlock from "@/components/Modules/Tortguard/TeamObjectAttributeBlock";
+import TeamObjectAttributeBlock from "@/components/Modules/TeamObjects/TeamObjectAttributeBlock";
 import { FaSolidPencil as EditIcon } from "danx-icon";
 import { shallowRef } from "vue";
 

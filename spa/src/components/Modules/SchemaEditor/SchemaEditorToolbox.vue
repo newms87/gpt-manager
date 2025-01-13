@@ -38,7 +38,10 @@
 				</div>
 			</div>
 		</div>
-		<div v-if="activeSchema && (isSelectingSubSchema || isEditingSchema || showPreview)" class="flex-grow h-full">
+		<div
+			v-if="activeSchema && (isSelectingSubSchema || isEditingSchema || showPreview)"
+			class="flex-grow overflow-hidden"
+		>
 			<JSONSchemaEditor
 				v-model:sub-selection="subSelection"
 				:readonly="!isEditingSchema"
