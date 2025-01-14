@@ -44,5 +44,5 @@ const createAgentAction = dxAgent.extendAction("create", props.job.id, {
 const assignAgentAction = dxWorkflow.getAction("assign-agent");
 const unassignAgentAction = dxWorkflow.getAction("unassign-agent");
 
-const availableAgents = computed(() => dxWorkflow.getFieldOptions("agents").filter(a => !props.job.assignments.find(ja => ja.agent.id === a.value)));
+const availableAgents = computed(() => dxWorkflow.getFieldOptions("agents").filter(a => !props.job.assignments.find(ja => ja.agent && ja.agent.id === a.value)));
 </script>

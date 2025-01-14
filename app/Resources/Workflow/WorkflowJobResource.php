@@ -4,6 +4,7 @@ namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowJob;
 use App\Resources\Prompt\PromptSchemaResource;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
 class WorkflowJobResource extends ActionResource
@@ -24,5 +25,15 @@ class WorkflowJobResource extends ActionResource
             'dependencies'   => fn($fields) => WorkflowJobDependencyResource::collection($workflowJob->dependencies, $fields),
             'assignments'    => fn($fields) => WorkflowAssignmentResource::collection($workflowJob->workflowAssignments->load(['agent']), $fields),
         ];
+    }
+
+    public static function details(Model $model, ?array $includeFields = null): array
+    {
+        return parent::details($model, $includeFields ?? [
+            '*'           => true,
+            'assignments' => [
+                'agent' => true,
+            ],
+        ]);
     }
 }

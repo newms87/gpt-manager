@@ -6,7 +6,7 @@
 					<div>{{ assignment.workflowJob.workflow?.name }}</div>
 					<div class="font-bold ml-2">{{ assignment.workflowJob.name }}</div>
 				</template>
-				<template v-if="context === 'workflow'">
+				<template v-if="context === 'workflow' && agent">
 					<div class="font-bold">{{ agent.name }}</div>
 					<div class="ml-2 text-xs">{{ agent.model }}</div>
 				</template>
