@@ -13,15 +13,15 @@ return new class extends Migration {
         Schema::create('task_processes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('task_run_id')->constrained()->onDelete('cascade');
-            $table->foreignId('thread_id');
+            $table->foreignId('thread_id')->nullable();
             $table->string('status')->default('Pending');
             $table->datetime('started_at')->nullable();
             $table->datetime('stopped_at')->nullable();
             $table->datetime('completed_at')->nullable();
             $table->datetime('failed_at')->nullable();
             $table->datetime('timeout_at')->nullable();
-            $table->unsignedInteger('input_tokens');
-            $table->unsignedInteger('output_tokens');
+            $table->unsignedInteger('input_tokens')->default(0);
+            $table->unsignedInteger('output_tokens')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });

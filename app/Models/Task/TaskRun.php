@@ -25,7 +25,7 @@ class TaskRun extends Model implements AuditableContract
     ];
 
     public array $relationCounters = [
-        TaskProcess::class => ['processes' => 'process_count'],
+        TaskProcess::class => ['taskProcesses' => 'process_count'],
     ];
 
     public function casts(): array
@@ -67,8 +67,8 @@ class TaskRun extends Model implements AuditableContract
 
     public static function booted(): void
     {
-        static::saving(function (TaskProcess $taskProcess) {
-            $taskProcess->computeStatus();
+        static::saving(function (TaskRun $taskRun) {
+            $taskRun->computeStatus();
         });
     }
 

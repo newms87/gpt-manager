@@ -36,6 +36,11 @@ class TaskDefinition extends Model implements AuditableContract
         return $this->hasMany(TaskDefinitionAgent::class);
     }
 
+    public function taskRuns(): HasMany|TaskRun
+    {
+        return $this->hasMany(TaskRun::class);
+    }
+
     public function __toString()
     {
         $serviceName = basename($this->task_service);

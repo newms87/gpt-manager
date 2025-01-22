@@ -18,9 +18,9 @@ return new class extends Migration {
             $table->datetime('stopped_at')->nullable();
             $table->datetime('completed_at')->nullable();
             $table->datetime('failed_at')->nullable();
-            $table->unsignedInteger('input_tokens');
-            $table->unsignedInteger('output_tokens');
-            $table->unsignedInteger('process_count');
+            $table->unsignedInteger('input_tokens')->default(0);
+            $table->unsignedInteger('output_tokens')->default(0);
+            $table->unsignedInteger('process_count')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });
