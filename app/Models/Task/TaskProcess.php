@@ -4,9 +4,12 @@ namespace App\Models\Task;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
@@ -16,6 +19,7 @@ class TaskProcess extends Model implements AuditableContract
 
     const string
         STATUS_PENDING = 'Pending',
+        STATUS_DISPATCHED = 'Dispatched',
         STATUS_RUNNING = 'Running',
         STATUS_STOPPED = 'Stopped',
         STATUS_COMPLETED = 'Completed',
@@ -24,6 +28,7 @@ class TaskProcess extends Model implements AuditableContract
 
     const array STATUSES = [
         self::STATUS_PENDING,
+        self::STATUS_DISPATCHED,
         self::STATUS_RUNNING,
         self::STATUS_COMPLETED,
         self::STATUS_TIMEOUT,
@@ -56,9 +61,9 @@ class TaskProcess extends Model implements AuditableContract
         ];
     }
 
-    public function taskRun(): HasMany|TaskRun
+    public function taskRun(): BelongsTo|TaskRun
     {
-        return $this->hasMany(TaskRun::class);
+        return $this->belongsTo(TaskRun::class);
     }
 
     public function taskProcessListeners(): HasMany|TaskProcessListener
@@ -66,20 +71,86 @@ class TaskProcess extends Model implements AuditableContract
         return $this->hasMany(TaskProcessListener::class);
     }
 
+    public function jobDispatches(): MorphToMany
+    {
+        return $this->morphToMany(JobDispatch::class, 'model', 'job_dispatchables');
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === TaskProcess::STATUS_PENDING;
+    }
+
+    public function isRunning(): bool
+    {
+        return $this->status === TaskProcess::STATUS_RUNNING;
+    }
+
+    public function isDispatched(): bool
+    {
+        return $this->last_job_dispatch_id !== null;
+    }
+
+    public function isStarted(): bool
+    {
+        return $this->started_at !== null;
+    }
+
+    public function isStopped(): bool
+    {
+        return $this->stopped_at !== null;
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->failed_at !== null;
+    }
+
+    public function isFinished(): bool
+    {
+        return $this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isTimeout();
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->completed_at !== null;
+    }
+
+    public function isTimeout(): bool
+    {
+        return $this->timeout_at !== null;
+    }
+
+    public function isPastTimeout(): bool
+    {
+        if (!$this->started_at) {
+            return false;
+        }
+
+        return $this->started_at->addSeconds($this->taskRun->taskDefinition->timeout_after_seconds)->isPast();
+    }
+
+    public function canBeRun(): bool
+    {
+        return $this->isDispatched() && !$this->isStarted() && !$this->isStopped() && !$this->isFailed() && !$this->isCompleted() && !$this->isTimeout();
+    }
+
     public function computeStatus(): static
     {
-        if ($this->started_at === null) {
-            $this->status = self::STATUS_PENDING;
-        } elseif ($this->failed_at !== null) {
-            $this->status = self::STATUS_FAILED;
-        } elseif ($this->timeout_at !== null) {
-            $this->status = self::STATUS_TIMEOUT;
-        } elseif ($this->stopped_at !== null) {
-            $this->status = self::STATUS_STOPPED;
-        } elseif ($this->completed_at === null) {
-            $this->status = self::STATUS_RUNNING;
+        if (!$this->isDispatched()) {
+            $this->status = TaskProcess::STATUS_PENDING;
+        } elseif (!$this->isStarted()) {
+            $this->status = TaskProcess::STATUS_DISPATCHED;
+        } elseif ($this->isFailed()) {
+            $this->status = TaskProcess::STATUS_FAILED;
+        } elseif ($this->isStopped()) {
+            $this->status = TaskProcess::STATUS_STOPPED;
+        } elseif ($this->isTimeout()) {
+            $this->status = TaskProcess::STATUS_TIMEOUT;
+        } elseif (!$this->isCompleted()) {
+            $this->status = TaskProcess::STATUS_RUNNING;
         } else {
-            $this->status = self::STATUS_COMPLETED;
+            $this->status = TaskProcess::STATUS_COMPLETED;
         }
 
         return $this;
@@ -90,12 +161,18 @@ class TaskProcess extends Model implements AuditableContract
         static::saving(function (TaskProcess $taskProcess) {
             $taskProcess->computeStatus();
         });
+
+        static::saved(function (TaskProcess $taskProcess) {
+            if ($taskProcess->wasChanged('status')) {
+                $taskProcess->taskRun->checkProcesses();
+            }
+        });
     }
 
     public function __toString()
     {
-        $serviceName = basename($this->task_service);
+        $name = $this->taskRun->taskDefinition->name;
 
-        return "<TaskRun id='$this->id' name='$this->name' service='$serviceName'>";
+        return "<TaskProcess id='$this->id' name='$name' status='$this->status'>";
     }
 }

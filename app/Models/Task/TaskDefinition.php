@@ -15,9 +15,10 @@ class TaskDefinition extends Model implements AuditableContract
     use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
 
     protected $fillable = [
-        'task_service',
+        'task_runner_class',
         'input_grouping',
         'input_group_chunk_size',
+        'timeout_after_seconds',
     ];
 
     public array $relationCounters = [
@@ -43,7 +44,7 @@ class TaskDefinition extends Model implements AuditableContract
 
     public function __toString()
     {
-        $serviceName = basename($this->task_service);
+        $serviceName = basename($this->task_runner_class);
 
         return "<TaskDefinition id='$this->id' name='$this->name' service='$serviceName'>";
     }

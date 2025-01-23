@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('task_run_id')->constrained()->onDelete('cascade');
             $table->foreignId('thread_id')->nullable();
+            $table->foreignId('last_job_dispatch_id')->nullable()->constrained('job_dispatch')->onDelete('set null');
             $table->string('status')->default('Pending');
             $table->datetime('started_at')->nullable();
             $table->datetime('stopped_at')->nullable();

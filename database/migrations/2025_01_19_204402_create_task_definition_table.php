@@ -15,9 +15,10 @@ return new class extends Migration {
             $table->foreignId('team_id')->constrained();
             $table->string('name');
             $table->string('description');
-            $table->string('task_service');
+            $table->string('task_runner_class');
             $table->json('input_grouping')->nullable();
             $table->unsignedInteger('input_group_chunk_size')->default(1);
+            $table->unsignedInteger('timeout_after_seconds')->default(300);
             $table->unsignedInteger('task_run_count')->default(0);
             $table->unsignedInteger('task_agent_count')->default(0);
             $table->timestamps();
