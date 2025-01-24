@@ -37,10 +37,6 @@ class AgentThreadService
 
         $agent = $thread->agent;
 
-        if ($thread->messages()->doesntExist()) {
-            throw new ValidationError('You must add messages to the thread before running it.');
-        }
-
         $threadRun = $thread->runs()->create([
             'agent_model'     => $agent->model,
             'status'          => ThreadRun::STATUS_RUNNING,

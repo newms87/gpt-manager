@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Agent\Agent;
 use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
+use App\Models\Workflow\Artifact;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Helpers\DateHelper;
@@ -50,6 +51,25 @@ class ThreadRepository extends ActionRepository
             'resume' => app(AgentThreadService::class)->resume($model),
             default => parent::applyAction($action, $model, $data)
         };
+    }
+
+    /**
+     * Adds an Artifact object to a thread.
+     * First converts the artifact to either a string (if content only) or an object w/ files, content and data.
+     */
+    public function addArtifactToThread(Thread $thread, Artifact $artifact): Thread
+    {
+        if ($artifact->data || $artifact->storedFiles->isNotEmpty()) {
+            $content = [
+                'files'   => $artifact->storedFiles,
+                'data'    => $artifact->data,
+                'content' => $artifact->content,
+            ];
+        } else {
+            $content = $artifact->content;
+        }
+        
+        return $this->addMessageToThread($thread, $content);
     }
 
     /**

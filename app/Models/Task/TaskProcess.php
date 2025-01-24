@@ -3,6 +3,7 @@
 namespace App\Models\Task;
 
 use App\Models\Agent\Thread;
+use App\Models\Workflow\Artifact;
 use App\Services\Task\Runners\TaskRunnerContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -81,6 +82,21 @@ class TaskProcess extends Model implements AuditableContract
     public function jobDispatches(): MorphToMany
     {
         return $this->morphToMany(JobDispatch::class, 'model', 'job_dispatchables');
+    }
+
+    public function artifacts(): MorphToMany|Artifact
+    {
+        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps();
+    }
+
+    public function inputArtifacts(): MorphToMany|Artifact
+    {
+        return $this->artifacts()->withPivotValue('category', 'input');
+    }
+
+    public function outputArtifacts(): MorphToMany|Artifact
+    {
+        return $this->artifacts()->withPivotValue('category', 'output');
     }
 
     public function isPending(): bool

@@ -5,6 +5,7 @@ namespace App\Services\Task\Runners;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\Task\TaskRunnerService;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 class AgentThreadTaskRunner extends TaskRunnerAbstract
@@ -26,15 +27,21 @@ class AgentThreadTaskRunner extends TaskRunnerAbstract
         $definition      = $definitionAgent->taskDefinition;
         $agent           = $definitionAgent->agent;
 
+        if (!$agent) {
+            throw new Exception("AgentThreadTaskRunner: Agent not found for TaskProcess: $this->taskProcess");
+        }
+
+        $inputArtifacts = $this->taskProcess->inputArtifacts()->get();
+
         $threadName = $definition->name . ': ' . $agent->name;
         $thread     = app(ThreadRepository::class)->create($agent, $threadName);
 
         Log::debug("Setup Task Thread: $thread");
 
-        //        Log::debug("\tAdding " . count($artifactTuple) . " artifacts");
-        //        foreach($artifactTuple as $item) {
-        //            app(ThreadRepository::class)->addMessageToThread($thread, $item);
-        //        }
+        Log::debug("\tAdding " . count($inputArtifacts) . " input artifacts");
+        foreach($inputArtifacts as $inputArtifact) {
+            app(ThreadRepository::class)->addArtifactToThread($thread, $inputArtifact);
+        }
 
         $this->taskProcess->thread()->associate($thread)->save();
 

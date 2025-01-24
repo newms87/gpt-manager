@@ -13,5 +13,10 @@ abstract class TaskRunnerAbstract implements TaskRunnerContract
         $this->taskProcess = $taskProcess;
     }
 
+    public static function make(TaskProcess $taskProcess): TaskRunnerContract
+    {
+        return new static($taskProcess);
+    }
+
     abstract public function run(): void;
 }

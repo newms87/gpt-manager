@@ -15,7 +15,6 @@ class TaskRunFactory extends Factory
             'stopped_at'         => null,
             'failed_at'          => null,
             'completed_at'       => null,
-            'timeout_at'         => null,
             'input_tokens'       => 0,
             'output_tokens'      => 0,
         ];
