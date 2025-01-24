@@ -2,7 +2,6 @@
 
 namespace App\Models\Task;
 
-use App\Services\Task\Runners\TaskRunnerContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -97,7 +96,7 @@ class TaskRun extends Model implements AuditableContract
 
         $hasRunningProcesses = false;
 
-        foreach($this->taskProcesses as $taskProcess) {
+        foreach($this->taskProcesses()->get() as $taskProcess) {
             // If any process has failed or timed out, the task run has failed (we can stop checking)
             if ($taskProcess->isFailed() || $taskProcess->isTimeout()) {
                 $this->failed_at = now();
@@ -130,11 +129,6 @@ class TaskRun extends Model implements AuditableContract
         }
 
         return $this;
-    }
-
-    public function getRunner(): TaskRunnerContract
-    {
-        return new $this->taskDefinition->task_runner_class;
     }
 
     public static function booted(): void

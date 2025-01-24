@@ -10,7 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('task_definition_agent', function (Blueprint $table) {
+        Schema::create('task_definition_agents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('task_definition_id')->constrained();
             $table->foreignId('agent_id')->constrained();
@@ -27,6 +27,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('task_definition_agent');
+        Schema::dropIfExists('task_definition_agents');
     }
 };

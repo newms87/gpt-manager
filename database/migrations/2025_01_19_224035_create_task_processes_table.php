@@ -13,7 +13,8 @@ return new class extends Migration {
         Schema::create('task_processes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('task_run_id')->constrained()->onDelete('cascade');
-            $table->foreignId('thread_id')->nullable();
+            $table->foreignId('task_definition_agent_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('thread_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('last_job_dispatch_id')->nullable()->constrained('job_dispatch')->onDelete('set null');
             $table->string('status')->default('Pending');
             $table->datetime('started_at')->nullable();

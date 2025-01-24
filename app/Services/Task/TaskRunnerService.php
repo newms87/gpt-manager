@@ -35,9 +35,15 @@ class TaskRunnerService
     {
         $taskProcesses = [];
 
-        $taskProcesses[] = $taskRun->taskProcesses()->create([
-            'status' => TaskProcess::STATUS_PENDING,
-        ]);
+        // NOTE: If there are no agents assigned to the task definition, create an array w/ null entry as a convenience so the loop will create a single process with no agent
+        $definitionAgents = $taskRun->taskDefinition->definitionAgents ?: [null];
+
+        foreach($definitionAgents as $definitionAgent) {
+            $taskProcesses[] = $taskRun->taskProcesses()->create([
+                'status'                   => TaskProcess::STATUS_PENDING,
+                'task_definition_agent_id' => $definitionAgent?->id,
+            ]);
+        }
 
         $taskRun->taskProcesses()->saveMany($taskProcesses);
 
@@ -139,8 +145,7 @@ class TaskRunnerService
         }
 
         // Run the task process
-        $runner = $taskProcess->taskRun->getRunner();
-        $runner->run($taskProcess);
+        $taskProcess->getRunner()->run();
     }
 
     /**

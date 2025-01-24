@@ -2,6 +2,8 @@
 
 namespace App\Models\Task;
 
+use App\Models\Agent\Thread;
+use App\Services\Task\Runners\TaskRunnerContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,11 +13,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\AuditableTrait;
-use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class TaskProcess extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, SoftDeletes;
 
     const string
         STATUS_PENDING = 'Pending',
@@ -36,7 +37,7 @@ class TaskProcess extends Model implements AuditableContract
     ];
 
     protected $fillable = [
-        'task_step',
+        'task_definition_agent_id',
         'started_at',
         'stopped_at',
         'completed_at',
@@ -44,10 +45,6 @@ class TaskProcess extends Model implements AuditableContract
         'timeout_at',
         'input_tokens',
         'output_tokens',
-    ];
-
-    public array $relationCounters = [
-        TaskDefinitionAgent::class => ['definitionAgents' => 'task_agent_count'],
     ];
 
     public function casts(): array
@@ -69,6 +66,16 @@ class TaskProcess extends Model implements AuditableContract
     public function taskProcessListeners(): HasMany|TaskProcessListener
     {
         return $this->hasMany(TaskProcessListener::class);
+    }
+
+    public function taskDefinitionAgent(): BelongsTo|TaskDefinitionAgent
+    {
+        return $this->belongsTo(TaskDefinitionAgent::class);
+    }
+
+    public function thread(): BelongsTo|Thread
+    {
+        return $this->belongsTo(Thread::class);
     }
 
     public function jobDispatches(): MorphToMany
@@ -154,6 +161,14 @@ class TaskProcess extends Model implements AuditableContract
         }
 
         return $this;
+    }
+
+    /**
+     * Get the TaskRunner class instance for the task process
+     */
+    public function getRunner(): TaskRunnerContract
+    {
+        return new $this->taskRun->taskDefinition->task_runner_class($this);
     }
 
     public static function booted(): void
