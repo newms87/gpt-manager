@@ -6,8 +6,10 @@ use App\Jobs\ExecuteTaskProcessJob;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
+use App\Models\Workflow\Artifact;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Models\Job\JobDispatch;
 
@@ -22,7 +24,7 @@ class TaskRunnerService
             'status' => TaskProcess::STATUS_PENDING,
         ]);
 
-        static::prepareTaskProcesses($taskRun);
+        static::prepareTaskProcesses($taskRun, $artifacts);
 
         return $taskRun;
     }
@@ -31,18 +33,29 @@ class TaskRunnerService
      * Prepare task processes for the task run. Each process will receive its own Artifacts / Agent Thread
      * based on the input groups and the assigned agents for the TaskDefinition
      */
-    public static function prepareTaskProcesses(TaskRun $taskRun): array
+    public static function prepareTaskProcesses(TaskRun $taskRun, array|Collection $artifacts = []): array
     {
+        // Validate the artifacts are all Artifact instances
+        foreach($artifacts as $artifact) {
+            // Only accept Artifact instances here. The input should have already converted content into an Artifact
+            if (!($artifact instanceof Artifact)) {
+                throw new ValidationError("Invalid artifact provided: All artifacts should be an instance of Artifact: " . (is_object($artifact) ? get_class($artifact) : json_encode($artifact)));
+            }
+        }
+
         $taskProcesses = [];
 
         // NOTE: If there are no agents assigned to the task definition, create an array w/ null entry as a convenience so the loop will create a single process with no agent
         $definitionAgents = $taskRun->taskDefinition->definitionAgents ?: [null];
 
         foreach($definitionAgents as $definitionAgent) {
-            $taskProcesses[] = $taskRun->taskProcesses()->create([
+            $taskProcess = $taskRun->taskProcesses()->create([
                 'status'                   => TaskProcess::STATUS_PENDING,
                 'task_definition_agent_id' => $definitionAgent?->id,
             ]);
+
+            $taskProcess->inputArtifacts()->saveMany($artifacts);
+            $taskProcesses[] = $taskProcess;
         }
 
         $taskRun->taskProcesses()->saveMany($taskProcesses);

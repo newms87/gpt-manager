@@ -4,6 +4,7 @@ namespace Tests\Feature\Services\Task;
 
 use App\Models\Agent\Agent;
 use App\Models\Task\TaskDefinition;
+use App\Models\Workflow\Artifact;
 use App\Services\Task\TaskRunnerService;
 use Tests\AuthenticatedTestCase;
 use Tests\Feature\MockData\AiMockData;
@@ -27,7 +28,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $this->assertEquals(1, $taskRun->process_count, 'TaskRun should have a process count of 1');
     }
 
-    public function test_prepareTaskRun_createsTaskRunWithAProcessForEachAgent(): void
+    public function test_prepareTaskRun_createsTaskRunWithOneProcessForEachAgent(): void
     {
         // Given
         $agentA         = Agent::factory()->create();
@@ -52,6 +53,53 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
 
         $this->assertNotNull($processA, 'Process A should have been found matching agent A');
         $this->assertNotNull($processB, 'Process B should have been found matching agent B');
+    }
+
+    public function test_prepareTaskRun_withArtifacts_createsOneProcessForAllArtifacts(): void
+    {
+        // Given
+        $agentA         = Agent::factory()->create();
+        $taskDefinition = TaskDefinition::factory()->withDefinitionAgent(['agent_id' => $agentA])->create();
+        $artifacts      = Artifact::factory()->count(2)->create();
+
+        // When
+        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition, $artifacts);
+
+        // Then
+        $taskRun->refresh();
+        $this->assertNotNull($taskRun, 'TaskRun should be created');
+        $this->assertCount(1, $taskRun->taskProcesses, 'TaskRun should have a single process for all artifacts');
+
+        $process = $taskRun->taskProcesses->first();
+
+        $this->assertEquals(2, $process->inputArtifacts()->count(), 'Process should have 2 input artifacts');
+    }
+
+    public function test_prepareTaskRun_withArtifactsAndMultipleAgents_createsAProcessWithAllArtifactsForEachAgent(): void
+    {
+        // Given
+        $agentA         = Agent::factory()->create();
+        $agentB         = Agent::factory()->create();
+        $taskDefinition = TaskDefinition::factory()
+            ->withDefinitionAgent(['agent_id' => $agentA])
+            ->withDefinitionAgent(['agent_id' => $agentB])
+            ->create();
+        $artifacts      = Artifact::factory()->count(2)->create();
+
+        // When
+        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition, $artifacts);
+
+        // Then
+        $taskRun->refresh();
+        $this->assertNotNull($taskRun, 'TaskRun should be created');
+        $this->assertCount(2, $taskRun->taskProcesses, 'TaskRun should have 2 processes: 1 for each agent');
+
+        $processes = $taskRun->taskProcesses;
+        $processA  = $processes->filter(fn($process) => $process->taskDefinitionAgent->agent_id === $agentA->id)->first();
+        $processB  = $processes->filter(fn($process) => $process->taskDefinitionAgent->agent_id === $agentB->id)->first();
+
+        $this->assertEquals(2, $processA->inputArtifacts()->count(), 'Process A should have 2 input artifacts');
+        $this->assertEquals(2, $processB->inputArtifacts()->count(), 'Process B should have 2 input artifacts');
     }
 
     public function test_continue_whenTaskRunIsPending_dispatchesAJobForTaskProcessToCompletion(): void
