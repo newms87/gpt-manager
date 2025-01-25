@@ -5,11 +5,10 @@ namespace App\Services\Task\Runners;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\ArtifactFilter;
-use App\Services\Task\TaskRunnerService;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
-class AgentThreadTaskRunner extends TaskRunnerAbstract
+class AgentThreadTaskRunner extends TaskRunnerBase
 {
     public function run(): void
     {
@@ -22,14 +21,14 @@ class AgentThreadTaskRunner extends TaskRunnerAbstract
             ->run($thread, dispatch: false);
 
         // Finished running the process
-        TaskRunnerService::processCompleted($this->taskProcess);
+        parent::run();
     }
 
     public function setupAgentThread()
     {
         $definitionAgent = $this->taskProcess->taskDefinitionAgent;
-        $definition      = $definitionAgent->taskDefinition;
-        $agent           = $definitionAgent->agent;
+        $definition      = $definitionAgent?->taskDefinition;
+        $agent           = $definitionAgent?->agent;
 
         if (!$agent) {
             throw new Exception("AgentThreadTaskRunner: Agent not found for TaskProcess: $this->taskProcess");

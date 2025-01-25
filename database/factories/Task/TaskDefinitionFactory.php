@@ -5,7 +5,7 @@ namespace Database\Factories\Task;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Team\Team;
-use App\Services\Task\Runners\AgentThreadTaskRunner;
+use App\Services\Task\Runners\TaskRunnerBase;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TaskDefinitionFactory extends Factory
@@ -16,7 +16,7 @@ class TaskDefinitionFactory extends Factory
             'team_id'                => Team::factory(),
             'name'                   => fake()->unique()->name,
             'description'            => fake()->sentence,
-            'task_runner_class'      => AgentThreadTaskRunner::class,
+            'task_runner_class'      => TaskRunnerBase::class,
             'input_grouping'         => null,
             'input_group_chunk_size' => 1,
         ];

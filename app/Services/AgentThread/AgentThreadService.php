@@ -32,7 +32,7 @@ class AgentThreadService
      * Overrides the response format for the thread run.
      * This will replace the Agent's response format with the provided schema and sub-selection
      */
-    public function withResponseFormat(PromptSchema $promptSchema, array $subSelection): static
+    public function withResponseFormat(?PromptSchema $promptSchema = null, ?array $subSelection = null): static
     {
         $this->responseSchema       = $promptSchema;
         $this->responseSubSelection = $subSelection;

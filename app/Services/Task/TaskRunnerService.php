@@ -45,8 +45,12 @@ class TaskRunnerService
 
         $taskProcesses = [];
 
+        $definitionAgents = $taskRun->taskDefinition->definitionAgents;
+
         // NOTE: If there are no agents assigned to the task definition, create an array w/ null entry as a convenience so the loop will create a single process with no agent
-        $definitionAgents = $taskRun->taskDefinition->definitionAgents ?: [null];
+        if ($definitionAgents->isEmpty()) {
+            $definitionAgents = [null];
+        }
 
         foreach($definitionAgents as $definitionAgent) {
             $taskProcess = $taskRun->taskProcesses()->create([

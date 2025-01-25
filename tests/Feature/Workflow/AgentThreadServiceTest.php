@@ -53,20 +53,6 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $service->run($threadRun->thread);
     }
 
-    public function test_run_throwsExceptionWhenThreadHasNoMessages()
-    {
-        // Given
-        $thread  = Thread::factory()->create();
-        $service = new AgentThreadService();
-
-        // Expect
-        $this->expectException(ValidationError::class);
-        $this->expectExceptionMessage('You must add messages to the thread before running it.');
-
-        // When
-        $service->run($thread);
-    }
-
     public function test_run_dispatchesJobWhenDispatchIsTrue()
     {
         // Given

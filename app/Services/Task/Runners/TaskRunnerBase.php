@@ -3,8 +3,10 @@
 namespace App\Services\Task\Runners;
 
 use App\Models\Task\TaskProcess;
+use App\Services\Task\TaskRunnerService;
+use Illuminate\Support\Facades\Log;
 
-abstract class TaskRunnerAbstract implements TaskRunnerContract
+class TaskRunnerBase implements TaskRunnerContract
 {
     protected TaskProcess $taskProcess;
 
@@ -18,5 +20,11 @@ abstract class TaskRunnerAbstract implements TaskRunnerContract
         return new static($taskProcess);
     }
 
-    abstract public function run(): void;
+    public function run(): void
+    {
+        Log::debug("TaskRunnerBase: task process completed: $this->taskProcess");
+
+        // Finished running the process
+        TaskRunnerService::processCompleted($this->taskProcess);
+    }
 }
