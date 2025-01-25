@@ -460,4 +460,119 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
             ],
         ], $formattedResponse);
     }
+
+    public function test_filterDataBySubSelection_onlySelectedPropertyIsReturned(): void
+    {
+        // Given
+        $data = [
+            'name' => 'Dan',
+            'dob'  => '2020-01-01',
+        ];
+
+        $subSelection = [
+            'type'     => 'object',
+            'children' => [
+                'name' => [
+                    'type' => 'string',
+                ],
+            ],
+        ];
+
+        // When
+        $filteredData = app(JsonSchemaService::class)->filterDataBySubSelection($data, $subSelection);
+
+        // Then
+        $this->assertEquals(['name' => $data['name']], $filteredData);
+    }
+
+    public function test_filterDataBySubSelection_onlySelectedPropertyOfChildObjectIsReturned(): void
+    {
+        // Given
+        $data = [
+            'name'    => 'Dan',
+            'dob'     => '2020-01-01',
+            'address' => [
+                'street' => '123 Main St',
+                'city'   => 'Springfield',
+            ],
+        ];
+
+        $subSelection = [
+            'type'     => 'object',
+            'children' => [
+                'address' => [
+                    'type'     => 'object',
+                    'children' => [
+                        'city' => [
+                            'type' => 'string',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $filteredData = app(JsonSchemaService::class)->filterDataBySubSelection($data, $subSelection);
+
+        // Then
+        $this->assertEquals(['address' => ['city' => $data['address']['city']]], $filteredData);
+    }
+
+    public function test_filterDataBySubSelection_onlySelectedPropertyOfChildArrayIsReturned(): void
+    {
+        // Given
+        $data = [
+            'name'      => 'Dan',
+            'dob'       => '2020-01-01',
+            'addresses' => [
+                ['street' => '123 Main St', 'city' => 'Springfield'],
+                ['street' => '456 Elm St', 'city' => 'Shelbyville'],
+            ],
+        ];
+
+        $subSelection = [
+            'type'     => 'object',
+            'children' => [
+                'addresses' => [
+                    'type'     => 'array',
+                    'children' => [
+                        'city' => [
+                            'type' => 'string',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $filteredData = app(JsonSchemaService::class)->filterDataBySubSelection($data, $subSelection);
+
+        // Then
+        $this->assertEquals(['addresses' => [['city' => 'Springfield'], ['city' => 'Shelbyville']]], $filteredData);
+    }
+
+    public function test_filterDataBySubSelection_onlySelectedPropertyArrayOfScalarsIsReturned(): void
+    {
+        // Given
+        $data = [
+            'name'      => 'Dan',
+            'dob'       => '2020-01-01',
+            'nicknames' => ['Danny', 'Hammer', 'Tater Salad'],
+        ];
+
+        $subSelection = [
+            'type'     => 'object',
+            'children' => [
+                'nicknames' => [
+                    'type' => 'array',
+                ],
+            ],
+        ];
+
+        // When
+        $filteredData = app(JsonSchemaService::class)->filterDataBySubSelection($data, $subSelection);
+
+        // Then
+        $this->assertEquals(['nicknames' => $data['nicknames']], $filteredData);
+    }
 }

@@ -135,6 +135,51 @@ class JsonSchemaService
         return $schema;
     }
 
+    public function filterDataBySubSelection(array $data, array $subSelection = null): array
+    {
+        if (!$subSelection) {
+            return $data;
+        }
+
+        if (empty($subSelection['children'])) {
+            return [];
+        }
+
+        $filtered = [];
+
+        foreach($subSelection['children'] as $selectedKey => $selectedProperty) {
+            if (empty($selectedProperty['type'])) {
+                throw new Exception("Sub-selection must have a type: $selectedKey: " . json_encode($selectedProperty));
+            }
+
+            $dataProperty = $data[$selectedKey] ?? null;
+
+            // Skip if the property is not in the data
+            // NOTE: We do not throw an error here because sub selections are not directly tied to schemas. They are loosely correlated, but schemas may change while selections remain the same.
+            if (!$dataProperty) {
+                continue;
+            }
+
+            if (!empty($dataProperty['type']) && $dataProperty['type'] !== $selectedProperty['type']) {
+                throw new Exception("Sub-selection type mismatch: $selectedKey: Data Type $dataProperty[type] is not $selectedProperty[type]");
+            }
+
+            if ($selectedProperty['type'] === 'object') {
+                $result = $this->filterDataBySubSelection($dataProperty, $selectedProperty);
+            } elseif ($selectedProperty['type'] === 'array') {
+                $result = array_map(fn($item) => is_array($item) ? $this->filterDataBySubSelection($item, $selectedProperty) : $item, $dataProperty);
+            } else {
+                $result = $dataProperty;
+            }
+
+            if ($result) {
+                $filtered[$selectedKey] = $result;
+            }
+        }
+
+        return $filtered;
+    }
+
     /**
      * Format and clean the schema to match the requirements of a strict JSON schema
      *
