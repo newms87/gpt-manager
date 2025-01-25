@@ -13,6 +13,9 @@ class TaskDefinitionAgentFactory extends Factory
         return [
             'task_definition_id'   => TaskDefinition::factory(),
             'agent_id'             => Agent::factory(),
+            'include_text'         => false,
+            'include_files'        => false,
+            'include_data'         => false,
             'input_schema_id'      => null,
             'input_sub_selection'  => null,
             'output_schema_id'     => null,

@@ -45,4 +45,39 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $this->assertCount(2, $messages, 'Thread should be 2 messages: the artifact and the agent response');
         $this->assertEquals($artifactContent, $messages->first()->content, 'First message should be the artifact content');
     }
+
+    public function test_setupAgentThread_withDefinitionAgentInputSubSelection_threadHasFilteredInputData(): void
+    {
+        // Given
+        $this->mocksOpenAiCompletionResponse();
+
+        $artifactAttributes = [
+            'content' => 'nothing',
+            'data'    => [
+                'name'  => 'John Doe',
+                'email' => 'john@doe.com',
+            ],
+        ];
+
+        $subSelection = [
+            'type'     => 'object',
+            'children' => [
+                'email' => ['type' => 'string'],
+            ],
+        ];
+
+        $taskProcess = TaskProcess::factory()->withInputArtifacts($artifactAttributes)->forTaskDefinitionAgent([
+            'include_data'        => true,
+            'input_sub_selection' => $subSelection,
+        ])->create();
+
+        // When
+        AgentThreadTaskRunner::make($taskProcess)->run();
+
+        // Then
+        $taskProcess->refresh();
+        $messages = $taskProcess->thread?->messages ?? [];
+        $this->assertCount(2, $messages, 'Thread should be 2 messages: the artifact and the agent response');
+        $this->assertEquals(['data' => ['email' => $artifactAttributes['data']['email']]], $messages->first()->getJsonContent(), 'First message should be the artifact content');
+    }
 }

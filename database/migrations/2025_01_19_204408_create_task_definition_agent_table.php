@@ -14,6 +14,9 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('task_definition_id')->constrained();
             $table->foreignId('agent_id')->constrained();
+            $table->boolean('include_text')->default(false);
+            $table->boolean('include_files')->default(false);
+            $table->boolean('include_data')->default(false);
             $table->foreignId('input_schema_id')->nullable()->constrained('prompt_schemas');
             $table->json('input_sub_selection')->nullable();
             $table->foreignId('output_schema_id')->nullable()->constrained('prompt_schemas');

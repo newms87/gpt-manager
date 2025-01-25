@@ -4,6 +4,7 @@ namespace App\Services\Task\Runners;
 
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
+use App\Services\AgentThread\ArtifactFilter;
 use App\Services\Task\TaskRunnerService;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -39,8 +40,14 @@ class AgentThreadTaskRunner extends TaskRunnerAbstract
         Log::debug("Setup Task Thread: $thread");
 
         Log::debug("\tAdding " . count($inputArtifacts) . " input artifacts");
+        $artifactFilter = (new ArtifactFilter())
+            ->includeText($definitionAgent->include_text)
+            ->includeFiles($definitionAgent->include_files)
+            ->includeData($definitionAgent->include_data, $definitionAgent->input_sub_selection);
+
         foreach($inputArtifacts as $inputArtifact) {
-            app(ThreadRepository::class)->addArtifactToThread($thread, $inputArtifact);
+            $artifactFilter->setArtifact($inputArtifact);
+            app(ThreadRepository::class)->addMessageToThread($thread, $artifactFilter->filter());
         }
 
         $this->taskProcess->thread()->associate($thread)->save();
