@@ -2,7 +2,6 @@
 
 namespace App\Services\JsonSchema;
 
-use App\Models\Agent\Agent;
 use Exception;
 use Newms87\Danx\Helpers\FileHelper;
 use Str;
@@ -305,7 +304,7 @@ class JsonSchemaService
                 'items' => $this->formatAndCleanSchemaItem("$name.items", $items, $depth + 1, $required),
             ],
             'string', 'number', 'integer', 'boolean', 'null' => ['type' => $typeList],
-            default => throw new Exception("Unknown type at path $name: " . $type),
+            default => throw new Exception("Unknown type at path $name: " . ($type ?: '(empty)')),
         };
 
         // If the type is an object with no properties, it is an empty object and can be ignored
@@ -334,24 +333,17 @@ class JsonSchemaService
     }
 
     /**
-     * Format the schema for an AI Agent based on the settings for the agent.
-     * The unique name is based on the agent's name and responseSchema overall structure
+     * Format the JSON schema and generate a unique name based on the given name and the schema structure
      */
-    public function formatAgentResponseSchema(Agent $agent): array|string
+    public function formatAndFilterSchema(string $name, array $schema, array $subSelection = []): array|string
     {
-        $responseSchema = $agent->responseSchema?->schema ?? '';
-
-        if (is_array($responseSchema)) {
-            if ($agent->response_sub_selection) {
-                $responseSchema = $this->applySubSelection($responseSchema, $agent->response_sub_selection);
-            }
-
-            // Name the response schema result based on the agent's name and a hash of the schema after applying sub selection
-            $name = $agent->name . ':' . substr(md5(json_encode($responseSchema)), 0, 7);
-
-            return $this->formatAndCleanSchema(Str::slug($name), $responseSchema);
+        if ($subSelection) {
+            $schema = $this->applySubSelection($schema, $subSelection);
         }
 
-        return $responseSchema;
+        // Name the response schema result based on the given name and a hash of the schema after applying sub selection
+        $name = $name . ':' . substr(md5(json_encode($schema)), 0, 7);
+
+        return $this->formatAndCleanSchema(Str::slug($name), $schema);
     }
 }

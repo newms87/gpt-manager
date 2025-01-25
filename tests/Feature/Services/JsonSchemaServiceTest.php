@@ -179,7 +179,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         $this->assertNotNull($objectSchema['$defs']['property_meta']['items']['properties']['citation'] ?? null, 'citation should be added to the schema');
     }
 
-    public function test_formatAgentResponseSchema_onlySelectedPropertyIsReturned(): void
+    public function test_formatAndFilterSchema_onlySelectedPropertyIsReturned(): void
     {
         // Given
         $schema       = [
@@ -209,7 +209,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAgentResponseSchema($agent);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema($agent->name, $agent->responseSchema->schema, $agent->response_sub_selection);
 
         // Then
         $this->assertEquals([
@@ -231,7 +231,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ], $formattedResponse);
     }
 
-    public function test_formatAgentResponseSchema_onlySelectedObjectsAreReturned(): void
+    public function test_formatAndFilterSchema_onlySelectedObjectsAreReturned(): void
     {
         // Given
         $schema       = [
@@ -285,7 +285,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAgentResponseSchema($agent);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema($agent->name, $agent->responseSchema->schema, $agent->response_sub_selection);
 
         // Then
         $this->assertEquals([
@@ -313,7 +313,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ], $formattedResponse);
     }
 
-    public function test_formatAgentResponseSchema_selectedObjectSkippedWhenNoPropertiesSelected(): void
+    public function test_formatAndFilterSchema_selectedObjectSkippedWhenNoPropertiesSelected(): void
     {
         // Given
         $schema       = [
@@ -353,7 +353,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAgentResponseSchema($agent);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema($agent->name, $agent->responseSchema->schema, $agent->response_sub_selection);
 
         // Then
         $this->assertEquals([
@@ -373,7 +373,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ], $formattedResponse);
     }
 
-    public function test_formatAgentResponseSchema_onlySelectedArraysAreReturned(): void
+    public function test_formatAndFilterSchema_onlySelectedArraysAreReturned(): void
     {
         // Given
         $schema       = [
@@ -430,7 +430,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAgentResponseSchema($agent);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema($agent->name, $agent->responseSchema->schema, $agent->response_sub_selection);
 
         // Then
         $this->assertEquals([

@@ -8,6 +8,7 @@ use App\Models\Agent\Agent;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowJobRun;
+use Mockery\CompositeExpectation;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
 use Tests\TestCase;
 
@@ -50,7 +51,7 @@ trait AiMockData
         $this->mock(OpenAiApi::class)->shouldNotReceive('complete');
     }
 
-    public function mocksOpenAiCompletionResponse($content = 'Mock completion message content', $finishReason = 'stop', $usage = null)
+    public function mocksOpenAiCompletionResponse($content = 'Mock completion message content', $finishReason = 'stop', $usage = null): CompositeExpectation
     {
         return $this->mock(OpenAiApi::class)
             ->shouldReceive('formatter')->andReturn(new OpenAiMessageFormatter)

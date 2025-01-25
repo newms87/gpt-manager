@@ -23,4 +23,17 @@ class PromptSchemaFactory extends Factory
             'response_example' => null,
         ];
     }
+
+    public function withJsonSchema(): self
+    {
+        return $this->state([
+            'schema' => [
+                'type'       => 'object',
+                'properties' => [
+                    'name'  => ['type' => 'string'],
+                    'email' => ['type' => 'string'],
+                ],
+            ],
+        ]);
+    }
 }
