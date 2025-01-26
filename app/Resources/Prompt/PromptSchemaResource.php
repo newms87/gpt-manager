@@ -20,6 +20,8 @@ class PromptSchemaResource extends ActionResource
             'workflow_jobs_count' => $promptSchema->workflow_jobs_count,
             'created_at'          => $promptSchema->created_at,
             'updated_at'          => $promptSchema->updated_at,
+
+            'fragments' => fn($fields) => PromptSchemaFragmentResource::collection($promptSchema->fragments, $fields),
         ];
     }
 }

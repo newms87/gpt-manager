@@ -11,6 +11,7 @@ use App\Models\Agent\Message;
 use App\Models\Agent\Thread;
 use App\Models\Agent\ThreadRun;
 use App\Models\Prompt\PromptSchema;
+use App\Models\Prompt\PromptSchemaFragment;
 use App\Repositories\AgentRepository;
 use App\Repositories\TeamObjectRepository;
 use App\Services\JsonSchema\JsonSchemaService;
@@ -25,17 +26,17 @@ use Throwable;
 
 class AgentThreadService
 {
-    protected ?PromptSchema $responseSchema       = null;
-    protected ?array        $responseSubSelection = null;
+    protected ?PromptSchema         $responseSchema         = null;
+    protected ?PromptSchemaFragment $responseSchemaFragment = null;
 
     /**
      * Overrides the response format for the thread run.
-     * This will replace the Agent's response format with the provided schema and sub-selection
+     * This will replace the Agent's response format with the provided schema and fragment
      */
-    public function withResponseFormat(?PromptSchema $promptSchema = null, ?array $subSelection = null): static
+    public function withResponseFormat(PromptSchema $responseSchema = null, PromptSchemaFragment $responseSchemaFragment = null): static
     {
-        $this->responseSchema       = $promptSchema;
-        $this->responseSubSelection = $subSelection;
+        $this->responseSchema         = $responseSchema;
+        $this->responseSchemaFragment = $responseSchemaFragment;
 
         return $this;
     }
@@ -123,15 +124,15 @@ class AgentThreadService
      */
     public function resolveResponseSchema(Agent $agent, JsonSchemaService $jsonSchemaService): array
     {
-        $responseSchema       = $this->responseSchema ?? $agent?->responseSchema;
-        $responseSubSelection = $this->responseSubSelection ?? $agent?->response_sub_selection;
+        $responseSchema         = $this->responseSchema ?? $agent->responseSchema;
+        $responseSchemaFragment = $this->responseSchemaFragment ?? $agent->responseSchemaFragment;
 
         if (!$responseSchema?->schema) {
             throw new Exception("JSON Schema response format requires a schema to be set on the agent: " . $agent . ": " . $agent->responseSchema);
         }
 
         // Configure the JSON schema service to require the name and id fields, and use citations for each property
-        return $jsonSchemaService->formatAndFilterSchema($responseSchema->name, $responseSchema->schema, $responseSubSelection);
+        return $jsonSchemaService->formatAndFilterSchema($responseSchema->name, $responseSchema->schema, $responseSchemaFragment->fragment_selector);
     }
 
     /**

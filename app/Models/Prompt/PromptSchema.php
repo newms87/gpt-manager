@@ -78,6 +78,11 @@ class PromptSchema extends Model implements AuditableContract
         return $this->hasMany(PromptSchemaHistory::class);
     }
 
+    public function fragments(): PromptSchemaFragment|HasMany
+    {
+        return $this->hasMany(PromptSchemaFragment::class);
+    }
+
     public function delete(): bool
     {
         $agentsCount = $this->agents()->count();
@@ -108,7 +113,6 @@ class PromptSchema extends Model implements AuditableContract
 
         return $this;
     }
-
 
     public static function booted(): void
     {

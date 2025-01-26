@@ -4,6 +4,7 @@ namespace Feature\Services\Task\Runners;
 
 use App\Models\Agent\Agent;
 use App\Models\Prompt\PromptSchema;
+use App\Models\Prompt\PromptSchemaFragment;
 use App\Models\Task\TaskProcess;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use Tests\AuthenticatedTestCase;
@@ -46,7 +47,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $this->assertEquals($artifactContent, $messages->first()->content, 'First message should be the artifact content');
     }
 
-    public function test_setupAgentThread_withDefinitionAgentInputSubSelection_threadHasFilteredInputData(): void
+    public function test_setupAgentThread_withDefinitionAgentInputFragment_threadHasFilteredInputData(): void
     {
         // Given
         $artifactAttributes = [
@@ -57,7 +58,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
             ],
         ];
 
-        $subSelection = [
+        $fragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'email' => ['type' => 'string'],
@@ -65,8 +66,8 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         ];
 
         $taskProcess = TaskProcess::factory()->withInputArtifacts($artifactAttributes)->forTaskDefinitionAgent([
-            'include_data'        => true,
-            'input_sub_selection' => $subSelection,
+            'include_data'             => true,
+            'input_schema_fragment_id' => PromptSchemaFragment::factory()->create(['fragment_selector' => $fragmentSelector]),
         ])->create();
 
         // When
@@ -79,10 +80,10 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $this->assertEquals(['data' => ['email' => $artifactAttributes['data']['email']]], $messages->first()->getJsonContent(), 'First message should be the artifact content');
     }
 
-    public function test_setupAgentThread_withDefinitionAgentOutputSubSelection_completeApiCallHasFilteredStructuredOutput(): void
+    public function test_setupAgentThread_withDefinitionAgentOutputFragment_completeApiCallHasFilteredStructuredOutput(): void
     {
         // Given
-        $inputSchema  = PromptSchema::factory()->create([
+        $inputSchema      = PromptSchema::factory()->create([
             'schema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -91,8 +92,8 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
                 ],
             ],
         ]);
-        $agent        = Agent::factory()->withJsonSchemaResponse($inputSchema)->create();
-        $outputSchema = PromptSchema::factory()->create([
+        $agent            = Agent::factory()->withJsonSchemaResponse($inputSchema)->create();
+        $outputSchema     = PromptSchema::factory()->create([
             'schema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -102,7 +103,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
                 ],
             ],
         ]);
-        $subSelection = [
+        $fragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'email' => ['type' => 'string'],
@@ -111,14 +112,14 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         ];
 
         $taskProcess = TaskProcess::factory()->forTaskDefinitionAgent([
-            'agent_id'             => $agent,
-            'output_schema_id'     => $outputSchema->id,
-            'output_sub_selection' => $subSelection,
+            'agent_id'                  => $agent,
+            'output_schema_id'          => $outputSchema->id,
+            'output_schema_fragment_id' => PromptSchemaFragment::factory()->create(['fragment_selector' => $fragmentSelector]),
         ])->create();
 
         // Then
         $this->partialMock(TestAiApi::class)
-            ->shouldReceive('complete')->withArgs(function ($model, $messages, $options) use ($subSelection) {
+            ->shouldReceive('complete')->withArgs(function ($model, $messages, $options) {
                 $this->assertEquals(Agent::RESPONSE_FORMAT_JSON_SCHEMA, $options['response_format']['type'] ?? null);
                 $this->assertNull($options['response_format']['json_schema']['schema']['properties']['phone'] ?? null, 'Phone should NOT be in the response schema');
                 $this->assertNotNull($options['response_format']['json_schema']['schema']['properties']['email'] ?? null, 'Email should be in the response schema');

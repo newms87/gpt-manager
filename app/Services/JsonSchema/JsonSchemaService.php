@@ -75,42 +75,42 @@ class JsonSchemaService
     }
 
     /**
-     * Recursively filters a JSON schema by a sub-selection of properties
+     * Recursively filters a JSON schema using a fragment selector to select a subset of properties
      */
-    public function applySubSelection(array $schema, array $subSelection = null): array
+    public function applyFragmentSelector(array $schema, array $fragmentSelector = null): array
     {
-        if (!$subSelection) {
+        if (!$fragmentSelector) {
             return $schema;
         }
 
-        if (empty($subSelection['children'])) {
+        if (empty($fragmentSelector['children'])) {
             return [];
         }
 
         $properties = $schema['properties'] ?? [];
         $filtered   = [];
 
-        foreach($subSelection['children'] as $selectedKey => $selectedProperty) {
+        foreach($fragmentSelector['children'] as $selectedKey => $selectedProperty) {
             if (empty($selectedProperty['type'])) {
-                throw new Exception("Sub-selection must have a type: $selectedKey: " . json_encode($selectedProperty));
+                throw new Exception("Fragment selector must have a type: $selectedKey: " . json_encode($selectedProperty));
             }
 
             $schemaProperty = $properties[$selectedKey] ?? null;
 
             // Skip if the property is not in the schema
-            // NOTE: We do not throw an error here because sub selections are not directly tied to schemas. They are loosely correlated, but schemas may change while selections remain the same.
+            // NOTE: We do not throw an error here because fragments are not directly tied to schemas. They are loosely correlated, but schemas may change while selections remain the same.
             if (!$schemaProperty) {
                 continue;
             }
 
             if (!empty($schemaProperty['type']) && $schemaProperty['type'] !== $selectedProperty['type']) {
-                throw new Exception("Sub-selection type mismatch: $selectedKey: Schema Type $schemaProperty[type] is not $selectedProperty[type]");
+                throw new Exception("Fragment selector type mismatch: $selectedKey: Schema Type $schemaProperty[type] is not $selectedProperty[type]");
             }
 
             if ($selectedProperty['type'] === 'object') {
-                $result = $this->applySubSelection($schemaProperty, $selectedProperty);
+                $result = $this->applyFragmentSelector($schemaProperty, $selectedProperty);
             } elseif ($selectedProperty['type'] === 'array') {
-                $result = $this->applySubSelection($schemaProperty['items'], $selectedProperty);
+                $result = $this->applyFragmentSelector($schemaProperty['items'], $selectedProperty);
             } else {
                 $result = $schemaProperty;
             }
@@ -134,39 +134,39 @@ class JsonSchemaService
         return $schema;
     }
 
-    public function filterDataBySubSelection(array $data, array $subSelection = null): array
+    public function filterDataByFragmentSelector(array $data, array $fragmentSelector = null): array
     {
-        if (!$subSelection) {
+        if (!$fragmentSelector) {
             return $data;
         }
 
-        if (empty($subSelection['children'])) {
+        if (empty($fragmentSelector['children'])) {
             return [];
         }
 
         $filtered = [];
 
-        foreach($subSelection['children'] as $selectedKey => $selectedProperty) {
+        foreach($fragmentSelector['children'] as $selectedKey => $selectedProperty) {
             if (empty($selectedProperty['type'])) {
-                throw new Exception("Sub-selection must have a type: $selectedKey: " . json_encode($selectedProperty));
+                throw new Exception("Fragment selector must have a type: $selectedKey: " . json_encode($selectedProperty));
             }
 
             $dataProperty = $data[$selectedKey] ?? null;
 
             // Skip if the property is not in the data
-            // NOTE: We do not throw an error here because sub selections are not directly tied to schemas. They are loosely correlated, but schemas may change while selections remain the same.
+            // NOTE: We do not throw an error here because fragments are not directly tied to schemas. They are loosely correlated, but schemas may change while selections remain the same.
             if (!$dataProperty) {
                 continue;
             }
 
             if (!empty($dataProperty['type']) && $dataProperty['type'] !== $selectedProperty['type']) {
-                throw new Exception("Sub-selection type mismatch: $selectedKey: Data Type $dataProperty[type] is not $selectedProperty[type]");
+                throw new Exception("Fragment selector type mismatch: $selectedKey: Data Type $dataProperty[type] is not $selectedProperty[type]");
             }
 
             if ($selectedProperty['type'] === 'object') {
-                $result = $this->filterDataBySubSelection($dataProperty, $selectedProperty);
+                $result = $this->filterDataByFragmentSelector($dataProperty, $selectedProperty);
             } elseif ($selectedProperty['type'] === 'array') {
-                $result = array_map(fn($item) => is_array($item) ? $this->filterDataBySubSelection($item, $selectedProperty) : $item, $dataProperty);
+                $result = array_map(fn($item) => is_array($item) ? $this->filterDataByFragmentSelector($item, $selectedProperty) : $item, $dataProperty);
             } else {
                 $result = $dataProperty;
             }
@@ -335,13 +335,13 @@ class JsonSchemaService
     /**
      * Format the JSON schema and generate a unique name based on the given name and the schema structure
      */
-    public function formatAndFilterSchema(string $name, array $schema, array $subSelection = []): array|string
+    public function formatAndFilterSchema(string $name, array $schema, array $fragmentSelector = null): array|string
     {
-        if ($subSelection) {
-            $schema = $this->applySubSelection($schema, $subSelection);
+        if ($fragmentSelector) {
+            $schema = $this->applyFragmentSelector($schema, $fragmentSelector);
         }
 
-        // Name the response schema result based on the given name and a hash of the schema after applying sub selection
+        // Name the response schema result based on the given name and a hash of the schema after applying fragment selector
         $name = $name . ':' . substr(md5(json_encode($schema)), 0, 7);
 
         return $this->formatAndCleanSchema(Str::slug($name), $schema);

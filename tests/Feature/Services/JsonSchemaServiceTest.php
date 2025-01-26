@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Services;
 
-use App\Models\Agent\Agent;
 use App\Services\JsonSchema\JsonSchemaService;
 use Tests\AuthenticatedTestCase;
 
@@ -182,7 +181,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
     public function test_formatAndFilterSchema_onlySelectedPropertyIsReturned(): void
     {
         // Given
-        $schema       = [
+        $schema           = [
             'type'        => 'object',
             'title'       => 'Person',
             'description' => 'The important person',
@@ -196,7 +195,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
-        $subSelection = [
+        $fragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'name' => [
@@ -204,12 +203,9 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
-        $agent        = Agent::factory()->forResponseSchema(['schema' => $schema])->create([
-            'response_sub_selection' => $subSelection,
-        ]);
 
         // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema($agent->name, $agent->responseSchema->schema, $agent->response_sub_selection);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema('', $schema, $fragmentSelector);
 
         // Then
         $this->assertEquals([
@@ -234,7 +230,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
     public function test_formatAndFilterSchema_onlySelectedObjectsAreReturned(): void
     {
         // Given
-        $schema       = [
+        $schema           = [
             'type'       => 'object',
             'title'      => 'Person',
             'properties' => [
@@ -267,7 +263,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
-        $subSelection = [
+        $fragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'address' => [
@@ -280,12 +276,9 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
-        $agent        = Agent::factory()->forResponseSchema(['schema' => $schema])->create([
-            'response_sub_selection' => $subSelection,
-        ]);
 
         // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema($agent->name, $agent->responseSchema->schema, $agent->response_sub_selection);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema('', $schema, $fragmentSelector);
 
         // Then
         $this->assertEquals([
@@ -316,7 +309,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
     public function test_formatAndFilterSchema_selectedObjectSkippedWhenNoPropertiesSelected(): void
     {
         // Given
-        $schema       = [
+        $schema           = [
             'type'       => 'object',
             'title'      => 'Person',
             'properties' => [
@@ -337,7 +330,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
-        $subSelection = [
+        $fragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'name'    => [
@@ -348,12 +341,9 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
-        $agent        = Agent::factory()->forResponseSchema(['schema' => $schema])->create([
-            'response_sub_selection' => $subSelection,
-        ]);
 
         // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema($agent->name, $agent->responseSchema->schema, $agent->response_sub_selection);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema('', $schema, $fragmentSelector);
 
         // Then
         $this->assertEquals([
@@ -376,7 +366,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
     public function test_formatAndFilterSchema_onlySelectedArraysAreReturned(): void
     {
         // Given
-        $schema       = [
+        $schema           = [
             'type'       => 'object',
             'title'      => 'Person',
             'properties' => [
@@ -412,7 +402,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
-        $subSelection = [
+        $fragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'addresses' => [
@@ -425,12 +415,9 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
-        $agent        = Agent::factory()->forResponseSchema(['schema' => $schema])->create([
-            'response_sub_selection' => $subSelection,
-        ]);
 
         // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema($agent->name, $agent->responseSchema->schema, $agent->response_sub_selection);
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema('', $schema, $fragmentSelector);
 
         // Then
         $this->assertEquals([
@@ -461,7 +448,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ], $formattedResponse);
     }
 
-    public function test_filterDataBySubSelection_onlySelectedPropertyIsReturned(): void
+    public function test_filterDataByFragmentSelector_onlySelectedPropertyIsReturned(): void
     {
         // Given
         $data = [
@@ -469,7 +456,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
             'dob'  => '2020-01-01',
         ];
 
-        $subSelection = [
+        $fragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'name' => [
@@ -479,13 +466,13 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $filteredData = app(JsonSchemaService::class)->filterDataBySubSelection($data, $subSelection);
+        $filteredData = app(JsonSchemaService::class)->filterDataByFragmentSelector($data, $fragmentSelector);
 
         // Then
         $this->assertEquals(['name' => $data['name']], $filteredData);
     }
 
-    public function test_filterDataBySubSelection_onlySelectedPropertyOfChildObjectIsReturned(): void
+    public function test_filterDataByFragmentSelector_onlySelectedPropertyOfChildObjectIsReturned(): void
     {
         // Given
         $data = [
@@ -497,7 +484,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
             ],
         ];
 
-        $subSelection = [
+        $fragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'address' => [
@@ -512,13 +499,13 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $filteredData = app(JsonSchemaService::class)->filterDataBySubSelection($data, $subSelection);
+        $filteredData = app(JsonSchemaService::class)->filterDataByFragmentSelector($data, $fragmentSelector);
 
         // Then
         $this->assertEquals(['address' => ['city' => $data['address']['city']]], $filteredData);
     }
 
-    public function test_filterDataBySubSelection_onlySelectedPropertyOfChildArrayIsReturned(): void
+    public function test_filterDataByFragmentSelector_onlySelectedPropertyOfChildArrayIsReturned(): void
     {
         // Given
         $data = [
@@ -530,7 +517,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
             ],
         ];
 
-        $subSelection = [
+        $fragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'addresses' => [
@@ -545,13 +532,13 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $filteredData = app(JsonSchemaService::class)->filterDataBySubSelection($data, $subSelection);
+        $filteredData = app(JsonSchemaService::class)->filterDataByFragmentSelector($data, $fragmentSelector);
 
         // Then
         $this->assertEquals(['addresses' => [['city' => 'Springfield'], ['city' => 'Shelbyville']]], $filteredData);
     }
 
-    public function test_filterDataBySubSelection_onlySelectedPropertyArrayOfScalarsIsReturned(): void
+    public function test_filterDataByFragmentSelector_onlySelectedPropertyArrayOfScalarsIsReturned(): void
     {
         // Given
         $data = [
@@ -560,7 +547,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
             'nicknames' => ['Danny', 'Hammer', 'Tater Salad'],
         ];
 
-        $subSelection = [
+        $fragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'nicknames' => [
@@ -570,7 +557,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         ];
 
         // When
-        $filteredData = app(JsonSchemaService::class)->filterDataBySubSelection($data, $subSelection);
+        $filteredData = app(JsonSchemaService::class)->filterDataByFragmentSelector($data, $fragmentSelector);
 
         // Then
         $this->assertEquals(['nicknames' => $data['nicknames']], $filteredData);

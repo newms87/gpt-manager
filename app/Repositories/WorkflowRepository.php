@@ -6,6 +6,7 @@ use App\Models\Agent\Agent;
 use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Prompt\PromptDirective;
 use App\Models\Prompt\PromptSchema;
+use App\Models\Prompt\PromptSchemaFragment;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowAssignment;
 use App\Models\Workflow\WorkflowInput;
@@ -130,7 +131,6 @@ class WorkflowRepository extends ActionRepository
                                 'enable_message_sources' => $agent->enable_message_sources,
                                 'retry_count'            => $agent->retry_count,
                                 'save_response_to_db'    => $agent->save_response_to_db,
-                                'response_sub_selection' => $agent->response_sub_selection,
                                 'directives'             => $agent->directives->map(function (AgentPromptDirective $directive) {
                                     return [
                                         'section'   => $directive->section,
@@ -142,6 +142,7 @@ class WorkflowRepository extends ActionRepository
                                     ];
                                 }),
                                 'responseSchema'         => $agent->responseSchema?->only(['type', 'name', 'description', 'schema_format', 'schema', 'response_example']),
+                                'responseSchemaFragment' => $agent->responseSchemaFragment?->only(['name', 'fragment_selector']),
                             ],
                         ];
                     }),
@@ -217,6 +218,19 @@ class WorkflowRepository extends ActionRepository
                         collect($responseSchemaData)->except('name')->toArray()
                     );
                     $agent->responseSchema()->associate($responseSchema)->save();
+
+                    // Fill in Response Schema Fragment
+                    $responseSchemaFragmentData = $jobData['responseSchemaFragment'] ?? null;
+
+                    if ($responseSchemaFragmentData) {
+                        $responseSchemaFragment = PromptSchemaFragment::updateOrCreate([
+                            'prompt_schema_id' => $responseSchema->id,
+                            'name'             => $responseSchemaFragmentData['name'],
+                        ],
+                            collect($responseSchemaFragmentData)->except('name')->toArray()
+                        );
+                        $agent->responseSchemaFragment()->associate($responseSchemaFragment)->save();
+                    }
                 }
 
                 // Create Directives

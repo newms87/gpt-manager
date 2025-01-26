@@ -7,11 +7,11 @@ use App\Services\JsonSchema\JsonSchemaService;
 
 class ArtifactFilter
 {
-    private ?Artifact $artifact     = null;
-    private bool      $includeText  = false;
-    private bool      $includeFiles = false;
-    private bool      $includeData  = false;
-    private array     $subSelection = [];
+    private ?Artifact $artifact         = null;
+    private bool      $includeText      = false;
+    private bool      $includeFiles     = false;
+    private bool      $includeData      = false;
+    private array     $fragmentSelector = [];
 
     public function setArtifact(Artifact $artifact): static
     {
@@ -34,10 +34,10 @@ class ArtifactFilter
         return $this;
     }
 
-    public function includeData(bool $included = true, array $subSelection = []): static
+    public function includeData(bool $included = true, array $fragmentSelector = []): static
     {
-        $this->includeData  = $included;
-        $this->subSelection = $subSelection;
+        $this->includeData      = $included;
+        $this->fragmentSelector = $fragmentSelector;
 
         return $this;
     }
@@ -47,13 +47,13 @@ class ArtifactFilter
         return $this->includeText && !$this->includeFiles && !$this->includeData;
     }
 
-    public function getFilteredData(): array
+    public function getFilteredData(): ?array
     {
-        if ($this->subSelection) {
-            return (new JsonSchemaService)->filterDataBySubSelection($this->artifact->data, $this->subSelection);
+        if ($this->fragmentSelector) {
+            return (new JsonSchemaService)->filterDataByFragmentSelector($this->artifact->data, $this->fragmentSelector);
         }
 
-        return [];
+        return $this->artifact->data;
     }
 
     public function filter(): array|string|null

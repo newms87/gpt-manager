@@ -17,7 +17,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
         // Run the thread synchronously (ie: dispatch = false)
         $taskDefinitionAgent = $this->taskProcess->taskDefinitionAgent;
         (new AgentThreadService)
-            ->withResponseFormat($taskDefinitionAgent->outputSchema, $taskDefinitionAgent->output_sub_selection)
+            ->withResponseFormat($taskDefinitionAgent->outputSchema, $taskDefinitionAgent->outputSchemaFragment)
             ->run($thread, dispatch: false);
 
         // Finished running the process
@@ -45,7 +45,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
         $artifactFilter = (new ArtifactFilter())
             ->includeText($definitionAgent->include_text)
             ->includeFiles($definitionAgent->include_files)
-            ->includeData($definitionAgent->include_data, $definitionAgent->input_sub_selection ?? []);
+            ->includeData($definitionAgent->include_data, $definitionAgent->inputSchemaFragment?->fragment_selector ?? []);
 
         foreach($inputArtifacts as $inputArtifact) {
             $artifactFilter->setArtifact($inputArtifact);

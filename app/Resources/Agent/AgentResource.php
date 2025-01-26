@@ -4,6 +4,7 @@ namespace App\Resources\Agent;
 
 use App\Models\Agent\Agent;
 use App\Resources\Prompt\AgentPromptDirectiveResource;
+use App\Resources\Prompt\PromptSchemaFragmentResource;
 use App\Resources\Prompt\PromptSchemaResource;
 use App\Resources\Workflow\WorkflowAssignmentResource;
 use Illuminate\Database\Eloquent\Model;
@@ -32,7 +33,7 @@ class AgentResource extends ActionResource
             'updated_at'             => $agent->updated_at,
 
             'responseSchema'         => fn($fields) => PromptSchemaResource::make($agent->responseSchema, $fields),
-            'response_sub_selection' => fn() => $agent->response_sub_selection,
+            'responseSchemaFragment' => fn($fields) => PromptSchemaFragmentResource::make($agent->responseSchemaFragment, $fields),
             'directives'             => fn($fields) => AgentPromptDirectiveResource::collection($agent->directives->load('directive'), $fields),
             'threads'                => fn($fields) => ThreadResource::collection($agent->threads()->orderByDesc('updated_at')->with('sortedMessages.storedFiles.transcodes')->limit(20)->get(), $fields),
             'assignments'            => fn($fields) => WorkflowAssignmentResource::collection($agent->assignments()->with('workflowJob.workflow')->limit(20)->get(), $fields),

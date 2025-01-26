@@ -4,6 +4,7 @@ namespace App\Models\Task;
 
 use App\Models\Agent\Agent;
 use App\Models\Prompt\PromptSchema;
+use App\Models\Prompt\PromptSchemaFragment;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,18 +18,10 @@ class TaskDefinitionAgent extends Model implements AuditableContract
     protected $fillable = [
         'agent_id',
         'input_schema_id',
-        'input_sub_selection',
+        'input_schema_fragment_id',
         'output_schema_id',
-        'output_sub_selection',
+        'output_schema_fragment_id',
     ];
-
-    public function casts(): array
-    {
-        return [
-            'input_sub_selection'  => 'json',
-            'output_sub_selection' => 'json',
-        ];
-    }
 
     public function taskDefinition(): TaskDefinition|BelongsTo
     {
@@ -45,9 +38,19 @@ class TaskDefinitionAgent extends Model implements AuditableContract
         return $this->belongsTo(PromptSchema::class, 'input_schema_id');
     }
 
+    public function inputSchemaFragment(): BelongsTo|PromptSchemaFragment
+    {
+        return $this->belongsTo(PromptSchemaFragment::class, 'input_schema_fragment_id');
+    }
+
     public function outputSchema(): BelongsTo|PromptSchema
     {
         return $this->belongsTo(PromptSchema::class, 'output_schema_id');
+    }
+
+    public function outputSchemaFragment(): BelongsTo|PromptSchemaFragment
+    {
+        return $this->belongsTo(PromptSchemaFragment::class, 'output_schema_fragment_id');
     }
 
     public function __toString()
