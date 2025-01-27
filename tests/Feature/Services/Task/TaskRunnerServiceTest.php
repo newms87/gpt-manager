@@ -7,12 +7,9 @@ use App\Models\Task\TaskDefinition;
 use App\Models\Workflow\Artifact;
 use App\Services\Task\TaskRunnerService;
 use Tests\AuthenticatedTestCase;
-use Tests\Feature\MockData\AiMockData;
 
 class TaskRunnerServiceTest extends AuthenticatedTestCase
 {
-    use AiMockData;
-
     public function test_prepareTaskRun_createsTaskRunWithSingleProcess(): void
     {
         // Given
@@ -154,5 +151,22 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertEquals(0, $taskProcess->jobDispatches()->count(), 'TaskProcess should not have been dispatched');
+    }
+
+    public function test_continue_whenRunningAgentThread_completedTaskHasOutputArtifact(): void
+    {
+        // Given
+        $taskDefinition = TaskDefinition::factory()->withDefinitionAgent()->create();
+        $taskRun        = TaskRunnerService::prepareTaskRun($taskDefinition);
+        $taskProcess    = $taskRun->taskProcesses->first();
+
+        // When
+        TaskRunnerService::continue($taskRun);
+
+        // Then After
+        $taskRun->refresh();
+        $taskProcess->refresh();
+        $this->assertTrue($taskRun->isCompleted(), 'TaskRun should be completed');
+        $this->assertEquals(1, $taskProcess->outputArtifacts()->count(), 'TaskProcess should have 1 output artifact');
     }
 }

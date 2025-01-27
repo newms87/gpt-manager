@@ -3,6 +3,7 @@
 namespace App\Services\Task\Runners;
 
 use App\Repositories\ThreadRepository;
+use App\Services\AgentThread\AgentThreadMessageToArtifactMapper;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\ArtifactFilter;
 use Exception;
@@ -12,18 +13,27 @@ class AgentThreadTaskRunner extends TaskRunnerBase
 {
     public function run(): void
     {
+        Log::debug("AgentThreadTaskRunner Running: $this->taskProcess");
+
         $thread = $this->setupAgentThread();
 
         // Run the thread synchronously (ie: dispatch = false)
         $taskDefinitionAgent = $this->taskProcess->taskDefinitionAgent;
-        (new AgentThreadService)
+        $threadRun           = (new AgentThreadService)
             ->withResponseFormat($taskDefinitionAgent->outputSchema, $taskDefinitionAgent->outputSchemaFragment)
             ->run($thread, dispatch: false);
 
-        // Finished running the process
-        parent::run();
+        // Create the artifact and associate it with the task process
+        if ($threadRun->lastMessage) {
+            $artifact = (new AgentThreadMessageToArtifactMapper)->setMessage($threadRun->lastMessage)->map();
+            $this->complete($artifact);
+        }
     }
 
+    /**
+     * Setup the agent thread with the input artifacts.
+     * Associate the thread to the TaskProcess so it has everything it needs to run in an independent job
+     */
     public function setupAgentThread()
     {
         $definitionAgent = $this->taskProcess->taskDefinitionAgent;

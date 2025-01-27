@@ -2,14 +2,12 @@
 
 namespace App\WorkflowTools;
 
-use App\Models\Agent\Agent;
-use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowTask;
+use App\Services\AgentThread\AgentThreadMessageToArtifactMapper;
 use App\Services\AgentThread\AgentThreadService;
 use App\WorkflowTools\Traits\AssignsWorkflowTasksTrait;
 use App\WorkflowTools\Traits\ResolvesDependencyArtifactsTrait;
 use Exception;
-use Illuminate\Support\Facades\Log;
 
 class RunAgentThreadWorkflowTool extends WorkflowTool
 {
@@ -36,64 +34,13 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
         // Run the thread synchronously
         $threadRun = app(AgentThreadService::class)->run($workflowTask->thread, dispatch: false);
 
-        // Product the artifact
-        $data    = null;
-        $content = null;
-
-        // If the agent responded with a message, set the content or data
-        // NOTE: Sometimes an agent may respond with a tools response that includes an is_finished flag, and our lastMessage may be empty
+        // Create the artifact
         if ($threadRun->lastMessage) {
-            if ($assignment->agent->response_format !== Agent::RESPONSE_FORMAT_TEXT) {
-                $data = $threadRun->lastMessage->getJsonContent();
-            } else {
-                $content = $threadRun->lastMessage->getCleanContent();
+            $artifact = (new AgentThreadMessageToArtifactMapper)->setMessage($threadRun->lastMessage)->map();
+
+            if ($artifact) {
+                $workflowTask->artifacts()->attach($artifact);
             }
         }
-
-        if ($content || $data) {
-            $artifact = $workflowTask->artifacts()->create([
-                'name'    => $workflowTask->thread->name,
-                'model'   => $assignment->agent->model,
-                'content' => $content,
-                'data'    => $data,
-            ]);
-
-            $this->attachCitedSourceFilesToArtifact($artifact);
-
-            Log::debug("$workflowTask created $artifact");
-        } else {
-            Log::debug("$workflowTask did not produce an artifact");
-        }
-    }
-
-    /**
-     * Attach any source files cited in the artifact data to the artifact
-     */
-    public function attachCitedSourceFilesToArtifact(Artifact $artifact): void
-    {
-        $sourceFileIds = $this->flattenSourceFiles($artifact->data);
-        $artifact->storedFiles()->syncWithoutDetaching($sourceFileIds);
-    }
-
-    /**
-     * Flatten the data structure to find all file IDs
-     */
-    private function flattenSourceFiles($data): array
-    {
-        if (!is_array($data)) {
-            return [];
-        }
-
-        $fileIds = [];
-
-        foreach($data as $key => $value) {
-            if (is_array($value)) {
-                $fileIds = array_merge($fileIds, $this->flattenSourceFiles($value));
-            } elseif ($key === 'file_id') {
-                $fileIds[] = $value;
-            }
-        }
-
-        return $fileIds;
     }
 }
