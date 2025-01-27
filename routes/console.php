@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\TaskTimeoutCommand;
 use App\Console\Commands\WorkflowTimeoutCommand;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -10,3 +11,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 Schedule::command(WorkflowTimeoutCommand::class)->everyMinute();
+Schedule::command(TaskTimeoutCommand::class)->everyMinute();

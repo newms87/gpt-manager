@@ -146,7 +146,7 @@ class TaskProcess extends Model implements AuditableContract
 
     public function isPastTimeout(): bool
     {
-        if (!$this->started_at) {
+        if (!$this->started_at || $this->completed_at || $this->failed_at || $this->stopped_at) {
             return false;
         }
 
