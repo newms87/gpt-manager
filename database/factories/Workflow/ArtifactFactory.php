@@ -14,10 +14,10 @@ class ArtifactFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'    => fake()->word,
-            'model'   => fake()->word,
-            'content' => null,
-            'data'    => null,
+            'name'         => fake()->word,
+            'model'        => fake()->word,
+            'text_content' => null,
+            'json_content' => null,
         ];
     }
 

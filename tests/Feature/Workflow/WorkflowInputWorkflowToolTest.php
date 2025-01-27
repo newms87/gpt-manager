@@ -43,7 +43,7 @@ class WorkflowInputWorkflowToolTest extends AuthenticatedTestCase
         // Then
         $artifacts = $task->artifacts()->get();
         $this->assertCount(1, $artifacts, 'Expected one artifact');
-        $this->assertEquals($content, $artifacts->first()->content);
+        $this->assertEquals($content, $artifacts->first()->text_content);
     }
 
     public function test_runTask_producesArtifactWithFiles(): void

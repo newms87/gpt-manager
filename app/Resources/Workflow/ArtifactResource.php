@@ -12,14 +12,14 @@ class ArtifactResource extends ActionResource
     public static function data(Artifact $artifact): array
     {
         return [
-            'id'         => $artifact->id,
-            'name'       => $artifact->name,
-            'group'      => $artifact->group,
-            'model'      => $artifact->model,
-            'created_at' => $artifact->created_at,
-            'content'    => fn() => $artifact->content,
-            'data'       => fn() => $artifact->data,
-            'files'      => fn($fields) => StoredFileResource::collection($artifact->storedFiles->load('transcodes'), $fields),
+            'id'           => $artifact->id,
+            'name'         => $artifact->name,
+            'group'        => $artifact->group,
+            'model'        => $artifact->model,
+            'created_at'   => $artifact->created_at,
+            'text_content' => fn() => $artifact->text_content,
+            'json_content' => fn() => $artifact->json_content,
+            'files'        => fn($fields) => StoredFileResource::collection($artifact->storedFiles->load('transcodes'), $fields),
         ];
     }
 

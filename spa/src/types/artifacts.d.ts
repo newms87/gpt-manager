@@ -5,8 +5,8 @@ export interface Artifact {
 	name: string;
 	group: string;
 	model: string;
-	content: string;
-	data: AnyObject;
+	text_content?: string;
+	json_content?: AnyObject;
 	files: UploadedFile[];
 	created_at: string;
 }

@@ -877,7 +877,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         $groupTuples = app(RunAgentThreadWorkflowTool::class)->generateArtifactGroupTuples($dependencyArtifactGroups);
 
         // Then
-        $this->assertEquals(['default' => [['content' => 'Follow the prompt']]], $groupTuples);
+        $this->assertEquals(['default' => [['text_content' => 'Follow the prompt']]], $groupTuples);
     }
 
     public function test_generateArtifactGroupTuples_returnOriginalWhenOnlyOneGroup(): void
@@ -994,7 +994,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
         // Given
         $inputContent = 'Input Directive Test';
         $artifact     = Artifact::factory()->withStoredFile()->create([
-            'content' => $inputContent,
+            'text_content' => $inputContent,
         ]);
 
         $workflowRun       = WorkflowRun::factory()->create();
@@ -1016,7 +1016,7 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
 
         $message    = $thread->messages()->first();
         $storedFile = $artifact->storedFiles->first();
-        $this->assertEquals(json_encode(['content' => $inputContent, 'files' => [['id' => $storedFile->id, 'url' => $storedFile->url]]]), $message->content);
+        $this->assertEquals(json_encode(['text_content' => $inputContent, 'files' => [['id' => $storedFile->id, 'url' => $storedFile->url]]]), $message->content);
         $this->assertEquals($artifact->storedFiles()->first()->id, $message->storedFiles()->first()->id);
     }
 

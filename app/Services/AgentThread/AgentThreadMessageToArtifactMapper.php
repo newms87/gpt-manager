@@ -31,30 +31,30 @@ class AgentThreadMessageToArtifactMapper
 
     public function map(): Artifact|null
     {
-        // Product the artifact
-        $data    = null;
-        $content = null;
+        // Produce the artifact
+        $jsonContent = null;
+        $textContent = null;
 
         if ($this->agent->response_format === Agent::RESPONSE_FORMAT_TEXT) {
-            $content = $this->message->getCleanContent();
+            $textContent = $this->message->getCleanContent();
         } else {
-            $data = $this->message->getJsonContent();
+            $jsonContent = $this->message->getJsonContent();
         }
 
-        if (!$content && !$data) {
+        if (!$textContent && !$jsonContent) {
             Log::debug("Did not produce an artifact: No text or JSON content found in message");
 
             return null;
         }
 
         $artifact = Artifact::create([
-            'name'    => $this->name ?: $this->message->thread->name . ' ' . DateHelper::formatDateTime(),
-            'model'   => $this->agent->model,
-            'content' => $content,
-            'data'    => $data,
+            'name'         => $this->name ?: $this->message->thread->name . ' ' . DateHelper::formatDateTime(),
+            'model'        => $this->agent->model,
+            'text_content' => $textContent,
+            'json_content' => $jsonContent,
         ]);
 
-        if ($data) {
+        if ($jsonContent) {
             $this->attachCitedSourceFilesToArtifact($artifact);
         }
 
@@ -68,7 +68,7 @@ class AgentThreadMessageToArtifactMapper
      */
     public function attachCitedSourceFilesToArtifact(Artifact $artifact): void
     {
-        $sourceFileIds = $this->flattenSourceFiles($artifact->data);
+        $sourceFileIds = $this->flattenSourceFiles($artifact->json_content);
         $artifact->storedFiles()->syncWithoutDetaching($sourceFileIds);
     }
 

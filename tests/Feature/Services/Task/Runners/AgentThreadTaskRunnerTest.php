@@ -32,7 +32,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
     {
         // Given
         $artifactContent = 'hello world';
-        $taskProcess     = TaskProcess::factory()->withInputArtifacts(['content' => $artifactContent])->forTaskDefinitionAgent([
+        $taskProcess     = TaskProcess::factory()->withInputArtifacts(['text_content' => $artifactContent])->forTaskDefinitionAgent([
             'include_text' => true,
         ])->create();
 
@@ -51,8 +51,8 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
     {
         // Given
         $artifactAttributes = [
-            'content' => 'nothing',
-            'data'    => [
+            'text_content' => 'nothing',
+            'json_content' => [
                 'name'  => 'John Doe',
                 'email' => 'john@doe.com',
             ],
@@ -77,7 +77,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess->refresh();
         $messages = $taskProcess->thread?->messages ?? [];
         $this->assertCount(2, $messages, 'Thread should be 2 messages: the artifact and the agent response');
-        $this->assertEquals(['data' => ['email' => $artifactAttributes['data']['email']]], $messages->first()->getJsonContent(), 'First message should be the artifact content');
+        $this->assertEquals(['json_content' => ['email' => $artifactAttributes['json_content']['email']]], $messages->first()->getJsonContent(), 'First message should be the artifact content');
     }
 
     public function test_setupAgentThread_withDefinitionAgentOutputFragment_completeApiCallHasFilteredStructuredOutput(): void

@@ -171,7 +171,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
             'started_at'   => now(),
         ]);
         $artifactContent = 'Job A Artifact';
-        $artifact        = Artifact::factory()->create(['content' => $artifactContent]);
+        $artifact        = Artifact::factory()->create(['text_content' => $artifactContent]);
         $workflowJobRunA->artifacts()->save($artifact);
         $workflowJobRunB = WorkflowJobRun::factory()->recycle($workflowJobB)->recycle($workflowRun)->create();
 
@@ -206,7 +206,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $artifactData    = [
             'service_dates' => $serviceDates,
         ];
-        $artifact        = Artifact::factory()->create(['data' => $artifactData]);
+        $artifact        = Artifact::factory()->create(['json_content' => $artifactData]);
         $workflowJobRunA->artifacts()->save($artifact);
         $workflowJobRunB = WorkflowJobRun::factory()->recycle($workflowJobB)->recycle($workflowRun)->create();
 
@@ -253,7 +253,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $artifactData    = [
             'service_dates' => $serviceDates,
         ];
-        $artifact        = Artifact::factory()->create(['data' => $artifactData]);
+        $artifact        = Artifact::factory()->create(['json_content' => $artifactData]);
         $workflowJobRunA->artifacts()->save($artifact);
         $workflowJobRunB = WorkflowJobRun::factory()->recycle($workflowJobB)->recycle($workflowRun)->create();
 
@@ -300,7 +300,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
             'completed_at' => now(),
             'started_at'   => now(),
         ]);
-        $workflowInputJobRun->artifacts()->save(Artifact::factory()->create(['content' => $workflowInputContent]));
+        $workflowInputJobRun->artifacts()->save(Artifact::factory()->create(['text_content' => $workflowInputContent]));
         $workflowJobRunA = WorkflowJobRun::factory()->recycle($workflowJobA)->recycle($workflowRun)->create([
             'completed_at' => now(),
             'started_at'   => now(),
@@ -312,7 +312,7 @@ class WorkflowServiceTest extends AuthenticatedTestCase
         $artifactData    = [
             'service_dates' => $serviceDates,
         ];
-        $artifact        = Artifact::factory()->create(['data' => $artifactData]);
+        $artifact        = Artifact::factory()->create(['json_content' => $artifactData]);
         $workflowJobRunA->artifacts()->save($artifact);
         $workflowJobRunB = WorkflowJobRun::factory()->recycle($workflowJobB)->recycle($workflowRun)->create();
 

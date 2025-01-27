@@ -47,7 +47,7 @@ class WorkflowJobRunFactory extends Factory
         return $this->afterCreating(function (WorkflowJobRun $workflowJobRun) use ($artifactData) {
             $artifacts = [];
             foreach($artifactData as $data) {
-                $artifacts[] = Artifact::factory()->create(['data' => $data]);
+                $artifacts[] = Artifact::factory()->create(['json_content' => $data]);
             }
             $workflowJobRun->artifacts()->saveMany($artifacts);
         });

@@ -39,8 +39,8 @@ class WorkflowInputWorkflowTool extends WorkflowTool
     public function getResponseExample(WorkflowJob $workflowJob): array
     {
         $response = [
-            'content' => 'Example content',
-            'files'   => [
+            'text_content' => 'Example content',
+            'files'        => [
                 [
                     'filename' => 'example.pdf',
                     'url'      => 'https://example.com/example.pdf',
@@ -69,10 +69,10 @@ class WorkflowInputWorkflowTool extends WorkflowTool
 
         Log::debug(self::$toolName . ": preparing $workflowTask ==> $workflowInput");
         $artifact = $workflowTask->artifacts()->create([
-            'name'    => self::$toolName . ': ' . $workflowInput->name,
-            'model'   => '',
-            'content' => $workflowInput->content,
-            'data'    => [
+            'name'         => self::$toolName . ': ' . $workflowInput->name,
+            'model'        => '',
+            'text_content' => $workflowInput->content,
+            'json_content' => [
                 'teamObjects' => $this->getTeamObjects($workflowInput),
             ],
         ]);

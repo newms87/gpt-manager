@@ -10,7 +10,7 @@ class ArtifactFilter
     private ?Artifact $artifact         = null;
     private bool      $includeText      = false;
     private bool      $includeFiles     = false;
-    private bool      $includeData      = false;
+    private bool      $includeJson      = false;
     private array     $fragmentSelector = [];
 
     public function setArtifact(Artifact $artifact): static
@@ -34,9 +34,9 @@ class ArtifactFilter
         return $this;
     }
 
-    public function includeData(bool $included = true, array $fragmentSelector = []): static
+    public function includeJson(bool $included = true, array $fragmentSelector = []): static
     {
-        $this->includeData      = $included;
+        $this->includeJson      = $included;
         $this->fragmentSelector = $fragmentSelector;
 
         return $this;
@@ -44,16 +44,16 @@ class ArtifactFilter
 
     public function isTextOnly(): bool
     {
-        return $this->includeText && !$this->includeFiles && !$this->includeData;
+        return $this->includeText && !$this->includeFiles && !$this->includeJson;
     }
 
     public function getFilteredData(): ?array
     {
         if ($this->fragmentSelector) {
-            return (new JsonSchemaService)->filterDataByFragmentSelector($this->artifact->data, $this->fragmentSelector);
+            return (new JsonSchemaService)->filterDataByFragmentSelector($this->artifact->json_content, $this->fragmentSelector);
         }
 
-        return $this->artifact->data;
+        return $this->artifact->json_content;
     }
 
     public function filter(): array|string|null
@@ -63,20 +63,20 @@ class ArtifactFilter
         }
 
         if ($this->isTextOnly()) {
-            return $this->artifact->content;
+            return $this->artifact->text_content;
         } else {
             $data = [];
 
             if ($this->includeText) {
-                $data['content'] = $this->artifact->content;
+                $data['text_content'] = $this->artifact->text_content;
             }
 
             if ($this->includeFiles) {
                 $data['files'] = $this->artifact->storedFiles;
             }
 
-            if ($this->includeData) {
-                $data['data'] = $this->getFilteredData();
+            if ($this->includeJson) {
+                $data['json_content'] = $this->getFilteredData();
             }
 
             return $data;

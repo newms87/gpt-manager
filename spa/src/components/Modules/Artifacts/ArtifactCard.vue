@@ -20,8 +20,8 @@
 		</div>
 		<div>
 			<MarkdownEditor
-				:model-value="artifact.content || artifact.data"
-				:format="artifact.content ? 'text' : 'yaml'"
+				:model-value="artifact.text_content || artifact.json_content"
+				:format="artifact.text_content ? 'text' : 'yaml'"
 				readonly
 			/>
 		</div>
