@@ -1,21 +1,5 @@
 <template>
 	<div class="flex flex-col flex-nowrap" :class="{'h-full': isEditingSchema}">
-		<div class="flex items-center flex-nowrap mb-4">
-			<SelectOrCreateField
-				v-if="canSelect"
-				v-model:editing="isEditingSchema"
-				:selected="activeSchema"
-				show-edit
-				:can-edit="!!activeSchema"
-				:options="dxPromptSchema.pagedItems.value?.data || []"
-				:loading="createSchemaAction.isApplying"
-				select-by-object
-				option-label="name"
-				class="w-1/2"
-				@create="onCreate"
-				@update:selected="selected => activeSchema = selected as PromptSchema"
-			/>
-		</div>
 		<div
 			v-if="activeSchema && (isSelectingFragment || isEditingSchema || showPreview)"
 			class="flex-grow overflow-hidden"
@@ -33,16 +17,25 @@
 			>
 				<template #header="{isShowingRaw}">
 					<div class="flex-grow flex items-center flex-nowrap">
-						<ShowHideButton
-							v-model="isSelectingSchema"
-							class="bg-sky-800 mr-2"
-							tooltip="Select Schema"
-							:show-icon="SchemaIcon"
-						/>
-						<EditableDiv
-							color="slate-600"
-							:model-value="activeSchema.name"
-							@update:model-value="name => updateSchemaAction.trigger(activeSchema, {name})"
+						<SelectionMenuField
+							v-if="canSelect"
+							v-model:editing="isEditingSchema"
+							:selected="activeSchema"
+							selectable
+							editable
+							creatable
+							clearable
+							deletable
+							name-editable
+							:select-icon="SchemaIcon"
+							label-class="text-slate-300"
+							:can-edit="!!activeSchema"
+							:options="dxPromptSchema.pagedItems.value?.data || []"
+							:loading="createSchemaAction.isApplying"
+							@create="onCreate"
+							@update="input => updateSchemaAction.trigger(activeSchema, input)"
+							@delete="selected => deleteSchemaAction.trigger(selected)"
+							@update:selected="selected => console.log('selected', selected) || (activeSchema = selected as PromptSchema)"
 						/>
 
 						<ShowHideButton
@@ -95,7 +88,7 @@ import {
 	FaSolidDatabase as SchemaIcon,
 	FaSolidPuzzlePiece as FragmentIcon
 } from "danx-icon";
-import { EditableDiv, FlashMessages, SelectField, SelectOrCreateField, ShowHideButton } from "quasar-ui-danx";
+import { EditableDiv, FlashMessages, SelectField, SelectionMenuField, ShowHideButton } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
 
 defineProps<{ canSelect?: boolean, canSelectFragment?: boolean, showPreview?: boolean }>();
@@ -103,6 +96,7 @@ defineProps<{ canSelect?: boolean, canSelectFragment?: boolean, showPreview?: bo
 onMounted(() => dxPromptSchema.initialize());
 const createSchemaAction = dxPromptSchema.getAction("create");
 const updateSchemaAction = dxPromptSchema.getAction("update");
+const deleteSchemaAction = dxPromptSchema.getAction("delete");
 const updateFragmentAction = dxPromptSchema.getAction("update");
 const activeSchema = defineModel<PromptSchema>();
 const activeFragment = defineModel<PromptSchemaFragment>("activeFragment");
