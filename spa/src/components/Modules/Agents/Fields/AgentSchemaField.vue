@@ -32,7 +32,7 @@
 			<SchemaEditorToolbox
 				v-model:isEditingSchema="isEditingSchema"
 				can-select
-				can-sub-select
+				can-select-fragment
 				show-preview
 				:sub-selection="agent.response_sub_selection"
 				:model-value="agent.responseSchema"

@@ -25,7 +25,7 @@
 				v-model="editableSchema"
 				v-model:sub-selection="subSelection"
 				:readonly="readonly"
-				:selectable="canSubSelect"
+				:selectable="selectable"
 				class="min-w-64"
 			/>
 
@@ -56,7 +56,7 @@ defineProps<{
 	saving: boolean;
 	readonly?: boolean;
 	hideContent?: boolean;
-	canSubSelect?: boolean;
+	selectable?: boolean;
 }>();
 const schema = defineModel<JsonSchema>();
 const subSelection = defineModel<SelectionSchema | null>("subSelection");

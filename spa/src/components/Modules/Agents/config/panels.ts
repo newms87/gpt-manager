@@ -24,6 +24,7 @@ export const panels = [
 	{
 		name: "prompt",
 		label: "Prompt",
+		class: "w-[80vw]",
 		vnode: (agent: Agent) => h(AgentPromptPanel, { agent })
 	},
 	{

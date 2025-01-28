@@ -1,5 +1,5 @@
 import { AuditRequest } from "@/components/Modules/Audits/audit-requests";
-import { ActionController } from "quasar-ui-danx";
+import { DanxController } from "quasar-ui-danx";
 import { columns } from "./columns";
 import { controls } from "./controls";
 import { filters } from "./filters";
@@ -12,4 +12,4 @@ export const dxAudit = {
 	filters,
 	panels,
 	routes
-} as ActionController<AuditRequest>;
+} as DanxController<AuditRequest>;

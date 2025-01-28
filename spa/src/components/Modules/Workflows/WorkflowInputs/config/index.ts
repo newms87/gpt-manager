@@ -1,7 +1,8 @@
-import { ActionController } from "quasar-ui-danx";
+import { WorkflowInput } from "@/types";
+import { DanxController } from "quasar-ui-danx";
 import { actionControls, batchActions, menuActions } from "./actions";
 import { columns } from "./columns";
-import { controls, WorkflowInputControllerInterface } from "./controls";
+import { controls } from "./controls";
 import { filters } from "./filters";
 import { panels } from "./panels";
 import { routes } from "./routes";
@@ -15,4 +16,4 @@ export const dxWorkflowInput = {
 	filters,
 	panels,
 	routes
-} as WorkflowInputControllerInterface & ActionController;
+} as DanxController<WorkflowInput>;

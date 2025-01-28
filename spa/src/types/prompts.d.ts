@@ -1,5 +1,5 @@
 import { Agent } from "@/types/agents";
-import { JsonSchema } from "@/types/json-schema";
+import { JsonSchema, JsonSchemaType } from "@/types/json-schema";
 import { ActionTargetItem, ListControlsRoutes } from "quasar-ui-danx";
 
 export interface PromptSchema extends ActionTargetItem {
@@ -12,6 +12,17 @@ export interface PromptSchema extends ActionTargetItem {
 	schema: JsonSchema;
 	response_example: object | object[];
 	agents: Agent[];
+}
+
+export interface PromptSchemaFragment extends ActionTargetItem {
+	id: string;
+	name: string;
+	fragment_selector: FragmentSelector;
+}
+
+export interface FragmentSelector {
+	type: JsonSchemaType;
+	children?: FragmentSelector[];
 }
 
 export interface PromptDirective extends ActionTargetItem {

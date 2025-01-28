@@ -1,4 +1,5 @@
-import { ActionController } from "quasar-ui-danx";
+import { PromptDirective } from "@/types";
+import { DanxController } from "quasar-ui-danx";
 import { actionControls, batchActions, menuActions } from "./actions";
 import { columns } from "./columns";
 import { controls } from "./controls";
@@ -15,4 +16,4 @@ export const dxPromptDirective = {
 	filters,
 	panels,
 	routes
-} as ActionController;
+} as DanxController<PromptDirective>;

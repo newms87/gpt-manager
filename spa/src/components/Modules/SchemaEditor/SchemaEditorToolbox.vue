@@ -15,31 +15,9 @@
 				@create="onCreate"
 				@update:selected="selected => activeSchema = selected as PromptSchema"
 			/>
-			<div v-if="canSubSelect" class="flex items-center flex-nowrap">
-				<ShowHideButton
-					v-model="isSelectingSubSchema"
-					class="bg-sky-800 !p-3 mx-4"
-					:show-icon="EditSelectionIcon"
-					:hide-icon="DoneSelectingIcon"
-				/>
-				<div v-if="!subSelection" class="text-green-700 flex items-center flex-nowrap">
-					<FullSchemaIcon class="w-4 mr-2" />
-					Full schema
-				</div>
-				<div v-else class="text-slate-500">
-					<div class="flex items-center flex-nowrap">
-						<ObjectIcon class="w-4 text-green-700 mr-2" />
-						{{ selectedObjectCount }} objects
-					</div>
-					<div class="flex items-center flex-nowrap">
-						<PropertyIcon class="w-4 h-4 text-green-700 mr-2" />
-						{{ selectedPropertyCount }} properties
-					</div>
-				</div>
-			</div>
 		</div>
 		<div
-			v-if="activeSchema && (isSelectingSubSchema || isEditingSchema || showPreview)"
+			v-if="activeSchema && (isSelectingFragment || isEditingSchema || showPreview)"
 			class="flex-grow overflow-hidden"
 		>
 			<JSONSchemaEditor
@@ -50,16 +28,39 @@
 				:model-value="activeSchema.schema as JsonSchema"
 				:saved-at="activeSchema.updated_at"
 				:saving="updateSchemaAction.isApplying"
-				:can-sub-select="isSelectingSubSchema"
+				:selectable="isSelectingFragment"
 				@update:model-value="schema => updateSchemaAction.trigger(activeSchema, { schema })"
 			>
 				<template #header="{isShowingRaw}">
 					<div class="flex-grow flex items-center flex-nowrap">
+						<ShowHideButton
+							v-model="isSelectingSchema"
+							class="bg-sky-800 mr-2"
+							tooltip="Select Schema"
+							:show-icon="SchemaIcon"
+						/>
 						<EditableDiv
 							color="slate-600"
 							:model-value="activeSchema.name"
 							@update:model-value="name => updateSchemaAction.trigger(activeSchema, {name})"
 						/>
+
+						<ShowHideButton
+							v-model="isSelectingFragment"
+							class="bg-sky-800 mr-2 ml-4"
+							tooltip="Select Schema Fragment"
+							:show-icon="FragmentIcon"
+						/>
+						<EditableDiv
+							v-if="activeFragment"
+							color="slate-600"
+							:model-value="activeFragment.name"
+							@update:model-value="name => updateFragmentAction.trigger(activeFragment, {name})"
+						/>
+						<div v-else class="text-green-700 flex items-center flex-nowrap">
+							<FullSchemaIcon class="w-4 mr-2" />
+							Full schema
+						</div>
 						<SelectField
 							v-if="isShowingRaw"
 							class="ml-4"
@@ -88,25 +89,26 @@ import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import SchemaResponseExampleCard from "@/components/Modules/SchemaEditor/SchemaResponseExampleCard";
 import { useSubSelection } from "@/components/Modules/SchemaEditor/subSelection";
-import { JsonSchema, PromptSchema, SelectionSchema } from "@/types";
+import { JsonSchema, PromptSchema, PromptSchemaFragment, SelectionSchema } from "@/types";
 import {
-	FaSolidA as PropertyIcon,
-	FaSolidCheck as DoneSelectingIcon,
 	FaSolidCircleCheck as FullSchemaIcon,
-	FaSolidListCheck as EditSelectionIcon,
-	FaSolidObjectGroup as ObjectIcon
+	FaSolidDatabase as SchemaIcon,
+	FaSolidPuzzlePiece as FragmentIcon
 } from "danx-icon";
 import { EditableDiv, FlashMessages, SelectField, SelectOrCreateField, ShowHideButton } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
 
-defineProps<{ canSelect?: boolean, canSubSelect?: boolean, showPreview?: boolean }>();
+defineProps<{ canSelect?: boolean, canSelectFragment?: boolean, showPreview?: boolean }>();
 
 onMounted(() => dxPromptSchema.initialize());
 const createSchemaAction = dxPromptSchema.getAction("create");
 const updateSchemaAction = dxPromptSchema.getAction("update");
+const updateFragmentAction = dxPromptSchema.getAction("update");
 const activeSchema = defineModel<PromptSchema>();
+const activeFragment = defineModel<PromptSchemaFragment>("activeFragment");
 const isEditingSchema = defineModel<boolean>("editing");
-const isSelectingSubSchema = defineModel<boolean>("selecting");
+const isSelectingSchema = defineModel<boolean>("selectingSchema");
+const isSelectingFragment = defineModel<boolean>("selectingFragment");
 const subSelection = defineModel<SelectionSchema | null>("subSelection");
 const isPreviewingExample = ref(false);
 

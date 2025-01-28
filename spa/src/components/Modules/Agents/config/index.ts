@@ -1,4 +1,5 @@
-import { ActionController } from "quasar-ui-danx";
+import { Agent } from "@/types";
+import { DanxController } from "quasar-ui-danx";
 import { actionControls, batchActions, menuActions } from "./actions";
 import { columns } from "./columns";
 import { controls } from "./controls";
@@ -17,4 +18,4 @@ export const dxAgent = {
 	fields,
 	panels,
 	routes
-} as ActionController;
+} as DanxController<Agent>;
