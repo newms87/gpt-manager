@@ -2,11 +2,11 @@
 
 namespace App\AiTools;
 
-use App\Models\Agent\ThreadRun;
+use App\Models\Agent\AgentThreadRun;
 
 interface AiToolContract
 {
     public function execute($params): AiToolResponse;
 
-    public function setThreadRun(ThreadRun $threadRun): static;
+    public function setThreadRun(AgentThreadRun $threadRun): static;
 }

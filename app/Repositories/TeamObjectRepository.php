@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Models\Agent\ThreadRun;
+use App\Models\Agent\AgentThreadRun;
 use App\Models\Prompt\PromptSchema;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
@@ -218,7 +218,7 @@ class TeamObjectRepository extends ActionRepository
         $fileId          = $source['file_id'] ?? [];
         $storedFile      = null;
 
-        Log::debug("Saving citation: " . $teamObjectAttribute->name . ($sourceUrl ? " URL: $sourceUrl" : '') . ($sourceMessageId ? " Message ID: $sourceMessageId" : ''));
+        Log::debug("Saving citation: " . $teamObjectAttribute->name . ($sourceUrl ? " URL: $sourceUrl" : '') . ($sourceMessageId ? " AgentThreadMessage ID: $sourceMessageId" : ''));
 
         if ($sourceUrl) {
             $sourceUrl  = FileHelper::normalizeUrl($sourceUrl);
@@ -244,16 +244,16 @@ class TeamObjectRepository extends ActionRepository
             $sourceId   = $fileId;
             $sourceType = 'file';
         } else {
-            throw new BadFunctionCallException("Save Team Object Attribute Source requires a File, URL or Message ID");
+            throw new BadFunctionCallException("Save Team Object Attribute Source requires a File, URL or AgentThreadMessage ID");
         }
 
         $attributeSource = $teamObjectAttribute->sources()->updateOrCreate([
             'source_type' => $sourceType,
             'source_id'   => $sourceId,
         ], [
-            'explanation'    => $source['explanation'] ?? null,
-            'message_id'     => $sourceMessageId,
-            'stored_file_id' => $storedFile?->id,
+            'explanation'             => $source['explanation'] ?? null,
+            'agent_thread_message_id' => $sourceMessageId,
+            'stored_file_id'          => $storedFile?->id,
         ]);
 
         Log::debug("$attributeSource was " . ($attributeSource->wasRecentlyCreated ? 'created' : 'updated'));
@@ -290,7 +290,7 @@ class TeamObjectRepository extends ActionRepository
      *
      * @return TeamObject[]
      */
-    public function saveTeamObjectsUsingSchema(array $schema, array &$objects, TeamObject $parentObject = null, ThreadRun $threadRun = null): array
+    public function saveTeamObjectsUsingSchema(array $schema, array &$objects, TeamObject $parentObject = null, AgentThreadRun $threadRun = null): array
     {
         Log::debug("Saving array of TeamObjects: " . count($objects));
 
@@ -307,7 +307,7 @@ class TeamObjectRepository extends ActionRepository
      *
      * NOTE: object is passed as reference so we can update the ID after creating the object
      */
-    public function saveTeamObjectUsingSchema(array $schema, array &$object, TeamObject $parentObject = null, ThreadRun $threadRun = null): TeamObject
+    public function saveTeamObjectUsingSchema(array $schema, array &$object, TeamObject $parentObject = null, AgentThreadRun $threadRun = null): TeamObject
     {
         $id           = $object['id'] ?? null;
         $type         = $schema['title'] ?? null;
@@ -402,7 +402,7 @@ class TeamObjectRepository extends ActionRepository
 
                 // Associate the thread run if it is set
                 if ($objectAttribute && $threadRun) {
-                    $objectAttribute->threadRun()->associate($threadRun)->save();
+                    $objectAttribute->agentThreadRun()->associate($threadRun)->save();
                 }
             }
         }

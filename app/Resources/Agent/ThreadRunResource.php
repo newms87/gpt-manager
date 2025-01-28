@@ -2,12 +2,12 @@
 
 namespace App\Resources\Agent;
 
-use App\Models\Agent\ThreadRun;
+use App\Models\Agent\AgentThreadRun;
 use Newms87\Danx\Resources\ActionResource;
 
 class ThreadRunResource extends ActionResource
 {
-    public static function data(ThreadRun $threadRun): array
+    public static function data(AgentThreadRun $threadRun): array
     {
         return [
             'id'            => $threadRun->id,
@@ -18,7 +18,7 @@ class ThreadRunResource extends ActionResource
             'refreshed_at'  => $threadRun->refreshed_at,
             'input_tokens'  => $threadRun->input_tokens,
             'output_tokens' => $threadRun->output_tokens,
-            'thread'        => fn($fields) => ThreadResource::make($threadRun->thread, $fields),
+            'thread'        => fn($fields) => ThreadResource::make($threadRun->agentThread, $fields),
         ];
     }
 }

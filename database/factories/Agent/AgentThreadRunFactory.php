@@ -2,14 +2,14 @@
 
 namespace Database\Factories\Agent;
 
-use App\Models\Agent\Thread;
-use App\Models\Agent\ThreadRun;
+use App\Models\Agent\AgentThread;
+use App\Models\Agent\AgentThreadRun;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Agent\ThreadRun>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Agent\AgentThreadRun>
  */
-class ThreadRunFactory extends Factory
+class AgentThreadRunFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -19,8 +19,8 @@ class ThreadRunFactory extends Factory
     public function definition(): array
     {
         return [
-            'thread_id'       => Thread::factory(),
-            'status'          => ThreadRun::STATUS_RUNNING,
+            'agent_thread_id' => AgentThread::factory(),
+            'status'          => AgentThreadRun::STATUS_RUNNING,
             'temperature'     => 1,
             'tool_choice'     => 'auto',
             'response_format' => 'text',

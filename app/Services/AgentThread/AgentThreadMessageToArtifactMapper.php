@@ -3,16 +3,16 @@
 namespace App\Services\AgentThread;
 
 use App\Models\Agent\Agent;
-use App\Models\Agent\Message;
+use App\Models\Agent\AgentThreadMessage;
 use App\Models\Workflow\Artifact;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\DateHelper;
 
 class AgentThreadMessageToArtifactMapper
 {
-    protected string  $name = '';
-    protected Agent   $agent;
-    protected Message $message;
+    protected string             $name = '';
+    protected Agent              $agent;
+    protected AgentThreadMessage $message;
 
     public function setName(string $name): static
     {
@@ -21,10 +21,10 @@ class AgentThreadMessageToArtifactMapper
         return $this;
     }
 
-    public function setMessage(Message $message): static
+    public function setMessage(AgentThreadMessage $message): static
     {
         $this->message = $message;
-        $this->agent   = $message->thread->agent;
+        $this->agent   = $message->agentThread->agent;
 
         return $this;
     }
@@ -48,7 +48,7 @@ class AgentThreadMessageToArtifactMapper
         }
 
         $artifact = Artifact::create([
-            'name'         => $this->name ?: $this->message->thread->name . ' ' . DateHelper::formatDateTime(),
+            'name'         => $this->name ?: $this->message->agentThread->name . ' ' . DateHelper::formatDateTime(),
             'model'        => $this->agent->model,
             'text_content' => $textContent,
             'json_content' => $jsonContent,

@@ -2,7 +2,7 @@
 
 namespace Database\Factories\Workflow;
 
-use App\Models\Agent\Thread;
+use App\Models\Agent\AgentThread;
 use App\Models\User;
 use App\Models\Workflow\WorkflowAssignment;
 use App\Models\Workflow\WorkflowJob;
@@ -24,7 +24,7 @@ class WorkflowTaskFactory extends Factory
             'workflow_job_id'        => WorkflowJob::factory(),
             'workflow_job_run_id'    => WorkflowJobRun::factory(),
             'workflow_assignment_id' => WorkflowAssignment::factory(),
-            'thread_id'              => Thread::factory()->withMessages(),
+            'thread_id'              => AgentThread::factory()->withMessages(),
         ];
     }
 

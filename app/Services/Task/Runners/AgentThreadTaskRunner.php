@@ -49,7 +49,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
         $threadName = $definition->name . ': ' . $agent->name;
         $thread     = app(ThreadRepository::class)->create($agent, $threadName);
 
-        Log::debug("Setup Task Thread: $thread");
+        Log::debug("Setup Task AgentThread: $thread");
 
         Log::debug("\tAdding " . count($inputArtifacts) . " input artifacts");
         $artifactFilter = (new ArtifactFilter())
@@ -62,7 +62,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
             app(ThreadRepository::class)->addMessageToThread($thread, $artifactFilter->filter());
         }
 
-        $this->taskProcess->thread()->associate($thread)->save();
+        $this->taskProcess->agentThread()->associate($thread)->save();
 
         return $thread;
     }

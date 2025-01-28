@@ -20,7 +20,7 @@ class HasRelationCountersTraitTest extends TestCase
         $agent->threads()->create([
             'team_id' => $agent->team_id,
             'user_id' => $user->id,
-            'name'    => 'Thread 1',
+            'name'    => 'AgentThread 1',
         ]);
 
         // Then
@@ -39,9 +39,9 @@ class HasRelationCountersTraitTest extends TestCase
         ];
 
         // When
-        $agent->threads()->create(['name' => 'Thread 1'] + $threadData);
-        $agent->threads()->create(['name' => 'Thread 2'] + $threadData);
-        $agent->threads()->create(['name' => 'Thread 3'] + $threadData);
+        $agent->threads()->create(['name' => 'AgentThread 1'] + $threadData);
+        $agent->threads()->create(['name' => 'AgentThread 2'] + $threadData);
+        $agent->threads()->create(['name' => 'AgentThread 3'] + $threadData);
 
         // Then
         $agent->refresh();
@@ -59,7 +59,7 @@ class HasRelationCountersTraitTest extends TestCase
         ];
 
         // When
-        $thread = $agent->threads()->create(['name' => 'Thread 1'] + $threadData);
+        $thread = $agent->threads()->create(['name' => 'AgentThread 1'] + $threadData);
         $thread->delete();
 
         // Then
@@ -78,9 +78,9 @@ class HasRelationCountersTraitTest extends TestCase
         ];
 
         // When
-        $thread1 = $agent->threads()->create(['name' => 'Thread 1'] + $threadData);
-        $thread2 = $agent->threads()->create(['name' => 'Thread 2'] + $threadData);
-        $thread3 = $agent->threads()->create(['name' => 'Thread 3'] + $threadData);
+        $thread1 = $agent->threads()->create(['name' => 'AgentThread 1'] + $threadData);
+        $thread2 = $agent->threads()->create(['name' => 'AgentThread 2'] + $threadData);
+        $thread3 = $agent->threads()->create(['name' => 'AgentThread 3'] + $threadData);
         $thread2->delete();
         $thread1->delete();
 

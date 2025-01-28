@@ -14,7 +14,7 @@ class TaskProcessFactory extends Factory
         return [
             'task_run_id'              => TaskRun::factory(),
             'task_definition_agent_id' => null,
-            'thread_id'                => null,
+            'agent_thread_id'          => null,
             'started_at'               => null,
             'stopped_at'               => null,
             'failed_at'                => null,

@@ -30,7 +30,7 @@ class TaskRunnerService
     }
 
     /**
-     * Prepare task processes for the task run. Each process will receive its own Artifacts / Agent Thread
+     * Prepare task processes for the task run. Each process will receive its own Artifacts / Agent AgentThread
      * based on the input groups and the assigned agents for the TaskDefinition
      */
     public static function prepareTaskProcesses(TaskRun $taskRun, array|Collection $artifacts = []): array

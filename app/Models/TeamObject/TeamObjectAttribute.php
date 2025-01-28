@@ -2,7 +2,7 @@
 
 namespace App\Models\TeamObject;
 
-use App\Models\Agent\ThreadRun;
+use App\Models\Agent\AgentThreadRun;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,19 +14,17 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 
 /**
- * @property int       $id
- * @property string    $object_id
- * @property string    $name
- * @property Carbon    $date
- * @property string    $reason
- * @property string    $confidence
- * @property string    $text_value
- * @property array     $json_value
- * @property string    $message_id
- * @property string    $source_stored_file_id
- * @property Carbon    $created_at
- * @property Carbon    $updated_at
- * @property ThreadRun $threadRun
+ * @property int            $id
+ * @property string         $object_id
+ * @property string         $name
+ * @property Carbon         $date
+ * @property string         $reason
+ * @property string         $confidence
+ * @property string         $text_value
+ * @property array          $json_value
+ * @property Carbon         $created_at
+ * @property Carbon         $updated_at
+ * @property AgentThreadRun $threadRun
  */
 class TeamObjectAttribute extends Model implements AuditableContract
 {
@@ -69,9 +67,9 @@ class TeamObjectAttribute extends Model implements AuditableContract
         return $this->hasMany(TeamObjectAttributeSource::class, 'object_attribute_id');
     }
 
-    public function threadRun(): BelongsTo|ThreadRun
+    public function agentThreadRun(): BelongsTo|AgentThreadRun
     {
-        return $this->belongsTo(ThreadRun::class, 'thread_run_id');
+        return $this->belongsTo(AgentThreadRun::class, 'agent_thread_run_id');
     }
 
     public function __toString(): string

@@ -3,8 +3,8 @@
 namespace App\Repositories;
 
 use App\Models\Agent\Agent;
-use App\Models\Agent\Message;
-use App\Models\Agent\Thread;
+use App\Models\Agent\AgentThread;
+use App\Models\Agent\AgentThreadMessage;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Helpers\DateHelper;
@@ -15,20 +15,20 @@ use Newms87\Danx\Repositories\ActionRepository;
 
 class ThreadRepository extends ActionRepository
 {
-    public static string $model = Thread::class;
+    public static string $model = AgentThread::class;
 
     public function query(): Builder
     {
         return parent::query()->where('team_id', team()->id);
     }
 
-    public function create(Agent $agent, $name = ''): Thread
+    public function create(Agent $agent, $name = ''): AgentThread
     {
         if (!$name) {
             $name = $agent->name . " " . DateHelper::formatDateTime(now());
         }
 
-        $thread = Thread::make()->forceFill([
+        $thread = AgentThread::make()->forceFill([
             'team_id'  => team()->id,
             'user_id'  => user()->id,
             'name'     => StringHelper::logSafeString(substr($name, 0, 150)),
@@ -42,7 +42,7 @@ class ThreadRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create-message' => app(MessageRepository::class)->create($model, $data['role'] ?? Message::ROLE_USER),
+            'create-message' => app(MessageRepository::class)->create($model, $data['role'] ?? AgentThreadMessage::ROLE_USER),
             'reset-to-message' => $this->resetToMessage($model, $data['message_id']),
             'copy' => $this->copyThread($model),
             'run' => app(AgentThreadService::class)->run($model),
@@ -55,7 +55,7 @@ class ThreadRepository extends ActionRepository
     /**
      * Append a new message to the thread
      */
-    public function addMessageToThread(Thread $thread, string|array|int|bool|null $content = null, array $fileIds = []): Thread
+    public function addMessageToThread(AgentThread $thread, string|array|int|bool|null $content = null, array $fileIds = []): AgentThread
     {
         if ($content || $fileIds) {
             if (is_scalar($content) || !$content) {
@@ -81,7 +81,7 @@ class ThreadRepository extends ActionRepository
             }
 
             $message = $thread->messages()->create([
-                'role'    => Message::ROLE_USER,
+                'role'    => AgentThreadMessage::ROLE_USER,
                 'content' => $contentString,
             ]);
 
@@ -120,9 +120,9 @@ class ThreadRepository extends ActionRepository
     /**
      * Deletes all the messages in a thread after the given message
      */
-    public function resetToMessage(Thread $thread, $messageId): Thread
+    public function resetToMessage(AgentThread $thread, $messageId): AgentThread
     {
-        $thread->messages()->where('id', '>', $messageId)->each(fn(Message $m) => $m->delete());
+        $thread->messages()->where('id', '>', $messageId)->each(fn(AgentThreadMessage $m) => $m->delete());
 
         return $thread;
     }
@@ -130,15 +130,15 @@ class ThreadRepository extends ActionRepository
     /**
      * Copy a thread and its messages / files
      */
-    public function copyThread(Thread $thread)
+    public function copyThread(AgentThread $thread)
     {
         $newThread       = $thread->replicate();
         $newThread->name = ModelHelper::getNextModelName($thread);
         $newThread->save();
 
         foreach($thread->messages as $message) {
-            $messageCopy            = $message->replicate();
-            $messageCopy->thread_id = $newThread->id;
+            $messageCopy                  = $message->replicate();
+            $messageCopy->agent_thread_id = $newThread->id;
             $messageCopy->save();
 
             foreach($message->storedFiles as $storedFile) {

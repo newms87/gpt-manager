@@ -2,7 +2,7 @@
 
 namespace App\Models\TeamObject;
 
-use App\Models\Agent\Message;
+use App\Models\Agent\AgentThreadMessage;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,18 +14,18 @@ use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\AuditableTrait;
 
 /**
- * @property int         $id
- * @property int         $object_attribute_id
- * @property string      $source_type
- * @property string      $source_id
- * @property string|null $explanation
- * @property string      $stored_file_id
- * @property int         $message_id
- * @property Carbon      $created_at
- * @property Carbon      $updated_at
- * @property Carbon      $deleted_at
- * @property StoredFile  $sourceFile
- * @property Message     $message
+ * @property int                $id
+ * @property int                $object_attribute_id
+ * @property string             $source_type
+ * @property string             $source_id
+ * @property string|null        $explanation
+ * @property string             $stored_file_id
+ * @property int                $agent_thread_message_id
+ * @property Carbon             $created_at
+ * @property Carbon             $updated_at
+ * @property Carbon             $deleted_at
+ * @property StoredFile         $sourceFile
+ * @property AgentThreadMessage $message
  */
 class TeamObjectAttributeSource extends Model implements AuditableContract
 {
@@ -56,9 +56,9 @@ class TeamObjectAttributeSource extends Model implements AuditableContract
         return $this->belongsTo(StoredFile::class, 'stored_file_id');
     }
 
-    public function sourceMessage(): BelongsTo|Message
+    public function sourceMessage(): BelongsTo|AgentThreadMessage
     {
-        return $this->belongsTo(Message::class, 'message_id');
+        return $this->belongsTo(AgentThreadMessage::class, 'agent_thread_message_id');
     }
 
     public function __toString(): string

@@ -4,7 +4,7 @@ namespace App\Api\OpenAi\Classes;
 
 use App\AiTools\AiToolResponse;
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
-use App\Models\Agent\Message;
+use App\Models\Agent\AgentThreadMessage;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -25,7 +25,7 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
     public function wrapMessage(string $prefix, array $message, string $suffix = ''): array
     {
         if (!isset($message['content'])) {
-            throw new Exception('Error wrapping formatted message: Invalid Open AI Message format');
+            throw new Exception('Error wrapping formatted message: Invalid Open AI AgentThreadMessage format');
         }
 
         if (is_string($message['content'])) {
@@ -58,7 +58,7 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
                 // The first message needs to be the tool response for the Completion API to respond correctly
                 // NOTE: the 'data' entry is stored directly on the message.data attribute in the DB (hence the structure)
                 // This will be used when setting up the response in the thread run.
-                $messages[] = $this->rawMessage(Message::ROLE_TOOL, $contentItem, [
+                $messages[] = $this->rawMessage(AgentThreadMessage::ROLE_TOOL, $contentItem, [
                     'data' => [
                         'tool_call_id' => $toolId,
                         'tool_name'    => $toolName,
@@ -66,7 +66,7 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
                 ]);
             } else {
                 // Subsequent messages are user messages
-                $messages[] = $this->rawMessage(Message::ROLE_USER, $contentItem);
+                $messages[] = $this->rawMessage(AgentThreadMessage::ROLE_USER, $contentItem);
             }
         }
 
@@ -78,7 +78,7 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
         return $messages;
     }
 
-    public function message(Message $message): array
+    public function message(AgentThreadMessage $message): array
     {
         Log::debug("Appending $message to messages");
 
@@ -106,7 +106,7 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
 
         $content = array_merge($content, $this->formatFilesContent($fileUrls));
 
-        return $this->rawMessage(Message::ROLE_USER, $content);
+        return $this->rawMessage(AgentThreadMessage::ROLE_USER, $content);
     }
 
     /**

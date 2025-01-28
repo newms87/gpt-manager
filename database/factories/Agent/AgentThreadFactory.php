@@ -3,16 +3,16 @@
 namespace Database\Factories\Agent;
 
 use App\Models\Agent\Agent;
-use App\Models\Agent\Message;
-use App\Models\Agent\Thread;
+use App\Models\Agent\AgentThread;
+use App\Models\Agent\AgentThreadMessage;
 use App\Models\Team\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Thread>
+ * @extends Factory<AgentThread>
  */
-class ThreadFactory extends Factory
+class AgentThreadFactory extends Factory
 {
     public function definition(): array
     {
@@ -25,15 +25,15 @@ class ThreadFactory extends Factory
         ];
     }
 
-    public function withMessage(Message $message)
+    public function withMessage(AgentThreadMessage $message)
     {
-        return $this->afterCreating(fn(Thread $thread) => $thread->messages()->save($message));
+        return $this->afterCreating(fn(AgentThread $thread) => $thread->messages()->save($message));
     }
 
-    public function withMessages($count = 3): ThreadFactory|Factory
+    public function withMessages($count = 3): AgentThreadFactory|Factory
     {
-        return $this->afterCreating(fn(Thread $thread) => $thread->messages()->saveMany(
-            Message::factory()->count($count)->make(['thread_id' => $thread])
+        return $this->afterCreating(fn(AgentThread $thread) => $thread->messages()->saveMany(
+            AgentThreadMessage::factory()->count($count)->make(['agent_thread_id' => $thread])
         ));
     }
 }

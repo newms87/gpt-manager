@@ -56,7 +56,7 @@ class Agent extends Model implements AuditableContract
     ];
 
     public array $relationCounters = [
-        Thread::class             => ['threads' => 'threads_count'],
+        AgentThread::class        => ['threads' => 'threads_count'],
         WorkflowAssignment::class => ['assignments' => 'assignments_count'],
     ];
 
@@ -105,9 +105,9 @@ class Agent extends Model implements AuditableContract
         return $this->directives()->where('section', AgentPromptDirective::SECTION_BOTTOM);
     }
 
-    public function threads(): HasMany|Thread
+    public function threads(): HasMany|AgentThread
     {
-        return $this->hasMany(Thread::class);
+        return $this->hasMany(AgentThread::class);
     }
 
     public function assignments(): WorkflowAssignment|HasMany

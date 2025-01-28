@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\TeamObjects;
 
-use App\Models\Agent\Message;
+use App\Models\Agent\AgentThreadMessage;
 use App\Models\Prompt\PromptSchema;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
@@ -519,7 +519,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $this->assertNotNull($attributeSource->stored_file_id, 'StoredFile should have been created and associated');
-        $this->assertNull($attributeSource->message_id, 'Message ID should be null');
+        $this->assertNull($attributeSource->agent_thread_message_id, 'AgentThreadMessage ID should be null');
         $this->assertEquals($source['url'], $attributeSource->source_id, 'Source ID should be set to the URL');
         $this->assertEquals($source['url'], $attributeSource->sourceFile->url);
         $this->assertEquals($source['explanation'], $attributeSource->explanation);
@@ -529,14 +529,14 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $teamObjectAttribute = TeamObjectAttribute::factory()->create();
-        $message             = Message::factory()->create();
+        $message             = AgentThreadMessage::factory()->create();
         $source              = ['message_id' => $message->id, 'explanation' => 'Source Explanation'];
 
         // When
         $attributeSource = app(TeamObjectRepository::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
 
         // Then
-        $this->assertNotNull($attributeSource->message_id);
+        $this->assertNotNull($attributeSource->agent_thread_message_id);
         $this->assertNull($attributeSource->stored_file_id, 'No source file was given');
         $this->assertEquals($source['message_id'], $attributeSource->source_id);
         $this->assertEquals($source['explanation'], $attributeSource->explanation);
@@ -553,7 +553,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $attributeSource = app(TeamObjectRepository::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
 
         // Then
-        $this->assertNull($attributeSource->message_id, 'No message was given');
+        $this->assertNull($attributeSource->agent_thread_message_id, 'No message was given');
         $this->assertNotNull($attributeSource->stored_file_id);
         $this->assertEquals($storedFile->id, $attributeSource->source_id, 'Source ID should be set to the File ID');
         $this->assertEquals($storedFile->id, $attributeSource->stored_file_id);

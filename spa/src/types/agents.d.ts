@@ -24,12 +24,12 @@ export interface AgentThread extends ActionTargetItem {
 	id: number;
 	name: string;
 	summary: string;
-	messages: ThreadMessage[];
+	messages: AgentThreadMessage[];
 	is_running: boolean;
 	timestamp: string;
 }
 
-export interface ThreadMessage extends ActionTargetItem {
+export interface AgentThreadMessage extends ActionTargetItem {
 	id: number;
 	role: "assistant" | "user" | "tool";
 	title: string;

@@ -3,7 +3,7 @@
 namespace App\Api\PerplexityAi\Classes;
 
 use App\Api\OpenAi\Classes\OpenAiMessageFormatter;
-use App\Models\Agent\Message;
+use App\Models\Agent\AgentThreadMessage;
 
 class PerplexityAiMessageFormatter extends OpenAiMessageFormatter
 {
@@ -22,7 +22,7 @@ class PerplexityAiMessageFormatter extends OpenAiMessageFormatter
             $role    = $message['role'];
             $content = $message['content'];
 
-            if ($prevMessageWasUser && $role === Message::ROLE_USER) {
+            if ($prevMessageWasUser && $role === AgentThreadMessage::ROLE_USER) {
                 $prevMessage = $newMessages[count($newMessages) - 1]['content'];
                 if (!is_array($prevMessage)) {
                     $prevMessage = [['type' => 'text', 'text' => $prevMessage]];
@@ -34,7 +34,7 @@ class PerplexityAiMessageFormatter extends OpenAiMessageFormatter
                 $newMessages[count($newMessages) - 1]['content'] = array_merge($prevMessage, $content);
             } else {
                 $newMessages[]      = $message;
-                $prevMessageWasUser = $role === Message::ROLE_USER;
+                $prevMessageWasUser = $role === AgentThreadMessage::ROLE_USER;
             }
         }
 

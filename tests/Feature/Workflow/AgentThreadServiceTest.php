@@ -4,9 +4,9 @@ namespace Tests\Feature\Workflow;
 
 use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\Agent;
-use App\Models\Agent\Message;
-use App\Models\Agent\Thread;
-use App\Models\Agent\ThreadRun;
+use App\Models\Agent\AgentThread;
+use App\Models\Agent\AgentThreadMessage;
+use App\Models\Agent\AgentThreadRun;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\JsonSchema\JsonSchemaService;
 use Illuminate\Support\Facades\Queue;
@@ -24,8 +24,8 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
             'temperature'     => $temperature,
             'response_format' => Agent::RESPONSE_FORMAT_JSON_OBJECT,
         ]);
-        $thread      = Thread::factory()->create(['agent_id' => $agent->id]);
-        $thread->messages()->create(['role' => Message::ROLE_USER, 'content' => 'Test message']);
+        $thread      = AgentThread::factory()->create(['agent_id' => $agent->id]);
+        $thread->messages()->create(['role' => AgentThreadMessage::ROLE_USER, 'content' => 'Test message']);
 
         $service = new AgentThreadService();
 
@@ -33,7 +33,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $threadRun = $service->run($thread);
 
         // Then
-        $this->assertEquals(ThreadRun::STATUS_RUNNING, $threadRun->status);
+        $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
         $this->assertEquals($temperature, $threadRun->temperature);
         $this->assertEquals($agent->tools, $threadRun->tools);
         $this->assertEquals(Agent::RESPONSE_FORMAT_JSON_OBJECT, $threadRun->response_format);
@@ -42,7 +42,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     public function test_run_throwsExceptionWhenThreadIsAlreadyRunning()
     {
         // Given
-        $threadRun = ThreadRun::factory()->create(['status' => ThreadRun::STATUS_RUNNING]);
+        $threadRun = AgentThreadRun::factory()->create(['status' => AgentThreadRun::STATUS_RUNNING]);
         $service   = new AgentThreadService();
 
         // Expect
@@ -50,14 +50,14 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $this->expectExceptionMessage('The thread is already running.');
 
         // When
-        $service->run($threadRun->thread);
+        $service->run($threadRun->agentThread);
     }
 
     public function test_run_dispatchesJobWhenDispatchIsTrue()
     {
         // Given
         Queue::fake();
-        $thread  = Thread::factory()->withMessages(1)->create();
+        $thread  = AgentThread::factory()->withMessages(1)->create();
         $service = new AgentThreadService();
 
         // When
@@ -67,13 +67,13 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         Queue::assertPushed(ExecuteThreadRunJob::class, function ($job) use ($threadRun) {
             return $job->threadRun->id === $threadRun->id;
         });
-        $this->assertEquals(ThreadRun::STATUS_RUNNING, $threadRun->status);
+        $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
     }
 
     public function test_run_executesThreadRunWhenDispatchIsFalse()
     {
         // Given
-        $thread  = Thread::factory()->withMessages(1)->create();
+        $thread  = AgentThread::factory()->withMessages(1)->create();
         $service = Mockery::mock(AgentThreadService::class)->makePartial();
         $service->shouldReceive('executeThreadRun')->once();
 
@@ -81,14 +81,14 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $threadRun = $service->run($thread, false);
 
         // Then
-        $this->assertEquals(ThreadRun::STATUS_RUNNING, $threadRun->status);
+        $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
     }
 
     public function test_run_setsResponseFormatToTextWhenAgentResponseFormatIsText()
     {
         // Given
         $agent   = Agent::factory()->create(['response_format' => Agent::RESPONSE_FORMAT_TEXT]);
-        $thread  = Thread::factory()->withMessages(1)->create(['agent_id' => $agent->id]);
+        $thread  = AgentThread::factory()->withMessages(1)->create(['agent_id' => $agent->id]);
         $service = new AgentThreadService();
 
         // When
@@ -102,7 +102,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         // Given
         Queue::fake();
-        $thread  = Thread::factory()->withMessages(1)->create();
+        $thread  = AgentThread::factory()->withMessages(1)->create();
         $service = new AgentThreadService();
 
         // When
@@ -116,7 +116,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         // Given
         $content = "```json\n{\"key\": \"value\"}\n```";
-        $message = new Message(['content' => $content]);
+        $message = new AgentThreadMessage(['content' => $content]);
 
         // When
         $cleanedContent = $message->getCleanContent();
@@ -129,7 +129,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         // Given
         $content = "{\"key\": \"value\"}";
-        $message = new Message(['content' => $content]);
+        $message = new AgentThreadMessage(['content' => $content]);
 
         // When
         $cleanedContent = $message->getCleanContent();

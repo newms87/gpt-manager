@@ -1,4 +1,4 @@
-import { ThreadMessage } from "@/types";
+import { AgentThreadMessage } from "@/types";
 import { ActionTargetItem, UploadedFile } from "quasar-ui-danx";
 
 interface TeamObject extends ActionTargetItem {
@@ -36,7 +36,7 @@ interface TeamObjectAttributeSource {
 	source_id: string;
 	explanation: string;
 	sourceFile?: UploadedFile;
-	sourceMessage?: ThreadMessage;
+	sourceMessage?: AgentThreadMessage;
 	created_at: string;
 }
 

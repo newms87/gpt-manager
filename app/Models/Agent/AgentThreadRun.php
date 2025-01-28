@@ -10,7 +10,7 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class ThreadRun extends Model implements AuditableContract
+class AgentThreadRun extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
@@ -50,14 +50,14 @@ class ThreadRun extends Model implements AuditableContract
         ];
     }
 
-    public function thread(): Thread|BelongsTo
+    public function agentThread(): AgentThread|BelongsTo
     {
-        return $this->belongsTo(Thread::class);
+        return $this->belongsTo(AgentThread::class, 'agent_thread_id');
     }
 
-    public function lastMessage(): BelongsTo|Message
+    public function lastMessage(): BelongsTo|AgentThreadMessage
     {
-        return $this->belongsTo(Message::class, 'last_message_id');
+        return $this->belongsTo(AgentThreadMessage::class, 'last_message_id');
     }
 
     public function jobDispatch(): BelongsTo|JobDispatch
@@ -67,6 +67,6 @@ class ThreadRun extends Model implements AuditableContract
 
     public function __toString(): string
     {
-        return "<ThreadRun $this->id $this->status thread='{$this->thread->name}'>";
+        return "<ThreadRun $this->id $this->status thread='{$this->agentThread->name}'>";
     }
 }

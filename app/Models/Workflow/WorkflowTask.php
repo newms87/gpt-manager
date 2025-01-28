@@ -2,7 +2,7 @@
 
 namespace App\Models\Workflow;
 
-use App\Models\Agent\Thread;
+use App\Models\Agent\AgentThread;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -55,9 +55,9 @@ class WorkflowTask extends Model implements AuditableContract, ComputedStatusCon
         return $this->belongsTo(WorkflowAssignment::class);
     }
 
-    public function thread(): BelongsTo|Thread
+    public function thread(): BelongsTo|AgentThread
     {
-        return $this->belongsTo(Thread::class);
+        return $this->belongsTo(AgentThread::class);
     }
 
     public function artifacts(): MorphToMany|Artifact

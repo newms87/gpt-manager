@@ -3,8 +3,8 @@
 namespace App\AiTools;
 
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
-use App\Models\Agent\Message;
-use App\Models\Agent\ThreadRun;
+use App\Models\Agent\AgentThreadMessage;
+use App\Models\Agent\AgentThreadRun;
 use Illuminate\Support\Facades\Log;
 
 abstract class AiToolCaller
@@ -22,7 +22,7 @@ abstract class AiToolCaller
 
     abstract public function getFormatter(): AgentMessageFormatterContract;
 
-    public function call(ThreadRun $threadRun): array
+    public function call(AgentThreadRun $threadRun): array
     {
         $tool = $this->getTool();
 
@@ -61,15 +61,15 @@ abstract class AiToolCaller
         return null;
     }
 
-    protected function handleToolNotFound(ThreadRun $threadRun): array
+    protected function handleToolNotFound(AgentThreadRun $threadRun): array
     {
         Log::error("$threadRun called an unknown tool: $this->name");
 
         // Delete the last tool message as this message was invalid
-        $threadRun->thread->messages()->get()->last()->delete();
-        $threadRun->thread->messages()->create([
+        $threadRun->agentThread->messages()->get()->last()->delete();
+        $threadRun->agentThread->messages()->create([
             'content' => "The tool $this->name does not exist. DO NOT USE",
-            'role'    => Message::ROLE_USER,
+            'role'    => AgentThreadMessage::ROLE_USER,
         ]);
 
         return [];

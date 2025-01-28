@@ -23,9 +23,9 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
 
         // Then
         $taskProcess->refresh();
-        $this->assertNotNull($taskProcess->thread, 'TaskProcess thread should have been created');
-        $messages = $taskProcess->thread->messages;
-        $this->assertCount(1, $messages, 'Thread should have a single message');
+        $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
+        $messages = $taskProcess->agentThread->messages;
+        $this->assertCount(1, $messages, 'AgentThread should have a single message');
     }
 
     public function test_run_withArtifactOnThread_agentResponds(): void
@@ -41,9 +41,9 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
 
         // Then
         $taskProcess->refresh();
-        $this->assertNotNull($taskProcess->thread, 'TaskProcess thread should have been created');
-        $messages = $taskProcess->thread->messages;
-        $this->assertCount(2, $messages, 'Thread should be 2 messages: the artifact and the agent response');
+        $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
+        $messages = $taskProcess->agentThread->messages;
+        $this->assertCount(2, $messages, 'AgentThread should be 2 messages: the artifact and the agent response');
         $this->assertEquals($artifactContent, $messages->first()->content, 'First message should be the artifact content');
     }
 
@@ -75,8 +75,8 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
 
         // Then
         $taskProcess->refresh();
-        $messages = $taskProcess->thread?->messages ?? [];
-        $this->assertCount(2, $messages, 'Thread should be 2 messages: the artifact and the agent response');
+        $messages = $taskProcess->agentThread?->messages ?? [];
+        $this->assertCount(2, $messages, 'AgentThread should be 2 messages: the artifact and the agent response');
         $this->assertEquals(['json_content' => ['email' => $artifactAttributes['json_content']['email']]], $messages->first()->getJsonContent(), 'First message should be the artifact content');
     }
 

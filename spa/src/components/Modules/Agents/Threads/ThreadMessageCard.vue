@@ -98,7 +98,7 @@ import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { dxThreadMessage } from "@/components/Modules/Agents/Threads/ThreadMessage/config";
 import { ActionButton } from "@/components/Shared";
-import { AgentThread, ThreadMessage } from "@/types/agents";
+import { AgentThread, AgentThreadMessage } from "@/types/agents";
 import {
 	FaRegularImage as HideImageIcon,
 	FaRegularUser as UserIcon,
@@ -118,7 +118,7 @@ import {
 import { computed, ref } from "vue";
 
 const props = defineProps<{
-	message: ThreadMessage;
+	message: AgentThreadMessage;
 	thread?: AgentThread,
 	readonly?: boolean;
 }>();

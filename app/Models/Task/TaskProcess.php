@@ -2,7 +2,7 @@
 
 namespace App\Models\Task;
 
-use App\Models\Agent\Thread;
+use App\Models\Agent\AgentThread;
 use App\Models\Workflow\Artifact;
 use App\Services\Task\Runners\TaskRunnerContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -74,9 +74,9 @@ class TaskProcess extends Model implements AuditableContract
         return $this->belongsTo(TaskDefinitionAgent::class);
     }
 
-    public function thread(): BelongsTo|Thread
+    public function agentThread(): BelongsTo|AgentThread
     {
-        return $this->belongsTo(Thread::class);
+        return $this->belongsTo(AgentThread::class, 'agent_thread_id');
     }
 
     public function jobDispatches(): MorphToMany

@@ -13,7 +13,7 @@ class RunAgentThreadWorkflowTool extends WorkflowTool
 {
     use AssignsWorkflowTasksTrait, ResolvesDependencyArtifactsTrait;
 
-    public static string $toolName = 'Run Agent Thread';
+    public static string $toolName = 'Run Agent AgentThread';
 
     /**
      * Run the thread associated to the task and produce an artifact from the last message

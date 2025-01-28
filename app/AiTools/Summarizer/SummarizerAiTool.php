@@ -5,7 +5,7 @@ namespace App\AiTools\Summarizer;
 use App\AiTools\AiToolAbstract;
 use App\AiTools\AiToolContract;
 use App\AiTools\AiToolResponse;
-use App\Models\Agent\Message;
+use App\Models\Agent\AgentThreadMessage;
 use BadFunctionCallException;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\StringHelper;
@@ -14,12 +14,12 @@ class SummarizerAiTool extends AiToolAbstract implements AiToolContract
 {
     public static string $name = 'summarizer';
 
-    public static function enabledMessage(Message $message): string
+    public static function enabledMessage(AgentThreadMessage $message): string
     {
         return "Summarizer Tool Enabled: MID-$message->id -- $message->summarizer_offset / $message->summarizer_total";
     }
 
-    public static function pageItems(Message $message, array $items): array
+    public static function pageItems(AgentThreadMessage $message, array $items): array
     {
         //  Setup the summarizer tool
         $message->summarizer_total = count($items);
@@ -69,10 +69,10 @@ class SummarizerAiTool extends AiToolAbstract implements AiToolContract
         }
 
         $parsedMessageId = str_replace('MID-', '', $messageId);
-        $message         = Message::find($parsedMessageId);
+        $message         = AgentThreadMessage::find($parsedMessageId);
 
         if (!$message) {
-            throw new BadFunctionCallException("Message not found: $messageId");
+            throw new BadFunctionCallException("AgentThreadMessage not found: $messageId");
         }
 
         $to               = $message->summarizer_offset + $limit;

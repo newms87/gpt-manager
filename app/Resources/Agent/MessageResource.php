@@ -2,13 +2,13 @@
 
 namespace App\Resources\Agent;
 
-use App\Models\Agent\Message;
+use App\Models\Agent\AgentThreadMessage;
 use Newms87\Danx\Resources\ActionResource;
 use Newms87\Danx\Resources\StoredFileResource;
 
 class MessageResource extends ActionResource
 {
-    public static function data(Message $message): array
+    public static function data(AgentThreadMessage $message): array
     {
         return [
             'id'         => $message->id,

@@ -4,6 +4,7 @@ namespace App\Models\Agent;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
@@ -11,7 +12,7 @@ use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class Message extends Model implements AuditableContract
+class AgentThreadMessage extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
@@ -35,9 +36,9 @@ class Message extends Model implements AuditableContract
         ];
     }
 
-    public function thread()
+    public function agentThread(): BelongsTo|AgentThread
     {
-        return $this->belongsTo(Thread::class);
+        return $this->belongsTo(AgentThread::class, 'agent_thread_id');
     }
 
     public function storedFiles(): MorphToMany|StoredFile
@@ -76,6 +77,6 @@ class Message extends Model implements AuditableContract
     {
         $message = StringHelper::limitText(20, $this->title ?: $this->content) ?: '(Empty)';
 
-        return "<Message ($this->id) $message>";
+        return "<AgentThreadMessage ($this->id) $message>";
     }
 }

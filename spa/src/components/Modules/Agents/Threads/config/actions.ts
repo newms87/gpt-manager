@@ -1,5 +1,5 @@
 import { controls as agentControls } from "@/components/Modules/Agents/config/controls";
-import { ThreadMessage } from "@/types";
+import { AgentThreadMessage } from "@/types";
 import {
 	ActionOptions,
 	ConfirmActionDialog,
@@ -46,7 +46,7 @@ export const actions: ActionOptions[] = [
 		label: "Reset To Message",
 		class: "text-red-500",
 		onSuccess: agentControls.getActiveItemDetails,
-		vnode: (target: ThreadMessage) => h(ConfirmActionDialog, {
+		vnode: (target: AgentThreadMessage) => h(ConfirmActionDialog, {
 			action: "Reset To Message",
 			label: "Delete all following messages",
 			content: "Are you sure you want to delete all messages following this one?",

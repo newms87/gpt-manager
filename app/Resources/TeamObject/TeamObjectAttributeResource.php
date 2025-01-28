@@ -10,7 +10,7 @@ abstract class TeamObjectAttributeResource extends ActionResource
     public static function data(TeamObjectAttribute $teamObjectAttribute): array
     {
         $threadUrl = null;
-        $thread    = $teamObjectAttribute->threadRun?->thread;
+        $thread    = $teamObjectAttribute->threadRun?->agentThread;
 
         if ($thread) {
             $threadUrl = app_url("agents/$thread->agent_id/threads/$thread->id");

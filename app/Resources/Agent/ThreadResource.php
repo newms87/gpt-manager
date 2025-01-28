@@ -2,12 +2,12 @@
 
 namespace App\Resources\Agent;
 
-use App\Models\Agent\Thread;
+use App\Models\Agent\AgentThread;
 use Newms87\Danx\Resources\ActionResource;
 
 class ThreadResource extends ActionResource
 {
-    public static function data(Thread $thread): array
+    public static function data(AgentThread $thread): array
     {
         return [
             'id'               => $thread->id,

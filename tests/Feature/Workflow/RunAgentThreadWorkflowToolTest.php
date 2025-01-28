@@ -3,8 +3,8 @@
 namespace Tests\Feature\Workflow;
 
 use App\Models\Agent\Agent;
-use App\Models\Agent\Message;
-use App\Models\Agent\Thread;
+use App\Models\Agent\AgentThread;
+use App\Models\Agent\AgentThreadMessage;
 use App\Models\Prompt\PromptSchema;
 use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowJob;
@@ -103,8 +103,8 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     public function test_runTask_emptyAgentResponseDoesNotProduceArtifact()
     {
         // Given
-        $message      = Message::factory()->create(['content' => 'Response:']);
-        $thread       = Thread::factory()->withMessage($message)->create();
+        $message      = AgentThreadMessage::factory()->create(['content' => 'Response:']);
+        $thread       = AgentThread::factory()->withMessage($message)->create();
         $workflowTask = WorkflowTask::factory()->create(['thread_id' => $thread]);
 
         // When

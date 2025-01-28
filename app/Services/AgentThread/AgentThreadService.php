@@ -7,9 +7,9 @@ use App\Api\AgentApiContracts\AgentMessageFormatterContract;
 use App\Api\OpenAi\Classes\OpenAiToolCaller;
 use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\Agent;
-use App\Models\Agent\Message;
-use App\Models\Agent\Thread;
-use App\Models\Agent\ThreadRun;
+use App\Models\Agent\AgentThread;
+use App\Models\Agent\AgentThreadMessage;
+use App\Models\Agent\AgentThreadRun;
 use App\Models\Prompt\PromptSchema;
 use App\Models\Prompt\PromptSchemaFragment;
 use App\Repositories\AgentRepository;
@@ -44,7 +44,7 @@ class AgentThreadService
     /**
      * Run the thread with the agent by calling the AI model API
      */
-    public function run(Thread $thread, $dispatch = true): ThreadRun
+    public function run(AgentThread $thread, $dispatch = true): AgentThreadRun
     {
         LockHelper::acquire($thread);
 
@@ -56,7 +56,7 @@ class AgentThreadService
 
         $threadRun = $thread->runs()->create([
             'agent_model'     => $agent->model,
-            'status'          => ThreadRun::STATUS_RUNNING,
+            'status'          => AgentThreadRun::STATUS_RUNNING,
             'temperature'     => $agent->temperature,
             'tools'           => $agent->tools,
             'tool_choice'     => 'auto',
@@ -87,12 +87,12 @@ class AgentThreadService
     /**
      * Stop the currently running thread (if it is running)
      */
-    public function stop(Thread $thread): ThreadRun|null
+    public function stop(AgentThread $thread): AgentThreadRun|null
     {
         LockHelper::acquire($thread);
         $threadRun = $thread->currentRun;
         if ($threadRun) {
-            $threadRun->status = ThreadRun::STATUS_STOPPED;
+            $threadRun->status = AgentThreadRun::STATUS_STOPPED;
             $threadRun->save();
         }
         LockHelper::release($thread);
@@ -103,13 +103,13 @@ class AgentThreadService
     /**
      * Resume the previously stopped thread (if there was a stopped thread run)
      */
-    public function resume(Thread $thread): ThreadRun|null
+    public function resume(AgentThread $thread): AgentThreadRun|null
     {
         LockHelper::acquire($thread);
-        $threadRun = $thread->runs()->where('status', ThreadRun::STATUS_STOPPED)->latest()->first();
+        $threadRun = $thread->runs()->where('status', AgentThreadRun::STATUS_STOPPED)->latest()->first();
 
         if ($threadRun) {
-            $threadRun->status          = ThreadRun::STATUS_RUNNING;
+            $threadRun->status          = AgentThreadRun::STATUS_RUNNING;
             $threadRun->job_dispatch_id = (new ExecuteThreadRunJob($threadRun))->dispatch()->getJobDispatch()?->id;
             $threadRun->save();
         }
@@ -132,18 +132,18 @@ class AgentThreadService
         }
 
         // Configure the JSON schema service to require the name and id fields, and use citations for each property
-        return $jsonSchemaService->formatAndFilterSchema($responseSchema->name, $responseSchema->schema, $responseSchemaFragment->fragment_selector);
+        return $jsonSchemaService->formatAndFilterSchema($responseSchema->name, $responseSchema->schema, $responseSchemaFragment?->fragment_selector);
     }
 
     /**
      * Execute the thread run to completion
      */
-    public function executeThreadRun(ThreadRun $threadRun): void
+    public function executeThreadRun(AgentThreadRun $threadRun): void
     {
         try {
             Log::debug("Executing $threadRun");
 
-            $thread = $threadRun->thread;
+            $thread = $threadRun->agentThread;
             $agent  = $thread->agent;
 
             $options = [
@@ -177,7 +177,7 @@ class AgentThreadService
 
             do {
                 $threadRun->refresh();
-                if ($threadRun->status !== ThreadRun::STATUS_RUNNING) {
+                if ($threadRun->status !== AgentThreadRun::STATUS_RUNNING) {
                     Log::debug("$threadRun is no longer running: " . $threadRun->status);
                     break;
                 }
@@ -223,7 +223,7 @@ class AgentThreadService
                 $this->handleResponse($thread, $threadRun, $response);
             } while(!$response?->isFinished() || $retries > 0);
         } catch(Throwable $throwable) {
-            $threadRun->status    = ThreadRun::STATUS_FAILED;
+            $threadRun->status    = AgentThreadRun::STATUS_FAILED;
             $threadRun->failed_at = now();
             $threadRun->save();
             throw $throwable;
@@ -233,22 +233,22 @@ class AgentThreadService
     /**
      * Format the messages to be sent to an AI completion API
      */
-    public function getMessagesForApi(Thread $thread): array
+    public function getMessagesForApi(AgentThread $thread): array
     {
         $agent        = $thread->agent;
         $apiFormatter = $agent->getModelApi()->formatter();
 
         $corePrompt = "The current date and time is " . now()->toDateTimeString() . "\n\n";
-        $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $corePrompt);
+        $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $corePrompt);
 
         // Top Directives go before thread messages
         foreach($agent->topDirectives()->get() as $topDirective) {
             if ($topDirective->directive->directive_text) {
-                $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $topDirective->directive->directive_text);
+                $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $topDirective->directive->directive_text);
             }
         }
 
-        // Thread messages are inserted between the directives
+        // AgentThread messages are inserted between the directives
         foreach($thread->messages()->get() as $message) {
             $formattedMessage = $apiFormatter->message($message);
 
@@ -263,14 +263,14 @@ class AgentThreadService
         // Bottom Directives go after thread messages
         foreach($agent->bottomDirectives()->get() as $bottomDirective) {
             if ($bottomDirective->directive->directive_text) {
-                $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $bottomDirective->directive->directive_text);
+                $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $bottomDirective->directive->directive_text);
             }
         }
 
         $responseMessage = $this->getResponseMessage($agent, $apiFormatter);
 
         if ($responseMessage) {
-            $messages[] = $apiFormatter->rawMessage(Message::ROLE_USER, $responseMessage);
+            $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $responseMessage);
         }
 
         return $apiFormatter->messageList($messages);
@@ -320,7 +320,7 @@ class AgentThreadService
     /**
      * Handle the response from the AI model
      */
-    public function handleResponse(Thread $thread, ThreadRun $threadRun, AgentCompletionResponseContract $response): void
+    public function handleResponse(AgentThread $thread, AgentThreadRun $threadRun, AgentCompletionResponseContract $response): void
     {
         $inputTokens  = $threadRun->input_tokens + $response->inputTokens();
         $outputTokens = $threadRun->output_tokens + $response->outputTokens();
@@ -336,7 +336,7 @@ class AgentThreadService
         ]);
 
         $lastMessage = $thread->messages()->create([
-            'role'    => Message::ROLE_ASSISTANT,
+            'role'    => AgentThreadMessage::ROLE_ASSISTANT,
             'content' => $response->getContent(),
             'data'    => $response->getDataFields() ?: null,
         ]);
@@ -350,7 +350,7 @@ class AgentThreadService
             if ($this->hasDuplicatedToolCall($threadRun, $response)) {
                 Log::error("Duplicated tool call detected, stopping thread");
                 $lastMessage = $thread->messages()->create([
-                    'role'    => Message::ROLE_USER,
+                    'role'    => AgentThreadMessage::ROLE_USER,
                     'content' => "Duplicated tool call detected, stopping thread",
                 ]);
                 $this->finishThreadResponse($threadRun, $lastMessage);
@@ -368,12 +368,12 @@ class AgentThreadService
     /**
      * Finish the thread response by updating the thread run and calling the response tools (if any)
      */
-    public function finishThreadResponse(ThreadRun $threadRun, Message $lastMessage): void
+    public function finishThreadResponse(AgentThreadRun $threadRun, AgentThreadMessage $lastMessage): void
     {
         Log::debug("Finishing thread response...");
 
         $threadRun->update([
-            'status'          => ThreadRun::STATUS_COMPLETED,
+            'status'          => AgentThreadRun::STATUS_COMPLETED,
             'completed_at'    => now(),
             'last_message_id' => $lastMessage->id,
         ]);
@@ -381,8 +381,8 @@ class AgentThreadService
         if ($lastMessage->content) {
             $jsonData = $lastMessage->getJsonContent();
 
-            if ($threadRun->thread->agent->save_response_to_db) {
-                app(TeamObjectRepository::class)->saveTeamObjectUsingSchema($threadRun->thread->agent->responseSchema->schema, $jsonData, null, $threadRun);
+            if ($threadRun->agentThread->agent->save_response_to_db) {
+                app(TeamObjectRepository::class)->saveTeamObjectUsingSchema($threadRun->agentThread->agent->responseSchema->schema, $jsonData, null, $threadRun);
 
                 // Update the last message to include the saved ids for each object
                 $lastMessage->content = json_encode($jsonData);
@@ -396,13 +396,13 @@ class AgentThreadService
             }
         }
 
-        Log::debug("Thread response is finished");
+        Log::debug("AgentThread response is finished");
     }
 
     /**
      * Call the response tools for the thread run
      */
-    public function callResponseTools(ThreadRun $threadRun, array $responseTools): void
+    public function callResponseTools(AgentThreadRun $threadRun, array $responseTools): void
     {
         Log::debug("Finishing thread response with " . count($responseTools) . " response tools");
 
@@ -428,7 +428,7 @@ class AgentThreadService
     /**
      * Call the AI Tools and attach the response from the tools to the thread for further processing by the AI Agent
      */
-    public function callToolsWithToolResponse(Thread $thread, ThreadRun $threadRun, AgentCompletionResponseContract $response): void
+    public function callToolsWithToolResponse(AgentThread $thread, AgentThreadRun $threadRun, AgentCompletionResponseContract $response): void
     {
         Log::debug("Completion Response: Handling " . count($response->getToolCallerFunctions()) . " tool calls");
 
@@ -466,9 +466,9 @@ class AgentThreadService
      * Check if the thread run has already made the exact same tool call in the current thread.
      * This will avoid any looping by the agent
      */
-    public function hasDuplicatedToolCall(ThreadRun $threadRun, AgentCompletionResponseContract $response): bool
+    public function hasDuplicatedToolCall(AgentThreadRun $threadRun, AgentCompletionResponseContract $response): bool
     {
-        $assistantMessages = $threadRun->thread->messages()->where('role', Message::ROLE_ASSISTANT)->get();
+        $assistantMessages = $threadRun->agentThread->messages()->where('role', AgentThreadMessage::ROLE_ASSISTANT)->get();
 
         $toolCallHashes = [];
 

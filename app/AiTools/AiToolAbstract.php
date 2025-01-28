@@ -2,15 +2,15 @@
 
 namespace App\AiTools;
 
-use App\Models\Agent\ThreadRun;
+use App\Models\Agent\AgentThreadRun;
 use Exception;
 use Newms87\Danx\Helpers\FileHelper;
 
 abstract class AiToolAbstract implements AiToolContract
 {
-    public static string   $name             = '';
-    protected static array $parsedParameters = [];
-    protected ?ThreadRun   $threadRun        = null;
+    public static string      $name             = '';
+    protected static array    $parsedParameters = [];
+    protected ?AgentThreadRun $threadRun        = null;
 
     public static function description(): string
     {
@@ -38,7 +38,7 @@ abstract class AiToolAbstract implements AiToolContract
         return static::$parsedParameters[static::$name];
     }
 
-    public function setThreadRun(ThreadRun $threadRun): static
+    public function setThreadRun(AgentThreadRun $threadRun): static
     {
         $this->threadRun = $threadRun;
 

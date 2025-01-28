@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class Thread extends Model implements AuditableContract
+class AgentThread extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes;
 
@@ -29,27 +29,27 @@ class Thread extends Model implements AuditableContract
         return $this->belongsTo(Team::class);
     }
 
-    public function runs(): HasMany|ThreadRun
+    public function runs(): HasMany|AgentThreadRun
     {
-        return $this->hasMany(ThreadRun::class);
+        return $this->hasMany(AgentThreadRun::class);
     }
 
-    public function currentRun(): HasOne|ThreadRun
+    public function currentRun(): HasOne|AgentThreadRun
     {
-        return $this->hasOne(ThreadRun::class)->where('status', ThreadRun::STATUS_RUNNING);
+        return $this->hasOne(AgentThreadRun::class)->where('status', AgentThreadRun::STATUS_RUNNING);
     }
 
-    public function lastRun(): HasOne|ThreadRun
+    public function lastRun(): HasOne|AgentThreadRun
     {
-        return $this->hasOne(ThreadRun::class)->latest();
+        return $this->hasOne(AgentThreadRun::class)->latest();
     }
 
-    public function messages(): HasMany|Message
+    public function messages(): HasMany|AgentThreadMessage
     {
-        return $this->hasMany(Message::class);
+        return $this->hasMany(AgentThreadMessage::class);
     }
 
-    public function sortedMessages(): HasMany|Message
+    public function sortedMessages(): HasMany|AgentThreadMessage
     {
         return $this->messages()->orderBy('id');
     }
@@ -97,6 +97,6 @@ class Thread extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<Thread ($this->id) $this->name>";
+        return "<AgentThread ($this->id) $this->name>";
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\WorkflowTools\Traits;
 
-use App\Models\Agent\Thread;
+use App\Models\Agent\AgentThread;
 use App\Models\Workflow\WorkflowJobRun;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowTask;
@@ -64,7 +64,7 @@ trait AssignsWorkflowTasksTrait
     /**
      * Create a thread for the task and add messages from the workflow input or dependencies
      */
-    protected function setupTaskThread(WorkflowTask $workflowTask, array $artifactTuple): Thread
+    protected function setupTaskThread(WorkflowTask $workflowTask, array $artifactTuple): AgentThread
     {
         $assignment  = $workflowTask->workflowAssignment;
         $workflowJob = $workflowTask->workflowJob;
@@ -72,7 +72,7 @@ trait AssignsWorkflowTasksTrait
         $threadName = $workflowJob->name . " ($workflowTask->id) [group: " . ($workflowTask->group ?: 'default') . "] by {$assignment->agent->name}";
         $thread     = app(ThreadRepository::class)->create($assignment->agent, $threadName);
 
-        Log::debug("Setup Task Thread: $workflowTask created $thread");
+        Log::debug("Setup Task AgentThread: $workflowTask created $thread");
 
         Log::debug("\tAdding " . count($artifactTuple) . " artifacts");
         foreach($artifactTuple as $item) {
