@@ -1,20 +1,20 @@
-import { JsonSchema, JsonSchemaType, SelectionSchema } from "@/types";
+import { FragmentSelector, JsonSchema, JsonSchemaType } from "@/types";
 import { computed, Ref } from "vue";
 
-export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: JsonSchema | null) {
+export function useFragmentSelector(fragmentSelector: Ref<FragmentSelector>, schema: JsonSchema | null) {
 	const type = schema?.type;
-	const isSelected = computed(() => !!subSelection.value);
-	const selectedObjectCount = computed(() => recursiveSelectedObjectCount(subSelection.value));
-	const selectedPropertyCount = computed(() => recursiveSelectedPropertyCount(subSelection.value));
+	const isSelected = computed(() => !!fragmentSelector.value);
+	const selectedObjectCount = computed(() => recursiveSelectedObjectCount(fragmentSelector.value));
+	const selectedPropertyCount = computed(() => recursiveSelectedPropertyCount(fragmentSelector.value));
 
 	function changeSelection() {
 		if (isSelected.value) {
-			subSelection.value = null;
+			fragmentSelector.value = null;
 		} else {
 			if (["object", "array"].includes(type)) {
 				selectAllChildren(schema);
 			} else {
-				subSelection.value = {
+				fragmentSelector.value = {
 					type
 				};
 			}
@@ -26,8 +26,8 @@ export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: Json
 	 *  If the selection is not null, this will add/replace the entry for the child in the selection set
 	 *  If the selection is null, this will remove the entry of the child from the selection set.
 	 */
-	function changeChildSelection(childName: string, type: JsonSchemaType, selection: SelectionSchema | null) {
-		const children = { ...subSelection.value?.children };
+	function changeChildSelection(childName: string, type: JsonSchemaType, selection: FragmentSelector | null) {
+		const children = { ...fragmentSelector.value?.children };
 
 		if (selection) {
 			// Add the child and its selection to the parent's selected children list
@@ -37,7 +37,7 @@ export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: Json
 			delete children[childName];
 		}
 
-		subSelection.value = {
+		fragmentSelector.value = {
 			type,
 			children
 		};
@@ -62,7 +62,7 @@ export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: Json
 						// Map the key to a [key, { type }] pair
 						.map((key) => [key, { type: properties[key].type }])
 		);
-		subSelection.value = {
+		fragmentSelector.value = {
 			type,
 			children
 		};
@@ -73,7 +73,7 @@ export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: Json
 	 */
 	function selectAllChildren(schema: JsonSchema) {
 		const children = recursiveSelectAllChildren(schema);
-		subSelection.value = {
+		fragmentSelector.value = {
 			type,
 			children
 		};
@@ -111,7 +111,7 @@ export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: Json
 	/**
 	 * Recursively counts the number of objects / arrays that are selected in the current selection
 	 */
-	function recursiveSelectedObjectCount(selection: SelectionSchema) {
+	function recursiveSelectedObjectCount(selection: FragmentSelector) {
 		if (!selection) return 0;
 
 		let count = 1;
@@ -128,7 +128,7 @@ export function useSubSelection(subSelection: Ref<SelectionSchema>, schema: Json
 	/**
 	 * Recursively counts the number of properties that are selected in the current selection
 	 */
-	function recursiveSelectedPropertyCount(selection: SelectionSchema) {
+	function recursiveSelectedPropertyCount(selection: FragmentSelector) {
 		if (!selection) return 0;
 
 		let count = 0;

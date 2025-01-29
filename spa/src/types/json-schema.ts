@@ -12,10 +12,3 @@ export interface JsonSchema {
 		[key: string]: JsonSchema;
 	};
 }
-
-export interface SelectionSchema {
-	type: JsonSchemaType;
-	children?: {
-		[key: string]: SelectionSchema;
-	};
-}

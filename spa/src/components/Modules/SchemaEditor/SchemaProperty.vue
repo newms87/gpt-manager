@@ -35,23 +35,23 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { useFragmentSelector } from "@/components/Modules/SchemaEditor/fragmentSelector";
 import SchemaPropertyTypeMenu from "@/components/Modules/SchemaEditor/SchemaPropertyTypeMenu";
-import { useSubSelection } from "@/components/Modules/SchemaEditor/subSelection";
-import { JsonSchema, SelectionSchema } from "@/types";
+import { FragmentSelector, JsonSchema } from "@/types";
 import { FaSolidTrash as RemoveIcon } from "danx-icon";
 import { EditableDiv } from "quasar-ui-danx";
 import { computed } from "vue";
 
 const emit = defineEmits(["update", "remove"]);
 const property = defineModel<JsonSchema>();
-const subSelection = defineModel<SelectionSchema | null>("subSelection");
+const fragmentSelector = defineModel<FragmentSelector | null>("fragmentSelector");
 const props = defineProps<{ name: string, readonly?: boolean, selectable?: boolean }>();
 const descriptionText = computed(() => property.value.items?.description || property.value.description || "");
 
 const {
 	isSelected,
 	changeSelection
-} = useSubSelection(subSelection, property.value);
+} = useFragmentSelector(fragmentSelector, property.value);
 
 function onUpdate(input: Partial<JsonSchema>) {
 	const type = input.type || property.value.type;

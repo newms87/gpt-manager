@@ -37,7 +37,7 @@
 						:key="`property-${objectProperties[name].id}`"
 					>
 						<ListItemDraggable
-							v-if="selectable || !readonly || !subSelection || (subSelection?.children && subSelection?.children[name])"
+							v-if="selectable || !readonly || !fragmentSelector || (fragmentSelector?.children && fragmentSelector?.children[name])"
 							:list-items="customPropertyNames"
 							:drop-zone="`custom-props-${schemaObject.id}-dz`"
 							:show-handle="!readonly"
@@ -51,9 +51,9 @@
 								:model-value="objectProperties[name]"
 								:name="name"
 								:selectable="selectable"
-								:sub-selection="subSelection?.children && subSelection.children[name]"
+								:fragment-selector="fragmentSelector?.children && fragmentSelector.children[name]"
 								class="my-2 ml-1"
-								@update:sub-selection="selection => changeChildSelection(name, schemaObject.type, selection)"
+								@update:fragment-selector="selection => changeChildSelection(name, schemaObject.type, selection)"
 								@update="input => onUpdateProperty(name, input.name, input.property)"
 								@remove="onRemoveProperty(name)"
 							/>
@@ -84,7 +84,7 @@
 					:key="`property-${objectProperties[name].id}`"
 				>
 					<ListItemDraggable
-						v-if="selectable || !readonly || !subSelection || (subSelection?.children && subSelection.children[name])"
+						v-if="selectable || !readonly || !fragmentSelector || (fragmentSelector?.children && fragmentSelector.children[name])"
 						:list-items="childObjectNames"
 						:drop-zone="`child-objects-${schemaObject.id}-dz`"
 						show-handle
@@ -99,9 +99,9 @@
 							:model-value="objectProperties[name]"
 							:relation-name="name"
 							:selectable="selectable"
-							:sub-selection="subSelection?.children && subSelection.children[name]"
+							:fragment-selector="fragmentSelector?.children && fragmentSelector.children[name]"
 							hide-header
-							@update:sub-selection="selection => changeChildSelection(name, schemaObject.type, selection)"
+							@update:fragment-selector="selection => changeChildSelection(name, schemaObject.type, selection)"
 							@update:model-value="input => onUpdateProperty(name, name, input)"
 						>
 							<template #header>
@@ -121,9 +121,9 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { useFragmentSelector } from "@/components/Modules/SchemaEditor/fragmentSelector";
 import SchemaProperty from "@/components/Modules/SchemaEditor/SchemaProperty";
-import { useSubSelection } from "@/components/Modules/SchemaEditor/subSelection";
-import { JsonSchema, SelectionSchema } from "@/types";
+import { FragmentSelector, JsonSchema } from "@/types";
 import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } from "danx-icon";
 import { cloneDeep, EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
@@ -141,7 +141,7 @@ withDefaults(defineProps<{
 	notSelectedClass: "opacity-50"
 });
 const schemaObject = defineModel<JsonSchema>();
-const subSelection = defineModel<SelectionSchema | null>("subSelection");
+const fragmentSelector = defineModel<FragmentSelector | null>("fragmentSelector");
 const objectProperties = ref(cloneDeep(schemaObject.value.properties || schemaObject.value.items?.properties || {}));
 
 watch(() => schemaObject.value, (value) => {
@@ -156,7 +156,7 @@ const {
 	isSelected,
 	changeSelection,
 	changeChildSelection
-} = useSubSelection(subSelection, schemaObject.value);
+} = useFragmentSelector(fragmentSelector, schemaObject.value);
 
 function onUpdate(input: Partial<JsonSchema>) {
 	const newSchemaObject = { ...schemaObject.value, ...input };

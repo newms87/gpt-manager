@@ -23,7 +23,7 @@
 			<SchemaObject
 				v-if="!isShowingRaw"
 				v-model="editableSchema"
-				v-model:sub-selection="fragmentSelector"
+				v-model:fragment-selector="fragmentSelector"
 				:readonly="readonly"
 				:selectable="selectable"
 				class="min-w-64"
@@ -51,7 +51,7 @@ import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import SchemaObject from "@/components/Modules/SchemaEditor/SchemaObject";
 import SchemaRevisionHistoryMenu from "@/components/Modules/SchemaEditor/SchemaRevisionHistoryMenu";
 import SchemaUndoActions from "@/components/Modules/SchemaEditor/SchemaUndoActions";
-import { JsonSchema, PromptSchema, SelectionSchema } from "@/types";
+import { FragmentSelector, JsonSchema, PromptSchema } from "@/types";
 import { FaSolidCode as RawCodeIcon } from "danx-icon";
 import { SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
 import { ref, watch } from "vue";
@@ -67,7 +67,7 @@ defineProps<{
 	loading?: boolean;
 }>();
 const schema = defineModel<JsonSchema>();
-const fragmentSelector = defineModel<SelectionSchema | null>("fragmentSelector");
+const fragmentSelector = defineModel<FragmentSelector | null>("fragmentSelector");
 const isShowingRaw = ref(false);
 
 // editableSchema is a 1-way binding to the parent component's schema prop but is initialized w/ the parent's schema value
