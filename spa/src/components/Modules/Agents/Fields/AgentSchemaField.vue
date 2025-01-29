@@ -34,9 +34,10 @@
 				can-select
 				can-select-fragment
 				show-preview
+				:loading="updateAction.isApplying"
 				:sub-selection="agent.response_sub_selection"
 				:model-value="agent.responseSchema"
-				@update:model-value="promptSchema => updateAction.trigger(props.agent, { response_schema_id: promptSchema.id })"
+				@update:model-value="promptSchema => updateAction.trigger(props.agent, { response_schema_id: promptSchema?.id || null })"
 				@update:sub-selection="response_sub_selection => updateAction.trigger(props.agent, { response_sub_selection })"
 			/>
 		</div>

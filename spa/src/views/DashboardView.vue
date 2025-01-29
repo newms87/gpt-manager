@@ -39,6 +39,6 @@ async function init() {
 
 async function onSelectPromptSchema(promptSchema) {
 	dxPromptSchema.setActiveItem(promptSchema);
-	setItem(PROMPT_SCHEMA_STORED_KEY, promptSchema.id);
+	setItem(PROMPT_SCHEMA_STORED_KEY, promptSchema?.id);
 }
 </script>

@@ -1,8 +1,8 @@
 <template>
-	<div class="flex flex-col flex-nowrap" :class="{'h-full': !hideContent}">
+	<div class="flex flex-col flex-nowrap relative" :class="{'h-full': !hideContent}">
 		<div class="flex items-center flex-nowrap space-x-2">
 			<slot name="header" v-bind="{isShowingRaw}" />
-			<div class="flex items-center flex-nowrap space-x-2">
+			<div v-if="!hideActions" class="flex items-center flex-nowrap space-x-2">
 				<template v-if="!readonly">
 					<SchemaUndoActions v-model="editableSchema" />
 					<SchemaRevisionHistoryMenu
@@ -38,6 +38,12 @@
 				:format="promptSchema.schema_format"
 			/>
 		</div>
+		<div
+			v-if="loading"
+			class="absolute top left w-full h-full flex items-center justify-center bg-slate-400 opacity-20 z-10"
+		>
+			<QSpinnerGears class="text-sky-900 w-32 h-32" />
+		</div>
 	</div>
 </template>
 <script setup lang="ts">
@@ -47,7 +53,7 @@ import SchemaRevisionHistoryMenu from "@/components/Modules/SchemaEditor/SchemaR
 import SchemaUndoActions from "@/components/Modules/SchemaEditor/SchemaUndoActions";
 import { JsonSchema, PromptSchema, SelectionSchema } from "@/types";
 import { FaSolidCode as RawCodeIcon } from "danx-icon";
-import { cloneDeep, SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
+import { SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
 import { ref, watch } from "vue";
 
 defineProps<{
@@ -56,12 +62,21 @@ defineProps<{
 	saving: boolean;
 	readonly?: boolean;
 	hideContent?: boolean;
+	hideActions?: boolean;
 	selectable?: boolean;
+	loading?: boolean;
 }>();
 const schema = defineModel<JsonSchema>();
 const subSelection = defineModel<SelectionSchema | null>("subSelection");
-const editableSchema = ref(schema.value || {});
 const isShowingRaw = ref(false);
 
-watch(() => editableSchema.value, () => schema.value = cloneDeep(editableSchema.value));
+// editableSchema is a 1-way binding to the parent component's schema prop but is initialized w/ the parent's schema value
+const editableSchema = ref<JsonSchema>(schema.value || {} as JsonSchema);
+watch(editableSchema, () => schema.value = editableSchema.value);
+
+watch(schema, () => {
+	if (editableSchema.value?.title !== schema.value?.title) {
+		editableSchema.value = schema.value;
+	}
+});
 </script>
