@@ -22,7 +22,9 @@ export interface PromptSchemaFragment extends ActionTargetItem {
 
 export interface FragmentSelector {
 	type: JsonSchemaType;
-	children?: FragmentSelector[];
+	children?: {
+		[key: string]: FragmentSelector;
+	};
 }
 
 export interface PromptDirective extends ActionTargetItem {

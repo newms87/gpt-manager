@@ -4,6 +4,7 @@ use App\Http\Controllers\Ai\AgentsController;
 use App\Http\Controllers\Ai\ContentSourcesController;
 use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\PromptDirectivesController;
+use App\Http\Controllers\Ai\PromptSchemaFragmentsController;
 use App\Http\Controllers\Ai\PromptSchemasController;
 use App\Http\Controllers\Ai\TeamObjectsController;
 use App\Http\Controllers\Ai\ThreadsController;
@@ -46,6 +47,7 @@ ActionRoute::routes('prompt/schemas', new PromptSchemasController, function () {
     Route::get('{promptSchema}/history', [PromptSchemasController::class, 'history'])->name('prompt.schemas.history');
 });
 ActionRoute::routes('prompt/directives', new PromptDirectivesController);
+ActionRoute::routes('prompt/schema-fragments', new PromptSchemaFragmentsController);
 ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
     Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');

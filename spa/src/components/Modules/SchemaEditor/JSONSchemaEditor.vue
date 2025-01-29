@@ -23,7 +23,7 @@
 			<SchemaObject
 				v-if="!isShowingRaw"
 				v-model="editableSchema"
-				v-model:sub-selection="subSelection"
+				v-model:sub-selection="fragmentSelector"
 				:readonly="readonly"
 				:selectable="selectable"
 				class="min-w-64"
@@ -67,11 +67,11 @@ defineProps<{
 	loading?: boolean;
 }>();
 const schema = defineModel<JsonSchema>();
-const subSelection = defineModel<SelectionSchema | null>("subSelection");
+const fragmentSelector = defineModel<SelectionSchema | null>("fragmentSelector");
 const isShowingRaw = ref(false);
 
 // editableSchema is a 1-way binding to the parent component's schema prop but is initialized w/ the parent's schema value
-const editableSchema = ref<JsonSchema>(schema.value || {} as JsonSchema);
+const editableSchema = ref<JsonSchema>(schema.value || null as JsonSchema);
 watch(editableSchema, () => schema.value = editableSchema.value);
 
 watch(schema, () => {

@@ -37,7 +37,7 @@
 						:key="`property-${objectProperties[name].id}`"
 					>
 						<ListItemDraggable
-							v-if="selectable || !readonly || !subSelection || subSelection?.children[name]"
+							v-if="selectable || !readonly || !subSelection || (subSelection?.children && subSelection?.children[name])"
 							:list-items="customPropertyNames"
 							:drop-zone="`custom-props-${schemaObject.id}-dz`"
 							:show-handle="!readonly"
@@ -84,7 +84,7 @@
 					:key="`property-${objectProperties[name].id}`"
 				>
 					<ListItemDraggable
-						v-if="selectable || !readonly || !subSelection || subSelection.children[name]"
+						v-if="selectable || !readonly || !subSelection || (subSelection?.children && subSelection.children[name])"
 						:list-items="childObjectNames"
 						:drop-zone="`child-objects-${schemaObject.id}-dz`"
 						show-handle

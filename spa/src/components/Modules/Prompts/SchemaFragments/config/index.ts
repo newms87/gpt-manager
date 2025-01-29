@@ -4,7 +4,7 @@ import { actionControls } from "./actions";
 import { controls } from "./controls";
 import { routes } from "./routes";
 
-export const dxPromptSchema = {
+export const dxPromptSchemaFragment = {
 	...controls,
 	...actionControls,
 	routes
