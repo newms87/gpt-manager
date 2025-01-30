@@ -134,6 +134,9 @@ class JsonSchemaService
         return $schema;
     }
 
+    /**
+     * Recursively filters data using a fragment selector to select a subset of properties
+     */
     public function filterDataByFragmentSelector(array $data, array $fragmentSelector = null): array
     {
         if (!$fragmentSelector) {
