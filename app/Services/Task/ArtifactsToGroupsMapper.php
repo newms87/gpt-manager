@@ -85,19 +85,21 @@ class ArtifactsToGroupsMapper
         $groups = [];
 
         foreach($artifacts as $artifact) {
+            // Set the artifact ID as the key prefix to keep groups separate across artifacts
             $keyPrefix      = $this->groupingMode === self::GROUPING_MODE_SPLIT ? ($artifact->id . ':') : '';
             $fragmentGroups = $this->resolveGroupsByFragment($artifact->json_content, $this->fragmentSelector, $keyPrefix);
 
             // When splitting by artifact, just concatenate the groups of each artifact together
             $groups = match ($this->groupingMode) {
-                // Split mode, all keys will be unique across artifacts since we're using the keyPrefix
+                // Split mode, all keys will be unique across artifacts since we're using the artifact ID as the key prefix
                 self::GROUPING_MODE_SPLIT => $groups + $fragmentGroups,
 
                 // Merge mode, for all groups with the same key, merge the data together and filter unique values
                 self::GROUPING_MODE_MERGE => ArrayHelper::mergeArraysRecursivelyUnique($groups, $fragmentGroups),
 
-                // Combine mode, just add the groups to the default group
-                default => ['default' => array_merge($groups['default'] ?? [], $fragmentGroups)],
+                // Combine mode, just concat the groups together throwing away any existing groups with the same key
+                // NOTE: this is technically the same operation as SPLIT, but semantically it is different because there is no key prefix being used.
+                default => $groups + $fragmentGroups,
             };
         }
 
