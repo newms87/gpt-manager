@@ -11,9 +11,10 @@ class ArtifactsToGroupsMapper
     const string
         GROUPING_MODE_SPLIT = 'Split',
         GROUPING_MODE_MERGE = 'Merge',
-        GROUPING_MODE_COMBINE = 'Combine';
+        GROUPING_MODE_OVERWRITE = 'Overwrite',
+        GROUPING_MODE_CONCATENATE = 'Concatenate';
 
-    protected string $groupingMode = self::GROUPING_MODE_COMBINE;
+    protected string $groupingMode = self::GROUPING_MODE_CONCATENATE;
     protected bool   $splitByFile  = false;
 
     /** @var array An array of schema fragment selectors. The resolved values from the artifacts' data will define the group key */
@@ -42,7 +43,7 @@ class ArtifactsToGroupsMapper
      *  Artifact C has 1 group
      *  --- 7 groups will be returned
      */
-    public function groupingMode(string $mode = self::GROUPING_MODE_COMBINE): static
+    public function groupingMode(string $mode = self::GROUPING_MODE_CONCATENATE): static
     {
         $this->groupingMode = $mode;
 
@@ -78,28 +79,36 @@ class ArtifactsToGroupsMapper
 
     /**
      * @param Artifact[] $artifacts
-     * @return Artifact[][]
+     * @return Artifact[][] An array of groups of artifacts
      */
     public function map(array $artifacts): array
     {
         $groups = [];
 
         foreach($artifacts as $artifact) {
-            // Set the artifact ID as the key prefix to keep groups separate across artifacts
-            $keyPrefix      = $this->groupingMode === self::GROUPING_MODE_SPLIT ? ($artifact->id . ':') : '';
-            $fragmentGroups = $this->resolveGroupsByFragment($artifact->json_content, $this->fragmentSelector, $keyPrefix);
+            $keyPrefix = $this->groupingMode === self::GROUPING_MODE_SPLIT ? $artifact->id : '';
 
-            // When splitting by artifact, just concatenate the groups of each artifact together
+            // Use the artifact ID as a key prefix to ensure groups remain distinct across artifacts
+            if ($this->fragmentSelector) {
+                $fragmentGroups = $this->resolveGroupsByFragment($artifact->json_content, $this->fragmentSelector, $keyPrefix);
+            } else {
+                $fragmentGroups[$keyPrefix ?: 'default'] = [$artifact->json_content];
+            }
+
+            // Determine how to combine fragment groups based on the selected grouping mode
             $groups = match ($this->groupingMode) {
-                // Split mode, all keys will be unique across artifacts since we're using the artifact ID as the key prefix
+                // In SPLIT mode, each artifact's groups remain separate since keys are prefixed with the artifact ID
                 self::GROUPING_MODE_SPLIT => $groups + $fragmentGroups,
 
-                // Merge mode, for all groups with the same key, merge the data together and filter unique values
+                // In OVERWRITE mode, fragment groups overwrite any existing groups with the same key
+                // NOTE: This behaves similarly to SPLIT but differs conceptually since no key prefix is applied, resulting in data being overwritten
+                self:: GROUPING_MODE_OVERWRITE => $fragmentGroups + $groups,
+
+                // In MERGE mode, groups with the same key are combined, keeping only unique values
                 self::GROUPING_MODE_MERGE => ArrayHelper::mergeArraysRecursivelyUnique($groups, $fragmentGroups),
 
-                // Combine mode, just concat the groups together throwing away any existing groups with the same key
-                // NOTE: this is technically the same operation as SPLIT, but semantically it is different because there is no key prefix being used.
-                default => $groups + $fragmentGroups,
+                // In CONCATENATE mode, append artifacts for any groups w/ the same key
+                default => $this->concatenate($groups, $fragmentGroups),
             };
         }
 
@@ -117,6 +126,21 @@ class ArtifactsToGroupsMapper
         return $groupsOfArtifacts;
     }
 
+    /**
+     * For each group key, concatenate the items from the fragment groups into the existing groups
+     */
+    protected function concatenate(array $groups, array $fragmentGroups): array
+    {
+        $newGroups = [];
+
+        foreach($fragmentGroups as $key => $group) {
+            $newGroups[$key] = $groups[$key] ?? [];
+            $newGroups[$key] = array_merge($newGroups[$key], $group);
+        }
+
+        return $newGroups;
+    }
+
     public function resolveFiles(Artifact $artifact): array
     {
         return [];
@@ -131,7 +155,7 @@ class ArtifactsToGroupsMapper
         if (!$fragmentSelector || empty($fragmentSelector['children'])) {
             $key = $this->getGroupKey($data);
 
-            return [$keyPrefix . $key => $data];
+            return [($keyPrefix ? "$keyPrefix:" : '') . $key => [$data]];
         }
 
         $baseGroupKey = '';
@@ -163,7 +187,7 @@ class ArtifactsToGroupsMapper
             }
         }
 
-        $groups = [$keyPrefix . static::getGroupKey($baseGroupKey) => $data];
+        $groups = [($keyPrefix ? "$keyPrefix:" : '') . static::getGroupKey($baseGroupKey) => $data];
 
         dump("Groupings: ", $groups, 'child groups', $childGroups);
 

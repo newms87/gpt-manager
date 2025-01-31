@@ -12,7 +12,6 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
     {
         // Given
         $jsonContent = ['name' => 'Alice'];
-        $groupKey    = ArtifactsToGroupsMapper::getGroupKey($jsonContent);
         $artifacts   = [
             new Artifact(['json_content' => $jsonContent]),
         ];
@@ -22,11 +21,12 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
 
         // Then
         $this->assertCount(1, $groups, 'A single group should be produced');
-        $this->assertNotNull($groups[$groupKey] ?? null, 'The group key should have been set in the groups list');
-        $this->assertEquals($jsonContent, $groups[$groupKey], 'The group should contain the given artifacts');
+        $groupArtifacts = $groups['default'] ?? [];
+        $this->assertCount(1, $groupArtifacts, 'The group key should have been set in the groups list pointing to an array w/ 1 artifact');
+        $this->assertEquals($jsonContent, $groups['default'][0]->json_content, 'The artifact in the group should match the passed in artifact');
     }
 
-    public function test_map_defaultBehaviorWithMultipleArtifacts_singleGroupProduced(): void
+    public function test_map_defaultBehaviorWith2Artifacts_singleGroupProducedWith2Artifacts(): void
     {
         // Given
         $jsonContentA = ['name' => 'Alice'];
@@ -41,9 +41,10 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
 
         // Then
         $this->assertCount(1, $groups, 'A single group should be produced');
-        $defaultGroup = array_values($groups['default']);
+        $defaultGroup = $groups['default'];
+        usort($defaultGroup, fn(Artifact $a, Artifact $b) => $a->json_content['name'] <=> $b->json_content['name']);
         $this->assertEquals($jsonContentA, $defaultGroup[0]->json_content, 'The groups 1st artifact should contain JSON content A');
-        $this->assertEquals($jsonContentA, $defaultGroup[1]->json_content, 'The groups 2nd artifact should contain JSON content B');
+        $this->assertEquals($jsonContentB, $defaultGroup[1]->json_content, 'The groups 2nd artifact should contain JSON content B');
     }
 
     public function test_map_withGroupingKeysAndSingleScalarProperty_singleGroupProduced(): void
