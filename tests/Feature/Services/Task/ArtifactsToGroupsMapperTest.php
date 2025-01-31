@@ -292,7 +292,7 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
             [
                 'type'     => 'object',
                 'children' => [
-                    'address' => [
+                    'addresses' => [
                         'type'     => 'array',
                         'children' => [
                             'city' => [
@@ -312,11 +312,15 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         // Then
         /** @var Artifact[][] $groups */
         $groups = array_values($groups);
-        $this->assertCount(2, $groups, 'A single group should be produced');
-        $this->assertCount(2, $groups[0], '2 artifacts should be in group A');
-        $this->assertCount(1, $groups[1], 'A single artifact should be in group B');
-        $this->assertEquals($jsonContent, $groups[0][0]->json_content, 'The 1st item in group A should contain the JSON content A artifact');
-        $this->assertEquals($jsonContentC, $groups[0][1]->json_content, 'The 2nd item in group A should contain the JSON content C artifact');
-        $this->assertEquals($jsonContentB, $groups[1][0]->json_content, 'The only item in group B should contain the JSON content B artifact');
+        $this->assertCount(3, $groups, '3 groups should have been produced. One for each city');
+        $this->assertCount(1, $groups[0], '1 artifact should be in the 1st group');
+        $this->assertCount(1, $groups[1], '1 artifact should be in the 2nd group');
+        $this->assertCount(1, $groups[2], '1 artifact should be in the 3rd group');
+
+        // Sort the groups so we know which group has which address
+        usort($groups, fn($a, $b) => $a[0]->json_content['addresses']['city'] <=> $b[0]->json_content['addresses']['city']);
+        $this->assertEquals(['name' => 'Alice', 'addresses' => ['city' => 'Denver', 'state' => 'CO']], $groups[0][0]->json_content, 'The 1st group should be Denver');
+        $this->assertEquals(['name' => 'Alice', 'addresses' => ['city' => 'Evergreen', 'state' => 'CO']], $groups[1][0]->json_content, 'The 2nd should be the Evergreen');
+        $this->assertEquals(['name' => 'Alice', 'addresses' => ['city' => 'Springfield', 'state' => 'IL']], $groups[2][0]->json_content, 'The 3rd group should be Springfield');
     }
 }
