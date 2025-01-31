@@ -131,14 +131,11 @@ class ArtifactsToGroupsMapper
      */
     protected function concatenate(array $groups, array $fragmentGroups): array
     {
-        $newGroups = [];
-
         foreach($fragmentGroups as $key => $group) {
-            $newGroups[$key] = $groups[$key] ?? [];
-            $newGroups[$key] = array_merge($newGroups[$key], $group);
+            $groups[$key] = array_merge($groups[$key] ?? [], $group);
         }
 
-        return $newGroups;
+        return $groups;
     }
 
     public function resolveFiles(Artifact $artifact): array
@@ -175,30 +172,47 @@ class ArtifactsToGroupsMapper
             }
 
             if ($childSelector['type'] === 'object') {
-                $resolvedGroups             = $this->resolveGroupsByFragment($childData, $childSelector);
-                $childGroups[$propertyName] = ArrayHelper::mergeArraysRecursivelyUnique($resolvedGroups, $childGroups[$propertyName] ?? []);
+                $childGroups[$propertyName] = $this->resolveGroupsByFragment($childData, $childSelector);
             } elseif ($childSelector['type'] === 'array') {
                 foreach($childData as $item) {
-                    $resolvedGroups             = $this->resolveGroupsByFragment($item, $childSelector);
-                    $childGroups[$propertyName] = ArrayHelper::mergeArraysRecursivelyUnique($resolvedGroups, $childGroups[$propertyName] ?? []);
+                    if (is_scalar($item)) {
+                        $childGroups[$propertyName][static::getGroupKey($item)] = $item;
+                    } else {
+                        $resolvedGroups             = $this->resolveGroupsByFragment($item, $childSelector);
+                        $childGroups[$propertyName] = ArrayHelper::mergeArraysRecursivelyUnique($resolvedGroups, $childGroups[$propertyName] ?? []);
+                    }
                 }
             } else {
                 $baseGroupKey .= ':' . $childData;
             }
         }
 
-        $groups = [($keyPrefix ? "$keyPrefix:" : '') . static::getGroupKey($baseGroupKey) => $data];
+        $groups = [($keyPrefix ? "$keyPrefix:" : '') . static::getGroupKey($baseGroupKey) => [$data]];
 
         dump("Groupings: ", $groups, 'child groups', $childGroups);
 
         // Cross product merge the groups together
         foreach($childGroups as $propertyName => $propertyGroups) {
             $newGroups = [];
-            foreach($propertyGroups as $propertyGroupKey => $propertyGroup) {
-                foreach($groups as $originalGroupKey => $groupData) {
-                    // Set the groups property to the
-                    $groupData[$propertyName]                               = $propertyGroup;
-                    $newGroups[$originalGroupKey . ':' . $propertyGroupKey] = $groupData;
+            // Property Group Items will be 1 or more items that have matched the same values of the fragment at this path
+            // (eg: if the fragment is matching on the city property of an array of addresses, all addresses in the same city will be in the same propertyGroupItems list)
+            foreach($propertyGroups as $propertyGroupKey => $propertyGroupItems) {
+                foreach($groups as $originalGroupKey => $groupItems) {
+                    foreach($groupItems as $groupItem) {
+                        if (is_scalar($propertyGroupItems)) {
+                            // If the propertyGroupItems is just a scalar value, set the group item property to the scalar value
+                            // as each scalar value will have exactly item since the scalar value itself determines the group key
+                            $groupItem[$propertyName] = $propertyGroupItems;
+                        } else {
+                            // Otherwise, set the group item property to the list of items resolved for the property.
+                            // If there is only 1 entry, the array will be converted into a single object to simplify the data structure
+                            // (eg: for the property addresses, set the list of addresses that match the city)
+                            // NOTE: Even if the property is address (singular), the propertyGroupItems may be an array of addresses as the fragment may have matched on an array of items
+                            $groupItem[$propertyName] = count($propertyGroupItems) === 1 ? $propertyGroupItems[0] : $propertyGroupItems;
+                        }
+
+                        $newGroups[$originalGroupKey . ':' . $propertyGroupKey][] = $groupItem;
+                    }
                 }
             }
             $groups = $newGroups;
