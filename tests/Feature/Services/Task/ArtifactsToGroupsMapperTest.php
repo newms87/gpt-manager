@@ -47,6 +47,73 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         $this->assertEquals($jsonContentB, $defaultGroup[1]->json_content, 'The groups 2nd artifact should contain JSON content B');
     }
 
+    public function test_map_splitOnArtifactWith2Artifacts_groupForEachArtifact(): void
+    {
+        // Given
+        $jsonContentA = ['name' => 'Alice'];
+        $jsonContentB = ['name' => 'Dan'];
+        $artifacts    = [
+            Artifact::factory()->create(['json_content' => $jsonContentA]),
+            Artifact::factory()->create(['json_content' => $jsonContentB]),
+        ];
+
+        // When
+        $groups = (new ArtifactsToGroupsMapper)->splitByArtifact()->map($artifacts);
+
+        // Then
+        /** @var Artifact[][] $groups */
+        $groups = array_values($groups);
+        $this->assertCount(2, $groups, 'A group for each artifact should be produced');
+        $this->assertEquals($jsonContentA, $groups[0][0]->json_content, 'The groups 1st artifact should contain JSON content A');
+        $this->assertEquals($jsonContentB, $groups[1][0]->json_content, 'The groups 2nd artifact should contain JSON content B');
+    }
+
+    public function test_map_splitOnArtifactWithGroupingKeys_groupsOfEachArtifactAreConcatenated(): void
+    {
+        // Given
+        $jsonContentA = [
+            'name'      => 'Alice',
+            'addresses' => [
+                ['city' => 'Springfield', 'state' => 'IL'],
+                ['city' => 'Denver', 'state' => 'CO'],
+            ],
+        ];
+        $jsonContentB = [
+            'name'      => 'Dan',
+            'addresses' => [
+                ['city' => 'Chicago', 'state' => 'IL'],
+                ['city' => 'Evergreen', 'state' => 'CO'],
+            ],
+        ];
+        $artifacts    = [
+            Artifact::factory()->create(['json_content' => $jsonContentA]),
+            Artifact::factory()->create(['json_content' => $jsonContentB]),
+        ];
+        $groupingKeys = [
+            [
+                'type'     => 'object',
+                'children' => [
+                    'addresses' => [
+                        'type' => 'array',
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $groups = (new ArtifactsToGroupsMapper)->splitByArtifact()->setGroupingKeys($groupingKeys)->map($artifacts);
+
+        // Then
+        /** @var Artifact[][] $groups */
+        $groups = array_values($groups);
+        usort($groups, fn($a, $b) => $a[0]->json_content['name'] . $a[0]->json_content['addresses']['city'] <=> $b[0]->json_content['name'] . $b[0]->json_content['addresses']['city']);
+        $this->assertCount(4, $groups, 'A group for each artifact should be produced');
+        $this->assertEquals(['name' => 'Alice', 'addresses' => ['city' => 'Denver', 'state' => 'CO']], $groups[0][0]->json_content, 'The groups 1st artifact should contain the Alice + Denver address');
+        $this->assertEquals(['name' => 'Alice', 'addresses' => ['city' => 'Springfield', 'state' => 'IL']], $groups[1][0]->json_content, 'The groups 1st artifact should contain the Alice + Springfield address');
+        $this->assertEquals(['name' => 'Dan', 'addresses' => ['city' => 'Chicago', 'state' => 'IL']], $groups[2][0]->json_content, 'The groups 2nd artifact should contain the Dan + Chicago address');
+        $this->assertEquals(['name' => 'Dan', 'addresses' => ['city' => 'Evergreen', 'state' => 'CO']], $groups[3][0]->json_content, 'The groups 2nd artifact should contain the Dan + Evergreen address');
+    }
+
     public function test_map_withGroupingKeysAndSingleScalarProperty_singleGroupProduced(): void
     {
         // Given
@@ -322,5 +389,87 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         $this->assertEquals(['name' => 'Alice', 'addresses' => ['city' => 'Denver', 'state' => 'CO']], $groups[0][0]->json_content, 'The 1st group should be Denver');
         $this->assertEquals(['name' => 'Alice', 'addresses' => ['city' => 'Evergreen', 'state' => 'CO']], $groups[1][0]->json_content, 'The 2nd should be the Evergreen');
         $this->assertEquals(['name' => 'Alice', 'addresses' => ['city' => 'Springfield', 'state' => 'IL']], $groups[2][0]->json_content, 'The 3rd group should be Springfield');
+    }
+
+    public function test_map_withGroupingKeysAndScalarPropertyOfNestedArrayOfObjects_crossProductOfGroupsProducedForEachElementInArrays(): void
+    {
+        // Given
+        $jsonContent  = [
+            'name' => 'Dan',
+            'jobs' => [
+                [
+                    'company'   => 'Google',
+                    'addresses' => [
+                        ['city' => 'Mountain View', 'state' => 'CA'],
+                        ['city' => 'Boulder', 'state' => 'CO'],
+                    ],
+                ],
+                [
+                    'company'   => 'Microsoft',
+                    'addresses' => [
+                        ['city' => 'Redmond', 'state' => 'WA'],
+                        ['city' => 'Boulder', 'state' => 'CO'],
+                    ],
+                ],
+            ],
+        ];
+        $artifacts    = [
+            new Artifact(['json_content' => $jsonContent]),
+        ];
+        $groupingKeys = [
+            [
+                'type'     => 'object',
+                'children' => [
+                    'jobs' => [
+                        'type'     => 'array',
+                        'children' => [
+                            'addresses' => [
+                                'type'     => 'array',
+                                'children' => [
+                                    'state' => [
+                                        'type' => 'string',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $groups = (new ArtifactsToGroupsMapper)
+            ->setGroupingKeys($groupingKeys)
+            ->map($artifacts);
+
+        // Then
+        /** @var Artifact[][] $groups */
+        $groups = array_values($groups);
+
+        // Sort the groups so we know which group has which address
+        usort($groups, fn($a, $b) => ($a[0]->json_content['jobs'][0]['addresses']['city'] ?? $a[0]->json_content['jobs']['addresses']['city']) <=> ($b[0]->json_content['jobs'][0]['addresses']['city'] ?? $b[0]->json_content['jobs']['addresses']['city']));
+
+        $this->assertCount(3, $groups, '3 groups should have been produced. One for each city');
+        $this->assertCount(1, $groups[0], '1 artifact should be in the 1st group');
+        $this->assertCount(1, $groups[1], '1 artifact should be in the 2nd group');
+        $this->assertCount(1, $groups[2], '1 artifact should be in the 3rd group');
+
+        $firstData = $groups[0][0]->json_content;
+        $this->assertCount(2, $firstData['jobs'], 'The 1st group should have 2 jobs');
+        $this->assertEquals('Dan', $firstData['name'], 'The 1st group should be Dan');
+        $this->assertEquals('Microsoft', $firstData['jobs'][0]['company'], 'The 1st job should be Microsoft');
+        $this->assertEquals('Boulder', $firstData['jobs'][0]['addresses']['city'], 'The 1st job address should be Boulder');
+        $this->assertEquals('Google', $firstData['jobs'][1]['company'], 'The 2nd job should be Google');
+        $this->assertEquals('Boulder', $firstData['jobs'][1]['addresses']['city'], 'The 2nd job address should also be Boulder');
+        
+        $secondData = $groups[1][0]->json_content;
+        $this->assertEquals('Dan', $secondData['name'], 'The 2nd group should be Dan');
+        $this->assertEquals('Google', $secondData['jobs']['company'], 'The 2nd job should be Google');
+        $this->assertEquals('Mountain View', $secondData['jobs']['addresses']['city'], 'The 2nd job address should be Mountain View');
+
+        $thirdData = $groups[2][0]->json_content;
+        $this->assertEquals('Dan', $thirdData['name'], 'The 3rd group should be Dan');
+        $this->assertEquals('Microsoft', $thirdData['jobs']['company'], 'The 3rd job should be Microsoft');
+        $this->assertEquals('Redmond', $thirdData['jobs']['addresses']['city'], 'The 3rd job address should be Redmond');
     }
 }

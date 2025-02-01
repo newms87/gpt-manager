@@ -32,6 +32,10 @@ class ArtifactsToGroupsMapper
      *   - This will merge the data of each group together to create a single artifact for each unique group
      *   - There will be 1 artifact per group
      *
+     * Overwrite
+     *   - This will overwrite any existing groups with the same key (no guarantee on which group is kept)
+     *   - There will be 1 or more groups w/ 1 or more artifacts per group
+     *
      * Split
      *   - This will create at least 1 group for each artifact given.
      *   - Each artifact will also be split by the other defined grouping keys
@@ -48,6 +52,21 @@ class ArtifactsToGroupsMapper
         $this->groupingMode = $mode;
 
         return $this;
+    }
+
+    public function splitByArtifact(): static
+    {
+        return $this->groupingMode(self::GROUPING_MODE_SPLIT);
+    }
+
+    public function mergeGroups(): static
+    {
+        return $this->groupingMode(self::GROUPING_MODE_MERGE);
+    }
+
+    public function overwriteGroups(): static
+    {
+        return $this->groupingMode(self::GROUPING_MODE_OVERWRITE);
     }
 
     /**
@@ -189,8 +208,6 @@ class ArtifactsToGroupsMapper
 
         $groups = [($keyPrefix ? "$keyPrefix:" : '') . static::getGroupKey($baseGroupKey) => [$data]];
 
-        dump("Groupings: ", $groups, 'child groups', $childGroups);
-
         // Cross product merge the groups together
         foreach($childGroups as $propertyName => $propertyGroups) {
             $newGroups = [];
@@ -217,8 +234,6 @@ class ArtifactsToGroupsMapper
             }
             $groups = $newGroups;
         }
-
-        dump("RETURN", $groups);
 
         return $groups;
     }
