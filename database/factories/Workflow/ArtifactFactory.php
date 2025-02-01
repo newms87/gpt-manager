@@ -21,6 +21,11 @@ class ArtifactFactory extends Factory
         ];
     }
 
+    public function withStoredFiles($count = 2, $attributes = []): static
+    {
+        return $this->afterCreating(fn(Artifact $artifact) => $artifact->storedFiles()->attach(StoredFile::factory()->count($count)->create($attributes)));
+    }
+
     public function withStoredFile(StoredFile $storedFile = null): static
     {
         if (!$storedFile) {

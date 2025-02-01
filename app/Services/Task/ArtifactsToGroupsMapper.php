@@ -142,7 +142,7 @@ class ArtifactsToGroupsMapper
             }
         }
 
-        return $groupsOfArtifacts;
+        return $this->addFilesToGroups($artifacts, $groupsOfArtifacts);
     }
 
     /**
@@ -157,9 +157,54 @@ class ArtifactsToGroupsMapper
         return $groups;
     }
 
-    public function resolveFiles(Artifact $artifact): array
+    /**
+     * Add the files from the artifacts to the groups of artifacts
+     *
+     * @param Artifact[]   $artifacts
+     * @param Artifact[][] $groupsOfArtifacts
+     */
+    public function addFilesToGroups(array $artifacts, array $groupsOfArtifacts): array
     {
-        return [];
+        $allFiles = [];
+        foreach($artifacts as $artifact) {
+            foreach($artifact->storedFiles as $storedFile) {
+                $allFiles[] = $storedFile;
+            }
+        }
+
+        // If no files, nothing to do, just return the original grouping
+        if (!$allFiles) {
+            return $groupsOfArtifacts;
+        }
+
+        // If splitting by file, cross product all files with all groups so each group contains 1 file and each file is a part of all artifact groups
+        if ($this->splitByFile) {
+            $fileGroups = [];
+            foreach($allFiles as $file) {
+                // Create an artifact containing only the single file
+                $fileArtifact = Artifact::create(['name' => $file->filename]);
+                $fileArtifact->storedFiles()->save($file);
+
+                // Append the file to each artifact group
+                foreach($groupsOfArtifacts as $groupKey => $artifactGroup) {
+                    $fileGroups[$groupKey . ':' . $file->id] = array_merge($artifactGroup, [$fileArtifact]);
+                }
+            }
+
+            return $fileGroups;
+        }
+
+        // Create a single artifact that contains all files
+        $filesArtifact = Artifact::create(['name' => 'Files']);
+        $filesArtifact->storedFiles()->saveMany($allFiles);
+
+        // Append the files artifact to each group
+        foreach($groupsOfArtifacts as &$artifactGroup) {
+            $artifactGroup[] = $filesArtifact;
+        }
+        unset($artifactGroup);
+
+        return $groupsOfArtifacts;
     }
 
     /**
