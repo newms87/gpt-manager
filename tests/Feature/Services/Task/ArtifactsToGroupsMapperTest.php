@@ -8,7 +8,7 @@ use Tests\AuthenticatedTestCase;
 
 class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
 {
-    public function test_map_defaultBehavior_singleGroupProduced(): void
+    public function test_map_concatenateMode_producesSingleGroup(): void
     {
         // Given
         $jsonContent = ['name' => 'Alice'];
@@ -17,7 +17,7 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         ];
 
         // When
-        $groups = (new ArtifactsToGroupsMapper)->map($artifacts);
+        $groups = (new ArtifactsToGroupsMapper)->useConcatenateMode()->map($artifacts);
 
         // Then
         $this->assertCount(1, $groups, 'A single group should be produced');
@@ -26,7 +26,7 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         $this->assertEquals($jsonContent, $groups['default'][0]->json_content, 'The artifact in the group should match the passed in artifact');
     }
 
-    public function test_map_defaultBehaviorWith2Artifacts_singleGroupProducedWith2Artifacts(): void
+    public function test_map_concatenateModeWith2Artifacts_producesSingleGroupWith2Artifacts(): void
     {
         // Given
         $jsonContentA = ['name' => 'Alice'];
@@ -37,7 +37,7 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         ];
 
         // When
-        $groups = (new ArtifactsToGroupsMapper)->map($artifacts);
+        $groups = (new ArtifactsToGroupsMapper)->useConcatenateMode()->map($artifacts);
 
         // Then
         $this->assertCount(1, $groups, 'A single group should be produced');
@@ -45,31 +45,6 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         usort($defaultGroup, fn(Artifact $a, Artifact $b) => $a->json_content['name'] <=> $b->json_content['name']);
         $this->assertEquals($jsonContentA, $defaultGroup[0]->json_content, 'The groups 1st artifact should contain JSON content A');
         $this->assertEquals($jsonContentB, $defaultGroup[1]->json_content, 'The groups 2nd artifact should contain JSON content B');
-    }
-
-    public function test_map_splitByArtifactWithDefaultBehaviorForFiles_allFilesAreAddedToEachGroup(): void
-    {
-        // Given
-        $jsonContentA = ['name' => 'Alice'];
-        $jsonContentB = ['name' => 'Dan'];
-
-        $artifacts = [
-            Artifact::factory()->withStoredFiles(1)->create(['json_content' => $jsonContentA]),
-            Artifact::factory()->withStoredFiles(1)->create(['json_content' => $jsonContentB]),
-        ];
-
-        // When
-        $groups = (new ArtifactsToGroupsMapper)->splitByArtifact()->map($artifacts);
-
-        // Then
-        /** @var Artifact[][] $groups */
-        $groups = array_values($groups);
-
-        $this->assertCount(2, $groups, 'A group for each file should be produced');
-        $this->assertCount(2, $groups[0], 'The 1st group should have 2 artifacts: 1. JSON content, 2. the files');
-        $this->assertCount(2, $groups[1], 'The 2nd group should have 2 artifacts: 1. JSON content, 2. the files ');
-        $this->assertEquals(2, $groups[0][1]->storedFiles()->count(), 'The 1st group should contain 2 files');
-        $this->assertEquals(2, $groups[1][1]->storedFiles()->count(), 'The 2nd group should contain 2 files');
     }
 
     public function test_map_splitByFile_aGroupForEachFile(): void
@@ -94,7 +69,32 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         $this->assertEquals(1, $groups[1][1]->storedFiles()->count(), 'The 2nd group should contain 1 file');
     }
 
-    public function test_map_splitOnArtifactWith2Artifacts_groupForEachArtifact(): void
+    public function test_map_splitModeWithFiles_allFilesAreAddedToEachGroup(): void
+    {
+        // Given
+        $jsonContentA = ['name' => 'Alice'];
+        $jsonContentB = ['name' => 'Dan'];
+
+        $artifacts = [
+            Artifact::factory()->withStoredFiles(1)->create(['json_content' => $jsonContentA]),
+            Artifact::factory()->withStoredFiles(1)->create(['json_content' => $jsonContentB]),
+        ];
+
+        // When
+        $groups = (new ArtifactsToGroupsMapper)->useSplitMode()->map($artifacts);
+
+        // Then
+        /** @var Artifact[][] $groups */
+        $groups = array_values($groups);
+
+        $this->assertCount(2, $groups, 'A group for each file should be produced');
+        $this->assertCount(2, $groups[0], 'The 1st group should have 2 artifacts: 1. JSON content, 2. the files');
+        $this->assertCount(2, $groups[1], 'The 2nd group should have 2 artifacts: 1. JSON content, 2. the files ');
+        $this->assertEquals(2, $groups[0][1]->storedFiles()->count(), 'The 1st group should contain 2 files');
+        $this->assertEquals(2, $groups[1][1]->storedFiles()->count(), 'The 2nd group should contain 2 files');
+    }
+
+    public function test_map_splitModeWith2Artifacts_producesOneGroupForEachArtifact(): void
     {
         // Given
         $jsonContentA = ['name' => 'Alice'];
@@ -105,7 +105,7 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         ];
 
         // When
-        $groups = (new ArtifactsToGroupsMapper)->splitByArtifact()->map($artifacts);
+        $groups = (new ArtifactsToGroupsMapper)->useSplitMode()->map($artifacts);
 
         // Then
         /** @var Artifact[][] $groups */
@@ -115,7 +115,47 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         $this->assertEquals($jsonContentB, $groups[1][0]->json_content, 'The groups 2nd artifact should contain JSON content B');
     }
 
-    public function test_map_splitOnArtifactWithGroupingKeys_groupsOfEachArtifactAreConcatenated(): void
+    public function test_map_overwriteModeWith2Artifacts_producesOneGroupWithOneArtifact(): void
+    {
+        // Given
+        $jsonContentA = ['name' => 'Alice'];
+        $jsonContentB = ['name' => 'Dan'];
+        $artifacts    = [
+            Artifact::factory()->create(['json_content' => $jsonContentA]),
+            Artifact::factory()->create(['json_content' => $jsonContentB]),
+        ];
+
+        // When
+        $groups = (new ArtifactsToGroupsMapper)->useOverwriteMode()->map($artifacts);
+
+        // Then
+        /** @var Artifact[][] $groups */
+        $groups = array_values($groups);
+        $this->assertCount(1, $groups, 'Only one group should exist as the other group was overwritten');
+        $this->assertCount(1, $groups[0], 'Only one artifact should be in the group. The other one was throw away.');
+        $this->assertEquals($jsonContentB, $groups[0][0]->json_content, 'The group artifact should contain JSON content B');
+    }
+
+    public function test_map_mergeModeWith2Artifacts_producesOneGroupWithMergedDataFromBothArtifacts(): void
+    {
+        // Given
+        $jsonContentA = ['name' => 'Alice'];
+        $jsonContentB = ['name' => 'Dan'];
+        $artifacts    = [
+            Artifact::factory()->create(['json_content' => $jsonContentA]),
+            Artifact::factory()->create(['json_content' => $jsonContentB]),
+        ];
+
+        // When
+        $groups = (new ArtifactsToGroupsMapper)->useMergeMode()->map($artifacts);
+
+        // Then
+        $this->assertCount(1, $groups, 'Only one group should exist as the other group was overwritten');
+        $this->assertCount(1, $groups['default'], 'Only one artifact should be in the group. The other one was throw away.');
+        $this->assertEquals(['name' => ['Alice', 'Dan']], $groups['default']['merged']->json_content, 'The group artifact should contain JSON content B');
+    }
+
+    public function test_map_splitModeWithGroupingKeys_producesSeparateGroupsForEachArtifactsDerivedGroups(): void
     {
         // Given
         $jsonContentA = [
@@ -148,7 +188,7 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         ];
 
         // When
-        $groups = (new ArtifactsToGroupsMapper)->splitByArtifact()->setGroupingKeys($groupingKeys)->map($artifacts);
+        $groups = (new ArtifactsToGroupsMapper)->useSplitMode()->setGroupingKeys($groupingKeys)->map($artifacts);
 
         // Then
         /** @var Artifact[][] $groups */

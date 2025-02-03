@@ -54,17 +54,22 @@ class ArtifactsToGroupsMapper
         return $this;
     }
 
-    public function splitByArtifact(): static
+    public function useConcatenateMode(): static
+    {
+        return $this->groupingMode(self::GROUPING_MODE_CONCATENATE);
+    }
+
+    public function useSplitMode(): static
     {
         return $this->groupingMode(self::GROUPING_MODE_SPLIT);
     }
 
-    public function mergeGroups(): static
+    public function useMergeMode(): static
     {
         return $this->groupingMode(self::GROUPING_MODE_MERGE);
     }
 
-    public function overwriteGroups(): static
+    public function useOverwriteMode(): static
     {
         return $this->groupingMode(self::GROUPING_MODE_OVERWRITE);
     }
@@ -110,6 +115,8 @@ class ArtifactsToGroupsMapper
             // Use the artifact ID as a key prefix to ensure groups remain distinct across artifacts
             if ($this->fragmentSelector) {
                 $fragmentGroups = $this->resolveGroupsByFragment($artifact->json_content, $this->fragmentSelector, $keyPrefix);
+            } elseif ($this->groupingMode === self::GROUPING_MODE_MERGE) {
+                $fragmentGroups[$keyPrefix ?: 'default'] = ['merged' => $artifact->json_content];
             } else {
                 $fragmentGroups[$keyPrefix ?: 'default'] = [$artifact->json_content];
             }
@@ -130,7 +137,7 @@ class ArtifactsToGroupsMapper
                 default => $this->concatenate($groups, $fragmentGroups),
             };
         }
-
+        
         $groupsOfArtifacts = [];
 
         foreach($groups as $groupKey => $items) {
