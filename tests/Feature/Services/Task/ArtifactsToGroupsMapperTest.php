@@ -201,6 +201,55 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         $this->assertEquals(['name' => 'Dan', 'addresses' => ['city' => 'Evergreen', 'state' => 'CO']], $groups[3][0]->json_content, 'The groups 2nd artifact should contain the Dan + Evergreen address');
     }
 
+    public function test_map_mergeModeWithGroupingKeys_producesSeparateGroupsForEachArtifactsDerivedGroups(): void
+    {
+        // Given
+        $jsonContentA = [
+            'name'      => 'Alice',
+            'addresses' => [
+                ['city' => 'Springfield', 'state' => 'IL'],
+                ['city' => 'Denver', 'state' => 'CO'],
+            ],
+        ];
+        $jsonContentB = [
+            'name'      => 'Dan',
+            'addresses' => [
+                ['city' => 'Chicago', 'state' => 'IL'],
+                ['city' => 'Evergreen', 'state' => 'CO'],
+            ],
+        ];
+        $artifacts    = [
+            Artifact::factory()->create(['json_content' => $jsonContentA]),
+            Artifact::factory()->create(['json_content' => $jsonContentB]),
+        ];
+        $groupingKeys = [
+            [
+                'type'     => 'object',
+                'children' => [
+                    'addresses' => [
+                        'type'     => 'array',
+                        'children' => [
+                            'state' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $groups = (new ArtifactsToGroupsMapper)->useMergeMode()->setGroupingKeys($groupingKeys)->map($artifacts);
+
+        // Then
+        /** @var Artifact[][] $groups */
+        $groups = array_values($groups);
+        usort($groups, fn($a, $b) => ($a['merged']->json_content['addresses']['state'][0] ?? '') <=> ($b['merged']->json_content['addresses']['state'][0] ?? ''));
+        $this->assertCount(2, $groups, 'Should produce a group for each state');
+        $this->assertCount(1, $groups[0], 'Should produce 1 artifact for group 1');
+        $this->assertCount(1, $groups[1], 'Should produce 1 artifact for group 2');
+        $this->assertEquals(['name' => ['Alice', 'Dan'], 'addresses' => ['city' => ['Denver', 'Evergreen'], 'state' => ['CO']]], $groups[0]['merged']->json_content, 'The groups 1st artifact should contain the Alice + Denver address');
+        $this->assertEquals(['name' => ['Alice', 'Dan'], 'addresses' => ['city' => ['Springfield', 'Chicago'], 'state' => ['IL']]], $groups[1]['merged']->json_content, 'The groups 1st artifact should contain the Alice + Springfield address');
+    }
+
     public function test_map_withGroupingKeysAndSingleScalarProperty_singleGroupProduced(): void
     {
         // Given

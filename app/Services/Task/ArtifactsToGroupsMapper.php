@@ -137,7 +137,7 @@ class ArtifactsToGroupsMapper
                 default => $this->concatenate($groups, $fragmentGroups),
             };
         }
-        
+
         $groupsOfArtifacts = [];
 
         foreach($groups as $groupKey => $items) {
@@ -280,7 +280,14 @@ class ArtifactsToGroupsMapper
                             $groupItem[$propertyName] = count($propertyGroupItems) === 1 ? $propertyGroupItems[0] : $propertyGroupItems;
                         }
 
-                        $newGroups[$originalGroupKey . ':' . $propertyGroupKey][] = $groupItem;
+                        if ($this->groupingMode === self::GROUPING_MODE_MERGE) {
+                            // In merge mode, merge the new item with the current item in the group (if it exists). All groups will have exactly 1 item.
+                            $mergedItem = ArrayHelper::mergeArraysRecursivelyUnique($groupItem, $newGroups[$originalGroupKey . ':' . $propertyGroupKey]['merged'] ?? []);
+
+                            $newGroups[$originalGroupKey . ':' . $propertyGroupKey]['merged'] = $mergedItem;
+                        } else {
+                            $newGroups[$originalGroupKey . ':' . $propertyGroupKey][] = $groupItem;
+                        }
                     }
                 }
             }
