@@ -33,12 +33,13 @@ class TaskDefinitionResource extends ActionResource
         return static::make($model, $includeFields ?? [
             '*'          => true,
             'taskAgents' => [
+                'agent'                => true,
                 'inputSchema'          => true,
                 'inputSchemaFragment'  => true,
                 'outputSchema'         => true,
                 'outputSchemaFragment' => true,
             ],
-            'taskRuns'   => ['*' => true],
+            'taskRuns'   => true,
         ]);
     }
 }

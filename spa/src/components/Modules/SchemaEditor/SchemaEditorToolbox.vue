@@ -1,13 +1,13 @@
 <template>
 	<div class="flex flex-col flex-nowrap" :class="{'h-full': isEditingSchema}">
 		<div
-			v-if="isEditingFragment || isEditingSchema || showPreview"
+			v-if="isEditingFragment || isEditingSchema || previewable || isPreviewing"
 			class="flex-grow overflow-hidden"
 		>
 			<JSONSchemaEditor
 				:fragment-selector="activeFragment?.fragment_selector"
 				:readonly="!activeSchema || !isEditingSchema"
-				:hide-content="isPreviewingExample || !activeSchema"
+				:hide-content="!isPreviewing && !isEditingSchema && !isEditingFragment"
 				:hide-actions="!activeSchema"
 				:prompt-schema="activeSchema"
 				:loading="loading"
@@ -32,7 +32,7 @@
 							name-editable
 							:select-icon="SchemaIcon"
 							label-class="text-slate-300"
-							:can-edit="!!activeSchema"
+							:select-class="buttonColor"
 							:options="dxPromptSchema.pagedItems.value?.data || []"
 							:loading="createSchemaAction.isApplying"
 							@create="onCreate"
@@ -53,6 +53,7 @@
 								name-editable
 								:select-icon="FragmentIcon"
 								label-class="text-slate-300"
+								:select-class="buttonColor"
 								:options="fragmentList"
 								:loading="createFragmentAction.isApplying"
 								@create="onCreateFragment"
@@ -79,15 +80,17 @@
 					</div>
 				</template>
 				<template #actions>
+					<ShowHideButton v-if="previewable" v-model="isPreviewing" :class="buttonColor" tooltip="Preview Selection" />
 					<ShowHideButton
-						v-model="isPreviewingExample"
+						v-if="example"
+						v-model="isShowingExample"
 						class="bg-amber-700"
-						tooltip="Preview Example Response"
+						tooltip="Show Example Response"
 					/>
 				</template>
 			</JSONSchemaEditor>
 
-			<SchemaResponseExampleCard v-if="isPreviewingExample" :prompt-schema="activeSchema" />
+			<SchemaResponseExampleCard v-if="isShowingExample" :prompt-schema="activeSchema" />
 		</div>
 	</div>
 </template>
@@ -106,7 +109,16 @@ import {
 import { FlashMessages, SelectField, SelectionMenuField, ShowHideButton, storeObjects } from "quasar-ui-danx";
 import { onMounted, ref, shallowRef, watch } from "vue";
 
-defineProps<{ canSelect?: boolean, canSelectFragment?: boolean, showPreview?: boolean, loading?: boolean }>();
+withDefaults(defineProps<{
+	canSelect?: boolean;
+	canSelectFragment?: boolean;
+	previewable?: boolean;
+	example?: boolean;
+	loading?: boolean;
+	buttonColor?: string;
+}>(), {
+	buttonColor: "bg-sky-800"
+});
 
 onMounted(() => dxPromptSchema.initialize());
 const createSchemaAction = dxPromptSchema.getAction("create");
@@ -119,7 +131,8 @@ const activeSchema = defineModel<PromptSchema>();
 const activeFragment = defineModel<PromptSchemaFragment>("fragment");
 const isEditingSchema = defineModel<boolean>("editing");
 const isEditingFragment = defineModel<boolean>("selectingFragment");
-const isPreviewingExample = ref(false);
+const isPreviewing = defineModel<boolean>("previewing");
+const isShowingExample = ref(false);
 
 const schemaFormatOptions = [
 	{ label: "JSON", value: "json" },

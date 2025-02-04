@@ -14,10 +14,10 @@ export interface TaskDefinition extends ActionTargetItem {
 	task_run_count: number;
 	task_agent_count: number;
 	taskRuns?: TaskRun[];
-	taskAgents?: TaskAgentDefinition[];
+	taskAgents?: TaskDefinitionAgent[];
 }
 
-export interface TaskAgentDefinition extends ActionTargetItem {
+export interface TaskDefinitionAgent extends ActionTargetItem {
 	id: string;
 	agent: Agent;
 	include_text: boolean;

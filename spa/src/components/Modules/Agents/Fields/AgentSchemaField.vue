@@ -33,7 +33,7 @@
 				v-model:isEditingSchema="isEditingSchema"
 				can-select
 				can-select-fragment
-				show-preview
+				previewing
 				:loading="updateAction.isApplying"
 				:model-value="agent.responseSchema"
 				:fragment="agent.responseSchemaFragment"

@@ -3,7 +3,16 @@ import { controls } from "./controls";
 import { routes } from "./routes";
 
 export const actions: ActionOptions[] = [
-	...withDefaultActions("Task Definition", controls)
+	...withDefaultActions("Task Definition", controls),
+	{
+		name: "add-agent"
+	},
+	{
+		name: "update-agent"
+	},
+	{
+		name: "remove-agent"
+	}
 ];
 
 export const actionControls = useActions(actions, { routes });

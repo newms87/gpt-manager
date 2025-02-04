@@ -11,13 +11,13 @@
 						@select="revision => editableSchema = revision.schema"
 					/>
 				</template>
-				<ShowHideButton v-model="isShowingRaw" class="bg-slate-700" :show-icon="RawCodeIcon" />
+				<ShowHideButton v-if="!hideContent" v-model="isShowingRaw" class="bg-slate-700" :show-icon="RawCodeIcon" />
 				<slot name="actions" v-bind="{readonly}" />
 				<SaveStateIndicator :saving="saving" :saved-at="savedAt" class="ml-2 w-48" />
 			</div>
 		</div>
 
-		<QSeparator class="bg-slate-600 my-4" />
+		<QSeparator v-if="!hideContent" class="bg-slate-600 my-4" />
 
 		<div v-if="!hideContent" class="flex-grow overflow-y-auto h-full pb-8">
 			<SchemaObject
@@ -64,6 +64,7 @@ defineProps<{
 	hideContent?: boolean;
 	hideActions?: boolean;
 	selectable?: boolean;
+	previewable?: boolean;
 	loading?: boolean;
 }>();
 const schema = defineModel<JsonSchema>();
