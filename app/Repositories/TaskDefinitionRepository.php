@@ -51,6 +51,7 @@ class TaskDefinitionRepository extends ActionRepository
             'copy' => $this->copyTaskDefinition($model),
             'add-agent' => $this->addAgent($model, $data),
             'update-agent' => $this->updateAgent($model, $data),
+            'copy-agent' => $this->copyAgent($model, $data),
             'remove-agent' => $this->removeAgent($model, $data),
             default => parent::applyAction($action, $model, $data)
         };
@@ -129,6 +130,23 @@ class TaskDefinitionRepository extends ActionRepository
         $taskDefinitionAgent->fill($input)->save();
 
         return $taskDefinitionAgent;
+    }
+
+    /**
+     * Copy an agent in a task definition
+     */
+    public function copyAgent(TaskDefinition $taskDefinition, ?array $input = []): TaskDefinitionAgent
+    {
+        $taskDefinitionAgent = $taskDefinition->definitionAgents()->find($input['id']);
+
+        if (!$taskDefinitionAgent) {
+            throw new Exception("TaskDefinitionAgent not found: $input[id]");
+        }
+
+        $replicateAgent = $taskDefinitionAgent->replicate();
+        $replicateAgent->save();
+
+        return $replicateAgent;
     }
 
     /**

@@ -5,9 +5,8 @@
 			:key="taskAgent.id"
 		>
 			<TaskDefinitionAgentConfigCard
+				:task-definition="taskDefinition"
 				:task-definition-agent="taskAgent"
-				@update="input => updateAgentAction.trigger(taskDefinition, {id: taskAgent.id, ...input})"
-				@remove="removeAgentAction.trigger(taskDefinition, {id: taskAgent.id})"
 			/>
 
 			<QSeparator class="bg-slate-400 my-4" />
@@ -34,6 +33,4 @@ defineProps<{
 }>();
 
 const addAgentAction = dxTaskDefinition.getAction("add-agent");
-const updateAgentAction = dxTaskDefinition.getAction("update-agent");
-const removeAgentAction = dxTaskDefinition.getAction("remove-agent");
 </script>

@@ -12,6 +12,9 @@ export const actions: ActionOptions[] = [
 	},
 	{
 		name: "remove-agent"
+	},
+	{
+		name: "copy-agent"
 	}
 ];
 

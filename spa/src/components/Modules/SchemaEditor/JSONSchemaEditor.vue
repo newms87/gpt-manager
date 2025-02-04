@@ -42,7 +42,8 @@
 			v-if="loading"
 			class="absolute top left w-full h-full flex items-center justify-center bg-slate-400 opacity-20 z-10"
 		>
-			<QSpinnerGears class="text-sky-900 w-32 h-32" />
+			<QSpinnerGears v-if="hideContent" class="text-sky-900 w-6 h-6" />
+			<QSpinnerGears v-else class="text-sky-900 w-32 h-32" />
 		</div>
 	</div>
 </template>
