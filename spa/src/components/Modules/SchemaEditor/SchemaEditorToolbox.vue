@@ -20,6 +20,7 @@
 			>
 				<template #header="{isShowingRaw}">
 					<div class="flex-grow flex items-center flex-nowrap">
+						<slot name="header-start" />
 						<SelectionMenuField
 							v-if="canSelect"
 							v-model:editing="isEditingSchema"
@@ -109,6 +110,8 @@ import {
 import { FlashMessages, SelectField, SelectionMenuField, ShowHideButton, storeObjects } from "quasar-ui-danx";
 import { onMounted, ref, shallowRef, watch } from "vue";
 
+const instanceId = Math.random().toString(36).substring(7);
+
 withDefaults(defineProps<{
 	canSelect?: boolean;
 	canSelectFragment?: boolean;
@@ -172,7 +175,8 @@ async function onCreateFragment() {
 async function loadFragments() {
 	if (!activeSchema.value) return;
 
-	const fragments = await routes.list({ filter: { prompt_schema_id: activeSchema.value.id } });
+	// NOTE The use of abortOn is to avoid generating duplicate requests at the same time causing this request to abort, leaving this instance w/o any fragments
+	const fragments = await routes.list({ filter: { prompt_schema_id: activeSchema.value.id } }, { abortOn: instanceId });
 	fragmentList.value = storeObjects(fragments.data);
 }
 </script>
