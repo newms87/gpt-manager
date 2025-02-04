@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 class AgentThreadTaskRunner extends TaskRunnerBase
 {
+    const string RUNNER_NAME = 'AI Agent';
+    
     public function run(): void
     {
         Log::debug("AgentThreadTaskRunner Running: $this->taskProcess");

@@ -10,6 +10,7 @@ import {
 	LoginView,
 	PageNotFoundView,
 	PromptsView,
+	TaskDefinitionsView,
 	WorkflowInputsView,
 	WorkflowsView
 } from "@/views";
@@ -49,6 +50,12 @@ const router = createRouter({
 					name: "workflows",
 					component: WorkflowsView,
 					meta: { title: "Workflows", type: "WorkflowResource" }
+				},
+				{
+					path: "/task-definitions/:id?/:panel?",
+					name: "task-definitions",
+					component: TaskDefinitionsView,
+					meta: { title: "Task Definitions", type: "TaskDefinitionResource" }
 				},
 				{
 					path: "prompts",

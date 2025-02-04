@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Log;
 
 class TaskRunnerBase implements TaskRunnerContract
 {
+    const string RUNNER_NAME = 'Base Task Runner';
+    
     protected TaskProcess $taskProcess;
 
     public function __construct(TaskProcess $taskProcess)
@@ -29,7 +31,7 @@ class TaskRunnerBase implements TaskRunnerContract
     public function complete(Artifact $artifact = null): void
     {
         Log::debug("TaskRunnerBase: task process completed: $this->taskProcess");
-        
+
         if ($artifact) {
             $this->taskProcess->outputArtifacts()->attach($artifact);
         }

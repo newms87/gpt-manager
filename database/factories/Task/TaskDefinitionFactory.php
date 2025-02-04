@@ -17,7 +17,7 @@ class TaskDefinitionFactory extends Factory
             'team_id'                => Team::factory(),
             'name'                   => fake()->unique()->name,
             'description'            => fake()->sentence,
-            'task_runner_class'      => TaskRunnerBase::class,
+            'task_runner_class'      => TaskRunnerBase::RUNNER_NAME,
             'input_grouping'         => null,
             'input_group_chunk_size' => 1,
         ];

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
@@ -15,6 +16,8 @@ class TaskDefinition extends Model implements AuditableContract
     use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
 
     protected $fillable = [
+        'name',
+        'description',
         'task_runner_class',
         'input_grouping',
         'input_group_chunk_size',
@@ -42,10 +45,23 @@ class TaskDefinition extends Model implements AuditableContract
         return $this->hasMany(TaskRun::class);
     }
 
+
+    public function validate(): static
+    {
+        validator($this->toArray(), [
+            'name' => [
+                'required',
+                'max:80',
+                'string',
+                Rule::unique('task_definitions')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
+            ],
+        ])->validate();
+
+        return $this;
+    }
+
     public function __toString()
     {
-        $serviceName = basename($this->task_runner_class);
-
-        return "<TaskDefinition id='$this->id' name='$this->name' service='$serviceName'>";
+        return "<TaskDefinition id='$this->id' name='$this->name' runner='$this->task_runner_class'>";
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\PromptDirectivesController;
 use App\Http\Controllers\Ai\PromptSchemaFragmentsController;
 use App\Http\Controllers\Ai\PromptSchemasController;
+use App\Http\Controllers\Ai\TaskDefinitionsController;
 use App\Http\Controllers\Ai\TeamObjectsController;
 use App\Http\Controllers\Ai\ThreadsController;
 use App\Http\Controllers\Ai\WorkflowAssignmentsController;
@@ -53,6 +54,9 @@ ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
     Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');
 });
 ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);
+
+// Task Definitions
+ActionRoute::routes('task-definitions', new TaskDefinitionsController);
 
 // Agents
 ActionRoute::routes('agents', new AgentsController);

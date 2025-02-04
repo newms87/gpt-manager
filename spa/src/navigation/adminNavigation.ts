@@ -3,6 +3,7 @@ import {
 	FaSolidCloudBolt as DashboardIcon,
 	FaSolidDatabase as AuditsIcon,
 	FaSolidDownload as WorkflowInputsIcon,
+	FaSolidGear as TaskDefinitionsIcon,
 	FaSolidRobot as AgentsIcon,
 	FaSolidTableCells as ContentSourcesIcon,
 	FaSolidWorm as WorkflowsIcon
@@ -28,6 +29,11 @@ export default [
 		label: "Workflows",
 		icon: WorkflowsIcon,
 		route: { name: "workflows" }
+	},
+	{
+		label: "Task Definitions",
+		icon: TaskDefinitionsIcon,
+		route: { name: "task-definitions" }
 	},
 	{
 		label: "Prompts",

@@ -38,20 +38,20 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::rename('agent_threads', 'threads');
-        Schema::rename('agent_thread_runs', 'thread_runs');
-        Schema::rename('agent_thread_messages', 'messages');
-        Schema::rename('agent_thread_messageables', 'messageables');
+        //        Schema::rename('agent_threads', 'threads');
+        //        Schema::rename('agent_thread_runs', 'thread_runs');
+        //        Schema::rename('agent_thread_messages', 'messages');
+        //        Schema::rename('agent_thread_messageables', 'messageables');
 
-        Schema::table('agent_thread_messages', function (Blueprint $table) {
+        Schema::table('messages', function (Blueprint $table) {
             $table->renameColumn('agent_thread_id', 'thread_id');
         });
 
-        Schema::table('agent_thread_runs', function (Blueprint $table) {
+        Schema::table('thread_runs', function (Blueprint $table) {
             $table->renameColumn('agent_thread_id', 'thread_id');
         });
 
-        Schema::table('agent_thread_messageables', function (Blueprint $table) {
+        Schema::table('messageables', function (Blueprint $table) {
             $table->renameColumn('agent_thread_message_id', 'message_id');
         });
 
