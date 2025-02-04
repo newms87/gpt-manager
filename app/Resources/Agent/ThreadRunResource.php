@@ -18,7 +18,7 @@ class ThreadRunResource extends ActionResource
             'refreshed_at'  => $threadRun->refreshed_at,
             'input_tokens'  => $threadRun->input_tokens,
             'output_tokens' => $threadRun->output_tokens,
-            'thread'        => fn($fields) => ThreadResource::make($threadRun->agentThread, $fields),
+            'thread'        => fn($fields) => AgentThreadResource::make($threadRun->agentThread, $fields),
         ];
     }
 }

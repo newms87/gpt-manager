@@ -35,7 +35,7 @@ class AgentResource extends ActionResource
             'responseSchema'         => fn($fields) => PromptSchemaResource::make($agent->responseSchema, $fields),
             'responseSchemaFragment' => fn($fields) => PromptSchemaFragmentResource::make($agent->responseSchemaFragment, $fields),
             'directives'             => fn($fields) => AgentPromptDirectiveResource::collection($agent->directives->load('directive'), $fields),
-            'threads'                => fn($fields) => ThreadResource::collection($agent->threads()->orderByDesc('updated_at')->with('sortedMessages.storedFiles.transcodes')->limit(20)->get(), $fields),
+            'threads'                => fn($fields) => AgentThreadResource::collection($agent->threads()->orderByDesc('updated_at')->with('sortedMessages.storedFiles.transcodes')->limit(20)->get(), $fields),
             'assignments'            => fn($fields) => WorkflowAssignmentResource::collection($agent->assignments()->with('workflowJob.workflow')->limit(20)->get(), $fields),
         ];
     }
