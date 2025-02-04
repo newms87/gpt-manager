@@ -8,8 +8,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { fields } from "@/components/Modules/Agents/config/fields";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
+import { fields } from "@/components/Modules/TaskDefinitions/config/fields";
 import { TaskDefinition } from "@/types";
 import { ActionForm } from "quasar-ui-danx";
 
