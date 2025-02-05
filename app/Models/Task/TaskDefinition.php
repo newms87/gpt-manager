@@ -50,7 +50,6 @@ class TaskDefinition extends Model implements AuditableContract
         return $this->hasMany(TaskRun::class);
     }
 
-
     public function validate(): static
     {
         validator($this->toArray(), [

@@ -6,6 +6,8 @@ use App\AiTools\UrlToImage\UrlToImageAiTool;
 use App\AiTools\UrlToMarkdown\UrlToMarkdownAiTool;
 use App\Api\OpenAi\OpenAiApi;
 use App\Api\PerplexityAi\PerplexityAiApi;
+use App\Services\Task\Runners\AgentThreadTaskRunner;
+use App\Services\Task\Runners\TaskRunnerBase;
 
 $million  = 1000000;
 $thousand = 1000;
@@ -80,6 +82,10 @@ return [
     'apis'          => [
         OpenAiApi::$serviceName       => OpenAiApi::class,
         PerplexityAiApi::$serviceName => PerplexityAiApi::class,
+    ],
+    'runners'       => [
+        TaskRunnerBase::RUNNER_NAME        => TaskRunnerBase::class,
+        AgentThreadTaskRunner::RUNNER_NAME => AgentThreadTaskRunner::class,
     ],
     'tools'         => [
         [

@@ -12,12 +12,29 @@ use Illuminate\Support\Facades\Log;
 class AgentThreadTaskRunner extends TaskRunnerBase
 {
     const string RUNNER_NAME = 'AI Agent';
-    
+
+    public function prepareProcess(): void
+    {
+        $defAgent = $this->taskProcess->taskDefinitionAgent;
+        $agent    = $defAgent->agent;
+        $name     = "$agent->name ($agent->model)";
+
+        if ($defAgent->outputSchema) {
+            $name .= ': ' . $defAgent->outputSchema->name . ($defAgent->outputSchemaFragment ? ' [' . $defAgent->outputSchemaFragment->name . ']' : '');
+        }
+
+        $this->taskProcess->name = $name;
+        $this->activity("Preparing agent thread", 1);
+    }
+
     public function run(): void
     {
         Log::debug("AgentThreadTaskRunner Running: $this->taskProcess");
 
         $thread = $this->setupAgentThread();
+        $agent  = $thread->agent;
+
+        $this->activity("Communicating with agent $agent->name", 10);
 
         // Run the thread synchronously (ie: dispatch = false)
         $taskDefinitionAgent = $this->taskProcess->taskDefinitionAgent;
@@ -27,8 +44,12 @@ class AgentThreadTaskRunner extends TaskRunnerBase
 
         // Create the artifact and associate it with the task process
         if ($threadRun->lastMessage) {
+            $this->activity("Received response from $agent->name", 100);
             $artifact = (new AgentThreadMessageToArtifactMapper)->setMessage($threadRun->lastMessage)->map();
             $this->complete($artifact);
+        } else {
+            $this->taskProcess->failed_at = now();
+            $this->activity("No response from $agent->name", 100);
         }
     }
 
@@ -38,6 +59,10 @@ class AgentThreadTaskRunner extends TaskRunnerBase
      */
     public function setupAgentThread()
     {
+        if ($this->taskProcess->agentThread) {
+            return $this->taskProcess->agentThread;
+        }
+
         $definitionAgent = $this->taskProcess->taskDefinitionAgent;
         $definition      = $definitionAgent?->taskDefinition;
         $agent           = $definitionAgent?->agent;

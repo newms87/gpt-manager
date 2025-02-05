@@ -20,9 +20,12 @@ class TaskRunnerService
      */
     public static function prepareTaskRun(TaskDefinition $taskDefinition, array|Collection $artifacts = []): TaskRun
     {
-        $taskRun = $taskDefinition->taskRuns()->create([
+        $taskRun = $taskDefinition->taskRuns()->make([
             'status' => TaskProcess::STATUS_PENDING,
         ]);
+
+        $taskRun->getRunner()->prepareRun();
+        $taskRun->save();
 
         static::prepareTaskProcesses($taskRun, $artifacts);
 
@@ -54,11 +57,15 @@ class TaskRunnerService
 
         foreach($definitionAgents as $definitionAgent) {
             $taskProcess = $taskRun->taskProcesses()->create([
+                'name'                     => '',
+                'activity'                 => 'Initializing...',
                 'status'                   => TaskProcess::STATUS_PENDING,
                 'task_definition_agent_id' => $definitionAgent?->id,
             ]);
 
             $taskProcess->inputArtifacts()->saveMany($artifacts);
+            $taskProcess->getRunner()->prepareProcess();
+
             $taskProcesses[] = $taskProcess;
         }
 

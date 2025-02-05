@@ -1,9 +1,10 @@
 <template>
 	<div class="bg-sky-900 rounded">
 		<div class="flex items-center">
-			<div class="flex flex-grow mx-2">
-				<div class="bg-sky-950 text-sky-400 px-2 py-1 rounded-full text-xs">{{ taskRun.id }}</div>
-				<div v-if="taskRun.label"></div>
+			<div class="flex flex-grow mx-2 space-x-2">
+				<div class="bg-sky-950 text-sky-400 px-2 py-1 rounded-full text-xs">Task Run: {{ taskRun.id }}</div>
+				<div class="bg-green-950 text-green-400 px-2 py-1 rounded-full text-xs">{{ taskRun.step }}</div>
+				<div>{{ taskRun.name }}</div>
 			</div>
 			<ShowHideButton
 				v-model="isShowingProcesses"
@@ -24,16 +25,22 @@
 			</div>
 		</div>
 
-		<ListTransition v-if="isShowingProcesses">
-			<template v-for="taskProcess in taskRun.processes" :key="taskProcess.id">
-				<TaskProcessCard :task-process="taskProcess" />
-				<QSeparator class="bg-slate-400 my-2" />
-			</template>
-			<template v-if="!taskRun.processes?.length">
-				<div class="text-center text-gray-500 font-bold h-12 flex items-center justify-center">
-					No processes have been executed for this task run.
-				</div>
-			</template>
+		<ListTransition v-if="isShowingProcesses" class="px-2 pb-2">
+			<TaskProcessCard
+				v-for="taskProcess in taskRun.processes"
+				:key="taskProcess.id"
+				:task-process="taskProcess"
+				class="my-2"
+			/>
+			<div v-if="taskRun.processes?.length === undefined">
+				<QSkeleton class="h-12" />
+			</div>
+			<div
+				v-else-if="taskRun.processes.length === 0"
+				class="text-center text-gray-500 font-bold h-12 flex items-center justify-center"
+			>
+				No processes have been executed for this task run.
+			</div>
 		</ListTransition>
 	</div>
 </template>

@@ -3,6 +3,8 @@
 namespace App\Models\Task;
 
 use App\Models\Usage\UsageSummary;
+use App\Services\Task\Runners\TaskRunnerBase;
+use App\Services\Task\Runners\TaskRunnerContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,10 +33,11 @@ class TaskRun extends Model implements AuditableContract
     public function casts(): array
     {
         return [
-            'started_at'   => 'datetime',
-            'stopped_at'   => 'datetime',
-            'completed_at' => 'datetime',
-            'failed_at'    => 'datetime',
+            'percent_complete' => 'float',
+            'started_at'       => 'datetime',
+            'stopped_at'       => 'datetime',
+            'completed_at'     => 'datetime',
+            'failed_at'        => 'datetime',
         ];
     }
 
@@ -141,6 +144,17 @@ class TaskRun extends Model implements AuditableContract
         return $this;
     }
 
+    /**
+     * Get the TaskRunner class instance for the task run
+     */
+    public function getRunner(TaskProcess $taskProcess = null): TaskRunnerContract
+    {
+        $runners     = config('ai.runners');
+        $runnerClass = $runners[$this->taskDefinition->task_runner_class] ?? TaskRunnerBase::class;
+
+        return new $runnerClass($this, $taskProcess);
+    }
+
     public static function booted(): void
     {
         static::saving(function (TaskRun $taskRun) {
@@ -150,6 +164,6 @@ class TaskRun extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<TaskRun id='$this->id' name='{$this->taskDefinition->name}' status='$this->status' processes='$this->process_count'>";
+        return "<TaskRun id='$this->id' name='$this->name' status='$this->status' step='$this->step' processes='$this->process_count'>";
     }
 }

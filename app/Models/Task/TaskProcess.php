@@ -41,22 +41,26 @@ class TaskProcess extends Model implements AuditableContract
     ];
 
     protected $fillable = [
+        'name',
         'task_definition_agent_id',
         'started_at',
         'stopped_at',
         'completed_at',
         'failed_at',
         'timeout_at',
+        'percent_complete',
+        'activity',
     ];
 
     public function casts(): array
     {
         return [
-            'started_at'   => 'datetime',
-            'stopped_at'   => 'datetime',
-            'completed_at' => 'datetime',
-            'failed_at'    => 'datetime',
-            'timeout_at'   => 'datetime',
+            'percent_complete' => 'float',
+            'started_at'       => 'datetime',
+            'stopped_at'       => 'datetime',
+            'completed_at'     => 'datetime',
+            'failed_at'        => 'datetime',
+            'timeout_at'       => 'datetime',
         ];
     }
 
@@ -198,7 +202,7 @@ class TaskProcess extends Model implements AuditableContract
      */
     public function getRunner(): TaskRunnerContract
     {
-        return new $this->taskRun->taskDefinition->task_runner_class($this);
+        return $this->taskRun->getRunner($this);
     }
 
     public static function booted(): void
@@ -216,8 +220,6 @@ class TaskProcess extends Model implements AuditableContract
 
     public function __toString()
     {
-        $name = $this->taskRun->taskDefinition->name;
-
-        return "<TaskProcess id='$this->id' name='$name' status='$this->status'>";
+        return "<TaskProcess id='$this->id' name='$this->name' status='$this->status' activity='$this->activity'>";
     }
 }
