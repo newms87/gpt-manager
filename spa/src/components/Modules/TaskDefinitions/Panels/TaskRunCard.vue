@@ -1,25 +1,56 @@
 <template>
-	<div>
+	<div class="bg-sky-900 rounded">
 		<div class="flex items-center">
-			<div class="bg-sky-900 text-sky-400 px-2 py-1 rounded-full text-xs">{{ taskRun.id }}</div>
+			<div class="flex flex-grow mx-2">
+				<div class="bg-sky-950 text-sky-400 px-2 py-1 rounded-full text-xs">{{ taskRun.id }}</div>
+				<div v-if="taskRun.label"></div>
+			</div>
+			<ShowHideButton
+				v-model="isShowingProcesses"
+				:label="taskRun.process_count + ' Processes'"
+				class="bg-slate-600 text-slate-200 mx-2"
+				@show="dxTaskRun.routes.detailsAndStore(taskRun, {processes: true})"
+			/>
+			<WorkflowStatusTimerPill :runner="taskRun" />
+			<AiTokenUsageButton v-if="taskRun.usage" class="mx-2" :usage="taskRun.usage" />
+			<div class="mr-1">
+				<ActionButton
+					type="trash"
+					:action="dxTaskRun.getAction('delete')"
+					:target="taskRun"
+					class="p-4"
+					@success="$emit('deleted')"
+				/>
+			</div>
 		</div>
+
+		<ListTransition v-if="isShowingProcesses">
+			<template v-for="taskProcess in taskRun.processes" :key="taskProcess.id">
+				<TaskProcessCard :task-process="taskProcess" />
+				<QSeparator class="bg-slate-400 my-2" />
+			</template>
+			<template v-if="!taskRun.processes?.length">
+				<div class="text-center text-gray-500 font-bold h-12 flex items-center justify-center">
+					No processes have been executed for this task run.
+				</div>
+			</template>
+		</ListTransition>
 	</div>
 </template>
 <script setup lang="ts">
-import { routes } from "@/components/Modules/TaskDefinitions/TaskRuns/config/routes";
+import TaskProcessCard from "@/components/Modules/TaskDefinitions/Panels/TaskProcessCard";
+import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
+import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
+import ActionButton from "@/components/Shared/Buttons/ActionButton";
+import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import { TaskRun } from "@/types/task-definitions";
-import { onMounted, ref } from "vue";
+import { ListTransition, ShowHideButton } from "quasar-ui-danx";
+import { ref } from "vue";
 
-const props = defineProps<{
+defineEmits(["deleted"]);
+defineProps<{
 	taskRun: TaskRun;
 }>();
 
-const isLoading = ref(false);
-onMounted(loadTaskInput);
-
-async function loadTaskInput() {
-	isLoading.value = true;
-	await routes.detailsAndStore(props.taskRun);
-	isLoading.value = false;
-}
+const isShowingProcesses = ref(false);
 </script>

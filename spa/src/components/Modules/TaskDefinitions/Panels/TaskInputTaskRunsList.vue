@@ -22,10 +22,7 @@
 			</div>
 			<div v-else>
 				<ListTransition>
-					<template v-for="taskRun in taskInput.taskRuns" :key="taskRun.id">
-						<TaskRunCard :task-run="taskRun" />
-						<QSeparator class="bg-slate-400 my-2" />
-					</template>
+					<TaskRunCard v-for="taskRun in taskInput.taskRuns" :key="taskRun.id" :task-run="taskRun" class="my-2" />
 				</ListTransition>
 			</div>
 		</div>

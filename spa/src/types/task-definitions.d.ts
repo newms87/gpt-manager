@@ -39,31 +39,44 @@ export interface TaskInput extends ActionTargetItem {
 	taskRuns: TaskRun[];
 }
 
-export interface TaskRun extends ActionTargetItem {
+export interface TaskRun extends TaskRunner {
 	id: number;
-	status: string;
-	started_at?: string;
-	failed_at?: string;
-	stopped_at?: string;
-	completed_at?: string;
-	input_tokens: number;
-	output_tokens: number;
 	process_count: number;
-	processes: TaskRunProcess;
+	job_dispatch_count: number;
+	processes?: TaskProcess[];
 }
 
-export interface TaskRunProcess extends ActionTargetItem {
+export interface TaskProcess extends TaskRunner {
 	id: number;
-	status: string;
+	created_at: string;
+	input_artifact_count: number;
+	output_artifact_count: number;
+	job_dispatch_count: number;
+	agentThread?: AgentThread;
+	lastJobDispatch?: JobDispatch;
+	jobDispatches?: JobDispatch[];
+}
+
+export interface TaskRunner extends ActionTargetItem {
+	id: number;
+	status: TaskRunStatus;
 	started_at?: string;
 	failed_at?: string;
 	stopped_at?: string;
 	completed_at?: string;
 	timeout_at?: string;
+	created_at: string;
+	usage: UsageSummary;
+}
+
+export interface UsageSummary {
+	count?: number;
+	run_time_ms: number;
 	input_tokens: number;
 	output_tokens: number;
-	created_at: string;
-	agentThread?: AgentThread;
-	lastJobDispatch?: JobDispatch;
-	jobDispatches?: JobDispatch[];
+	input_cost: number;
+	output_cost: number;
+	total_cost: number;
 }
+
+export type TaskRunStatus = "Pending" | "Running" | "Failed" | "Completed" | "Stopped" | "Timeout";

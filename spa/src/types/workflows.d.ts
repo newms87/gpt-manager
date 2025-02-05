@@ -1,6 +1,7 @@
 import { Agent, AgentThread } from "@/types/agents";
 import { Artifact } from "@/types/artifacts";
 import { PromptSchema } from "@/types/prompts";
+import { TaskRunner } from "@/types/task-definitions";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { ActionTargetItem, AnyObject, ListControlsRoutes } from "quasar-ui-danx";
 
@@ -41,44 +42,7 @@ export interface WorkflowJob extends ActionTargetItem {
 	responseSchema?: PromptSchema | null;
 }
 
-export interface WorkflowJobRun extends WorkflowRunner {
-	name: string;
-	workflowJob: WorkflowJob;
-	tasks: WorkflowTask[];
-	usage: WorkflowUsage;
-}
-
-export interface WorkflowTask extends WorkflowRunner {
-	job_name: string;
-	group: string;
-	agent_id: number;
-	agent_name: string;
-	model: string;
-	artifact?: Artifact;
-	thread: AgentThread;
-	audit_request_id: string;
-	logs?: string;
-	usage: WorkflowUsage;
-}
-
-export interface WorkflowAssignment extends ActionTargetItem {
-	id: number;
-	is_required: boolean;
-	max_attempts: number;
-	group_by: string;
-	workflowJob?: WorkflowJob;
-	agent?: Agent;
-}
-
-export interface WorkflowRunner extends ActionTargetItem {
-	id: number;
-	status: "Pending" | "Running" | "Failed" | "Completed";
-	completed_at: string;
-	started_at: string;
-	failed_at: string;
-}
-
-export interface WorkflowRun extends WorkflowRunner {
+export interface WorkflowRun extends TaskRunner {
 	workflow_id: number;
 	workflow_name: string;
 	input_id: number;
@@ -88,14 +52,33 @@ export interface WorkflowRun extends WorkflowRunner {
 	workflowInput?: WorkflowInput;
 	workflowJobRuns?: WorkflowJobRun[];
 	artifacts?: Artifact[];
-	usage: WorkflowUsage;
 }
 
-export interface WorkflowUsage {
-	count?: number;
-	input_tokens: number;
-	output_tokens: number;
-	total_cost: number;
+export interface WorkflowJobRun extends TaskRunner {
+	name: string;
+	workflowJob: WorkflowJob;
+	tasks: WorkflowTask[];
+}
+
+export interface WorkflowTask extends TaskRunner {
+	job_name: string;
+	group: string;
+	agent_id: number;
+	agent_name: string;
+	model: string;
+	artifact?: Artifact;
+	thread: AgentThread;
+	audit_request_id: string;
+	logs?: string;
+}
+
+export interface WorkflowAssignment extends ActionTargetItem {
+	id: number;
+	is_required: boolean;
+	max_attempts: number;
+	group_by: string;
+	workflowJob?: WorkflowJob;
+	agent?: Agent;
 }
 
 export interface WorkflowRunStatuses {

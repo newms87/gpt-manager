@@ -3,21 +3,24 @@
 namespace App\Models\Task;
 
 use App\Models\Agent\AgentThread;
+use App\Models\Usage\UsageSummary;
 use App\Models\Workflow\Artifact;
 use App\Services\Task\Runners\TaskRunnerContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class TaskProcess extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
 
     const string
         STATUS_PENDING = 'Pending',
@@ -44,8 +47,6 @@ class TaskProcess extends Model implements AuditableContract
         'completed_at',
         'failed_at',
         'timeout_at',
-        'input_tokens',
-        'output_tokens',
     ];
 
     public function casts(): array
@@ -58,6 +59,14 @@ class TaskProcess extends Model implements AuditableContract
             'timeout_at'   => 'datetime',
         ];
     }
+
+    public array $relationCounters = [
+        JobDispatch::class => ['jobDispatches' => 'job_dispatch_count'],
+        Artifact::class    => [
+            'inputArtifacts'  => 'artifact_count',
+            'outputArtifacts' => 'output_artifact_count',
+        ],
+    ];
 
     public function taskRun(): BelongsTo|TaskRun
     {
@@ -97,6 +106,11 @@ class TaskProcess extends Model implements AuditableContract
     public function outputArtifacts(): MorphToMany|Artifact
     {
         return $this->artifacts()->withPivotValue('category', 'output');
+    }
+
+    public function usageSummary(): MorphOne
+    {
+        return $this->morphOne(UsageSummary::class, 'object');
     }
 
     public function isPending(): bool

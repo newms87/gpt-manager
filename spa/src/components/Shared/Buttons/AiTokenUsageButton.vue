@@ -31,11 +31,11 @@
 	</QBtn>
 </template>
 <script setup lang="ts">
-import { TaskUsage } from "@/types";
+import { UsageSummary } from "@/types";
 import { fCurrency, fNumber, LabelValueFormat } from "quasar-ui-danx";
 
 defineProps<{
-	usage: TaskUsage;
+	usage: UsageSummary;
 	showRuns?: boolean;
 }>();
 </script>

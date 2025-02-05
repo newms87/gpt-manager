@@ -3,6 +3,7 @@
 namespace App\Resources\TaskDefinition;
 
 use App\Models\Task\TaskRun;
+use App\Resources\Usage\UsageSummaryResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
@@ -17,15 +18,13 @@ class TaskRunResource extends ActionResource
             'completed_at'  => $taskRun->completed_at,
             'stopped_at'    => $taskRun->stopped_at,
             'failed_at'     => $taskRun->failed_at,
-            'input_tokens'  => $taskRun->input_tokens,
-            'output_tokens' => $taskRun->output_tokens,
-            'input_cost'    => $taskRun->input_cost,
-            'output_cost'   => $taskRun->output_cost,
-            'total_cost'    => $taskRun->total_cost,
+            'process_count' => $taskRun->process_count,
             'created_at'    => $taskRun->created_at,
             'updated_at'    => $taskRun->updated_at,
 
-            'processes' => fn($fields) => TaskProcessResource::collection($taskRun->taskProcesses, $fields),
+            'taskDefinition' => fn($fields) => TaskDefinitionResource::make($taskRun->taskDefinition, $fields),
+            'processes'      => fn($fields) => TaskProcessResource::collection($taskRun->taskProcesses, $fields),
+            'usage'          => fn($fields) => UsageSummaryResource::make($taskRun->usageSummary, $fields),
         ];
     }
 

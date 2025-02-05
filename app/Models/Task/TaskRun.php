@@ -2,10 +2,12 @@
 
 namespace App\Models\Task;
 
+use App\Models\Usage\UsageSummary;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -20,8 +22,6 @@ class TaskRun extends Model implements AuditableContract
         'stopped_at',
         'completed_at',
         'failed_at',
-        'input_tokens',
-        'output_tokens',
     ];
 
     public array $relationCounters = [
@@ -52,7 +52,12 @@ class TaskRun extends Model implements AuditableContract
     {
         return $this->belongsTo(TaskInput::class);
     }
-    
+
+    public function usageSummary(): MorphOne
+    {
+        return $this->morphOne(UsageSummary::class, 'object');
+    }
+
     public function isPending(): bool
     {
         return $this->status === TaskProcess::STATUS_PENDING;
