@@ -15,9 +15,9 @@ class TaskDefinitionAgentResource extends ActionResource
     {
         return [
             'id'            => $taskAgent->id,
-            'include_text'  => $taskAgent->include_text,
-            'include_files' => $taskAgent->include_files,
-            'include_data'  => $taskAgent->include_data,
+            'include_text'  => (bool)$taskAgent->include_text,
+            'include_files' => (bool)$taskAgent->include_files,
+            'include_data'  => (bool)$taskAgent->include_data,
             'created_at'    => $taskAgent->created_at,
             'updated_at'    => $taskAgent->updated_at,
 

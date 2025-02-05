@@ -32,41 +32,72 @@
 			</div>
 		</div>
 
-		<div class="mt-4">
-			<SchemaEditorToolbox
-				can-select
-				can-select-fragment
-				previewable
-				button-color="bg-sky-900 text-sky-200"
-				:model-value="taskDefinitionAgent.inputSchema"
-				:fragment="taskDefinitionAgent.inputSchemaFragment"
-				:loading="isUpdatingInput"
-				@update:model-value="schema => onUpdateAgent({ input_schema_id: schema?.id || null, input_schema_fragment_id: null })"
-				@update:fragment="fragment => onUpdateAgent({input_schema_fragment_id: fragment?.id || null })"
-			>
-				<template #header-start>
-					<div class="bg-sky-900 text-sky-200 rounded w-20 text-center py-1.5 text-sm mr-4">Input</div>
-				</template>
-			</SchemaEditorToolbox>
+		<div class="mt-4 flex items-center space-x-4">
+			<div>
+				<QCheckbox
+					:model-value="taskDefinitionAgent.include_text"
+					label="Include Text?"
+					class="text-slate-500"
+					@update:model-value="include_text => onUpdateAgent({ include_text })"
+				/>
+			</div>
+			<div>
+				<QCheckbox
+					:model-value="taskDefinitionAgent.include_files"
+					label="Include Files?"
+					class="text-slate-500"
+					@update:model-value="include_files => onUpdateAgent({ include_files })"
+				/>
+			</div>
+			<div>
+				<QCheckbox
+					:model-value="taskDefinitionAgent.include_data"
+					label="Include Data?"
+					class="text-slate-500"
+					@update:model-value="include_data => onUpdateAgent({ include_data })"
+				/>
+			</div>
 		</div>
 
-		<div class="mt-4">
-			<SchemaEditorToolbox
-				can-select
-				can-select-fragment
-				previewable
-				button-color="bg-green-900 text-green-200"
-				:model-value="taskDefinitionAgent.outputSchema"
-				:fragment="taskDefinitionAgent.outputSchemaFragment"
-				:loading="isUpdatingOutput"
-				@update:model-value="schema => onUpdateAgent({output_schema_id: schema?.id || null, output_schema_fragment_id: null })"
-				@update:fragment="fragment => onUpdateAgent({output_schema_fragment_id: fragment?.id || null })"
-			>
-				<template #header-start>
-					<div class="bg-green-900 text-green-200 rounded w-20 text-center py-1.5 text-sm mr-4">Output</div>
-				</template>
-			</SchemaEditorToolbox>
-		</div>
+		<Transition>
+			<div v-if="taskDefinitionAgent.include_data">
+				<div class="mt-4">
+					<SchemaEditorToolbox
+						can-select
+						can-select-fragment
+						previewable
+						button-color="bg-sky-900 text-sky-200"
+						:model-value="taskDefinitionAgent.inputSchema"
+						:fragment="taskDefinitionAgent.inputSchemaFragment"
+						:loading="isUpdatingInput"
+						@update:model-value="schema => onUpdateAgent({ input_schema_id: schema?.id || null, input_schema_fragment_id: null })"
+						@update:fragment="fragment => onUpdateAgent({input_schema_fragment_id: fragment?.id || null })"
+					>
+						<template #header-start>
+							<div class="bg-sky-900 text-sky-200 rounded w-20 text-center py-1.5 text-sm mr-4">Input</div>
+						</template>
+					</SchemaEditorToolbox>
+				</div>
+
+				<div class="mt-4">
+					<SchemaEditorToolbox
+						can-select
+						can-select-fragment
+						previewable
+						button-color="bg-green-900 text-green-200"
+						:model-value="taskDefinitionAgent.outputSchema"
+						:fragment="taskDefinitionAgent.outputSchemaFragment"
+						:loading="isUpdatingOutput"
+						@update:model-value="schema => onUpdateAgent({output_schema_id: schema?.id || null, output_schema_fragment_id: null })"
+						@update:fragment="fragment => onUpdateAgent({output_schema_fragment_id: fragment?.id || null })"
+					>
+						<template #header-start>
+							<div class="bg-green-900 text-green-200 rounded w-20 text-center py-1.5 text-sm mr-4">Output</div>
+						</template>
+					</SchemaEditorToolbox>
+				</div>
+			</div>
+		</Transition>
 	</div>
 </template>
 <script setup lang="ts">
@@ -100,7 +131,7 @@ async function onUpdateAgent(data) {
 		isUpdatingAgent.value = true;
 	} else if (data.output_schema_fragment_id !== undefined) {
 		isUpdatingOutput.value = true;
-	} else {
+	} else if (data.input_schema_fragment_id !== undefined) {
 		isUpdatingInput.value = true;
 	}
 	await updateAgentAction.trigger(props.taskDefinition, { id: props.taskDefinitionAgent.id, ...data });

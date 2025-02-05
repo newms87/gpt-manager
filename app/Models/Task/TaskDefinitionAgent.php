@@ -17,6 +17,9 @@ class TaskDefinitionAgent extends Model implements AuditableContract
 
     protected $fillable = [
         'agent_id',
+        'include_data',
+        'include_text',
+        'include_files',
         'input_schema_id',
         'input_schema_fragment_id',
         'output_schema_id',
