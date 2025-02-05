@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -176,7 +177,11 @@ class TaskDefinitionRepository extends ActionRepository
         $workflowInput = team()->workflowInputs()->find($input['workflow_input_id'] ?? null);
 
         if (!$workflowInput) {
-            throw new Exception("The workflow input was not found.");
+            throw new ValidationError("The workflow input was not found.");
+        }
+
+        if ($taskDefinition->taskInputs()->where('workflow_input_id', $workflowInput->id)->exists()) {
+            throw new ValidationError("The task input already exists for this task definition.");
         }
 
         return $taskDefinition->taskInputs()->create([

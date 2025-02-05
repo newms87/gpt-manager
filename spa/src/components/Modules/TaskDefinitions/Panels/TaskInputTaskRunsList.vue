@@ -23,7 +23,7 @@
 			<div v-else>
 				<ListTransition>
 					<template v-for="taskRun in taskInput.taskRuns" :key="taskRun.id">
-						<TaskRunsCard :task-run="taskRun" />
+						<TaskRunCard :task-run="taskRun" />
 						<QSeparator class="bg-slate-400 my-2" />
 					</template>
 				</ListTransition>
@@ -32,7 +32,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import TaskRunsCard from "@/components/Modules/TaskDefinitions/Panels/TaskRunsCard";
+import TaskRunCard from "@/components/Modules/TaskDefinitions/Panels/TaskRunCard";
 import { routes } from "@/components/Modules/TaskDefinitions/TaskInputs/config/routes";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import { TaskDefinition, TaskInput } from "@/types/task-definitions";

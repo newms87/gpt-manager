@@ -17,10 +17,10 @@
 </template>
 <script setup lang="ts">
 import { ElapsedTimePill, WorkflowStatusPill } from "@/components/Modules/Workflows/Shared";
-import { WorkflowRunner } from "@/types";
+import { TaskRunner } from "@/types";
 
 export interface WorkflowStatusTimerPillProps {
-	runner: WorkflowRunner;
+	runner: TaskRunner;
 	restart?: boolean;
 	inverse?: boolean,
 	statusClass?: string;

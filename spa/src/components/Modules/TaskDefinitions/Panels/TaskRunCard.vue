@@ -1,6 +1,8 @@
 <template>
 	<div>
-		Task Run: {{ taskRun.id }}
+		<div class="flex items-center">
+			<div class="bg-sky-900 text-sky-400 px-2 py-1 rounded-full text-xs">{{ taskRun.id }}</div>
+		</div>
 	</div>
 </template>
 <script setup lang="ts">

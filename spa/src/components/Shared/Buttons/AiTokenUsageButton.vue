@@ -3,9 +3,23 @@
 		{{ fCurrency(usage.total_cost) }}
 		<QMenu>
 			<div class="grid grid-cols-2 p-6 gap-y-4 gap-x-4">
-				<LabelValueFormat label="Runs" :value="usage.count" />
+				<LabelValueFormat v-if="showRuns" label="Runs" :value="usage.count" />
 				<LabelValueFormat
-					label="Cost" :value="fCurrency(usage.total_cost, {
+					:class="{'cols-2': !showRuns}"
+					label="Total Cost"
+					:value="fCurrency(usage.total_cost, {
+						minimumFractionDigits: 4,
+						maximumFractionDigits: 4
+					})"
+				/>
+				<LabelValueFormat
+					label="Input Cost" :value="fCurrency(usage.input_cost, {
+						minimumFractionDigits: 4,
+						maximumFractionDigits: 4
+					})"
+				/>
+				<LabelValueFormat
+					label="Output Cost" :value="fCurrency(usage.output_cost, {
 						minimumFractionDigits: 4,
 						maximumFractionDigits: 4
 					})"
@@ -17,10 +31,11 @@
 	</QBtn>
 </template>
 <script setup lang="ts">
-import { WorkflowUsage } from "@/types/workflows";
+import { TaskUsage } from "@/types";
 import { fCurrency, fNumber, LabelValueFormat } from "quasar-ui-danx";
 
 defineProps<{
-	usage: WorkflowUsage;
+	usage: TaskUsage;
+	showRuns?: boolean;
 }>();
 </script>
