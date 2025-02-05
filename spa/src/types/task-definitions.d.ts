@@ -1,6 +1,7 @@
 import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
 import { Agent, AgentThread } from "@/types/agents";
 import { FragmentSelector, PromptSchema, PromptSchemaFragment } from "@/types/prompts";
+import { WorkflowInput } from "@/types/workflow-inputs";
 import { ActionTargetItem } from "quasar-ui-danx";
 
 export interface TaskDefinition extends ActionTargetItem {
@@ -14,6 +15,7 @@ export interface TaskDefinition extends ActionTargetItem {
 	task_run_count: number;
 	task_agent_count: number;
 	taskRuns?: TaskRun[];
+	taskInputs?: TaskInput[];
 	taskAgents?: TaskDefinitionAgent[];
 }
 
@@ -27,6 +29,14 @@ export interface TaskDefinitionAgent extends ActionTargetItem {
 	inputSchemaFragment?: PromptSchemaFragment;
 	outputSchema?: PromptSchema;
 	outputSchemaFragment?: PromptSchemaFragment;
+}
+
+export interface TaskInput extends ActionTargetItem {
+	id: string;
+	taskDefinition: TaskDefinition;
+	workflowInput: WorkflowInput;
+	task_run_count: number;
+	taskRuns: TaskRun[];
 }
 
 export interface TaskRun extends ActionTargetItem {

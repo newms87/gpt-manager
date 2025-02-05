@@ -40,6 +40,11 @@ class TaskDefinition extends Model implements AuditableContract
         return $this->hasMany(TaskDefinitionAgent::class);
     }
 
+    public function taskInputs(): HasMany|TaskInput
+    {
+        return $this->hasMany(TaskInput::class);
+    }
+
     public function taskRuns(): HasMany|TaskRun
     {
         return $this->hasMany(TaskRun::class);

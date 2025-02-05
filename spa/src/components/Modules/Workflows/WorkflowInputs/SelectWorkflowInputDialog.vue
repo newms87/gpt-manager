@@ -1,6 +1,6 @@
 <template>
 	<InfoDialog
-		title="Select Workflow Input"
+		title="Select Input"
 		content-class="w-[50rem]"
 		done-class="bg-slate-700"
 		@close="$emit('close')"

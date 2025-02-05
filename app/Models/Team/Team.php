@@ -4,6 +4,7 @@ namespace App\Models\Team;
 
 use App\Models\Agent\Agent;
 use App\Models\User;
+use App\Models\Workflow\WorkflowInput;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -26,6 +27,11 @@ class Team extends Model implements AuditableContract
     public function agents(): HasMany|Agent
     {
         return $this->hasMany(Agent::class);
+    }
+
+    public function workflowInputs(): HasMany|WorkflowInput
+    {
+        return $this->hasMany(WorkflowInput::class);
     }
 
     public function __toString()

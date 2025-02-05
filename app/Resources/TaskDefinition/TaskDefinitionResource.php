@@ -24,6 +24,7 @@ class TaskDefinitionResource extends ActionResource
             'updated_at'             => $taskDefinition->updated_at,
 
             'taskAgents' => fn($fields) => TaskDefinitionAgentResource::collection($taskDefinition->definitionAgents, $fields),
+            'taskInputs' => fn($fields) => TaskInputResource::collection($taskDefinition->taskInputs, $fields),
             'taskRuns'   => fn($fields) => TaskRunResource::collection($taskDefinition->taskRuns, $fields),
         ];
     }
@@ -31,7 +32,6 @@ class TaskDefinitionResource extends ActionResource
     public static function details(Model $model, ?array $includeFields = null): array
     {
         return static::make($model, $includeFields ?? [
-            '*'          => true,
             'taskAgents' => [
                 'agent'                => true,
                 'inputSchema'          => true,
@@ -39,7 +39,7 @@ class TaskDefinitionResource extends ActionResource
                 'outputSchema'         => true,
                 'outputSchemaFragment' => true,
             ],
-            'taskRuns'   => true,
+            'taskInputs' => true,
         ]);
     }
 }

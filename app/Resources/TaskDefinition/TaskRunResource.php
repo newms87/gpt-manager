@@ -3,7 +3,6 @@
 namespace App\Resources\TaskDefinition;
 
 use App\Models\Task\TaskRun;
-use App\Resources\Prompt\PromptSchemaResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
@@ -26,7 +25,7 @@ class TaskRunResource extends ActionResource
             'created_at'    => $taskRun->created_at,
             'updated_at'    => $taskRun->updated_at,
 
-            'processes' => fn($fields) => PromptSchemaResource::make($taskRun->taskProcesses, $fields),
+            'processes' => fn($fields) => TaskProcessResource::collection($taskRun->taskProcesses, $fields),
         ];
     }
 

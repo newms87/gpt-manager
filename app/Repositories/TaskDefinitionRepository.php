@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskDefinitionAgent;
+use App\Models\Task\TaskInput;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,6 +54,8 @@ class TaskDefinitionRepository extends ActionRepository
             'update-agent' => $this->updateAgent($model, $data),
             'copy-agent' => $this->copyAgent($model, $data),
             'remove-agent' => $this->removeAgent($model, $data),
+            'add-input' => $this->addInput($model, $data),
+            'remove-input' => $this->removeInput($model, $data),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -161,6 +164,38 @@ class TaskDefinitionRepository extends ActionRepository
         }
 
         $taskDefinitionAgent->delete();
+
+        return true;
+    }
+
+    /**
+     * Add a task input to a task definition to enable running the task against the input
+     */
+    public function addInput(TaskDefinition $taskDefinition, ?array $input = []): TaskInput
+    {
+        $workflowInput = team()->workflowInputs()->find($input['workflow_input_id'] ?? null);
+
+        if (!$workflowInput) {
+            throw new Exception("The workflow input was not found.");
+        }
+
+        return $taskDefinition->taskInputs()->create([
+            'workflow_input_id' => $workflowInput->id,
+        ]);
+    }
+
+    /**
+     * Remove a task input from a task definition
+     */
+    public function removeInput(TaskDefinition $taskDefinition, ?array $input = []): bool
+    {
+        $taskInput = $taskDefinition->taskInputs()->find($input['id']);
+
+        if (!$taskInput) {
+            throw new Exception("TaskInput not found: $input[id]");
+        }
+
+        $taskInput->delete();
 
         return true;
     }
