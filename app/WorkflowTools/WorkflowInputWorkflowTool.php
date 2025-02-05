@@ -73,7 +73,7 @@ class WorkflowInputWorkflowTool extends WorkflowTool
             'model'        => '',
             'text_content' => $workflowInput->content,
             'json_content' => [
-                'teamObjects' => $this->getTeamObjects($workflowInput),
+                'teamObjects' => static::getTeamObjects($workflowInput),
             ],
         ]);
 
@@ -93,7 +93,7 @@ class WorkflowInputWorkflowTool extends WorkflowTool
         Log::debug(self::$toolName . ": created $artifact");
     }
 
-    public function getTeamObjects(WorkflowInput $workflowInput): array
+    public static function getTeamObjects(WorkflowInput $workflowInput): array
     {
         if (!$workflowInput->team_object_type) {
             return [];
@@ -101,7 +101,10 @@ class WorkflowInputWorkflowTool extends WorkflowTool
 
         $teamObject = app(TeamObjectRepository::class)->loadTeamObject($workflowInput->team_object_type, $workflowInput->team_object_id);
 
-
+        if (!$teamObject) {
+            return [];
+        }
+        
         // TODO: For now just one object, but maybe add team_object_filter field to query the team objects required
 
         return [TeamObjectForAgentsResource::make($teamObject)];

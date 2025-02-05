@@ -14,16 +14,16 @@ class TaskInputResource extends ActionResource
         return [
             'id'             => $taskInput->id,
             'task_run_count' => $taskInput->task_run_count,
-
-            'workflowInput'  => WorkflowInputResource::make($taskInput->workflowInput),
+            'workflowInput'  => WorkflowInputResource::details($taskInput->workflowInput),
             'taskDefinition' => fn($fields) => TaskDefinitionResource::make($taskInput->taskDefinition, $fields),
+            'taskRuns'       => fn($fields) => TaskRunResource::collection($taskInput->taskRuns, $fields),
         ];
     }
 
     public static function details(Model $model, ?array $includeFields = null): array
     {
         return static::make($model, $includeFields ?? [
-            '*' => true,
+            'taskRuns' => true,
         ]);
     }
 }

@@ -48,6 +48,11 @@ class TaskRun extends Model implements AuditableContract
         return $this->hasMany(TaskProcess::class);
     }
 
+    public function taskInput(): BelongsTo|TaskInput
+    {
+        return $this->belongsTo(TaskInput::class);
+    }
+    
     public function isPending(): bool
     {
         return $this->status === TaskProcess::STATUS_PENDING;

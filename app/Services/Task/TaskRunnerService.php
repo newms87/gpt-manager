@@ -18,7 +18,7 @@ class TaskRunnerService
     /**
      * Prepare a task run for the task definition. Creates a TaskRun object w/ TaskProcess objects
      */
-    public static function prepareTaskRun(TaskDefinition $taskDefinition, array|Collection $artifacts = [])
+    public static function prepareTaskRun(TaskDefinition $taskDefinition, array|Collection $artifacts = []): TaskRun
     {
         $taskRun = $taskDefinition->taskRuns()->create([
             'status' => TaskProcess::STATUS_PENDING,

@@ -21,7 +21,7 @@ return new class extends Migration {
         });
 
         Schema::table('task_runs', function (Blueprint $table) {
-            $table->foreignId('task_input_id')->constrained()->onDelete('cascade');
+            $table->foreignId('task_input_id')->nullable()->constrained()->onDelete('cascade');
         });
     }
 
