@@ -21,7 +21,7 @@
 				/>
 			</div>
 			<ActionButton
-				:action="dxWorkflow.getAction('run-workflow')"
+				:action="runWorkflowAction"
 				:target="workflow"
 				:input="actionInput"
 				:disabled="!selectedInput"
@@ -67,6 +67,7 @@ defineProps<{
 	workflow: Workflow,
 }>();
 
+const runWorkflowAction = dxWorkflow.getAction("run-workflow");
 const selectedInput = ref<WorkflowInput | null>(null);
 const actionInput = computed(() => ({ workflow_input_id: selectedInput.value?.id }));
 const showInputDialog = ref<boolean>(false);

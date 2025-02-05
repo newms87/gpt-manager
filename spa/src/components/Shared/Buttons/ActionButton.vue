@@ -132,14 +132,14 @@ const typeOptions = computed(() => {
 
 const isSaving = computed(() => {
 	if (props.saving) return true;
+	if (props.action) {
+		return props.action.isApplying;
+	}
 	if (props.target) {
 		if (Array.isArray(props.target)) {
 			return props.target.some((t) => t.isSaving);
 		}
 		return props.target.isSaving;
-	}
-	if (props.action) {
-		return props.action.isApplying;
 	}
 	return false;
 });

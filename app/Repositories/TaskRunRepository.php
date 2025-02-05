@@ -16,6 +16,8 @@ class TaskRunRepository extends ActionRepository
     {
         return match ($action) {
             'create' => $this->createTaskRun($data),
+            'resume' => $this->resumeTaskRun($model),
+            'stop' => $this->stopTaskRun($model),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -36,6 +38,25 @@ class TaskRunRepository extends ActionRepository
 
         $taskRun->taskInput()->associate($taskInput)->save();
 
+        // Dispatch the take processes to begin the task run
+        TaskRunnerService::continue($taskRun);
+
         return $taskRun;
     }
+
+    public function resumeTaskRun(TaskRun $taskRun): TaskRun
+    {
+        TaskRunnerService::resume($taskRun);
+
+        return $taskRun;
+    }
+
+    public function stopTaskRun(TaskRun $taskRun): TaskRun
+    {
+        TaskRunnerService::stop($taskRun);
+
+        return $taskRun;
+    }
+
+
 }

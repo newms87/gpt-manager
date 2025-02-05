@@ -45,7 +45,7 @@
 				<ActionButton
 					v-if="taskProcess.status === 'Running'"
 					type="stop"
-					:action="dxTaskProcess.getAction('stop')"
+					:action="stopAction"
 					:target="taskProcess"
 					color="red"
 					class="mr-2"
@@ -73,6 +73,7 @@ withDefaults(defineProps<{
 	colorClass: "bg-sky-950 text-sky-400"
 });
 
+const stopAction = dxTaskProcess.getAction("stop");
 const isShowingInputArtifacts = ref(false);
 const isShowingOutputArtifacts = ref(false);
 const isShowingJobDispatches = ref(false);

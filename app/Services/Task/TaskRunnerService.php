@@ -120,6 +120,68 @@ class TaskRunnerService
     }
 
     /**
+     * Resume the task run. This will resume all task processes that were stopped
+     */
+    public static function resume(TaskRun $taskRun): void
+    {
+        Log::debug("Resuming $taskRun");
+
+        LockHelper::acquire($taskRun);
+
+        try {
+            if (!$taskRun->isStopped() && !$taskRun->isPending()) {
+                Log::debug("TaskRun is not stopped, skipping resume");
+
+                return;
+            }
+
+            $taskRun->stopped_at = null;
+            $taskRun->save();
+
+            foreach($taskRun->taskProcesses as $taskProcess) {
+                if ($taskProcess->isStopped()) {
+                    $taskProcess->stopped_at = null;
+                    $taskProcess->save();
+                }
+            }
+        } finally {
+            LockHelper::release($taskRun);
+        }
+
+        static::continue($taskRun);
+    }
+
+    /**
+     * Stop the task run. This will stop all task processes and prevent any further execution
+     */
+    public static function stop(TaskRun $taskRun): void
+    {
+        Log::debug("Stopping $taskRun");
+
+        LockHelper::acquire($taskRun);
+
+        try {
+            if ($taskRun->isStopped()) {
+                Log::debug("TaskRun is already stopped");
+
+                return;
+            }
+
+            $taskRun->stopped_at = now();
+            $taskRun->save();
+
+            foreach($taskRun->taskProcesses as $taskProcess) {
+                if ($taskProcess->isStarted()) {
+                    $taskProcess->status = TaskProcess::STATUS_STOPPED;
+                    $taskProcess->save();
+                }
+            }
+        } finally {
+            LockHelper::release($taskRun);
+        }
+    }
+
+    /**
      * Dispatch a task process to be executed by the job queue
      */
     public static function dispatchProcess(TaskProcess $taskProcess): ?JobDispatch
