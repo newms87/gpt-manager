@@ -1,47 +1,55 @@
 <template>
-	<ConfirmDialog
+	<InfoDialog
 		title="Select Workflow Input"
-		:confirm-text="selectedInput ? 'Select ' + selectedInput.name : 'Select an input...'"
-		content-class="w-[80vw]"
-		:disabled="!selectedInput"
-		@confirm="$emit('confirm', selectedInput)"
+		content-class="w-[50rem]"
+		done-class="bg-slate-700"
 		@close="$emit('close')"
 	>
-		<ActionTableLayout
-			title="Workflow Inputs"
-			:controller="dxWorkflowInput"
-			table-class="bg-slate-600"
-			filter-class="bg-slate-500"
-			show-filters
-			create-button
-			selection="single"
-		/>
-	</ConfirmDialog>
+		<div>
+			<div>
+				<TextField
+					:model-value="dxWorkflowInput.activeFilter.value.keywords"
+					placeholder="Search..."
+					:loading="dxWorkflowInput.isLoadingList.value"
+					:debounce="500"
+					@update:model-value="keywords => dxWorkflowInput.setActiveFilter({keywords })"
+				>
+					<template #prepend>
+						<SearchIcon class="w-4" />
+					</template>
+				</TextField>
+			</div>
+			<template v-for="workflowInput in dxWorkflowInput.pagedItems.value?.data || []" :key="workflowInput?.id">
+				<WorkflowInputCard :workflow-input="workflowInput" readonly @select="$emit('confirm', workflowInput)" />
+				<QSeparator class="bg-slate-400 my-4" />
+			</template>
+		</div>
+	</InfoDialog>
 </template>
 <script setup lang="ts">
 import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
-import { WorkflowInput } from "@/types";
-import { ActionTableLayout, ConfirmDialog } from "quasar-ui-danx";
-import { computed, onMounted } from "vue";
+import WorkflowInputCard from "@/components/Modules/Workflows/WorkflowInputs/WorkflowInputCard";
+import { FaSolidMagnifyingGlass as SearchIcon } from "danx-icon";
+import { InfoDialog, TextField } from "quasar-ui-danx";
+import { onMounted } from "vue";
 
-defineEmits(["confirm", "close"]);
-defineProps<{
-	filter?: Partial<WorkflowInput>;
-}>();
+const emit = defineEmits(["confirm", "close"]);
+
+dxWorkflowInput.activeFilter.value = {
+	keywords: ""
+};
 
 // Modify the 'create' action behavior so we reload the list and select the created item
 dxWorkflowInput.modifyAction("create", {
 	onFinish: ({ item }) => {
 		if (item) {
-			dxWorkflowInput.loadList();
-			dxWorkflowInput.setSelectedRows([item]);
+			emit("confirm", item);
 		}
 	}
 });
-dxWorkflowInput.columns = dxWorkflowInput.columns.filter(col => ["id", "name", "description", "tags", "created_at"].includes(col.name));
-const selectedInput = computed(() => dxWorkflowInput.selectedRows.value[0] || null);
 onMounted(() => {
 	dxWorkflowInput.initialize();
 	dxWorkflowInput.setPagination({ rowsPerPage: 10 });
+	dxWorkflowInput.loadList();
 });
 </script>

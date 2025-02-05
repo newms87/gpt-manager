@@ -1,9 +1,14 @@
 <template>
 	<div>
 		<div class="flex items-center flex-nowrap space-x-4 h-20">
-			<ShowHideButton v-model="isEditing" :show-icon="EditIcon" class="bg-slate-700" />
-			<div class="rounded-full bg-sky-800 text-sky-200 px-4 py-2">
+			<ShowHideButton v-if="!readonly" v-model="isEditing" :show-icon="EditIcon" class="bg-slate-700" />
+			<QBtn v-if="readonly" class="rounded-full bg-sky-800 text-sky-200 px-4 py-2" @click="$emit('select')">{{
+					workflowInput.name
+				}}
+			</QBtn>
+			<div v-else class="rounded-full bg-sky-800 text-sky-200 px-4 py-2">
 				<EditableDiv
+					:readonly="readonly"
 					color="sky-800"
 					:model-value="workflowInput.name"
 					placeholder="Enter Name..."
@@ -11,12 +16,14 @@
 				/>
 			</div>
 			<EditableDiv
+				:readonly="readonly"
 				color="slate-700"
 				:model-value="workflowInput.description"
 				placeholder="Enter Description..."
 				@update:model-value="description => updateAction.trigger(workflowInput, { description })"
 			/>
 			<MultiFileField
+				:readonly="readonly"
 				:disable="!isEditing"
 				:model-value="workflowInput.files"
 				:width="70"
@@ -27,7 +34,7 @@
 				@update:model-value="files => updateAction.trigger(workflowInput, { files })"
 			/>
 		</div>
-		<div v-if="isEditing" class="mt-4">
+		<div v-if="isEditing && !readonly" class="mt-4">
 			<MarkdownEditor
 				:model-value="workflowInput.content"
 				:max-length="60000"
@@ -49,8 +56,10 @@ import { FaSolidPencil as EditIcon } from "danx-icon";
 import { EditableDiv, MultiFileField, SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
+defineEmits(["select"]);
 defineProps<{
 	workflowInput: WorkflowInput;
+	readonly?: boolean;
 }>();
 
 const updateAction = dxWorkflowInput.getAction("update");
