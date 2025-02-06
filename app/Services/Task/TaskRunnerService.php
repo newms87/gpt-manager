@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Models\Job\JobDispatch;
+use Throwable;
 
 class TaskRunnerService
 {
@@ -281,7 +282,13 @@ class TaskRunnerService
         }
 
         // Run the task process
-        $taskProcess->getRunner()->run();
+        try {
+            $taskProcess->getRunner()->run();
+        } catch(Throwable $throwable) {
+            $taskProcess->failed_at = now();
+            $taskProcess->save();
+            throw $throwable;
+        }
     }
 
     /**

@@ -11,7 +11,7 @@
 		<ElapsedTimePill
 			:timer-class="timerClass + ' rounded-l-none flex items-center justify-center'"
 			:start="runner.started_at"
-			:end="runner.failed_at || runner.completed_at"
+			:end="runner.failed_at || runner.completed_at || runner.timeout_at"
 		/>
 	</div>
 </template>
