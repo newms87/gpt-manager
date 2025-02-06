@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Task\TaskProcess;
+use App\Repositories\TaskProcessRepository;
 use Illuminate\Console\Command;
 
 class TaskTimeoutCommand extends Command
@@ -15,11 +16,7 @@ class TaskTimeoutCommand extends Command
         $taskProcesses = TaskProcess::where('status', TaskProcess::STATUS_RUNNING)->get();
 
         foreach($taskProcesses as $taskProcess) {
-            if ($taskProcess->isPastTimeout()) {
-                $this->info("Task process timed out: $taskProcess");
-                $taskProcess->timeout_at = now();
-                $taskProcess->save();
-            }
+            app(TaskProcessRepository::class)->checkForTimeout($taskProcess);
         }
 
         $this->info("All tasks have been checked for timeouts");
