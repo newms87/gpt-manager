@@ -1,6 +1,6 @@
 <template>
 	<div class="bg-transparent text-slate-300 flex flex-col flex-nowrap" :class="{'h-full': active}">
-		<ThreadCardHeader v-model:active="active" v-model:logs="showLogs" :thread="thread" @close="$emit('close')" />
+		<AgentThreadCardHeader v-model:active="active" v-model:logs="showLogs" :thread="thread" @close="$emit('close')" />
 		<div v-if="active" class="mt-4 flex-grow overflow-y-scroll -mr-10 pr-5">
 			<AuditRequestLogsCard
 				v-if="showLogs"
@@ -27,8 +27,8 @@
 </template>
 
 <script setup lang="ts">
+import AgentThreadCardHeader from "@/components/Modules/Agents/Threads/AgentThreadCardHeader";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
-import ThreadCardHeader from "@/components/Modules/Agents/Threads/ThreadCardHeader";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
 import { ActionButton } from "@/components/Shared";

@@ -13,7 +13,7 @@
 
 			<template v-for="thread in visibleThreads" :key="thread.id">
 				<QSeparator v-if="!activeThread" class="bg-slate-200" />
-				<ThreadCard
+				<AgentThreadCard
 					:class="{'my-4': !activeThread }"
 					:thread="thread"
 					:active="activeThreadId === thread.id"
@@ -26,7 +26,7 @@
 </template>
 <script setup lang="ts">
 import { dxAgent } from "@/components/Modules/Agents";
-import ThreadCard from "@/components/Modules/Agents/Threads/ThreadCard";
+import AgentThreadCard from "@/components/Modules/Agents/Threads/AgentThreadCard";
 import router from "@/router";
 import { Agent } from "@/types/agents";
 import { FaRegularMessage as CreateIcon } from "danx-icon";
