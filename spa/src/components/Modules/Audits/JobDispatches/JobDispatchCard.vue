@@ -10,11 +10,13 @@
 			<div class="flex space-x-2 items-center">
 				<ShowHideButton v-model="isShowingLogs" label="Logs" class="bg-slate-950 text-slate-400" />
 				<ShowHideButton
+					v-if="job.apiLogs"
 					v-model="isShowingApiLogs"
 					class="bg-sky-900 text-sky-300"
 					:label="`Api Logs: ${job.apiLogs.length}`"
 				/>
 				<ShowHideButton
+					v-if="job.errors"
 					v-model="isShowingErrors"
 					class="bg-red-950 text-red-300"
 					:label="`Errors: ${job.errors.length}`"

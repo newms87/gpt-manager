@@ -10,19 +10,19 @@
 					v-model="isShowingJobDispatches"
 					:label="taskProcess.job_dispatch_count + ' Jobs'"
 					:class="colorClass"
-					@show="dxTaskRun.routes.detailsAndStore(taskProcess, {jobDispatches: true})"
+					@show="dxTaskProcess.routes.detailsAndStore(taskProcess, {jobDispatches: jobDispatchesField})"
 				/>
 				<ShowHideButton
 					v-model="isShowingInputArtifacts"
 					:label="taskProcess.input_artifact_count + ' Input'"
 					:class="colorClass"
-					@show="dxTaskRun.routes.detailsAndStore(taskProcess, {inputArtifacts: true})"
+					@show="dxTaskProcess.routes.detailsAndStore(taskProcess, {inputArtifacts: artifactsField})"
 				/>
 				<ShowHideButton
 					v-model="isShowingOutputArtifacts"
 					:label="taskProcess.output_artifact_count + ' Output'"
 					:class="colorClass"
-					@show="dxTaskRun.routes.detailsAndStore(taskProcess, {inputArtifacts: true})"
+					@show="dxTaskProcess.routes.detailsAndStore(taskProcess, {inputArtifacts: artifactsField})"
 				/>
 				<WorkflowStatusTimerPill :runner="taskProcess" />
 			</div>
@@ -50,17 +50,26 @@
 			</div>
 		</div>
 
-		<div v-if="isShowingJobDispatches">
-			<AuditRequestJobsPanel v-if="taskProcess.jobDispatches" :jobs="taskProcess.jobDispatches" />
-			<div v-else>
-				<QSkeleton v-for="i in 3" :key="'s' + i" class="h-12 my-2" />
-			</div>
-		</div>
+		<JobDispatchList
+			v-if="isShowingJobDispatches"
+			class="p-2 border-t border-slate-400 mt-2"
+			:jobs="taskProcess.jobDispatches"
+		/>
+		<ArtifactList
+			v-if="isShowingInputArtifacts"
+			class="p-2 border-t border-slate-400 mt-2"
+			:artifacts="taskProcess.inputArtifacts"
+		/>
+		<ArtifactList
+			v-if="isShowingOutputArtifacts"
+			class="p-2 border-t border-slate-400 mt-2"
+			:artifacts="taskProcess.outputArtifacts"
+		/>
 	</div>
 </template>
 <script setup lang="ts">
-import { AuditRequestJobsPanel } from "@/components/Modules/Audits/Panels";
-import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
+import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
+import JobDispatchList from "@/components/Modules/Audits/JobDispatches/JobDispatchList";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
@@ -83,6 +92,16 @@ const isShowingInputArtifacts = ref(false);
 const isShowingOutputArtifacts = ref(false);
 const isShowingJobDispatches = ref(false);
 
+// Defines the fields to fetch when requesting JobDispatches
+const jobDispatchesField = { logs: true, apiLogs: true, errors: true };
+
+// Defines the fields to fetch when requesting artifacts
+const artifactsField = {
+	text_content: true,
+	json_content: true,
+	files: { transcodes: true, thumb: true }
+};
+
 /********
  * Refresh the task run every 2 seconds while it is running
  */
@@ -91,9 +110,9 @@ onMounted(() => {
 		props.taskProcess,
 		(tp: TaskProcess) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(tp.status),
 		(tp: TaskProcess) => dxTaskProcess.routes.details(tp, {
-			jobDispatches: isShowingJobDispatches.value ? { logs: true, apiLogs: true, errors: true } : false,
-			inputArtifacts: isShowingInputArtifacts.value,
-			outputArtifacts: isShowingOutputArtifacts.value
+			jobDispatches: isShowingJobDispatches.value ? jobDispatchesField : false,
+			inputArtifacts: isShowingInputArtifacts.value ? artifactsField : false,
+			outputArtifacts: isShowingOutputArtifacts.value ? artifactsField : false
 		})
 	);
 });

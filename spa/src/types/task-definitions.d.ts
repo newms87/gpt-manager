@@ -1,5 +1,6 @@
 import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
 import { Agent, AgentThread } from "@/types/agents";
+import { Artifact } from "@/types/artifacts";
 import { FragmentSelector, PromptSchema, PromptSchemaFragment } from "@/types/prompts";
 import { WorkflowInput } from "@/types/workflow-inputs";
 import { ActionTargetItem } from "quasar-ui-danx";
@@ -59,6 +60,9 @@ export interface TaskProcess extends TaskRunner {
 	agentThread?: AgentThread;
 	lastJobDispatch?: JobDispatch;
 	jobDispatches?: JobDispatch[];
+	inputArtifacts?: Artifact[];
+	outputArtifacts?: Artifact[];
+	taskRun?: TaskRun;
 }
 
 export interface TaskRunner extends ActionTargetItem {

@@ -1,12 +1,10 @@
 <template>
-	<div>
+	<div class="bg-slate-900 p-2 rounded-lg">
 		<div class="flex items-center mb-2">
-			<div class="flex flex-nowrap items-center flex-grow">
-				<div>{{ artifact.name }}</div>
-			</div>
-			<div>{{ fDateTime(artifact.created_at) }}</div>
+			<LabelPillWidget :label="fDateTime(artifact.created_at)" color="blue" size="xs" />
+			<div class="ml-2">{{ artifact.name }}</div>
 		</div>
-		<div v-if="artifact.files.length > 0">
+		<div v-if="artifact.files?.length">
 			<div class="flex items-stretch justify-start">
 				<FilePreview
 					v-for="file in artifact.files"
@@ -18,7 +16,7 @@
 				/>
 			</div>
 		</div>
-		<div>
+		<div v-if="artifact.text_content || artifact.json_content">
 			<MarkdownEditor
 				:model-value="artifact.text_content || artifact.json_content"
 				:format="artifact.text_content ? 'text' : 'yaml'"
@@ -29,6 +27,7 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
+import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { Artifact } from "@/types";
 import { fDateTime, FilePreview } from "quasar-ui-danx";
 
