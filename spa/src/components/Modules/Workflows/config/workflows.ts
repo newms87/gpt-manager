@@ -6,11 +6,16 @@ export interface WorkflowStatus {
 
 export const WORKFLOW_STATUS = {
 	resolve(value): WorkflowStatus {
-		return [WORKFLOW_STATUS.PENDING, WORKFLOW_STATUS.RUNNING, WORKFLOW_STATUS.COMPLETED, WORKFLOW_STATUS.FAILED, WORKFLOW_STATUS.TIMED_OUT].find(s => s.value === value);
+		return [WORKFLOW_STATUS.PENDING, WORKFLOW_STATUS.STOPPED, WORKFLOW_STATUS.RUNNING, WORKFLOW_STATUS.COMPLETED, WORKFLOW_STATUS.FAILED, WORKFLOW_STATUS.TIMEOUT].find(s => s.value === value) || WORKFLOW_STATUS.PENDING;
 	},
 
 	PENDING: {
 		value: "Pending",
+		classPrimary: "bg-slate-700 text-slate-300",
+		classAlt: "bg-slate-300 text-slate-700"
+	},
+	STOPPED: {
+		value: "Stopped",
 		classPrimary: "bg-slate-700 text-slate-300",
 		classAlt: "bg-slate-300 text-slate-700"
 	},
@@ -29,8 +34,8 @@ export const WORKFLOW_STATUS = {
 		classPrimary: "bg-red-800 text-red-200",
 		classAlt: "bg-red-200 text-red-800"
 	},
-	TIMED_OUT: {
-		value: "Timed Out",
+	TIMEOUT: {
+		value: "Timeout",
 		classPrimary: "bg-gray-800 text-gray-200",
 		classAlt: "bg-gray-200 text-gray-800"
 	}

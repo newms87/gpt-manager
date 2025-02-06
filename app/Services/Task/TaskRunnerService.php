@@ -64,6 +64,7 @@ class TaskRunnerService
             ]);
 
             $taskProcess->inputArtifacts()->saveMany($artifacts);
+            $taskProcess->updateRelationCounter('inputArtifacts');
             $taskProcess->getRunner()->prepareProcess();
 
             $taskProcesses[] = $taskProcess;
@@ -182,6 +183,54 @@ class TaskRunnerService
     }
 
     /**
+     * Resume the task process. This will resume the task process if it was stopped
+     */
+    public static function resumeProcess(TaskProcess $taskProcess): void
+    {
+        Log::debug("Resuming: $taskProcess");
+
+        LockHelper::acquire($taskProcess);
+
+        try {
+            if (!$taskProcess->isStopped()) {
+                Log::debug("TaskProcess is not stopped, skipping resume");
+
+                return;
+            }
+
+            $taskProcess->stopped_at = null;
+            $taskProcess->save();
+        } finally {
+            LockHelper::release($taskProcess);
+        }
+
+        static::dispatchProcess($taskProcess);
+    }
+
+    /**
+     * Stop the task process. This will prevent the task process from executing further
+     */
+    public static function stopProcess(TaskProcess $taskProcess): void
+    {
+        Log::debug("Stopping: $taskProcess");
+
+        LockHelper::acquire($taskProcess);
+
+        try {
+            if ($taskProcess->isStopped()) {
+                Log::debug("TaskProcess is already stopped");
+
+                return;
+            }
+
+            $taskProcess->stopped_at = now();
+            $taskProcess->save();
+        } finally {
+            LockHelper::release($taskProcess);
+        }
+    }
+
+    /**
      * Dispatch a task process to be executed by the job queue
      */
     public static function dispatchProcess(TaskProcess $taskProcess): ?JobDispatch
@@ -200,6 +249,7 @@ class TaskRunnerService
 
             // Associate all job dispatches with the task process for logging purposes
             $taskProcess->jobDispatches()->attach($jobDispatch->id);
+            $taskProcess->updateRelationCounter('jobDispatches');
         }
 
         // Dispatch the job

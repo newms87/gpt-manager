@@ -2,7 +2,8 @@
 	<QBtn
 		:loading="isSaving"
 		class="shadow-none"
-		:class="colorClass"
+		:class="disabled ? 'text-slate-800 bg-slate-500 opacity-50' : colorClass"
+		:disable="disabled"
 		@click="onAction"
 	>
 		<div class="flex items-center flex-nowrap">
@@ -43,6 +44,7 @@ export interface ActionButtonProps {
 	action?: ResourceAction;
 	target?: ActionTarget;
 	input?: object;
+	disabled?: boolean;
 }
 
 const emit = defineEmits(["success", "error", "always"]);
@@ -145,6 +147,7 @@ const isSaving = computed(() => {
 });
 
 function onAction() {
+	if (props.disabled) return;
 	if (props.action) {
 		props.action.trigger(props.target, props.input).then(async (response) => {
 			emit("success", typeof response.json === "function" ? await response.json() : response);

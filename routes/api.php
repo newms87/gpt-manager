@@ -8,6 +8,7 @@ use App\Http\Controllers\Ai\PromptSchemaFragmentsController;
 use App\Http\Controllers\Ai\PromptSchemasController;
 use App\Http\Controllers\Ai\TaskDefinitionsController;
 use App\Http\Controllers\Ai\TaskInputsController;
+use App\Http\Controllers\Ai\TaskProcessesController;
 use App\Http\Controllers\Ai\TaskRunsController;
 use App\Http\Controllers\Ai\TeamObjectsController;
 use App\Http\Controllers\Ai\ThreadsController;
@@ -61,6 +62,7 @@ ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);
 ActionRoute::routes('task-definitions', new TaskDefinitionsController);
 ActionRoute::routes('task-inputs', new TaskInputsController);
 ActionRoute::routes('task-runs', new TaskRunsController);
+ActionRoute::routes('task-processes', new TaskProcessesController);
 
 // Agents
 ActionRoute::routes('agents', new AgentsController);

@@ -67,7 +67,7 @@ class TaskProcess extends Model implements AuditableContract
     public array $relationCounters = [
         JobDispatch::class => ['jobDispatches' => 'job_dispatch_count'],
         Artifact::class    => [
-            'inputArtifacts'  => 'artifact_count',
+            'inputArtifacts'  => 'input_artifact_count',
             'outputArtifacts' => 'output_artifact_count',
         ],
     ];

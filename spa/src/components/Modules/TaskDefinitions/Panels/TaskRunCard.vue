@@ -26,6 +26,7 @@
 			<ActionButton
 				v-else
 				type="stop"
+				:disabled="!isRunning"
 				:action="stopAction"
 				:target="taskRun"
 				color="red"
@@ -82,4 +83,5 @@ const deleteAction = dxTaskRun.getAction("delete");
 
 const isShowingProcesses = ref(false);
 const isStopped = computed(() => props.taskRun.status === "Stopped" || props.taskRun.status === "Pending");
+const isRunning = computed(() => props.taskRun.status === "Running");
 </script>
