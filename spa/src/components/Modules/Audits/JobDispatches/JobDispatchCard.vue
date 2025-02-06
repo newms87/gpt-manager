@@ -9,8 +9,16 @@
 			</div>
 			<div class="flex space-x-2 items-center">
 				<ShowHideButton v-model="isShowingLogs" label="Logs" class="bg-slate-950 text-slate-400" />
-				<ShowHideButton v-model="isShowingApiLogs" class="bg-sky-900 text-sky-300" label="Api Logs" />
-				<ShowHideButton v-model="isShowingErrors" class="bg-red-950 text-red-300" label="Errors" />
+				<ShowHideButton
+					v-model="isShowingApiLogs"
+					class="bg-sky-900 text-sky-300"
+					:label="`Api Logs: ${job.apiLogs.length}`"
+				/>
+				<ShowHideButton
+					v-model="isShowingErrors"
+					class="bg-red-950 text-red-300"
+					:label="`Errors: ${job.errors.length}`"
+				/>
 				<LabelPillWidget :status="JOB_DISPATCH_STATUS.resolve(job.status)" size="sm" />
 			</div>
 		</div>
@@ -29,19 +37,25 @@
 			<LabelValueBlock label="Ran At" :value="fDateTime(job.ran_at)" />
 			<LabelValueBlock label="Completed At" :value="fDateTime(job.completed_at)" />
 			<LabelValueBlock label="Timeout At" :value="fDateTime(job.timeout_at)" />
-			<LabelValueBlock label="Run Time" :value="fNumber(+job.run_time)" />
+			<LabelValueBlock label="Run Time" :value="fSecondsToDuration(+job.run_time)" />
 		</div>
-		<div v-if="isShowingLogs">
-			<AuditRequestLogsCard :logs="job.logs" />
-		</div>
+		<AuditRequestLogsCard v-if="isShowingLogs" :logs="job.logs" />
+		<ListTransition v-if="isShowingApiLogs">
+			<ApiLogEntryCard v-for="apiLog in job.apiLogs" :key="apiLog.id" :api-log="apiLog" />
+		</ListTransition>
+		<ListTransition v-if="isShowingErrors">
+			<ErrorLogEntryCard v-for="error in job.errors" :key="error.id" :error="error" />
+		</ListTransition>
 	</QCard>
 </template>
 <script setup lang="ts">
+import ApiLogEntryCard from "@/components/Modules/Audits/ApiLogs/ApiLogEntryCard";
 import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
 import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
+import ErrorLogEntryCard from "@/components/Modules/Audits/ErrorLogs/ErrorLogEntryCard";
 import { JOB_DISPATCH_STATUS } from "@/components/Modules/Audits/JobDispatches/statuses";
 import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
-import { fDateTime, fNumber, LabelValueBlock, ShowHideButton } from "quasar-ui-danx";
+import { fDateTime, fSecondsToDuration, LabelValueBlock, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineProps<{

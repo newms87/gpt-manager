@@ -30,7 +30,7 @@ class TaskProcessResource extends ActionResource
             'output_artifact_count' => $taskProcess->output_artifact_count,
             'created_at'            => $taskProcess->created_at,
             'updated_at'            => $taskProcess->updated_at,
-
+            
             'agentThread'     => fn($fields) => AgentThreadResource::make($taskProcess->agentThread, $fields),
             'inputArtifacts'  => fn($fields) => ArtifactResource::collection($taskProcess->inputArtifacts, $fields),
             'outputArtifacts' => fn($fields) => ArtifactResource::collection($taskProcess->outputArtifacts, $fields),

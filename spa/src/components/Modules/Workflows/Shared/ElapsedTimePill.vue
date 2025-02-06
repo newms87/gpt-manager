@@ -2,7 +2,7 @@
 	<div :class="timerClass">{{ taskTimer }}</div>
 </template>
 <script lang="ts" setup>
-import { DateTime, fElapsedTime } from "quasar-ui-danx";
+import { DateTime, fDuration } from "quasar-ui-danx";
 import { onMounted, onUnmounted, ref } from "vue";
 
 export interface ElapsedTimePillProps {
@@ -26,7 +26,7 @@ onMounted(() => {
 });
 
 function calcTaskTimer() {
-	return fElapsedTime(props.start, props.end || DateTime.now());
+	return fDuration(props.start, props.end || DateTime.now());
 }
 
 </script>
