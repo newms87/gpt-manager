@@ -36,13 +36,18 @@ class TaskProcessResource extends ActionResource
             'outputArtifacts' => fn($fields) => ArtifactResource::collection($taskProcess->outputArtifacts, $fields),
             'jobDispatches'   => fn($fields) => JobDispatchResource::collection($taskProcess->jobDispatches, $fields),
             'usage'           => fn($fields) => UsageSummaryResource::make($taskProcess->usageSummary, $fields),
+            'taskRun'         => fn($fields) => TaskRunResource::make($taskProcess->taskRun, $fields),
         ];
     }
 
     public static function details(Model $model, ?array $includeFields = null): array
     {
         return static::make($model, $includeFields ?? [
-            '*' => true,
+            'agentThread'     => true,
+            'inputArtifacts'  => true,
+            'outputArtifacts' => true,
+            'jobDispatches'   => true,
+            'usage'           => true,
         ]);
     }
 }

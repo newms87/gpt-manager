@@ -4,7 +4,6 @@
 		<div v-if="active" class="mt-4 flex-grow overflow-y-scroll -mr-10 pr-5">
 			<AuditRequestLogsCard
 				v-if="showLogs"
-				:audit-request-id="thread.audit_request_id"
 				:logs="thread.logs"
 				class="my-6"
 			/>

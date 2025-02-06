@@ -4,16 +4,15 @@
 			<div class="text-xl text-center text-gray-500">No Jobs</div>
 		</template>
 		<template v-else>
-			<DispatchedJobCard v-for="job in jobs" :key="job.id" class="mb-6" :job="job" />
+			<JobDispatchCard v-for="job in jobs" :key="job.id" class="mb-6" :job="job" />
 		</template>
 	</div>
 </template>
 <script setup lang="ts">
-import { AuditRequest, JobDispatch } from "@/components/Modules/Audits/audit-requests";
-import DispatchedJobCard from "@/components/Modules/Audits/DispatchedJobs/DispatchedJobCard";
+import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
+import JobDispatchCard from "@/components/Modules/Audits/JobDispatches/JobDispatchCard";
 
 defineProps<{
-	auditRequest: AuditRequest,
 	jobs: JobDispatch[],
 }>();
 </script>

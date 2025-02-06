@@ -71,6 +71,7 @@ class TaskRunnerBase implements TaskRunnerContract
 
         if ($artifact) {
             $this->taskProcess->outputArtifacts()->attach($artifact);
+            $this->taskProcess->updateRelationCounter('outputArtifacts');
         }
 
         // Finished running the process

@@ -37,6 +37,10 @@ export interface JobDispatch {
 	run_time: string;
 	count: string;
 	created_at: string;
+
+	logs?: string;
+	errors?: ErrorLogEntry[];
+	apiLogs?: ApiLog[];
 }
 
 export interface ErrorLogEntry {

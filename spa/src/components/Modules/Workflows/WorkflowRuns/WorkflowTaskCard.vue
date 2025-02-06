@@ -39,7 +39,7 @@
 				<AiTokenUsageButton :usage="task.usage" />
 			</div>
 		</div>
-		<AuditRequestLogsCard v-if="showLogs" :audit-request-id="task.audit_request_id" :logs="task.logs" />
+		<AuditRequestLogsCard v-if="showLogs" :logs="task.logs" />
 		<div v-if="showThread" class="px-2">
 			<ThreadMessageCard
 				v-for="message in task.thread.messages"

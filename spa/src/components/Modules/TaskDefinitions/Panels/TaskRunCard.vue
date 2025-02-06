@@ -2,8 +2,8 @@
 	<div class="bg-sky-900 rounded">
 		<div class="flex items-center p-2 space-x-2">
 			<div class="flex flex-grow mx-2 space-x-2">
-				<div class="bg-sky-950 text-sky-400 px-2 py-1 rounded-full text-xs">Task Run: {{ taskRun.id }}</div>
-				<div class="bg-green-950 text-green-400 px-2 py-1 rounded-full text-xs">{{ taskRun.step }}</div>
+				<LabelPillWidget :label="`TaskRun: ${taskRun.id}`" color="sky" size="xs" />
+				<LabelPillWidget :label="taskRun.step" color="green" size="xs" />
 				<div>{{ taskRun.name }}</div>
 			</div>
 			<ShowHideButton
@@ -65,12 +65,14 @@
 <script setup lang="ts">
 import TaskProcessCard from "@/components/Modules/TaskDefinitions/Panels/TaskProcessCard";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
+import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
+import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { TaskRun } from "@/types/task-definitions";
-import { ListTransition, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { autoRefreshObject, ListTransition, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 defineEmits(["deleted"]);
 const props = defineProps<{
@@ -84,4 +86,19 @@ const deleteAction = dxTaskRun.getAction("delete");
 const isShowingProcesses = ref(false);
 const isStopped = computed(() => props.taskRun.status === "Stopped" || props.taskRun.status === "Pending");
 const isRunning = computed(() => props.taskRun.status === "Running");
+
+/********
+ * Refresh the task run every 2 seconds while it is running
+ */
+onMounted(() => {
+	autoRefreshObject(
+		props.taskRun,
+		(tr: TaskRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(tr.status),
+		(tr: TaskRun) => dxTaskRun.routes.details(tr, { processes: false })
+	);
+});
+
+onUnmounted(() => {
+	stopAutoRefreshObject(props.taskRun);
+});
 </script>

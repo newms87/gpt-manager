@@ -50,7 +50,6 @@ export const panels = [
 		class: "w-[80em]",
 		tabVnode: (auditRequest: AuditRequest) => h(BadgeTab, { count: auditRequest.ran_jobs_count }),
 		vnode: (auditRequest: AuditRequest) => h(AuditRequestJobsPanel, {
-			auditRequest,
 			jobs: auditRequest.ran_jobs || []
 		})
 	},
@@ -60,7 +59,6 @@ export const panels = [
 		class: "w-[80em]",
 		tabVnode: (auditRequest: AuditRequest) => h(BadgeTab, { count: auditRequest.dispatched_jobs_count }),
 		vnode: (auditRequest: AuditRequest) => h(AuditRequestJobsPanel, {
-			auditRequest,
 			jobs: auditRequest.dispatched_jobs || []
 		})
 	},
