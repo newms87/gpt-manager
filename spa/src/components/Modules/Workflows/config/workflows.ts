@@ -14,6 +14,11 @@ export const WORKFLOW_STATUS = {
 		classPrimary: "bg-slate-700 text-slate-300",
 		classAlt: "bg-slate-300 text-slate-700"
 	},
+	DISPATCHED: {
+		value: "Dispatched",
+		classPrimary: "bg-slate-700 text-slate-300",
+		classAlt: "bg-slate-300 text-slate-700"
+	},
 	STOPPED: {
 		value: "Stopped",
 		classPrimary: "bg-slate-700 text-slate-300",

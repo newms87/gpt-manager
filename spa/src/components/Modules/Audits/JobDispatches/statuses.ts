@@ -24,9 +24,9 @@ export const JOB_DISPATCH_STATUS = {
 		classAlt: "bg-green-200 text-green-900"
 	},
 	EXCEPTION: {
-		value: "Failed",
-		classPrimary: "bg-red-800 text-red-200",
-		classAlt: "bg-red-200 text-red-800"
+		value: "Exception",
+		classPrimary: "bg-red-950 text-red-300",
+		classAlt: "bg-red-300 text-red-950"
 	},
 	FAILED: {
 		value: "Failed",

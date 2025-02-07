@@ -1,6 +1,6 @@
 <?php
 
-namespace Feature\Services\Task;
+namespace Tests\Feature\Services\Task;
 
 use App\Models\Workflow\Artifact;
 use App\Services\Task\ArtifactsToGroupsMapper;

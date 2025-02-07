@@ -134,7 +134,7 @@ const artifactsField = {
 onMounted(() => {
 	autoRefreshObject(
 		props.taskProcess,
-		(tp: TaskProcess) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(tp.status),
+		(tp: TaskProcess) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value, WORKFLOW_STATUS.DISPATCHED.value].includes(tp.status),
 		(tp: TaskProcess) => dxTaskProcess.routes.details(tp, {
 			agentThread: isShowingAgentThread.value ? agentThreadField : false,
 			jobDispatches: isShowingJobDispatches.value ? jobDispatchesField : false,
