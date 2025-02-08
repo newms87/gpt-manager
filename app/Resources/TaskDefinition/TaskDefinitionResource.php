@@ -3,6 +3,7 @@
 namespace App\Resources\TaskDefinition;
 
 use App\Models\Task\TaskDefinition;
+use App\Resources\Prompt\SchemaAssociationResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
@@ -15,7 +16,8 @@ class TaskDefinitionResource extends ActionResource
             'name'                   => $taskDefinition->name,
             'description'            => $taskDefinition->description,
             'task_runner_class'      => $taskDefinition->task_runner_class,
-            'input_grouping'         => $taskDefinition->input_grouping,
+            'grouping_mode'          => $taskDefinition->grouping_mode,
+            'split_by_file'          => $taskDefinition->split_by_file,
             'input_group_chunk_size' => $taskDefinition->input_group_chunk_size,
             'timeout_after_seconds'  => $taskDefinition->timeout_after_seconds,
             'task_run_count'         => $taskDefinition->task_run_count,
@@ -23,23 +25,25 @@ class TaskDefinitionResource extends ActionResource
             'created_at'             => $taskDefinition->created_at,
             'updated_at'             => $taskDefinition->updated_at,
 
-            'taskAgents' => fn($fields) => TaskDefinitionAgentResource::collection($taskDefinition->definitionAgents, $fields),
-            'taskInputs' => fn($fields) => TaskInputResource::collection($taskDefinition->taskInputs, $fields),
-            'taskRuns'   => fn($fields) => TaskRunResource::collection($taskDefinition->taskRuns, $fields),
+            'groupingFragments' => fn($fields) => SchemaAssociationResource::collection($taskDefinition->groupingFragments, $fields),
+            'taskAgents'        => fn($fields) => TaskDefinitionAgentResource::collection($taskDefinition->definitionAgents, $fields),
+            'taskInputs'        => fn($fields) => TaskInputResource::collection($taskDefinition->taskInputs, $fields),
+            'taskRuns'          => fn($fields) => TaskRunResource::collection($taskDefinition->taskRuns, $fields),
         ];
     }
 
     public static function details(Model $model, ?array $includeFields = null): array
     {
         return static::make($model, $includeFields ?? [
-            'taskAgents' => [
+            'groupingFragments' => true,
+            'taskAgents'        => [
                 'agent'                => true,
                 'inputSchema'          => true,
                 'inputSchemaFragment'  => true,
                 'outputSchema'         => true,
                 'outputSchemaFragment' => true,
             ],
-            'taskInputs' => true,
+            'taskInputs'        => true,
         ]);
     }
 }

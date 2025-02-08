@@ -4,11 +4,14 @@ namespace App\Models\Task;
 
 use App\Models\Agent\Agent;
 use App\Models\Prompt\PromptSchema;
-use App\Models\Prompt\PromptSchemaFragment;
+use App\Models\Prompt\SchemaAssociation;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskDefinitionAgent extends Model implements AuditableContract
@@ -20,10 +23,6 @@ class TaskDefinitionAgent extends Model implements AuditableContract
         'include_data',
         'include_text',
         'include_files',
-        'input_schema_id',
-        'input_schema_fragment_id',
-        'output_schema_id',
-        'output_schema_fragment_id',
     ];
 
     public function taskDefinition(): TaskDefinition|BelongsTo
@@ -36,24 +35,33 @@ class TaskDefinitionAgent extends Model implements AuditableContract
         return $this->belongsTo(Agent::class);
     }
 
-    public function inputSchema(): BelongsTo|PromptSchema
+    public function schemaAssociations(): MorphMany|SchemaAssociation
     {
-        return $this->belongsTo(PromptSchema::class, 'input_schema_id');
+        return $this->morphMany(SchemaAssociation::class, 'object');
     }
 
-    public function inputSchemaFragment(): BelongsTo|PromptSchemaFragment
+    public function inputSchemaAssociations(): MorphMany|PromptSchema
     {
-        return $this->belongsTo(PromptSchemaFragment::class, 'input_schema_fragment_id');
+        return $this->schemaAssociations()->where('category', 'input');
     }
 
-    public function outputSchema(): BelongsTo|PromptSchema
+    public function outputSchemaAssociation(): MorphOne|SchemaAssociation
     {
-        return $this->belongsTo(PromptSchema::class, 'output_schema_id');
+        return $this->morphOne(SchemaAssociation::class, 'object');
     }
 
-    public function outputSchemaFragment(): BelongsTo|PromptSchemaFragment
+    /**
+     * Get the fragment selector for the input schema. This merges all input fragments together to resolve to a single
+     * fragment selector
+     */
+    public function getInputFragmentSelector(): array
     {
-        return $this->belongsTo(PromptSchemaFragment::class, 'output_schema_fragment_id');
+        $fragmentSelector = [];
+        foreach($this->inputSchemaAssociations as $inputSchemaAssociation) {
+            $fragmentSelector = ArrayHelper::mergeArraysRecursively($inputSchemaAssociation->promptSchemaFragment->fragment_selector, $fragmentSelector);
+        }
+
+        return $fragmentSelector;
     }
 
     public function __toString()

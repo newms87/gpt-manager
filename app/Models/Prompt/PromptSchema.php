@@ -46,8 +46,10 @@ class PromptSchema extends Model implements AuditableContract
     ];
 
     public array $relationCounters = [
-        Agent::class       => ['agents' => 'agents_count'],
-        WorkflowJob::class => ['workflowJobs' => 'workflow_jobs_count'],
+        Agent::class                => ['agents' => 'agents_count'],
+        PromptSchemaFragment::class => ['fragments' => 'fragments_count'],
+        SchemaAssociation::class    => ['associations' => 'associations_count'],
+        WorkflowJob::class          => ['workflowJobs' => 'workflow_jobs_count'],
     ];
 
     public function casts(): array
@@ -81,6 +83,11 @@ class PromptSchema extends Model implements AuditableContract
     public function fragments(): PromptSchemaFragment|HasMany
     {
         return $this->hasMany(PromptSchemaFragment::class);
+    }
+
+    public function associations(): SchemaAssociation|HasMany
+    {
+        return $this->hasMany(SchemaAssociation::class);
     }
 
     public function delete(): bool

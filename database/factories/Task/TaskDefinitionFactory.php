@@ -18,7 +18,6 @@ class TaskDefinitionFactory extends Factory
             'name'                   => fake()->unique()->name,
             'description'            => fake()->sentence,
             'task_runner_class'      => TaskRunnerBase::RUNNER_NAME,
-            'input_grouping'         => null,
             'input_group_chunk_size' => 1,
         ];
     }

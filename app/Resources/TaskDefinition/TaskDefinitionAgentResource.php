@@ -4,8 +4,7 @@ namespace App\Resources\TaskDefinition;
 
 use App\Models\Task\TaskDefinitionAgent;
 use App\Resources\Agent\AgentResource;
-use App\Resources\Prompt\PromptSchemaFragmentResource;
-use App\Resources\Prompt\PromptSchemaResource;
+use App\Resources\Prompt\SchemaAssociationResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
@@ -21,11 +20,9 @@ class TaskDefinitionAgentResource extends ActionResource
             'created_at'    => $taskAgent->created_at,
             'updated_at'    => $taskAgent->updated_at,
 
-            'agent'                => fn($fields) => AgentResource::make($taskAgent->agent, $fields),
-            'inputSchema'          => fn($fields) => PromptSchemaResource::make($taskAgent->inputSchema, $fields),
-            'inputSchemaFragment'  => fn($fields) => PromptSchemaFragmentResource::make($taskAgent->inputSchemaFragment, $fields),
-            'outputSchema'         => fn($fields) => PromptSchemaResource::make($taskAgent->outputSchema, $fields),
-            'outputSchemaFragment' => fn($fields) => PromptSchemaFragmentResource::make($taskAgent->outputSchemaFragment, $fields),
+            'agent'                   => fn($fields) => AgentResource::make($taskAgent->agent, $fields),
+            'inputSchemaAssociations' => fn($fields) => SchemaAssociationResource::collection($taskAgent->inputSchemaAssociations, $fields),
+            'outputSchemaAssociation' => fn($fields) => SchemaAssociationResource::make($taskAgent->outputSchemaAssociation, $fields),
         ];
     }
 

@@ -82,7 +82,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
         $artifactFilter = (new ArtifactFilter())
             ->includeText($definitionAgent->include_text)
             ->includeFiles($definitionAgent->include_files)
-            ->includeJson($definitionAgent->include_data, $definitionAgent->inputSchemaFragment?->fragment_selector ?? []);
+            ->includeJson($definitionAgent->include_data, $definitionAgent->getInputFragmentSelector());
 
         foreach($inputArtifacts as $inputArtifact) {
             $artifactFilter->setArtifact($inputArtifact);
