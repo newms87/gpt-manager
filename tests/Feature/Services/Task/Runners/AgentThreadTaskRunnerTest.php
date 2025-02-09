@@ -4,7 +4,6 @@ namespace Feature\Services\Task\Runners;
 
 use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaDefinition;
-use App\Models\Schema\SchemaFragment;
 use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Task\TaskProcess;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
@@ -66,10 +65,8 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
             ],
         ];
 
-        $taskProcess = TaskProcess::factory()->withInputArtifacts($artifactAttributes)->forTaskDefinitionAgent([
-            'include_data'             => true,
-            'input_schema_fragment_id' => SchemaFragment::factory()->create(['fragment_selector' => $fragmentSelector]),
-        ])->create();
+        $taskDefinitionAgent = TaskDefinitionAgent::factory()->withInputSchema([], $fragmentSelector)->create(['include_data' => true]);
+        $taskProcess         = TaskProcess::factory()->withInputArtifacts($artifactAttributes)->create(['task_definition_agent_id' => $taskDefinitionAgent]);
 
         // When
         AgentThreadTaskRunner::make($taskProcess->taskRun, $taskProcess)->run();
@@ -111,7 +108,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         ];
         $taskDefinitionAgent    = TaskDefinitionAgent::factory()->withOutputSchema($outputSchema, $outputFragmentSelector)->create(['agent_id' => $agent]);
         $taskProcess            = TaskProcess::factory()->create(['task_definition_agent_id' => $taskDefinitionAgent]);
-        
+
         // Then
         $this->partialMock(TestAiApi::class)
             ->shouldReceive('complete')->withArgs(function ($model, $messages, $options) {

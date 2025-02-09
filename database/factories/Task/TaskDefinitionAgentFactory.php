@@ -25,12 +25,24 @@ class TaskDefinitionAgentFactory extends Factory
         ];
     }
 
+    public function withInputSchema($schema, $fragmentSelector = []): static
+    {
+        return $this->afterCreating(function (TaskDefinitionAgent $taskDefinitionAgent) use ($schema, $fragmentSelector) {
+            SchemaAssociation::factory()->withSchema($schema, $fragmentSelector)->create([
+                'object_type' => TaskDefinitionAgent::class,
+                'object_id'   => $taskDefinitionAgent->id,
+                'category'    => 'input',
+            ]);
+        });
+    }
+
     public function withOutputSchema($schema, $fragmentSelector = []): static
     {
         return $this->afterCreating(function (TaskDefinitionAgent $taskDefinitionAgent) use ($schema, $fragmentSelector) {
             SchemaAssociation::factory()->withSchema($schema, $fragmentSelector)->create([
                 'object_type' => TaskDefinitionAgent::class,
                 'object_id'   => $taskDefinitionAgent->id,
+                'category'    => 'output',
             ]);
         });
     }

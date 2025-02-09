@@ -47,7 +47,7 @@ class TaskDefinitionAgent extends Model implements AuditableContract
 
     public function outputSchemaAssociation(): MorphOne|SchemaAssociation
     {
-        return $this->morphOne(SchemaAssociation::class, 'object');
+        return $this->morphOne(SchemaAssociation::class, 'object')->where('category', 'output');
     }
 
     /**
