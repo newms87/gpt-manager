@@ -5,7 +5,7 @@ namespace Tests\Feature\Workflow;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
-use App\Models\Prompt\PromptSchema;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowJob;
 use App\Models\Workflow\WorkflowJobDependency;
@@ -538,20 +538,20 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     public function test_getArtifactGroups_allowsNonSchemaFields(): void
     {
         // Given
-        $artifacts       = [
+        $artifacts        = [
             [
                 'name'             => 'Bill',
                 'dob'              => '1987-11-18',
                 'non_schema_field' => 'Hello World',
             ],
         ];
-        $responseExample = [
+        $responseExample  = [
             'name' => 'Dan',
             'dob'  => '1987-11-18',
         ];
-        $workflowJob     = WorkflowJob::factory()->hasWorkflowAssignments()->create();
-        $promptSchema    = PromptSchema::factory()->create(['response_example' => $responseExample,]);
-        $workflowJob->responseSchema()->associate($promptSchema)->save();
+        $workflowJob      = WorkflowJob::factory()->hasWorkflowAssignments()->create();
+        $schemaDefinition = SchemaDefinition::factory()->create(['response_example' => $responseExample,]);
+        $workflowJob->responseSchema()->associate($schemaDefinition)->save();
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();
         $workflowJobDependency = WorkflowJobDependency::factory()->create([
             'force_schema'               => false,
@@ -568,20 +568,20 @@ class RunAgentThreadWorkflowToolTest extends AuthenticatedTestCase
     public function test_getArtifactGroups_forcesOnlySchemaFields(): void
     {
         // Given
-        $artifacts       = [
+        $artifacts        = [
             [
                 'name'             => 'Bill',
                 'dob'              => '1987-11-18',
                 'non_schema_field' => 'Hello World',
             ],
         ];
-        $responseExample = [
+        $responseExample  = [
             'name' => 'Dan',
             'dob'  => '1987-11-18',
         ];
-        $workflowJob     = WorkflowJob::factory()->hasWorkflowAssignments()->create();
-        $promptSchema    = PromptSchema::factory()->create(['response_example' => $responseExample]);
-        $workflowJob->responseSchema()->associate($promptSchema)->save();
+        $workflowJob      = WorkflowJob::factory()->hasWorkflowAssignments()->create();
+        $schemaDefinition = SchemaDefinition::factory()->create(['response_example' => $responseExample]);
+        $workflowJob->responseSchema()->associate($schemaDefinition)->save();
         $agent = $workflowJob->workflowAssignments()->first()->agent;
         $agent->forceFill(['response_format' => Agent::RESPONSE_FORMAT_JSON_OBJECT])->save();
         $workflowJobRun        = WorkflowJobRun::factory()->withArtifactData($artifacts)->create();

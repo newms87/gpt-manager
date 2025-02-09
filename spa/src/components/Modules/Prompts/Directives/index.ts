@@ -1,4 +1,4 @@
 export * from "./config";
 export * from "./Panels";
-export { default as PromptSchemaPanelsDialog } from "./PromptDirectivePanelsDialog.vue";
-export { default as PromptSchemaTable } from "./PromptDirectiveTable.vue";
+export { default as SchemaDefinitionPanelsDialog } from "./PromptDirectivePanelsDialog.vue";
+export { default as SchemaDefinitionTable } from "./PromptDirectiveTable.vue";

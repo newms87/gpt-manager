@@ -3,7 +3,7 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowJob;
-use App\Resources\Prompt\PromptSchemaResource;
+use App\Resources\Schema\SchemaDefinitionResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
@@ -21,7 +21,7 @@ class WorkflowJobResource extends ActionResource
 
             'tasks_preview'  => fn() => $workflowJob->getTasksPreview(),
             'workflow'       => fn($fields) => WorkflowResource::make($workflowJob->workflow, $fields),
-            'responseSchema' => fn($fields) => PromptSchemaResource::make($workflowJob->responseSchema, $fields),
+            'responseSchema' => fn($fields) => SchemaDefinitionResource::make($workflowJob->responseSchema, $fields),
             'dependencies'   => fn($fields) => WorkflowJobDependencyResource::collection($workflowJob->dependencies, $fields),
             'assignments'    => fn($fields) => WorkflowAssignmentResource::collection($workflowJob->workflowAssignments->load(['agent']), $fields),
         ];

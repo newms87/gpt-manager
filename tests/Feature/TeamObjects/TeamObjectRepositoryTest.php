@@ -3,7 +3,7 @@
 namespace Tests\Feature\TeamObjects;
 
 use App\Models\Agent\AgentThreadMessage;
-use App\Models\Prompt\PromptSchema;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Repositories\TeamObjectRepository;
@@ -61,12 +61,12 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->setUpTeam();
     }
 
-    public function test_resolveTeamObject_withSameTypeNameAndPromptSchema_resolvesExistingObject(): void
+    public function test_resolveTeamObject_withSameTypeNameAndSchemaDefinition_resolvesExistingObject(): void
     {
         // Given
-        $teamObject = TeamObject::factory()->forPromptSchema()->create();
+        $teamObject = TeamObject::factory()->forSchemaDefinition()->create();
         $input      = [
-            'prompt_schema_id' => $teamObject->prompt_schema_id,
+            'schema_definition_id' => $teamObject->schema_definition_id,
         ];
 
         // When
@@ -77,10 +77,10 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertEquals($teamObject->id, $resolvedTeamObject->id, "The resolved object should match the original");
     }
 
-    public function test_resolvedTeamObject_withSameTypeNameButNullPromptSchema_doesNotResolveObject(): void
+    public function test_resolvedTeamObject_withSameTypeNameButNullSchemaDefinition_doesNotResolveObject(): void
     {
         // Given
-        $teamObject = TeamObject::factory()->forPromptSchema()->create();
+        $teamObject = TeamObject::factory()->forSchemaDefinition()->create();
         $input      = [];
 
         // When
@@ -90,12 +90,12 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertNull($resolvedObject);
     }
 
-    public function test_resolvedTeamObject_withSameTypeNameButDifferentPromptSchema_doesNotResolveObject(): void
+    public function test_resolvedTeamObject_withSameTypeNameButDifferentSchemaDefinition_doesNotResolveObject(): void
     {
         // Given
-        $teamObject = TeamObject::factory()->forPromptSchema()->create();
+        $teamObject = TeamObject::factory()->forSchemaDefinition()->create();
         $input      = [
-            'prompt_schema_id' => PromptSchema::factory()->create()->id,
+            'schema_definition_id' => SchemaDefinition::factory()->create()->id,
         ];
 
         // When
@@ -149,13 +149,13 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertNull($resolvedObject);
     }
 
-    public function test_resolvedTeamObject_withSameTypeNameRootObjectAndPromptSchema_resolvesObject(): void
+    public function test_resolvedTeamObject_withSameTypeNameRootObjectAndSchemaDefinition_resolvesObject(): void
     {
         // Given
         $teamObject = TeamObject::factory()->forRootObject()->create();
         $input      = [
-            'prompt_schema_id' => $teamObject->prompt_schema_id,
-            'root_object_id'   => $teamObject->root_object_id,
+            'schema_definition_id' => $teamObject->schema_definition_id,
+            'root_object_id'       => $teamObject->root_object_id,
         ];
 
         // When
@@ -166,10 +166,10 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertEquals($teamObject->id, $resolvedObject->id, "The resolved object should match the original");
     }
 
-    public function test_resolvedTeamObject_withSameTypeNameRootObjectButNullPromptSchema_doesNotResolvesObject(): void
+    public function test_resolvedTeamObject_withSameTypeNameRootObjectButNullSchemaDefinition_doesNotResolvesObject(): void
     {
         // Given
-        $teamObject = TeamObject::factory()->forPromptSchema()->forRootObject()->create();
+        $teamObject = TeamObject::factory()->forSchemaDefinition()->forRootObject()->create();
         $input      = [
             'root_object_id' => $teamObject->root_object_id,
         ];
@@ -181,12 +181,12 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertNull($resolvedObject);
     }
 
-    public function test_resolvedTeamObject_withSameTypeNamePromptSchemaButNullRootObject_doesNotResolvesObject(): void
+    public function test_resolvedTeamObject_withSameTypeNameSchemaDefinitionButNullRootObject_doesNotResolvesObject(): void
     {
         // Given
-        $teamObject = TeamObject::factory()->forPromptSchema()->forRootObject()->create();
+        $teamObject = TeamObject::factory()->forSchemaDefinition()->forRootObject()->create();
         $input      = [
-            'prompt_schema_id' => $teamObject->prompt_schema_id,
+            'schema_definition_id' => $teamObject->schema_definition_id,
         ];
 
         // When
@@ -196,12 +196,12 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertNull($resolvedObject);
     }
 
-    public function test_createTeamObject_withSameTypeNameAndDifferentPromptSchema_createsNewObject(): void
+    public function test_createTeamObject_withSameTypeNameAndDifferentSchemaDefinition_createsNewObject(): void
     {
         // Given
-        $teamObject = TeamObject::factory()->forPromptSchema()->create();
+        $teamObject = TeamObject::factory()->forSchemaDefinition()->create();
         $input      = [
-            'prompt_schema_id' => PromptSchema::factory()->create()->id,
+            'schema_definition_id' => SchemaDefinition::factory()->create()->id,
         ];
 
         // When

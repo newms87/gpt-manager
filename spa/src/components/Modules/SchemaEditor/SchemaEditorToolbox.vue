@@ -34,7 +34,7 @@
 							:select-icon="SchemaIcon"
 							label-class="text-slate-300"
 							:select-class="buttonColor"
-							:options="dxPromptSchema.pagedItems.value?.data || []"
+							:options="dxSchemaDefinition.pagedItems.value?.data || []"
 							:loading="createSchemaAction.isApplying"
 							@create="onCreate"
 							@update="input => activeSchema && updateSchemaAction.trigger(activeSchema, input)"
@@ -96,12 +96,12 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { dxPromptSchemaFragment } from "@/components/Modules/Prompts/SchemaFragments";
-import { routes } from "@/components/Modules/Prompts/SchemaFragments/config/routes";
-import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import SchemaResponseExampleCard from "@/components/Modules/SchemaEditor/SchemaResponseExampleCard";
-import { JsonSchema, PromptSchema, PromptSchemaFragment } from "@/types";
+import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
+import { dxSchemaFragment } from "@/components/Modules/Schemas/SchemaFragments";
+import { routes } from "@/components/Modules/Schemas/SchemaFragments/config/routes";
+import { JsonSchema, SchemaDefinition, SchemaFragment } from "@/types";
 import {
 	FaSolidCircleCheck as FullSchemaIcon,
 	FaSolidDatabase as SchemaIcon,
@@ -123,15 +123,15 @@ withDefaults(defineProps<{
 	buttonColor: "bg-sky-800"
 });
 
-onMounted(() => dxPromptSchema.initialize());
-const createSchemaAction = dxPromptSchema.getAction("create");
-const updateSchemaAction = dxPromptSchema.getAction("update");
-const deleteSchemaAction = dxPromptSchema.getAction("delete");
-const createFragmentAction = dxPromptSchemaFragment.getAction("quick-create");
-const updateFragmentAction = dxPromptSchemaFragment.getAction("update");
-const deleteFragmentAction = dxPromptSchemaFragment.getAction("delete", { onFinish: loadFragments });
-const activeSchema = defineModel<PromptSchema>();
-const activeFragment = defineModel<PromptSchemaFragment>("fragment");
+onMounted(() => dxSchemaDefinition.initialize());
+const createSchemaAction = dxSchemaDefinition.getAction("create");
+const updateSchemaAction = dxSchemaDefinition.getAction("update");
+const deleteSchemaAction = dxSchemaDefinition.getAction("delete");
+const createFragmentAction = dxSchemaFragment.getAction("quick-create");
+const updateFragmentAction = dxSchemaFragment.getAction("update");
+const deleteFragmentAction = dxSchemaFragment.getAction("delete", { onFinish: loadFragments });
+const activeSchema = defineModel<SchemaDefinition>();
+const activeFragment = defineModel<SchemaFragment>("fragment");
 const isEditingSchema = defineModel<boolean>("editing");
 const isEditingFragment = defineModel<boolean>("selectingFragment");
 const isPreviewing = defineModel<boolean>("previewing");

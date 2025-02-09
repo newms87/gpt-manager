@@ -5,7 +5,7 @@ namespace App\Repositories;
 use App\Models\Agent\Agent;
 use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Prompt\PromptDirective;
-use App\Models\Prompt\PromptSchema;
+use App\Models\Schema\SchemaDefinition;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
@@ -46,11 +46,11 @@ class AgentRepository extends ActionRepository
 
         $aiTools = config('ai.tools');
 
-        $promptSchemas = PromptSchema::where('team_id', team()->id)
-            ->get()->map(function ($promptSchema) {
+        $schemaDefinitions = SchemaDefinition::where('team_id', team()->id)
+            ->get()->map(function ($schemaDefinition) {
                 return [
-                    'label' => $promptSchema->name,
-                    'value' => $promptSchema->id,
+                    'label' => $schemaDefinition->name,
+                    'value' => $schemaDefinition->id,
                 ];
             });
 
@@ -63,10 +63,10 @@ class AgentRepository extends ActionRepository
             });
 
         return [
-            'aiModels'         => $aiModels,
-            'aiTools'          => $aiTools,
-            'promptSchemas'    => $promptSchemas,
-            'promptDirectives' => $promptDirectives,
+            'aiModels'          => $aiModels,
+            'aiTools'           => $aiTools,
+            'schemaDefinitions' => $schemaDefinitions,
+            'promptDirectives'  => $promptDirectives,
         ];
     }
 

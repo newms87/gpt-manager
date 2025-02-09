@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Prompt\PromptSchema;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Workflow\WorkflowJob;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -15,10 +15,10 @@ return new class extends Migration {
         foreach(WorkflowJob::whereNotNull('response_schema')->get() as $workflowJob) {
             $responseSchema = $workflowJob->responseSchema()->updateOrCreate([
                 'team_id' => $workflowJob->workflow->team_id,
-                'type'    => PromptSchema::TYPE_AGENT_RESPONSE,
+                'type'    => SchemaDefinition::TYPE_AGENT_RESPONSE,
                 'name'    => $workflowJob->name . ' Workflow Job Response Schema',
             ], [
-                'schema_format'    => PromptSchema::FORMAT_YAML,
+                'schema_format'    => SchemaDefinition::FORMAT_YAML,
                 'response_example' => $workflowJob->response_schema,
             ]);
 

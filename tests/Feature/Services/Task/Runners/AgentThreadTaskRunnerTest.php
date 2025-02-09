@@ -3,8 +3,8 @@
 namespace Feature\Services\Task\Runners;
 
 use App\Models\Agent\Agent;
-use App\Models\Prompt\PromptSchema;
-use App\Models\Prompt\PromptSchemaFragment;
+use App\Models\Schema\SchemaDefinition;
+use App\Models\Schema\SchemaFragment;
 use App\Models\Task\TaskProcess;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use Tests\AuthenticatedTestCase;
@@ -67,7 +67,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
 
         $taskProcess = TaskProcess::factory()->withInputArtifacts($artifactAttributes)->forTaskDefinitionAgent([
             'include_data'             => true,
-            'input_schema_fragment_id' => PromptSchemaFragment::factory()->create(['fragment_selector' => $fragmentSelector]),
+            'input_schema_fragment_id' => SchemaFragment::factory()->create(['fragment_selector' => $fragmentSelector]),
         ])->create();
 
         // When
@@ -83,7 +83,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
     public function test_setupAgentThread_withDefinitionAgentOutputFragment_completeApiCallHasFilteredStructuredOutput(): void
     {
         // Given
-        $inputSchema      = PromptSchema::factory()->create([
+        $inputSchema      = SchemaDefinition::factory()->create([
             'schema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -93,7 +93,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
             ],
         ]);
         $agent            = Agent::factory()->withJsonSchemaResponse($inputSchema)->create();
-        $outputSchema     = PromptSchema::factory()->create([
+        $outputSchema     = SchemaDefinition::factory()->create([
             'schema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -114,7 +114,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->forTaskDefinitionAgent([
             'agent_id'                  => $agent,
             'output_schema_id'          => $outputSchema->id,
-            'output_schema_fragment_id' => PromptSchemaFragment::factory()->create(['fragment_selector' => $fragmentSelector]),
+            'output_schema_fragment_id' => SchemaFragment::factory()->create(['fragment_selector' => $fragmentSelector]),
         ])->create();
 
         // Then

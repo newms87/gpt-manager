@@ -2,7 +2,7 @@
 
 namespace App\Models\Workflow;
 
-use App\Models\Prompt\PromptSchema;
+use App\Models\Schema\SchemaDefinition;
 use App\WorkflowTools\RunAgentThreadWorkflowTool;
 use App\WorkflowTools\WorkflowInputWorkflowTool;
 use App\WorkflowTools\WorkflowTool;
@@ -71,9 +71,9 @@ class WorkflowJob extends Model implements AuditableContract
         return $this->hasMany(WorkflowAssignment::class);
     }
 
-    public function responseSchema(): BelongsTo|PromptSchema
+    public function responseSchema(): BelongsTo|SchemaDefinition
     {
-        return $this->belongsTo(PromptSchema::class, 'response_schema_id');
+        return $this->belongsTo(SchemaDefinition::class, 'response_schema_id');
     }
 
     public function getWorkflowTool(): WorkflowTool

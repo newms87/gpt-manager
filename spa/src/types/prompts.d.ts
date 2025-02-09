@@ -2,7 +2,7 @@ import { Agent } from "@/types/agents";
 import { JsonSchema, JsonSchemaType } from "@/types/json-schema";
 import { ActionTargetItem, ListControlsRoutes } from "quasar-ui-danx";
 
-export interface PromptSchema extends ActionTargetItem {
+export interface SchemaDefinition extends ActionTargetItem {
 	id: string;
 	name: string;
 	description: string;
@@ -14,13 +14,20 @@ export interface PromptSchema extends ActionTargetItem {
 	agents: Agent[];
 }
 
-export interface PromptSchemaFragment extends ActionTargetItem {
+export interface SchemaFragment extends ActionTargetItem {
 	id: string;
 	name: string;
 	fragment_selector: FragmentSelector;
 }
 
+export interface SchemaAssociation extends ActionTargetItem {
+	id: string;
+	schema: SchemaDefinition;
+	fragment?: SchemaFragment;
+}
+
 export interface FragmentSelector {
+	prompt_schema_id?: string;
 	type: JsonSchemaType;
 	children?: {
 		[key: string]: FragmentSelector;
@@ -43,11 +50,11 @@ export interface AgentPromptDirective extends ActionTargetItem {
 
 export interface PromptSchemaRevision {
 	id: number;
-	schema: PromptSchema;
+	schema: SchemaDefinition;
 	user_email: string;
 	created_at: string;
 }
 
-export interface PromptSchemaRoutes extends ListControlsRoutes<PromptSchema> {
-	history(target: PromptSchema): Promise<PromptSchemaRevision[]>;
+export interface SchemaDefinitionRoutes extends ListControlsRoutes<SchemaDefinition> {
+	history(target: SchemaDefinition): Promise<PromptSchemaRevision[]>;
 }

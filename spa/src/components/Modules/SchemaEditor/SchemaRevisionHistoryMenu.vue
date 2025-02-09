@@ -31,15 +31,15 @@
 </template>
 
 <script setup lang="ts">
-import { routes } from "@/components/Modules/Prompts/Schemas/config/routes";
-import { PromptSchema, PromptSchemaRevision } from "@/types";
+import { routes } from "@/components/Modules/Schemas/Schemas/config/routes";
+import { PromptSchemaRevision, SchemaDefinition } from "@/types";
 import { FaSolidClock as HistoryIcon } from "danx-icon";
 import { fDateTime } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineEmits(["select"]);
 const props = defineProps<{
-	promptSchema: PromptSchema
+	promptSchema: SchemaDefinition
 }>();
 
 const history = ref<PromptSchemaRevision[]>(null);

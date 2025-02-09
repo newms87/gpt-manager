@@ -4,8 +4,8 @@ namespace App\Models\Agent;
 
 use App\Api\AgentApiContracts\AgentApiContract;
 use App\Models\Prompt\AgentPromptDirective;
-use App\Models\Prompt\PromptSchema;
-use App\Models\Prompt\PromptSchemaFragment;
+use App\Models\Schema\SchemaDefinition;
+use App\Models\Schema\SchemaFragment;
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowAssignment;
 use App\Models\Workflow\WorkflowJob;
@@ -80,14 +80,14 @@ class Agent extends Model implements AuditableContract
         return $this->belongsTo(Knowledge::class);
     }
 
-    public function responseSchema(): BelongsTo|PromptSchema
+    public function responseSchema(): BelongsTo|SchemaDefinition
     {
-        return $this->belongsTo(PromptSchema::class, 'response_schema_id');
+        return $this->belongsTo(SchemaDefinition::class, 'response_schema_id');
     }
 
-    public function responseSchemaFragment(): BelongsTo|PromptSchemaFragment
+    public function responseSchemaFragment(): BelongsTo|SchemaFragment
     {
-        return $this->belongsTo(PromptSchemaFragment::class, 'response_schema_fragment_id');
+        return $this->belongsTo(SchemaFragment::class, 'response_schema_fragment_id');
     }
 
     public function directives(): HasMany|AgentPromptDirective

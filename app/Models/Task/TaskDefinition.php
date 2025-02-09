@@ -2,7 +2,7 @@
 
 namespace App\Models\Task;
 
-use App\Models\Prompt\SchemaAssociation;
+use App\Models\Schema\SchemaAssociation;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;

@@ -13,8 +13,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { dxPromptSchema } from "@/components/Modules/Prompts/Schemas";
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
+import { dxPromptSchema } from "@/components/Modules/Schemas/Schemas";
 import TeamObjectsList from "@/components/Modules/TeamObjects/TeamObjectsList";
 import { until } from "@vueuse/core";
 import { getItem, setItem } from "quasar-ui-danx";

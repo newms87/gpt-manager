@@ -12,12 +12,12 @@
 </template>
 
 <script setup lang="ts">
-import { PromptSchema } from "@/types";
+import { SchemaDefinition } from "@/types";
 import { useMagicKeys, useRefHistory, whenever } from "@vueuse/core";
 import { FaSolidArrowRotateLeft as UndoIcon, FaSolidArrowRotateRight as RedoIcon } from "danx-icon";
 import { ref, watch } from "vue";
 
-const schema = defineModel<{ type: PromptSchema }>();
+const schema = defineModel<{ type: SchemaDefinition }>();
 const editableSchema = ref(schema.value);
 watch(() => schema.value, () => {
 	// Don't add the same schema to the history

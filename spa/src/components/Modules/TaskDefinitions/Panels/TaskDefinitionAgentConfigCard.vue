@@ -85,8 +85,8 @@
 						can-select-fragment
 						previewable
 						button-color="bg-green-900 text-green-200"
-						:model-value="taskDefinitionAgent.outputSchema"
-						:fragment="taskDefinitionAgent.outputSchemaFragment"
+						:model-value="taskDefinitionAgent.outputSchemaAssociation.schema"
+						:fragment="taskDefinitionAgent.outputSchemaAssociation.fragment"
 						:loading="isUpdatingOutput"
 						@update:model-value="schema => onUpdateAgent({output_schema_id: schema?.id || null, output_schema_fragment_id: null })"
 						@update:fragment="fragment => onUpdateAgent({output_schema_fragment_id: fragment?.id || null })"

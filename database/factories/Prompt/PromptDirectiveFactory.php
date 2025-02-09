@@ -2,12 +2,12 @@
 
 namespace Database\Factories\Prompt;
 
-use App\Models\Prompt\PromptSchema;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<PromptSchema>
+ * @extends Factory<SchemaDefinition>
  */
 class PromptDirectiveFactory extends Factory
 {

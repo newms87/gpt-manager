@@ -4,8 +4,8 @@ use App\Http\Controllers\Ai\AgentsController;
 use App\Http\Controllers\Ai\ContentSourcesController;
 use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\PromptDirectivesController;
-use App\Http\Controllers\Ai\PromptSchemaFragmentsController;
-use App\Http\Controllers\Ai\PromptSchemasController;
+use App\Http\Controllers\Ai\SchemaDefinitionsController;
+use App\Http\Controllers\Ai\SchemaFragmentsController;
 use App\Http\Controllers\Ai\TaskDefinitionsController;
 use App\Http\Controllers\Ai\TaskInputsController;
 use App\Http\Controllers\Ai\TaskProcessesController;
@@ -47,16 +47,17 @@ ActionRoute::routes('workflows', new WorkflowsController, function () {
     Route::get('{workflow}/export-as-json', [WorkflowsController::class, 'exportAsJson'])->name('workflows.export-as-json');
 });
 ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
-ActionRoute::routes('prompt/schemas', new PromptSchemasController, function () {
-    Route::get('{promptSchema}/history', [PromptSchemasController::class, 'history'])->name('prompt.schemas.history');
-});
-ActionRoute::routes('prompt/directives', new PromptDirectivesController);
-ActionRoute::routes('prompt/schema-fragments', new PromptSchemaFragmentsController);
 ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
     Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');
 });
 ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);
+
+// Schemas
+ActionRoute::routes('schemas/definitions', new SchemaDefinitionsController, function () {
+    Route::get('{schemaDefinition}/history', [SchemaDefinitionsController::class, 'history'])->name('schemas.history');
+});
+ActionRoute::routes('schemas/fragments', new SchemaFragmentsController);
 
 // Task Definitions
 ActionRoute::routes('task-definitions', new TaskDefinitionsController);
@@ -68,6 +69,7 @@ ActionRoute::routes('task-processes', new TaskProcessesController);
 ActionRoute::routes('agents', new AgentsController);
 ActionRoute::routes('threads', new ThreadsController);
 ActionRoute::routes('messages', new MessagesController);
+ActionRoute::routes('prompt/directives', new PromptDirectivesController);
 
 // Team Objects
 ActionRoute::routes('team-objects', new TeamObjectsController);

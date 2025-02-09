@@ -67,7 +67,7 @@ const router = createRouter({
 							path: "schemas/:id?/:panel?",
 							name: "prompts.schemas",
 							component: PromptSchemaTable,
-							meta: { title: "Prompt Schemas", type: "PromptSchemaResource" }
+							meta: { title: "Prompt SchemaDefinitions", type: "PromptSchemaResource" }
 						},
 						{
 							path: "directives/:id?/:panel?",

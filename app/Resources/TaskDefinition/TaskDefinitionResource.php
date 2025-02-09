@@ -3,7 +3,7 @@
 namespace App\Resources\TaskDefinition;
 
 use App\Models\Task\TaskDefinition;
-use App\Resources\Prompt\SchemaAssociationResource;
+use App\Resources\Schema\SchemaAssociationResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 

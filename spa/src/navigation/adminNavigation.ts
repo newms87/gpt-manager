@@ -45,7 +45,7 @@ export default [
 				route: { name: "prompts.directives" }
 			},
 			{
-				label: "Schemas",
+				label: "SchemaDefinitions",
 				route: { name: "prompts.schemas" }
 			}
 		]

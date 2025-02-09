@@ -47,12 +47,12 @@
 </template>
 <script setup lang="ts">
 import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
-import { JsonSchema, PromptSchema } from "@/types";
+import { JsonSchema, SchemaDefinition } from "@/types";
 import { FaSolidPlus as CreateIcon } from "danx-icon";
 import { PanelsDrawer } from "quasar-ui-danx";
 import { computed, onMounted, ref, watch } from "vue";
 
-const props = defineProps<{ promptSchema: PromptSchema }>();
+const props = defineProps<{ promptSchema: SchemaDefinition }>();
 
 onMounted(init);
 watch(() => props.promptSchema, loadTeamObjects);

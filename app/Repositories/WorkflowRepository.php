@@ -5,8 +5,8 @@ namespace App\Repositories;
 use App\Models\Agent\Agent;
 use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Prompt\PromptDirective;
-use App\Models\Prompt\PromptSchema;
-use App\Models\Prompt\PromptSchemaFragment;
+use App\Models\Schema\SchemaDefinition;
+use App\Models\Schema\SchemaFragment;
 use App\Models\Workflow\Workflow;
 use App\Models\Workflow\WorkflowAssignment;
 use App\Models\Workflow\WorkflowInput;
@@ -179,7 +179,7 @@ class WorkflowRepository extends ActionRepository
             $responseSchemaData = $jobData['responseSchema'] ?? null;
 
             if ($responseSchemaData) {
-                $responseSchema = PromptSchema::updateOrCreate([
+                $responseSchema = SchemaDefinition::updateOrCreate([
                     'team_id' => team()->id,
                     'name'    => $responseSchemaData['name'],
                 ],
@@ -211,7 +211,7 @@ class WorkflowRepository extends ActionRepository
                 $responseSchemaData = $agentData['responseSchema'] ?? null;
 
                 if ($responseSchemaData) {
-                    $responseSchema = PromptSchema::updateOrCreate([
+                    $responseSchema = SchemaDefinition::updateOrCreate([
                         'team_id' => team()->id,
                         'name'    => $responseSchemaData['name'],
                     ],
@@ -223,9 +223,9 @@ class WorkflowRepository extends ActionRepository
                     $responseSchemaFragmentData = $jobData['responseSchemaFragment'] ?? null;
 
                     if ($responseSchemaFragmentData) {
-                        $responseSchemaFragment = PromptSchemaFragment::updateOrCreate([
-                            'prompt_schema_id' => $responseSchema->id,
-                            'name'             => $responseSchemaFragmentData['name'],
+                        $responseSchemaFragment = SchemaFragment::updateOrCreate([
+                            'schema_definition_id' => $responseSchema->id,
+                            'name'                 => $responseSchemaFragmentData['name'],
                         ],
                             collect($responseSchemaFragmentData)->except('name')->toArray()
                         );

@@ -3,7 +3,7 @@
 namespace Database\Factories\Agent;
 
 use App\Models\Agent\Agent;
-use App\Models\Prompt\PromptSchema;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Tests\Feature\Api\TestAi\TestAiApi;
@@ -29,11 +29,11 @@ class AgentFactory extends Factory
         ];
     }
 
-    public function withJsonSchemaResponse(PromptSchema $promptSchema = null): self
+    public function withJsonSchemaResponse(SchemaDefinition $schemaDefinition = null): self
     {
         return $this->state([
             'response_format'    => Agent::RESPONSE_FORMAT_JSON_SCHEMA,
-            'response_schema_id' => $promptSchema ?? PromptSchema::factory()->withJsonSchema()->create(),
+            'response_schema_id' => $schemaDefinition ?? SchemaDefinition::factory()->withJsonSchema()->create(),
         ]);
     }
 }

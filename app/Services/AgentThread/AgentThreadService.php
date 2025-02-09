@@ -10,8 +10,8 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
 use App\Models\Agent\AgentThreadRun;
-use App\Models\Prompt\PromptSchema;
-use App\Models\Prompt\PromptSchemaFragment;
+use App\Models\Schema\SchemaDefinition;
+use App\Models\Schema\SchemaFragment;
 use App\Repositories\AgentRepository;
 use App\Repositories\TeamObjectRepository;
 use App\Services\JsonSchema\JsonSchemaService;
@@ -26,14 +26,14 @@ use Throwable;
 
 class AgentThreadService
 {
-    protected ?PromptSchema         $responseSchema         = null;
-    protected ?PromptSchemaFragment $responseSchemaFragment = null;
+    protected ?SchemaDefinition $responseSchema         = null;
+    protected ?SchemaFragment   $responseSchemaFragment = null;
 
     /**
      * Overrides the response format for the thread run.
      * This will replace the Agent's response format with the provided schema and fragment
      */
-    public function withResponseFormat(PromptSchema $responseSchema = null, PromptSchemaFragment $responseSchemaFragment = null): static
+    public function withResponseFormat(SchemaDefinition $responseSchema = null, SchemaFragment $responseSchemaFragment = null): static
     {
         $this->responseSchema         = $responseSchema;
         $this->responseSchemaFragment = $responseSchemaFragment;

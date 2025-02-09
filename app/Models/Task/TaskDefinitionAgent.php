@@ -3,8 +3,8 @@
 namespace App\Models\Task;
 
 use App\Models\Agent\Agent;
-use App\Models\Prompt\PromptSchema;
-use App\Models\Prompt\SchemaAssociation;
+use App\Models\Schema\SchemaAssociation;
+use App\Models\Schema\SchemaDefinition;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,7 +40,7 @@ class TaskDefinitionAgent extends Model implements AuditableContract
         return $this->morphMany(SchemaAssociation::class, 'object');
     }
 
-    public function inputSchemaAssociations(): MorphMany|PromptSchema
+    public function inputSchemaAssociations(): MorphMany|SchemaDefinition
     {
         return $this->schemaAssociations()->where('category', 'input');
     }
@@ -58,7 +58,7 @@ class TaskDefinitionAgent extends Model implements AuditableContract
     {
         $fragmentSelector = [];
         foreach($this->inputSchemaAssociations as $inputSchemaAssociation) {
-            $fragmentSelector = ArrayHelper::mergeArraysRecursively($inputSchemaAssociation->promptSchemaFragment->fragment_selector, $fragmentSelector);
+            $fragmentSelector = ArrayHelper::mergeArraysRecursively($inputSchemaAssociation->schemaFragment->fragment_selector, $fragmentSelector);
         }
 
         return $fragmentSelector;

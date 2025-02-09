@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Agent\AgentThreadRun;
-use App\Models\Prompt\PromptSchema;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectAttributeSource;
@@ -45,14 +45,14 @@ class TeamObjectRepository extends ActionRepository
             throw new BadFunctionCallException("Team Objects requires a type and name for each object: \n\nType: $type\nName: $name\nInput:\n" . json_encode($input));
         }
 
-        $promptSchema = null;
-        $rootObject   = null;
+        $schemaDefinition = null;
+        $rootObject       = null;
 
-        if (isset($input['prompt_schema_id'])) {
-            $promptSchema = PromptSchema::find($input['prompt_schema_id']);
+        if (isset($input['schema_definition_id'])) {
+            $schemaDefinition = SchemaDefinition::find($input['schema_definition_id']);
 
-            if (!$promptSchema) {
-                throw new ValidationError("Resolve Team Object ($type) $name failed: Prompt Schema not found: $input[prompt_schema_id]");
+            if (!$schemaDefinition) {
+                throw new ValidationError("Resolve Team Object ($type) $name failed: Schema Definition not found: $input[schema_definition_id]");
             }
         }
 
@@ -68,10 +68,10 @@ class TeamObjectRepository extends ActionRepository
             ->where('name', $name)
             ->withTrashed();
 
-        if ($promptSchema) {
-            $teamObjectQuery->where('prompt_schema_id', $promptSchema->id);
+        if ($schemaDefinition) {
+            $teamObjectQuery->where('schema_definition_id', $schemaDefinition->id);
         } else {
-            $teamObjectQuery->whereNull('prompt_schema_id');
+            $teamObjectQuery->whereNull('schema_definition_id');
         }
 
         if ($rootObject) {
@@ -148,10 +148,10 @@ class TeamObjectRepository extends ActionRepository
 
         unset($input['name']);
 
-        // Inherit the prompt schema and root object from the parent object to ensure correct cardinality in DB
+        // Inherit the schema definition and root object from the parent object to ensure correct cardinality in DB
         $inheritedData = [
-            'prompt_schema_id' => $teamObject->prompt_schema_id,
-            'root_object_id'   => $teamObject->root_object_id,
+            'schema_definition_id' => $teamObject->schema_definition_id,
+            'root_object_id'       => $teamObject->root_object_id,
         ];
 
         $input += $inheritedData;
@@ -332,10 +332,10 @@ class TeamObjectRepository extends ActionRepository
                 throw new ValidationError("Failed to save Team Object ($type) $name: Object already exists");
             }
 
-            // Inherit the prompt schema and root object from the parent object to ensure correct cardinality in DB
+            // Inherit the schema definition and root object from the parent object to ensure correct cardinality in DB
             if ($parentObject) {
-                $object['prompt_schema_id'] = $parentObject->prompt_schema_id;
-                $object['root_object_id']   = $parentObject->root_object_id;
+                $object['schema_definition_id'] = $parentObject->schema_definition_id;
+                $object['root_object_id']       = $parentObject->root_object_id;
             }
 
             $teamObject                     = $this->createTeamObject($type, $name, $object);

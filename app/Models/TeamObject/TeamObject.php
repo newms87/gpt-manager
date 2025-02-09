@@ -2,7 +2,7 @@
 
 namespace App\Models\TeamObject;
 
-use App\Models\Prompt\PromptSchema;
+use App\Models\Schema\SchemaDefinition;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +17,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 /**
  * @property int    $id
- * @property int    prompt_schema_id
+ * @property int    schema_definition_id
  * @property int    root_object_id
  * @property string $type
  * @property string $name
@@ -59,9 +59,9 @@ class TeamObject extends Model implements AuditableContract
         ];
     }
 
-    public function promptSchema(): BelongsTo|PromptSchema
+    public function schemaDefinition(): BelongsTo|SchemaDefinition
     {
-        return $this->belongsTo(PromptSchema::class, 'prompt_schema_id');
+        return $this->belongsTo(SchemaDefinition::class, 'schema_definition_id');
     }
 
     public function rootObject(): BelongsTo|TeamObject
@@ -104,12 +104,12 @@ class TeamObject extends Model implements AuditableContract
     {
         $query = TeamObject::where('type', $this->type)->where('name', $this->name)->where('id', '!=', $this->id);
 
-        // If a prompt schema is set, only allow one object with the same name and schema,
-        // Otherwise, there should be only 1 w/ a null prompt schema (aka: belongs to global namespace)
-        if ($this->prompt_schema_id) {
-            $query->where('prompt_schema_id', $this->prompt_schema_id);
+        // If a schema is set, only allow one object with the same name and schema,
+        // Otherwise, there should be only 1 w/ a null schema (aka: belongs to global namespace)
+        if ($this->schema_definition_id) {
+            $query->where('schema_definition_id', $this->schema_definition_id);
         } else {
-            $query->whereNull('prompt_schema_id');
+            $query->whereNull('schema_definition_id');
         }
 
         if ($query->exists()) {

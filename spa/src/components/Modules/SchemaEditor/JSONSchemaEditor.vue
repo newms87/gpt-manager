@@ -52,13 +52,13 @@ import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import SchemaObject from "@/components/Modules/SchemaEditor/SchemaObject";
 import SchemaRevisionHistoryMenu from "@/components/Modules/SchemaEditor/SchemaRevisionHistoryMenu";
 import SchemaUndoActions from "@/components/Modules/SchemaEditor/SchemaUndoActions";
-import { FragmentSelector, JsonSchema, PromptSchema } from "@/types";
+import { FragmentSelector, JsonSchema, SchemaDefinition } from "@/types";
 import { FaSolidCode as RawCodeIcon } from "danx-icon";
 import { SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
 import { ref, watch } from "vue";
 
 defineProps<{
-	promptSchema?: PromptSchema;
+	promptSchema?: SchemaDefinition;
 	savedAt?: string;
 	saving: boolean;
 	readonly?: boolean;

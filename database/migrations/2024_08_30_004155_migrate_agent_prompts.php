@@ -3,7 +3,7 @@
 use App\Models\Agent\Agent;
 use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Prompt\PromptDirective;
-use App\Models\Prompt\PromptSchema;
+use App\Models\Schema\SchemaDefinition;
 use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration {
@@ -20,8 +20,8 @@ return new class extends Migration {
                 'name'    => $agent->name . ' Schema',
             ],
                 [
-                    'type'          => PromptSchema::TYPE_AGENT_RESPONSE,
-                    'schema_format' => $agent->schema_format ?: PromptSchema::FORMAT_YAML,
+                    'type'          => SchemaDefinition::TYPE_AGENT_RESPONSE,
+                    'schema_format' => $agent->schema_format ?: SchemaDefinition::FORMAT_YAML,
                     'schema'        => $agent->response_schema,
                 ]);
 
