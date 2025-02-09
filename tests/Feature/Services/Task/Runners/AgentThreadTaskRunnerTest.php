@@ -5,6 +5,7 @@ namespace Feature\Services\Task\Runners;
 use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
+use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Task\TaskProcess;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use Tests\AuthenticatedTestCase;
@@ -19,7 +20,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->forTaskDefinitionAgent()->create();
 
         // When
-        AgentThreadTaskRunner::make($taskProcess)->run();
+        AgentThreadTaskRunner::make($taskProcess->taskRun, $taskProcess)->run();
 
         // Then
         $taskProcess->refresh();
@@ -37,7 +38,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         ])->create();
 
         // When
-        AgentThreadTaskRunner::make($taskProcess)->run();
+        AgentThreadTaskRunner::make($taskProcess->taskRun, $taskProcess)->run();
 
         // Then
         $taskProcess->refresh();
@@ -71,7 +72,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         ])->create();
 
         // When
-        AgentThreadTaskRunner::make($taskProcess)->run();
+        AgentThreadTaskRunner::make($taskProcess->taskRun, $taskProcess)->run();
 
         // Then
         $taskProcess->refresh();
@@ -83,7 +84,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
     public function test_setupAgentThread_withDefinitionAgentOutputFragment_completeApiCallHasFilteredStructuredOutput(): void
     {
         // Given
-        $inputSchema      = SchemaDefinition::factory()->create([
+        $inputSchema            = SchemaDefinition::factory()->create([
             'schema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -92,31 +93,25 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
                 ],
             ],
         ]);
-        $agent            = Agent::factory()->withJsonSchemaResponse($inputSchema)->create();
-        $outputSchema     = SchemaDefinition::factory()->create([
-            'schema' => [
-                'type'       => 'object',
-                'properties' => [
-                    'phone' => ['type' => 'string'],
-                    'email' => ['type' => 'string'],
-                    'dob'   => ['type' => 'string'],
-                ],
+        $agent                  = Agent::factory()->withJsonSchemaResponse($inputSchema)->create();
+        $outputSchema           = [
+            'type'       => 'object',
+            'properties' => [
+                'phone' => ['type' => 'string'],
+                'email' => ['type' => 'string'],
+                'dob'   => ['type' => 'string'],
             ],
-        ]);
-        $fragmentSelector = [
+        ];
+        $outputFragmentSelector = [
             'type'     => 'object',
             'children' => [
                 'email' => ['type' => 'string'],
                 'dob'   => ['type' => 'string'],
             ],
         ];
-
-        $taskProcess = TaskProcess::factory()->forTaskDefinitionAgent([
-            'agent_id'                  => $agent,
-            'output_schema_id'          => $outputSchema->id,
-            'output_schema_fragment_id' => SchemaFragment::factory()->create(['fragment_selector' => $fragmentSelector]),
-        ])->create();
-
+        $taskDefinitionAgent    = TaskDefinitionAgent::factory()->withOutputSchema($outputSchema, $outputFragmentSelector)->create(['agent_id' => $agent]);
+        $taskProcess            = TaskProcess::factory()->create(['task_definition_agent_id' => $taskDefinitionAgent]);
+        
         // Then
         $this->partialMock(TestAiApi::class)
             ->shouldReceive('complete')->withArgs(function ($model, $messages, $options) {
@@ -129,6 +124,6 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
             })->andReturn(new TestAiCompletionResponse());
 
         // When
-        AgentThreadTaskRunner::make($taskProcess)->run();
+        AgentThreadTaskRunner::make($taskProcess->taskRun, $taskProcess)->run();
     }
 }

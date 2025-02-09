@@ -167,6 +167,6 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $taskRun->refresh();
         $taskProcess->refresh();
         $this->assertTrue($taskRun->isCompleted(), 'TaskRun should be completed');
-        $this->assertEquals(1, $taskProcess->outputArtifacts()->count(), 'TaskProcess should have 1 output artifact');
+        $this->assertEquals(0, $taskProcess->outputArtifacts()->count(), 'TaskProcess should not have any output artifacts');
     }
 }

@@ -33,6 +33,12 @@ return new class extends Migration {
             $table->unsignedBigInteger('input_schema_fragment_id')->nullable();
             $table->unsignedBigInteger('output_schema_id')->nullable();
             $table->unsignedBigInteger('output_schema_fragment_id')->nullable();
+
+            $table->foreign('input_schema_id')->references('id')->on('schema_definitions');
+            $table->foreign('input_schema_fragment_id')->references('id')->on('schema_fragments');
+            $table->foreign('output_schema_id')->references('id')->on('schema_definitions');
+            $table->foreign('output_schema_fragment_id')->references('id')->on('schema_fragments');
+
         });
     }
 };

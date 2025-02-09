@@ -39,7 +39,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
         // Run the thread synchronously (ie: dispatch = false)
         $taskDefinitionAgent = $this->taskProcess->taskDefinitionAgent;
         $threadRun           = (new AgentThreadService)
-            ->withResponseFormat($taskDefinitionAgent->outputSchema, $taskDefinitionAgent->outputSchemaFragment)
+            ->withResponseFormat($taskDefinitionAgent->outputSchemaAssociation?->schemaDefinition, $taskDefinitionAgent->outputSchemaAssociation?->schemaFragment)
             ->run($thread, dispatch: false);
 
         // Create the artifact and associate it with the task process

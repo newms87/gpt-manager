@@ -15,11 +15,11 @@ return new class extends Migration {
         Schema::rename('prompt_schema_history', 'schema_history');
 
         Schema::table('schema_fragments', function (Blueprint $table) {
-            $table->renameColumn('schema_definition_id', 'schema_definition_id');
+            $table->renameColumn('prompt_schema_id', 'schema_definition_id');
         });
 
         Schema::table('schema_history', function (Blueprint $table) {
-            $table->renameColumn('schema_definition_id', 'schema_definition_id');
+            $table->renameColumn('prompt_schema_id', 'schema_definition_id');
         });
     }
 

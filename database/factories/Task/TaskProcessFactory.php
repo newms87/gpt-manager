@@ -15,13 +15,12 @@ class TaskProcessFactory extends Factory
             'task_run_id'              => TaskRun::factory(),
             'task_definition_agent_id' => null,
             'agent_thread_id'          => null,
+            'name'                     => fake()->unique()->name,
             'started_at'               => null,
             'stopped_at'               => null,
             'failed_at'                => null,
             'completed_at'             => null,
             'timeout_at'               => null,
-            'input_tokens'             => 0,
-            'output_tokens'            => 0,
         ];
     }
 

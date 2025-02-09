@@ -3,7 +3,9 @@
 namespace Database\Factories\Task;
 
 use App\Models\Agent\Agent;
+use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\TaskDefinition;
+use App\Models\Task\TaskDefinitionAgent;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TaskDefinitionAgentFactory extends Factory
@@ -21,5 +23,15 @@ class TaskDefinitionAgentFactory extends Factory
             'output_schema_id'          => null,
             'output_schema_fragment_id' => null,
         ];
+    }
+
+    public function withOutputSchema($schema, $fragmentSelector = []): static
+    {
+        return $this->afterCreating(function (TaskDefinitionAgent $taskDefinitionAgent) use ($schema, $fragmentSelector) {
+            SchemaAssociation::factory()->withSchema($schema, $fragmentSelector)->create([
+                'object_type' => TaskDefinitionAgent::class,
+                'object_id'   => $taskDefinitionAgent->id,
+            ]);
+        });
     }
 }

@@ -70,6 +70,7 @@ class TaskRunnerBase implements TaskRunnerContract
         Log::debug("TaskRunnerBase: task process completed: $this->taskProcess");
 
         if ($artifact) {
+            Log::debug("TaskRunnerBase: attaching artifact to task process: $artifact");
             $this->taskProcess->outputArtifacts()->attach($artifact);
             $this->taskProcess->updateRelationCounter('outputArtifacts');
         }
