@@ -16,7 +16,7 @@ export interface TaskDefinition extends ActionTargetItem {
 	timeout_after_seconds: number;
 	task_run_count: number;
 	task_agent_count: number;
-	groupingFragments?: SchemaAssociation[];
+	groupingSchemaAssociations?: SchemaAssociation[];
 	taskRuns?: TaskRun[];
 	taskInputs?: TaskInput[];
 	taskAgents?: TaskDefinitionAgent[];

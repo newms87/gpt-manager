@@ -35,7 +35,7 @@
 							label-class="text-slate-300"
 							:class="{'mr-4': clearable, 'mr-8': !clearable}"
 							:select-class="buttonColor"
-							:options="dxSchemaDefinition.pagedItems.value?.data || []"
+							:options="allowedSchemaDefinitions"
 							:loading="createSchemaAction.isApplying"
 							@create="onCreate"
 							@update="input => activeSchema && updateSchemaAction.trigger(activeSchema, input)"
@@ -109,11 +109,11 @@ import {
 	FaSolidPuzzlePiece as FragmentIcon
 } from "danx-icon";
 import { FlashMessages, SelectField, SelectionMenuField, ShowHideButton, storeObjects } from "quasar-ui-danx";
-import { onMounted, ref, shallowRef, watch } from "vue";
+import { computed, onMounted, ref, shallowRef, watch } from "vue";
 
 const instanceId = Math.random().toString(36).substring(7);
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
 	canSelect?: boolean;
 	canSelectFragment?: boolean;
 	previewable?: boolean;
@@ -121,8 +121,10 @@ withDefaults(defineProps<{
 	example?: boolean;
 	loading?: boolean;
 	buttonColor?: string;
+	excludeSchemaIds?: string[] | number[];
 }>(), {
-	buttonColor: "bg-sky-800"
+	buttonColor: "bg-sky-800",
+	excludeSchemaIds: null
 });
 
 onMounted(() => dxSchemaDefinition.initialize());
@@ -144,6 +146,8 @@ const schemaFormatOptions = [
 	{ label: "YAML", value: "yaml" },
 	{ label: "Typescript", value: "ts" }
 ];
+
+const allowedSchemaDefinitions = computed(() => (dxSchemaDefinition.pagedItems.value?.data || []).filter(s => !props.excludeSchemaIds?.includes(s.id)));
 
 // Load fragments when the active schema changes
 const fragmentList = shallowRef([]);

@@ -1,14 +1,14 @@
 <template>
 	<div class="p-6">
+		<TaskDefinitionGroupingList :task-definition="taskDefinition" />
 		<SelectField
-			class="flex-grow"
+			class="mt-8"
 			:model-value="taskDefinition.task_runner_class"
 			:options="dxTaskDefinition.getFieldOptions('runners')"
 			:disable="updateAction.isApplying"
 			:loading="!dxTaskDefinition.getFieldOptions('runners')"
 			@update="task_runner_class => updateAction.trigger(taskDefinition, {task_runner_class})"
 		/>
-		<TaskDefinitionGroupingList :task-definition="taskDefinition" />
 		<TaskDefinitionAgentList v-if="showAgentList" class="mt-8" :task-definition="taskDefinition" />
 	</div>
 </template>

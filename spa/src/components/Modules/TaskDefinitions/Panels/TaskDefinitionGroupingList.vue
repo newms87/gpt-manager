@@ -19,37 +19,48 @@
 				label="Split by file"
 				@update:model-value="split_by_file => updateAction.trigger(taskDefinition, {split_by_file})"
 			/>
-			<QCheckbox
-				class="ml-8"
-				:model-value="!!taskDefinition.groupingFragments"
-				label="Group by keys"
-				@update:model-value="addGroupingKey"
-			/>
 		</div>
-		<div v-if="taskDefinition.grouping_keys" class="mt-4">
-			<div v-for="(groupingKey, index) in taskDefinition.grouping_keys" :key="index" class="flex items-center">
+		<div class="mt-4">
+			<div
+				v-for="(schemaAssociation, index) in taskDefinition.groupingSchemaAssociations"
+				:key="index"
+				class="flex items-start flex-nowrap my-4"
+			>
+				<ActionButton
+					type="trash"
+					color="white"
+					class="mr-4"
+					:action="deleteAction"
+					:target="schemaAssociation"
+				/>
 				<SchemaEditorToolbox
 					can-select
 					can-select-fragment
 					previewable
-					:loading="updateAction.isApplying"
-					:model-value="resolveSchemaDefinition(groupingKey.schema_definition_id)"
-					:fragment="groupingKey"
-					@update:model-value="schemaDefinition => updateAction.trigger(taskDefinition, {grouping_keys: taskDefinition.grouping_keys})"
+					:exclude-schema-ids="usedSchemaIds"
+					:loading="schemaAssociation.isSaving"
+					:model-value="schemaAssociation.schema"
+					:fragment="schemaAssociation.fragment"
+					@update:model-value="schema => updateAction.trigger(schemaAssociation, {schema_definition_id: schema.id})"
+					@update:fragment="fragment => updateAction.trigger(schemaAssociation, {schema_fragment_id: fragment.id || null})"
 				/>
 			</div>
 			<ActionButton
-				v-if="unusedSchemaDefinitions.length > 0"
+				v-if="nextSchemaDefinition"
 				type="create"
 				color="green"
+				size="sm"
 				label="Add Grouping Key"
-				@click="addGroupingKey"
+				class="mt-4"
+				:action="createAction"
+				:input="{task_definition_id: taskDefinition.id, schema_definition_id: nextSchemaDefinition.id, category: 'grouping'}"
 			/>
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
+import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociations";
 import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { ActionButton } from "@/components/Shared";
@@ -60,40 +71,19 @@ const props = defineProps<{
 	taskDefinition: TaskDefinition,
 }>();
 
-const updateAction = dxTaskDefinition.getAction("update");
+const createAction = dxSchemaAssociation.getAction("quick-create", { onFinish: () => dxTaskDefinition.routes.detailsAndStore(props.taskDefinition) });
+const updateAction = dxSchemaAssociation.getAction("update");
+const deleteAction = dxSchemaAssociation.getAction("quick-delete", { onFinish: () => dxTaskDefinition.routes.detailsAndStore(props.taskDefinition) });
 
-// Unused schemas are the remaining schemas that are not already added to the list of group keys
-const unusedSchemaDefinitions = computed(() => {
-	const unused = [];
+const usedSchemaIds = computed(() => props.taskDefinition.groupingSchemaAssociations.map(s => s.schema.id));
+
+// The next schema to use when adding a new group (only allow using each schema once when defining the grouping keys)
+const nextSchemaDefinition = computed(() => {
 	for (let schema of dxSchemaDefinition.pagedItems.value?.data || []) {
-		console.log("check", schema);
-		if (!props.taskDefinition.groupingFragments.find(gf => gf.schema.id === schema.id)) {
-			unused.push(schema);
+		if (!usedSchemaIds.value.includes(schema.id)) {
+			return schema;
 		}
 	}
-	return unused;
+	return null;
 });
-
-/**
- *  Resolve the schema by its id
- */
-function resolveSchemaDefinition(schemaDefinitionId) {
-	return (dxSchemaDefinition.pagedItems.value?.data || []).find(schema => schema.id === schemaDefinitionId);
-}
-
-/**
- *  Add a new grouping key to the task definition w/ the first available schema
- */
-function addGroupingKey() {
-	if (unusedSchemaDefinitions.value.length === 0) {
-		return;
-	}
-
-	// TODO: consider allowing one-off selections of fragments (ie: schema_associations.fragment_selector field optional instead of a fragment_id)
-
-	// TODO: HEREEEEEE needs to be reworked to modify schema associations directly
-	const groupingKeys = props.taskDefinition.groupingFragments || [];
-	groupingKeys.push({ schema_definition_id: unusedSchemaDefinitions.value[0].id });
-	updateAction.trigger(props.taskDefinition, { grouping_keys: groupingKeys });
-}
 </script>

@@ -168,7 +168,7 @@ class TaskProcess extends Model implements AuditableContract
             return false;
         }
 
-        return $this->started_at->addSeconds($this->taskRun->taskDefinition->timeout_after_seconds)->isPast();
+        return $this->started_at->addSeconds($this->taskRun?->taskDefinition->timeout_after_seconds)->isPast();
     }
 
     public function canBeRun(): bool

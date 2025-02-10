@@ -29,7 +29,7 @@
 					v-model="isShowingOutputArtifacts"
 					:label="taskProcess.output_artifact_count + ' Output'"
 					:class="colorClass"
-					@show="dxTaskProcess.routes.detailsAndStore(taskProcess, {inputArtifacts: artifactsField})"
+					@show="dxTaskProcess.routes.detailsAndStore(taskProcess, {outputArtifacts: artifactsField})"
 				/>
 				<WorkflowStatusTimerPill :runner="taskProcess" />
 			</div>

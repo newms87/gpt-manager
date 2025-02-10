@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
+use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskDefinitionAgent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -36,14 +37,21 @@ class SchemaAssociationRepository extends ActionRepository
      */
     public function createAssociation($input): SchemaAssociation
     {
+        $taskDefinitionId      = $input['task_definition_id'] ?? null;
         $taskDefinitionAgentId = $input['task_definition_agent_id'] ?? null;
 
-        if ($taskDefinitionAgentId) {
+        if ($taskDefinitionId) {
+            $objectType = TaskDefinition::class;
+            $objectId   = $taskDefinitionId;
+
+            if (TaskDefinition::where('team_id', team()->id)->where('id', $taskDefinitionId)->doesntExist()) {
+                throw new ValidationError('Task Definition was not found: ' . $taskDefinitionId);
+            }
+        } elseif ($taskDefinitionAgentId) {
             $objectType = TaskDefinitionAgent::class;
             $objectId   = $taskDefinitionAgentId;
 
-            $taskDefinitionAgent = TaskDefinitionAgent::whereHas('taskDefinition', fn($b) => $b->where('team_id', team()->id))->find($taskDefinitionAgentId);
-            if (!$taskDefinitionAgent) {
+            if (TaskDefinitionAgent::whereHas('taskDefinition', fn($b) => $b->where('team_id', team()->id))->where('id', $taskDefinitionAgentId)->doesntExist()) {
                 throw new ValidationError('Task Definition Agent was not found: ' . $taskDefinitionAgentId);
             }
         } else {
@@ -63,6 +71,9 @@ class SchemaAssociationRepository extends ActionRepository
         return $this->updateAssociation($association, $input);
     }
 
+    /**
+     * Update a Schema Association verifying the schema and fragment exist
+     */
     public function updateAssociation(SchemaAssociation $schemaAssociation, array $input): SchemaAssociation
     {
         $schemaAssociation->fill($input);

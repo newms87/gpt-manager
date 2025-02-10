@@ -25,23 +25,23 @@ class TaskDefinitionResource extends ActionResource
             'created_at'             => $taskDefinition->created_at,
             'updated_at'             => $taskDefinition->updated_at,
 
-            'groupingFragments' => fn($fields) => SchemaAssociationResource::collection($taskDefinition->groupingFragments, $fields),
-            'taskAgents'        => fn($fields) => TaskDefinitionAgentResource::collection($taskDefinition->definitionAgents, $fields),
-            'taskInputs'        => fn($fields) => TaskInputResource::collection($taskDefinition->taskInputs, $fields),
-            'taskRuns'          => fn($fields) => TaskRunResource::collection($taskDefinition->taskRuns, $fields),
+            'groupingSchemaAssociations' => fn($fields) => SchemaAssociationResource::collection($taskDefinition->groupingSchemaAssociations, $fields),
+            'taskAgents'                 => fn($fields) => TaskDefinitionAgentResource::collection($taskDefinition->definitionAgents, $fields),
+            'taskInputs'                 => fn($fields) => TaskInputResource::collection($taskDefinition->taskInputs, $fields),
+            'taskRuns'                   => fn($fields) => TaskRunResource::collection($taskDefinition->taskRuns, $fields),
         ];
     }
 
     public static function details(Model $model, ?array $includeFields = null): array
     {
         return static::make($model, $includeFields ?? [
-            'groupingFragments' => true,
-            'taskAgents'        => [
+            'groupingSchemaAssociations' => true,
+            'taskAgents'                 => [
                 'agent'                   => true,
                 'inputSchemaAssociations' => true,
                 'outputSchemaAssociation' => true,
             ],
-            'taskInputs'        => true,
+            'taskInputs'                 => true,
         ]);
     }
 }

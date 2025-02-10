@@ -58,7 +58,7 @@ class TaskDefinition extends Model implements AuditableContract
         return $this->morphMany(SchemaAssociation::class, 'object');
     }
 
-    public function groupingFragments(): MorphMany|SchemaAssociation
+    public function groupingSchemaAssociations(): MorphMany|SchemaAssociation
     {
         return $this->schemaAssociations()->where('category', 'grouping');
     }
