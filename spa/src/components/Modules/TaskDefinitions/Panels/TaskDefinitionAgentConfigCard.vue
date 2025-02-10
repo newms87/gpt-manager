@@ -61,20 +61,26 @@
 
 		<Transition>
 			<div v-if="taskDefinitionAgent.include_data">
-				<div class="mt-4">
+				<div
+					v-for="(inputSchemaAssociation, index) in taskDefinitionAgent.inputSchemaAssociations"
+					:key="inputSchemaAssociation.id"
+					class="mt-4"
+				>
 					<SchemaEditorToolbox
 						can-select
 						can-select-fragment
 						previewable
 						button-color="bg-sky-900 text-sky-200"
-						:model-value="taskDefinitionAgent.inputSchema"
-						:fragment="taskDefinitionAgent.inputSchemaFragment"
-						:loading="isUpdatingInput"
-						@update:model-value="schema => onUpdateAgent({ input_schema_id: schema?.id || null, input_schema_fragment_id: null })"
-						@update:fragment="fragment => onUpdateAgent({input_schema_fragment_id: fragment?.id || null })"
+						:model-value="inputSchemaAssociation.schema"
+						:fragment="inputSchemaAssociation.fragment"
+						:loading="inputSchemaAssociation.isSaving"
+						@update:model-value="schema => updateSchemaAssociationAction.trigger(inputSchemaAssociation, { schema_definition_id: schema?.id })"
+						@update:fragment="(fragment) => updateSchemaAssociationAction.trigger(inputSchemaAssociation, { schema_fragment_id: fragment?.id })"
 					>
 						<template #header-start>
-							<div class="bg-sky-900 text-sky-200 rounded w-20 text-center py-1.5 text-sm mr-4">Input</div>
+							<div class="bg-sky-900 text-sky-200 rounded w-20 text-center py-1.5 text-sm mr-4">
+								Input {{ index + 1 }}
+							</div>
 						</template>
 					</SchemaEditorToolbox>
 				</div>
@@ -85,11 +91,11 @@
 						can-select-fragment
 						previewable
 						button-color="bg-green-900 text-green-200"
-						:model-value="taskDefinitionAgent.outputSchemaAssociation.schema"
-						:fragment="taskDefinitionAgent.outputSchemaAssociation.fragment"
-						:loading="isUpdatingOutput"
-						@update:model-value="schema => onUpdateAgent({output_schema_id: schema?.id || null, output_schema_fragment_id: null })"
-						@update:fragment="fragment => onUpdateAgent({output_schema_fragment_id: fragment?.id || null })"
+						:model-value="taskDefinitionAgent.outputSchemaAssociation?.schema"
+						:fragment="taskDefinitionAgent.outputSchemaAssociation?.fragment"
+						:loading="isSavingOutputSchema || taskDefinitionAgent.outputSchemaAssociation.isSaving"
+						@update:model-value="onSelectOutputSchema"
+						@update:fragment="(fragment) => updateSchemaAssociationAction.trigger(taskDefinitionAgent.outputSchemaAssociation, { schema_fragment_id: fragment?.id })"
 					>
 						<template #header-start>
 							<div class="bg-green-900 text-green-200 rounded w-20 text-center py-1.5 text-sm mr-4">Output</div>
@@ -103,6 +109,7 @@
 <script setup lang="ts">
 import { dxAgent } from "@/components/Modules/Agents";
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
+import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociations";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { ActionButton } from "@/components/Shared";
 import { TaskDefinition, TaskDefinitionAgent } from "@/types";
@@ -122,21 +129,30 @@ const isEditingAgent = ref(false);
 const copyAgentAction = dxTaskDefinition.getAction("copy-agent");
 const updateAgentAction = dxTaskDefinition.getAction("update-agent");
 const removeAgentAction = dxTaskDefinition.getAction("remove-agent");
+const createSchemaAssociationAction = dxSchemaAssociation.getAction("quick-create", { onFinish: () => dxTaskDefinition.routes.detailsAndStore(props.taskDefinition) });
+const updateSchemaAssociationAction = dxSchemaAssociation.getAction("update");
 const isUpdatingAgent = ref(false);
-const isUpdatingOutput = ref(false);
-const isUpdatingInput = ref(false);
+const isSavingOutputSchema = ref(false);
 
 async function onUpdateAgent(data) {
 	if (data.agent_id) {
 		isUpdatingAgent.value = true;
-	} else if (data.output_schema_fragment_id !== undefined) {
-		isUpdatingOutput.value = true;
-	} else if (data.input_schema_fragment_id !== undefined) {
-		isUpdatingInput.value = true;
 	}
 	await updateAgentAction.trigger(props.taskDefinition, { id: props.taskDefinitionAgent.id, ...data });
 	isUpdatingAgent.value = false;
-	isUpdatingOutput.value = false;
-	isUpdatingInput.value = false;
+}
+
+async function onSelectOutputSchema(schema) {
+	isSavingOutputSchema.value = true;
+	if (props.taskDefinitionAgent.outputSchemaAssociation) {
+		await updateSchemaAssociationAction.trigger(props.taskDefinitionAgent.outputSchemaAssociation, { schema_definition_id: schema?.id });
+	} else {
+		await createSchemaAssociationAction.trigger(null, {
+			task_definition_agent_id: props.taskDefinitionAgent.id,
+			schema_definition_id: schema?.id,
+			category: "output"
+		});
+	}
+	isSavingOutputSchema.value = false;
 }
 </script>
