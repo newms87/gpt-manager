@@ -1,15 +1,14 @@
 <template>
 	<div>
 		<div v-if="teamObjectType" class="mt-4">
-			<QBtn
-				class="px-4 bg-green-900 text-sm py-3"
-				align="left"
-				:loading="createTeamObjectAction.isApplying"
-				@click="createTeamObjectAction.trigger(null, { type: teamObjectType, schema_definition_id: schemaDefinition.id })"
-			>
-				<CreateIcon class="w-4 mr-2" />
-				{{ teamObjectType }}
-			</QBtn>
+			<ActionButton
+				type="create"
+				color="green"
+				size="sm"
+				:label="teamObjectType"
+				:action="createTeamObjectAction"
+				:input="{ type: teamObjectType, schema_definition_id: schemaDefinition.id }"
+			/>
 		</div>
 		<QBanner v-else class="bg-red-800 text-slate-300 mt-8">
 			Please update the schema to include the title property at the top level
@@ -47,8 +46,8 @@
 </template>
 <script setup lang="ts">
 import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
+import { ActionButton } from "@/components/Shared";
 import { JsonSchema, SchemaDefinition } from "@/types";
-import { FaSolidPlus as CreateIcon } from "danx-icon";
 import { PanelsDrawer } from "quasar-ui-danx";
 import { computed, onMounted, ref, watch } from "vue";
 

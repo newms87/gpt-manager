@@ -3,6 +3,7 @@
 		<WorkflowInputCard
 			:workflow-input="taskInput.workflowInput"
 			removable
+			editable-team-objects
 			:removing="removeInputAction.isApplying"
 			@remove="removeInputAction.trigger(taskDefinition, {id: taskInput.id})"
 		>

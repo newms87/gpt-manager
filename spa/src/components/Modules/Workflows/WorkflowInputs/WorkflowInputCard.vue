@@ -22,25 +22,6 @@
 					placeholder="Enter Description..."
 					@update:model-value="description => updateAction.trigger(workflowInput, { description })"
 				/>
-				<SelectField
-					select-class="dx-select-field-dense"
-					placeholder="(Select Type)"
-					:options="dxWorkflowInput.getFieldOptions('teamObjectTypes')"
-					:model-value="workflowInput.team_object_type"
-					@update:model-value="onUpdateTeamObjectType"
-				/>
-				<SelectionMenuField
-					v-if="workflowInput.team_object_type"
-					:selected="workflowInput.teamObject"
-					selectable
-					clearable
-					:select-icon="TeamObjectIcon"
-					select-class="bg-emerald-900 text-cyan-400"
-					label-class="text-slate-300"
-					:options="workflowInput.availableTeamObjects || []"
-					:loading="updateAction.isApplying"
-					@update:selected="teamObject => updateAction.trigger(workflowInput, { team_object_id: teamObject?.id || null })"
-				/>
 			</div>
 			<slot name="actions" />
 			<ActionButton
@@ -50,6 +31,27 @@
 				class="bg-red-200"
 				:saving="removing"
 				@click="$emit('remove')"
+			/>
+		</div>
+		<div v-if="editableTeamObjects" class="mb-4 flex items-center flex-nowrap space-x-4">
+			<SelectField
+				select-class="dx-select-field-dense"
+				placeholder="(Select Type)"
+				:options="dxWorkflowInput.getFieldOptions('teamObjectTypes')"
+				:model-value="workflowInput.team_object_type"
+				@update:model-value="onUpdateTeamObjectType"
+			/>
+			<SelectionMenuField
+				v-if="workflowInput.team_object_type"
+				:selected="workflowInput.teamObject"
+				selectable
+				clearable
+				:select-icon="TeamObjectIcon"
+				select-class="bg-emerald-900 text-cyan-400"
+				label-class="text-slate-300"
+				:options="workflowInput.availableTeamObjects || []"
+				:loading="updateAction.isApplying"
+				@update:selected="teamObject => updateAction.trigger(workflowInput, { team_object_id: teamObject?.id || null })"
 			/>
 		</div>
 		<MultiFileField
@@ -99,6 +101,7 @@ const props = defineProps<{
 	readonly?: boolean;
 	removable?: boolean;
 	removing?: boolean;
+	editableTeamObjects?: boolean;
 }>();
 
 onMounted(() => {

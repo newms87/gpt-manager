@@ -4,6 +4,7 @@
 			v-model:editing="isEditingSchema"
 			:model-value="activeSchema"
 			can-select
+			previewable
 			@update:model-value="onSelectSchemaDefinition"
 		/>
 

@@ -42,7 +42,7 @@
 							@delete="selected => deleteSchemaAction.trigger(selected)"
 						/>
 
-						<template v-if="activeSchema">
+						<template v-if="activeSchema && canSelectFragment">
 							<SelectionMenuField
 								v-if="canSelect"
 								v-model:editing="isEditingFragment"

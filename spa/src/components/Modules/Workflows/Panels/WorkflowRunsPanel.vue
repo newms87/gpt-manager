@@ -13,6 +13,7 @@
 					:key="selectedInput.id"
 					class="ml-4 w-full"
 					:workflow-input="selectedInput"
+					editable-team-objects
 				/>
 				<SelectWorkflowInputDialog
 					v-if="showInputDialog"
