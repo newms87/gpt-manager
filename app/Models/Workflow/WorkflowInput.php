@@ -3,6 +3,7 @@
 namespace App\Models\Workflow;
 
 use App\Models\ContentSource\ContentSource;
+use App\Models\TeamObject\TeamObject;
 use App\Traits\HasObjectTags;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -44,6 +45,16 @@ class WorkflowInput extends Model implements AuditableContract
         ];
     }
 
+    public function teamObject(): BelongsTo
+    {
+        return $this->belongsTo(TeamObject::class, 'team_object_id');
+    }
+
+    public function availableTeamObjects(): HasMany
+    {
+        return $this->hasMany(TeamObject::class, 'type', 'team_object_type');
+    }
+
     public function contentSource(): BelongsTo|ContentSource
     {
         return $this->belongsTo(ContentSource::class);
@@ -77,8 +88,6 @@ class WorkflowInput extends Model implements AuditableContract
                 Rule::unique('workflow_inputs')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
             ],
             'team_object_id'   => [
-                // If team_object_type is present, team_object_id must be present.
-                'required_with:team_object_type',
                 'nullable',
                 'integer', // Adjust type as needed
             ],

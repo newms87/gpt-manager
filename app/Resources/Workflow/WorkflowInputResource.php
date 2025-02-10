@@ -3,6 +3,8 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowInput;
+use App\Resources\TeamObject\TeamObjectResource;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 use Newms87\Danx\Resources\StoredFileResource;
 
@@ -30,6 +32,17 @@ class WorkflowInputResource extends ActionResource
             // Optional fields
             'files'                   => fn($fields) => StoredFileResource::collection($storedFiles, $fields),
             'content'                 => fn() => $workflowInput->content,
+            'teamObject'              => fn($fields) => TeamObjectResource::make($workflowInput->teamObject, $fields),
+            'availableTeamObjects'    => fn($fields) => TeamObjectResource::collection($workflowInput->availableTeamObjects, $fields),
         ];
+    }
+
+    public static function details(Model $model, ?array $includeFields = null): array
+    {
+        return static::make($model, $includeFields ?? [
+            'files'      => ['thumb' => true, 'transcodes' => true],
+            'content'    => true,
+            'teamObject' => true,
+        ]);
     }
 }
