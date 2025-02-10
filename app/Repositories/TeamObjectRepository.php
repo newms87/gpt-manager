@@ -323,6 +323,12 @@ class TeamObjectRepository extends ActionRepository
             if (!$teamObject) {
                 throw new ValidationError("Failed to save Team Object ($type) $name: Object w/ ID $id not found");
             }
+
+            if ($type && $teamObject->type !== $type) {
+                throw new ValidationError("Failed to save Team Object ($type: $id): type of object did not match: $type !== $teamObject->type");
+            }
+
+            Log::debug("Loaded for update: $teamObject");
             $this->updateTeamObject($teamObject, $object);
         } else {
             // If no ID is set, then validate a duplicate object doesn't exist and create a new object
@@ -341,6 +347,8 @@ class TeamObjectRepository extends ActionRepository
             $teamObject                     = $this->createTeamObject($type, $name, $object);
             $object['id']                   = $teamObject->id;
             $object['was_recently_created'] = true;
+
+            Log::debug("Creating a new teamObject: $teamObject");
         }
 
         // Save the properties to the resolved team object

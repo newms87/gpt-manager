@@ -49,7 +49,7 @@ class WorkflowInputRepository extends ActionRepository
 
         // If the team objects has been installed, add the object types to the field options
         if (Schema::hasTable((new TeamObject())->getTable())) {
-            $options['teamObjectTypes'] = TeamObject::distinct()->select('type')->whereNull('root_object_id')->get()->pluck('type');
+            $options['teamObjectTypes'] = TeamObject::distinct()->select('type')->whereNotNull('schema_definition_id')->get()->pluck('type');
         }
 
         return $options;

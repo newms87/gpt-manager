@@ -46,6 +46,7 @@
 				:selected="workflowInput.teamObject"
 				selectable
 				clearable
+				:placeholder="`(Select ${workflowInput.team_object_type})`"
 				:select-icon="TeamObjectIcon"
 				select-class="bg-emerald-900 text-cyan-400"
 				label-class="text-slate-300"

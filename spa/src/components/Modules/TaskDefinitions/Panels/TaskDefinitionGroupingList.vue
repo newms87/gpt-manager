@@ -46,14 +46,15 @@
 				/>
 			</div>
 			<ActionButton
-				v-if="nextSchemaDefinition"
+				:disabled="!nextSchemaDefinition"
 				type="create"
 				color="green"
 				size="sm"
-				label="Add Grouping Key"
+				:label="nextSchemaDefinition ? 'Add Grouping Key' : 'All schemas added'"
 				class="mt-4"
 				:action="createAction"
-				:input="{task_definition_id: taskDefinition.id, schema_definition_id: nextSchemaDefinition.id, category: 'grouping'}"
+				:input="{task_definition_id: taskDefinition.id, schema_definition_id: nextSchemaDefinition?.id, category: 'grouping'}"
+				:loading="!dxSchemaDefinition.pagedItems.value || createAction.isApplying"
 			/>
 		</div>
 	</div>

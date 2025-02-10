@@ -22,7 +22,7 @@
 				height="5em"
 			/>
 		</template>
-		<template v-else-if="teamObjects?.length > 0">
+		<ListTransition v-else-if="teamObjects?.length > 0">
 			<TeamObjectCard
 				v-for="teamObject in teamObjects"
 				:key="teamObject.id"
@@ -31,7 +31,7 @@
 				class="mt-4 bg-slate-800 rounded"
 				@select="dxTeamObject.activatePanel(teamObject, 'workflows')"
 			/>
-		</template>
+		</ListTransition>
 
 		<PanelsDrawer
 			v-if="activeTeamObject"
@@ -48,7 +48,7 @@
 import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
 import { ActionButton } from "@/components/Shared";
 import { JsonSchema, SchemaDefinition } from "@/types";
-import { PanelsDrawer } from "quasar-ui-danx";
+import { ListTransition, PanelsDrawer } from "quasar-ui-danx";
 import { computed, onMounted, ref, watch } from "vue";
 
 const props = defineProps<{ schemaDefinition: SchemaDefinition }>();
