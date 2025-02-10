@@ -78,7 +78,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
 
         Log::debug("Setup Task AgentThread: $thread");
 
-        Log::debug("\tAdding " . count($inputArtifacts) . " input artifacts");
+        Log::debug("\tAdding " . count($inputArtifacts) . " input artifacts for " . $definitionAgent);
         $artifactFilter = (new ArtifactFilter())
             ->includeText($definitionAgent->include_text)
             ->includeFiles($definitionAgent->include_files)

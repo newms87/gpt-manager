@@ -149,6 +149,21 @@ class JsonSchemaService
 
         $filtered = [];
 
+        // Special case for handling an array of objects at the top level, instead of an object w/ associative keys
+        if (!is_associative_array($data)) {
+            foreach($data as $datum) {
+                $filtered[] = $this->filterDataByFragmentSelector($datum, $fragmentSelector);
+            }
+
+            return $filtered;
+        }
+
+        // When using ID, the data is likely coming from a database so it should specify the ID and type for objects so it is clear where this data came from
+        if ($this->useId) {
+            $fragmentSelector['children']['id']   = ['type' => 'string'];
+            $fragmentSelector['children']['type'] = ['type' => 'string'];
+        }
+
         foreach($fragmentSelector['children'] as $selectedKey => $selectedProperty) {
             if (empty($selectedProperty['type'])) {
                 throw new Exception("Fragment selector must have a type: $selectedKey: " . json_encode($selectedProperty));
