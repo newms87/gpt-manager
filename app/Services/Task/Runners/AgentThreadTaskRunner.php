@@ -19,8 +19,10 @@ class AgentThreadTaskRunner extends TaskRunnerBase
         $agent    = $defAgent->agent;
         $name     = "$agent->name ($agent->model)";
 
-        if ($defAgent->outputSchema) {
-            $name .= ': ' . $defAgent->outputSchema->name . ($defAgent->outputSchemaFragment ? ' [' . $defAgent->outputSchemaFragment->name . ']' : '');
+        $outputSchema         = $defAgent->outputSchemaAssociation?->schemaDefinition;
+        $outputSchemaFragment = $defAgent->outputSchemaAssociation?->schemaFragment;
+        if ($outputSchema) {
+            $name .= ': ' . $outputSchema->name . ($outputSchemaFragment ? ' [' . $outputSchemaFragment->name . ']' : '');
         }
 
         $this->taskProcess->name = $name;

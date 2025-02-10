@@ -1,5 +1,5 @@
 <template>
-	<div class="bg-slate-800 p-4 rounded">
+	<div class="bg-sky-950 p-4 rounded">
 		<div class="flex">
 			<div class="pr-4 py-4">Grouping Mode:</div>
 			<QTabs
