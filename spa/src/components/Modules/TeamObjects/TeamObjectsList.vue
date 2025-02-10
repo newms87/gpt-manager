@@ -5,7 +5,7 @@
 				class="px-4 bg-green-900 text-sm py-3"
 				align="left"
 				:loading="createTeamObjectAction.isApplying"
-				@click="createTeamObjectAction.trigger(null, { type: teamObjectType, prompt_schema_id: promptSchema.id })"
+				@click="createTeamObjectAction.trigger(null, { type: teamObjectType, schema_definition_id: schemaDefinition.id })"
 			>
 				<CreateIcon class="w-4 mr-2" />
 				{{ teamObjectType }}
@@ -28,7 +28,7 @@
 				v-for="teamObject in teamObjects"
 				:key="teamObject.id"
 				:object="teamObject"
-				:schema="promptSchema.schema || {} as JsonSchema"
+				:schema="schemaDefinition.schema || {} as JsonSchema"
 				class="mt-4 bg-slate-800 rounded"
 				@select="dxTeamObject.activatePanel(teamObject, 'workflows')"
 			/>
@@ -52,13 +52,13 @@ import { FaSolidPlus as CreateIcon } from "danx-icon";
 import { PanelsDrawer } from "quasar-ui-danx";
 import { computed, onMounted, ref, watch } from "vue";
 
-const props = defineProps<{ promptSchema: SchemaDefinition }>();
+const props = defineProps<{ schemaDefinition: SchemaDefinition }>();
 
 onMounted(init);
-watch(() => props.promptSchema, loadTeamObjects);
+watch(() => props.schemaDefinition, loadTeamObjects);
 
 const createTeamObjectAction = dxTeamObject.getAction("create");
-const teamObjectType = computed(() => props.promptSchema?.schema?.title);
+const teamObjectType = computed(() => props.schemaDefinition?.schema?.title);
 const teamObjects = computed(() => dxTeamObject.pagedItems.value?.data);
 const activeTeamObject = computed(() => dxTeamObject.activeItem.value);
 const activePanel = ref("workflows");

@@ -4,41 +4,41 @@
 			v-model:editing="isEditingSchema"
 			:model-value="activeSchema"
 			can-select
-			@update:model-value="onSelectPromptSchema"
+			@update:model-value="onSelectSchemaDefinition"
 		/>
 
 		<div class="flex-grow overflow-y-auto overflow-x-hidden">
-			<TeamObjectsList v-if="activeSchema && !isEditingSchema" :prompt-schema="activeSchema" />
+			<TeamObjectsList v-if="activeSchema && !isEditingSchema" :schema-definition="activeSchema" />
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
-import { dxPromptSchema } from "@/components/Modules/Schemas/Schemas";
+import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
 import TeamObjectsList from "@/components/Modules/TeamObjects/TeamObjectsList";
 import { until } from "@vueuse/core";
 import { getItem, setItem } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 
-const PROMPT_SCHEMA_STORED_KEY = "dx-prompt-schema-id";
+const SCHEMA_DEFINITION_STORED_KEY = "dx-schema-definition-id";
 
 onMounted(init);
 
 const isEditingSchema = ref(false);
-const activeSchema = computed(() => dxPromptSchema.activeItem.value);
+const activeSchema = computed(() => dxSchemaDefinition.activeItem.value);
 
 async function init() {
-	dxPromptSchema.initialize();
-	const storedPromptSchemaId = getItem(PROMPT_SCHEMA_STORED_KEY);
+	dxSchemaDefinition.initialize();
+	const storedSchemaDefinitionId = getItem(SCHEMA_DEFINITION_STORED_KEY);
 
-	if (storedPromptSchemaId) {
-		await until(dxPromptSchema.pagedItems).toMatch(pi => pi?.data.length > 0);
-		dxPromptSchema.setActiveItem(dxPromptSchema.pagedItems.value.data.find(ps => ps.id === storedPromptSchemaId));
+	if (storedSchemaDefinitionId) {
+		await until(dxSchemaDefinition.pagedItems).toMatch(pi => pi?.data.length > 0);
+		dxSchemaDefinition.setActiveItem(dxSchemaDefinition.pagedItems.value.data.find(ps => ps.id === storedSchemaDefinitionId));
 	}
 }
 
-async function onSelectPromptSchema(promptSchema) {
-	dxPromptSchema.setActiveItem(promptSchema);
-	setItem(PROMPT_SCHEMA_STORED_KEY, promptSchema?.id);
+async function onSelectSchemaDefinition(schemaDefinition) {
+	dxSchemaDefinition.setActiveItem(schemaDefinition);
+	setItem(SCHEMA_DEFINITION_STORED_KEY, schemaDefinition?.id);
 }
 </script>

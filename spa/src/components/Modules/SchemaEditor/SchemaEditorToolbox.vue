@@ -9,7 +9,7 @@
 				:readonly="!activeSchema || !isEditingSchema"
 				:hide-content="!isPreviewing && !isEditingSchema && !isEditingFragment"
 				:hide-actions="!activeSchema"
-				:prompt-schema="activeSchema"
+				:schema-definition="activeSchema"
 				:loading="loading"
 				:model-value="activeSchema?.schema as JsonSchema"
 				:saved-at="activeSchema?.updated_at"
@@ -91,7 +91,7 @@
 				</template>
 			</JSONSchemaEditor>
 
-			<SchemaResponseExampleCard v-if="isShowingExample" :prompt-schema="activeSchema" />
+			<SchemaResponseExampleCard v-if="isShowingExample" :schema-definition="activeSchema" />
 		</div>
 	</div>
 </template>
@@ -161,7 +161,7 @@ async function onCreate() {
 
 // Create a new fragment
 async function onCreateFragment() {
-	const response = await createFragmentAction.trigger(null, { prompt_schema_id: activeSchema.value.id });
+	const response = await createFragmentAction.trigger(null, { schema_definition_id: activeSchema.value.id });
 
 	if (!response.result || !response.item) {
 		return FlashMessages.error("Failed to create fragment: " + response.error || "There was a problem communicating with the server");
@@ -176,7 +176,7 @@ async function loadFragments() {
 	if (!activeSchema.value) return;
 
 	// NOTE The use of abortOn is to avoid generating duplicate requests at the same time causing this request to abort, leaving this instance w/o any fragments
-	const fragments = await routes.list({ filter: { prompt_schema_id: activeSchema.value.id } }, { abortOn: instanceId });
+	const fragments = await routes.list({ filter: { schema_definition_id: activeSchema.value.id } }, { abortOn: instanceId });
 	fragmentList.value = storeObjects(fragments.data);
 }
 </script>

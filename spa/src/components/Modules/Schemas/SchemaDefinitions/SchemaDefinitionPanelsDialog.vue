@@ -1,8 +1,8 @@
 <template>
 	<PanelsDrawer
-		:title="promptSchema.name"
-		:panels="dxPromptSchema.panels"
-		:target="promptSchema"
+		:title="schemaDefinition.name"
+		:panels="dxSchemaDefinition.panels"
+		:target="schemaDefinition"
 		position="standard"
 		panels-class="w-full"
 		@close="$emit('close')"
@@ -10,16 +10,16 @@
 </template>
 
 <script lang="ts" setup>
-import { dxPromptSchema } from "@/components/Modules/Prompts/SchemaDefinitions";
+import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
 import { SchemaDefinition } from "@/types";
 import { PanelsDrawer } from "quasar-ui-danx";
 
-export interface PromptSchemaPanelsDialogProps {
-	promptSchema: SchemaDefinition;
+export interface SchemaDefinitionPanelsDialogProps {
+	schemaDefinition: SchemaDefinition;
 }
 
 defineEmits(["close"]);
-const props = defineProps<PromptSchemaPanelsDialogProps>();
-dxPromptSchema.routes.detailsAndStore(props.promptSchema);
-dxPromptSchema.loadFieldOptions();
+const props = defineProps<SchemaDefinitionPanelsDialogProps>();
+dxSchemaDefinition.routes.detailsAndStore(props.schemaDefinition);
+dxSchemaDefinition.loadFieldOptions();
 </script>

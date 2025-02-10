@@ -6,8 +6,8 @@
 				<template v-if="!readonly">
 					<SchemaUndoActions v-model="editableSchema" />
 					<SchemaRevisionHistoryMenu
-						v-if="promptSchema"
-						:prompt-schema="promptSchema"
+						v-if="schemaDefinition"
+						:schema-definition="schemaDefinition"
 						@select="revision => editableSchema = revision.schema"
 					/>
 				</template>
@@ -35,7 +35,7 @@
 				sync-model-changes
 				:readonly="readonly"
 				label=""
-				:format="promptSchema.schema_format"
+				:format="schemaDefinition.schema_format"
 			/>
 		</div>
 		<div
@@ -58,7 +58,7 @@ import { SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
 import { ref, watch } from "vue";
 
 defineProps<{
-	promptSchema?: SchemaDefinition;
+	schemaDefinition?: SchemaDefinition;
 	savedAt?: string;
 	saving: boolean;
 	readonly?: boolean;

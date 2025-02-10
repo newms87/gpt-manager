@@ -1,6 +1,6 @@
 <template>
 	<div class="p-6 h-full overflow-y-auto">
-		<template v-for="agent in promptSchema.agents" :key="agent.id">
+		<template v-for="agent in schemaDefinition.agents" :key="agent.id">
 			<QSeparator class="bg-slate-400 my-4" />
 			<div>
 				{{ agent.name }}
@@ -12,6 +12,6 @@
 import { SchemaDefinition } from "@/types";
 
 defineProps<{
-	promptSchema: SchemaDefinition,
+	schemaDefinition: SchemaDefinition,
 }>();
 </script>

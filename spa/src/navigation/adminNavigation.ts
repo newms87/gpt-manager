@@ -1,11 +1,12 @@
 import {
 	FaRegularFileLines as PromptsIcon,
 	FaSolidCloudBolt as DashboardIcon,
-	FaSolidDatabase as AuditsIcon,
+	FaSolidDatabase as SchemaDefinitionsIcon,
 	FaSolidDownload as WorkflowInputsIcon,
 	FaSolidGear as TaskDefinitionsIcon,
 	FaSolidRobot as AgentsIcon,
 	FaSolidTableCells as ContentSourcesIcon,
+	FaSolidToiletPaperSlash as AuditsIcon,
 	FaSolidWorm as WorkflowsIcon
 } from "danx-icon";
 
@@ -36,19 +37,14 @@ export default [
 		route: { name: "task-definitions" }
 	},
 	{
-		label: "Prompts",
+		label: "Schema Definitions",
+		icon: SchemaDefinitionsIcon,
+		route: { name: "schema-definitions" }
+	},
+	{
+		label: "Prompt Directives",
 		icon: PromptsIcon,
-		route: { name: "prompts" },
-		children: [
-			{
-				label: "Directives",
-				route: { name: "prompts.directives" }
-			},
-			{
-				label: "SchemaDefinitions",
-				route: { name: "prompts.schemas" }
-			}
-		]
+		route: { name: "prompt-directives" }
 	},
 	{
 		label: "Agents",

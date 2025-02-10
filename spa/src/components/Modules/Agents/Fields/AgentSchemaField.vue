@@ -37,7 +37,7 @@
 				:loading="updateAction.isApplying"
 				:model-value="agent.responseSchema"
 				:fragment="agent.responseSchemaFragment"
-				@update:model-value="promptSchema => updateAction.trigger(props.agent, { response_schema_id: promptSchema?.id || null })"
+				@update:model-value="schemaDefinition => updateAction.trigger(props.agent, { response_schema_id: schemaDefinition?.id || null })"
 				@update:fragment="fragment => updateAction.trigger(props.agent, { response_schema_fragment_id: fragment?.id || null })"
 			/>
 		</div>

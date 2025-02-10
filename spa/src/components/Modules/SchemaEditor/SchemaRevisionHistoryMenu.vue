@@ -31,24 +31,24 @@
 </template>
 
 <script setup lang="ts">
-import { routes } from "@/components/Modules/Schemas/Schemas/config/routes";
-import { PromptSchemaRevision, SchemaDefinition } from "@/types";
+import { routes } from "@/components/Modules/Schemas/SchemaDefinitions/config/routes";
+import { SchemaDefinition, SchemaDefinitionRevision } from "@/types";
 import { FaSolidClock as HistoryIcon } from "danx-icon";
 import { fDateTime } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineEmits(["select"]);
 const props = defineProps<{
-	promptSchema: SchemaDefinition
+	schemaDefinition: SchemaDefinition
 }>();
 
-const history = ref<PromptSchemaRevision[]>(null);
+const history = ref<SchemaDefinitionRevision[]>(null);
 async function loadHistory() {
-	history.value = await routes.history(props.promptSchema);
+	history.value = await routes.history(props.schemaDefinition);
 }
 
 function isMatch(revision) {
-	return JSON.stringify(revision.schema) === JSON.stringify(props.promptSchema.schema);
+	return JSON.stringify(revision.schema) === JSON.stringify(props.schemaDefinition.schema);
 }
 
 </script>

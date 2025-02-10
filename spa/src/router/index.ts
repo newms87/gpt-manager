@@ -1,5 +1,5 @@
 import { ThePageLayout, ThePrimaryLayout } from "@/components/Layouts";
-import { PromptDirectiveTable, PromptSchemaTable } from "@/components/Modules/Prompts";
+import { PromptDirectiveTable } from "@/components/Modules/Prompts";
 import { authTeam, isAuthenticated, setAuthToken } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
 import {
@@ -9,7 +9,7 @@ import {
 	DashboardView,
 	LoginView,
 	PageNotFoundView,
-	PromptsView,
+	SchemaDefinitionsView,
 	TaskDefinitionsView,
 	WorkflowInputsView,
 	WorkflowsView
@@ -58,24 +58,16 @@ const router = createRouter({
 					meta: { title: "Task Definitions", type: "TaskDefinitionResource" }
 				},
 				{
-					path: "prompts",
-					name: "prompts",
-					redirect: { name: "prompts.schemas" },
-					component: PromptsView,
-					children: [
-						{
-							path: "schemas/:id?/:panel?",
-							name: "prompts.schemas",
-							component: PromptSchemaTable,
-							meta: { title: "Prompt SchemaDefinitions", type: "PromptSchemaResource" }
-						},
-						{
-							path: "directives/:id?/:panel?",
-							name: "prompts.directives",
-							component: PromptDirectiveTable,
-							meta: { title: "Prompt Directives", type: "PromptDirectiveResource" }
-						}
-					]
+					path: "/schemas/definitions/:id?/:panel?",
+					name: "schema-definitions",
+					component: SchemaDefinitionsView,
+					meta: { title: "Schema Definitions", type: "SchemaDefinitionResource" }
+				},
+				{
+					path: "directives/:id?/:panel?",
+					name: "prompt-directives",
+					component: PromptDirectiveTable,
+					meta: { title: "Prompt Directives", type: "PromptDirectiveResource" }
 				},
 				{
 					path: "/agents/:id?/:panel?/:thread_id?",

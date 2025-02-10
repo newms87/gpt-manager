@@ -4,6 +4,7 @@ use App\Http\Controllers\Ai\AgentsController;
 use App\Http\Controllers\Ai\ContentSourcesController;
 use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\PromptDirectivesController;
+use App\Http\Controllers\Ai\SchemaAssociationsController;
 use App\Http\Controllers\Ai\SchemaDefinitionsController;
 use App\Http\Controllers\Ai\SchemaFragmentsController;
 use App\Http\Controllers\Ai\TaskDefinitionsController;
@@ -58,6 +59,7 @@ ActionRoute::routes('schemas/definitions', new SchemaDefinitionsController, func
     Route::get('{schemaDefinition}/history', [SchemaDefinitionsController::class, 'history'])->name('schemas.history');
 });
 ActionRoute::routes('schemas/fragments', new SchemaFragmentsController);
+ActionRoute::routes('schemas/associations', new SchemaAssociationsController);
 
 // Task Definitions
 ActionRoute::routes('task-definitions', new TaskDefinitionsController);

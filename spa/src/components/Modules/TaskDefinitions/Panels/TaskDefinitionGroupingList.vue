@@ -33,13 +33,13 @@
 					can-select-fragment
 					previewable
 					:loading="updateAction.isApplying"
-					:model-value="resolvePromptSchema(groupingKey.prompt_schema_id)"
+					:model-value="resolveSchemaDefinition(groupingKey.schema_definition_id)"
 					:fragment="groupingKey"
-					@update:model-value="promptSchema => updateAction.trigger(taskDefinition, {grouping_keys: taskDefinition.grouping_keys})"
+					@update:model-value="schemaDefinition => updateAction.trigger(taskDefinition, {grouping_keys: taskDefinition.grouping_keys})"
 				/>
 			</div>
 			<ActionButton
-				v-if="unusedPromptSchemas.length > 0"
+				v-if="unusedSchemaDefinitions.length > 0"
 				type="create"
 				color="green"
 				label="Add Grouping Key"
@@ -50,7 +50,7 @@
 </template>
 <script setup lang="ts">
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
-import { dxPromptSchema } from "@/components/Modules/Schemas/Schemas";
+import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { ActionButton } from "@/components/Shared";
 import { TaskDefinition } from "@/types";
@@ -62,18 +62,10 @@ const props = defineProps<{
 
 const updateAction = dxTaskDefinition.getAction("update");
 
-
-// TODO: Maybe best to create a generalized prompt_schema_fragmentables table
-//       prompt_schema_id
-//       prompt_schema_fragment_id
-//       category (ie: agent input, agent output, grouping_key, etc)
-//       Replaces the task_definition_agent.output_schema_fragment_id, task_definition_agent.input_schema_fragment_id, etc
-
-
-// Unused prompt schemas are the remaining prompt schemas that are not already added to the list of group keys
-const unusedPromptSchemas = computed(() => {
+// Unused schemas are the remaining schemas that are not already added to the list of group keys
+const unusedSchemaDefinitions = computed(() => {
 	const unused = [];
-	for (let schema of dxPromptSchema.pagedItems.value?.data || []) {
+	for (let schema of dxSchemaDefinition.pagedItems.value?.data || []) {
 		console.log("check", schema);
 		if (!props.taskDefinition.groupingFragments.find(gf => gf.schema.id === schema.id)) {
 			unused.push(schema);
@@ -83,23 +75,25 @@ const unusedPromptSchemas = computed(() => {
 });
 
 /**
- *  Resolve the prompt schema by its id
+ *  Resolve the schema by its id
  */
-function resolvePromptSchema(promptSchemaId) {
-	return (dxPromptSchema.pagedItems.value?.data || []).find(schema => schema.id === promptSchemaId);
+function resolveSchemaDefinition(schemaDefinitionId) {
+	return (dxSchemaDefinition.pagedItems.value?.data || []).find(schema => schema.id === schemaDefinitionId);
 }
 
 /**
- *  Add a new grouping key to the task definition w/ the first available prompt schema
+ *  Add a new grouping key to the task definition w/ the first available schema
  */
 function addGroupingKey() {
-	if (unusedPromptSchemas.value.length === 0) {
+	if (unusedSchemaDefinitions.value.length === 0) {
 		return;
 	}
 
 	// TODO: consider allowing one-off selections of fragments (ie: schema_associations.fragment_selector field optional instead of a fragment_id)
+
+	// TODO: HEREEEEEE needs to be reworked to modify schema associations directly
 	const groupingKeys = props.taskDefinition.groupingFragments || [];
-	groupingKeys.push({ prompt_schema_id: unusedPromptSchemas.value[0].id });
+	groupingKeys.push({ schema_definition_id: unusedSchemaDefinitions.value[0].id });
 	updateAction.trigger(props.taskDefinition, { grouping_keys: groupingKeys });
 }
 </script>

@@ -1,7 +1,8 @@
-import { ActionTargetItem, fDate, fNumber, TableColumn } from "quasar-ui-danx";
+import { PromptDirective } from "@/types";
+import { fDate, fNumber, TableColumn } from "quasar-ui-danx";
 import { controls } from "./controls";
 
-const onEdit = (promptDirective: ActionTargetItem) => controls.activatePanel(promptDirective, "edit");
+const onEdit = (promptDirective: PromptDirective) => controls.activatePanel(promptDirective, "edit");
 
 export const columns: TableColumn[] = [
 	{

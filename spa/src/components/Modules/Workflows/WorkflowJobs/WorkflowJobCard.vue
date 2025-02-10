@@ -72,7 +72,7 @@
 			<SelectOrCreateField
 				class="mt-4"
 				:selected="job.responseSchema?.id"
-				:options="dxAgent.getFieldOptions('promptSchemas')"
+				:options="dxAgent.getFieldOptions('schemaDefinitions')"
 				:loading="createSchemaAction.isApplying"
 				@create="onCreateSchema"
 				@update:selected="onChangeSchema"
@@ -91,7 +91,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxAgent } from "@/components/Modules/Agents";
-import { dxPromptSchema } from "@/components/Modules/Schemas/Schemas";
+import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
 import { dxWorkflow } from "@/components/Modules/Workflows";
 import WorkflowJobAssignmentsManager from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobAssignmentsManager";
 import WorkflowJobDependenciesList from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependenciesList";
@@ -112,17 +112,16 @@ const showTasksExample = ref(false);
 const showResponseExample = ref(false);
 const updateJobAction = dxWorkflow.getAction("update-job-debounced");
 const updateJobDebouncedAction = dxWorkflow.getAction("update-job-debounced");
-const updatePromptSchemaAction = dxPromptSchema.getAction("update-debounced");
-const createSchemaAction = dxPromptSchema.getAction("create");
+const createSchemaAction = dxSchemaDefinition.getAction("create");
 const deleteJobAction = dxWorkflow.getAction("delete-job");
 
 onMounted(dxAgent.loadFieldOptions);
 
 async function onCreateSchema() {
-	const { item: promptSchema } = await createSchemaAction.trigger();
+	const { item: schemaDefinition } = await createSchemaAction.trigger();
 
-	if (promptSchema) {
-		await updateJobAction.trigger(props.job, { response_schema_id: promptSchema.id });
+	if (schemaDefinition) {
+		await updateJobAction.trigger(props.job, { response_schema_id: schemaDefinition.id });
 	}
 }
 

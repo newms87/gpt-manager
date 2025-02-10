@@ -27,7 +27,7 @@ export interface SchemaAssociation extends ActionTargetItem {
 }
 
 export interface FragmentSelector {
-	prompt_schema_id?: string;
+	schema_definition_id?: string;
 	type: JsonSchemaType;
 	children?: {
 		[key: string]: FragmentSelector;
@@ -48,7 +48,7 @@ export interface AgentPromptDirective extends ActionTargetItem {
 	section: string;
 }
 
-export interface PromptSchemaRevision {
+export interface SchemaDefinitionRevision {
 	id: number;
 	schema: SchemaDefinition;
 	user_email: string;
@@ -56,5 +56,5 @@ export interface PromptSchemaRevision {
 }
 
 export interface SchemaDefinitionRoutes extends ListControlsRoutes<SchemaDefinition> {
-	history(target: SchemaDefinition): Promise<PromptSchemaRevision[]>;
+	history(target: SchemaDefinition): Promise<SchemaDefinitionRevision[]>;
 }

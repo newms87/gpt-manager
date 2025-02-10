@@ -2,21 +2,21 @@
 	<div class="p-6">
 		<ActionForm
 			:action="updateAction"
-			:target="promptSchema"
+			:target="schemaDefinition"
 			:form="form"
 		/>
 	</div>
 </template>
 <script setup lang="ts">
-import { dxPromptSchema } from "@/components/Modules/Prompts/SchemaDefinitions";
+import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
 import { SchemaDefinition } from "@/types/prompts";
 import { ActionForm } from "quasar-ui-danx";
 import { computed } from "vue";
 
 defineProps<{
-	promptSchema: SchemaDefinition,
+	schemaDefinition: SchemaDefinition,
 }>();
 
-const form = computed(() => ({ fields: dxPromptSchema.fields }));
-const updateAction = dxPromptSchema.getAction("update-debounced");
+const form = computed(() => ({ fields: dxSchemaDefinition.fields }));
+const updateAction = dxSchemaDefinition.getAction("update-debounced");
 </script>
