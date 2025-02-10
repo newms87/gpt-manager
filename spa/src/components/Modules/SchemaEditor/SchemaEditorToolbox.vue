@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col flex-nowrap" :class="{'h-full': isEditingSchema}">
+	<div class="flex flex-col flex-nowrap w-full" :class="{'h-full': isEditingSchema}">
 		<div
 			v-if="isEditingFragment || isEditingSchema || previewable || isPreviewing"
 			class="flex-grow overflow-hidden"
@@ -28,11 +28,12 @@
 							selectable
 							editable
 							creatable
-							clearable
+							:clearable="clearable"
 							deletable
 							name-editable
 							:select-icon="SchemaIcon"
 							label-class="text-slate-300"
+							:class="{'mr-4': clearable, 'mr-8': !clearable}"
 							:select-class="buttonColor"
 							:options="dxSchemaDefinition.pagedItems.value?.data || []"
 							:loading="createSchemaAction.isApplying"
@@ -116,6 +117,7 @@ withDefaults(defineProps<{
 	canSelect?: boolean;
 	canSelectFragment?: boolean;
 	previewable?: boolean;
+	clearable?: boolean;
 	example?: boolean;
 	loading?: boolean;
 	buttonColor?: string;

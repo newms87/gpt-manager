@@ -64,8 +64,16 @@
 				<div
 					v-for="(inputSchemaAssociation, index) in taskDefinitionAgent.inputSchemaAssociations"
 					:key="inputSchemaAssociation.id"
-					class="mt-4"
+					class="mt-4 flex items-start flex-nowrap"
 				>
+					<ActionButton
+						type="trash"
+						color="white"
+						:action="deleteSchemaAssociationAction"
+						:target="inputSchemaAssociation"
+						class="mr-2"
+					/>
+
 					<SchemaEditorToolbox
 						can-select
 						can-select-fragment
@@ -75,7 +83,7 @@
 						:fragment="inputSchemaAssociation.fragment"
 						:loading="inputSchemaAssociation.isSaving"
 						@update:model-value="schema => updateSchemaAssociationAction.trigger(inputSchemaAssociation, { schema_definition_id: schema?.id })"
-						@update:fragment="(fragment) => updateSchemaAssociationAction.trigger(inputSchemaAssociation, { schema_fragment_id: fragment?.id })"
+						@update:fragment="(fragment) => updateSchemaAssociationAction.trigger(inputSchemaAssociation, { schema_fragment_id: fragment?.id || null })"
 					>
 						<template #header-start>
 							<div class="bg-sky-900 text-sky-200 rounded w-20 text-center py-1.5 text-sm mr-4">
@@ -84,18 +92,30 @@
 						</template>
 					</SchemaEditorToolbox>
 				</div>
+				<div class="mt-4">
+					<ActionButton
+						type="create"
+						color="sky"
+						label="Input Schema"
+						size="sm"
+						class="px-4"
+						:action="createSchemaAssociationAction"
+						:input="{task_definition_agent_id: taskDefinitionAgent.id, category: 'input'}"
+					/>
+				</div>
 
 				<div class="mt-4">
 					<SchemaEditorToolbox
 						can-select
 						can-select-fragment
 						previewable
+						clearable
 						button-color="bg-green-900 text-green-200"
 						:model-value="taskDefinitionAgent.outputSchemaAssociation?.schema"
 						:fragment="taskDefinitionAgent.outputSchemaAssociation?.fragment"
-						:loading="isSavingOutputSchema || taskDefinitionAgent.outputSchemaAssociation.isSaving"
+						:loading="isSavingOutputSchema || taskDefinitionAgent.outputSchemaAssociation?.isSaving"
 						@update:model-value="onSelectOutputSchema"
-						@update:fragment="(fragment) => updateSchemaAssociationAction.trigger(taskDefinitionAgent.outputSchemaAssociation, { schema_fragment_id: fragment?.id })"
+						@update:fragment="(fragment) => updateSchemaAssociationAction.trigger(taskDefinitionAgent.outputSchemaAssociation, { schema_fragment_id: fragment?.id || null })"
 					>
 						<template #header-start>
 							<div class="bg-green-900 text-green-200 rounded w-20 text-center py-1.5 text-sm mr-4">Output</div>
@@ -131,6 +151,8 @@ const updateAgentAction = dxTaskDefinition.getAction("update-agent");
 const removeAgentAction = dxTaskDefinition.getAction("remove-agent");
 const createSchemaAssociationAction = dxSchemaAssociation.getAction("quick-create", { onFinish: () => dxTaskDefinition.routes.detailsAndStore(props.taskDefinition) });
 const updateSchemaAssociationAction = dxSchemaAssociation.getAction("update");
+const deleteSchemaAssociationAction = dxSchemaAssociation.getAction("delete", { onFinish: () => dxTaskDefinition.routes.detailsAndStore(props.taskDefinition) });
+
 const isUpdatingAgent = ref(false);
 const isSavingOutputSchema = ref(false);
 
@@ -145,7 +167,11 @@ async function onUpdateAgent(data) {
 async function onSelectOutputSchema(schema) {
 	isSavingOutputSchema.value = true;
 	if (props.taskDefinitionAgent.outputSchemaAssociation) {
-		await updateSchemaAssociationAction.trigger(props.taskDefinitionAgent.outputSchemaAssociation, { schema_definition_id: schema?.id });
+		if (!schema) {
+			await deleteSchemaAssociationAction.trigger(props.taskDefinitionAgent.outputSchemaAssociation);
+		} else {
+			await updateSchemaAssociationAction.trigger(props.taskDefinitionAgent.outputSchemaAssociation, { schema_definition_id: schema?.id });
+		}
 	} else {
 		await createSchemaAssociationAction.trigger(null, {
 			task_definition_agent_id: props.taskDefinitionAgent.id,

@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Schema\SchemaAssociation;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Models\Task\TaskDefinitionAgent;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,6 +54,10 @@ class SchemaAssociationRepository extends ActionRepository
             'object_type' => $objectType,
             'object_id'   => $objectId,
         ]);
+
+        if (!isset($input['schema_definition_id'])) {
+            $input['schema_definition_id'] = SchemaDefinition::where('team_id', team()->id)->first()?->id;
+        }
 
         // Update will validate the schema definition and fragment
         return $this->updateAssociation($association, $input);
