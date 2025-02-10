@@ -150,6 +150,14 @@ class TaskDefinitionRepository extends ActionRepository
         $replicateAgent = $taskDefinitionAgent->replicate();
         $replicateAgent->save();
 
+        foreach($taskDefinitionAgent->schemaAssociations as $schemaAssociation) {
+            $replicateAgent->inputSchemaAssociations()->create([
+                'schema_definition_id' => $schemaAssociation->schema_definition_id,
+                'schema_fragment_id'   => $schemaAssociation->schema_fragment_id,
+                'category'             => $schemaAssociation->category,
+            ]);
+        }
+
         return $replicateAgent;
     }
 
