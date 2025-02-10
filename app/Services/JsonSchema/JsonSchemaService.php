@@ -3,6 +3,7 @@
 namespace App\Services\JsonSchema;
 
 use Exception;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\FileHelper;
 use Str;
 
@@ -152,7 +153,9 @@ class JsonSchemaService
         // Special case for handling an array of objects at the top level, instead of an object w/ associative keys
         if (!is_associative_array($data)) {
             foreach($data as $datum) {
-                $filtered[] = $this->filterDataByFragmentSelector($datum, $fragmentSelector);
+                if (is_array($datum)) {
+                    $filtered[] = $this->filterDataByFragmentSelector($datum, $fragmentSelector);
+                }
             }
 
             return $filtered;
@@ -177,16 +180,22 @@ class JsonSchemaService
                 continue;
             }
 
-            if (!empty($dataProperty['type']) && $dataProperty['type'] !== $selectedProperty['type']) {
-                throw new Exception("Fragment selector type mismatch: $selectedKey: Data Type $dataProperty[type] is not $selectedProperty[type]");
-            }
+            $isObjectOrArray = in_array($selectedProperty['type'], ['object', 'array']);
 
-            if ($selectedProperty['type'] === 'object') {
-                $result = $this->filterDataByFragmentSelector($dataProperty, $selectedProperty);
-            } elseif ($selectedProperty['type'] === 'array') {
-                $result = array_map(fn($item) => is_array($item) ? $this->filterDataByFragmentSelector($item, $selectedProperty) : $item, $dataProperty);
-            } else {
+            if (is_scalar($dataProperty)) {
+                if ($isObjectOrArray) {
+                    throw new ValidationError("Fragment selector type mismatch: $selectedKey: Data Type should be a $selectedProperty[type] scalar type, but found array or object instead");
+                }
                 $result = $dataProperty;
+            } else {
+                if (!$isObjectOrArray) {
+                    throw new ValidationError("Fragment selector type mismatch: $selectedKey: Data Type " . gettype($dataProperty) . " is not an array or object");
+                }
+                if (is_associative_array($dataProperty)) {
+                    $result = $this->filterDataByFragmentSelector($dataProperty, $selectedProperty);
+                } else {
+                    $result = array_map(fn($item) => is_array($item) ? $this->filterDataByFragmentSelector($item, $selectedProperty) : $item, $dataProperty);
+                }
             }
 
             if ($result) {

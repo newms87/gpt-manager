@@ -63,6 +63,18 @@ class TaskDefinition extends Model implements AuditableContract
         return $this->schemaAssociations()->where('category', 'grouping');
     }
 
+    public function getGroupingKeys(): array
+    {
+        $groupingKeys = [];
+        foreach($this->groupingSchemaAssociations as $association) {
+            if ($association->schemaFragment->fragment_selector) {
+                $groupingKeys[] = $association->schemaFragment->fragment_selector;
+            }
+        }
+
+        return $groupingKeys;
+    }
+
     public function validate(): static
     {
         validator($this->toArray(), [

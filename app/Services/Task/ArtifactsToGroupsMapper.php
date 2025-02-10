@@ -175,7 +175,13 @@ class ArtifactsToGroupsMapper
         $allFiles = [];
         foreach($artifacts as $artifact) {
             foreach($artifact->storedFiles as $storedFile) {
-                $allFiles[] = $storedFile;
+                if ($storedFile->transcodes) {
+                    foreach($storedFile->transcodes as $transcode) {
+                        $allFiles[] = $transcode;
+                    }
+                } else {
+                    $allFiles[] = $storedFile;
+                }
             }
         }
 

@@ -49,26 +49,43 @@ class TaskRunnerService
 
         $taskProcesses = [];
 
-        $definitionAgents = $taskRun->taskDefinition->definitionAgents;
+        $taskDefinition   = $taskRun->taskDefinition;
+        $definitionAgents = $taskDefinition->definitionAgents;
 
         // NOTE: If there are no agents assigned to the task definition, create an array w/ null entry as a convenience so the loop will create a single process with no agent
         if ($definitionAgents->isEmpty()) {
             $definitionAgents = [null];
         }
 
+        // Prepare the artifact groups based on the task definition settings
+        if ($artifacts) {
+            $artifactGroups = (new ArtifactsToGroupsMapper)
+                ->groupingMode($taskDefinition->grouping_mode)
+                ->splitByFile($taskDefinition->split_by_file)
+                ->setGroupingKeys($taskDefinition->getGroupingKeys())
+                ->map($artifacts);
+        } else {
+            $artifactGroups = ['default' => []];
+        }
+
         foreach($definitionAgents as $definitionAgent) {
-            $taskProcess = $taskRun->taskProcesses()->create([
-                'name'                     => '',
-                'activity'                 => 'Initializing...',
-                'status'                   => TaskProcess::STATUS_PENDING,
-                'task_definition_agent_id' => $definitionAgent?->id,
-            ]);
+            foreach($artifactGroups as $groupKey => $artifactsInGroup) {
+                $taskProcess = $taskRun->taskProcesses()->create([
+                    'name'                     => '',
+                    'activity'                 => "Initializing $groupKey...",
+                    'status'                   => TaskProcess::STATUS_PENDING,
+                    'task_definition_agent_id' => $definitionAgent?->id,
+                ]);
 
-            $taskProcess->inputArtifacts()->saveMany($artifacts);
-            $taskProcess->updateRelationCounter('inputArtifacts');
-            $taskProcess->getRunner()->prepareProcess();
+                if ($artifactsInGroup) {
+                    $taskProcess->inputArtifacts()->saveMany($artifactsInGroup);
+                    $taskProcess->updateRelationCounter('inputArtifacts');
+                }
 
-            $taskProcesses[] = $taskProcess;
+                $taskProcess->getRunner()->prepareProcess();
+
+                $taskProcesses[] = $taskProcess;
+            }
         }
 
         $taskRun->taskProcesses()->saveMany($taskProcesses);
