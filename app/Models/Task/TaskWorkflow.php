@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Models\Task;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\Rule;
+use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
+
+class TaskWorkflow extends Model implements AuditableContract
+{
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
+
+    protected $fillable = [
+        'name',
+    ];
+
+    public array $relationCounters = [
+        TaskWorkflowRun::class => ['taskWorkflowRuns' => 'workflow_runs_count'],
+    ];
+
+    public function validate(): static
+    {
+        validator($this->toArray(), [
+            'name' => [
+                'required',
+                'max:80',
+                'string',
+                Rule::unique('task_workflows')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
+            ],
+        ])->validate();
+
+        return $this;
+    }
+
+    public function __toString()
+    {
+        return "<TaskWorkflow id='$this->id' name='$this->name'>";
+    }
+}
