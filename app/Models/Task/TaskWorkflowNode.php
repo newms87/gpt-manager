@@ -5,6 +5,7 @@ namespace App\Models\Task;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -32,9 +33,14 @@ class TaskWorkflowNode extends Model implements AuditableContract
         return $this->belongsTo(TaskWorkflow::class);
     }
 
-    public function taskWorkflowConnections(): BelongsTo|TaskWorkflowConnection
+    public function connectionsAsSource(): HasMany|TaskWorkflowConnection
     {
-        return $this->belongsTo(TaskWorkflowConnection::class);
+        return $this->hasMany(TaskWorkflowConnection::class, 'source_node_id');
+    }
+
+    public function connectionsAsTarget(): HasMany|TaskWorkflowConnection
+    {
+        return $this->hasMany(TaskWorkflowConnection::class, 'target_node_id');
     }
 
     public function taskDefinition(): BelongsTo|TaskDefinition

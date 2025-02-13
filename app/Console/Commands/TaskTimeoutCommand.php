@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Task\TaskProcess;
+use App\Models\Task\WorkflowStatesContract;
 use App\Repositories\TaskProcessRepository;
 use Illuminate\Console\Command;
 
@@ -13,7 +14,7 @@ class TaskTimeoutCommand extends Command
 
     public function handle()
     {
-        $taskProcesses = TaskProcess::where('status', TaskProcess::STATUS_RUNNING)->get();
+        $taskProcesses = TaskProcess::where('status', WorkflowStatesContract::STATUS_RUNNING)->get();
 
         foreach($taskProcesses as $taskProcess) {
             app(TaskProcessRepository::class)->checkForTimeout($taskProcess);

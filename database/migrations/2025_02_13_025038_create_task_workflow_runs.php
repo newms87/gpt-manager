@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->foreignId('task_workflow_id')->constrained()->onDelete('cascade');
             $table->string('status')->default('Pending');
             $table->timestamp('started_at', 3)->nullable();
+            $table->timestamp('stopped_at', 3)->nullable();
             $table->timestamp('completed_at', 3)->nullable();
             $table->timestamp('failed_at', 3)->nullable();
             $table->timestamps();

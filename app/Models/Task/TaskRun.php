@@ -5,6 +5,7 @@ namespace App\Models\Task;
 use App\Models\Usage\UsageSummary;
 use App\Services\Task\Runners\TaskRunnerBase;
 use App\Services\Task\Runners\TaskRunnerContract;
+use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,9 +16,9 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
-class TaskRun extends Model implements AuditableContract
+class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, HasWorkflowStatesTrait, SoftDeletes;
 
     protected $fillable = [
         'started_at',
@@ -56,44 +57,19 @@ class TaskRun extends Model implements AuditableContract
         return $this->belongsTo(TaskInput::class);
     }
 
+    public function taskWorkflowRun(): BelongsTo|TaskWorkflow
+    {
+        return $this->belongsTo(TaskWorkflowRun::class);
+    }
+
+    public function taskWorkflowNode(): BelongsTo|TaskWorkflowNode
+    {
+        return $this->belongsTo(TaskWorkflowNode::class);
+    }
+
     public function usageSummary(): MorphOne
     {
         return $this->morphOne(UsageSummary::class, 'object');
-    }
-
-    public function isPending(): bool
-    {
-        return $this->status === TaskProcess::STATUS_PENDING;
-    }
-
-    public function isRunning(): bool
-    {
-        return $this->status === TaskProcess::STATUS_RUNNING;
-    }
-
-    public function isStarted(): bool
-    {
-        return $this->started_at !== null;
-    }
-
-    public function isStopped(): bool
-    {
-        return $this->stopped_at !== null;
-    }
-
-    public function isFailed(): bool
-    {
-        return $this->failed_at !== null;
-    }
-
-    public function isCompleted(): bool
-    {
-        return $this->completed_at !== null;
-    }
-
-    public function canContinue(): bool
-    {
-        return !$this->isStopped() && !$this->isFailed() && !$this->isCompleted();
     }
 
     /**
@@ -127,23 +103,6 @@ class TaskRun extends Model implements AuditableContract
         }
     }
 
-    public function computeStatus(): static
-    {
-        if (!$this->isStarted()) {
-            $this->status = TaskProcess::STATUS_PENDING;
-        } elseif ($this->isFailed()) {
-            $this->status = TaskProcess::STATUS_FAILED;
-        } elseif ($this->isStopped()) {
-            $this->status = TaskProcess::STATUS_STOPPED;
-        } elseif (!$this->isCompleted()) {
-            $this->status = TaskProcess::STATUS_RUNNING;
-        } else {
-            $this->status = TaskProcess::STATUS_COMPLETED;
-        }
-
-        return $this;
-    }
-
     /**
      * Get the TaskRunner class instance for the task run
      */
@@ -159,6 +118,12 @@ class TaskRun extends Model implements AuditableContract
     {
         static::saving(function (TaskRun $taskRun) {
             $taskRun->computeStatus();
+        });
+
+        static::saved(function (TaskRun $taskRun) {
+            if ($taskRun->wasChanged('status')) {
+                $taskRun->taskWorkflowRun->checkTaskRuns();
+            }
         });
     }
 

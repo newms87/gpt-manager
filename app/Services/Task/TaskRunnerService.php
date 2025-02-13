@@ -4,8 +4,10 @@ namespace App\Services\Task;
 
 use App\Jobs\ExecuteTaskProcessJob;
 use App\Models\Task\TaskDefinition;
+use App\Models\Task\TaskInput;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
+use App\Models\Task\WorkflowStatesContract;
 use App\Models\Workflow\Artifact;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
@@ -17,12 +19,36 @@ use Throwable;
 class TaskRunnerService
 {
     /**
+     * Start a task run for the task definition. This will create a task run and dispatch the task processes
+     */
+    public static function start(TaskDefinition $taskDefinition, TaskInput $taskInput = null, array $artifacts = []): TaskRun
+    {
+        Log::debug("Starting TaskRun for $taskDefinition");
+
+        if ($taskInput) {
+            $artifact    = (new TaskInputToArtifactMapper)->setTaskInput($taskInput)->map();
+            $artifacts[] = $artifact;
+        }
+
+        $taskRun = static::prepareTaskRun($taskDefinition, $artifacts);
+
+        if ($taskInput) {
+            $taskRun->taskInput()->associate($taskInput)->save();
+        }
+
+        // Dispatch the take processes to begin the task run
+        static::continue($taskRun);
+
+        return $taskRun;
+    }
+
+    /**
      * Prepare a task run for the task definition. Creates a TaskRun object w/ TaskProcess objects
      */
     public static function prepareTaskRun(TaskDefinition $taskDefinition, array|Collection $artifacts = []): TaskRun
     {
         $taskRun = $taskDefinition->taskRuns()->make([
-            'status' => TaskProcess::STATUS_PENDING,
+            'status' => WorkflowStatesContract::STATUS_PENDING,
         ]);
 
         $taskRun->getRunner()->prepareRun();
@@ -73,7 +99,7 @@ class TaskRunnerService
                 $taskProcess = $taskRun->taskProcesses()->create([
                     'name'                     => '',
                     'activity'                 => "Initializing $groupKey...",
-                    'status'                   => TaskProcess::STATUS_PENDING,
+                    'status'                   => WorkflowStatesContract::STATUS_PENDING,
                     'task_definition_agent_id' => $definitionAgent?->id,
                 ]);
 
@@ -191,7 +217,7 @@ class TaskRunnerService
 
             foreach($taskRun->taskProcesses as $taskProcess) {
                 if ($taskProcess->isStarted()) {
-                    $taskProcess->status = TaskProcess::STATUS_STOPPED;
+                    $taskProcess->status = WorkflowStatesContract::STATUS_STOPPED;
                     $taskProcess->save();
                 }
             }
@@ -326,6 +352,12 @@ class TaskRunnerService
         }
 
         // Continue the task run if there are more processes to run
-        static::continue($taskProcess->taskRun);
+        $taskRun = $taskProcess->taskRun->refresh();
+        static::continue($taskRun);
+
+        // If the task run is a part of a task workflow run and the task run is completed, then notify the task workflow run
+        if ($taskRun->task_workflow_run_id && $taskRun->isCompleted()) {
+            TaskWorkflowRunnerService::taskRunComplete($taskRun);
+        }
     }
 }

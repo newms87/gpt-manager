@@ -3,7 +3,6 @@
 namespace App\Repositories;
 
 use App\Models\Task\TaskRun;
-use App\Services\Task\TaskInputToArtifactMapper;
 use App\Services\Task\TaskRunnerService;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Repositories\ActionRepository;
@@ -32,16 +31,7 @@ class TaskRunRepository extends ActionRepository
 
         $taskInput = $taskDefinition->taskInputs()->find($data['task_input_id'] ?? null);
 
-        $artifact = (new TaskInputToArtifactMapper)->setTaskInput($taskInput)->map();
-
-        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition, [$artifact]);
-
-        $taskRun->taskInput()->associate($taskInput)->save();
-
-        // Dispatch the take processes to begin the task run
-        TaskRunnerService::continue($taskRun);
-
-        return $taskRun;
+        return TaskRunnerService::start($taskDefinition, $taskInput);
     }
 
     public function resumeTaskRun(TaskRun $taskRun): TaskRun

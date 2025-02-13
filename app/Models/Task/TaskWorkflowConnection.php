@@ -22,12 +22,12 @@ class TaskWorkflowConnection extends Model implements AuditableContract
 
     public function sourceNode(): BelongsTo|TaskWorkflowNode
     {
-        return $this->belongsTo(TaskWorkflow::class, 'source_node_id');
+        return $this->belongsTo(TaskWorkflowNode::class, 'source_node_id');
     }
 
     public function targetNode(): BelongsTo|TaskWorkflowNode
     {
-        return $this->belongsTo(TaskWorkflow::class, 'target_node_id');
+        return $this->belongsTo(TaskWorkflowNode::class, 'target_node_id');
     }
 
     public function __toString()

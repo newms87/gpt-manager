@@ -6,6 +6,7 @@ use App\Models\Agent\AgentThread;
 use App\Models\Usage\UsageSummary;
 use App\Models\Workflow\Artifact;
 use App\Services\Task\Runners\TaskRunnerContract;
+use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,27 +19,9 @@ use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
-class TaskProcess extends Model implements AuditableContract
+class TaskProcess extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
-
-    const string
-        STATUS_PENDING = 'Pending',
-        STATUS_DISPATCHED = 'Dispatched',
-        STATUS_RUNNING = 'Running',
-        STATUS_STOPPED = 'Stopped',
-        STATUS_COMPLETED = 'Completed',
-        STATUS_TIMEOUT = 'Timeout',
-        STATUS_FAILED = 'Failed';
-
-    const array STATUSES = [
-        self::STATUS_PENDING,
-        self::STATUS_DISPATCHED,
-        self::STATUS_RUNNING,
-        self::STATUS_COMPLETED,
-        self::STATUS_TIMEOUT,
-        self::STATUS_FAILED,
-    ];
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, HasWorkflowStatesTrait;
 
     protected $fillable = [
         'name',
@@ -117,49 +100,9 @@ class TaskProcess extends Model implements AuditableContract
         return $this->morphOne(UsageSummary::class, 'object');
     }
 
-    public function isPending(): bool
-    {
-        return $this->status === TaskProcess::STATUS_PENDING;
-    }
-
-    public function isRunning(): bool
-    {
-        return $this->status === TaskProcess::STATUS_RUNNING;
-    }
-
     public function isDispatched(): bool
     {
         return $this->last_job_dispatch_id !== null;
-    }
-
-    public function isStarted(): bool
-    {
-        return $this->started_at !== null;
-    }
-
-    public function isStopped(): bool
-    {
-        return $this->stopped_at !== null;
-    }
-
-    public function isFailed(): bool
-    {
-        return $this->failed_at !== null;
-    }
-
-    public function isFinished(): bool
-    {
-        return $this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isTimeout();
-    }
-
-    public function isCompleted(): bool
-    {
-        return $this->completed_at !== null;
-    }
-
-    public function isTimeout(): bool
-    {
-        return $this->timeout_at !== null;
     }
 
     public function isPastTimeout(): bool
@@ -179,19 +122,19 @@ class TaskProcess extends Model implements AuditableContract
     public function computeStatus(): static
     {
         if (!$this->isDispatched()) {
-            $this->status = TaskProcess::STATUS_PENDING;
+            $this->status = WorkflowStatesContract::STATUS_PENDING;
         } elseif (!$this->isStarted()) {
-            $this->status = TaskProcess::STATUS_DISPATCHED;
+            $this->status = WorkflowStatesContract::STATUS_DISPATCHED;
         } elseif ($this->isFailed()) {
-            $this->status = TaskProcess::STATUS_FAILED;
+            $this->status = WorkflowStatesContract::STATUS_FAILED;
         } elseif ($this->isStopped()) {
-            $this->status = TaskProcess::STATUS_STOPPED;
+            $this->status = WorkflowStatesContract::STATUS_STOPPED;
         } elseif ($this->isTimeout()) {
-            $this->status = TaskProcess::STATUS_TIMEOUT;
+            $this->status = WorkflowStatesContract::STATUS_TIMEOUT;
         } elseif (!$this->isCompleted()) {
-            $this->status = TaskProcess::STATUS_RUNNING;
+            $this->status = WorkflowStatesContract::STATUS_RUNNING;
         } else {
-            $this->status = TaskProcess::STATUS_COMPLETED;
+            $this->status = WorkflowStatesContract::STATUS_COMPLETED;
         }
 
         return $this;
