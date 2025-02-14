@@ -76,7 +76,7 @@ class TaskRunnerBase implements TaskRunnerContract
         if ($artifacts) {
             foreach($artifacts as $artifact) {
                 if (!($artifact instanceof Artifact)) {
-                    throw new ValidationError("Invalid artifact provided: artifacts should be instance of Artifact, instead received: " . is_object($artifact) ? get_class($artifact) : json_encode($artifact));
+                    throw new ValidationError("Invalid artifact provided: artifacts should be instance of Artifact, instead received: " . (is_object($artifact) ? get_class($artifact) : json_encode($artifact)));
                 }
                 static::log("Attaching $artifact");
                 $this->taskProcess->outputArtifacts()->attach($artifact);

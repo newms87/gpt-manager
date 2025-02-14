@@ -60,7 +60,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $artifacts      = Artifact::factory()->count(2)->create();
 
         // When
-        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition, $artifacts);
+        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition, null, $artifacts);
 
         // Then
         $taskRun->refresh();
@@ -84,7 +84,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $artifacts      = Artifact::factory()->count(2)->create();
 
         // When
-        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition, $artifacts);
+        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition, null, $artifacts);
 
         // Then
         $taskRun->refresh();

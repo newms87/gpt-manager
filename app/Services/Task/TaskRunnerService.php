@@ -50,7 +50,13 @@ class TaskRunnerService
         LockHelper::acquire($taskRun);
 
         if (!$taskRun->canContinue()) {
-            static::log("TaskRun is $taskRun->status, skipping execution");
+            static::log("TaskRun is $taskRun->status. Skipping execution");
+
+            return;
+        }
+
+        if ($taskRun->taskProcesses->isEmpty()) {
+            static::log("No task processes found. Skipping execution");
 
             return;
         }
@@ -65,6 +71,7 @@ class TaskRunnerService
 
             foreach($taskRun->taskProcesses as $taskProcess) {
                 if ($taskProcess->isCompleted()) {
+                    static::log("TaskProcess already Completed. Skipping dispatch: $taskProcess");
                     continue;
                 }
 
@@ -311,6 +318,9 @@ class TaskRunnerService
      */
     public static function prepareTaskProcesses(TaskRun $taskRun, $artifacts = []): array
     {
+        $artifacts = collect($artifacts);
+        static::log("Preparing task processes for $taskRun");
+
         // Validate the artifacts are all Artifact instances
         foreach($artifacts as $artifact) {
             // Only accept Artifact instances here. The input should have already converted content into an Artifact
@@ -330,12 +340,12 @@ class TaskRunnerService
         }
 
         // Prepare the artifact groups based on the task definition settings
-        if ($artifacts) {
+        if ($artifacts->isNotEmpty()) {
             $artifactGroups = (new ArtifactsToGroupsMapper)
                 ->groupingMode($taskDefinition->grouping_mode)
                 ->splitByFile($taskDefinition->split_by_file)
                 ->setGroupingKeys($taskDefinition->getGroupingKeys())
-                ->map(is_array($artifacts) ? $artifacts : $artifacts->all());
+                ->map($artifacts->all());
         } else {
             $artifactGroups = ['default' => []];
         }
@@ -353,6 +363,8 @@ class TaskRunnerService
                     $taskProcess->inputArtifacts()->saveMany($artifactsInGroup);
                     $taskProcess->updateRelationCounter('inputArtifacts');
                 }
+
+                static::log("Prepared task process w/ " . count($artifactsInGroup) . " artifacts: $taskProcess");
 
                 $taskProcess->getRunner()->prepareProcess();
 

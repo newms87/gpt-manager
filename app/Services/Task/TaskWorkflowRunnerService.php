@@ -23,14 +23,14 @@ class TaskWorkflowRunnerService
     {
         static::log("Starting $taskWorkflow");
 
+        if ($taskWorkflow->startingWorkflowNodes->isEmpty()) {
+            throw  new ValidationError("Workflow does not have any starting nodes");
+        }
+
         $taskWorkflowRun = $taskWorkflow->taskWorkflowRuns()->create([
             'name'       => $taskWorkflow->name,
             'started_at' => now(),
         ]);
-
-        if (empty($taskWorkflow->startingWorkflowNodes)) {
-            throw  new ValidationError("Workflow does not have any starting nodes");
-        }
 
         foreach($taskWorkflow->startingWorkflowNodes as $taskWorkflowNode) {
             static::startNode($taskWorkflowRun, $taskWorkflowNode, $taskInput, $artifacts);

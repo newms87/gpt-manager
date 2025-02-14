@@ -70,7 +70,9 @@ class AgentThreadMessage extends Model implements AuditableContract
 
     public function getJsonContent(): ?array
     {
-        return json_decode($this->getCleanContent(), true);
+        $content = $this->getCleanContent();
+
+        return json_decode($content, true) ?? ['text_content' => $content];
     }
 
     public function __toString()

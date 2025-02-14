@@ -7,6 +7,7 @@ use App\Models\Task\TaskWorkflowConnection;
 use App\Models\Task\TaskWorkflowNode;
 use App\Models\Workflow\Artifact;
 use App\Services\Task\TaskWorkflowRunnerService;
+use Newms87\Danx\Exceptions\ValidationError;
 use Tests\AuthenticatedTestCase;
 
 class TaskWorkflowRunnerServiceTest extends AuthenticatedTestCase
@@ -16,11 +17,14 @@ class TaskWorkflowRunnerServiceTest extends AuthenticatedTestCase
         // Given
         $taskWorkflow = TaskWorkflow::factory()->create();
 
+        // Then
+        $this->expectException(ValidationError::class);
+
         // When
         $taskWorkflowRun = TaskWorkflowRunnerService::start($taskWorkflow);
 
         // Then
-        $this->assertNull($taskWorkflowRun, 'TaskWorkflowRun should note have been created');
+        $this->assertNull($taskWorkflowRun, 'TaskWorkflowRun should not have been created');
     }
 
     public function test_start_withSingleNode_singleTaskRunCreatedAndCompleted(): void
