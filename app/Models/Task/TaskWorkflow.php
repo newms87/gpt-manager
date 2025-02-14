@@ -42,6 +42,11 @@ class TaskWorkflow extends Model implements AuditableContract
         return $this->taskWorkflowNodes()->whereDoesntHave('connectionsAsTarget');
     }
 
+    public function taskWorkflowConnections(): HasMany|TaskWorkflowConnection
+    {
+        return $this->hasMany(TaskWorkflowConnection::class);
+    }
+
     public function validate(): static
     {
         validator($this->toArray(), [

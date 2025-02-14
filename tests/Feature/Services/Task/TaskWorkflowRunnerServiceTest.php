@@ -61,11 +61,12 @@ class TaskWorkflowRunnerServiceTest extends AuthenticatedTestCase
     public function test_start_withStartingNodeAndTargetNode_outputArtifactOfSourceIsPassedToTarget(): void
     {
         // Given
-        $artifact      = Artifact::factory()->create(['json_content' => ['hello' => 'world']]);
-        $taskWorkflow  = TaskWorkflow::factory()->create();
-        $workflowNodeA = TaskWorkflowNode::factory()->recycle($taskWorkflow)->create();
-        $workflowNodeB = TaskWorkflowNode::factory()->recycle($taskWorkflow)->create();
-        $connection    = TaskWorkflowConnection::factory()->connect($taskWorkflow, $workflowNodeA, $workflowNodeB)->create();
+        $artifactJsonContent = ['hello' => 'world'];
+        $artifact            = Artifact::factory()->create(['json_content' => $artifactJsonContent]);
+        $taskWorkflow        = TaskWorkflow::factory()->create();
+        $workflowNodeA       = TaskWorkflowNode::factory()->recycle($taskWorkflow)->create();
+        $workflowNodeB       = TaskWorkflowNode::factory()->recycle($taskWorkflow)->create();
+        $connection          = TaskWorkflowConnection::factory()->connect($taskWorkflow, $workflowNodeA, $workflowNodeB)->create();
 
         // When
         $taskWorkflowRun = TaskWorkflowRunnerService::start($taskWorkflow, null, [$artifact]);
@@ -79,6 +80,7 @@ class TaskWorkflowRunnerServiceTest extends AuthenticatedTestCase
         $sourceOutputArtifact = $sourceOutputArtifacts->first();
         /** @var Artifact $targetInputArtifact */
         $targetInputArtifact = $targetInputArtifacts->first();
-        $this->assertEquals($sourceOutputArtifact->json_content, $targetInputArtifact->json_content, 'Output artifacts of source node should be passed to target node');
+        $this->assertEquals($artifactJsonContent, $sourceOutputArtifact->json_content, 'Source Output artifact should match the input');
+        $this->assertEquals($artifactJsonContent, $targetInputArtifact->json_content, 'Output artifacts of source node should be passed as input to target node');
     }
 }

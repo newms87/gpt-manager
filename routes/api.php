@@ -67,6 +67,9 @@ ActionRoute::routes('task-inputs', new TaskInputsController);
 ActionRoute::routes('task-runs', new TaskRunsController);
 ActionRoute::routes('task-processes', new TaskProcessesController);
 
+// Task Workflows
+ActionRoute::routes('task-definitions', new TaskDefinitionsController);
+
 // Agents
 ActionRoute::routes('agents', new AgentsController);
 ActionRoute::routes('threads', new ThreadsController);
