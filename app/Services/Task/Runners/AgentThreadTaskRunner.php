@@ -48,7 +48,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
         if ($threadRun->lastMessage) {
             $this->activity("Received response from $agent->name", 100);
             $artifact = (new AgentThreadMessageToArtifactMapper)->setMessage($threadRun->lastMessage)->map();
-            $this->complete($artifact);
+            $this->complete([$artifact]);
         } else {
             $this->taskProcess->failed_at = now();
             $this->activity("No response from $agent->name", 100);

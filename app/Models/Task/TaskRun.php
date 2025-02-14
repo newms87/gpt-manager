@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
@@ -67,6 +68,26 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         return $this->belongsTo(TaskWorkflowNode::class);
     }
 
+    public function collectInputArtifacts(): Collection
+    {
+        $artifacts = collect();
+        foreach($this->taskProcesses as $taskProcess) {
+            $artifacts = $artifacts->merge($taskProcess->inputArtifacts);
+        }
+
+        return $artifacts;
+    }
+
+    public function collectOutputArtifacts(): Collection
+    {
+        $artifacts = collect();
+        foreach($this->taskProcesses as $taskProcess) {
+            $artifacts = $artifacts->merge($taskProcess->outputArtifacts);
+        }
+
+        return $artifacts;
+    }
+
     public function usageSummary(): MorphOne
     {
         return $this->morphOne(UsageSummary::class, 'object');
@@ -111,7 +132,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         $runners     = config('ai.runners');
         $runnerClass = $runners[$this->taskDefinition->task_runner_class] ?? TaskRunnerBase::class;
 
-        return new $runnerClass($this, $taskProcess);
+        return app()->makeWith($runnerClass, ['taskRun' => $this, 'taskProcess' => $taskProcess]);
     }
 
     public static function booted(): void
@@ -122,7 +143,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 
         static::saved(function (TaskRun $taskRun) {
             if ($taskRun->wasChanged('status')) {
-                $taskRun->taskWorkflowRun->checkTaskRuns();
+                $taskRun->taskWorkflowRun?->checkTaskRuns();
             }
         });
     }

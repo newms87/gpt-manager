@@ -19,4 +19,13 @@ class TaskWorkflowConnectionFactory extends Factory
             'name'               => fake()->name,
         ];
     }
+
+    public function connect(TaskWorkflow $taskWorkflow, TaskWorkflowNode $sourceNode, TaskWorkflowNode $targetNode): self
+    {
+        return $this->state([
+            'task_workflow_id' => $taskWorkflow->id,
+            'source_node_id'   => $sourceNode->id,
+            'target_node_id'   => $targetNode->id,
+        ]);
+    }
 }

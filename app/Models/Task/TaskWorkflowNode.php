@@ -64,6 +64,6 @@ class TaskWorkflowNode extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<TaskWorkflow id='$this->id' name='$this->name'>";
+        return "<TaskWorkflowNode id='$this->id' name='$this->name'>";
     }
 }

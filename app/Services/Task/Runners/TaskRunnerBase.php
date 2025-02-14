@@ -6,10 +6,14 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\Artifact;
 use App\Services\Task\TaskRunnerService;
-use Illuminate\Support\Facades\Log;
+use App\Traits\HasDebugLogging;
+use Illuminate\Database\Eloquent\Collection;
+use Newms87\Danx\Exceptions\ValidationError;
 
 class TaskRunnerBase implements TaskRunnerContract
 {
+    use HasDebugLogging;
+
     const string RUNNER_NAME = 'Base Task Runner';
 
     protected TaskRun      $taskRun;
@@ -23,7 +27,7 @@ class TaskRunnerBase implements TaskRunnerContract
 
     public static function make(TaskRun $taskRun, TaskProcess $taskProcess = null): TaskRunnerContract
     {
-        return new static($taskRun, $taskProcess);
+        return app()->makeWith(static::class, ['taskRun' => $taskRun, 'taskProcess' => $taskProcess]);
     }
 
     public function setTaskProcess(TaskProcess $taskProcess): static
@@ -62,16 +66,21 @@ class TaskRunnerBase implements TaskRunnerContract
 
     public function run(): void
     {
-        $this->complete();
+        $this->complete($this->taskProcess->inputArtifacts);
     }
 
-    public function complete(Artifact $artifact = null): void
+    public function complete(array|Collection $artifacts = []): void
     {
-        Log::debug("TaskRunnerBase: task process completed: $this->taskProcess");
+        static::log("Task process completed: $this->taskProcess");
 
-        if ($artifact) {
-            Log::debug("TaskRunnerBase: attaching artifact to task process: $artifact");
-            $this->taskProcess->outputArtifacts()->attach($artifact);
+        if ($artifacts) {
+            foreach($artifacts as $artifact) {
+                if (!($artifact instanceof Artifact)) {
+                    throw new ValidationError("Invalid artifact provided: artifacts should be instance of Artifact, instead received: " . is_object($artifact) ? get_class($artifact) : json_encode($artifact));
+                }
+                static::log("Attaching $artifact");
+                $this->taskProcess->outputArtifacts()->attach($artifact);
+            }
             $this->taskProcess->updateRelationCounter('outputArtifacts');
         }
 

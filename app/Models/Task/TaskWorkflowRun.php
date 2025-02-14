@@ -3,12 +3,14 @@
 namespace App\Models\Task;
 
 use App\Models\Usage\UsageSummary;
+use App\Models\Workflow\Artifact;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 class TaskWorkflowRun extends Model implements WorkflowStatesContract
 {
@@ -66,17 +68,37 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
 
     /**
      * Get all the artifacts from the source nodes of the given target node
+     * @return Collection<Artifact>
      */
-    public function getSourceNodeArtifacts(TaskWorkflowNode $targetNode): array
+    public function collectOutputArtifactsFromSourceNodes(TaskWorkflowNode $targetNode): Collection
     {
-        $artifacts = [];
-        foreach($targetNode->connectionsAsTarget as $connectionAsTarget) {
-            $sourceNodeTaskRun = $this->taskRuns()->where('task_workflow_node_id', $connectionAsTarget->source_node_id)->first();
+        $artifacts = collect();
 
-            $artifacts = array_merge($artifacts, $sourceNodeTaskRun->outputArtifacts);
+        // Loop through all the source nodes of the target node to gather the output artifacts of each one
+        foreach($targetNode->connectionsAsTarget as $connectionAsTarget) {
+            $outputArtifacts = $this->collectOutputArtifactsForNode($connectionAsTarget->sourceNode);
+            $artifacts       = $artifacts->merge($outputArtifacts);
         }
 
         return $artifacts;
+    }
+
+    /**
+     * Get all the artifacts from the source nodes of the given target node
+     * @return Collection<Artifact>
+     */
+    public function collectInputArtifactsForNode(TaskWorkflowNode $node): Collection
+    {
+        return $this->taskRuns()->where('task_workflow_node_id', $node->id)->first()->collectInputArtifacts() ?? collect();
+    }
+
+    /**
+     * Get all the artifacts from the source nodes of the given target node
+     * @return Collection<Artifact>
+     */
+    public function collectOutputArtifactsForNode(TaskWorkflowNode $node): Collection
+    {
+        return $this->taskRuns()->where('task_workflow_node_id', $node->id)->first()->collectOutputArtifacts() ?? collect();
     }
 
     /**
