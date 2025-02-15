@@ -314,7 +314,7 @@ class TeamObjectRepository extends ActionRepository
         $name         = $object['name']['value'] ?? $object['name'] ?? null;
         $propertyMeta = $object['property_meta'] ?? null;
 
-        Log::debug("Saving TeamObject: $type $name");
+        Log::debug("Saving TeamObject: $type" . ($id ? "($id)" : '') . " $name");
 
         // If an ID is set, resolve the existing team object
         if ($id) {
@@ -325,7 +325,14 @@ class TeamObjectRepository extends ActionRepository
             }
 
             if ($type && $teamObject->type !== $type) {
-                throw new ValidationError("Failed to save Team Object ($type: $id): type of object did not match: $type !== $teamObject->type");
+                if ($threadRun) {
+                    Log::warning("Team Object ($type: $id): type of object did not match: $type !== $teamObject->type. Setting id to null for LLM agent thread run and continuing...");
+                    $object['id'] = null;
+
+                    return $this->saveTeamObjectUsingSchema($schema, $object, $parentObject, $threadRun);
+                } else {
+                    throw new ValidationError("Failed to save Team Object ($type: $id): type of object did not match: $type !== $teamObject->type");
+                }
             }
 
             Log::debug("Loaded for update: $teamObject");

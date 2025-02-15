@@ -32,7 +32,7 @@ items:
         Citation of the source(s) for the property's value.
           * Set to `null` if:
             - The value is explicitly `null`.
-            - The value is derived from the database (e.g., teamObjects).
+            - The value is derived from the database (e.g., json_content w/ type + id properties).
             - The value matches what is already stored in the database.
           * If the value is sourced from a message, file or URL and improves upon the database value:
             - Reference the source(s) in the citation
@@ -63,7 +63,7 @@ items:
             The source of the child property value.
             * Always use file_id if it is present instead of the URL (if you are sure the value came from the file)
             * Message IDs are ONLY found from <AgentMessage id="message_id"> tags in the thread. If no <AgentMessage> tags are present, DO NOT create a source w/ message_id property. These message sources apply ONLY to values found inside the <AgentMessage /> tags.
-              * NEVER cite a message_id if it contains teamObjects data.
+              * NEVER cite a message_id if it contains `json_content` data.
             * Use URL as a last resort to cite a source if message / file is not present
             * Make sure you include all relevant sources (more than one if others apply).
             * Set to null if property value was found outside of the <AgentMessage> tag and not in a URL / image / file, DO NOT add a source entry for it.

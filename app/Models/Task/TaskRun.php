@@ -26,6 +26,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         'stopped_at',
         'completed_at',
         'failed_at',
+        'task_input_id',
     ];
 
     public array $relationCounters = [

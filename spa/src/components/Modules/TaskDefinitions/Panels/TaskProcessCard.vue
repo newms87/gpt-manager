@@ -58,6 +58,17 @@
 		</div>
 
 		<div v-if="isShowingAgentThread" class="p-2 border-t border-slate-400 mt-2">
+			<div class="flex items-center flex-nowrap mb-2 space-x-2">
+				<ShowHideButton v-model="isEditingAgentThread" class="bg-slate-800 text-slate-300" />
+				<ActionButton
+					:action="resumeProcessAction"
+					:target="taskProcess"
+					label="Run Thread"
+					:icon="RunThreadIcon"
+					class="bg-green-900 text-green-300"
+					size="sm"
+				/>
+			</div>
 			<template v-if="taskProcess.agentThread">
 				<ThreadMessageCard
 					v-for="message in taskProcess.agentThread.messages"
@@ -65,7 +76,7 @@
 					:message="message"
 					:thread="taskProcess.agentThread"
 					class="mb-5"
-					readonly
+					:readonly="!isEditingAgentThread"
 				/>
 			</template>
 			<QSkeleton v-else class="h-30" />
@@ -98,7 +109,7 @@ import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { TaskProcess } from "@/types/task-definitions";
-import { FaSolidMessage as AgentThreadIcon } from "danx-icon";
+import { FaSolidMessage as AgentThreadIcon, FaSolidPersonRunning as RunThreadIcon } from "danx-icon";
 import { autoRefreshObject, fPercent, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
 import { onMounted, onUnmounted, ref } from "vue";
 
@@ -110,7 +121,10 @@ const props = withDefaults(defineProps<{
 });
 
 const stopAction = dxTaskProcess.getAction("stop");
+const resumeProcessAction = dxTaskProcess.getAction("resume");
+
 const isShowingAgentThread = ref(false);
+const isEditingAgentThread = ref(false);
 const isShowingInputArtifacts = ref(false);
 const isShowingOutputArtifacts = ref(false);
 const isShowingJobDispatches = ref(false);

@@ -302,12 +302,27 @@ class AgentThreadService
         }
 
         if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA) {
-            $responseMessage .= "\n\nYour response will be saved to the DB. In order to save correctly, the name attribute must be set as the unique identifier for the object type. " .
-                "Your goal is to investigate and decide the best value for each attribute of every object in the response schema. " .
-                "Set an attribute value to null if it is not given in the source content. NEVER make up values for an attribute. " .
-                "If teamObjects is present, it is provided as a source of reference for what is already saved in the DB. " .
-                "Similar names like Johnson and Johnson vs Johnson & Johnson should resolve to the same object. Try to avoid creating duplicate records. " .
-                "Only update an attribute if you have a new / better value than what is already in teamObjects by ingesting additional content  (ie: images / files, URLs leading to web pages, additionally provided content, etc.), otherwise leave the attribute value null to avoid updating.";
+            $responseMessage .= <<<STR
+Your response will be saved to the DB. In order to save correctly, the `name` attribute must be set as the unique identifier for the object type.
+
+Your goal is to **investigate and determine the best value** for each attribute of every object in the response schema.
+
+### **Rules for Assigning IDs:**
+- If `json_content` contains an object with `type` and `id`, it represents an existing record in the DB.
+- **Assign `id` ONLY if an object with a matching `type` is found in `json_content`.** The `type` field in `json_content` **must exactly match** the `title` field in the schema.
+- **DO NOT** use an `id` from a different `type`. IDs are not interchangeable.
+- If an object exists in the schema but is **not present in `json_content`**, set `id: null` to create a new record.
+- Similar names (e.g., "Johnson and Johnson" vs. "Johnson & Johnson") should resolve to the same object to **avoid duplicate records**.
+
+### **Attribute Handling:**
+- **Only update an attribute** if you have a new or better value than what is already in `teamObjects`.
+- New or better values may come from additional content sources (e.g., images, files, URLs leading to web pages, newly provided content).
+- If no improvement is found, **leave the attribute value null** to avoid unnecessary updates.
+- **NEVER make up values** for an attribute. If an attribute is not provided in the source content, set it to `null`.
+
+By following these rules, ensure that data integrity is maintained, duplicate records are minimized, and unnecessary updates are avoided.
+STR;
+
         }
 
         if ($agent->response_format !== 'text') {

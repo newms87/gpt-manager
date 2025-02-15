@@ -19,7 +19,7 @@
 
 		<QSeparator v-if="!hideContent" class="bg-slate-600 my-4" />
 
-		<div v-if="!hideContent" class="flex-grow overflow-y-auto h-full pb-8">
+		<div v-if="!hideContent && editableSchema" class="flex-grow overflow-y-auto h-full pb-8">
 			<SchemaObject
 				v-if="!isShowingRaw"
 				v-model="editableSchema"

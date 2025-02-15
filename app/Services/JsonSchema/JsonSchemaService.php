@@ -20,7 +20,7 @@ class JsonSchemaService
 
     static array $idDef = [
         'type'        => ['number', 'null'],
-        'description' => 'Always set id for an object matching the one found in teamObjects for the object you are updating. Setting id to null will create a new record in the DB.',
+        'description' => 'ID must match an object from json_content with the same `type` (ie: the `title` property means `type` in this context). If no such object exists, set `id: null`',
     ];
 
     protected array $propertyMetaDef = [];

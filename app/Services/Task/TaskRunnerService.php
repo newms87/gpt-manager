@@ -161,13 +161,18 @@ class TaskRunnerService
         LockHelper::acquire($taskProcess);
 
         try {
-            if (!$taskProcess->isStopped()) {
-                static::log("TaskProcess is not stopped, skipping resume");
+            if (!$taskProcess->canResume()) {
+                static::log("TaskProcess is not in a resumable state, skipping resume");
 
                 return;
             }
 
             $taskProcess->stopped_at = null;
+            $taskProcess->failed_at  = null;
+            $taskProcess->timeout_at = null;
+            // NOTE: we must reset the started_at and completed_at flag so the task process can be re-run
+            $taskProcess->started_at   = null;
+            $taskProcess->completed_at = null;
             $taskProcess->save();
         } finally {
             LockHelper::release($taskProcess);

@@ -119,6 +119,12 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         return $this->isDispatched() && !$this->isStarted() && !$this->isStopped() && !$this->isFailed() && !$this->isCompleted() && !$this->isTimeout();
     }
 
+    public function canResume(): bool
+    {
+        // If the process is not currently running, it can be resumed. If it is running, it must first be stopped before resuming.
+        return !$this->isRunning();
+    }
+
     public function computeStatus(): static
     {
         if (!$this->isDispatched()) {
