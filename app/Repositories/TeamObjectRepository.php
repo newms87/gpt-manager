@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\FileHelper;
+use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -83,28 +84,52 @@ class TeamObjectRepository extends ActionRepository
         return $teamObjectQuery->first();
     }
 
+    public function acquireCreateLock($type, $name): void
+    {
+        LockHelper::acquire("create-team-object-$type-$name");
+    }
+
+    public function releaseCreateLock($type, $name): void
+    {
+        LockHelper::release("create-team-object-$type-$name");
+    }
+
     /**
      * Create a new Team Object record based on type, name and input
      */
-    public function createTeamObject($type, $name, $input = []): TeamObject
+    public function createTeamObject($type, $name, $input = [], $orUpdate = false): TeamObject
     {
-        $teamObject = $this->resolveTeamObject($type, $name, $input);
+        $this->acquireCreateLock($type, $name);
 
-        if ($teamObject) {
-            // If this object was deleted, then restore the object so we can re-use the deleted object instead of creating a new one
-            if ($teamObject->deleted_at) {
-                $teamObject->restore();
+        try {
+            $teamObject = $this->resolveTeamObject($type, $name, $input);
+
+            if ($teamObject) {
+                // If this object was deleted, then restore the object so we can re-use the deleted object instead of creating a new one
+                if ($teamObject->deleted_at) {
+                    $teamObject->restore();
+                } elseif (!$orUpdate) {
+                    throw new ValidationError("Team Object of type $type already exists: $name");
+                }
             } else {
-                throw new ValidationError("Team Object of type $type already exists: $name");
+                $teamObject = TeamObject::make([
+                    'type' => $type,
+                    'name' => $name,
+                ]);
             }
-        } else {
-            $teamObject = TeamObject::make([
-                'type' => $type,
-                'name' => $name,
-            ]);
-        }
 
-        return $this->updateTeamObject($teamObject, $input);
+            return $this->updateTeamObject($teamObject, $input);
+        } finally {
+            $this->releaseCreateLock($type, $name);
+        }
+    }
+
+    /**
+     * Create or Update a Team Object record based on type, name and input
+     */
+    public function createOrUpdateTeamObject($type, $name, $input = []): TeamObject
+    {
+        return $this->createTeamObject($type, $name, $input, true);
     }
 
     /**
@@ -338,22 +363,20 @@ class TeamObjectRepository extends ActionRepository
             Log::debug("Loaded for update: $teamObject");
             $this->updateTeamObject($teamObject, $object);
         } else {
-            // If no ID is set, then validate a duplicate object doesn't exist and create a new object
-            $teamObject = $this->resolveTeamObject($type, $name, $object);
-
-            if ($teamObject) {
-                throw new ValidationError("Failed to save Team Object ($type) $name: Object already exists");
-            }
-
             // Inherit the schema definition and root object from the parent object to ensure correct cardinality in DB
             if ($parentObject) {
                 $object['schema_definition_id'] = $parentObject->schema_definition_id;
                 $object['root_object_id']       = $parentObject->root_object_id;
             }
 
-            $teamObject                     = $this->createTeamObject($type, $name, $object);
+            // Perform a create operation that is safe for concurrent requests
+            // If this is NOT a root object (ie: parentObject is set), then allow the object to be updated if it already exists
+            // NOTE: We do NOT want to allow updating of root objects since this could cause data corruption if the LLM thinks this root object does not exist.
+            // We want to make sure we're dealing with the correct root object!
+            $teamObject = $this->createTeamObject($type, $name, $object, orUpdate: (bool)$parentObject);
+
             $object['id']                   = $teamObject->id;
-            $object['was_recently_created'] = true;
+            $object['was_recently_created'] = $teamObject->wasRecentlyCreated;
 
             Log::debug("Creating a new teamObject: $teamObject");
         }

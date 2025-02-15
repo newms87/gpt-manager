@@ -53,6 +53,16 @@
 					:target="taskProcess"
 					color="red"
 					class="mr-2"
+					tooltip="Stop Task Process"
+				/>
+				<ActionButton
+					v-else
+					:action="resumeProcessAction"
+					:target="taskProcess"
+					:icon="ResumeProcessIcon"
+					color="sky"
+					size="sm"
+					tooltip="Resume / Restart Task Process"
 				/>
 			</div>
 		</div>
@@ -65,7 +75,7 @@
 					:target="taskProcess"
 					label="Run Thread"
 					:icon="RunThreadIcon"
-					class="bg-green-900 text-green-300"
+					color="green"
 					size="sm"
 				/>
 			</div>
@@ -109,7 +119,11 @@ import ActionButton from "@/components/Shared/Buttons/ActionButton";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { TaskProcess } from "@/types/task-definitions";
-import { FaSolidMessage as AgentThreadIcon, FaSolidPersonRunning as RunThreadIcon } from "danx-icon";
+import {
+	FaSolidArrowsRotate as ResumeProcessIcon,
+	FaSolidMessage as AgentThreadIcon,
+	FaSolidPersonRunning as RunThreadIcon
+} from "danx-icon";
 import { autoRefreshObject, fPercent, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
 import { onMounted, onUnmounted, ref } from "vue";
 
