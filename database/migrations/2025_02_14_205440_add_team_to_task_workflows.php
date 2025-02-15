@@ -11,6 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('task_workflows', function (Blueprint $table) {
+            if (!Schema::hasColumn('task_workflows', 'name')) {
+                $table->string('name')->default('')->after('id');
+            }
             $table->foreignId('team_id')->after('id')->constrained()->onDelete('cascade');
             $table->string('description')->default('')->after('name');
         });
