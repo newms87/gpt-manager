@@ -31,7 +31,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
 
     public function run(): void
     {
-        Log::debug("AgentThreadTaskRunner Running: $this->taskProcess");
+        static::log("Running $this->taskProcess");
 
         $thread = $this->setupAgentThread();
         $agent  = $thread->agent;

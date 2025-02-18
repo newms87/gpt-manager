@@ -50,6 +50,8 @@ class TaskRunnerBase implements TaskRunnerContract
 
     public function step(string $step, float $percentComplete = null): void
     {
+        static::log("Step: $step");
+
         $this->taskRun->update([
             'step'             => $step,
             'percent_complete' => $percentComplete ?? $this->taskRun->percent_complete,
@@ -58,6 +60,8 @@ class TaskRunnerBase implements TaskRunnerContract
 
     public function activity(string $activity, float $percentComplete = null): void
     {
+        static::log("Activity: $activity");
+
         $this->taskProcess->update([
             'activity'         => $activity,
             'percent_complete' => $percentComplete ?? $this->taskProcess->percent_complete,

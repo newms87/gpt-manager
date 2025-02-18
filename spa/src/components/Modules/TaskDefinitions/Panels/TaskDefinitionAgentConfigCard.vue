@@ -13,6 +13,7 @@
 				label-class="text-slate-300"
 				:options="dxAgent.pagedItems.value?.data || []"
 				:loading="isUpdatingAgent"
+				@create="createAgentAction.trigger(null, {name: taskDefinition.name + ' Agent'})"
 				@update:selected="agent => onUpdateAgent({ agent_id: agent.id })"
 				@update:editing="isTrue => (isTrue ? dxAgent.routes.detailsAndStore(taskDefinitionAgent.agent) : null)"
 			/>
@@ -150,6 +151,7 @@ const props = defineProps<{
 dxAgent.initialize();
 
 const isEditingAgent = ref(false);
+const createAgentAction = dxAgent.getAction("quick-create", { onFinish: dxAgent.loadList });
 const copyAgentAction = dxTaskDefinition.getAction("copy-agent");
 const updateAgentAction = dxTaskDefinition.getAction("update-agent");
 const removeAgentAction = dxTaskDefinition.getAction("remove-agent");

@@ -6,6 +6,7 @@ use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Task\TaskInput;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
+use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -34,7 +35,14 @@ class TaskDefinitionRepository extends ActionRepository
     public function fieldOptions(?array $filter = []): array
     {
         $runners = [
-            ['label' => AgentThreadTaskRunner::RUNNER_NAME, 'value' => AgentThreadTaskRunner::RUNNER_NAME],
+            [
+                'label' => AgentThreadTaskRunner::RUNNER_NAME,
+                'value' => AgentThreadTaskRunner::RUNNER_NAME,
+            ],
+            [
+                'label' => ImageToTextTranscoderTaskRunner::RUNNER_NAME,
+                'value' => ImageToTextTranscoderTaskRunner::RUNNER_NAME,
+            ],
         ];
 
         return [
