@@ -5,7 +5,6 @@ namespace App\Resources\TeamObject;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
-use Illuminate\Support\Str;
 use Log;
 
 class TeamObjectForAgentsResource
@@ -15,8 +14,10 @@ class TeamObjectForAgentsResource
         // Filter out only desired and non-empty attributes
         $loadedObject = collect($teamObject->toArray())->only(['id', 'url', 'date', 'type', 'name', 'meta', 'description'])->toArray();
 
+        $schema = $teamObject->schemaDefinition?->schema;
+
         $loadedAttributes    = static::loadTeamObjectAttributes($teamObject);
-        $loadedRelationships = static::recursivelyLoadTeamObjectRelations($teamObject);
+        $loadedRelationships = static::recursivelyLoadTeamObjectRelations($teamObject, $schema);
 
         return $loadedAttributes + $loadedRelationships + $loadedObject;
     }
@@ -75,7 +76,7 @@ class TeamObjectForAgentsResource
     /**
      * Load all relationships for a Team Object record and recursively load all attributes and relationships
      */
-    public static function recursivelyLoadTeamObjectRelations(TeamObject $teamObject, $maxDepth = 10): array
+    public static function recursivelyLoadTeamObjectRelations(TeamObject $teamObject, array $schema, $maxDepth = 10): array
     {
         $relationships = TeamObjectRelationship::where('object_id', $teamObject->id)->get();
 
@@ -89,13 +90,14 @@ class TeamObjectForAgentsResource
                 continue;
             }
 
+            $relatedSchema        = $schema['items']['properties'][$relationship->relationship_name] ?? $schema['properties'][$relationship->relationship_name] ?? [];
             $arrayRelatedObject   = collect($relatedObject->toArray())->except(['created_at', 'updated_at', 'deleted_at'])->toArray();
             $relatedRelationships = [];
             $relatedAttributes    = static::loadTeamObjectAttributes($relatedObject);
 
             // Keep loading recursively if we haven't reached the max depth
             if ($maxDepth > 0) {
-                $relatedRelationships = static::recursivelyLoadTeamObjectRelations($relatedObject, $maxDepth - 1);
+                $relatedRelationships = static::recursivelyLoadTeamObjectRelations($relatedObject, $relatedSchema, $maxDepth - 1);
             } else {
                 Log::warning("Max depth reached for object with ID: $teamObject->id");
             }
@@ -106,7 +108,7 @@ class TeamObjectForAgentsResource
             $currentRelation = $arrayRelatedObject;
 
             // If the relationship is plural, add the object to the relationship array
-            if (Str::plural($relationship->relationship_name) === $relationship->relationship_name) {
+            if ($relatedSchema['type'] === 'array') {
                 if (isset($loadedRelationships[$relationship->relationship_name])) {
                     $currentRelation   = $loadedRelationships[$relationship->relationship_name];
                     $currentRelation[] = $arrayRelatedObject;

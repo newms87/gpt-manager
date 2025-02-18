@@ -1,7 +1,9 @@
 <template>
 	<div class="group rounded overflow-hidden">
 		<div class="team-object-header flex items-stretch flex-nowrap gap-x-4">
-			<div class="bg-slate-950 text-slate-500 px-3 flex items-center rounded-br-lg">{{ schema?.title }}</div>
+			<div class="bg-slate-950 text-slate-500 px-3 flex items-center rounded-br-lg">
+				{{ schema.title }}: {{ object.id }}
+			</div>
 			<div class="flex space-x-3 items-center flex-grow">
 				<ShowHideButton
 					v-if="hasChildren"
@@ -59,7 +61,7 @@
 			/>
 		</div>
 		<div v-if="isShowing" class="mt-3 px-4">
-			<div class="grid grid-cols-12 space-y-4">
+			<div class="grid grid-cols-12">
 				<TeamObjectAttribute
 					v-for="attr in schemaAttributes"
 					:key="'attribute-' + attr.name"

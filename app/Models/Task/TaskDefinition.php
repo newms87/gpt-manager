@@ -28,6 +28,7 @@ class TaskDefinition extends Model implements AuditableContract
     ];
 
     public array $relationCounters = [
+        TaskRun::class             => ['taskRuns' => 'task_run_count'],
         TaskDefinitionAgent::class => ['definitionAgents' => 'task_agent_count'],
     ];
 

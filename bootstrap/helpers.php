@@ -27,6 +27,8 @@ if (!function_exists('team')) {
             // The token name matches the name of the team the user is authorized to access
             if ($token) {
                 $user->setCurrentTeam($token->name);
+            } else {
+                $user->setCurrentTeam($user->teams()->first()?->name);
             }
         }
 
