@@ -14,6 +14,7 @@
 				:options="dxAgent.pagedItems.value?.data || []"
 				:loading="isUpdatingAgent"
 				@update:selected="agent => onUpdateAgent({ agent_id: agent.id })"
+				@update:editing="isTrue => (isTrue ? dxAgent.routes.detailsAndStore(taskDefinitionAgent.agent) : null)"
 			/>
 			<div class="flex items-center">
 				<ActionButton
@@ -32,6 +33,9 @@
 			</div>
 		</div>
 
+		<div v-if="isEditingAgent" class="mt-4 bg-slate-800 rounded">
+			<AgentPromptPanel :agent="taskDefinitionAgent.agent" />
+		</div>
 		<div class="mt-4 flex items-center space-x-4">
 			<div>
 				<QCheckbox
@@ -127,7 +131,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { dxAgent } from "@/components/Modules/Agents";
+import { AgentPromptPanel, dxAgent } from "@/components/Modules/Agents";
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
 import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociations";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";

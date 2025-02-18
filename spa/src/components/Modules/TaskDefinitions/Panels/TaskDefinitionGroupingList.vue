@@ -77,7 +77,7 @@ const createAssociationAction = dxSchemaAssociation.getAction("quick-create", { 
 const updateAssociationAction = dxSchemaAssociation.getAction("update");
 const deleteAssociationAction = dxSchemaAssociation.getAction("quick-delete", { onFinish: () => dxTaskDefinition.routes.detailsAndStore(props.taskDefinition) });
 
-const usedSchemaIds = computed(() => props.taskDefinition.groupingSchemaAssociations.map(s => s.schema.id));
+const usedSchemaIds = computed(() => props.taskDefinition.groupingSchemaAssociations?.map(s => s.schema.id) || []);
 
 // The next schema to use when adding a new group (only allow using each schema once when defining the grouping keys)
 const nextSchemaDefinition = computed(() => {
