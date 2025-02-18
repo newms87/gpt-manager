@@ -112,6 +112,12 @@ class TeamObject extends Model implements AuditableContract
             $query->whereNull('schema_definition_id');
         }
 
+        if ($this->root_object_id) {
+            $query->where('root_object_id', $this->root_object_id);
+        } else {
+            $query->whereNull('root_object_id');
+        }
+
         if ($query->exists()) {
             throw new ValidationError("A $this->type with the name $this->name already exists");
         }

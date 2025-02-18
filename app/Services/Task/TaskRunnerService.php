@@ -141,7 +141,7 @@ class TaskRunnerService
             $taskRun->save();
 
             foreach($taskRun->taskProcesses as $taskProcess) {
-                if ($taskProcess->isStarted()) {
+                if ($taskProcess->isStarted() || $taskProcess->isDispatched()) {
                     $taskProcess->status = WorkflowStatesContract::STATUS_STOPPED;
                     $taskProcess->save();
                 }

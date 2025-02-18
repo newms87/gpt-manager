@@ -184,12 +184,12 @@ class JsonSchemaService
 
             if (is_scalar($dataProperty)) {
                 if ($isObjectOrArray) {
-                    throw new ValidationError("Fragment selector type mismatch: $selectedKey: Data Type should be a $selectedProperty[type] scalar type, but found array or object instead");
+                    throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (a scalar type), but found " . gettype($dataProperty) . " (an array or object type) instead");
                 }
                 $result = $dataProperty;
             } else {
                 if (!$isObjectOrArray) {
-                    throw new ValidationError("Fragment selector type mismatch: $selectedKey: Data Type " . gettype($dataProperty) . " is not an array or object");
+                    throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (an array or object type), but found " . gettype($dataProperty) . " (a scalar type) instead");
                 }
                 if (is_associative_array($dataProperty)) {
                     $result = $this->filterDataByFragmentSelector($dataProperty, $selectedProperty);

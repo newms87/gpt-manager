@@ -5,6 +5,7 @@ namespace Tests\Feature\TeamObjects;
 use App\Models\TeamObject\TeamObject;
 use App\Repositories\TeamObjectRepository;
 use App\Resources\TeamObject\TeamObjectForAgentsResource;
+use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -71,9 +72,9 @@ class TeamObjectForAgentsResourceTest extends AuthenticatedTestCase
             'type' => 'ChildType',
             'name' => 'ChildName',
         ]);
-        $repo->saveTeamObjectRelationship($parent, 'child', $child);
-        $repo->saveTeamObjectAttribute($parent, 'parent_attribute', ['value' => 'ParentVal']);
-        $repo->saveTeamObjectAttribute($child, 'child_attribute', ['value' => 'ChildVal']);
+        app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectRelationship($parent, 'child', $child);
+        app(TeamObjectRepository::class)->saveTeamObjectAttribute($parent, 'parent_attribute', ['value' => 'ParentVal']);
+        app(TeamObjectRepository::class)->saveTeamObjectAttribute($child, 'child_attribute', ['value' => 'ChildVal']);
 
         $teamObject = $repo->loadTeamObject('ParentType', $parent->id);
 

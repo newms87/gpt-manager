@@ -76,7 +76,7 @@ class TeamObjectForAgentsResource
     /**
      * Load all relationships for a Team Object record and recursively load all attributes and relationships
      */
-    public static function recursivelyLoadTeamObjectRelations(TeamObject $teamObject, array $schema, $maxDepth = 10): array
+    public static function recursivelyLoadTeamObjectRelations(TeamObject $teamObject, array $schema = null, $maxDepth = 10): array
     {
         $relationships = TeamObjectRelationship::where('object_id', $teamObject->id)->get();
 
@@ -108,7 +108,8 @@ class TeamObjectForAgentsResource
             $currentRelation = $arrayRelatedObject;
 
             // If the relationship is plural, add the object to the relationship array
-            if ($relatedSchema['type'] === 'array') {
+            $relatedSchemaType = $relatedSchema['type'] ?? null;
+            if ($relatedSchemaType === 'array') {
                 if (isset($loadedRelationships[$relationship->relationship_name])) {
                     $currentRelation   = $loadedRelationships[$relationship->relationship_name];
                     $currentRelation[] = $arrayRelatedObject;

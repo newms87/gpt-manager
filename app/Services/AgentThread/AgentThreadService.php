@@ -13,7 +13,7 @@ use App\Models\Agent\AgentThreadRun;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Repositories\AgentRepository;
-use App\Repositories\TeamObjectRepository;
+use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use App\Services\JsonSchema\JsonSchemaService;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -397,7 +397,9 @@ STR;
             $jsonData = $lastMessage->getJsonContent();
 
             if ($threadRun->agentThread->agent->save_response_to_db) {
-                app(TeamObjectRepository::class)->saveTeamObjectUsingSchema($threadRun->agentThread->agent->responseSchema->schema, $jsonData, null, $threadRun);
+                app(JSONSchemaDataToDatabaseMapper::class)
+                    ->setSchemaDefinition($threadRun->agentThread->agent->responseSchema)
+                    ->saveTeamObjectUsingSchema($threadRun->agentThread->agent->responseSchema->schema, $jsonData, $threadRun);
 
                 // Update the last message to include the saved ids for each object
                 $lastMessage->content = json_encode($jsonData);

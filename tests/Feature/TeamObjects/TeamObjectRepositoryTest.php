@@ -7,7 +7,8 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Repositories\TeamObjectRepository;
-use BadFunctionCallException;
+use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
+use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
@@ -215,13 +216,13 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     /**
      * Test exception-handling scenarios for better coverage.
      */
-    public function test_createTeamObject_throwsBadFunctionCallExceptionIfNoTypeOrName(): void
+    public function test_createTeamObject_throwsExceptionIfNoTypeOrName(): void
     {
         // Given
         $repo = app(TeamObjectRepository::class);
 
         // Then
-        $this->expectException(BadFunctionCallException::class);
+        $this->expectException(Exception::class);
 
         // When
         $repo->createTeamObject(null, null, []);
@@ -239,7 +240,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         ];
 
         // When
-        $teamObject = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
+        $teamObject = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectUsingSchema(static::$schema, $response);
 
         // Then
         $teamObject->refresh();
@@ -263,7 +264,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         ];
 
         // When
-        $teamObject = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
+        $teamObject = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectUsingSchema(static::$schema, $response);
 
         // Then
         $teamObject->refresh();
@@ -286,7 +287,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         ];
 
         // When
-        $teamObject = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
+        $teamObject = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectUsingSchema(static::$schema, $response);
 
         // Then
         $teamObject->refresh();
@@ -309,7 +310,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         ];
 
         // When
-        $teamObject = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
+        $teamObject = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectUsingSchema(static::$schema, $response);
 
         // Then
         $teamObject->refresh();
@@ -338,7 +339,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         ];
 
         // When
-        $parentObject = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
+        $parentObject = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectUsingSchema(static::$schema, $response);
 
         // Then
         $parentObject->refresh();
@@ -388,7 +389,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         ];
 
         // When
-        $person = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
+        $person = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectUsingSchema(static::$schema, $response);
 
         // Then
         $person->refresh();
@@ -434,7 +435,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         ];
 
         // When
-        $person = app(TeamObjectRepository::class)->saveTeamObjectUsingSchema(static::$schema, $response);
+        $person = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectUsingSchema(static::$schema, $response);
 
         // Then
         $person->refresh();
@@ -488,7 +489,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         ];
 
         // When
-        $attribute = app(TeamObjectRepository::class)->saveTeamObjectAttribute($teamObject, $data['name'], $data, $propertyMeta);
+        $attribute = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectAttribute($teamObject, $data['name'], $data, $propertyMeta);
 
         // Then
         $citation = $propertyMeta[0]['citation'];
@@ -515,7 +516,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $source              = ['url' => 'http://example.com', 'explanation' => 'Source Explanation'];
 
         // When
-        $attributeSource = app(TeamObjectRepository::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
+        $attributeSource = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
 
         // Then
         $this->assertNotNull($attributeSource->stored_file_id, 'StoredFile should have been created and associated');
@@ -533,7 +534,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $source              = ['message_id' => $message->id, 'explanation' => 'Source Explanation'];
 
         // When
-        $attributeSource = app(TeamObjectRepository::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
+        $attributeSource = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
 
         // Then
         $this->assertNotNull($attributeSource->agent_thread_message_id);
@@ -550,7 +551,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $source              = ['file_id' => $storedFile->id, 'explanation' => 'Source Explanation'];
 
         // When
-        $attributeSource = app(TeamObjectRepository::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
+        $attributeSource = app(JSONSchemaDataToDatabaseMapper::class)->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
 
         // Then
         $this->assertNull($attributeSource->agent_thread_message_id, 'No message was given');
@@ -579,14 +580,13 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     public function test_loadTeamObject_returnsTeamObjectIfFound(): void
     {
         // Given
-        $repo       = app(TeamObjectRepository::class);
         $teamObject = TeamObject::create([
             'type' => 'TestType',
             'name' => 'TestName',
         ]);
 
         // When
-        $loaded = $repo->loadTeamObject('TestType', $teamObject->id);
+        $loaded = app(TeamObjectRepository::class)->loadTeamObject('TestType', $teamObject->id);
 
         // Then
         $this->assertNotNull($loaded, "Should load the object if it exists");
@@ -596,7 +596,6 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     public function test_createRelation_throwsValidationErrorIfNoRelationshipName(): void
     {
         // Given
-        $repo   = app(TeamObjectRepository::class);
         $parent = TeamObject::create([
             'type' => 'ParentType',
             'name' => 'ParentName',
@@ -604,6 +603,6 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->expectException(ValidationError::class);
 
         // When
-        $repo->createRelation($parent, null, 'SomeType', 'SomeName');
+        app(TeamObjectRepository::class)->createRelation($parent, null, 'SomeType', 'SomeName');
     }
 }

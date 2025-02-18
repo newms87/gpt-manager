@@ -14,7 +14,9 @@ return new class extends Migration {
             if (!Schema::hasColumn('task_workflows', 'name')) {
                 $table->string('name')->default('')->after('id');
             }
-            $table->foreignId('team_id')->after('id')->constrained()->onDelete('cascade');
+            if (!Schema::hasColumn('task_workflows', 'team_id')) {
+                $table->foreignId('team_id')->after('id')->constrained()->onDelete('cascade');
+            }
             $table->string('description')->default('')->after('name');
         });
     }
