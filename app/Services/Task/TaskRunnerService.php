@@ -300,7 +300,7 @@ class TaskRunnerService
 
         $artifacts = collect($artifacts);
         if ($taskInput) {
-            $artifact = (new TaskInputToArtifactMapper)->setTaskInput($taskInput)->map();
+            $artifact = (new WorkflowInputToArtifactMapper)->setWorkflowInput($taskInput->workflowInput)->map();
             $artifacts->push($artifact);
         }
 

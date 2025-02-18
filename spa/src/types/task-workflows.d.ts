@@ -1,4 +1,4 @@
-import { TaskDefinition, TaskRunStatus, UsageSummary } from "@/types/task-definitions";
+import { TaskDefinition, TaskRun, TaskRunStatus, UsageSummary } from "@/types/task-definitions";
 import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
 
 export interface TaskWorkflow extends ActionTargetItem {
@@ -8,7 +8,7 @@ export interface TaskWorkflow extends ActionTargetItem {
 	created_at: string;
 	nodes?: TaskWorkflowNode[];
 	connections?: TaskWorkflowConnection[];
-	taskWorkflowRuns: TaskWorkflowRun[];
+	runs?: TaskWorkflowRun[];
 }
 
 export interface TaskWorkflowNode extends ActionTargetItem {
@@ -45,4 +45,5 @@ export interface TaskWorkflowRun extends ActionTargetItem {
 	completed_at?: string;
 	created_at: string;
 	usage?: UsageSummary;
+	taskRuns?: TaskRun[];
 }

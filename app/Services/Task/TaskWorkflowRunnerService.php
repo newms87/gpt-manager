@@ -2,12 +2,13 @@
 
 namespace App\Services\Task;
 
-use App\Models\Task\TaskInput;
 use App\Models\Task\TaskRun;
 use App\Models\Task\TaskWorkflow;
 use App\Models\Task\TaskWorkflowNode;
 use App\Models\Task\TaskWorkflowRun;
+use App\Models\Workflow\WorkflowInput;
 use App\Traits\HasDebugLogging;
+use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
@@ -19,7 +20,7 @@ class TaskWorkflowRunnerService
     /**
      * Start a task workflow run
      */
-    public static function start(TaskWorkflow $taskWorkflow, TaskInput $taskInput = null, Collection|array $artifacts = []): TaskWorkflowRun
+    public static function start(TaskWorkflow $taskWorkflow, WorkflowInput $workflowInput = null, Collection|array $artifacts = []): TaskWorkflowRun
     {
         static::log("Starting $taskWorkflow");
 
@@ -27,13 +28,20 @@ class TaskWorkflowRunnerService
             throw  new ValidationError("Workflow does not have any starting nodes");
         }
 
+        // Create the workflow run
         $taskWorkflowRun = $taskWorkflow->taskWorkflowRuns()->create([
             'name'       => $taskWorkflow->name,
             'started_at' => now(),
         ]);
 
+        // Add the workflow input to the list of artifacts
+        if ($workflowInput) {
+            $artifacts[] = app(WorkflowInputToArtifactMapper::class)->setWorkflowInput($workflowInput)->map();
+        }
+
+        // Start all the starting nodes
         foreach($taskWorkflow->startingWorkflowNodes as $taskWorkflowNode) {
-            static::startNode($taskWorkflowRun, $taskWorkflowNode, $taskInput, $artifacts);
+            static::startNode($taskWorkflowRun, $taskWorkflowNode, $artifacts);
         }
 
         return $taskWorkflowRun;
@@ -42,7 +50,7 @@ class TaskWorkflowRunnerService
     /**
      * Start a task run for the given node in the workflow, passing all source node output artifacts
      */
-    public static function startNode(TaskWorkflowRun $taskWorkflowRun, TaskWorkflowNode $taskWorkflowNode, TaskInput $taskInput = null, Collection|array $artifacts = []): TaskRun
+    public static function startNode(TaskWorkflowRun $taskWorkflowRun, TaskWorkflowNode $taskWorkflowNode, Collection|array $artifacts = []): TaskRun
     {
         static::log("Starting node $taskWorkflowNode");
 
@@ -51,7 +59,7 @@ class TaskWorkflowRunnerService
         $artifacts = $artifacts->merge($taskWorkflowRun->collectOutputArtifactsFromSourceNodes($taskWorkflowNode));
 
         // Then run the node
-        $taskRun = TaskRunnerService::prepareTaskRun($taskWorkflowNode->taskDefinition, $taskInput, $artifacts);
+        $taskRun = TaskRunnerService::prepareTaskRun($taskWorkflowNode->taskDefinition, null, $artifacts);
         $taskRun->taskWorkflowRun()->associate($taskWorkflowRun)->save();
         $taskRun->taskWorkflowNode()->associate($taskWorkflowNode)->save();
         TaskRunnerService::continue($taskRun);
@@ -78,7 +86,7 @@ class TaskWorkflowRunnerService
         }
 
         try {
-            throw new \Exception("Implement this, check for the next task runs to dispatch");
+            throw new Exception("Implement this, check for the next task runs to dispatch");
         } finally {
             LockHelper::release($taskWorkflowRun);
         }
@@ -153,9 +161,9 @@ class TaskWorkflowRunnerService
         LockHelper::acquire($taskWorkflowRun);
 
         try {
-            // If there are no dependent connections, we can skip this step
+            // For every connection on the workflow node, start the target node if it is ready to run
             foreach($taskRun->taskWorkflowNode->connectionsAsSource as $taskWorkflowConnection) {
-                if ($taskWorkflowRun->targetNodeCanBeRun($taskWorkflowConnection->targetNode)) {
+                if ($taskWorkflowRun->targetNodeReadyToRun($taskWorkflowConnection->targetNode)) {
                     static::startNode($taskWorkflowRun, $taskWorkflowConnection->targetNode);
                 } else {
                     static::log("Waiting for sources before running target $taskWorkflowConnection->targetNode");

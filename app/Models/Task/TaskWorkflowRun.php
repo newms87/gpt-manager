@@ -51,7 +51,7 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
     /**
      * Checks if the given target node is ready to be run by checking if all of its source nodes have completed running
      */
-    public function targetNodeCanBeRun(TaskWorkflowNode $targetNode): bool
+    public function targetNodeReadyToRun(TaskWorkflowNode $targetNode): bool
     {
         // For all the target's source nodes, we want to check if they have all completed running in this workflow run.
         // If so, then we can run the target node

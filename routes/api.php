@@ -13,6 +13,7 @@ use App\Http\Controllers\Ai\TaskProcessesController;
 use App\Http\Controllers\Ai\TaskRunsController;
 use App\Http\Controllers\Ai\TaskWorkflowConnectionsController;
 use App\Http\Controllers\Ai\TaskWorkflowNodesController;
+use App\Http\Controllers\Ai\TaskWorkflowRunsController;
 use App\Http\Controllers\Ai\TaskWorkflowsController;
 use App\Http\Controllers\Ai\TeamObjectsController;
 use App\Http\Controllers\Ai\ThreadsController;
@@ -74,6 +75,7 @@ ActionRoute::routes('task-processes', new TaskProcessesController);
 ActionRoute::routes('task-workflows', new TaskWorkflowsController);
 ActionRoute::routes('task-workflow-nodes', new TaskWorkflowNodesController);
 ActionRoute::routes('task-workflow-connections', new TaskWorkflowConnectionsController);
+ActionRoute::routes('task-workflow-runs', new TaskWorkflowRunsController);
 
 // Agents
 ActionRoute::routes('agents', new AgentsController);

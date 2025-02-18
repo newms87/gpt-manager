@@ -16,10 +16,12 @@
 		<div class="flex flex-grow items-center justify-center">
 			<TaskWorkflowEditor v-if="activeTaskWorkflow" :task-workflow="activeTaskWorkflow" />
 		</div>
+		<TaskWorkflowRunsDrawer v-if="activeTaskWorkflow" :task-workflow="activeTaskWorkflow" />
 	</div>
 </template>
 <script setup lang="ts">
 import { dxTaskWorkflow, TaskWorkflowEditor } from "@/components/Modules/TaskWorkflows";
+import TaskWorkflowRunsDrawer from "@/components/Modules/TaskWorkflows/TaskWorkflowRunsDrawer";
 import { TaskWorkflow } from "@/types/task-workflows";
 import { until } from "@vueuse/core";
 import { FaSolidAnkh as WorkflowIcon } from "danx-icon";

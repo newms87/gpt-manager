@@ -2,7 +2,7 @@ import { TaskDefinition } from "@/types";
 import { TaskWorkflow } from "@/types/task-workflows";
 import { ActionOptions, useActions, withDefaultActions } from "quasar-ui-danx";
 import { h } from "vue";
-import SelectTaskNodeDialog from "../SelectTaskNodeDialog";
+import SelectTaskNodeDialog from "../SelectTaskNodeDialog.vue";
 import { controls } from "./controls";
 import { routes } from "./routes";
 

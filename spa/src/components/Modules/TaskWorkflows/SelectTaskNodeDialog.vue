@@ -16,7 +16,7 @@
 		</div>
 	</InfoDialog>
 </template>
-<script setup>
+<script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { InfoDialog } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";

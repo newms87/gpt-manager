@@ -4,6 +4,7 @@ namespace App\Models\Team;
 
 use App\Models\Agent\Agent;
 use App\Models\Task\TaskDefinition;
+use App\Models\Task\TaskWorkflow;
 use App\Models\User;
 use App\Models\Workflow\WorkflowInput;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,6 +34,11 @@ class Team extends Model implements AuditableContract
     public function taskDefinitions(): HasMany|TaskDefinition
     {
         return $this->hasMany(TaskDefinition::class);
+    }
+
+    public function taskWorkflows(): HasMany|TaskWorkflow
+    {
+        return $this->hasMany(TaskWorkflow::class);
     }
 
     public function workflowInputs(): HasMany|WorkflowInput
