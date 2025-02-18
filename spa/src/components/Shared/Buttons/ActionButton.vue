@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import {
 	FaSolidArrowsRotate as RefreshIcon,
+	FaSolidCircleXmark as CancelIcon,
 	FaSolidCopy as CopyIcon,
 	FaSolidPause as PauseIcon,
 	FaSolidPencil as EditIcon,
@@ -34,7 +35,7 @@ import { ActionTarget, ResourceAction } from "quasar-ui-danx";
 import { computed } from "vue";
 
 export interface ActionButtonProps {
-	type?: "trash" | "trash-red" | "create" | "edit" | "copy" | "play" | "stop" | "pause" | "refresh";
+	type?: "trash" | "trash-red" | "create" | "edit" | "copy" | "play" | "stop" | "pause" | "refresh" | "cancel";
 	color?: "red" | "blue" | "sky" | "green" | "green-invert" | "lime" | "white" | "gray";
 	icon?: object | string;
 	iconClass?: string;
@@ -92,6 +93,11 @@ const typeOptions = computed(() => {
 		case "create":
 			return {
 				icon: CreateIcon,
+				iconClass: "w-3"
+			};
+		case "cancel":
+			return {
+				icon: CancelIcon,
 				iconClass: "w-3"
 			};
 		case "edit":

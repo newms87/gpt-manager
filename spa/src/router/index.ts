@@ -11,6 +11,7 @@ import {
 	PageNotFoundView,
 	SchemaDefinitionsView,
 	TaskDefinitionsView,
+	TaskWorkflowView,
 	WorkflowInputsView,
 	WorkflowsView
 } from "@/views";
@@ -50,6 +51,12 @@ const router = createRouter({
 					name: "workflows",
 					component: WorkflowsView,
 					meta: { title: "Workflows", type: "WorkflowResource" }
+				},
+				{
+					path: "/task-workflows/:id?/:panel?",
+					name: "task-workflows",
+					component: TaskWorkflowView,
+					meta: { title: "Task Workflows", type: "TaskWorkflowResource" }
 				},
 				{
 					path: "/task-definitions/:id?/:panel?",

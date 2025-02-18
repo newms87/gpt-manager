@@ -6,6 +6,7 @@
 			name-editable
 			creatable
 			:select-icon="WorkflowIcon"
+			label-class="text-slate-300"
 			:options="dxTaskWorkflow.pagedItems.value?.data || []"
 			:loading="dxTaskWorkflow.isLoadingList.value"
 			@update:selected="onSelect"
@@ -13,12 +14,12 @@
 			@update="input => updateAction.trigger(activeTaskWorkflow, input)"
 		/>
 		<div class="flex flex-grow items-center justify-center">
-			{{ activeTaskWorkflow?.name || "Please select task workflow" }}
+			<TaskWorkflowEditor v-if="activeTaskWorkflow" :task-workflow="activeTaskWorkflow" />
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
-import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows";
+import { dxTaskWorkflow, TaskWorkflowEditor } from "@/components/Modules/TaskWorkflows";
 import { TaskWorkflow } from "@/types/task-workflows";
 import { until } from "@vueuse/core";
 import { FaSolidAnkh as WorkflowIcon } from "danx-icon";
@@ -29,7 +30,7 @@ const ACTIVE_TASK_WORKFLOW_KEY = "dx-active-task-workflow-id";
 
 onMounted(init);
 
-const createAction = dxTaskWorkflow.getAction("quick-create");
+const createAction = dxTaskWorkflow.getAction("quick-create", { onFinish: () => dxTaskWorkflow.loadList() });
 const updateAction = dxTaskWorkflow.getAction("update");
 
 const activeTaskWorkflow = computed(() => dxTaskWorkflow.activeItem.value);

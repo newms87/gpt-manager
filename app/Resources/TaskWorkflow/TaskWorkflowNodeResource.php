@@ -26,7 +26,6 @@ class TaskWorkflowNodeResource extends ActionResource
     {
         return static::make($model, $includeFields ?? [
             'taskDefinition' => true,
-            'connections'    => true,
         ]);
     }
 }

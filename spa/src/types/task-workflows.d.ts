@@ -7,6 +7,7 @@ export interface TaskWorkflow extends ActionTargetItem {
 	description: string;
 	created_at: string;
 	nodes?: TaskWorkflowNode[];
+	connections?: TaskWorkflowConnection[];
 	taskWorkflowRuns: TaskWorkflowRun[];
 }
 
@@ -23,6 +24,8 @@ export interface TaskWorkflowConnection extends ActionTargetItem {
 	id: string;
 	sourceNode?: TaskWorkflowNode;
 	targetNode?: TaskWorkflowNode;
+	source_node_id: string;
+	target_node_id: string;
 	source_output_port: string;
 	target_input_port: string;
 	name: string;

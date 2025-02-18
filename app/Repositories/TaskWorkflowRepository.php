@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Task\TaskWorkflow;
+use App\Models\Task\TaskWorkflowConnection;
 use App\Models\Task\TaskWorkflowNode;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,9 +25,10 @@ class TaskWorkflowRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createTaskWorkflow($data),
+            'create' => $this->createTaskWorkflow($data ?? []),
             'update' => $this->updateTaskWorkflow($model, $data),
             'add-node' => $this->addNode($model, $data),
+            'add-connection' => $this->addConnection($model, $data),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -34,7 +36,7 @@ class TaskWorkflowRepository extends ActionRepository
     /**
      * Create a task workflow applying business rules
      */
-    public function createTaskWorkflow(array $data): TaskWorkflow
+    public function createTaskWorkflow(array $input = []): TaskWorkflow
     {
         $taskWorkflow = TaskWorkflow::make()->forceFill([
             'team_id' => team()->id,
@@ -44,7 +46,7 @@ class TaskWorkflowRepository extends ActionRepository
         $taskWorkflow->name = ModelHelper::getNextModelName($taskWorkflow);
 
 
-        return $this->updateTaskWorkflow($taskWorkflow, $data);
+        return $this->updateTaskWorkflow($taskWorkflow, $input);
     }
 
     /**
@@ -72,6 +74,28 @@ class TaskWorkflowRepository extends ActionRepository
         return $taskWorkflow->taskWorkflowNodes()->create([
             'task_definition_id' => $taskDefinition->id,
             'name'               => $input['name'] ?? $taskDefinition->name,
+            'settings'           => $input['settings'] ?? null,
+            'params'             => $input['params'] ?? null,
+        ]);
+    }
+
+    /**
+     * Add a connection to a task workflow
+     */
+    public function addConnection(TaskWorkflow $taskWorkflow, ?array $input = []): TaskWorkflowConnection
+    {
+        $sourceNode = $taskWorkflow->taskWorkflowNodes()->find($input['source_node_id'] ?? null);
+        $targetNode = $taskWorkflow->taskWorkflowNodes()->find($input['target_node_id'] ?? null);
+
+        if (!$sourceNode || !$targetNode) {
+            throw new Exception("You must choose a source and target node to create a connection.");
+        }
+
+        return $taskWorkflow->taskWorkflowConnections()->create([
+            'source_node_id'     => $sourceNode->id,
+            'target_node_id'     => $targetNode->id,
+            'source_output_port' => $input['source_output_port'] ?? 'default',
+            'target_input_port'  => $input['target_input_port'] ?? 'default',
             'settings'           => $input['settings'] ?? null,
             'params'             => $input['params'] ?? null,
         ]);

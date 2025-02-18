@@ -4,6 +4,7 @@ import {
 	FaSolidDatabase as SchemaDefinitionsIcon,
 	FaSolidDownload as WorkflowInputsIcon,
 	FaSolidGear as TaskDefinitionsIcon,
+	FaSolidPallet as TaskWorkflowsIcon,
 	FaSolidRobot as AgentsIcon,
 	FaSolidTableCells as ContentSourcesIcon,
 	FaSolidToiletPaperSlash as AuditsIcon,
@@ -30,6 +31,11 @@ export default [
 		label: "Workflows",
 		icon: WorkflowsIcon,
 		route: { name: "workflows" }
+	},
+	{
+		label: "Task Workflows",
+		icon: TaskWorkflowsIcon,
+		route: { name: "task-workflows" }
 	},
 	{
 		label: "Task Definitions",

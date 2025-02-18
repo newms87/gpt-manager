@@ -3,7 +3,6 @@
 namespace App\Resources\TaskWorkflow;
 
 use App\Models\Task\TaskWorkflow;
-use App\Resources\TaskDefinition\TaskInputResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
@@ -18,7 +17,7 @@ class TaskWorkflowResource extends ActionResource
             'created_at'  => $taskWorkflow->created_at,
             'updated_at'  => $taskWorkflow->updated_at,
 
-            'nodes'            => fn($fields) => TaskInputResource::collection($taskWorkflow->taskWorkflowNodes, $fields),
+            'nodes'            => fn($fields) => TaskWorkflowNodeResource::collection($taskWorkflow->taskWorkflowNodes, $fields),
             'connections'      => fn($fields) => TaskWorkflowConnectionResource::collection($taskWorkflow->taskWorkflowConnections, $fields),
             'taskWorkflowRuns' => fn($fields) => TaskWorkflowRunResource::collection($taskWorkflow->taskWorkflowRuns, $fields),
         ];

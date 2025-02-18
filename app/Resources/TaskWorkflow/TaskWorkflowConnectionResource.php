@@ -15,6 +15,8 @@ class TaskWorkflowConnectionResource extends ActionResource
             'name'               => $taskWorkflowConnection->name,
             'source_output_port' => $taskWorkflowConnection->source_output_port,
             'target_input_port'  => $taskWorkflowConnection->target_input_port,
+            'source_node_id'     => $taskWorkflowConnection->source_node_id,
+            'target_node_id'     => $taskWorkflowConnection->target_node_id,
             'sourceNode'         => fn($fields) => TaskWorkflowNodeResource::data($taskWorkflowConnection->sourceNode, $fields),
             'targetNode'         => fn($fields) => TaskWorkflowNodeResource::data($taskWorkflowConnection->targetNode, $fields),
         ];

@@ -15,6 +15,7 @@ class TaskWorkflowNode extends Model implements AuditableContract
     use HasFactory, AuditableTrait;
 
     protected $fillable = [
+        'task_definition_id',
         'name',
         'settings',
         'params',
