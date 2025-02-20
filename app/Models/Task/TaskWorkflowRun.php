@@ -26,10 +26,10 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
     public function casts(): array
     {
         return [
-            'started_at'   => 'timestamp',
-            'stopped_at'   => 'timestamp',
-            'completed_at' => 'timestamp',
-            'failed_at'    => 'timestamp',
+            'started_at'   => 'datetime:Y-m-d H:i:s.v',
+            'stopped_at'   => 'datetime:Y-m-d H:i:s.v',
+            'completed_at' => 'datetime:Y-m-d H:i:s.v',
+            'failed_at'    => 'datetime:Y-m-d H:i:s.v',
         ];
     }
 
@@ -107,17 +107,12 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
      */
     public function checkTaskRuns(): void
     {
-        // If we are already in an end state, we don't need to check the processes
-        if (!$this->canContinue()) {
-            return;
-        }
-
         $hasRunningTasks = false;
 
         foreach($this->taskRuns()->get() as $taskRun) {
             // If any process has failed or timed out, the task run has failed (we can stop checking)
             if ($taskRun->isFailed() || $taskRun->isTimeout()) {
-                $this->failed_at = now();
+                $this->failed_at = now_ms();
                 $this->save();
 
                 return;
@@ -126,10 +121,19 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
             }
         }
 
-        if (!$hasRunningTasks && !$this->isFailed() && !$this->isStopped()) {
-            $this->completed_at = now();
-            $this->save();
+        if ($hasRunningTasks) {
+            $this->completed_at = null;
+            $this->failed_at    = null;
+            $this->timeout_at   = null;
+            $this->stopped_at   = null;
         }
+    }
+
+    public static function booted(): void
+    {
+        static::saving(function (TaskWorkflowRun $taskWorkflowRun) {
+            $taskWorkflowRun->computeStatus();
+        });
     }
 
     public function __toString()

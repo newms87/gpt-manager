@@ -3,6 +3,7 @@
 		<div class="flex items-center flex-nowrap space-x-2">
 			<LabelPillWidget :label="`TaskWorkflowRun: ${taskWorkflowRun.id}`" color="sky" size="xs" />
 			<div class="flex-grow">{{ taskWorkflowRun.name }}</div>
+			<WorkflowStatusTimerPill :runner="taskWorkflowRun" />
 			<ShowHideButton v-model="isShowing" class="bg-sky-900" />
 			<ActionButton type="trash" color="red" :action="deleteTaskWorkflowRunAction" :target="taskWorkflowRun" />
 		</div>
@@ -15,11 +16,13 @@
 import TaskRunCard from "@/components/Modules/TaskDefinitions/Panels/TaskRunCard";
 import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
 import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
+import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
+import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { ActionButton } from "@/components/Shared";
 import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { TaskWorkflow, TaskWorkflowRun } from "@/types/task-workflows";
-import { ShowHideButton } from "quasar-ui-danx";
-import { ref } from "vue";
+import { autoRefreshObject, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
+import { onMounted, onUnmounted, ref } from "vue";
 
 const props = defineProps<{
 	taskWorkflow: TaskWorkflow;
@@ -28,4 +31,19 @@ const props = defineProps<{
 
 const deleteTaskWorkflowRunAction = dxTaskWorkflowRun.getAction("delete", { onFinish: () => dxTaskWorkflow.routes.detailsAndStore(props.taskWorkflow) });
 const isShowing = ref(false);
+
+/********
+ * Refresh the task run every 2 seconds while it is running
+ */
+onMounted(() => {
+	autoRefreshObject(
+		props.taskWorkflowRun,
+		(tr: TaskWorkflowRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(tr.status),
+		(tr: TaskWorkflowRun) => dxTaskWorkflowRun.routes.details(tr, { taskRuns: true })
+	);
+});
+
+onUnmounted(() => {
+	stopAutoRefreshObject(props.taskWorkflowRun);
+});
 </script>

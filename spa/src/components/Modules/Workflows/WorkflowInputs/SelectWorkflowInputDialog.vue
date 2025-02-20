@@ -1,11 +1,12 @@
 <template>
 	<InfoDialog
+		:disable="loading || saving"
 		title="Select Input"
 		content-class="w-[50rem]"
 		done-class="bg-slate-700"
 		@close="$emit('close')"
 	>
-		<div>
+		<div :class="{'opacity-50': loading || saving}">
 			<div>
 				<TextField
 					:model-value="dxWorkflowInput.activeFilter.value.keywords as string"
@@ -41,6 +42,8 @@ import { ActionButton } from "@/components/Shared";
 import { FaSolidMagnifyingGlass as SearchIcon } from "danx-icon";
 import { InfoDialog, TextField } from "quasar-ui-danx";
 import { onMounted } from "vue";
+
+defineProps<{ loading?: boolean; saving?: boolean; }>();
 
 const emit = defineEmits(["confirm", "close"]);
 

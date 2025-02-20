@@ -142,7 +142,7 @@ class TaskRunnerService
 
             foreach($taskRun->taskProcesses as $taskProcess) {
                 if ($taskProcess->isStarted() || $taskProcess->isDispatched()) {
-                    $taskProcess->status = WorkflowStatesContract::STATUS_STOPPED;
+                    $taskProcess->stopped_at = now();
                     $taskProcess->save();
                 }
             }
@@ -343,7 +343,7 @@ class TaskRunnerService
         if ($definitionAgents->isEmpty()) {
             $definitionAgents = [null];
         }
-        
+
         // Prepare the artifact groups based on the task definition settings
         if ($artifacts->isNotEmpty()) {
             $artifactGroups = (new ArtifactsToGroupsMapper)

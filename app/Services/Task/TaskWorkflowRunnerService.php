@@ -6,6 +6,7 @@ use App\Models\Task\TaskRun;
 use App\Models\Task\TaskWorkflow;
 use App\Models\Task\TaskWorkflowNode;
 use App\Models\Task\TaskWorkflowRun;
+use App\Models\Task\WorkflowStatesContract;
 use App\Models\Workflow\WorkflowInput;
 use App\Traits\HasDebugLogging;
 use Exception;
@@ -31,7 +32,7 @@ class TaskWorkflowRunnerService
         // Create the workflow run
         $taskWorkflowRun = $taskWorkflow->taskWorkflowRuns()->create([
             'name'       => $taskWorkflow->name,
-            'started_at' => now(),
+            'started_at' => now_ms(),
         ]);
 
         // Add the workflow input to the list of artifacts
@@ -138,7 +139,7 @@ class TaskWorkflowRunnerService
                 return;
             }
 
-            $taskWorkflowRun->stopped_at = now();
+            $taskWorkflowRun->stopped_at = now_ms();
             $taskWorkflowRun->save();
 
             foreach($taskWorkflowRun->taskRuns as $taskRun) {
@@ -168,6 +169,13 @@ class TaskWorkflowRunnerService
                 } else {
                     static::log("Waiting for sources before running target $taskWorkflowConnection->targetNode");
                 }
+            }
+
+            // Mark the task workflow run as completed when all tasks have finished running
+            if ($taskWorkflowRun->taskRuns()->whereIn('status', [WorkflowStatesContract::STATUS_PENDING, WorkflowStatesContract::STATUS_RUNNING])->doesntExist()) {
+                $taskWorkflowRun->status       = WorkflowStatesContract::STATUS_COMPLETED;
+                $taskWorkflowRun->completed_at = now_ms();
+                $taskWorkflowRun->save();
             }
         } finally {
             LockHelper::release($taskWorkflowRun);

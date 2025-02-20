@@ -53,7 +53,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
                 'task_process_id' => $this->taskProcess->id,
                 'text_content'    => $transcodedFile->getContents(),
             ]);
-            $artifact->storedFiles()->attach($transcodedFile);
+            $artifact->storedFiles()->attach($transcodedFile->originalFile);
             $this->complete([$artifact]);
 
             return;
@@ -85,7 +85,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
                 $artifact->text_content
             );
 
-            $artifact->storedFiles()->attach($transcodedFile);
+            $artifact->storedFiles()->attach($transcodedFile->originalFile);
             $artifact->save();
 
             $this->complete([$artifact]);

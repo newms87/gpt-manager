@@ -6,8 +6,8 @@ import { DateTime, fDuration } from "quasar-ui-danx";
 import { onMounted, onUnmounted, ref } from "vue";
 
 export interface ElapsedTimePillProps {
-	start?: string;
-	end?: string;
+	start?: string | number;
+	end?: string | number;
 	timerClass?: string;
 }
 

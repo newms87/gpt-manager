@@ -14,6 +14,7 @@ class TaskWorkflowRunResource extends ActionResource
         return [
             'id'           => $taskWorkflowRun->id,
             'name'         => $taskWorkflowRun->name,
+            'status'       => $taskWorkflowRun->status,
             'started_at'   => $taskWorkflowRun->started_at,
             'stopped_at'   => $taskWorkflowRun->stopped_at,
             'failed_at'    => $taskWorkflowRun->failed_at,
