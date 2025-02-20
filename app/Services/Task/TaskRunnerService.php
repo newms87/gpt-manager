@@ -343,7 +343,7 @@ class TaskRunnerService
         if ($definitionAgents->isEmpty()) {
             $definitionAgents = [null];
         }
-
+        
         // Prepare the artifact groups based on the task definition settings
         if ($artifacts->isNotEmpty()) {
             $artifactGroups = (new ArtifactsToGroupsMapper)

@@ -7,7 +7,7 @@
 			<ActionButton type="trash" color="red" :action="deleteTaskWorkflowRunAction" :target="taskWorkflowRun" />
 		</div>
 		<div v-if="isShowing" class="py-4">
-			<TaskRunCard v-for="taskRun in taskWorkflowRun.taskRuns" :key="taskRun.id" :task-run="taskRun" />
+			<TaskRunCard v-for="taskRun in taskWorkflowRun.taskRuns" :key="taskRun.id" :task-run="taskRun" class="my-2" />
 		</div>
 	</div>
 </template>

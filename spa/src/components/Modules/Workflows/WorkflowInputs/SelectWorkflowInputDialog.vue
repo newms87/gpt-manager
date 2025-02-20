@@ -8,7 +8,7 @@
 		<div>
 			<div>
 				<TextField
-					:model-value="dxWorkflowInput.activeFilter.value.keywords"
+					:model-value="dxWorkflowInput.activeFilter.value.keywords as string"
 					placeholder="Search..."
 					:loading="dxWorkflowInput.isLoadingList.value"
 					:debounce="500"
@@ -23,12 +23,21 @@
 				<WorkflowInputCard :workflow-input="workflowInput" readonly @select="$emit('confirm', workflowInput)" />
 				<QSeparator class="bg-slate-400 my-4" />
 			</template>
+			<div>
+				<ActionButton
+					type="create"
+					color="green"
+					label="Create Input"
+					:action="createAction"
+				/>
+			</div>
 		</div>
 	</InfoDialog>
 </template>
 <script setup lang="ts">
 import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
 import WorkflowInputCard from "@/components/Modules/Workflows/WorkflowInputs/WorkflowInputCard";
+import { ActionButton } from "@/components/Shared";
 import { FaSolidMagnifyingGlass as SearchIcon } from "danx-icon";
 import { InfoDialog, TextField } from "quasar-ui-danx";
 import { onMounted } from "vue";
@@ -40,7 +49,7 @@ dxWorkflowInput.activeFilter.value = {
 };
 
 // Modify the 'create' action behavior so we reload the list and select the created item
-dxWorkflowInput.modifyAction("create", {
+const createAction = dxWorkflowInput.getAction("create", {
 	onFinish: ({ item }) => {
 		if (item) {
 			emit("confirm", item);

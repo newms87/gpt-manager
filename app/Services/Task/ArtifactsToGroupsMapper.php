@@ -112,13 +112,18 @@ class ArtifactsToGroupsMapper
         foreach($artifacts as $artifact) {
             $keyPrefix = $this->groupingMode === self::GROUPING_MODE_SPLIT ? $artifact->id : '';
 
+            $jsonContent = $artifact->json_content ?? [];
+            if ($artifact->text_content) {
+                $jsonContent['text_content'] = $artifact->text_content;
+            }
+
             // Use the artifact ID as a key prefix to ensure groups remain distinct across artifacts
             if ($this->fragmentSelector) {
-                $fragmentGroups = $this->resolveGroupsByFragment($artifact->json_content, $this->fragmentSelector, $keyPrefix);
+                $fragmentGroups = $this->resolveGroupsByFragment($jsonContent, $this->fragmentSelector, $keyPrefix);
             } elseif ($this->groupingMode === self::GROUPING_MODE_MERGE) {
-                $fragmentGroups[$keyPrefix ?: 'default'] = ['merged' => $artifact->json_content];
+                $fragmentGroups[$keyPrefix ?: 'default'] = ['merged' => $jsonContent];
             } else {
-                $fragmentGroups[$keyPrefix ?: 'default'] = [$artifact->json_content];
+                $fragmentGroups[$keyPrefix ?: 'default'] = [$jsonContent];
             }
 
             // Determine how to combine fragment groups based on the selected grouping mode
@@ -142,9 +147,12 @@ class ArtifactsToGroupsMapper
 
         foreach($groups as $groupKey => $items) {
             foreach($items as $itemKey => $item) {
+                $textContent = $item['text_content'] ?? null;
+                unset($item['text_content']);
                 $groupsOfArtifacts[$groupKey][$itemKey] = Artifact::create([
                     'name'         => "$groupKey:$itemKey",
                     'json_content' => $item,
+                    'text_content' => $textContent,
                 ]);
             }
         }

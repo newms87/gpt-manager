@@ -1,7 +1,7 @@
 <template>
 	<div
 		class="absolute-bottom w-full px-6 py-4 bg-sky-900 transition-all overflow-y-auto"
-		:class="{'h-[80vh]': isShowing, 'h-16': !isShowing}"
+		:class="{'h-[80vh]': isShowing, 'h-18': !isShowing}"
 	>
 		<div class="flex items-center flex-nowrap space-x-4">
 			<div class="flex-grow">{{ taskWorkflow.runs?.length || 0 }} Workflow Runs</div>
@@ -37,10 +37,11 @@
 import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
 import TaskWorkflowRunCard from "@/components/Modules/TaskWorkflows/TaskWorkflowRunCard";
 import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
+import SelectWorkflowInputDialog from "@/components/Modules/Workflows/WorkflowInputs/SelectWorkflowInputDialog";
 import { ActionButton } from "@/components/Shared";
 import { TaskWorkflow } from "@/types/task-workflows";
 import { ShowHideButton } from "quasar-ui-danx";
-import { onMounted, ref } from "vue";
+import { h, onMounted, ref } from "vue";
 
 defineEmits(["confirm", "close"]);
 const props = defineProps<{
@@ -48,7 +49,14 @@ const props = defineProps<{
 }>();
 onMounted(loadTaskWorkflowRuns);
 
-const createTaskWorkflowRunAction = dxTaskWorkflowRun.getAction("quick-create");
+const createTaskWorkflowRunAction = dxTaskWorkflowRun.getAction("create", {
+	vnode: () => h(SelectWorkflowInputDialog),
+	onAction: (action, target, input) => dxTaskWorkflowRun.routes.applyAction("create", target, {
+		task_workflow_id: props.taskWorkflow.id,
+		workflow_input_id: input.id
+	}),
+	onFinish: loadTaskWorkflowRuns
+});
 
 const isShowing = ref(false);
 

@@ -58,7 +58,7 @@
 		<MultiFileField
 			:readonly="readonly"
 			:disable="!isEditing"
-			:model-value="workflowInput.files"
+			:model-value="workflowInput.files || (workflowInput.thumb ? [workflowInput.thumb] : [])"
 			:width="70"
 			:height="60"
 			add-icon-class="w-5"
