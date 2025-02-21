@@ -108,27 +108,26 @@
 						:input="{task_definition_agent_id: taskDefinitionAgent.id, category: 'input'}"
 					/>
 				</div>
-
-				<div class="mt-4">
-					<SchemaEditorToolbox
-						can-select
-						can-select-fragment
-						previewable
-						clearable
-						button-color="bg-green-900 text-green-200"
-						:model-value="taskDefinitionAgent.outputSchemaAssociation?.schema"
-						:fragment="taskDefinitionAgent.outputSchemaAssociation?.fragment"
-						:loading="isSavingOutputSchema || taskDefinitionAgent.outputSchemaAssociation?.isSaving"
-						@update:model-value="onSelectOutputSchema"
-						@update:fragment="(fragment) => updateSchemaAssociationAction.trigger(taskDefinitionAgent.outputSchemaAssociation, { schema_fragment_id: fragment?.id || null })"
-					>
-						<template #header-start>
-							<div class="bg-green-900 text-green-200 rounded w-20 text-center py-1.5 text-sm mr-4">Output</div>
-						</template>
-					</SchemaEditorToolbox>
-				</div>
 			</div>
 		</Transition>
+		<div class="mt-4">
+			<SchemaEditorToolbox
+				can-select
+				can-select-fragment
+				previewable
+				clearable
+				button-color="bg-green-900 text-green-200"
+				:model-value="taskDefinitionAgent.outputSchemaAssociation?.schema"
+				:fragment="taskDefinitionAgent.outputSchemaAssociation?.fragment"
+				:loading="isSavingOutputSchema || taskDefinitionAgent.outputSchemaAssociation?.isSaving"
+				@update:model-value="onSelectOutputSchema"
+				@update:fragment="(fragment) => updateSchemaAssociationAction.trigger(taskDefinitionAgent.outputSchemaAssociation, { schema_fragment_id: fragment?.id || null })"
+			>
+				<template #header-start>
+					<div class="bg-green-900 text-green-200 rounded w-20 text-center py-1.5 text-sm mr-4">Output</div>
+				</template>
+			</SchemaEditorToolbox>
+		</div>
 	</div>
 </template>
 <script setup lang="ts">

@@ -7,15 +7,23 @@ use App\Services\JsonSchema\JsonSchemaService;
 
 class ArtifactFilter
 {
-    private ?Artifact $artifact         = null;
-    private bool      $includeText      = false;
-    private bool      $includeFiles     = false;
-    private bool      $includeJson      = false;
-    private array     $fragmentSelector = [];
+    private ?Artifact $artifact           = null;
+    private bool      $includePageNumbers = false;
+    private bool      $includeText        = false;
+    private bool      $includeFiles       = false;
+    private bool      $includeJson        = false;
+    private array     $fragmentSelector   = [];
 
     public function setArtifact(Artifact $artifact): static
     {
         $this->artifact = $artifact;
+
+        return $this;
+    }
+
+    public function includePageNumbers(bool $included = true): static
+    {
+        $this->includePageNumbers = $included;
 
         return $this;
     }
@@ -47,6 +55,27 @@ class ArtifactFilter
         return $this->includeText && !$this->includeFiles && !$this->includeJson;
     }
 
+    public function getTextContent(): string
+    {
+        $textContent = $this->artifact->text_content;
+
+        if ($this->includePageNumbers && $this->artifact->storedFiles) {
+            $pageNumbers = [];
+            foreach($this->artifact->storedFiles as $file) {
+                if ($file->page_number) {
+                    $pageNumbers[$file->page_number] = $file->page_number;
+                }
+            }
+
+            if ($pageNumbers) {
+                sort($pageNumbers);
+                $textContent = "###### Content for " . (count($pageNumbers) > 1 ? 'pages' : 'page') . ' ' . implode(', ', $pageNumbers) . " ######\n\n" . $textContent;
+            }
+        }
+
+        return $textContent;
+    }
+
     public function getFilteredData(): ?array
     {
         if ($this->fragmentSelector) {
@@ -63,12 +92,12 @@ class ArtifactFilter
         }
 
         if ($this->isTextOnly()) {
-            return $this->artifact->text_content;
+            return $this->getTextContent();
         } else {
             $data = [];
 
             if ($this->includeText) {
-                $data['text_content'] = $this->artifact->text_content;
+                $data['text_content'] = $this->getTextContent();
             }
 
             if ($this->includeFiles) {

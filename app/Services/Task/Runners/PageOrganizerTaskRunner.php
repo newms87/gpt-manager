@@ -17,6 +17,9 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 		$taskDefinitionAgent = $this->taskProcess->taskDefinitionAgent;
 		$agent               = $taskDefinitionAgent->agent;
 
+		// Make sure to include page numbers in the agent thread so the agent can reference them
+		$this->includePageNumbersInThread = true;
+
 		// Setup the thread
 		$agentThread       = $this->setupAgentThread();
 		$schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
@@ -53,9 +56,9 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 		$percentPerGroup = (100 - $percentComplete) / count($groups);
 
 		$organizedArtifacts = [];
-		foreach($groups as $groupId => $artifactsInGroup) {
+		foreach($groups as $artifactsInGroup) {
 			$inputArtifact = $artifactsInGroup[0];
-			$this->activity("Organizing pages for group $groupId w/ artifact $inputArtifact->name", $percentComplete);
+			$this->activity("Organizing pages for group of artifact $inputArtifact->id", $percentComplete);
 
 			// Organize the pages for this group
 			$pages = $this->runOrganizingAgentThread($agentThread, $inputArtifact);
@@ -87,6 +90,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 		);
 
 		$schemaDefinition = SchemaDefinition::make([
+			'name'   => 'Pages List',
 			'schema' => [
 				'type'        => 'array',
 				'description' => 'The list of page numbers for the pages that belong to the group',
@@ -114,7 +118,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 	 */
 	public function addPagesToArtifact(Artifact $artifact, array $pages): void
 	{
-		$artifact->json_content['pages'] = $pages;
+		$artifact->json_content = ($artifact->json_content ?? []) + ['pages' => $pages];
 
 		foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
 			foreach($inputArtifact->storedFiles as $storedFile) {

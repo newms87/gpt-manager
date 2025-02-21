@@ -26,17 +26,24 @@ use Throwable;
 
 class AgentThreadService
 {
+    protected JsonSchemaService $jsonSchemaService;
     protected ?SchemaDefinition $responseSchema         = null;
     protected ?SchemaFragment   $responseSchemaFragment = null;
+
+    public function __construct(JsonSchemaService $jsonSchemaService = null)
+    {
+        $this->jsonSchemaService = $jsonSchemaService ?: app(JsonSchemaService::class);
+    }
 
     /**
      * Overrides the response format for the thread run.
      * This will replace the Agent's response format with the provided schema and fragment
      */
-    public function withResponseFormat(SchemaDefinition $responseSchema = null, SchemaFragment $responseSchemaFragment = null): static
+    public function withResponseFormat(SchemaDefinition $responseSchema = null, SchemaFragment $responseSchemaFragment = null, JsonSchemaService $jsonSchemaService = null): static
     {
         $this->responseSchema         = $responseSchema;
         $this->responseSchemaFragment = $responseSchemaFragment;
+        $this->jsonSchemaService      = $jsonSchemaService ?: $this->jsonSchemaService;
 
         return $this;
     }
@@ -155,13 +162,7 @@ class AgentThreadService
             ];
 
             if ($threadRun->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA) {
-                // Configure the JSON schema service to require the name and id fields, and use citations for each property
-                $jsonSchemaService = app(JsonSchemaService::class)
-                    ->useCitations()
-                    ->requireName()
-                    ->useId();
-
-                $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = $this->resolveResponseSchema($agent, $jsonSchemaService);
+                $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = $this->resolveResponseSchema($agent, $this->jsonSchemaService);
             }
 
             $tools = $agent->formatTools();

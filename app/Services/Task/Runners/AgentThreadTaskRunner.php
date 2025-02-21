@@ -10,11 +10,14 @@ use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadMessageToArtifactMapper;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\ArtifactFilter;
+use App\Services\JsonSchema\JsonSchemaService;
 use Exception;
 
 class AgentThreadTaskRunner extends TaskRunnerBase
 {
     const string RUNNER_NAME = 'AI Agent';
+
+    protected bool $includePageNumbersInThread = false;
 
     public function prepareProcess(): void
     {
@@ -38,7 +41,9 @@ class AgentThreadTaskRunner extends TaskRunnerBase
         $agent             = $agentThread->agent;
         $schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
 
-        $artifact = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment);
+        // The default agent thread task runner will use the JsonSchemaService with citations, id, and the name so we are enabling database I/O w/ citations
+        $jsonSchemaService = app(JsonSchemaService::class)->useCitations()->useId()->requireName();
+        $artifact          = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment, $jsonSchemaService);
         if ($artifact) {
             $this->activity("Received response from $agent->name", 100);
             $this->complete([$artifact]);
@@ -76,6 +81,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
 
         static::log("\tAdding " . count($inputArtifacts) . " input artifacts for " . $definitionAgent);
         $artifactFilter = (new ArtifactFilter())
+            ->includePageNumbers($this->includePageNumbersInThread)
             ->includeText($definitionAgent->include_text)
             ->includeFiles($definitionAgent->include_files)
             ->includeJson($definitionAgent->include_data, $definitionAgent->getInputFragmentSelector());
@@ -93,13 +99,13 @@ class AgentThreadTaskRunner extends TaskRunnerBase
     /**
      * Run the agent thread and return the last message as an artifact
      */
-    public function runAgentThreadWithSchema(AgentThread $agentThread, SchemaDefinition $schemaDefinition = null, SchemaFragment $schemaFragment = null): Artifact|null
+    public function runAgentThreadWithSchema(AgentThread $agentThread, SchemaDefinition $schemaDefinition = null, SchemaFragment $schemaFragment = null, JsonSchemaService $jsonSchemaService = null): Artifact|null
     {
         $this->activity("Communicating with AI agent in thread", 11);
 
         // Run the thread synchronously (ie: dispatch = false)
         $threadRun = (new AgentThreadService)
-            ->withResponseFormat($schemaDefinition, $schemaFragment)
+            ->withResponseFormat($schemaDefinition, $schemaFragment, $jsonSchemaService)
             ->run($agentThread, dispatch: false);
 
         // Create the artifact and associate it with the task process

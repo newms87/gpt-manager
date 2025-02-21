@@ -107,6 +107,11 @@ class ArtifactsToGroupsMapper
      */
     public function map(array $artifacts): array
     {
+        // A quick return if no grouping is defined
+        if (!$this->splitByFile && $this->groupingMode === self::GROUPING_MODE_CONCATENATE && !$this->fragmentSelector) {
+            return ['default' => $artifacts];
+        }
+
         $groups = [];
 
         foreach($artifacts as $artifact) {
