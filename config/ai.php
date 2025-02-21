@@ -8,6 +8,7 @@ use App\Api\OpenAi\OpenAiApi;
 use App\Api\PerplexityAi\PerplexityAiApi;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
+use App\Services\Task\Runners\PageOrganizerTaskRunner;
 use App\Services\Task\Runners\TaskRunnerBase;
 
 $million  = 1000000;
@@ -88,6 +89,7 @@ return [
         TaskRunnerBase::RUNNER_NAME                  => TaskRunnerBase::class,
         AgentThreadTaskRunner::RUNNER_NAME           => AgentThreadTaskRunner::class,
         ImageToTextTranscoderTaskRunner::RUNNER_NAME => ImageToTextTranscoderTaskRunner::class,
+        PageOrganizerTaskRunner::RUNNER_NAME         => PageOrganizerTaskRunner::class,
     ],
     'tools'         => [
         [

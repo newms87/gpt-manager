@@ -398,8 +398,8 @@ STR;
 
             if ($threadRun->agentThread->agent->save_response_to_db) {
                 app(JSONSchemaDataToDatabaseMapper::class)
-                    ->setSchemaDefinition($threadRun->agentThread->agent->responseSchema)
-                    ->saveTeamObjectUsingSchema($threadRun->agentThread->agent->responseSchema->schema, $jsonData, $threadRun);
+                    ->setSchemaDefinition($this->responseSchema)
+                    ->saveTeamObjectUsingSchema($this->responseSchema->schema, $jsonData, $threadRun);
 
                 // Update the last message to include the saved ids for each object
                 $lastMessage->content = json_encode($jsonData);

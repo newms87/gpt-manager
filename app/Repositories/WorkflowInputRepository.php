@@ -55,10 +55,14 @@ class WorkflowInputRepository extends ActionRepository
         return $options;
     }
 
-    public function createWorkflowInput(array $data): WorkflowInput
+    public function createWorkflowInput(?array $data = []): WorkflowInput
     {
+        $data            = $data ?: [];
         $data['team_id'] = team()->id;
         $data['user_id'] = user()->id;
+        $data            += [
+            'name' => 'New Workflow Input',
+        ];
 
         $workflowInput       = WorkflowInput::make()->forceFill($data);
         $workflowInput->name = ModelHelper::getNextModelName($workflowInput);

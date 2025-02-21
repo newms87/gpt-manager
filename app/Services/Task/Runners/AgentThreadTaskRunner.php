@@ -2,12 +2,15 @@
 
 namespace App\Services\Task\Runners;
 
+use App\Models\Agent\AgentThread;
+use App\Models\Schema\SchemaDefinition;
+use App\Models\Schema\SchemaFragment;
+use App\Models\Workflow\Artifact;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadMessageToArtifactMapper;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\ArtifactFilter;
 use Exception;
-use Illuminate\Support\Facades\Log;
 
 class AgentThreadTaskRunner extends TaskRunnerBase
 {
@@ -31,26 +34,17 @@ class AgentThreadTaskRunner extends TaskRunnerBase
 
     public function run(): void
     {
-        static::log("Running $this->taskProcess");
+        $agentThread       = $this->setupAgentThread();
+        $agent             = $agentThread->agent;
+        $schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
 
-        $thread = $this->setupAgentThread();
-        $agent  = $thread->agent;
-
-        $this->activity("Communicating with agent $agent->name", 10);
-
-        // Run the thread synchronously (ie: dispatch = false)
-        $taskDefinitionAgent = $this->taskProcess->taskDefinitionAgent;
-        $threadRun           = (new AgentThreadService)
-            ->withResponseFormat($taskDefinitionAgent->outputSchemaAssociation?->schemaDefinition, $taskDefinitionAgent->outputSchemaAssociation?->schemaFragment)
-            ->run($thread, dispatch: false);
-
-        // Create the artifact and associate it with the task process
-        if ($threadRun->lastMessage) {
+        $artifact = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment);
+        if ($artifact) {
             $this->activity("Received response from $agent->name", 100);
-            $artifact = (new AgentThreadMessageToArtifactMapper)->setMessage($threadRun->lastMessage)->map();
             $this->complete([$artifact]);
         } else {
             $this->taskProcess->failed_at = now();
+            $this->taskProcess->save();
             $this->activity("No response from $agent->name", 100);
         }
     }
@@ -59,7 +53,7 @@ class AgentThreadTaskRunner extends TaskRunnerBase
      * Setup the agent thread with the input artifacts.
      * Associate the thread to the TaskProcess so it has everything it needs to run in an independent job
      */
-    public function setupAgentThread()
+    public function setupAgentThread(): AgentThread
     {
         if ($this->taskProcess->agentThread) {
             return $this->taskProcess->agentThread;
@@ -73,14 +67,14 @@ class AgentThreadTaskRunner extends TaskRunnerBase
             throw new Exception("AgentThreadTaskRunner: Agent not found for TaskProcess: $this->taskProcess");
         }
 
+        $this->activity("Setting up agent thread for: $agent->name", 5);
+
+        $threadName  = $definition->name . ': ' . $agent->name;
+        $agentThread = app(ThreadRepository::class)->create($agent, $threadName);
+
         $inputArtifacts = $this->taskProcess->inputArtifacts()->get();
 
-        $threadName = $definition->name . ': ' . $agent->name;
-        $thread     = app(ThreadRepository::class)->create($agent, $threadName);
-
-        Log::debug("Setup Task AgentThread: $thread");
-
-        Log::debug("\tAdding " . count($inputArtifacts) . " input artifacts for " . $definitionAgent);
+        static::log("\tAdding " . count($inputArtifacts) . " input artifacts for " . $definitionAgent);
         $artifactFilter = (new ArtifactFilter())
             ->includeText($definitionAgent->include_text)
             ->includeFiles($definitionAgent->include_files)
@@ -88,11 +82,31 @@ class AgentThreadTaskRunner extends TaskRunnerBase
 
         foreach($inputArtifacts as $inputArtifact) {
             $artifactFilter->setArtifact($inputArtifact);
-            app(ThreadRepository::class)->addMessageToThread($thread, $artifactFilter->filter());
+            app(ThreadRepository::class)->addMessageToThread($agentThread, $artifactFilter->filter());
         }
 
-        $this->taskProcess->agentThread()->associate($thread)->save();
+        $this->taskProcess->agentThread()->associate($agentThread)->save();
 
-        return $thread;
+        return $agentThread;
+    }
+
+    /**
+     * Run the agent thread and return the last message as an artifact
+     */
+    public function runAgentThreadWithSchema(AgentThread $agentThread, SchemaDefinition $schemaDefinition = null, SchemaFragment $schemaFragment = null): Artifact|null
+    {
+        $this->activity("Communicating with AI agent in thread", 11);
+
+        // Run the thread synchronously (ie: dispatch = false)
+        $threadRun = (new AgentThreadService)
+            ->withResponseFormat($schemaDefinition, $schemaFragment)
+            ->run($agentThread, dispatch: false);
+
+        // Create the artifact and associate it with the task process
+        if ($threadRun->lastMessage) {
+            return (new AgentThreadMessageToArtifactMapper)->setMessage($threadRun->lastMessage)->map();
+        }
+
+        return null;
     }
 }
