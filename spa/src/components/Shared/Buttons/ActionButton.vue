@@ -17,6 +17,9 @@
 			</slot>
 		</div>
 		<QTooltip v-if="tooltip" class="whitespace-nowrap">{{ tooltip }}</QTooltip>
+		<QMenu v-if="isConfirming">
+			Are you sure
+		</QMenu>
 	</QBtn>
 </template>
 <script setup lang="ts">
@@ -32,7 +35,7 @@ import {
 	FaSolidTrash as TrashIcon
 } from "danx-icon";
 import { ActionTarget, ResourceAction } from "quasar-ui-danx";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 export interface ActionButtonProps {
 	type?: "trash" | "trash-red" | "create" | "edit" | "copy" | "play" | "stop" | "pause" | "refresh" | "cancel";
@@ -46,6 +49,7 @@ export interface ActionButtonProps {
 	target?: ActionTarget;
 	input?: object;
 	disabled?: boolean;
+	confirm?: boolean;
 }
 
 const emit = defineEmits(["success", "error", "always"]);
@@ -152,7 +156,14 @@ const isSaving = computed(() => {
 	return false;
 });
 
-function onAction() {
+const isConfirming = ref(false);
+function onAction(isConfirmed = false) {
+	// Make sure this action is confirmed if the confirm prop is set
+	if (props.confirm && !isConfirmed) {
+		isConfirming.value = true;
+		return false;
+	}
+	isConfirming.value = false;
 	if (props.disabled) return;
 	if (props.action) {
 		props.action.trigger(props.target, props.input).then(async (response) => {

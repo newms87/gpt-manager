@@ -1,9 +1,9 @@
 <template>
 	<div>
-		<div class="flex items-center">
-			<div class="flex-grow flex items-center flex-nowrap space-x-4 h-20">
+		<div class="flex items-center flex-nowrap space-x-2">
+			<div class="flex-grow flex items-center flex-nowrap space-x-4">
 				<ShowHideButton v-if="!readonly" v-model="isEditing" :show-icon="EditIcon" class="bg-slate-700" />
-				<QBtn v-if="readonly" class="rounded-full bg-sky-800 text-sky-200 px-4 py-2" @click="$emit('select')">
+				<QBtn v-if="readonly" class="rounded-full bg-sky-800 text-sky-200 px-4 py-2">
 					{{ workflowInput.name }}
 				</QBtn>
 				<div v-else class="rounded-full bg-sky-800 text-sky-200 px-4 py-2">
@@ -25,15 +25,25 @@
 			</div>
 			<slot name="actions" />
 			<ActionButton
+				v-if="selectable"
+				type="confirm"
+				label="Select"
+				color="green"
+				size="sm"
+				class="py-1.5"
+				@click="$emit('select')"
+			/>
+			<ActionButton
 				v-if="removable"
 				type="trash"
 				color="red"
 				class="bg-red-200"
 				:saving="removing"
-				@click="$emit('remove')"
+				confirm
+				@always="$emit('remove')"
 			/>
 		</div>
-		<div v-if="editableTeamObjects" class="mb-4 flex items-center flex-nowrap space-x-4">
+		<div v-if="editableTeamObjects" class="mt-4 flex items-center flex-nowrap space-x-4">
 			<SelectField
 				select-class="dx-select-field-dense"
 				placeholder="(Select Type)"
@@ -56,6 +66,7 @@
 			/>
 		</div>
 		<MultiFileField
+			v-if="!readonly || workflowInput.files?.length > 0 || !!workflowInput.thumb"
 			:readonly="readonly"
 			:disable="!isEditing"
 			:model-value="workflowInput.files || (workflowInput.thumb ? [workflowInput.thumb] : [])"
@@ -83,10 +94,10 @@
 <script setup lang="ts">
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs/config";
-import { ActionButton } from "@/components/Shared";
 import { WorkflowInput } from "@/types";
 import { FaSolidIndustry as TeamObjectIcon, FaSolidPencil as EditIcon } from "danx-icon";
 import {
+	ActionButton,
 	EditableDiv,
 	MultiFileField,
 	SaveStateIndicator,
@@ -100,6 +111,7 @@ defineEmits(["select", "remove"]);
 const props = defineProps<{
 	workflowInput: WorkflowInput;
 	readonly?: boolean;
+	selectable?: boolean;
 	removable?: boolean;
 	removing?: boolean;
 	editableTeamObjects?: boolean;

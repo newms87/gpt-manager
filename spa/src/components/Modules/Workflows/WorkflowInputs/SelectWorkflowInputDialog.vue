@@ -20,10 +20,18 @@
 					</template>
 				</TextField>
 			</div>
-			<template v-for="workflowInput in dxWorkflowInput.pagedItems.value?.data || []" :key="workflowInput?.id">
-				<WorkflowInputCard :workflow-input="workflowInput" readonly @select="$emit('confirm', workflowInput)" />
-				<QSeparator class="bg-slate-400 my-4" />
-			</template>
+			<ListTransition class="mt-4">
+				<template v-for="workflowInput in dxWorkflowInput.pagedItems.value?.data || []" :key="workflowInput?.id">
+					<WorkflowInputCard
+						:workflow-input="workflowInput"
+						selectable
+						removable
+						@select="$emit('confirm', workflowInput)"
+						@remove="deleteAction.trigger(workflowInput)"
+					/>
+					<QSeparator class="bg-slate-400 my-4" />
+				</template>
+			</ListTransition>
 			<div>
 				<ActionButton
 					type="create"
@@ -38,27 +46,22 @@
 <script setup lang="ts">
 import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
 import WorkflowInputCard from "@/components/Modules/Workflows/WorkflowInputs/WorkflowInputCard";
-import { ActionButton } from "@/components/Shared";
 import { FaSolidMagnifyingGlass as SearchIcon } from "danx-icon";
-import { InfoDialog, TextField } from "quasar-ui-danx";
+import { ActionButton, InfoDialog, ListTransition, TextField } from "quasar-ui-danx";
 import { onMounted } from "vue";
 
 defineProps<{ loading?: boolean; saving?: boolean; }>();
 
-const emit = defineEmits(["confirm", "close"]);
+defineEmits(["confirm", "close"]);
 
 dxWorkflowInput.activeFilter.value = {
 	keywords: ""
 };
 
 // Modify the 'create' action behavior so we reload the list and select the created item
-const createAction = dxWorkflowInput.getAction("create", {
-	onFinish: ({ item }) => {
-		if (item) {
-			emit("confirm", item);
-		}
-	}
-});
+const createAction = dxWorkflowInput.getAction("quick-create", { onFinish: dxWorkflowInput.loadList });
+const deleteAction = dxWorkflowInput.getAction("quick-delete", { onFinish: dxWorkflowInput.loadList });
+
 onMounted(() => {
 	dxWorkflowInput.initialize();
 	dxWorkflowInput.setPagination({ rowsPerPage: 10 });

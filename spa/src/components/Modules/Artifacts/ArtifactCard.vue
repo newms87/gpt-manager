@@ -17,10 +17,17 @@
 				/>
 			</div>
 		</div>
-		<div v-if="artifact.text_content || artifact.json_content">
+		<div v-if="artifact.text_content">
 			<MarkdownEditor
-				:model-value="artifact.text_content || artifact.json_content"
-				:format="artifact.text_content ? 'text' : 'yaml'"
+				:model-value="artifact.text_content"
+				format="text"
+				readonly
+			/>
+		</div>
+		<div v-if="artifact.json_content">
+			<MarkdownEditor
+				:model-value="artifact.json_content"
+				format="yaml"
 				readonly
 			/>
 		</div>

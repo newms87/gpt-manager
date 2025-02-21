@@ -14,7 +14,7 @@
 			@close="isSelectingInput = false"
 		/>
 
-		<ListTransition>
+		<ListTransition class="mt-8">
 			<template
 				v-for="taskInput in taskDefinition.taskInputs"
 				:key="taskInput.id"
