@@ -81,6 +81,8 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 	 * Run the agent thread to organize the pages for a group.
 	 * This will run the agent thread with the original thread and append the given artifact that defines the grouping.
 	 * The agent will be asked to identify all the pages related to the given grouping and return that list of pages.
+	 *
+	 * @return array|null The list of pages that belong to the group
 	 */
 	public function runOrganizingAgentThread(AgentThread $agentThread, Artifact $inputArtifact): array|null
 	{
@@ -92,10 +94,13 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 		$schemaDefinition = SchemaDefinition::make([
 			'name'   => 'Pages List',
 			'schema' => [
-				'type'        => 'array',
-				'description' => 'The list of page numbers for the pages that belong to the group',
-				'items'       => [
-					'type' => 'number',
+				'type'       => 'object',
+				'properties' => [
+					'pages' => [
+						'type'        => 'array',
+						'description' => 'The list of page numbers for the pages that belong to the group',
+						'items'       => ['type' => 'number'],
+					],
 				],
 			],
 		]);
@@ -110,7 +115,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 			return null;
 		}
 
-		return $outputArtifact->json_content;
+		return $outputArtifact->json_content['pages'];
 	}
 
 	/**
@@ -118,14 +123,17 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 	 */
 	public function addPagesToArtifact(Artifact $artifact, array $pages): void
 	{
+		static::log("Add pages to artifact: " . implode(', ', $pages));
+
 		$artifact->json_content = ($artifact->json_content ?? []) + ['pages' => $pages];
 
 		foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
 			foreach($inputArtifact->storedFiles as $storedFile) {
 				if (in_array($storedFile->page_number, $pages)) {
 					static::log("Adding page $storedFile to $artifact");
-					$artifact->storedFiles()->save($storedFile);
-					$artifact->text_content = ($artifact->text_content ? "$artifact->text_content\n\n" : '') . "------ Page $storedFile->page_number ------\n" . $storedFile->text_content;
+					$artifact->storedFiles()->attach($storedFile);
+					$artifact->text_content = ($artifact->text_content ? "$artifact->text_content\n\n" : '') . "---\n### Page $storedFile->page_number\n\n" . $inputArtifact->text_content;
+					continue 2;
 				}
 			}
 		}

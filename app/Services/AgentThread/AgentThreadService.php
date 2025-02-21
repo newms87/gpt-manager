@@ -131,8 +131,13 @@ class AgentThreadService
      */
     public function resolveResponseSchema(Agent $agent, JsonSchemaService $jsonSchemaService): array
     {
-        $responseSchema         = $this->responseSchema ?? $agent->responseSchema;
-        $responseSchemaFragment = $this->responseSchemaFragment ?? $agent->responseSchemaFragment;
+        if ($this->responseSchema) {
+            $responseSchema         = $this->responseSchema;
+            $responseSchemaFragment = $this->responseSchemaFragment;
+        } else {
+            $responseSchema         = $agent->responseSchema;
+            $responseSchemaFragment = $agent->responseSchemaFragment;
+        }
 
         if (!$responseSchema?->schema) {
             throw new Exception("JSON Schema response format requires a schema to be set on the agent: " . $agent . ": " . $agent->responseSchema);
@@ -302,7 +307,7 @@ class AgentThreadService
             $responseMessage .= "\n\nExample Response:\n" . json_encode($agent->responseSchema->response_example);
         }
 
-        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA) {
+        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && $agent->save_response_to_db) {
             $responseMessage .= <<<STR
 Your response will be saved to the DB. In order to save correctly, the `name` attribute must be set as the unique identifier for the object type.
 

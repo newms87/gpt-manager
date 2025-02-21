@@ -69,7 +69,7 @@ class ArtifactFilter
 
             if ($pageNumbers) {
                 sort($pageNumbers);
-                $textContent = "###### Content for " . (count($pageNumbers) > 1 ? 'pages' : 'page') . ' ' . implode(', ', $pageNumbers) . " ######\n\n" . $textContent;
+                $textContent = "### Content for " . (count($pageNumbers) > 1 ? 'pages' : 'page') . ' ' . implode(', ', $pageNumbers) . "\n\n" . $textContent;
             }
         }
 

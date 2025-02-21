@@ -369,7 +369,7 @@ class JsonSchemaService
         }
 
         // Name the response schema result based on the given name and a hash of the schema after applying fragment selector
-        $name = $name . ':' . substr(md5(json_encode($schema)), 0, 7);
+        $name = $name . '-' . substr(md5(json_encode($schema)), 0, 7);
 
         return $this->formatAndCleanSchema(Str::slug($name), $schema);
     }
