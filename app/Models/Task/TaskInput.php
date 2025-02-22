@@ -2,7 +2,9 @@
 
 namespace App\Models\Task;
 
+use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowInput;
+use App\Services\Task\WorkflowInputToArtifactMapper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,5 +39,10 @@ class TaskInput extends Model implements AuditableContract
     public function taskRuns(): HasMany|TaskRun
     {
         return $this->hasMany(TaskRun::class);
+    }
+
+    public function toArtifact(): Artifact
+    {
+        return (new WorkflowInputToArtifactMapper)->setWorkflowInput($this->workflowInput)->map();
     }
 }

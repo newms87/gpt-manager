@@ -4,7 +4,6 @@ namespace App\Services\Task;
 
 use App\Jobs\ExecuteTaskProcessJob;
 use App\Models\Task\TaskDefinition;
-use App\Models\Task\TaskInput;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\Task\WorkflowStatesContract;
@@ -22,11 +21,11 @@ class TaskRunnerService
     /**
      * Start a task run for the task definition. This will create a task run and dispatch the task processes
      */
-    public static function start(TaskDefinition $taskDefinition, TaskInput $taskInput = null, $artifacts = []): TaskRun
+    public static function start(TaskDefinition $taskDefinition, $artifacts = []): TaskRun
     {
         static::log("Starting for $taskDefinition");
 
-        $taskRun = static::prepareTaskRun($taskDefinition, $taskInput, $artifacts);
+        $taskRun = static::prepareTaskRun($taskDefinition, $artifacts);
 
         $taskRun->started_at = now();
         $taskRun->save();
@@ -294,19 +293,12 @@ class TaskRunnerService
     /**
      * Prepare a task run for the task definition. Creates a TaskRun object w/ TaskProcess objects
      */
-    public static function prepareTaskRun(TaskDefinition $taskDefinition, TaskInput $taskInput = null, $artifacts = []): TaskRun
+    public static function prepareTaskRun(TaskDefinition $taskDefinition, $artifacts = []): TaskRun
     {
         static::log("Preparing task run for $taskDefinition");
 
-        $artifacts = collect($artifacts);
-        if ($taskInput) {
-            $artifact = (new WorkflowInputToArtifactMapper)->setWorkflowInput($taskInput->workflowInput)->map();
-            $artifacts->push($artifact);
-        }
-
         $taskRun = $taskDefinition->taskRuns()->make([
-            'status'        => WorkflowStatesContract::STATUS_PENDING,
-            'task_input_id' => $taskInput?->id,
+            'status' => WorkflowStatesContract::STATUS_PENDING,
         ]);
 
         $taskRun->getRunner()->prepareRun();

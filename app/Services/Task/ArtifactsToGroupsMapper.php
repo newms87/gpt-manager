@@ -190,10 +190,10 @@ class ArtifactsToGroupsMapper
             foreach($artifact->storedFiles as $storedFile) {
                 if ($storedFile->transcodes->isNotEmpty()) {
                     foreach($storedFile->transcodes as $transcode) {
-                        $allFiles[] = $transcode;
+                        $allFiles[$transcode->id] = $transcode;
                     }
                 } else {
-                    $allFiles[] = $storedFile;
+                    $allFiles[$storedFile->id] = $storedFile;
                 }
             }
         }
@@ -222,7 +222,7 @@ class ArtifactsToGroupsMapper
 
         // Create a single artifact that contains all files
         $filesArtifact = Artifact::create(['name' => 'Files']);
-        $filesArtifact->storedFiles()->saveMany($allFiles);
+        $filesArtifact->storedFiles()->sync(array_keys($allFiles));
 
         // Append the files artifact to each group
         foreach($groupsOfArtifacts as &$artifactGroup) {

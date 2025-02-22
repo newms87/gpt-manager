@@ -31,7 +31,14 @@ class TaskRunRepository extends ActionRepository
 
         $taskInput = $taskDefinition->taskInputs()->find($data['task_input_id'] ?? null);
 
-        return TaskRunnerService::start($taskDefinition, $taskInput);
+        $taskRun = TaskRunnerService::start($taskDefinition, [$taskInput->toArtifact()]);
+
+        // Associate the task input to the task run
+        if ($taskInput) {
+            $taskRun->taskInput()->associate($taskInput)->save();
+        }
+
+        return $taskRun;
     }
 
     public function resumeTaskRun(TaskRun $taskRun): TaskRun
