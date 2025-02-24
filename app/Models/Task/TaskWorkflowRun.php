@@ -124,9 +124,10 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
         if ($hasRunningTasks) {
             $this->completed_at = null;
             $this->failed_at    = null;
-            $this->timeout_at   = null;
             $this->stopped_at   = null;
         }
+
+        $this->save();
     }
 
     public static function booted(): void

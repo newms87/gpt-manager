@@ -60,7 +60,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 		$organizedArtifacts = [];
 		foreach($groups as $artifactsInGroup) {
 			$inputArtifact = $artifactsInGroup[0];
-			$this->activity("Organizing pages for group of artifact $inputArtifact->id", $percentComplete);
+			$this->activity("Organizing pages for group of artifact $inputArtifact->id $inputArtifact->name", $percentComplete);
 
 			// Organize the pages for this group
 			$pages = $this->runOrganizingAgentThread($agentThread, $inputArtifact);

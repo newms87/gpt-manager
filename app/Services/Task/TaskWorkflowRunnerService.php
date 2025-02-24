@@ -163,10 +163,19 @@ class TaskWorkflowRunnerService
         try {
             // For every connection on the workflow node, start the target node if it is ready to run
             foreach($taskRun->taskWorkflowNode->connectionsAsSource as $taskWorkflowConnection) {
-                if ($taskWorkflowRun->targetNodeReadyToRun($taskWorkflowConnection->targetNode)) {
-                    static::startNode($taskWorkflowRun, $taskWorkflowConnection->targetNode);
+                $targetNode = $taskWorkflowConnection->targetNode;
+
+                // If this workflow node has already been started, we don't want to start it again
+                if ($taskWorkflowRun->taskRuns()->where('task_workflow_node_id', $targetNode->id)->exists()) {
+                    static::log("Target node has already been started $targetNode");
+                    continue;
+                }
+
+                // If this node is ready to run, start it
+                if ($taskWorkflowRun->targetNodeReadyToRun($targetNode)) {
+                    static::startNode($taskWorkflowRun, $targetNode);
                 } else {
-                    static::log("Waiting for sources before running target $taskWorkflowConnection->targetNode");
+                    static::log("Waiting for sources before running target $targetNode");
                 }
             }
 

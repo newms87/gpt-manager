@@ -60,7 +60,7 @@
 				@update:model-value="description => updateAction.trigger(object, {description})"
 			/>
 		</div>
-		<div v-if="isShowing" class="mt-3 px-4">
+		<div v-if="isShowing" class="px-4">
 			<div class="grid grid-cols-12">
 				<TeamObjectAttribute
 					v-for="attr in schemaAttributes"
@@ -70,6 +70,8 @@
 					:object="object"
 					:attribute="object.attributes[attr.name]"
 					:format="attr.format || attr.type"
+					class="my-2"
+					:class="calcAttrColSpan(object.attributes[attr.name]?.value)"
 				/>
 			</div>
 			<div class="mt-5 space-y-4">
@@ -187,6 +189,15 @@ const schemaRelationObjects = computed(() => {
 async function onShow() {
 	await dxTeamObject.routes.detailsAndStore(props.object);
 }
+
+function calcAttrColSpan(value) {
+	if (typeof value !== "string") return "col-span-1";
+
+	const sizePerCol = 100;
+	const cols = Math.min(12, Math.floor(value.length / sizePerCol));
+	return `col-span-${cols}`;
+}
+
 </script>
 
 <style lang="scss" scoped>

@@ -42,7 +42,6 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         $schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
 
         $this->activity("Using agent to transcode $agent->name", 10);
-
         $artifact = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment);
 
         // If we didn't receive an artifact from the agent, record the failure

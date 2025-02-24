@@ -405,7 +405,7 @@ STR;
             if ($this->jsonSchemaService->isUsingDbFields()) {
                 app(JSONSchemaDataToDatabaseMapper::class)
                     ->setSchemaDefinition($this->responseSchema)
-                    ->saveTeamObjectUsingSchema($this->responseSchema->schema, $jsonData, $threadRun);
+                    ->saveTeamObjectUsingSchema($this->responseSchema?->schema, $jsonData, $threadRun);
 
                 // Update the last message to include the saved ids for each object
                 $lastMessage->content = json_encode($jsonData);

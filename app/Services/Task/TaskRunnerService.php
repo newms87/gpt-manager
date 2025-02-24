@@ -48,19 +48,19 @@ class TaskRunnerService
         // NOTE: This prevents allowing the TaskRun to continue if there was a race condition on failing/stopping the TaskRun
         LockHelper::acquire($taskRun);
 
-        if (!$taskRun->canContinue()) {
-            static::log("TaskRun is $taskRun->status. Skipping execution");
-
-            return;
-        }
-
-        if ($taskRun->taskProcesses->isEmpty()) {
-            static::log("No task processes found. Skipping execution");
-
-            return;
-        }
-
         try {
+            if (!$taskRun->canContinue()) {
+                static::log("TaskRun is $taskRun->status. Skipping execution");
+
+                return;
+            }
+
+            if ($taskRun->taskProcesses->isEmpty()) {
+                static::log("No task processes found. Skipping execution");
+
+                return;
+            }
+            
             if ($taskRun->isPending()) {
                 static::log("TaskRun was Pending, starting now...");
                 // Only start the task run if it is pending
