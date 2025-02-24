@@ -60,7 +60,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 		$organizedArtifacts = [];
 		foreach($groups as $artifactsInGroup) {
 			$inputArtifact = $artifactsInGroup[0];
-			$this->activity("Organizing pages for group of artifact $inputArtifact->id $inputArtifact->name", $percentComplete);
+			$this->activity("Organizing pages for group of artifact $inputArtifact->id", $percentComplete);
 
 			// Organize the pages for this group
 			$pages = $this->runOrganizingAgentThread($agentThread, $inputArtifact);
@@ -75,6 +75,8 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 			$organizedArtifacts[] = $inputArtifact;
 			$percentComplete      += $percentPerGroup;
 		}
+
+		$this->activity("Pages have been organized into " . count($organizedArtifacts) . " artifacts", 100);
 
 		return $organizedArtifacts;
 	}
@@ -112,7 +114,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 		// If we didn't receive an artifact from the agent, record the failure
 		if (!$outputArtifact) {
 			$this->taskProcess->failed_at = now();
-			$this->activity("Failed to organize artifacts: No response from agent for artifact $inputArtifact->name", 100);
+			$this->activity("Failed to organize artifacts: No response from agent for artifact $inputArtifact->id", 100);
 
 			return null;
 		}
