@@ -101,7 +101,7 @@ $defs:
     properties:
       file_id:
         type: string
-        description: A file ID for a file / image that provided the chosen value. ALWAYS use a file_id instead of a URL if it is available.
+        description: A file ID for a file / image that provided the chosen value. ALWAYS use a file_id instead of a URL if it is available. If no file_id is given explicitly, DO NOT use this source type.
       explanation:
         $ref: "#/$defs/explanation"
     additionalProperties: false

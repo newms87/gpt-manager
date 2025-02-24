@@ -134,7 +134,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 				if (in_array($storedFile->page_number, $pages)) {
 					static::log("Adding page $storedFile to $artifact");
 					$artifact->storedFiles()->attach($storedFile);
-					$artifact->text_content = ($artifact->text_content ? "$artifact->text_content\n\n" : '') . "---\n### Page $storedFile->page_number\n\n" . $inputArtifact->text_content;
+					$artifact->text_content = ($artifact->text_content ? "$artifact->text_content\n\n" : '') . "---\n### Page $storedFile->page_number (file_id: $storedFile->id)\n\n" . $inputArtifact->text_content;
 					continue 2;
 				}
 			}
