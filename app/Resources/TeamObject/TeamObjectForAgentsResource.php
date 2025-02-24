@@ -34,37 +34,13 @@ class TeamObjectForAgentsResource
         foreach($attributes as $attribute) {
             $currentValue = $loadedAttributes[$attribute->name] ?? null;
 
-            // If the attribute has a date set, that means this data is a time-series and should show the most recent value by default (or the default value w/o date set)
-            // In addition should list all the dates in the time series
-            if ($attribute->date) {
-                if (!is_array($currentValue)) {
-                    $currentValue = [
-                        'date'  => $currentValue['date'] ?? null,
-                        'value' => $currentValue['value'] ?? null,
-                        'dates' => [],
-                    ];
-                }
-
-                // If the current value does not have a date set or is older than the attribute's date, update the current value
-                if (!$currentValue['date'] || $attribute->date->isAfter($currentValue['date'])) {
-                    $currentValue['date']  = $attribute->date->toDateTimeString();
-                    $currentValue['value'] = $attribute->getValue();
-                }
-
-                // Add the date to the time series
-                $currentValue['dates'][] = [
-                    'date'  => $attribute->date->toDateTimeString(),
-                    'value' => $attribute->getValue(),
-                ];
+            // If this is not a time-series, just set the value directly
+            if (is_array($currentValue)) {
+                // This means their are other values in a time-series, but this value is the default value for the attribute
+                $currentValue['value'] = $attribute->getValue();
             } else {
-                // If this is not a time-series, just set the value directly
-                if (is_array($currentValue)) {
-                    // This means their are other values in a time-series, but this value is the default value for the attribute
-                    $currentValue['value'] = $attribute->getValue();
-                } else {
-                    // Set the value directly if not in a time-series
-                    $currentValue = $attribute->getValue();
-                }
+                // Set the value directly if not in a time-series
+                $currentValue = $attribute->getValue();
             }
 
             $loadedAttributes[$attribute->name] = $currentValue;
