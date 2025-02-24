@@ -16,7 +16,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
     public function run(): void
     {
-        $this->activity("Running $this->taskProcess", 1);
+        $this->activity("Running {$this->taskProcess->name}", 1);
 
         $fileToTranscode = $this->getFileToTranscode();
 
@@ -103,7 +103,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         $agentThread = app(ThreadRepository::class)->create($agent, "$definition->name: $agent->name");
 
-        $this->activity("Setup agent thread: $agentThread with $file", 5);
+        $this->activity("Setup agent thread with Stored File $file->id" . ($file->page_number ? " (page: $file->page_number)" : ''), 5);
 
         $artifactFilter = (new ArtifactFilter())
             ->includeText($definitionAgent->include_text)
