@@ -53,8 +53,16 @@ return [
                 ],
             ],
             'o1-mini'     => [
-                'input'            => 3 / $million,
-                'output'           => 12 / $million,
+                'input'            => 1.1 / $million,
+                'output'           => 4.4 / $million,
+                'context'          => 128000,
+                'excluded_options' => [
+                    'temperature',
+                ],
+            ],
+            'o3-mini'     => [
+                'input'            => 1.1 / $million,
+                'output'           => 4.4 / $million,
                 'context'          => 128000,
                 'excluded_options' => [
                     'temperature',
