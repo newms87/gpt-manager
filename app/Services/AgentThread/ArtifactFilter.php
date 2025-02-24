@@ -55,7 +55,7 @@ class ArtifactFilter
         return $this->includeText && !$this->includeFiles && !$this->includeJson;
     }
 
-    public function getTextContent(): string
+    public function getTextContent(): ?string
     {
         $textContent = $this->artifact->text_content;
 

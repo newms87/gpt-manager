@@ -10,7 +10,7 @@ use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 
-class TaskRunnerBase implements TaskRunnerContract
+class BaseTaskRunner implements TaskRunnerContract
 {
     use HasDebugLogging;
 

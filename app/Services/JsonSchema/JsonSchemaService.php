@@ -25,6 +25,16 @@ class JsonSchemaService
 
     protected array $propertyMetaDef = [];
 
+    public function isUsingDbFields(): bool
+    {
+        return $this->useId && $this->requireName;
+    }
+
+    public function useDbFields(bool $use = true): self
+    {
+        return $this->useId($use)->requireName($use);
+    }
+
     public function useId(bool $use = true): self
     {
         $this->useId = $use;

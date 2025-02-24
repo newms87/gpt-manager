@@ -13,7 +13,7 @@ use App\Services\AgentThread\ArtifactFilter;
 use App\Services\JsonSchema\JsonSchemaService;
 use Exception;
 
-class AgentThreadTaskRunner extends TaskRunnerBase
+class AgentThreadTaskRunner extends BaseTaskRunner
 {
     const string RUNNER_NAME = 'AI Agent';
 

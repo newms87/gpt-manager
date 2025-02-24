@@ -6,6 +6,7 @@ use App\Models\Agent\AgentThread;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Workflow\Artifact;
 use App\Repositories\ThreadRepository;
+use App\Services\JsonSchema\JsonSchemaService;
 use App\Services\Task\ArtifactsToGroupsMapper;
 
 class PageOrganizerTaskRunner extends AgentThreadTaskRunner
@@ -25,7 +26,8 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 		$schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
 
 		$this->activity("Using agent to organize: $agent->name", 10);
-		$artifact = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment);
+		$jsonSchemaService = app(JsonSchemaService::class)->useDbFields($agent->save_response_to_db);
+		$artifact          = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment, $jsonSchemaService);
 
 		// If we didn't receive an artifact from the agent, record the failure
 		if (!$artifact) {

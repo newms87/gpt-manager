@@ -4,7 +4,6 @@ namespace App\Services\Task;
 
 use App\Models\Workflow\Artifact;
 use App\Models\Workflow\WorkflowInput;
-use App\WorkflowTools\WorkflowInputWorkflowTool;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\DateHelper;
 
@@ -21,12 +20,21 @@ class WorkflowInputToArtifactMapper
 
     public function map(): Artifact|null
     {
+        $jsonContent = null;
+
+        if ($this->workflowInput->team_object_id) {
+            $jsonContent = [
+                'id'   => $this->workflowInput->team_object_id,
+                'type' => $this->workflowInput->team_object_type,
+            ];
+        }
+
         // Produce the artifact
         $artifact = Artifact::create([
             'name'         => $this->workflowInput->name . ' ' . DateHelper::formatDateTime(),
             'model'        => '',
             'text_content' => $this->workflowInput->content,
-            'json_content' => WorkflowInputWorkflowTool::getTeamObjects($this->workflowInput),
+            'json_content' => $jsonContent,
         ]);
 
         $artifact->storedFiles()->saveMany($this->workflowInput->storedFiles);

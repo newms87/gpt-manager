@@ -4,6 +4,7 @@ namespace App\Models\Workflow;
 
 use App\Models\ContentSource\ContentSource;
 use App\Models\TeamObject\TeamObject;
+use App\Services\Task\WorkflowInputToArtifactMapper;
 use App\Traits\HasObjectTags;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -100,6 +101,11 @@ class WorkflowInput extends Model implements AuditableContract
         ])->validate();
 
         return $this;
+    }
+
+    public function toArtifact(): Artifact
+    {
+        return (new WorkflowInputToArtifactMapper)->setWorkflowInput($this)->map();
     }
 
     public function __toString()

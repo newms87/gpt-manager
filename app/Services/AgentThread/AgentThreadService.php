@@ -307,7 +307,7 @@ class AgentThreadService
             $responseMessage .= "\n\nExample Response:\n" . json_encode($agent->responseSchema->response_example);
         }
 
-        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && $agent->save_response_to_db) {
+        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && $this->jsonSchemaService->isUsingDbFields()) {
             $responseMessage .= <<<STR
 Your response will be saved to the DB. In order to save correctly, the `name` attribute must be set as the unique identifier for the object type.
 
@@ -402,7 +402,7 @@ STR;
         if ($lastMessage->content) {
             $jsonData = $lastMessage->getJsonContent();
 
-            if ($threadRun->agentThread->agent->save_response_to_db) {
+            if ($this->jsonSchemaService->isUsingDbFields()) {
                 app(JSONSchemaDataToDatabaseMapper::class)
                     ->setSchemaDefinition($this->responseSchema)
                     ->saveTeamObjectUsingSchema($this->responseSchema->schema, $jsonData, $threadRun);

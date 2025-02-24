@@ -3,7 +3,7 @@
 namespace App\Models\Task;
 
 use App\Models\Usage\UsageSummary;
-use App\Services\Task\Runners\TaskRunnerBase;
+use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\TaskRunnerContract;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -101,11 +101,14 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
     public function checkProcesses(): void
     {
         // If we are already in an end state, we don't need to check the processes
-        if (!$this->canContinue()) {
+        if ($this->isStopped() || $this->isTimeout()) {
             return;
         }
 
         $hasRunningProcesses = false;
+
+        // We always want to recheck for failed processes in case they have since been completed
+        $this->failed_at = null;
 
         foreach($this->taskProcesses()->get() as $taskProcess) {
             // If any process has failed or timed out, the task run has failed (we can stop checking)
@@ -131,7 +134,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
     public function getRunner(TaskProcess $taskProcess = null): TaskRunnerContract
     {
         $runners     = config('ai.runners');
-        $runnerClass = $runners[$this->taskDefinition->task_runner_class] ?? TaskRunnerBase::class;
+        $runnerClass = $runners[$this->taskDefinition->task_runner_class] ?? BaseTaskRunner::class;
 
         return app()->makeWith($runnerClass, ['taskRun' => $this, 'taskProcess' => $taskProcess]);
     }

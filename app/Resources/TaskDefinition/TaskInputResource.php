@@ -14,7 +14,7 @@ class TaskInputResource extends ActionResource
         return [
             'id'             => $taskInput->id,
             'task_run_count' => $taskInput->task_run_count,
-            'workflowInput'  => WorkflowInputResource::details($taskInput->workflowInput),
+            'workflowInput'  => $taskInput->workflowInput ? WorkflowInputResource::details($taskInput->workflowInput) : null,
             'taskDefinition' => fn($fields) => TaskDefinitionResource::make($taskInput->taskDefinition, $fields),
             'taskRuns'       => fn($fields) => TaskRunResource::collection($taskInput->taskRuns, $fields),
         ];

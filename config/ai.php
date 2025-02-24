@@ -7,9 +7,10 @@ use App\AiTools\UrlToMarkdown\UrlToMarkdownAiTool;
 use App\Api\OpenAi\OpenAiApi;
 use App\Api\PerplexityAi\PerplexityAiApi;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
+use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
+use App\Services\Task\Runners\LoadFromDatabaseTaskRunner;
 use App\Services\Task\Runners\PageOrganizerTaskRunner;
-use App\Services\Task\Runners\TaskRunnerBase;
 
 $million  = 1000000;
 $thousand = 1000;
@@ -86,10 +87,11 @@ return [
         PerplexityAiApi::$serviceName => PerplexityAiApi::class,
     ],
     'runners'       => [
-        TaskRunnerBase::RUNNER_NAME                  => TaskRunnerBase::class,
+        BaseTaskRunner::RUNNER_NAME                  => BaseTaskRunner::class,
         AgentThreadTaskRunner::RUNNER_NAME           => AgentThreadTaskRunner::class,
         ImageToTextTranscoderTaskRunner::RUNNER_NAME => ImageToTextTranscoderTaskRunner::class,
         PageOrganizerTaskRunner::RUNNER_NAME         => PageOrganizerTaskRunner::class,
+        LoadFromDatabaseTaskRunner::RUNNER_NAME      => LoadFromDatabaseTaskRunner::class,
     ],
     'tools'         => [
         [

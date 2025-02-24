@@ -25,6 +25,7 @@
 					<WorkflowInputCard
 						:workflow-input="workflowInput"
 						selectable
+						editable-team-objects
 						removable
 						@select="$emit('confirm', workflowInput)"
 						@remove="deleteAction.trigger(workflowInput)"
