@@ -12,10 +12,11 @@ use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
+use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class TaskDefinition extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -25,6 +26,11 @@ class TaskDefinition extends Model implements AuditableContract
         'split_by_file',
         'input_group_chunk_size',
         'timeout_after_seconds',
+    ];
+
+    protected array $keywordFields = [
+        'name',
+        'description',
     ];
 
     public array $relationCounters = [
