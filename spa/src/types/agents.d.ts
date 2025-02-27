@@ -1,3 +1,4 @@
+import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
 import { AgentPromptDirective, SchemaDefinition, SchemaFragment } from "@/types/prompts";
 import { WorkflowAssignment } from "@/types/workflows";
 import { ActionTargetItem, AnyObject, UploadedFile } from "quasar-ui-danx";
@@ -26,6 +27,7 @@ export interface AgentThread extends ActionTargetItem {
 	messages: AgentThreadMessage[];
 	is_running: boolean;
 	timestamp: string;
+	jobDispatch?: JobDispatch;
 }
 
 export interface AgentThreadMessage extends ActionTargetItem {

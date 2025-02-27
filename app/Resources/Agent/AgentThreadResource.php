@@ -3,6 +3,7 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\AgentThread;
+use App\Resources\Audit\JobDispatchResource;
 use Newms87\Danx\Resources\ActionResource;
 
 class AgentThreadResource extends ActionResource
@@ -19,7 +20,8 @@ class AgentThreadResource extends ActionResource
             'audit_request_id' => $thread->lastRun?->jobDispatch?->running_audit_request_id,
             'timestamp'        => $thread->updated_at,
 
-            'messages' => fn($fields) => MessageResource::collection($thread->sortedMessages, $fields),
+            'messages'    => fn($fields) => MessageResource::collection($thread->sortedMessages, $fields),
+            'jobDispatch' => fn($fields) => JobDispatchResource::make($thread->lastRun?->jobDispatch, $fields),
         ];
     }
 }

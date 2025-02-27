@@ -1,12 +1,15 @@
 <template>
 	<div class="bg-transparent text-slate-300 flex flex-col flex-nowrap" :class="{'h-full': active}">
-		<AgentThreadCardHeader v-model:active="active" v-model:logs="showLogs" :thread="thread" @close="$emit('close')" />
+		<AgentThreadCardHeader
+			v-model:active="active"
+			v-model:logs="showLogs"
+			:thread="thread"
+			@update:logs="loadJobDispatch"
+			@close="$emit('close')"
+		/>
 		<div v-if="active" class="mt-4 flex-grow overflow-y-scroll -mr-10 pr-5">
-			<AuditRequestLogsCard
-				v-if="showLogs"
-				:logs="thread.logs"
-				class="my-6"
-			/>
+			<JobDispatchCard v-if="showLogs && thread.jobDispatch" :job="thread.jobDispatch" class="mb-8" />
+
 			<ThreadMessageCard
 				v-for="message in thread.messages"
 				:key="message.id"
@@ -30,18 +33,24 @@
 import AgentThreadCardHeader from "@/components/Modules/Agents/Threads/AgentThreadCardHeader";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
-import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
+import JobDispatchCard from "@/components/Modules/Audits/JobDispatches/JobDispatchCard";
 import { ActionButton } from "@/components/Shared";
 import { AgentThread } from "@/types/agents";
 import { FaRegularMessage as CreateIcon } from "danx-icon";
 import { ref } from "vue";
 
 defineEmits(["toggle", "close"]);
-defineProps<{
+const props = defineProps<{
 	thread: AgentThread;
 }>();
 
 const active = defineModel<boolean>("active", { default: false });
 const showLogs = ref(false);
 const createMessageAction = dxAgentThread.getAction("create-message");
+function loadJobDispatch() {
+	dxAgentThread.routes.detailsAndStore(props.thread, {
+		"*": false,
+		jobDispatch: { logs: true, errors: true, apiLogs: true }
+	});
+}
 </script>

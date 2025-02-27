@@ -43,10 +43,10 @@
 		</div>
 		<AuditRequestLogsCard v-if="isShowingLogs" :logs="job.logs" />
 		<ListTransition v-if="isShowingApiLogs">
-			<ApiLogEntryCard v-for="apiLog in job.apiLogs" :key="apiLog.id" :api-log="apiLog" />
+			<ApiLogEntryCard v-for="apiLog in job.apiLogs" :key="apiLog.id" :api-log="apiLog" class="my-2" />
 		</ListTransition>
 		<ListTransition v-if="isShowingErrors">
-			<ErrorLogEntryCard v-for="error in job.errors" :key="error.id" :error="error" />
+			<ErrorLogEntryCard v-for="error in job.errors" :key="error.id" :error="error" class="my-2" />
 		</ListTransition>
 	</QCard>
 </template>
