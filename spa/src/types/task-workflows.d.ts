@@ -24,8 +24,8 @@ export interface TaskWorkflowConnection extends ActionTargetItem {
 	id: string;
 	sourceNode?: TaskWorkflowNode;
 	targetNode?: TaskWorkflowNode;
-	source_node_id: string;
-	target_node_id: string;
+	source_node_id: number;
+	target_node_id: number;
 	source_output_port: string;
 	target_input_port: string;
 	name: string;
