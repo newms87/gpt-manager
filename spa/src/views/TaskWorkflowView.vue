@@ -5,6 +5,7 @@
 			selectable
 			name-editable
 			creatable
+			deletable
 			:select-icon="WorkflowIcon"
 			label-class="text-slate-300"
 			:options="taskWorkflows"
@@ -12,6 +13,7 @@
 			@update:selected="taskWorkflow => onSelect(taskWorkflow.id as string)"
 			@create="createAction.trigger"
 			@update="input => updateAction.trigger(activeTaskWorkflow, input)"
+			@delete="taskWorkflow => deleteAction.trigger(taskWorkflow)"
 		/>
 		<div class="flex flex-grow items-center justify-center">
 			<TaskWorkflowEditor v-if="activeTaskWorkflow" :task-workflow="activeTaskWorkflow" />
@@ -32,6 +34,7 @@ onMounted(loadTaskWorkflows);
 
 const createAction = dxTaskWorkflow.getAction("quick-create", { onFinish: loadTaskWorkflows });
 const updateAction = dxTaskWorkflow.getAction("update");
+const deleteAction = dxTaskWorkflow.getAction("delete", { onFinish: loadTaskWorkflows });
 
 const isLoading = ref(false);
 const taskWorkflows = ref([]);
