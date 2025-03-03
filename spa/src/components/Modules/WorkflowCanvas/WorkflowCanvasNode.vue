@@ -2,7 +2,7 @@
 	<div class="workflow-canvas-node">
 		<div class="node-header">
 			<span class="node-title">{{ node.data.name }} ({{ node.id }})</span>
-			<ActionButton type="trash" color="red" @click.stop="$emit('delete-node', node)" />
+			<ActionButton type="trash" color="red" @click.stop="$emit('remove', node)" />
 		</div>
 
 		<div class="node-body">
@@ -39,7 +39,7 @@ import { computed } from "vue";
 const { edges } = useVueFlow();
 
 defineEmits<{
-	(e: "delete-node", node: Node): void;
+	(e: "remove", node: Node): void;
 }>();
 
 const props = defineProps<{ node: Node; }>();

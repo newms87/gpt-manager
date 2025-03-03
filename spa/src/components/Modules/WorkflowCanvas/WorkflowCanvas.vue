@@ -10,18 +10,18 @@
 			:snap-grid="[20, 20]"
 			class="workflow-canvas"
 			elevate-edges-on-select
-			@connect="onConnect"
+			@connect="onConnectionAdd"
 			@node-click="(e) => onNodeClick(e.node)"
 			@node-drag-stop="onNodeDragStop"
 		>
 			<template #node-custom="nodeProps">
 				<WorkflowCanvasNode
 					:node="nodeProps"
-					@delete-node="onDeleteNode"
+					@remove="onNodeRemove"
 				/>
 			</template>
 			<template #edge-custom="edgeProps">
-				<WorkflowCanvasEdge :edge="edgeProps" />
+				<WorkflowCanvasEdge :edge="edgeProps" @remove="onConnectionRemove" />
 			</template>
 			<template #connection-line="connectionLineProps">
 				<WorkflowCanvasConnectionLine v-bind="connectionLineProps" />
@@ -47,7 +47,7 @@ import WorkflowCanvasEdge from "@/components/Modules/WorkflowCanvas/WorkflowCanv
 import { ActionButton } from "@/components/Shared";
 import { TaskWorkflow, TaskWorkflowConnection, TaskWorkflowNode } from "@/types/task-workflows";
 import { Background } from "@vue-flow/background";
-import { Connection, Edge, Node, Panel, VueFlow } from "@vue-flow/core";
+import { Connection, Edge, EdgeProps, Node, Panel, VueFlow } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 import { onMounted, ref, watch } from "vue";
@@ -58,6 +58,7 @@ const emit = defineEmits<{
 	(e: "node-position", node: TaskWorkflowNode, position: { x: number, y: number }): void;
 	(e: "node-remove", node: TaskWorkflowNode): void;
 	(e: "connection-add", connection: TaskWorkflowConnection): void;
+	(e: "connection-remove", connection: TaskWorkflowConnection): void;
 }>();
 
 const workflowDefinition = defineModel<TaskWorkflow>();
@@ -79,6 +80,7 @@ function convertToVueFlow() {
 watch(() => workflowDefinition.value, convertToVueFlow, { deep: true });
 onMounted(convertToVueFlow);
 
+/*********** Node Related Methods *********/
 function resolveWorkflowNode(node: Node) {
 	const workflowNode = workflowDefinition.value.nodes.find(n => n.id == +node.id);
 
@@ -96,13 +98,27 @@ function onNodeClick(node: Node) {
 function onNodeDragStop({ node }) {
 	emit("node-position", resolveWorkflowNode(node), { ...node.position });
 }
-function onDeleteNode(node) {
+function onNodeRemove(node) {
 	emit("node-remove", resolveWorkflowNode(node));
 }
 
-// Handle new connections
-function onConnect(connection: Connection) {
+/*********** Connection Related Methods *********/
+function resolveWorkflowConnection(edge: EdgeProps) {
+	const workflowNode = workflowDefinition.value.connections.find(c => c.id == +edge.id);
+
+	if (!workflowNode) {
+		throw new Error("Workflow node not found: " + edge.id);
+	}
+
+	return workflowNode;
+}
+
+function onConnectionAdd(connection: Connection) {
 	const connections = connectWorkflowNodes(workflowDefinition.value.connections, connection);
 	emit("connection-add", connections.pop());
+}
+
+function onConnectionRemove(edge: EdgeProps) {
+	emit("connection-remove", resolveWorkflowConnection(edge));
 }
 </script>

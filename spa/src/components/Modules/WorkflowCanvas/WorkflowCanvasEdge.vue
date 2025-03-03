@@ -10,7 +10,7 @@
         position: 'absolute',
         transform: `translate(-50%, -50%) translate(${path[1]}px,${path[2]}px)`,
       }"
-			class="nodrag nopan group"
+			class="nodrag nopan group z-[1000]"
 			@mouseenter="isHoveringMenu = true"
 			@mouseleave="isHoveringMenu = false"
 		>
@@ -19,7 +19,7 @@
 				color="red"
 				class="transition-all"
 				:class="{'opacity-100': isHovering, 'opacity-0': !isHovering}"
-				@click="$emit('remove')"
+				@click="$emit('remove', edge)"
 			/>
 		</div>
 	</EdgeLabelRenderer>
@@ -31,7 +31,7 @@ import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath, useVueFlow } fro
 import { computed, ref, watch } from "vue";
 
 defineEmits<{
-	(e: "remove"): void;
+	(e: "remove", edge: EdgeProps): void;
 }>();
 
 const props = defineProps<{
