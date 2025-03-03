@@ -1,24 +1,27 @@
 <template>
-	<div class="relative h-full p-6 overflow-hidden flex flex-col flex-nowrap">
-		<SelectionMenuField
-			:selected="activeTaskWorkflow"
-			selectable
-			name-editable
-			creatable
-			deletable
-			:select-icon="WorkflowIcon"
-			label-class="text-slate-300"
-			:options="taskWorkflows"
-			:loading="isLoading"
-			@update:selected="taskWorkflow => onSelect(taskWorkflow.id as string)"
-			@create="createAction.trigger"
-			@update="input => updateAction.trigger(activeTaskWorkflow, input)"
-			@delete="taskWorkflow => deleteAction.trigger(taskWorkflow)"
-		/>
+	<div class="relative h-full overflow-hidden flex flex-col flex-nowrap">
+		<div class="flex flex-nowrap space-x-4 p-3">
+			<SelectionMenuField
+				:selected="activeTaskWorkflow"
+				selectable
+				name-editable
+				creatable
+				deletable
+				:select-icon="WorkflowIcon"
+				label-class="text-slate-300"
+				:options="taskWorkflows"
+				:loading="isLoading"
+				@update:selected="taskWorkflow => onSelect(taskWorkflow.id as string)"
+				@create="createAction.trigger"
+				@update="input => updateAction.trigger(activeTaskWorkflow, input)"
+				@delete="taskWorkflow => deleteAction.trigger(taskWorkflow)"
+			/>
+			<div class="flex-grow" />
+			<TaskWorkflowRunsDrawer v-if="activeTaskWorkflow" :task-workflow="activeTaskWorkflow" />
+		</div>
 		<div class="flex flex-grow items-center justify-center">
 			<TaskWorkflowEditor v-if="activeTaskWorkflow" :task-workflow="activeTaskWorkflow" />
 		</div>
-		<TaskWorkflowRunsDrawer v-if="activeTaskWorkflow" :task-workflow="activeTaskWorkflow" />
 	</div>
 </template>
 <script setup lang="ts">

@@ -28,15 +28,11 @@
 			</template>
 
 			<Background variant="dots" />
-			<Panel position="top-right">
-				<ActionButton type="play" label="Run" :action="runWorkflowAction" :target="workflowDefinition" color="green" />
-			</Panel>
 		</VueFlow>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
 import {
 	connectWorkflowNodes,
 	convertEdgesToVueFlow,
@@ -44,10 +40,9 @@ import {
 } from "@/components/Modules/WorkflowCanvas/helpers";
 import WorkflowCanvasConnectionLine from "@/components/Modules/WorkflowCanvas/WorkflowCanvasConnectionLine";
 import WorkflowCanvasEdge from "@/components/Modules/WorkflowCanvas/WorkflowCanvasEdge";
-import { ActionButton } from "@/components/Shared";
 import { TaskWorkflow, TaskWorkflowConnection, TaskWorkflowNode } from "@/types/task-workflows";
 import { Background } from "@vue-flow/background";
-import { Connection, Edge, EdgeProps, Node, Panel, VueFlow } from "@vue-flow/core";
+import { Connection, Edge, EdgeProps, Node, VueFlow } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 import { onMounted, ref, watch } from "vue";
@@ -62,7 +57,6 @@ const emit = defineEmits<{
 }>();
 
 const workflowDefinition = defineModel<TaskWorkflow>();
-const runWorkflowAction = dxTaskWorkflowRun.getAction("create");
 
 // Reference to internal Vue Flow nodes
 const nodes = ref<Node[]>([]);

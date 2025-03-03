@@ -9,7 +9,7 @@
 			@connection-add="onConnectionAdd"
 			@connection-remove="workflowConnection => removeConnectionAction.trigger(workflowConnection)"
 		/>
-		<ActionButton type="create" color="green" label="Add Node" :action="addNodeAction" :target="taskWorkflow" />
+		<WorkflowCanvasSidebar :task-workflow="taskWorkflow" />
 	</div>
 </template>
 <script setup lang="ts">
@@ -17,14 +17,13 @@ import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
 import { dxTaskWorkflowConnection } from "@/components/Modules/TaskWorkflows/TaskWorkflowConnections/config";
 import { dxTaskWorkflowNode } from "@/components/Modules/TaskWorkflows/TaskWorkflowNodes/config";
 import WorkflowCanvas from "@/components/Modules/WorkflowCanvas/WorkflowCanvas";
-import { ActionButton } from "@/components/Shared";
+import WorkflowCanvasSidebar from "@/components/Modules/WorkflowCanvas/WorkflowCanvasSidebar";
 import { TaskWorkflow, TaskWorkflowConnection, TaskWorkflowNode } from "@/types/task-workflows";
 
 const props = defineProps<{
 	taskWorkflow: TaskWorkflow;
 }>();
 
-const addNodeAction = dxTaskWorkflow.getAction("add-node");
 const updateNodeAction = dxTaskWorkflowNode.getAction("update");
 const removeNodeAction = dxTaskWorkflowNode.getAction("delete", { onFinish: refreshWorkflow });
 const addConnectionAction = dxTaskWorkflow.getAction("add-connection", { onFinish: refreshWorkflow });

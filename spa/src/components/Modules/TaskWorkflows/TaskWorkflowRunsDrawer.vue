@@ -1,8 +1,5 @@
 <template>
-	<div
-		class="absolute-bottom w-full px-6 py-4 bg-sky-900 transition-all overflow-y-auto"
-		:class="{'h-[80vh]': isShowing, 'h-18': !isShowing}"
-	>
+	<div class="relative h-18">
 		<div class="flex items-center flex-nowrap space-x-4">
 			<div class="flex-grow">{{ taskWorkflow.runs?.length || 0 }} Workflow Runs</div>
 			<div>
@@ -18,23 +15,29 @@
 				<ShowHideButton v-model="isShowing" class="bg-sky-700 text-sky-300" />
 			</div>
 		</div>
-		<div v-if="isShowing" class="mt-4">
-			<div v-if="taskWorkflow.runs?.length === 0" class="text-center text-sky-300">No Workflow Runs</div>
-			<div v-else>
-				<TaskWorkflowRunCard
-					v-for="run in taskWorkflow.runs"
-					:key="run.id"
-					:task-workflow="taskWorkflow"
-					:task-workflow-run="run"
-					class="my-2"
-				/>
+		<div
+			class="absolute-top-right top-[120%] z-10 transition-all overflow-y-auto max-h-[80vh] w-[80vw] bg-sky-900 px-4"
+			:class="{'h-[5000%]': isShowing, 'h-0': !isShowing}"
+		>
+
+			<div v-if="isShowing" class="mt-4">
+				<div v-if="taskWorkflow.runs?.length === 0" class="text-center text-sky-300">No Workflow Runs</div>
+				<div v-else>
+					<TaskWorkflowRunCard
+						v-for="run in taskWorkflow.runs"
+						:key="run.id"
+						:task-workflow="taskWorkflow"
+						:task-workflow-run="run"
+						class="my-2"
+					/>
+				</div>
 			</div>
+			<SelectWorkflowInputDialog
+				v-if="isSelectingWorkflowInput"
+				@confirm="onCreateTaskWorkflowRun"
+				@close="isSelectingWorkflowInput = false"
+			/>
 		</div>
-		<SelectWorkflowInputDialog
-			v-if="isSelectingWorkflowInput"
-			@confirm="onCreateTaskWorkflowRun"
-			@close="isSelectingWorkflowInput = false"
-		/>
 	</div>
 </template>
 <script setup lang="ts">
