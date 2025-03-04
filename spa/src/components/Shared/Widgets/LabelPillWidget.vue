@@ -1,6 +1,6 @@
 <template>
 	<div :class="{[colorClass]: true, [sizeClass]: true, 'rounded-full': true}">
-		{{ label || status.value }}
+		<slot>{{ label || status.value }}</slot>
 	</div>
 </template>
 <script setup lang="ts">

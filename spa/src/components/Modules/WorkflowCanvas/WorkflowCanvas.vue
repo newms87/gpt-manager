@@ -1,6 +1,7 @@
 <template>
 	<div class="workflow-editor overflow-hidden relative">
 		<VueFlow
+			id="workflow-canvas-vf"
 			v-model="nodes"
 			v-model:edges="edges"
 			:default-zoom="1"
@@ -12,6 +13,8 @@
 			elevate-edges-on-select
 			@connect="onConnectionAdd"
 			@node-drag-stop="onNodeDragStop"
+			@dragover="onDragOver"
+			@drop="e => handleExternalDrop('workflow-canvas-vf', workflowDefinition, e)"
 		>
 			<template #node-custom="nodeProps">
 				<WorkflowCanvasNode
@@ -33,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { handleExternalDrop, onDragOver } from "@/components/Modules/WorkflowCanvas/dragNDrop";
 import {
 	connectWorkflowNodes,
 	convertEdgesToVueFlow,

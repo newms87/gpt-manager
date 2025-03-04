@@ -35,7 +35,7 @@ const props = defineProps<{
 const nodeToEdit = ref<TaskWorkflowNode>(null);
 
 const updateNodeAction = dxTaskWorkflowNode.getAction("update");
-const removeNodeAction = dxTaskWorkflowNode.getAction("delete", { onFinish: refreshWorkflow });
+const removeNodeAction = dxTaskWorkflowNode.getAction("quick-delete", { onFinish: refreshWorkflow });
 const addConnectionAction = dxTaskWorkflow.getAction("add-connection", {
 	onFinish: refreshWorkflow,
 	optimistic: (action, target: TaskWorkflow, data: TaskWorkflowConnection) => target.connections.push({ ...data })

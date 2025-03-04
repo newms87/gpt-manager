@@ -4,6 +4,7 @@
 		class="workflow-canvas-sidebar"
 		right-side
 		min-width="3.5rem"
+		max-width="20rem"
 		name="workflow-canvas-sidebar"
 	>
 		<div class="sidebar-title text-center pt-4">
@@ -14,62 +15,87 @@
 				<ActionButton
 					type="create"
 					color="green"
-					:action="addNodeAction"
-					:target="taskWorkflow"
+					:action="createTaskAction"
 					class="p-2"
 					icon-class="w-4"
-					tooltip="Add Node to Workflow"
+					:tooltip="isCollapsed ? 'Create new task' : ''"
+					:label="isCollapsed ? '' : 'Create new task'"
+					@success="({item}) => afterCreateTask(item)"
 				/>
 			</div>
 			<div v-else class="text-xl">Add Tasks</div>
 		</div>
-		<div class="node-list">
-			<div
-				v-for="node in availableNodes"
-				:key="node.type"
-				class="node-item"
+		<div class="node-task-list pt-4 flex flex-col space-y-4">
+			<LabelPillWidget
+				v-for="task in availableTasks"
+				:key="task.id"
+				class="node-task flex items-center flex-nowrap cursor-pointer group max-w-full overflow-hidden"
+				color="sky"
+				size="sm"
 				draggable="true"
-				@dragstart="onDragStart($event, node.type)"
+				@dragstart="onDragStart($event, task)"
+				@click="onAddTask(task)"
 			>
-				<div class="node-item-icon" :class="node.icon">
-					<div class="icon" v-html="node.icon.template" />
+				<div class="node-task-icon p-1">
+					<NodeTaskIcon class="w-6" />
+					<QTooltip v-if="isCollapsed">{{ task.name }}</QTooltip>
 				</div>
-				<div class="node-item-content">
-					<div class="node-item-title">{{ node.type }}</div>
-					<div class="node-item-description">{{ node.description }}</div>
+				<div v-if="!isCollapsed" class="flex items-center flex-nowrap ml-2 flex-grow max-w-full overflow-hidden">
+					<div class="flex-grow max-w-full overflow-hidden">
+						<div class="node-item-title whitespace-nowrap">{{ task.name }}</div>
+						<QTooltip v-if="task.description" class="text-sm text-slate-300 bg-slate-700 p-3 rounded">{{
+								task.description
+							}}
+						</QTooltip>
+					</div>
+					<ActionButton
+						type="trash"
+						:action="deleteTaskAction"
+						:target="task"
+						class="opacity-0 group-hover:opacity-100 transition-all"
+					/>
 				</div>
-			</div>
+			</LabelPillWidget>
 		</div>
 	</CollapsableSidebar>
 </template>
 
 <script setup lang="ts">
+import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows";
+import { onDragStart } from "@/components/Modules/WorkflowCanvas/dragNDrop";
+import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
+import { TaskDefinition } from "@/types";
 import { TaskWorkflow } from "@/types/task-workflows";
+import { FaSolidSquareShareNodes as NodeTaskIcon } from "danx-icon";
 import { ActionButton, CollapsableSidebar } from "quasar-ui-danx";
-import { ref, shallowRef } from "vue";
+import { onMounted, ref, shallowRef } from "vue";
 
-defineProps<{
+const props = defineProps<{
 	taskWorkflow: TaskWorkflow;
 }>();
 
 const isCollapsed = ref(false);
+const createTaskAction = dxTaskDefinition.getAction("create");
+const deleteTaskAction = dxTaskDefinition.getAction("delete", { onFinish: loadTaskDefinitions });
 const addNodeAction = dxTaskWorkflow.getAction("add-node");
 
 // Define available node types with descriptions
-const availableNodes = shallowRef([]);
+const availableTasks = shallowRef([]);
 
-// Handle drag start event
-const onDragStart = (event: DragEvent, nodeType: string) => {
-	if (event.dataTransfer) {
-		event.dataTransfer.setData("node-type", nodeType);
-		event.dataTransfer.effectAllowed = "move";
-	}
-};
-</script>
+onMounted(loadTaskDefinitions);
 
-<style scoped>
-.workflow-canvas-sidebar {
-
+async function loadTaskDefinitions() {
+	availableTasks.value = (await dxTaskDefinition.routes.list()).data;
 }
-</style>
+
+async function onAddTask(taskDefinition: TaskDefinition) {
+	await addNodeAction.trigger(props.taskWorkflow, { task_definition_id: taskDefinition.id });
+}
+
+async function afterCreateTask(taskDefinition: TaskDefinition) {
+	loadTaskDefinitions();
+	await onAddTask(taskDefinition);
+}
+
+</script>
