@@ -1,6 +1,7 @@
 <template>
 	<div>
 		<WorkflowInputCard
+			v-if="taskInput.workflowInput"
 			:workflow-input="taskInput.workflowInput"
 			removable
 			editable-team-objects

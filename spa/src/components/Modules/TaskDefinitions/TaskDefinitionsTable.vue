@@ -4,6 +4,7 @@
 		:controller="dxTaskDefinition"
 		table-class="bg-slate-600"
 		filter-class="bg-slate-500"
+		drawer-class="w-[80vw]"
 		show-filters
 		refresh-button
 		create-button

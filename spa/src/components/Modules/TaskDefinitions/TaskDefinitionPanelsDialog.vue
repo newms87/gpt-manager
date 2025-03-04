@@ -4,7 +4,7 @@
 		:panels="dxTaskDefinition.panels"
 		:target="taskDefinition"
 		position="standard"
-		panels-class="w-full"
+		drawer-class="w-[80vw]"
 		@close="$emit('close')"
 	/>
 </template>
