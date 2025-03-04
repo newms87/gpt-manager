@@ -26,8 +26,14 @@ const props = defineProps<{
 
 const updateNodeAction = dxTaskWorkflowNode.getAction("update");
 const removeNodeAction = dxTaskWorkflowNode.getAction("delete", { onFinish: refreshWorkflow });
-const addConnectionAction = dxTaskWorkflow.getAction("add-connection", { onFinish: refreshWorkflow });
-const removeConnectionAction = dxTaskWorkflowConnection.getAction("delete", { onFinish: refreshWorkflow });
+const addConnectionAction = dxTaskWorkflow.getAction("add-connection", {
+	onFinish: refreshWorkflow,
+	optimistic: (action, target: TaskWorkflow, data: TaskWorkflowConnection) => target.connections.push({ ...data })
+});
+const removeConnectionAction = dxTaskWorkflowConnection.getAction("quick-delete", {
+	onFinish: refreshWorkflow,
+	optimisticDelete: true
+});
 
 async function refreshWorkflow() {
 	await dxTaskWorkflow.routes.detailsAndStore(props.taskWorkflow);

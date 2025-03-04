@@ -10,12 +10,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class TaskInput extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait;
+    use HasFactory, ActionModelTrait, AuditableTrait, HasRelationCountersTrait;
 
     protected $fillable = [
         'task_definition_id',

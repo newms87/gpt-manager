@@ -14,12 +14,13 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, HasWorkflowStatesTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, HasWorkflowStatesTrait, SoftDeletes;
 
     protected $fillable = [
         'started_at',

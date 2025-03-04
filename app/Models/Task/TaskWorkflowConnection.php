@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskWorkflowConnection extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait;
+    use HasFactory, ActionModelTrait, AuditableTrait;
 
     protected $fillable = [
         'source_node_id',

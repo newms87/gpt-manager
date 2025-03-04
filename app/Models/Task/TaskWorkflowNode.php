@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskWorkflowNode extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait;
+    use HasFactory, ActionModelTrait, AuditableTrait;
 
     protected $fillable = [
         'task_definition_id',

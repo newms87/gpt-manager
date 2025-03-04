@@ -64,7 +64,7 @@ const edges = ref<Edge[]>([]);
 
 function convertToVueFlow() {
 	if (workflowDefinition.value?.nodes) {
-		console.log("convert", workflowDefinition.value);
+		console.log("convert", workflowDefinition.value.connections.length + " connections", workflowDefinition.value.nodes.length + " nodes", workflowDefinition.value);
 		nodes.value = convertNodesToVueFlow(workflowDefinition.value.nodes);
 		edges.value = convertEdgesToVueFlow(workflowDefinition.value.connections || []);
 	}
@@ -88,7 +88,6 @@ function resolveWorkflowNode(node: Node) {
 function onNodeClick(node: Node) {
 	emit("node-click", resolveWorkflowNode(node));
 }
-
 function onNodeDragStop({ node }) {
 	emit("node-position", resolveWorkflowNode(node), { ...node.position });
 }
@@ -109,7 +108,9 @@ function resolveWorkflowConnection(edge: EdgeProps) {
 
 function onConnectionAdd(connection: Connection) {
 	const connections = connectWorkflowNodes(workflowDefinition.value.connections, connection);
-	emit("connection-add", connections.pop());
+	if (connections) {
+		emit("connection-add", connections.pop());
+	}
 }
 
 function onConnectionRemove(edge: EdgeProps) {

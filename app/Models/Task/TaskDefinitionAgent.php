@@ -12,11 +12,12 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Helpers\ArrayHelper;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskDefinitionAgent extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait;
+    use ActionModelTrait, HasFactory, AuditableTrait;
 
     protected $fillable = [
         'agent_id',

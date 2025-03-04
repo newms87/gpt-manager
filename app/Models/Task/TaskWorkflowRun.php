@@ -11,10 +11,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
+use Newms87\Danx\Traits\ActionModelTrait;
 
 class TaskWorkflowRun extends Model implements WorkflowStatesContract
 {
-    use SoftDeletes, HasWorkflowStatesTrait;
+    use SoftDeletes, ActionModelTrait, HasWorkflowStatesTrait;
 
     protected $fillable = [
         'started_at',

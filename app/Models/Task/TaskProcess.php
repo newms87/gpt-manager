@@ -16,12 +16,13 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Job\JobDispatch;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class TaskProcess extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, HasWorkflowStatesTrait;
+    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes, HasWorkflowStatesTrait;
 
     protected $fillable = [
         'name',

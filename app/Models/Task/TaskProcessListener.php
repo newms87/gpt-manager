@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Job\JobDispatch;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskProcessListener extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait;
+    use HasFactory, ActionModelTrait, AuditableTrait;
 
     static array $allowedEventTypes = [
         WorkflowRun::class,
