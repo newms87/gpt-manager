@@ -72,13 +72,14 @@ import { FaSolidSquareShareNodes as NodeTaskIcon } from "danx-icon";
 import { ActionButton, CollapsableSidebar } from "quasar-ui-danx";
 import { onMounted, ref, shallowRef } from "vue";
 
+const emit = defineEmits(["refresh"]);
 const props = defineProps<{
 	taskWorkflow: TaskWorkflow;
 }>();
 
 const isCollapsed = ref(false);
 const createTaskAction = dxTaskDefinition.getAction("create");
-const deleteTaskAction = dxTaskDefinition.getAction("delete", { onFinish: loadTaskDefinitions });
+const deleteTaskAction = dxTaskDefinition.getAction("delete", { onFinish: async () => emit("refresh") || await loadTaskDefinitions() });
 const addNodeAction = dxTaskWorkflow.getAction("add-node");
 
 // Define available node types with descriptions

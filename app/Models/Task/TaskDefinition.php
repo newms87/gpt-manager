@@ -71,6 +71,11 @@ class TaskDefinition extends Model implements AuditableContract
         return $this->schemaAssociations()->where('category', 'grouping');
     }
 
+    public function workflowNodes(): HasMany|TaskWorkflowNode
+    {
+        return $this->hasMany(TaskWorkflowNode::class);
+    }
+
     public function getGroupingKeys(): array
     {
         $groupingKeys = [];
@@ -95,6 +100,13 @@ class TaskDefinition extends Model implements AuditableContract
         ])->validate();
 
         return $this;
+    }
+
+    public function delete()
+    {
+        $this->workflowNodes()->each(fn(TaskWorkflowNode $wn) => $wn->delete());
+
+        return parent::delete();
     }
 
     public function __toString()

@@ -10,7 +10,7 @@
 			@connection-add="onConnectionAdd"
 			@connection-remove="workflowConnection => removeConnectionAction.trigger(workflowConnection)"
 		/>
-		<WorkflowCanvasSidebar :task-workflow="taskWorkflow" />
+		<WorkflowCanvasSidebar :task-workflow="taskWorkflow" @refresh="refreshWorkflow" />
 		<TaskDefinitionPanelsDialog
 			v-if="nodeToEdit?.taskDefinition"
 			:task-definition="nodeToEdit.taskDefinition"
