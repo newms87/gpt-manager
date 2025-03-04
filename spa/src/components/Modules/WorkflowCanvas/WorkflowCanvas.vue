@@ -69,7 +69,6 @@ const edges = ref<Edge[]>([]);
 
 function convertToVueFlow() {
 	if (workflowDefinition.value?.nodes) {
-		console.log("convert", workflowDefinition.value.connections.length + " connections", workflowDefinition.value.nodes.length + " nodes", workflowDefinition.value);
 		nodes.value = convertNodesToVueFlow(workflowDefinition.value.nodes);
 		edges.value = convertEdgesToVueFlow(workflowDefinition.value.connections || []);
 	}

@@ -48,7 +48,7 @@ const active = defineModel<boolean>("active", { default: false });
 const showLogs = ref(false);
 const createMessageAction = dxAgentThread.getAction("create-message");
 function loadJobDispatch() {
-	dxAgentThread.routes.detailsAndStore(props.thread, {
+	dxAgentThread.routes.details(props.thread, {
 		"*": false,
 		jobDispatch: { logs: true, errors: true, apiLogs: true }
 	});

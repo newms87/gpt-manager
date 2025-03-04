@@ -187,7 +187,7 @@ const schemaRelationObjects = computed(() => {
 });
 
 async function onShow() {
-	await dxTeamObject.routes.detailsAndStore(props.object);
+	await dxTeamObject.routes.details(props.object);
 }
 
 function calcAttrColSpan(value) {

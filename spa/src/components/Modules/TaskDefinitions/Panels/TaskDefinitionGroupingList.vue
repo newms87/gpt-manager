@@ -73,9 +73,9 @@ const props = defineProps<{
 }>();
 
 const updateTaskDefinitionAction = dxTaskDefinition.getAction("update");
-const createAssociationAction = dxSchemaAssociation.getAction("quick-create", { onFinish: () => dxTaskDefinition.routes.detailsAndStore(props.taskDefinition) });
+const createAssociationAction = dxSchemaAssociation.getAction("quick-create", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
 const updateAssociationAction = dxSchemaAssociation.getAction("update");
-const deleteAssociationAction = dxSchemaAssociation.getAction("quick-delete", { onFinish: () => dxTaskDefinition.routes.detailsAndStore(props.taskDefinition) });
+const deleteAssociationAction = dxSchemaAssociation.getAction("quick-delete", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
 
 const usedSchemaIds = computed(() => props.taskDefinition.groupingSchemaAssociations?.map(s => s.schema.id) || []);
 

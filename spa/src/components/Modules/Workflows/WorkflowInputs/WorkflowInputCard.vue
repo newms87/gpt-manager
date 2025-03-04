@@ -127,7 +127,7 @@ const isEditing = ref(false);
 
 async function loadAvailableTeamObjects() {
 	if (props.workflowInput.team_object_type) {
-		await dxWorkflowInput.routes.detailsAndStore(props.workflowInput, { availableTeamObjects: true });
+		await dxWorkflowInput.routes.details(props.workflowInput, { availableTeamObjects: true });
 	}
 }
 

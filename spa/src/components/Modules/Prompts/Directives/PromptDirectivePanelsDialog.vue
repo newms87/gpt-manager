@@ -20,6 +20,6 @@ export interface PromptDirectivePanelsDialogProps {
 
 defineEmits(["close"]);
 const props = defineProps<PromptDirectivePanelsDialogProps>();
-dxPromptDirective.routes.detailsAndStore(props.promptDirective);
+dxPromptDirective.routes.details(props.promptDirective);
 dxPromptDirective.loadFieldOptions();
 </script>

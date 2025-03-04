@@ -20,6 +20,6 @@ export interface SchemaDefinitionPanelsDialogProps {
 
 defineEmits(["close"]);
 const props = defineProps<SchemaDefinitionPanelsDialogProps>();
-dxSchemaDefinition.routes.detailsAndStore(props.schemaDefinition);
+dxSchemaDefinition.routes.details(props.schemaDefinition);
 dxSchemaDefinition.loadFieldOptions();
 </script>

@@ -11,13 +11,13 @@
 				v-model="showArtifacts"
 				:label="workflowRun.artifacts_count + ' Artifacts'"
 				class="bg-sky-800 text-sky-200 mx-2"
-				@show="dxWorkflowRun.routes.detailsAndStore(props.workflowRun, {'*': false, artifacts: true})"
+				@show="dxWorkflowRun.routes.details(props.workflowRun, {'*': false, artifacts: true})"
 			/>
 			<ShowHideButton
 				v-model="showJobs"
 				:label="workflowRun.job_runs_count + ' Jobs'"
 				class="bg-slate-600 text-slate-200 mx-2"
-				@show="dxWorkflowRun.routes.detailsAndStore(props.workflowRun, {'*': false, workflowJobRuns: {'*': true, tasks: {thread: {messages: {files: {transcodes: true}}}}}})"
+				@show="dxWorkflowRun.routes.details(props.workflowRun, {'*': false, workflowJobRuns: {'*': true, tasks: {thread: {messages: {files: {transcodes: true}}}}}})"
 			/>
 			<WorkflowStatusTimerPill :runner="workflowRun" />
 			<div class="mx-2">

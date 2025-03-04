@@ -48,7 +48,7 @@ onMounted(loadTaskInput);
 
 async function loadTaskInput() {
 	isLoading.value = true;
-	await routes.detailsAndStore(props.taskInput);
+	await routes.details(props.taskInput);
 	isLoading.value = false;
 }
 </script>

@@ -11,25 +11,25 @@
 					label="Thread"
 					:show-icon="AgentThreadIcon"
 					:class="colorClass"
-					@show="dxTaskProcess.routes.detailsAndStore(taskProcess, {agentThread: agentThreadField})"
+					@show="dxTaskProcess.routes.details(taskProcess, {agentThread: agentThreadField})"
 				/>
 				<ShowHideButton
 					v-model="isShowingJobDispatches"
 					:label="taskProcess.job_dispatch_count + ' Jobs'"
 					:class="colorClass"
-					@show="dxTaskProcess.routes.detailsAndStore(taskProcess, {jobDispatches: jobDispatchesField})"
+					@show="dxTaskProcess.routes.details(taskProcess, {jobDispatches: jobDispatchesField})"
 				/>
 				<ShowHideButton
 					v-model="isShowingInputArtifacts"
 					:label="taskProcess.input_artifact_count + ' Input'"
 					:class="colorClass"
-					@show="dxTaskProcess.routes.detailsAndStore(taskProcess, {inputArtifacts: artifactsField})"
+					@show="dxTaskProcess.routes.details(taskProcess, {inputArtifacts: artifactsField})"
 				/>
 				<ShowHideButton
 					v-model="isShowingOutputArtifacts"
 					:label="taskProcess.output_artifact_count + ' Output'"
 					:class="colorClass"
-					@show="dxTaskProcess.routes.detailsAndStore(taskProcess, {outputArtifacts: artifactsField})"
+					@show="dxTaskProcess.routes.details(taskProcess, {outputArtifacts: artifactsField})"
 				/>
 				<WorkflowStatusTimerPill :runner="taskProcess" />
 			</div>

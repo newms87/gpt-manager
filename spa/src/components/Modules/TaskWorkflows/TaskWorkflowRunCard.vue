@@ -29,7 +29,7 @@ const props = defineProps<{
 	taskWorkflowRun: TaskWorkflowRun;
 }>();
 
-const deleteTaskWorkflowRunAction = dxTaskWorkflowRun.getAction("delete", { onFinish: () => dxTaskWorkflow.routes.detailsAndStore(props.taskWorkflow) });
+const deleteTaskWorkflowRunAction = dxTaskWorkflowRun.getAction("delete", { onFinish: () => dxTaskWorkflow.routes.details(props.taskWorkflow) });
 const isShowing = ref(false);
 
 /********

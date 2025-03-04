@@ -41,7 +41,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
+import { loadTaskWorkflowRuns } from "@/components/Modules/TaskWorkflows/store";
 import TaskWorkflowRunCard from "@/components/Modules/TaskWorkflows/TaskWorkflowRunCard";
 import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
 import SelectWorkflowInputDialog from "@/components/Modules/Workflows/WorkflowInputs/SelectWorkflowInputDialog";
@@ -49,21 +49,16 @@ import { ActionButton } from "@/components/Shared";
 import { WorkflowInput } from "@/types";
 import { TaskWorkflow } from "@/types/task-workflows";
 import { FlashMessages, ShowHideButton } from "quasar-ui-danx";
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 
 defineEmits(["confirm", "close"]);
 const props = defineProps<{
 	taskWorkflow: TaskWorkflow;
 }>();
-onMounted(loadTaskWorkflowRuns);
 
 const isShowing = ref(false);
 const isSelectingWorkflowInput = ref(false);
 const createTaskWorkflowRunAction = dxTaskWorkflowRun.getAction("quick-create", { onFinish: loadTaskWorkflowRuns });
-
-async function loadTaskWorkflowRuns() {
-	await dxTaskWorkflow.routes.detailsAndStore(props.taskWorkflow, { runs: { taskRuns: true } });
-}
 
 async function onCreateTaskWorkflowRun(workflowInput: WorkflowInput) {
 	isSelectingWorkflowInput.value = false;

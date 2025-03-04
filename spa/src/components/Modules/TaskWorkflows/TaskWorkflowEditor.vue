@@ -46,7 +46,7 @@ const removeConnectionAction = dxTaskWorkflowConnection.getAction("quick-delete"
 });
 
 async function refreshWorkflow() {
-	await dxTaskWorkflow.routes.detailsAndStore(props.taskWorkflow);
+	await dxTaskWorkflow.routes.details(props.taskWorkflow);
 }
 
 async function onNodePosition(workflowNode: TaskWorkflowNode, position) {

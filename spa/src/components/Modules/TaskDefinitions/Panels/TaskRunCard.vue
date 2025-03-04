@@ -10,7 +10,7 @@
 				v-model="isShowingProcesses"
 				:label="taskRun.process_count + ' Processes'"
 				class="bg-slate-600 text-slate-200"
-				@show="dxTaskRun.routes.detailsAndStore(taskRun, {processes: true})"
+				@show="dxTaskRun.routes.details(taskRun, {processes: true})"
 			/>
 			<WorkflowStatusTimerPill :runner="taskRun" />
 			<AiTokenUsageButton v-if="taskRun.usage" :usage="taskRun.usage" />

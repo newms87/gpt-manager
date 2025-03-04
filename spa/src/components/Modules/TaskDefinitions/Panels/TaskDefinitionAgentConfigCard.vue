@@ -15,7 +15,7 @@
 				:loading="isUpdatingAgent"
 				@create="createAgentAction.trigger(null, {name: taskDefinition.name + ' Agent'})"
 				@update:selected="agent => onUpdateAgent({ agent_id: agent.id })"
-				@update:editing="isTrue => (isTrue ? dxAgent.routes.detailsAndStore(taskDefinitionAgent.agent) : null)"
+				@update:editing="isTrue => (isTrue ? dxAgent.routes.details(taskDefinitionAgent.agent) : null)"
 			/>
 			<div class="flex items-center">
 				<ActionButton
@@ -154,9 +154,9 @@ const createAgentAction = dxAgent.getAction("quick-create", { onFinish: dxAgent.
 const copyAgentAction = dxTaskDefinition.getAction("copy-agent");
 const updateAgentAction = dxTaskDefinition.getAction("update-agent");
 const removeAgentAction = dxTaskDefinition.getAction("remove-agent");
-const createSchemaAssociationAction = dxSchemaAssociation.getAction("quick-create", { onFinish: () => dxTaskDefinition.routes.detailsAndStore(props.taskDefinition) });
+const createSchemaAssociationAction = dxSchemaAssociation.getAction("quick-create", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
 const updateSchemaAssociationAction = dxSchemaAssociation.getAction("update");
-const deleteSchemaAssociationAction = dxSchemaAssociation.getAction("delete", { onFinish: () => dxTaskDefinition.routes.detailsAndStore(props.taskDefinition) });
+const deleteSchemaAssociationAction = dxSchemaAssociation.getAction("delete", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
 
 const isUpdatingAgent = ref(false);
 const isSavingOutputSchema = ref(false);
