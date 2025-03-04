@@ -7,55 +7,56 @@
 		max-width="20rem"
 		name="workflow-canvas-sidebar"
 	>
-		<div class="sidebar-title text-center pt-4">
-			<div
-				v-if="isCollapsed"
-				class="flex items-center justify-center w-full"
-			>
-				<ActionButton
-					type="create"
-					color="green"
-					:action="createTaskAction"
-					class="p-2"
-					icon-class="w-4"
-					:tooltip="isCollapsed ? 'Create new task' : ''"
-					:label="isCollapsed ? '' : 'Create new task'"
-					@success="({item}) => afterCreateTask(item)"
-				/>
-			</div>
-			<div v-else class="text-xl">Add Tasks</div>
-		</div>
-		<div class="node-task-list pt-4 flex flex-col space-y-4">
-			<LabelPillWidget
-				v-for="task in availableTasks"
-				:key="task.id"
-				class="node-task flex items-center flex-nowrap cursor-pointer group max-w-full overflow-hidden"
-				color="sky"
-				size="sm"
-				draggable="true"
-				@dragstart="onDragStart($event, task)"
-				@click="onAddTask(task)"
-			>
-				<div class="node-task-icon p-1">
-					<NodeTaskIcon class="w-6" />
-					<QTooltip v-if="isCollapsed">{{ task.name }}</QTooltip>
-				</div>
-				<div v-if="!isCollapsed" class="flex items-center flex-nowrap ml-2 flex-grow max-w-full overflow-hidden">
-					<div class="flex-grow max-w-full overflow-hidden">
-						<div class="node-item-title whitespace-nowrap">{{ task.name }}</div>
-						<QTooltip v-if="task.description" class="text-sm text-slate-300 bg-slate-700 p-3 rounded">{{
-								task.description
-							}}
-						</QTooltip>
-					</div>
+		<div class="h-full flex overflow-hidden flex-col flex-nowrap">
+			<div class="sidebar-title flex-shrink-0 text-center pt-4">
+				<div class="flex items-center justify-center w-full">
 					<ActionButton
-						type="trash"
-						:action="deleteTaskAction"
-						:target="task"
-						class="opacity-0 group-hover:opacity-100 transition-all"
+						type="create"
+						color="green"
+						:action="createTaskAction"
+						class="p-2"
+						icon-class="w-4"
+						:tooltip="isCollapsed ? 'Create new task' : ''"
+						:label="isCollapsed ? '' : 'Create new task'"
+						@success="({item}) => afterCreateTask(item)"
 					/>
 				</div>
-			</LabelPillWidget>
+			</div>
+			<div
+				class="node-task-list flex-grow overflow-y-auto overflow-x-hidden pt-4 flex flex-col flex-nowrap space-y-4"
+				:class="{'overflow-y-hidden': isCollapsed}"
+			>
+				<LabelPillWidget
+					v-for="task in availableTasks"
+					:key="task.id"
+					class="node-task flex items-center flex-nowrap cursor-pointer group max-w-full overflow-hidden flex-shrink-0"
+					color="sky"
+					size="sm"
+					draggable="true"
+					@dragstart="onDragStart($event, task)"
+					@click="onAddTask(task)"
+				>
+					<div class="node-task-icon p-1">
+						<NodeTaskIcon class="w-6" />
+						<QTooltip v-if="isCollapsed">{{ task.name }}</QTooltip>
+					</div>
+					<div v-if="!isCollapsed" class="flex items-center flex-nowrap ml-2 flex-grow max-w-full overflow-hidden">
+						<div class="flex-grow max-w-full overflow-hidden">
+							<div class="node-item-title whitespace-nowrap">{{ task.name }}</div>
+							<QTooltip v-if="task.description" class="text-sm text-slate-300 bg-slate-700 p-3 rounded">{{
+									task.description
+								}}
+							</QTooltip>
+						</div>
+						<ActionButton
+							type="trash"
+							:action="deleteTaskAction"
+							:target="task"
+							class="opacity-0 group-hover:opacity-100 transition-all"
+						/>
+					</div>
+				</LabelPillWidget>
+			</div>
 		</div>
 	</CollapsableSidebar>
 </template>

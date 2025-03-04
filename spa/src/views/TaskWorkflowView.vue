@@ -19,7 +19,7 @@
 			<div class="flex-grow" />
 			<TaskWorkflowRunsDrawer v-if="activeTaskWorkflow" :task-workflow="activeTaskWorkflow" />
 		</div>
-		<div class="flex flex-grow items-center justify-center">
+		<div class="flex flex-grow items-center justify-center overflow-hidden">
 			<TaskWorkflowEditor v-if="activeTaskWorkflow" :task-workflow="activeTaskWorkflow" />
 		</div>
 	</div>
