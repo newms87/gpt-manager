@@ -11,17 +11,17 @@
 			class="workflow-canvas"
 			elevate-edges-on-select
 			@connect="onConnectionAdd"
-			@node-click="(e) => onNodeClick(e.node)"
 			@node-drag-stop="onNodeDragStop"
 		>
 			<template #node-custom="nodeProps">
 				<WorkflowCanvasNode
 					:node="nodeProps"
-					@remove="onNodeRemove"
+					@edit="node => $emit('node-edit', resolveWorkflowNode(node))"
+					@remove="node => $emit('node-remove', resolveWorkflowNode(node))"
 				/>
 			</template>
 			<template #edge-custom="edgeProps">
-				<WorkflowCanvasEdge :edge="edgeProps" @remove="onConnectionRemove" />
+				<WorkflowCanvasEdge :edge="edgeProps" :nodes="nodes" @remove="onConnectionRemove" />
 			</template>
 			<template #connection-line="connectionLineProps">
 				<WorkflowCanvasConnectionLine v-bind="connectionLineProps" />
@@ -51,6 +51,7 @@ import WorkflowCanvasNode from "./WorkflowCanvasNode.vue";
 const emit = defineEmits<{
 	(e: "node-click", node: TaskWorkflowNode): void;
 	(e: "node-position", node: TaskWorkflowNode, position: { x: number, y: number }): void;
+	(e: "node-edit", node: TaskWorkflowNode): void;
 	(e: "node-remove", node: TaskWorkflowNode): void;
 	(e: "connection-add", connection: TaskWorkflowConnection): void;
 	(e: "connection-remove", connection: TaskWorkflowConnection): void;
@@ -85,14 +86,8 @@ function resolveWorkflowNode(node: Node) {
 	return workflowNode;
 }
 
-function onNodeClick(node: Node) {
-	emit("node-click", resolveWorkflowNode(node));
-}
 function onNodeDragStop({ node }) {
 	emit("node-position", resolveWorkflowNode(node), { ...node.position });
-}
-function onNodeRemove(node) {
-	emit("node-remove", resolveWorkflowNode(node));
 }
 
 /*********** Connection Related Methods *********/

@@ -12,13 +12,14 @@ class TaskWorkflowNodeResource extends ActionResource
     public static function data(TaskWorkflowNode $taskWorkflowNode): array
     {
         return [
-            'id'         => $taskWorkflowNode->id,
-            'name'       => $taskWorkflowNode->name,
-            'settings'   => $taskWorkflowNode->settings,
-            'params'     => $taskWorkflowNode->params,
-            'updated_at' => $taskWorkflowNode->updated_at,
+            'id'                 => $taskWorkflowNode->id,
+            'name'               => $taskWorkflowNode->name,
+            'settings'           => $taskWorkflowNode->settings,
+            'params'             => $taskWorkflowNode->params,
+            'updated_at'         => $taskWorkflowNode->updated_at,
+            'task_definition_id' => $taskWorkflowNode->task_definition_id,
 
-            'taskDefinition' => fn($fields) => TaskDefinitionResource::data($taskWorkflowNode->taskDefinition, $fields),
+            'taskDefinition' => fn($fields) => TaskDefinitionResource::make($taskWorkflowNode->taskDefinition, $fields),
         ];
     }
 

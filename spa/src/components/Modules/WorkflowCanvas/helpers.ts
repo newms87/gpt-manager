@@ -11,7 +11,7 @@ export function convertNodesToVueFlow(workflowNodes: TaskWorkflowNode[]) {
 			type: "custom",
 			position: { x: workflowNode.settings?.x || 0, y: workflowNode.settings?.y || 0 },
 			data: {
-				name: workflowNode.name,
+				name: workflowNode.taskDefinition?.name || workflowNode.name,
 				inputs: ["default"],
 				outputs: ["default"]
 			},
@@ -33,7 +33,7 @@ export function convertEdgesToVueFlow(workflowEdges) {
 			sourceHandle: "source-" + workflowEdge.source_output_port,
 			targetHandle: "target-" + workflowEdge.target_input_port,
 			type: "custom",
-			animated: false
+			animated: true
 		});
 	}
 	return vueFlowEdges;

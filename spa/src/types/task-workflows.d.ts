@@ -16,6 +16,7 @@ export interface TaskWorkflowNode extends ActionTargetItem {
 	name: string;
 	settings?: TaskWorkflowNodeSettings;
 	params?: AnyObject;
+	task_definition_id: number;
 	taskDefinition: TaskDefinition;
 	connections?: TaskWorkflowConnection[];
 }

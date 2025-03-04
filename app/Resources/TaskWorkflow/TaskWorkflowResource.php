@@ -26,7 +26,9 @@ class TaskWorkflowResource extends ActionResource
     public static function details(Model $model, ?array $includeFields = null): array
     {
         return static::make($model, $includeFields ?? [
-            'nodes'       => true,
+            'nodes'       => [
+                'taskDefinition' => true,
+            ],
             'connections' => true,
         ]);
     }

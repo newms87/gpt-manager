@@ -1,7 +1,8 @@
 <template>
 	<div class="workflow-canvas-node">
-		<div class="node-header">
+		<div class="node-header flex flex-nowrap items-center space-x-2">
 			<span class="node-title">{{ node.data.name }} ({{ node.id }})</span>
+			<ActionButton type="edit" color="sky" @click.stop="$emit('edit', node)" />
 			<ActionButton type="trash" color="red" @click.stop="$emit('remove', node)" />
 		</div>
 
@@ -39,6 +40,7 @@ import { computed } from "vue";
 const { edges } = useVueFlow();
 
 defineEmits<{
+	(e: "edit", node: Node): void;
 	(e: "remove", node: Node): void;
 }>();
 
