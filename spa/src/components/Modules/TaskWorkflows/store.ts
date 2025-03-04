@@ -1,14 +1,18 @@
 import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
-import { TaskWorkflow } from "@/types/task-workflows";
+import { TaskWorkflow, TaskWorkflowRun } from "@/types/task-workflows";
 import { getItem, setItem, storeObjects } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const ACTIVE_TASK_WORKFLOW_KEY = "dx-active-task-workflow-id";
 
 const isLoadingWorkflows = ref(false);
-const activeTaskWorkflow = ref(null);
-const activeTaskWorkflowRun = ref(null);
+const activeTaskWorkflow = ref<TaskWorkflow>(null);
+const activeTaskWorkflowRun = ref<TaskWorkflowRun>(null);
 const taskWorkflows = ref([]);
+
+async function refreshActiveTaskWorkflow() {
+	await dxTaskWorkflow.routes.details(activeTaskWorkflow.value);
+}
 
 async function setActiveTaskWorkflow(taskWorkflow: string | number | TaskWorkflow | null) {
 	const taskWorkflowId = typeof taskWorkflow === "object" ? taskWorkflow.id : taskWorkflow;
@@ -42,6 +46,7 @@ export {
 	activeTaskWorkflowRun,
 	taskWorkflows,
 	initWorkflowState,
+	refreshActiveTaskWorkflow,
 	loadTaskWorkflows,
 	loadTaskWorkflowRuns,
 	setActiveTaskWorkflow

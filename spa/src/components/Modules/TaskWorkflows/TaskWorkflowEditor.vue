@@ -1,8 +1,8 @@
 <template>
 	<div class="flex items-stretch flex-nowrap w-full h-full">
 		<WorkflowCanvas
-			v-if="taskWorkflow"
-			:model-value="taskWorkflow"
+			v-if="activeTaskWorkflow"
+			:model-value="activeTaskWorkflow"
 			class="w-full h-full"
 			@node-position="onNodePosition"
 			@node-edit="node => nodeToEdit = node"
@@ -10,7 +10,7 @@
 			@connection-add="onConnectionAdd"
 			@connection-remove="workflowConnection => removeConnectionAction.trigger(workflowConnection)"
 		/>
-		<WorkflowCanvasSidebar :task-workflow="taskWorkflow" @refresh="refreshWorkflow" />
+		<WorkflowCanvasSidebar :task-workflow="activeTaskWorkflow" @refresh="refreshActiveTaskWorkflow" />
 		<TaskDefinitionPanelsDialog
 			v-if="nodeToEdit?.taskDefinition"
 			:task-definition="nodeToEdit.taskDefinition"
@@ -21,6 +21,7 @@
 <script setup lang="ts">
 import { TaskDefinitionPanelsDialog } from "@/components/Modules/TaskDefinitions";
 import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
+import { activeTaskWorkflow, refreshActiveTaskWorkflow } from "@/components/Modules/TaskWorkflows/store";
 import { dxTaskWorkflowConnection } from "@/components/Modules/TaskWorkflows/TaskWorkflowConnections/config";
 import { dxTaskWorkflowNode } from "@/components/Modules/TaskWorkflows/TaskWorkflowNodes/config";
 import WorkflowCanvas from "@/components/Modules/WorkflowCanvas/WorkflowCanvas";
@@ -28,32 +29,24 @@ import WorkflowCanvasSidebar from "@/components/Modules/WorkflowCanvas/WorkflowC
 import { TaskWorkflow, TaskWorkflowConnection, TaskWorkflowNode } from "@/types/task-workflows";
 import { ref } from "vue";
 
-const props = defineProps<{
-	taskWorkflow: TaskWorkflow;
-}>();
-
 const nodeToEdit = ref<TaskWorkflowNode>(null);
 
 const updateNodeAction = dxTaskWorkflowNode.getAction("update");
-const removeNodeAction = dxTaskWorkflowNode.getAction("quick-delete", { onFinish: refreshWorkflow });
+const removeNodeAction = dxTaskWorkflowNode.getAction("quick-delete", { onFinish: refreshActiveTaskWorkflow });
 const addConnectionAction = dxTaskWorkflow.getAction("add-connection", {
-	onFinish: refreshWorkflow,
+	onFinish: refreshActiveTaskWorkflow,
 	optimistic: (action, target: TaskWorkflow, data: TaskWorkflowConnection) => target.connections.push({ ...data })
 });
 const removeConnectionAction = dxTaskWorkflowConnection.getAction("quick-delete", {
-	onFinish: refreshWorkflow,
+	onFinish: refreshActiveTaskWorkflow,
 	optimisticDelete: true
 });
-
-async function refreshWorkflow() {
-	await dxTaskWorkflow.routes.details(props.taskWorkflow);
-}
 
 async function onNodePosition(workflowNode: TaskWorkflowNode, position) {
 	await updateNodeAction.trigger(workflowNode, { settings: position });
 }
 
 async function onConnectionAdd(connection: Partial<TaskWorkflowConnection>) {
-	await addConnectionAction.trigger(props.taskWorkflow, connection);
+	await addConnectionAction.trigger(activeTaskWorkflow.value, connection);
 }
 </script>

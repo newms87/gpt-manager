@@ -5,6 +5,14 @@
 			<div class="flex-grow">{{ taskWorkflowRun.name }}</div>
 			<WorkflowStatusTimerPill :runner="taskWorkflowRun" />
 			<ShowHideButton v-model="isShowing" class="bg-sky-900" />
+			<ActionButton
+				v-if="selectable"
+				type="confirm"
+				color="green-invert"
+				label="select"
+				class="text-xs"
+				@click="$emit('select')"
+			/>
 			<ActionButton type="trash" color="red" :action="deleteTaskWorkflowRunAction" :target="taskWorkflowRun" />
 		</div>
 		<div v-if="isShowing" class="py-4">
@@ -18,15 +26,16 @@ import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
 import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
 import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
-import { ActionButton } from "@/components/Shared";
 import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { TaskWorkflow, TaskWorkflowRun } from "@/types/task-workflows";
-import { autoRefreshObject, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
+import { ActionButton, autoRefreshObject, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
 import { onMounted, onUnmounted, ref } from "vue";
 
+defineEmits(["select"]);
 const props = defineProps<{
 	taskWorkflow: TaskWorkflow;
 	taskWorkflowRun: TaskWorkflowRun;
+	selectable?: boolean;
 }>();
 
 const deleteTaskWorkflowRunAction = dxTaskWorkflowRun.getAction("delete", { onFinish: () => dxTaskWorkflow.routes.details(props.taskWorkflow) });
