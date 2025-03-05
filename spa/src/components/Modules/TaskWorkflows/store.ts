@@ -1,5 +1,6 @@
 import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
-import { TaskWorkflow, TaskWorkflowRun } from "@/types/task-workflows";
+import { TaskDefinition } from "@/types";
+import { TaskWorkflow, TaskWorkflowNode, TaskWorkflowRun } from "@/types/task-workflows";
 import { getItem, setItem, storeObjects } from "quasar-ui-danx";
 import { ref } from "vue";
 
@@ -40,6 +41,21 @@ async function loadTaskWorkflowRuns() {
 	await dxTaskWorkflow.routes.details(activeTaskWorkflow.value, { "*": false, runs: { taskRuns: true } });
 }
 
+
+const addNodeAction = dxTaskWorkflow.getAction("add-node", {
+	optimistic: (action, target: TaskWorkflow, data: TaskWorkflowNode) => target.nodes.push({ ...data }),
+	onFinish: refreshActiveTaskWorkflow
+});
+
+async function addWorkflowNode(taskDefinition: TaskDefinition, input: Partial<TaskWorkflowNode>) {
+	return await addNodeAction.trigger(activeTaskWorkflow.value, {
+		id: "td-" + taskDefinition.id,
+		name: taskDefinition.name,
+		task_definition_id: taskDefinition.id,
+		...input
+	});
+}
+
 export {
 	isLoadingWorkflows,
 	activeTaskWorkflow,
@@ -49,5 +65,6 @@ export {
 	refreshActiveTaskWorkflow,
 	loadTaskWorkflows,
 	loadTaskWorkflowRuns,
-	setActiveTaskWorkflow
+	setActiveTaskWorkflow,
+	addWorkflowNode
 };

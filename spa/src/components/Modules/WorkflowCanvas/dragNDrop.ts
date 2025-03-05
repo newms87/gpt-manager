@@ -1,7 +1,6 @@
 // Handle drag start event
-import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows";
+import { addWorkflowNode } from "@/components/Modules/TaskWorkflows/store";
 import { TaskDefinition } from "@/types";
-import { TaskWorkflow } from "@/types/task-workflows";
 import { useVueFlow } from "@vue-flow/core";
 import { ref } from "vue";
 
@@ -21,12 +20,10 @@ export function onDragOver(event) {
 	}
 }
 
-const addNodeAction = dxTaskWorkflow.getAction("add-node");
-
 /**
  *  Handles dropping a task definition record on the workflow canvas
  */
-export async function handleExternalDrop(id: string, taskWorkflow: TaskWorkflow, event: DragEvent) {
+export async function handleExternalDrop(id: string, event: DragEvent) {
 	const { viewportRef, project } = useVueFlow(id);
 	if (!viewportRef.value || !draggingTaskDefinition.value) return;
 
@@ -37,10 +34,7 @@ export async function handleExternalDrop(id: string, taskWorkflow: TaskWorkflow,
 		y: event.clientY - rect.top
 	});
 
-	await addNodeAction.trigger(taskWorkflow, {
-		task_definition_id: draggingTaskDefinition.value.id,
-		settings: {
-			...position
-		}
+	await addWorkflowNode(draggingTaskDefinition.value, {
+		settings: { x: position.x, y: position.y }
 	});
 }

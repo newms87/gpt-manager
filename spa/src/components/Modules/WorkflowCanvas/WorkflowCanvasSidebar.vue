@@ -63,7 +63,6 @@
 
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
-import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows";
 import { onDragStart } from "@/components/Modules/WorkflowCanvas/dragNDrop";
 import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { TaskDefinition } from "@/types";
@@ -80,7 +79,6 @@ const props = defineProps<{
 const isCollapsed = ref(false);
 const createTaskAction = dxTaskDefinition.getAction("create");
 const deleteTaskAction = dxTaskDefinition.getAction("delete", { onFinish: async () => emit("refresh") || await loadTaskDefinitions() });
-const addNodeAction = dxTaskWorkflow.getAction("add-node");
 
 // Define available node types with descriptions
 const availableTasks = shallowRef([]);
@@ -92,7 +90,7 @@ async function loadTaskDefinitions() {
 }
 
 async function onAddTask(taskDefinition: TaskDefinition) {
-	await addNodeAction.trigger(props.taskWorkflow, { task_definition_id: taskDefinition.id });
+	await addNode(taskDefinition);
 }
 
 async function afterCreateTask(taskDefinition: TaskDefinition) {

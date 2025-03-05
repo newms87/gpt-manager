@@ -14,7 +14,7 @@
 			@connect="onConnectionAdd"
 			@node-drag-stop="onNodeDragStop"
 			@dragover="onDragOver"
-			@drop="e => handleExternalDrop('workflow-canvas-vf', workflowDefinition, e)"
+			@drop="e => handleExternalDrop('workflow-canvas-vf', e)"
 		>
 			<template #node-custom="nodeProps">
 				<WorkflowCanvasNode
@@ -44,7 +44,7 @@ import {
 } from "@/components/Modules/WorkflowCanvas/helpers";
 import WorkflowCanvasConnectionLine from "@/components/Modules/WorkflowCanvas/WorkflowCanvasConnectionLine";
 import WorkflowCanvasEdge from "@/components/Modules/WorkflowCanvas/WorkflowCanvasEdge";
-import { TaskWorkflow, TaskWorkflowConnection, TaskWorkflowNode } from "@/types/task-workflows";
+import { TaskWorkflow, TaskWorkflowConnection, TaskWorkflowNode, TaskWorkflowRun } from "@/types/task-workflows";
 import { Background } from "@vue-flow/background";
 import { Connection, Edge, EdgeProps, Node, VueFlow } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
@@ -59,6 +59,10 @@ const emit = defineEmits<{
 	(e: "node-remove", node: TaskWorkflowNode): void;
 	(e: "connection-add", connection: TaskWorkflowConnection): void;
 	(e: "connection-remove", connection: TaskWorkflowConnection): void;
+}>();
+
+const props = defineProps<{
+	taskWorkflowRun?: TaskWorkflowRun;
 }>();
 
 const workflowDefinition = defineModel<TaskWorkflow>();

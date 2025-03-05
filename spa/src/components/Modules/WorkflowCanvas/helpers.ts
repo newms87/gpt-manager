@@ -7,7 +7,7 @@ export function convertNodesToVueFlow(workflowNodes: TaskWorkflowNode[]) {
 	const vueFlowNodes = [];
 	for (const workflowNode of workflowNodes) {
 		vueFlowNodes.push({
-			id: workflowNode.id.toString(),
+			id: workflowNode.id?.toString() || nanoid(),
 			type: "custom",
 			position: { x: workflowNode.settings?.x || 0, y: workflowNode.settings?.y || 0 },
 			data: {

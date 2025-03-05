@@ -3,6 +3,7 @@
 		<WorkflowCanvas
 			v-if="activeTaskWorkflow"
 			:model-value="activeTaskWorkflow"
+			:task-workflow-run="activeTaskWorkflowRun"
 			class="w-full h-full"
 			@node-position="onNodePosition"
 			@node-edit="node => nodeToEdit = node"
@@ -21,7 +22,11 @@
 <script setup lang="ts">
 import { TaskDefinitionPanelsDialog } from "@/components/Modules/TaskDefinitions";
 import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
-import { activeTaskWorkflow, refreshActiveTaskWorkflow } from "@/components/Modules/TaskWorkflows/store";
+import {
+	activeTaskWorkflow,
+	activeTaskWorkflowRun,
+	refreshActiveTaskWorkflow
+} from "@/components/Modules/TaskWorkflows/store";
 import { dxTaskWorkflowConnection } from "@/components/Modules/TaskWorkflows/TaskWorkflowConnections/config";
 import { dxTaskWorkflowNode } from "@/components/Modules/TaskWorkflows/TaskWorkflowNodes/config";
 import WorkflowCanvas from "@/components/Modules/WorkflowCanvas/WorkflowCanvas";
@@ -32,7 +37,10 @@ import { ref } from "vue";
 const nodeToEdit = ref<TaskWorkflowNode>(null);
 
 const updateNodeAction = dxTaskWorkflowNode.getAction("update");
-const removeNodeAction = dxTaskWorkflowNode.getAction("quick-delete", { onFinish: refreshActiveTaskWorkflow });
+const removeNodeAction = dxTaskWorkflowNode.getAction("quick-delete", {
+	onFinish: refreshActiveTaskWorkflow,
+	optimisticDelete: true
+});
 const addConnectionAction = dxTaskWorkflow.getAction("add-connection", {
 	onFinish: refreshActiveTaskWorkflow,
 	optimistic: (action, target: TaskWorkflow, data: TaskWorkflowConnection) => target.connections.push({ ...data })
