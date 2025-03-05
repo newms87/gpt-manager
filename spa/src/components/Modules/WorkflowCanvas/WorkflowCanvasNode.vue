@@ -1,9 +1,9 @@
 <template>
 	<div class="workflow-canvas-node">
 		<div class="node-header flex flex-nowrap items-center space-x-2">
-			<span class="node-title">{{ node.data.name }} ({{ node.id }})</span>
-			<ActionButton type="edit" color="sky" @click.stop="$emit('edit', node)" />
-			<ActionButton type="trash" color="red" @click.stop="$emit('remove', node)" />
+			<span class="node-title">{{ node.data.name }} {{ node.id }}</span>
+			<ActionButton type="edit" color="sky" :disabled="isTemporary" @click.stop="$emit('edit', node)" />
+			<ActionButton type="trash" color="red" :disabled="isTemporary" @click.stop="$emit('remove', node)" />
 		</div>
 
 		<div class="node-body">
@@ -33,8 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import { ActionButton } from "@/components/Shared";
 import { Edge, Handle, Node, useVueFlow } from "@vue-flow/core";
+import { ActionButton } from "quasar-ui-danx";
 import { computed } from "vue";
 
 const { edges } = useVueFlow();
@@ -45,6 +45,9 @@ defineEmits<{
 }>();
 
 const props = defineProps<{ node: Node; }>();
+
+// Is this node a temporary placeholder waiting for the backend to respond with the real node ID
+const isTemporary = computed(() => !!props.node.id.match(/^td-/));
 
 const sourceEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.source === props.node.id.toString()));
 const targetEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.target === props.node.id.toString()));

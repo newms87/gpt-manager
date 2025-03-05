@@ -47,7 +47,7 @@ const addNodeAction = dxTaskWorkflow.getAction("add-node", {
 	onFinish: refreshActiveTaskWorkflow
 });
 
-async function addWorkflowNode(taskDefinition: TaskDefinition, input: Partial<TaskWorkflowNode>) {
+async function addWorkflowNode(taskDefinition: TaskDefinition, input: Partial<TaskWorkflowNode> = {}) {
 	return await addNodeAction.trigger(activeTaskWorkflow.value, {
 		id: "td-" + taskDefinition.id,
 		name: taskDefinition.name,

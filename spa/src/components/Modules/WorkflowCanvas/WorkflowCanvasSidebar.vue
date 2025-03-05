@@ -63,6 +63,7 @@
 
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
+import { addWorkflowNode } from "@/components/Modules/TaskWorkflows/store";
 import { onDragStart } from "@/components/Modules/WorkflowCanvas/dragNDrop";
 import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { TaskDefinition } from "@/types";
@@ -90,7 +91,7 @@ async function loadTaskDefinitions() {
 }
 
 async function onAddTask(taskDefinition: TaskDefinition) {
-	await addNode(taskDefinition);
+	await addWorkflowNode(taskDefinition);
 }
 
 async function afterCreateTask(taskDefinition: TaskDefinition) {

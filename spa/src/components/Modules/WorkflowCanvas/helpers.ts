@@ -52,6 +52,10 @@ export function connectWorkflowNodes(currentConnections: TaskWorkflowConnection[
 	const targetId = +newConnection.target;
 	const sourcePort = newConnection.sourceHandle.replace(/^source-/, "");
 	const targetPort = newConnection.targetHandle.replace(/^target-/, "");
+
+	// Do not allow looping to self
+	if (sourceId === targetId) return;
+
 	const connectionAlreadyExists = currentConnections.find(c => c.source_node_id == sourceId && c.source_output_port == sourcePort && c.target_node_id == targetId && c.target_input_port == targetPort);
 	if (connectionAlreadyExists) {
 		return;
