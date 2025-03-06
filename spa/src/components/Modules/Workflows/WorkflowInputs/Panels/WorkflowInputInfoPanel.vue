@@ -12,7 +12,7 @@
 </template>
 <script setup lang="ts">
 import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
-import { WorkflowInput } from "@/types/workflow-inputs";
+import { WorkflowInput } from "@/types";
 import { Form, RenderedForm, TextField } from "quasar-ui-danx";
 import { h, ref } from "vue";
 

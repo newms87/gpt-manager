@@ -26,7 +26,7 @@
 <script setup lang="ts">
 import { dxWorkflow } from "@/components/Modules/Workflows";
 import WorkflowJobDependencyItem from "@/components/Modules/Workflows/WorkflowJobs/WorkflowJobDependencyItem";
-import { Workflow, WorkflowJob } from "@/types/workflows";
+import { Workflow, WorkflowJob } from "@/types";
 import { SelectField } from "quasar-ui-danx";
 import { computed } from "vue";
 

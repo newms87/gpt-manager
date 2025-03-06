@@ -402,7 +402,9 @@ STR;
         if ($lastMessage->content) {
             $jsonData = $lastMessage->getJsonContent();
 
-            if ($this->jsonSchemaService->isUsingDbFields()) {
+            $hasDBFields = ($jsonData['type'] ?? false) && ($jsonData['id'] ?? false);
+
+            if ($hasDBFields && $this->jsonSchemaService->isUsingDbFields()) {
                 app(JSONSchemaDataToDatabaseMapper::class)
                     ->setSchemaDefinition($this->responseSchema)
                     ->saveTeamObjectUsingSchema($this->responseSchema?->schema, $jsonData, $threadRun);

@@ -3,6 +3,7 @@
 namespace App\Models\Task;
 
 use App\Models\Usage\UsageSummary;
+use App\Models\Workflow\Artifact;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\TaskRunnerContract;
 use App\Traits\HasWorkflowStatesTrait;
@@ -11,8 +12,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Collection;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -32,6 +33,10 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 
     public array $relationCounters = [
         TaskProcess::class => ['taskProcesses' => 'process_count'],
+        Artifact::class    => [
+            'inputArtifacts'  => 'input_artifacts_count',
+            'outputArtifacts' => 'output_artifacts_count',
+        ],
     ];
 
     public function casts(): array
@@ -70,24 +75,19 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         return $this->belongsTo(TaskWorkflowNode::class);
     }
 
-    public function collectInputArtifacts(): Collection
+    public function artifacts(): MorphToMany|Artifact
     {
-        $artifacts = collect();
-        foreach($this->taskProcesses as $taskProcess) {
-            $artifacts = $artifacts->merge($taskProcess->inputArtifacts);
-        }
-
-        return $artifacts;
+        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps();
     }
 
-    public function collectOutputArtifacts(): Collection
+    public function inputArtifacts(): MorphToMany|Artifact
     {
-        $artifacts = collect();
-        foreach($this->taskProcesses as $taskProcess) {
-            $artifacts = $artifacts->merge($taskProcess->outputArtifacts);
-        }
+        return $this->artifacts()->withPivotValue('category', 'input');
+    }
 
-        return $artifacts;
+    public function outputArtifacts(): MorphToMany|Artifact
+    {
+        return $this->artifacts()->withPivotValue('category', 'output');
     }
 
     public function usageSummary(): MorphOne

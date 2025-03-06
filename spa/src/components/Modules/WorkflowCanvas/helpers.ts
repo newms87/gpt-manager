@@ -12,6 +12,7 @@ export function convertNodesToVueFlow(workflowNodes: TaskWorkflowNode[]) {
 			position: { x: workflowNode.settings?.x || 0, y: workflowNode.settings?.y || 0 },
 			data: {
 				name: workflowNode.taskDefinition?.name || workflowNode.name,
+				task_definition_id: workflowNode.taskDefinition?.id,
 				inputs: ["default"],
 				outputs: ["default"]
 			},

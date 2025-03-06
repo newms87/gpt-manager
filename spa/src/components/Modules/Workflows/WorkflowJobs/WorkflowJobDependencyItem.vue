@@ -76,7 +76,7 @@
 </template>
 <script setup lang="ts">
 import ActionButton from "@/components/Shared/Buttons/ActionButton";
-import { WorkflowJobDependency } from "@/types/workflows";
+import { WorkflowJobDependency } from "@/types";
 import { FaSolidScrewdriverWrench as HideConfigureIcon, FaSolidWrench as ShowConfigureIcon } from "danx-icon";
 import { ListTransition, SelectField, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";

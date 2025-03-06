@@ -83,9 +83,15 @@ class BaseTaskRunner implements TaskRunnerContract
                     throw new ValidationError("Invalid artifact provided: artifacts should be instance of Artifact, instead received: " . (is_object($artifact) ? get_class($artifact) : json_encode($artifact)));
                 }
                 static::log("Attaching $artifact");
+                // Add the artifact to the list of output artifacts for this process
                 $this->taskProcess->outputArtifacts()->attach($artifact);
+
+                // Also add to the list of output artifacts for this task run
+                $this->taskRun->outputArtifacts()->attach($artifact);
             }
+
             $this->taskProcess->updateRelationCounter('outputArtifacts');
+            $this->taskRun->updateRelationCounter('outputArtifacts');
         }
 
         // Finished running the process

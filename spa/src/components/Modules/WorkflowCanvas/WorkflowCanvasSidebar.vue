@@ -73,7 +73,7 @@ import { ActionButton, CollapsableSidebar } from "quasar-ui-danx";
 import { onMounted, ref, shallowRef } from "vue";
 
 const emit = defineEmits(["refresh"]);
-const props = defineProps<{
+defineProps<{
 	taskWorkflow: TaskWorkflow;
 }>();
 

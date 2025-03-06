@@ -47,6 +47,11 @@ export interface TaskRun extends TaskRunner {
 	process_count: number;
 	job_dispatch_count: number;
 	processes?: TaskProcess[];
+	task_definition_id: number;
+	input_artifacts_count: number;
+	output_artifacts_count: number;
+	inputArtifacts?: Artifact[];
+	outputArtifacts?: Artifact[];
 }
 
 export interface TaskProcess extends TaskRunner {

@@ -19,6 +19,7 @@
 			<template #node-custom="nodeProps">
 				<WorkflowCanvasNode
 					:node="nodeProps"
+					:task-workflow-run="taskWorkflowRun"
 					@edit="node => $emit('node-edit', resolveWorkflowNode(node))"
 					@remove="node => $emit('node-remove', resolveWorkflowNode(node))"
 				/>
@@ -61,7 +62,7 @@ const emit = defineEmits<{
 	(e: "connection-remove", connection: TaskWorkflowConnection): void;
 }>();
 
-const props = defineProps<{
+defineProps<{
 	taskWorkflowRun?: TaskWorkflowRun;
 }>();
 

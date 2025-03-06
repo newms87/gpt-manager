@@ -58,7 +58,7 @@ import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/A
 import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { AiTokenUsageButton } from "@/components/Shared";
 import router from "@/router";
-import { WorkflowTask } from "@/types/workflows";
+import { WorkflowTask } from "@/types";
 import { FaSolidMessage as ThreadLinkIcon } from "danx-icon";
 import { ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";

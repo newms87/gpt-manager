@@ -90,7 +90,7 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
      */
     public function collectInputArtifactsForNode(TaskWorkflowNode $node): Collection
     {
-        return $this->taskRuns()->where('task_workflow_node_id', $node->id)->first()->collectInputArtifacts() ?? collect();
+        return $this->taskRuns()->where('task_workflow_node_id', $node->id)->first()->inputArtifacts()->get() ?? collect();
     }
 
     /**
@@ -99,7 +99,7 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
      */
     public function collectOutputArtifactsForNode(TaskWorkflowNode $node): Collection
     {
-        return $this->taskRuns()->where('task_workflow_node_id', $node->id)->first()->collectOutputArtifacts() ?? collect();
+        return $this->taskRuns()->where('task_workflow_node_id', $node->id)->first()->outputArtifacts()->get() ?? collect();
     }
 
     /**

@@ -60,7 +60,7 @@ class TaskRunnerService
 
                 return;
             }
-            
+
             if ($taskRun->isPending()) {
                 static::log("TaskRun was Pending, starting now...");
                 // Only start the task run if it is pending
@@ -295,6 +295,7 @@ class TaskRunnerService
      */
     public static function prepareTaskRun(TaskDefinition $taskDefinition, $artifacts = []): TaskRun
     {
+        $artifacts = collect($artifacts);
         static::log("Preparing task run for $taskDefinition");
 
         $taskRun = $taskDefinition->taskRuns()->make([
@@ -303,6 +304,9 @@ class TaskRunnerService
 
         $taskRun->getRunner()->prepareRun();
         $taskRun->save();
+
+        $taskRun->inputArtifacts()->sync($artifacts->pluck('id'));
+        $taskRun->updateRelationCounter('inputArtifacts');
 
         static::prepareTaskProcesses($taskRun, $artifacts);
 
