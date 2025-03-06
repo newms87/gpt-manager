@@ -1,12 +1,13 @@
 <template>
 	<div class="relative h-18">
 		<div v-if="activeTaskWorkflow" class="flex items-center flex-nowrap space-x-4">
-			<div v-if="activeTaskWorkflowRun" class="flex-grow">
+			<div v-if="activeTaskWorkflowRun" class="flex-grow flex items-center space-x-4 flex-nowrap">
 				<LabelPillWidget
 					:label="`TaskWorkflowRun: ${activeTaskWorkflowRun.id}`"
 					color="sky"
 					size="xs"
 				/>
+				<WorkflowStatusTimerPill :runner="activeTaskWorkflowRun" />
 			</div>
 			<div>
 				<ActionButton
@@ -63,6 +64,7 @@ import {
 } from "@/components/Modules/TaskWorkflows/store";
 import TaskWorkflowRunCard from "@/components/Modules/TaskWorkflows/TaskWorkflowRunCard";
 import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
+import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import SelectWorkflowInputDialog from "@/components/Modules/Workflows/WorkflowInputs/SelectWorkflowInputDialog";
 import { ActionButton } from "@/components/Shared";
 import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
@@ -82,11 +84,11 @@ async function onCreateTaskWorkflowRun(workflowInput: WorkflowInput) {
 	isSelectingWorkflowInput.value = false;
 
 	FlashMessages.info("Creating Task Workflow Run...");
-	await createTaskWorkflowRunAction.trigger(null, {
+	const result = await createTaskWorkflowRunAction.trigger(null, {
 		task_workflow_id: activeTaskWorkflow.value.id,
 		workflow_input_id: workflowInput.id
 	});
 	FlashMessages.success("Task Workflow Run Created");
-	isShowing.value = true;
+	activeTaskWorkflowRun.value = result.item;
 }
 </script>
