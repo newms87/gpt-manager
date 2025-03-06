@@ -39,8 +39,6 @@ class TaskRunResource extends ActionResource
 
     public static function details(Model $model, ?array $includeFields = null): array
     {
-        return static::make($model, $includeFields ?? [
-            '*' => true,
-        ]);
+        return static::make($model, $includeFields ?? []);
     }
 }

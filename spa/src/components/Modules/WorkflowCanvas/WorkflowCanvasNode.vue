@@ -96,11 +96,17 @@ function isTargetConnected(id) {
 
 const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_definition_id === props.node.data.task_definition_id));
 const isRunning = computed(() => ["Running"].includes(taskRun.value?.status));
+
+const artifactsField = {
+	text_content: true,
+	json_content: true,
+	files: { transcodes: true, thumb: true }
+};
 async function onShowInputArtifacts() {
-	await dxTaskRun.routes.details(taskRun.value);
+	await dxTaskRun.routes.details(taskRun.value, { inputArtifacts: artifactsField });
 }
 async function onShowOutputArtifacts() {
-	await dxTaskRun.routes.details(taskRun.value);
+	await dxTaskRun.routes.details(taskRun.value, { outputArtifacts: artifactsField });
 }
 </script>
 
