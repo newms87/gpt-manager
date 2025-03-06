@@ -1,39 +1,39 @@
 <template>
 	<div class="workflow-canvas-node">
 		<div class="node-header flex flex-nowrap items-center space-x-2">
-			<span class="node-title">{{ node.data.name }}</span>
-			<ActionButton type="edit" color="sky" :disabled="isTemporary" @click.stop="$emit('edit', node)" />
-			<ActionButton type="trash" color="red" :disabled="isTemporary" @click.stop="$emit('remove', node)" />
+			<span class="node-title flex-grow">{{ node.data.name }}</span>
+			<template v-if="isRunning">
+				<DotLottieVue
+					class="w-8 h-8 bg-sky-900 rounded-full"
+					autoplay
+					loop
+					src="https://lottie.host/e61ac963-4a56-4667-ab2f-b54431a0548d/RSumZz9y00.lottie"
+				/>
+			</template>
+			<template v-else>
+				<ActionButton type="edit" color="sky" :disabled="isTemporary" @click.stop="$emit('edit', node)" />
+				<ActionButton type="trash" color="red" :disabled="isTemporary" @click.stop="$emit('remove', node)" />
+			</template>
 		</div>
 
-		<div class="node-body flex items-center flex-nowrap mt-4">
-			<LabelPillWidget
-				v-if="taskRun?.input_artifacts_count >= 0"
-				color="sky"
-				size="xs"
-				class="flex items-center flex-nowrap flex-shrink-1 cursor-pointer"
-				@click="onShowInputArtifacts"
-			>
-				{{ taskRun.input_artifacts_count }}
-				<ArtifactIcon class="w-4 ml-2" />
-				<QMenu v-if="isShowingInputArtifacts" :model-value="true" @close="isShowingInputArtifacts = false">
-					<ArtifactList :artifacts="taskRun.inputArtifacts" class="p-4" />
-				</QMenu>
-			</LabelPillWidget>
-			<div class="flex-grow"></div>
-			<LabelPillWidget
-				v-if="taskRun?.output_artifacts_count >= 0"
-				color="green"
-				size="xs"
-				class="flex items-center flex-nowrap flex-shrink-1 cursor-pointer"
-				@click="onShowOutputArtifacts"
-			>
-				{{ taskRun.output_artifacts_count }}
-				<ArtifactIcon class="w-4 ml-2" />
-				<QMenu v-if="isShowingOutputArtifacts" :model-value="true" @close="isShowingOutputArtifacts = false">
-					<ArtifactList :artifacts="taskRun.outputArtifacts" class="p-4" />
-				</QMenu>
-			</LabelPillWidget>
+		<div class="node-body flex items-center flex-nowrap mt-4 space-x-4">
+			<NodeArtifactsButton
+				:count="taskRun?.input_artifacts_count"
+				active-color="sky"
+				:disabled="!taskRun"
+				:artifacts="taskRun?.inputArtifacts"
+				@show="onShowInputArtifacts"
+			/>
+			<div class="flex-grow">
+				<WorkflowStatusTimerPill v-if="taskRun" :runner="taskRun" class="text-xs" />
+			</div>
+			<NodeArtifactsButton
+				:count="taskRun?.output_artifacts_count"
+				active-color="green"
+				:disabled="!taskRun"
+				:artifacts="taskRun?.outputArtifacts"
+				@show="onShowOutputArtifacts"
+			/>
 		</div>
 
 		<!-- Input Ports -->
@@ -61,14 +61,14 @@
 </template>
 
 <script setup lang="ts">
-import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
-import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
+import NodeArtifactsButton from "@/components/Modules/WorkflowCanvas/NodeArtifactsButton";
+import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { TaskRun, TaskWorkflowRun } from "@/types";
+import { DotLottieVue } from "@lottiefiles/dotlottie-vue";
 import { Edge, Handle, Node, useVueFlow } from "@vue-flow/core";
-import { FaSolidTruckArrowRight as ArtifactIcon } from "danx-icon";
 import { ActionButton } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 const { edges } = useVueFlow();
 
@@ -95,15 +95,11 @@ function isTargetConnected(id) {
 }
 
 const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_definition_id === props.node.data.task_definition_id));
-
-const isShowingInputArtifacts = ref(false);
-const isShowingOutputArtifacts = ref(false);
+const isRunning = computed(() => ["Running"].includes(taskRun.value?.status));
 async function onShowInputArtifacts() {
-	isShowingInputArtifacts.value = true;
 	await dxTaskRun.routes.details(taskRun.value);
 }
 async function onShowOutputArtifacts() {
-	isShowingOutputArtifacts.value = true;
 	await dxTaskRun.routes.details(taskRun.value);
 }
 </script>

@@ -7,13 +7,15 @@
 import { ResourceStatus } from "@/types";
 import { computed } from "vue";
 
-const props = withDefaults(defineProps<{
+export interface LabelPillWidgetProps {
 	status?: ResourceStatus;
 	label?: string;
 	alt?: boolean;
 	size?: "xs" | "sm" | "md" | "lg";
-	color?: "sky" | "green" | "red" | "amber" | "yellow" | "blue" | "slate" | "none"
-}>(), {
+	color?: "sky" | "green" | "red" | "amber" | "yellow" | "blue" | "slate" | "gray" | "none";
+}
+
+const props = withDefaults(defineProps<LabelPillWidgetProps>(), {
 	status: null,
 	label: "",
 	color: "none",
@@ -28,6 +30,7 @@ const colorClasses = {
 	yellow: "bg-yellow-950 text-yellow-400",
 	blue: "bg-blue-950 text-blue-400",
 	slate: "bg-slate-950 text-slate-400",
+	gray: "bg-slate-700 text-gray-300",
 	none: ""
 };
 
