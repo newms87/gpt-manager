@@ -65,11 +65,10 @@
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { addWorkflowNode } from "@/components/Modules/TaskWorkflows/store";
 import { onDragStart } from "@/components/Modules/WorkflowCanvas/dragNDrop";
-import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { TaskDefinition } from "@/types";
 import { TaskWorkflow } from "@/types/task-workflows";
 import { FaSolidSquareShareNodes as NodeTaskIcon } from "danx-icon";
-import { ActionButton, CollapsableSidebar } from "quasar-ui-danx";
+import { ActionButton, CollapsableSidebar, LabelPillWidget } from "quasar-ui-danx";
 import { onMounted, ref, shallowRef } from "vue";
 
 const emit = defineEmits(["refresh"]);

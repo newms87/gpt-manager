@@ -25,8 +25,7 @@
 <script setup lang="ts">
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import { TeamObjectAttributeSourceCardProps } from "@/components/Modules/TeamObjects/team-objects";
-import LabelValuePillWidget from "@/components/Shared/Widgets/LabelValuePillWidget";
-import { FilePreview } from "quasar-ui-danx";
+import { FilePreview, LabelValuePillWidget } from "quasar-ui-danx";
 
 defineProps<TeamObjectAttributeSourceCardProps>();
 </script>

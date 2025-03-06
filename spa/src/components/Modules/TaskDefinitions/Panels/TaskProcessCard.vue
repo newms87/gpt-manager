@@ -113,18 +113,23 @@ import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessage
 import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import JobDispatchList from "@/components/Modules/Audits/JobDispatches/JobDispatchList";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
-import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
-import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
-import ActionButton from "@/components/Shared/Buttons/ActionButton";
+import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
+import { WORKFLOW_STATUS } from "@/components/Modules/TaskWorkflows/workflows";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
-import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { TaskProcess } from "@/types/task-definitions";
 import {
 	FaSolidArrowsRotate as ResumeProcessIcon,
 	FaSolidMessage as AgentThreadIcon,
 	FaSolidPersonRunning as RunThreadIcon
 } from "danx-icon";
-import { autoRefreshObject, fPercent, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
+import {
+	ActionButton,
+	autoRefreshObject,
+	fPercent,
+	LabelPillWidget,
+	ShowHideButton,
+	stopAutoRefreshObject
+} from "quasar-ui-danx";
 import { onMounted, onUnmounted, ref } from "vue";
 
 const props = withDefaults(defineProps<{
@@ -159,8 +164,10 @@ const artifactsField = {
 /********
  * Refresh the task run every 2 seconds while it is running
  */
+const autoRefreshId = "task-process:" + props.taskProcess.id;
 onMounted(() => {
 	autoRefreshObject(
+		autoRefreshId,
 		props.taskProcess,
 		(tp: TaskProcess) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value, WORKFLOW_STATUS.DISPATCHED.value].includes(tp.status),
 		(tp: TaskProcess) => dxTaskProcess.routes.details(tp, {
@@ -173,6 +180,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-	stopAutoRefreshObject(props.taskProcess);
+	stopAutoRefreshObject(autoRefreshId);
 });
 </script>

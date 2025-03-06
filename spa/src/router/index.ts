@@ -12,8 +12,7 @@ import {
 	SchemaDefinitionsView,
 	TaskDefinitionsView,
 	TaskWorkflowView,
-	WorkflowInputsView,
-	WorkflowsView
+	WorkflowInputsView
 } from "@/views";
 import { FlashMessages } from "quasar-ui-danx";
 import { createRouter, createWebHistory } from "vue-router";
@@ -45,12 +44,6 @@ const router = createRouter({
 					name: "workflow-inputs",
 					component: WorkflowInputsView,
 					meta: { title: "Workflow Inputs", type: "WorkflowInputResource" }
-				},
-				{
-					path: "/workflows/:id?/:panel?",
-					name: "workflows",
-					component: WorkflowsView,
-					meta: { title: "Workflows", type: "WorkflowResource" }
 				},
 				{
 					path: "/task-workflows/:id?/:panel?",

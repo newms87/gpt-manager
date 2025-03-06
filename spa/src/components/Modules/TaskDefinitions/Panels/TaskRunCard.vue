@@ -65,13 +65,18 @@
 <script setup lang="ts">
 import TaskProcessCard from "@/components/Modules/TaskDefinitions/Panels/TaskProcessCard";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
-import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
-import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
-import ActionButton from "@/components/Shared/Buttons/ActionButton";
-import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
-import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
-import { TaskRun } from "@/types/task-definitions";
-import { autoRefreshObject, ListTransition, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
+import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
+import { WORKFLOW_STATUS } from "@/components/Modules/TaskWorkflows/workflows";
+import { AiTokenUsageButton } from "@/components/Shared";
+import { TaskRun } from "@/types";
+import {
+	ActionButton,
+	autoRefreshObject,
+	LabelPillWidget,
+	ListTransition,
+	ShowHideButton,
+	stopAutoRefreshObject
+} from "quasar-ui-danx";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
 defineEmits(["deleted"]);
@@ -90,8 +95,10 @@ const isRunning = computed(() => props.taskRun.status === "Running");
 /********
  * Refresh the task run every 2 seconds while it is running
  */
+const autoRefreshId = "task-run:" + props.taskRun.id;
 onMounted(() => {
 	autoRefreshObject(
+		autoRefreshId,
 		props.taskRun,
 		(tr: TaskRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(tr.status),
 		(tr: TaskRun) => dxTaskRun.routes.details(tr, { processes: false })
@@ -99,6 +106,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-	stopAutoRefreshObject(props.taskRun);
+	stopAutoRefreshObject(autoRefreshId);
 });
 </script>

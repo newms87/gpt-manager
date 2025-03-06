@@ -38,9 +38,8 @@
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
-import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { Artifact } from "@/types";
-import { fDateTime, FilePreview, ListTransition, ShowHideButton } from "quasar-ui-danx";
+import { fDateTime, FilePreview, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { ref, watch } from "vue";
 
 const props = defineProps<{

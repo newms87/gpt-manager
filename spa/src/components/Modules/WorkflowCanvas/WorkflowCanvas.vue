@@ -62,7 +62,7 @@ const emit = defineEmits<{
 	(e: "connection-remove", connection: TaskWorkflowConnection): void;
 }>();
 
-defineProps<{
+const props = defineProps<{
 	taskWorkflowRun?: TaskWorkflowRun;
 }>();
 
@@ -119,4 +119,5 @@ function onConnectionAdd(connection: Connection) {
 function onConnectionRemove(edge: EdgeProps) {
 	emit("connection-remove", resolveWorkflowConnection(edge));
 }
+
 </script>

@@ -23,12 +23,17 @@
 <script setup lang="ts">
 import TaskRunCard from "@/components/Modules/TaskDefinitions/Panels/TaskRunCard";
 import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
+import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
 import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
-import { WORKFLOW_STATUS } from "@/components/Modules/Workflows/config/workflows";
-import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
-import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
+import { WORKFLOW_STATUS } from "@/components/Modules/TaskWorkflows/workflows";
 import { TaskWorkflow, TaskWorkflowRun } from "@/types/task-workflows";
-import { ActionButton, autoRefreshObject, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
+import {
+	ActionButton,
+	autoRefreshObject,
+	LabelPillWidget,
+	ShowHideButton,
+	stopAutoRefreshObject
+} from "quasar-ui-danx";
 import { onMounted, onUnmounted, ref } from "vue";
 
 defineEmits(["select"]);
@@ -44,8 +49,10 @@ const isShowing = ref(false);
 /********
  * Refresh the task run every 2 seconds while it is running
  */
+const autoRefreshName = "task-workflow-run:" + props.taskWorkflowRun.id;
 onMounted(() => {
 	autoRefreshObject(
+		autoRefreshName,
 		props.taskWorkflowRun,
 		(tr: TaskWorkflowRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(tr.status),
 		(tr: TaskWorkflowRun) => dxTaskWorkflowRun.routes.details(tr, { taskRuns: true })
@@ -53,6 +60,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-	stopAutoRefreshObject(props.taskWorkflowRun);
+	stopAutoRefreshObject(autoRefreshName);
 });
 </script>

@@ -9,4 +9,3 @@ export { default as SchemaDefinitionsView } from "./SchemaDefinitionsView.vue";
 export { default as TaskDefinitionsView } from "./TaskDefinitionsView.vue";
 export { default as TaskWorkflowView } from "./TaskWorkflowView.vue";
 export { default as WorkflowInputsView } from "./WorkflowInputsView.vue";
-export { default as WorkflowsView } from "./WorkflowsView.vue";

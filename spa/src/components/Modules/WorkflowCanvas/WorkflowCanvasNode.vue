@@ -62,8 +62,8 @@
 
 <script setup lang="ts">
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
+import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
 import NodeArtifactsButton from "@/components/Modules/WorkflowCanvas/NodeArtifactsButton";
-import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
 import { TaskRun, TaskWorkflowRun } from "@/types";
 import { DotLottieVue } from "@lottiefiles/dotlottie-vue";
 import { Edge, Handle, Node, useVueFlow } from "@vue-flow/core";

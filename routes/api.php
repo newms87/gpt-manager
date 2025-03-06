@@ -51,7 +51,6 @@ ActionRoute::routes('content-sources', new ContentSourcesController);
 ActionRoute::routes('workflows', new WorkflowsController, function () {
     Route::get('{workflow}/export-as-json', [WorkflowsController::class, 'exportAsJson'])->name('workflows.export-as-json');
 });
-ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
 ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
     Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');
@@ -75,7 +74,10 @@ ActionRoute::routes('task-processes', new TaskProcessesController);
 ActionRoute::routes('task-workflows', new TaskWorkflowsController);
 ActionRoute::routes('task-workflow-nodes', new TaskWorkflowNodesController);
 ActionRoute::routes('task-workflow-connections', new TaskWorkflowConnectionsController);
-ActionRoute::routes('task-workflow-runs', new TaskWorkflowRunsController);
+ActionRoute::routes('task-workflow-runs', new TaskWorkflowRunsController, function () {
+    Route::get('run-statuses', [TaskWorkflowRunsController::class, 'runStatuses'])->name('task-workflow-runs.run-statuses');
+});
+ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
 
 // Agents
 ActionRoute::routes('agents', new AgentsController);

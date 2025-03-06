@@ -21,8 +21,8 @@
 </template>
 <script setup lang="ts">
 import { dxTaskWorkflowNode } from "@/components/Modules/TaskWorkflows/TaskWorkflowNodes/config";
-import { ActionButton } from "@/components/Shared";
 import { TaskWorkflowNode } from "@/types/task-workflows";
+import { ActionButton } from "quasar-ui-danx";
 
 const emit = defineEmits(["delete", "connect-source", "connect-target", "cancel"]);
 defineProps<{

@@ -7,8 +7,7 @@ import {
 	FaSolidPallet as TaskWorkflowsIcon,
 	FaSolidRobot as AgentsIcon,
 	FaSolidTableCells as ContentSourcesIcon,
-	FaSolidToiletPaperSlash as AuditsIcon,
-	FaSolidWorm as WorkflowsIcon
+	FaSolidToiletPaperSlash as AuditsIcon
 } from "danx-icon";
 
 export default [
@@ -26,11 +25,6 @@ export default [
 		label: "Workflow Inputs",
 		icon: WorkflowInputsIcon,
 		route: { name: "workflow-inputs" }
-	},
-	{
-		label: "Workflows",
-		icon: WorkflowsIcon,
-		route: { name: "workflows" }
 	},
 	{
 		label: "Task Workflows",

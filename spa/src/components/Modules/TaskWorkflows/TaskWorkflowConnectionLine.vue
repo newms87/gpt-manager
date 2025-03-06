@@ -18,10 +18,9 @@
 </template>
 <script setup lang="ts">
 import { dxTaskWorkflowConnection } from "@/components/Modules/TaskWorkflows/TaskWorkflowConnections/config";
-import { ActionButton } from "@/components/Shared";
-import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
 import { TaskWorkflowConnection, TaskWorkflowNode } from "@/types/task-workflows";
 import { FaSolidArrowRight as ConnectedIcon } from "danx-icon";
+import { ActionButton, LabelPillWidget } from "quasar-ui-danx";
 
 const emit = defineEmits(["delete"]);
 defineProps<{

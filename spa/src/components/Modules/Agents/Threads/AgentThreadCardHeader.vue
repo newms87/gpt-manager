@@ -52,10 +52,10 @@
 
 <script setup lang="ts">
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
-import { ActionButton, AiTokenUsageButton } from "@/components/Shared";
+import { AiTokenUsageButton } from "@/components/Shared";
 import { AgentThread } from "@/types/agents";
 import { FaSolidFileCircleCheck as ShowLogsIcon, FaSolidFileCircleXmark as HideLogsIcon } from "danx-icon";
-import { ActionMenu, EditOnClickTextField, fDateTime, ShowHideButton } from "quasar-ui-danx";
+import { ActionButton, ActionMenu, EditOnClickTextField, fDateTime, ShowHideButton } from "quasar-ui-danx";
 
 defineEmits(["toggle", "close"]);
 defineProps<{

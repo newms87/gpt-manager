@@ -28,7 +28,7 @@
 	</QToolbar>
 </template>
 <script setup lang="ts">
-import LogoImage from "@/components/Shared/Images/LogoImage";
+import { LogoImage } from "@/components/Shared";
 import { authTeam, authUser } from "@/helpers";
 import router from "@/router";
 import { FaSolidUser as AccountIcon } from "danx-icon";

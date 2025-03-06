@@ -15,9 +15,9 @@
 </template>
 <script setup lang="ts">
 import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
-import LabelPillWidget, { LabelPillWidgetProps } from "@/components/Shared/Widgets/LabelPillWidget";
 import { Artifact } from "@/types";
 import { FaSolidTruckArrowRight as ArtifactIcon } from "danx-icon";
+import { LabelPillWidget, LabelPillWidgetProps } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const emit = defineEmits(["show"]);

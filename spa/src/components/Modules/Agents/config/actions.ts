@@ -1,5 +1,4 @@
 import { AgentsBatchUpdateDialog } from "@/components/Modules/Agents/Dialogs";
-import { WorkflowAssignmentRoutes } from "@/components/Modules/Workflows/config/routes";
 import { FaSolidPencil as EditIcon } from "danx-icon";
 import { ActionOptions, useActions, withDefaultActions } from "quasar-ui-danx";
 import { h } from "vue";
@@ -19,12 +18,6 @@ export const actions: ActionOptions[] = [
 	},
 	{
 		name: "create-thread"
-	},
-	{
-		name: "unassign-agent",
-		alias: "delete",
-		onAction: WorkflowAssignmentRoutes.applyAction,
-		onFinish: controls.getActiveItemDetails
 	},
 	{
 		name: "update-directives",

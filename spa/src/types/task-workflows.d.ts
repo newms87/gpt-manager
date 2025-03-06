@@ -1,5 +1,6 @@
 import { TaskDefinition, TaskRun, TaskRunner } from "@/types/task-definitions";
-import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
+import { WorkflowRunStatuses } from "@/types/workflows";
+import { ActionTargetItem, AnyObject, ListControlsRoutes } from "quasar-ui-danx";
 
 export interface TaskWorkflow extends ActionTargetItem {
 	id: string;
@@ -39,4 +40,8 @@ export interface TaskWorkflowNodeSettings {
 
 export interface TaskWorkflowRun extends TaskRunner {
 	taskRuns?: TaskRun[];
+}
+
+export interface TaskWorkflowRunRoutes extends ListControlsRoutes<TaskWorkflowRun> {
+	runStatuses(filter: AnyObject): Promise<WorkflowRunStatuses>;
 }

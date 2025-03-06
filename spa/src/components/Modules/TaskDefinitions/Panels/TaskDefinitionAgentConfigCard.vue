@@ -135,10 +135,9 @@ import { AgentPromptPanel, dxAgent } from "@/components/Modules/Agents";
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
 import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociations";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
-import { ActionButton } from "@/components/Shared";
 import { TaskDefinition, TaskDefinitionAgent } from "@/types";
 import { FaSolidRobot as AgentIcon } from "danx-icon";
-import { SelectionMenuField } from "quasar-ui-danx";
+import { ActionButton, SelectionMenuField } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineEmits(["update", "remove"]);

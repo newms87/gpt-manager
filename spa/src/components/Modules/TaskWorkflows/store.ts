@@ -1,8 +1,10 @@
 import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
+import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
+import { WORKFLOW_STATUS } from "@/components/Modules/TaskWorkflows/workflows";
 import { TaskDefinition } from "@/types";
 import { TaskWorkflow, TaskWorkflowNode, TaskWorkflowRun } from "@/types/task-workflows";
-import { getItem, setItem, storeObjects } from "quasar-ui-danx";
-import { ref } from "vue";
+import { autoRefreshObject, getItem, setItem, stopAutoRefreshObject, storeObjects } from "quasar-ui-danx";
+import { ref, watch } from "vue";
 
 const ACTIVE_TASK_WORKFLOW_KEY = "dx-active-task-workflow-id";
 
@@ -41,6 +43,20 @@ async function loadTaskWorkflowRuns() {
 	await dxTaskWorkflow.routes.details(activeTaskWorkflow.value, { "*": false, runs: { taskRuns: true } });
 }
 
+watch(() => activeTaskWorkflowRun.value, autoRefreshTaskWorkflowRun);
+async function autoRefreshTaskWorkflowRun() {
+	const AUTO_REFRESH_NAME = "active-task-workflow-run";
+	if (activeTaskWorkflowRun.value) {
+		await autoRefreshObject(
+				AUTO_REFRESH_NAME,
+				activeTaskWorkflowRun.value,
+				(tr: TaskWorkflowRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value, WORKFLOW_STATUS.DISPATCHED.value].includes(tr.status),
+				(tr: TaskWorkflowRun) => dxTaskWorkflowRun.routes.details(tr)
+		);
+	} else {
+		stopAutoRefreshObject(AUTO_REFRESH_NAME);
+	}
+}
 
 const addNodeAction = dxTaskWorkflow.getAction("add-node", {
 	optimistic: (action, target: TaskWorkflow, data: TaskWorkflowNode) => target.nodes.push({ ...data }),

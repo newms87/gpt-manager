@@ -25,9 +25,9 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
-import { ActionButton } from "@/components/Shared";
 import { SchemaDefinition } from "@/types";
 import { FaSolidRobot as GenerateExampleIcon } from "danx-icon";
+import { ActionButton } from "quasar-ui-danx";
 
 defineProps<{
 	schemaDefinition: SchemaDefinition,

@@ -41,8 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import { ActionButton } from "@/components/Shared";
 import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath, Node, useVueFlow } from "@vue-flow/core";
+import { ActionButton } from "quasar-ui-danx";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 defineEmits<{

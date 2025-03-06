@@ -46,9 +46,8 @@
 </template>
 <script setup lang="ts">
 import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
-import { ActionButton } from "@/components/Shared";
 import { JsonSchema, SchemaDefinition } from "@/types";
-import { ListTransition, PanelsDrawer } from "quasar-ui-danx";
+import { ActionButton, ListTransition, PanelsDrawer } from "quasar-ui-danx";
 import { computed, onMounted, ref, watch } from "vue";
 
 const props = defineProps<{ schemaDefinition: SchemaDefinition }>();

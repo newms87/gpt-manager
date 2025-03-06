@@ -1,5 +1,4 @@
 import {
-	AgentAssignmentsPanel,
 	AgentInfoPanel,
 	AgentPromptPanel,
 	AgentThreadsPanel,
@@ -32,11 +31,5 @@ export const panels = [
 		label: "Threads",
 		tabVnode: (agent: Agent) => h(BadgeTab, { count: agent.threads_count }),
 		vnode: (agent: Agent) => h(AgentThreadsPanel, { agent })
-	},
-	{
-		name: "assignments",
-		label: "Assignments",
-		tabVnode: (agent: Agent) => h(BadgeTab, { count: agent.assignments_count }),
-		vnode: (agent: Agent) => h(AgentAssignmentsPanel, { agent })
 	}
 ];

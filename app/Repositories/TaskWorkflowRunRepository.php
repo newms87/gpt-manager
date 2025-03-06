@@ -3,7 +3,10 @@
 namespace App\Repositories;
 
 use App\Models\Task\TaskWorkflowRun;
+use App\Models\Task\WorkflowStatesContract;
+use App\Models\Workflow\WorkflowRun;
 use App\Services\Task\TaskWorkflowRunnerService;
+use DB;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -48,5 +51,24 @@ class TaskWorkflowRunRepository extends ActionRepository
         return $taskWorkflowRun;
     }
 
+    /**
+     * Get the count of workflow run statuses based on the filter
+     */
+    public function getRunStatuses($filter = []): array
+    {
+        $completedStatus = WorkflowStatesContract::STATUS_COMPLETED;
+        $pendingStatus   = WorkflowStatesContract::STATUS_PENDING;
+        $failedStatus    = WorkflowStatesContract::STATUS_FAILED;
+        $runningStatus   = WorkflowStatesContract::STATUS_RUNNING;
 
+        return WorkflowRun::filter($filter)->select([
+            DB::raw('COUNT(*) as total_count'),
+            DB::raw("SUM(IF(status = '$completedStatus', 1, 0)) as completed_count"),
+            DB::raw("SUM(IF(status = '$pendingStatus', 1, 0)) as pending_count"),
+            DB::raw("SUM(IF(status = '$failedStatus', 1, 0)) as failed_count"),
+            DB::raw("SUM(IF(status = '$runningStatus', 1, 0)) as running_count"),
+        ])
+            ->first()
+            ->toArray();
+    }
 }

@@ -35,7 +35,6 @@
     "@vue-flow/core": "^1.42.1",
     "@wysimark/vue": "^3.0.20",
     "danx-icon": "^1.0.2",
-    "mermaid": "^10.9.0",
     "prism-themes": "^1.9.0",
     "quasar": "^2.15.2",
     "quasar-ui-danx": "^0.4.43",

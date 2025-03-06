@@ -97,7 +97,6 @@
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { dxThreadMessage } from "@/components/Modules/Agents/Threads/ThreadMessage/config";
-import { ActionButton } from "@/components/Shared";
 import { AgentThread, AgentThreadMessage } from "@/types/agents";
 import {
 	FaRegularImage as HideImageIcon,
@@ -107,6 +106,7 @@ import {
 	FaSolidToolbox as ToolIcon
 } from "danx-icon";
 import {
+	ActionButton,
 	EditOnClickTextField,
 	fDateTime,
 	isJSON,

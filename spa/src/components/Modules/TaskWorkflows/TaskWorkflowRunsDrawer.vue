@@ -57,6 +57,7 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
 import {
 	activeTaskWorkflow,
 	activeTaskWorkflowRun,
@@ -64,12 +65,9 @@ import {
 } from "@/components/Modules/TaskWorkflows/store";
 import TaskWorkflowRunCard from "@/components/Modules/TaskWorkflows/TaskWorkflowRunCard";
 import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
-import { WorkflowStatusTimerPill } from "@/components/Modules/Workflows/Shared";
-import SelectWorkflowInputDialog from "@/components/Modules/Workflows/WorkflowInputs/SelectWorkflowInputDialog";
-import { ActionButton } from "@/components/Shared";
-import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
+import SelectWorkflowInputDialog from "@/components/Modules/TaskWorkflows/WorkflowInputs/SelectWorkflowInputDialog";
 import { WorkflowInput } from "@/types";
-import { FlashMessages, ShowHideButton } from "quasar-ui-danx";
+import { ActionButton, FlashMessages, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 defineEmits(["confirm", "close"]);

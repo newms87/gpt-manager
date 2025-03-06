@@ -64,8 +64,8 @@ import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorT
 import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociations";
 import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
-import { ActionButton } from "@/components/Shared";
 import { TaskDefinition } from "@/types";
+import { ActionButton } from "quasar-ui-danx";
 import { computed } from "vue";
 
 const props = defineProps<{

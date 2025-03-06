@@ -29,26 +29,20 @@
 				</div>
 			</div>
 			<div v-if="activeWorkflowInput?.id === workflowInput.id">
-				<WorkflowInputWorkflowRunsPanel
-					:workflow-input="activeWorkflowInput"
-					@run="activeWorkflowInput.has_active_workflow_run = true"
-				/>
+				Implement this panel
 			</div>
 			<QSeparator class="bg-slate-400 my-4" />
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
+import WorkflowStatusProgressBar from "@/components/Modules/TaskWorkflows/Shared/WorkflowStatusProgressBar";
+import { dxWorkflowInput } from "@/components/Modules/TaskWorkflows/WorkflowInputs";
+import WorkflowInputCard from "@/components/Modules/TaskWorkflows/WorkflowInputs/WorkflowInputCard";
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
-import WorkflowStatusProgressBar from "@/components/Modules/Workflows/Shared/WorkflowStatusProgressBar";
-import { dxWorkflowInput } from "@/components/Modules/Workflows/WorkflowInputs";
-import { routes } from "@/components/Modules/Workflows/WorkflowInputs/config/routes";
-import { WorkflowInputWorkflowRunsPanel } from "@/components/Modules/Workflows/WorkflowInputs/Panels";
-import WorkflowInputCard from "@/components/Modules/Workflows/WorkflowInputs/WorkflowInputCard";
-import { ActionButton } from "@/components/Shared";
 import { WorkflowInput } from "@/types";
 import { FaSolidPlus as CreateIcon, FaSolidWorm as ShowWorkflowIcon } from "danx-icon";
-import { FlashMessages, ShowHideButton, storeObjects } from "quasar-ui-danx";
+import { ActionButton, FlashMessages, ShowHideButton, storeObjects } from "quasar-ui-danx";
 import { onMounted, Ref, ref } from "vue";
 
 const props = defineProps<{
@@ -63,7 +57,7 @@ const workflowInputs: Ref<WorkflowInput[]> = ref([]);
 const activeWorkflowInput = ref<WorkflowInput>(null);
 
 async function createWorkflowInput() {
-	const result = await routes.applyAction("create", null, {
+	const result = await dxWorkflowInput.routes.applyAction("create", null, {
 		name: props.teamObject.name + " Input",
 		team_object_id: props.teamObject.id,
 		team_object_type: props.teamObject.type
@@ -71,14 +65,14 @@ async function createWorkflowInput() {
 
 
 	if (result.success) {
-		loadWorkflowInputs();
+		await loadWorkflowInputs();
 	} else {
 		FlashMessages.error("Failed to create workflow input" + (result.error ? ": " + result.message : ""));
 	}
 }
 
 async function loadWorkflowInputs() {
-	const result = await routes.list({
+	const result = await dxWorkflowInput.routes.list({
 		filter: { team_object_id: props.teamObject.id },
 		fields: { files: { transcodes: true, thumb: true }, content: true }
 	});

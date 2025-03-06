@@ -21,7 +21,7 @@
 					class="bg-red-950 text-red-300"
 					:label="`Errors: ${job.errors.length}`"
 				/>
-				<LabelPillWidget :status="JOB_DISPATCH_STATUS.resolve(job.status)" size="sm" />
+				<LabelPillWidget :label="jobStatus.value" :class="jobStatus.classPrimary" size="sm" />
 			</div>
 		</div>
 		<div class="p-3 grid grid-cols-7">
@@ -56,9 +56,15 @@ import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
 import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
 import ErrorLogEntryCard from "@/components/Modules/Audits/ErrorLogs/ErrorLogEntryCard";
 import { JOB_DISPATCH_STATUS } from "@/components/Modules/Audits/JobDispatches/statuses";
-import LabelPillWidget from "@/components/Shared/Widgets/LabelPillWidget";
-import { fDateTime, fSecondsToDuration, LabelValueBlock, ListTransition, ShowHideButton } from "quasar-ui-danx";
-import { ref } from "vue";
+import {
+	fDateTime,
+	fSecondsToDuration,
+	LabelPillWidget,
+	LabelValueBlock,
+	ListTransition,
+	ShowHideButton
+} from "quasar-ui-danx";
+import { computed, ref } from "vue";
 
 defineProps<{
 	job: JobDispatch
@@ -67,4 +73,5 @@ defineProps<{
 const isShowingLogs = ref(false);
 const isShowingApiLogs = ref(false);
 const isShowingErrors = ref(false);
+const jobStatus = computed(() => JOB_DISPATCH_STATUS.resolve(job.status));
 </script>

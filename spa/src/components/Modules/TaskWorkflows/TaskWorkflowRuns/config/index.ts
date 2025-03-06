@@ -1,4 +1,4 @@
-import { TaskWorkflowRun } from "@/types/task-workflows";
+import { TaskWorkflowRun, TaskWorkflowRunRoutes } from "@/types";
 import { DanxController } from "quasar-ui-danx";
 import { actionControls } from "./actions";
 import { controls } from "./controls";
@@ -8,4 +8,4 @@ export const dxTaskWorkflowRun = {
 	...controls,
 	...actionControls,
 	routes
-} as DanxController<TaskWorkflowRun>;
+} as DanxController<TaskWorkflowRun> & { routes: TaskWorkflowRunRoutes };
