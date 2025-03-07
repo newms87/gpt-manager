@@ -10,7 +10,7 @@ export const fields = [
 	},
 	{
 		name: "description",
-		vnode: (props) => h(TextField, { ...props, type: "textarea", inputClass: "h-56", maxLength: 512 }),
+		vnode: (props) => h(TextField, { ...props, type: "textarea", inputClass: "h-16", maxLength: 512 }),
 		label: "Description"
 	}
 ];

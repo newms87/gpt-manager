@@ -10,7 +10,7 @@
 			</template>
 			<template v-else>
 				<ListItemDraggable
-					v-for="(agentDirective) in topDirectives"
+					v-for="agentDirective in topDirectives"
 					:key="agentDirective.id"
 					:list-items="topDirectives"
 					drop-zone="top-directives-dz"
