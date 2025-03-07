@@ -10,7 +10,6 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        \App\Models\Workflow\WorkflowJobDependency::query()->update(['group_by' => '[]']);
         Schema::table('workflow_job_dependencies', function (Blueprint $table) {
             $table->json('group_by')->nullable()->change();
         });

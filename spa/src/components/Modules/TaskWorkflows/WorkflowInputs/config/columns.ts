@@ -1,4 +1,4 @@
-import { fDate, fNumber, TableColumn } from "quasar-ui-danx";
+import { fDate, TableColumn } from "quasar-ui-danx";
 import { controls } from "./controls";
 
 export const columns: TableColumn[] = [
@@ -29,14 +29,6 @@ export const columns: TableColumn[] = [
 		label: "Tags",
 		align: "left",
 		format: v => v.join(", ")
-	},
-	{
-		name: "workflow_runs_count",
-		label: "WorkflowInput Runs",
-		align: "left",
-		format: fNumber,
-		sortable: true,
-		onClick: (workflowInput) => controls.activatePanel(workflowInput, "runs")
 	},
 	{
 		name: "created_at",

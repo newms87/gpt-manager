@@ -31,7 +31,7 @@ onMounted(() => {
 	autoRefreshObject(
 		autoRefreshId,
 		props.workflowInput,
-		() => statuses.value.total_count === undefined || props.workflowInput.has_active_workflow_run || (statuses.value?.pending_count + statuses.value?.running_count) > 0,
+		() => statuses.value.total_count === undefined || (statuses.value?.pending_count + statuses.value?.running_count) > 0,
 		loadWorkflowRunStatuses
 	);
 });

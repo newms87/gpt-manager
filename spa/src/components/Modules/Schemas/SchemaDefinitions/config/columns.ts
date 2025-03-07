@@ -39,12 +39,6 @@ export const columns: TableColumn[] = [
 		sortable: true
 	},
 	{
-		name: "workflow_jobs_count",
-		label: "Workflow Jobs",
-		format: fNumber,
-		sortable: true
-	},
-	{
 		name: "created_at",
 		label: "Created Date",
 		sortable: true,

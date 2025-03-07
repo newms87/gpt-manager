@@ -48,13 +48,6 @@ export const columns: TableColumn[] = [
 		onClick: (agent) => controls.activatePanel(agent, "threads")
 	},
 	{
-		name: "assignments_count",
-		label: "Assignments",
-		format: fNumber,
-		sortable: true,
-		onClick: (agent) => controls.activatePanel(agent, "assignments")
-	},
-	{
 		name: "created_at",
 		label: "Created Date",
 		sortable: true,

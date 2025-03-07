@@ -43,9 +43,8 @@
 					<div v-if="!isCollapsed" class="flex items-center flex-nowrap ml-2 flex-grow max-w-full overflow-hidden">
 						<div class="flex-grow max-w-full overflow-hidden">
 							<div class="node-item-title whitespace-nowrap">{{ task.name }}</div>
-							<QTooltip v-if="task.description" class="text-sm text-slate-300 bg-slate-700 p-3 rounded">{{
-									task.description
-								}}
+							<QTooltip v-if="task.description" class="text-sm text-slate-300 bg-slate-700 p-3 rounded">
+								{{ task.description }}
 							</QTooltip>
 						</div>
 						<ActionButton

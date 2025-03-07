@@ -1,6 +1,5 @@
 import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
 import { AgentPromptDirective, SchemaDefinition, SchemaFragment } from "@/types/prompts";
-import { WorkflowAssignment } from "@/types/workflows";
 import { ActionTargetItem, AnyObject, UploadedFile } from "quasar-ui-danx";
 
 export interface Agent extends ActionTargetItem {
@@ -10,10 +9,8 @@ export interface Agent extends ActionTargetItem {
 	temperature: string;
 	description: string;
 	threads_count: number;
-	assignments_count: number;
 	tools: string[];
 	threads: AgentThread[];
-	assignments?: WorkflowAssignment[];
 	response_format: "text" | "json_object" | "json_schema";
 	responseSchema?: SchemaDefinition;
 	responseSchemaFragment?: SchemaFragment;
