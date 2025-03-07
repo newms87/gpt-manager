@@ -3,21 +3,24 @@ import { Agent, AgentThread } from "@/types/agents";
 import { Artifact } from "@/types/artifacts";
 import { SchemaAssociation } from "@/types/prompts";
 import { WorkflowInput } from "@/types/workflow-inputs";
-import { ActionTargetItem } from "quasar-ui-danx";
+import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
 
 export interface TaskDefinition extends ActionTargetItem {
 	id: string;
 	name: string;
 	description: string;
 	task_runner_class: string;
+	task_runner_config?: AnyObject;
+	artifact_split_mode: ArtifactSplitMode;
 	timeout_after_seconds: number;
 	task_run_count: number;
 	task_agent_count: number;
-	groupingSchemaAssociations?: SchemaAssociation[];
 	taskRuns?: TaskRun[];
 	taskInputs?: TaskInput[];
 	taskAgents?: TaskDefinitionAgent[];
 }
+
+export type ArtifactSplitMode = "" | "Node" | "Artifact";
 
 export interface TaskDefinitionAgent extends ActionTargetItem {
 	id: string;

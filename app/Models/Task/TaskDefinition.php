@@ -17,11 +17,16 @@ class TaskDefinition extends Model implements AuditableContract
 {
     use ActionModelTrait, HasFactory, AuditableTrait, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
 
+    const string
+        ARTIFACT_SPLIT_BY_NODE = 'Node',
+        ARTIFACT_SPLIT_BY_ARTIFACT = 'Artifact';
+
     protected $fillable = [
         'name',
         'description',
         'task_runner_class',
         'task_runner_config',
+        'artifact_split_mode',
         'timeout_after_seconds',
     ];
 

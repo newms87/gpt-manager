@@ -34,7 +34,6 @@ class SchemaDefinition extends Model implements AuditableContract
         'updated_at',
         'deleted_at',
         'agents_count',
-        'workflow_jobs_count',
     ];
 
     protected array $keywordFields = [

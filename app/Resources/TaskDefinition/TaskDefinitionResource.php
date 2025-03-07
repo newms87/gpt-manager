@@ -15,6 +15,8 @@ class TaskDefinitionResource extends ActionResource
             'name'                  => $taskDefinition->name,
             'description'           => $taskDefinition->description,
             'task_runner_class'     => $taskDefinition->task_runner_class,
+            'task_runner_config'    => $taskDefinition->task_runner_config,
+            'artifact_split_mode'   => $taskDefinition->artifact_split_mode,
             'timeout_after_seconds' => $taskDefinition->timeout_after_seconds,
             'task_run_count'        => $taskDefinition->task_run_count,
             'task_agent_count'      => $taskDefinition->task_agent_count,

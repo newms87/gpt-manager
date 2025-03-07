@@ -9,6 +9,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\Task\WorkflowStatesContract;
 use App\Traits\HasDebugLogging;
+use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Models\Job\JobDispatch;
@@ -316,6 +317,10 @@ class TaskRunnerService
     /**
      * Prepare task processes for the task run. Each process will receive its own Artifacts / Agent AgentThread
      * based on the input groups and the assigned agents for the TaskDefinition
+     * @param TaskRun               $taskRun
+     * @param Artifact[]|Collection $artifacts
+     * @return array
+     * @throws ValidationError
      */
     public static function prepareTaskProcesses(TaskRun $taskRun, $artifacts = []): array
     {
@@ -340,28 +345,54 @@ class TaskRunnerService
             $definitionAgents = [null];
         }
 
+        // Split up the artifacts into the groups defined by the task definition
+        $artifactGroups = static::splitArtifacts($taskDefinition->artifact_split_mode ?: '', $artifacts);
+
         foreach($definitionAgents as $definitionAgent) {
-            $taskProcess = $taskRun->taskProcesses()->create([
-                'name'                     => '',
-                'activity'                 => "Preparing " . ($definitionAgent?->agent->name ?: $taskDefinition->name) . "...",
-                'status'                   => WorkflowStatesContract::STATUS_PENDING,
-                'task_definition_agent_id' => $definitionAgent?->id,
-            ]);
+            foreach($artifactGroups as $groupKey => $artifactsInGroup) {
+                $taskProcess = $taskRun->taskProcesses()->create([
+                    'name'                     => $groupKey,
+                    'activity'                 => "Preparing " . ($definitionAgent?->agent->name ?: $taskDefinition->name) . "...",
+                    'status'                   => WorkflowStatesContract::STATUS_PENDING,
+                    'task_definition_agent_id' => $definitionAgent?->id,
+                ]);
 
-            if ($artifacts->isNotEmpty()) {
-                $taskProcess->inputArtifacts()->saveMany($artifacts);
-                $taskProcess->updateRelationCounter('inputArtifacts');
+                if ($artifacts->isNotEmpty()) {
+                    $taskProcess->inputArtifacts()->saveMany($artifactsInGroup);
+                    $taskProcess->updateRelationCounter('inputArtifacts');
+                }
+
+                static::log("Prepared task process w/ " . count($artifactsInGroup) . " artifact(s): $taskProcess");
+
+                $taskProcess->getRunner()->prepareProcess();
+
+                $taskProcesses[] = $taskProcess;
             }
-
-            static::log("Prepared task process w/ " . count($artifacts) . " artifact(s): $taskProcess");
-
-            $taskProcess->getRunner()->prepareProcess();
-
-            $taskProcesses[] = $taskProcess;
         }
 
         $taskRun->taskProcesses()->saveMany($taskProcesses);
 
         return $taskProcesses;
+    }
+
+    /**
+     * Split the artifacts into groups based on the split mode
+     */
+    public static function splitArtifacts(string $splitMode, $artifacts)
+    {
+        $artifactGroups = [];
+        if ($splitMode === TaskDefinition::ARTIFACT_SPLIT_BY_ARTIFACT) {
+            $artifactGroups = $artifacts->groupBy('id');
+        } elseif ($splitMode === TaskDefinition::ARTIFACT_SPLIT_BY_NODE) {
+            foreach($artifacts as $artifact) {
+                $taskProcess = $artifact->getTaskProcessThatCreatedArtifact();
+
+                $artifactGroups[$taskProcess->taskRun->task_workflow_node_id][] = $artifact;
+            }
+        } else {
+            $artifactGroups['default'] = $artifacts;
+        }
+
+        return $artifactGroups;
     }
 }

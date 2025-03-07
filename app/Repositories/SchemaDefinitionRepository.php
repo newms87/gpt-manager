@@ -25,7 +25,6 @@ class SchemaDefinitionRepository extends ActionRepository
     {
         return parent::summaryQuery($filter)->addSelect([
             DB::raw("SUM(agents_count) as agents_count"),
-            DB::raw("SUM(workflow_jobs_count) as workflow_jobs_count"),
         ]);
     }
 
