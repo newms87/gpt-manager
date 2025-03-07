@@ -2,11 +2,9 @@
 
 namespace App\Models\Task;
 
-use App\Models\Schema\SchemaAssociation;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
@@ -23,28 +21,20 @@ class TaskDefinition extends Model implements AuditableContract
         'name',
         'description',
         'task_runner_class',
-        'grouping_mode',
-        'split_by_file',
-        'input_group_chunk_size',
+        'task_runner_config',
         'timeout_after_seconds',
     ];
 
     protected array $keywordFields = [
         'name',
         'description',
+        'task_runner_class',
     ];
 
     public array $relationCounters = [
         TaskRun::class             => ['taskRuns' => 'task_run_count'],
         TaskDefinitionAgent::class => ['definitionAgents' => 'task_agent_count'],
     ];
-
-    public function casts(): array
-    {
-        return [
-            'split_by_file' => 'boolean',
-        ];
-    }
 
     public function definitionAgents(): HasMany|TaskDefinitionAgent
     {
@@ -61,31 +51,9 @@ class TaskDefinition extends Model implements AuditableContract
         return $this->hasMany(TaskRun::class);
     }
 
-    public function schemaAssociations(): MorphMany|SchemaAssociation
-    {
-        return $this->morphMany(SchemaAssociation::class, 'object');
-    }
-
-    public function groupingSchemaAssociations(): MorphMany|SchemaAssociation
-    {
-        return $this->schemaAssociations()->where('category', 'grouping');
-    }
-
     public function workflowNodes(): HasMany|TaskWorkflowNode
     {
         return $this->hasMany(TaskWorkflowNode::class);
-    }
-
-    public function getGroupingKeys(): array
-    {
-        $groupingKeys = [];
-        foreach($this->groupingSchemaAssociations as $association) {
-            if ($association->schemaFragment->fragment_selector) {
-                $groupingKeys[] = $association->schemaFragment->fragment_selector;
-            }
-        }
-
-        return $groupingKeys;
     }
 
     public function validate(): static
@@ -102,7 +70,7 @@ class TaskDefinition extends Model implements AuditableContract
         return $this;
     }
 
-    public function delete()
+    public function delete(): ?bool
     {
         $this->workflowNodes()->each(fn(TaskWorkflowNode $wn) => $wn->delete());
 

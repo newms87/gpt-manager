@@ -340,37 +340,24 @@ class TaskRunnerService
             $definitionAgents = [null];
         }
 
-        // Prepare the artifact groups based on the task definition settings
-        if ($artifacts->isNotEmpty()) {
-            $artifactGroups = (new ArtifactsToGroupsMapper)
-                ->groupingMode($taskDefinition->grouping_mode)
-                ->splitByFile($taskDefinition->split_by_file)
-                ->setGroupingKeys($taskDefinition->getGroupingKeys())
-                ->map($artifacts->all());
-        } else {
-            $artifactGroups = ['default' => []];
-        }
-
         foreach($definitionAgents as $definitionAgent) {
-            foreach($artifactGroups as $groupKey => $artifactsInGroup) {
-                $taskProcess = $taskRun->taskProcesses()->create([
-                    'name'                     => '',
-                    'activity'                 => "Initializing $groupKey...",
-                    'status'                   => WorkflowStatesContract::STATUS_PENDING,
-                    'task_definition_agent_id' => $definitionAgent?->id,
-                ]);
+            $taskProcess = $taskRun->taskProcesses()->create([
+                'name'                     => '',
+                'activity'                 => "Preparing " . ($definitionAgent?->agent->name ?: $taskDefinition->name) . "...",
+                'status'                   => WorkflowStatesContract::STATUS_PENDING,
+                'task_definition_agent_id' => $definitionAgent?->id,
+            ]);
 
-                if ($artifactsInGroup) {
-                    $taskProcess->inputArtifacts()->saveMany($artifactsInGroup);
-                    $taskProcess->updateRelationCounter('inputArtifacts');
-                }
-
-                static::log("Prepared task process w/ " . count($artifactsInGroup) . " artifacts: $taskProcess");
-
-                $taskProcess->getRunner()->prepareProcess();
-
-                $taskProcesses[] = $taskProcess;
+            if ($artifacts->isNotEmpty()) {
+                $taskProcess->inputArtifacts()->saveMany($artifacts);
+                $taskProcess->updateRelationCounter('inputArtifacts');
             }
+
+            static::log("Prepared task process w/ " . count($artifacts) . " artifact(s): $taskProcess");
+
+            $taskProcess->getRunner()->prepareProcess();
+
+            $taskProcesses[] = $taskProcess;
         }
 
         $taskRun->taskProcesses()->saveMany($taskProcesses);

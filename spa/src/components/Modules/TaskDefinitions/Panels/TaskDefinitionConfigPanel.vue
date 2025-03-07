@@ -1,6 +1,5 @@
 <template>
 	<div class="p-6">
-		<TaskDefinitionGroupingList :task-definition="taskDefinition" />
 		<SelectField
 			class="mt-8"
 			:model-value="taskDefinition.task_runner_class"
@@ -15,7 +14,6 @@
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import TaskDefinitionAgentList from "@/components/Modules/TaskDefinitions/Panels/TaskDefinitionAgentList";
-import TaskDefinitionGroupingList from "@/components/Modules/TaskDefinitions/Panels/TaskDefinitionGroupingList";
 import { TaskDefinition } from "@/types";
 import { SelectField } from "quasar-ui-danx";
 import { ref } from "vue";

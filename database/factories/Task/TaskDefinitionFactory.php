@@ -14,11 +14,11 @@ class TaskDefinitionFactory extends Factory
     public function definition(): array
     {
         return [
-            'team_id'                => Team::factory(),
-            'name'                   => fake()->unique()->name,
-            'description'            => fake()->sentence,
-            'task_runner_class'      => BaseTaskRunner::RUNNER_NAME,
-            'input_group_chunk_size' => 1,
+            'team_id'            => Team::factory(),
+            'name'               => fake()->unique()->name,
+            'description'        => fake()->sentence,
+            'task_runner_class'  => BaseTaskRunner::RUNNER_NAME,
+            'task_runner_config' => null,
         ];
     }
 

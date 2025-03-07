@@ -10,9 +10,6 @@ export interface TaskDefinition extends ActionTargetItem {
 	name: string;
 	description: string;
 	task_runner_class: string;
-	grouping_mode: string;
-	split_by_file: boolean;
-	input_group_chunk_size: number;
 	timeout_after_seconds: number;
 	task_run_count: number;
 	task_agent_count: number;
