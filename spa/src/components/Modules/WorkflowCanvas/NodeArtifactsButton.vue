@@ -8,8 +8,15 @@
 	>
 		{{ count || 0 }}
 		<ArtifactIcon class="w-4 ml-2" />
-		<QMenu v-if="isShowing" :model-value="true" @close="isShowing = false">
-			<ArtifactList :artifacts="artifacts" class="p-4 w-[60rem]" />
+		<QMenu
+			v-if="isShowing"
+			:model-value="true"
+			self="center right"
+			max-height="80vh"
+			class="bg-slate-700"
+			@close="isShowing = false"
+		>
+			<ArtifactList :artifacts="artifacts" class="p-4 w-[60rem] h-[80vh]" />
 		</QMenu>
 	</LabelPillWidget>
 </template>

@@ -16,25 +16,7 @@
 			</template>
 		</div>
 
-		<div class="node-body flex items-center flex-nowrap mt-4 space-x-4">
-			<NodeArtifactsButton
-				:count="taskRun?.input_artifacts_count"
-				active-color="sky"
-				:disabled="!taskRun"
-				:artifacts="taskRun?.inputArtifacts"
-				@show="onShowInputArtifacts"
-			/>
-			<div class="flex-grow">
-				<WorkflowStatusTimerPill v-if="taskRun" :runner="taskRun" class="text-xs" />
-			</div>
-			<NodeArtifactsButton
-				:count="taskRun?.output_artifacts_count"
-				active-color="green"
-				:disabled="!taskRun"
-				:artifacts="taskRun?.outputArtifacts"
-				@show="onShowOutputArtifacts"
-			/>
-		</div>
+		<NodeTaskRunWidget class="node-body mt-4" :task-run="taskRun" />
 
 		<!-- Input Ports -->
 		<div class="ports input-ports">
@@ -61,9 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
-import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
-import NodeArtifactsButton from "@/components/Modules/WorkflowCanvas/NodeArtifactsButton";
+import NodeTaskRunWidget from "@/components/Modules/WorkflowCanvas/NodeTaskRunWidget";
 import { TaskRun, TaskWorkflowRun } from "@/types";
 import { DotLottieVue } from "@lottiefiles/dotlottie-vue";
 import { Edge, Handle, Node, useVueFlow } from "@vue-flow/core";
@@ -96,18 +76,6 @@ function isTargetConnected(id) {
 
 const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_definition_id === props.node.data.task_definition_id));
 const isRunning = computed(() => ["Running"].includes(taskRun.value?.status));
-
-const artifactsField = {
-	text_content: true,
-	json_content: true,
-	files: { transcodes: true, thumb: true }
-};
-async function onShowInputArtifacts() {
-	await dxTaskRun.routes.details(taskRun.value, { inputArtifacts: artifactsField });
-}
-async function onShowOutputArtifacts() {
-	await dxTaskRun.routes.details(taskRun.value, { outputArtifacts: artifactsField });
-}
 </script>
 
 <style lang="scss">
