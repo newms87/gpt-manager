@@ -53,6 +53,7 @@
 							:action="deleteTaskAction"
 							:target="task"
 							class="opacity-0 group-hover:opacity-100 transition-all"
+							@click.stop
 						/>
 					</div>
 				</LabelPillWidget>
@@ -69,10 +70,10 @@ import { TaskDefinition } from "@/types";
 import { TaskWorkflow } from "@/types/task-workflows";
 import { FaSolidSquareShareNodes as NodeTaskIcon } from "danx-icon";
 import { ActionButton, CollapsableSidebar, LabelPillWidget } from "quasar-ui-danx";
-import { onMounted, ref, shallowRef } from "vue";
+import { computed, onMounted, ref, shallowRef, watch } from "vue";
 
 const emit = defineEmits(["refresh"]);
-defineProps<{
+const props = defineProps<{
 	taskWorkflow: TaskWorkflow;
 }>();
 
@@ -80,13 +81,19 @@ const isCollapsed = ref(false);
 const createTaskAction = dxTaskDefinition.getAction("create");
 const deleteTaskAction = dxTaskDefinition.getAction("delete", { onFinish: async () => emit("refresh") || await loadTaskDefinitions() });
 
-// Define available node types with descriptions
-const availableTasks = shallowRef([]);
+// The list of all tasks in the teams account
+const taskDefinitions = shallowRef([]);
+
+// All the task definitions minus the ones already added into the workflow
+const availableTasks = computed(() => taskDefinitions.value.filter((task: TaskDefinition) => !props.taskWorkflow.nodes.find((node) => node.task_definition_id === task.id)));
+
+// XXX: To recheck availableTasks when taskDefinitions.nodes changes
+watch(() => props.taskWorkflow, () => taskDefinitions.value = [...taskDefinitions.value], { deep: true });
 
 onMounted(loadTaskDefinitions);
 
 async function loadTaskDefinitions() {
-	availableTasks.value = (await dxTaskDefinition.routes.list()).data;
+	taskDefinitions.value = (await dxTaskDefinition.routes.list()).data;
 }
 
 async function onAddTask(taskDefinition: TaskDefinition) {
