@@ -14,7 +14,7 @@
 						:key="'file-upload-' + file.id"
 						class="cursor-pointer bg-gray-200 w-16 h-16 m-1"
 						:file="file"
-						:related-files="artifact.files"
+						:related-files="file.transcodes"
 						downloadable
 					/>
 				</div>

@@ -9,11 +9,11 @@
 		<div :class="{'opacity-50': loading || saving}">
 			<div>
 				<TextField
-					:model-value="dxWorkflowInput.activeFilter.value.keywords as string"
+					v-model="filter.keywords"
 					placeholder="Search..."
-					:loading="dxWorkflowInput.isLoadingList.value"
+					:loading="isLoading"
 					:debounce="500"
-					@update:model-value="keywords => dxWorkflowInput.setActiveFilter({keywords })"
+					@update:model-value="loadWorkflowInputs"
 				>
 					<template #prepend>
 						<SearchIcon class="w-4" />
@@ -21,7 +21,7 @@
 				</TextField>
 			</div>
 			<ListTransition class="mt-4">
-				<template v-for="workflowInput in dxWorkflowInput.pagedItems.value?.data || []" :key="workflowInput?.id">
+				<template v-for="workflowInput in workflowInputs" :key="workflowInput?.id">
 					<WorkflowInputCard
 						:workflow-input="workflowInput"
 						selectable
@@ -49,7 +49,7 @@ import { dxWorkflowInput } from "@/components/Modules/TaskWorkflows/WorkflowInpu
 import WorkflowInputCard from "@/components/Modules/TaskWorkflows/WorkflowInputs/WorkflowInputCard";
 import { FaSolidMagnifyingGlass as SearchIcon } from "danx-icon";
 import { ActionButton, InfoDialog, ListTransition, TextField } from "quasar-ui-danx";
-import { onMounted } from "vue";
+import { onMounted, ref, shallowRef } from "vue";
 
 defineProps<{ loading?: boolean; saving?: boolean; }>();
 
@@ -60,12 +60,19 @@ dxWorkflowInput.activeFilter.value = {
 };
 
 // Modify the 'create' action behavior so we reload the list and select the created item
-const createAction = dxWorkflowInput.getAction("quick-create", { onFinish: dxWorkflowInput.loadList });
-const deleteAction = dxWorkflowInput.getAction("quick-delete", { onFinish: dxWorkflowInput.loadList });
+const createAction = dxWorkflowInput.getAction("quick-create", { onFinish: loadWorkflowInputs });
+const deleteAction = dxWorkflowInput.getAction("quick-delete", { onFinish: loadWorkflowInputs });
 
-onMounted(() => {
-	dxWorkflowInput.initialize();
-	dxWorkflowInput.setPagination({ rowsPerPage: 10 });
-	dxWorkflowInput.loadList();
+const isLoading = ref(false);
+const workflowInputs = shallowRef([]);
+const filter = ref({
+	keywords: ""
 });
+onMounted(loadWorkflowInputs);
+
+async function loadWorkflowInputs() {
+	isLoading.value = true;
+	workflowInputs.value = (await dxWorkflowInput.routes.list({ filter: filter.value, perPage: 10 })).data;
+	isLoading.value = false;
+}
 </script>

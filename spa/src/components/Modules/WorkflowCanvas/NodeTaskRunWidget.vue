@@ -38,11 +38,12 @@
 						<QMenu
 							self="center right"
 							max-height="80vh"
+							cover
 							:model-value="showTaskProcesses"
 							@before-hide="showTaskProcesses = false"
 							@hide="showTaskProcesses = false"
 						>
-							<ListTransition class="p-4 w-[60rem] h-[80vh] overflow-x-hidden overflow-y-auto">
+							<ListTransition class="p-4 w-[70rem] h-[80vh] overflow-x-hidden overflow-y-auto">
 								<QSkeleton v-if="taskRun.processes?.length === undefined" class="h-12" />
 								<div
 									v-else-if="taskRun.processes.length === 0"
