@@ -26,7 +26,6 @@ class AgentRepository extends ActionRepository
     {
         return parent::summaryQuery($filter)->addSelect([
             DB::raw("SUM(threads_count) as threads_count"),
-            DB::raw("SUM(assignments_count) as assignments_count"),
         ]);
     }
 
@@ -123,7 +122,7 @@ class AgentRepository extends ActionRepository
      */
     public function copyAgent(Agent $agent)
     {
-        $newAgent       = $agent->replicate(['threads_count', 'assignments_count']);
+        $newAgent       = $agent->replicate(['threads_count']);
         $newAgent->name = ModelHelper::getNextModelName($agent);
         $newAgent->save();
 

@@ -3,11 +3,11 @@
 namespace App\Services\Task;
 
 use App\Jobs\ExecuteTaskProcessJob;
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\Task\WorkflowStatesContract;
-use App\Models\Workflow\Artifact;
 use App\Traits\HasDebugLogging;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;

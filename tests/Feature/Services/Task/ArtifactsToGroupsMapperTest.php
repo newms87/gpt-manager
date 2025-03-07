@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Services\Task;
 
-use App\Models\Workflow\Artifact;
+use App\Models\Task\Artifact;
 use App\Services\Task\ArtifactsToGroupsMapper;
 use Tests\AuthenticatedTestCase;
 

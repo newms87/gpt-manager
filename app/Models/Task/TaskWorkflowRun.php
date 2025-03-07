@@ -3,7 +3,6 @@
 namespace App\Models\Task;
 
 use App\Models\Usage\UsageSummary;
-use App\Models\Workflow\Artifact;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

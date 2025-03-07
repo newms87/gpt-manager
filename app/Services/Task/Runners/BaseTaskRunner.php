@@ -2,9 +2,9 @@
 
 namespace App\Services\Task\Runners;
 
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Models\Workflow\Artifact;
 use App\Services\Task\TaskRunnerService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;

@@ -4,7 +4,6 @@ namespace App\Models\Schema;
 
 use App\Models\Agent\Agent;
 use App\Models\Team\Team;
-use App\Models\Workflow\WorkflowJob;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -49,7 +48,6 @@ class SchemaDefinition extends Model implements AuditableContract
         Agent::class             => ['agents' => 'agents_count'],
         SchemaFragment::class    => ['fragments' => 'fragments_count'],
         SchemaAssociation::class => ['associations' => 'associations_count'],
-        WorkflowJob::class       => ['workflowJobs' => 'workflow_jobs_count'],
     ];
 
     public function casts(): array
@@ -68,11 +66,6 @@ class SchemaDefinition extends Model implements AuditableContract
     public function agents(): HasMany|Agent
     {
         return $this->hasMany(Agent::class, 'response_schema_id');
-    }
-
-    public function workflowJobs(): HasMany|WorkflowJob
-    {
-        return $this->hasMany(WorkflowJob::class, 'response_schema_id');
     }
 
     public function schemaDefinitionRevisions(): HasMany|SchemaHistory
@@ -95,12 +88,6 @@ class SchemaDefinition extends Model implements AuditableContract
         $agentsCount = $this->agents()->count();
         if ($agentsCount) {
             throw new Exception("Cannot delete Schema Definition $this->name: there are $agentsCount agents with this schema assigned.");
-        }
-
-        $workflowJobsCount = $this->workflowJobs()->count();
-
-        if ($workflowJobsCount) {
-            throw new Exception("Cannot delete Schema Definition $this->name: there are $workflowJobsCount workflow jobs assigned");
         }
 
         return parent::delete();

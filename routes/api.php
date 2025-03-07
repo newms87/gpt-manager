@@ -17,11 +17,7 @@ use App\Http\Controllers\Ai\TaskWorkflowRunsController;
 use App\Http\Controllers\Ai\TaskWorkflowsController;
 use App\Http\Controllers\Ai\TeamObjectsController;
 use App\Http\Controllers\Ai\ThreadsController;
-use App\Http\Controllers\Ai\WorkflowAssignmentsController;
 use App\Http\Controllers\Ai\WorkflowInputsController;
-use App\Http\Controllers\Ai\WorkflowJobsController;
-use App\Http\Controllers\Ai\WorkflowRunsController;
-use App\Http\Controllers\Ai\WorkflowsController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
 use Illuminate\Http\Request;
@@ -46,16 +42,6 @@ FileUploadRoute::routes();
 
 // Content Sources
 ActionRoute::routes('content-sources', new ContentSourcesController);
-
-// Workflows
-ActionRoute::routes('workflows', new WorkflowsController, function () {
-    Route::get('{workflow}/export-as-json', [WorkflowsController::class, 'exportAsJson'])->name('workflows.export-as-json');
-});
-ActionRoute::routes('workflow-jobs', new WorkflowJobsController);
-ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
-    Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');
-});
-ActionRoute::routes('workflow-assignments', new WorkflowAssignmentsController);
 
 // Schemas
 ActionRoute::routes('schemas/definitions', new SchemaDefinitionsController, function () {

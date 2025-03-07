@@ -3,8 +3,8 @@
 namespace Tests\Feature\Services\Task;
 
 use App\Models\Agent\Agent;
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
-use App\Models\Workflow\Artifact;
 use App\Services\Task\TaskRunnerService;
 use Tests\AuthenticatedTestCase;
 

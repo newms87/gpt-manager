@@ -5,7 +5,7 @@ namespace App\Services\Task\Runners;
 use App\Models\Agent\AgentThread;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
-use App\Models\Workflow\Artifact;
+use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadMessageToArtifactMapper;
 use App\Services\AgentThread\AgentThreadService;

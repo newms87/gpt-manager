@@ -1,8 +1,8 @@
 <?php
 
-namespace Database\Factories\Workflow;
+namespace Database\Factories\Task;
 
-use App\Models\Workflow\Artifact;
+use App\Models\Task\Artifact;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Newms87\Danx\Models\Utilities\StoredFile;
 

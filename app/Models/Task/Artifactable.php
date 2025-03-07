@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Workflow;
+namespace App\Models\Task;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;

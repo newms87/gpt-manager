@@ -3,7 +3,6 @@
 namespace App\Models\Task;
 
 use App\Models\Usage\UsageSummary;
-use App\Models\Workflow\Artifact;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\TaskRunnerContract;
 use App\Traits\HasWorkflowStatesTrait;

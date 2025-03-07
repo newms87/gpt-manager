@@ -5,8 +5,8 @@ namespace App\Models\Team;
 use App\Models\Agent\Agent;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskWorkflow;
+use App\Models\Task\WorkflowInput;
 use App\Models\User;
-use App\Models\Workflow\WorkflowInput;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -17,37 +17,37 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class Team extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes;
+	use HasFactory, AuditableTrait, SoftDeletes;
 
-    protected $guarded = ['id', 'created_at', 'updated_at', 'deleted_at'];
+	protected $guarded = ['id', 'created_at', 'updated_at', 'deleted_at'];
 
-    public function users(): BelongsToMany|User
-    {
-        return $this->belongsToMany(User::class)->withTimestamps();
-    }
+	public function users(): BelongsToMany|User
+	{
+		return $this->belongsToMany(User::class)->withTimestamps();
+	}
 
-    public function agents(): HasMany|Agent
-    {
-        return $this->hasMany(Agent::class);
-    }
+	public function agents(): HasMany|Agent
+	{
+		return $this->hasMany(Agent::class);
+	}
 
-    public function taskDefinitions(): HasMany|TaskDefinition
-    {
-        return $this->hasMany(TaskDefinition::class);
-    }
+	public function taskDefinitions(): HasMany|TaskDefinition
+	{
+		return $this->hasMany(TaskDefinition::class);
+	}
 
-    public function taskWorkflows(): HasMany|TaskWorkflow
-    {
-        return $this->hasMany(TaskWorkflow::class);
-    }
+	public function taskWorkflows(): HasMany|TaskWorkflow
+	{
+		return $this->hasMany(TaskWorkflow::class);
+	}
 
-    public function workflowInputs(): HasMany|WorkflowInput
-    {
-        return $this->hasMany(WorkflowInput::class);
-    }
+	public function workflowInputs(): HasMany|WorkflowInput
+	{
+		return $this->hasMany(WorkflowInput::class);
+	}
 
-    public function __toString()
-    {
-        return "<Team ($this->id) $this->name>";
-    }
+	public function __toString()
+	{
+		return "<Team ($this->id) $this->name>";
+	}
 }

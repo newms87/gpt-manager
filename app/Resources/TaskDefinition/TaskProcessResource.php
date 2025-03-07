@@ -5,8 +5,8 @@ namespace App\Resources\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Resources\Agent\AgentThreadResource;
 use App\Resources\Audit\JobDispatchResource;
+use App\Resources\TaskWorkflow\ArtifactResource;
 use App\Resources\Usage\UsageSummaryResource;
-use App\Resources\Workflow\ArtifactResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
@@ -30,7 +30,7 @@ class TaskProcessResource extends ActionResource
             'output_artifact_count' => $taskProcess->output_artifact_count,
             'created_at'            => $taskProcess->created_at,
             'updated_at'            => $taskProcess->updated_at,
-            
+
             'agentThread'     => fn($fields) => AgentThreadResource::make($taskProcess->agentThread, $fields),
             'inputArtifacts'  => fn($fields) => ArtifactResource::collection($taskProcess->inputArtifacts, $fields),
             'outputArtifacts' => fn($fields) => ArtifactResource::collection($taskProcess->outputArtifacts, $fields),

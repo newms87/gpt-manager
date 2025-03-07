@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Resources\Workflow;
+namespace App\Resources\TaskWorkflow;
 
-use App\Models\Workflow\WorkflowInput;
+use App\Models\Task\WorkflowInput;
 use App\Resources\TeamObject\TeamObjectResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;

@@ -2,8 +2,8 @@
 
 namespace App\Services\Task;
 
-use App\Models\Workflow\Artifact;
-use App\Models\Workflow\WorkflowInput;
+use App\Models\Task\Artifact;
+use App\Models\Task\WorkflowInput;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\DateHelper;
 

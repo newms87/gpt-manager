@@ -2,9 +2,9 @@
 
 namespace Database\Factories\Task;
 
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Models\Workflow\Artifact;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TaskProcessFactory extends Factory

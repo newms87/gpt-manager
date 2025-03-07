@@ -5,9 +5,6 @@ namespace Tests\Feature\MockData;
 use App\Api\OpenAi\Classes\OpenAiMessageFormatter;
 use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
-use App\Models\Workflow\Workflow;
-use App\Models\Workflow\WorkflowJob;
-use App\Models\Workflow\WorkflowJobRun;
 use Mockery\CompositeExpectation;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
 use Tests\TestCase;
@@ -17,23 +14,6 @@ use Tests\TestCase;
  */
 trait AiMockData
 {
-    public function openAiWorkflowJobRun(Workflow $workflow = null, $attributes = [])
-    {
-        $workflowJob = $this->openAiWorkflowJob($workflow);
-
-        return WorkflowJobRun::factory()->recycle($workflowJob)->create($attributes);
-    }
-
-    public function openAiWorkflowJob(Workflow $workflow = null, $attributes = [])
-    {
-        if (!$workflow) {
-            $workflow = Workflow::factory()->create();
-        }
-        $agent = $this->openAiAgent();
-
-        return WorkflowJob::factory()->recycle($workflow)->recycle($agent)->hasWorkflowAssignments()->create($attributes);
-    }
-
     public function openAiAgent($attributes = [], $user = null): Agent
     {
         if (!$user) {

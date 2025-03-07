@@ -2,7 +2,7 @@
 
 namespace App\Services\AgentThread;
 
-use App\Models\Workflow\Artifact;
+use App\Models\Task\Artifact;
 use App\Services\JsonSchema\JsonSchemaService;
 
 class ArtifactFilter

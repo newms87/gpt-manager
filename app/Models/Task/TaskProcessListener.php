@@ -2,7 +2,6 @@
 
 namespace App\Models\Task;
 
-use App\Models\Workflow\WorkflowRun;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,7 +15,7 @@ class TaskProcessListener extends Model implements AuditableContract
     use HasFactory, ActionModelTrait, AuditableTrait;
 
     static array $allowedEventTypes = [
-        WorkflowRun::class,
+        TaskWorkflowRun::class,
         TaskRun::class,
         JobDispatch::class,
     ];

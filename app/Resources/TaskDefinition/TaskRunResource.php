@@ -3,8 +3,8 @@
 namespace App\Resources\TaskDefinition;
 
 use App\Models\Task\TaskRun;
+use App\Resources\TaskWorkflow\ArtifactResource;
 use App\Resources\Usage\UsageSummaryResource;
-use App\Resources\Workflow\ArtifactResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Resources\Workflow;
+namespace App\Resources\TaskWorkflow;
 
-use App\Models\Workflow\Artifact;
+use App\Models\Task\Artifact;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 use Newms87\Danx\Resources\StoredFileResource;

@@ -2,7 +2,7 @@
 
 namespace App\Services\Task\Runners;
 
-use App\Models\Workflow\Artifact;
+use App\Models\Task\Artifact;
 use App\Repositories\TeamObjectRepository;
 use App\Resources\TeamObject\TeamObjectForAgentsResource;
 

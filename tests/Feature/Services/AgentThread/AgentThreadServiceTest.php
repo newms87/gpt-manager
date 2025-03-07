@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Workflow;
+namespace Tests\Feature\Services\AgentThread;
 
 use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\Agent;

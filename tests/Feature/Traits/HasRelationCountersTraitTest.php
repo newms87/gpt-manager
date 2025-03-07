@@ -1,11 +1,11 @@
 <?php
 
-namespace Feature\Traits;
+namespace Tests\Feature\Traits;
 
 use App\Models\Agent\Agent;
+use App\Models\Task\Artifact;
+use App\Models\Task\TaskRun;
 use App\Models\User;
-use App\Models\Workflow\Artifact;
-use App\Models\Workflow\WorkflowRun;
 use Tests\TestCase;
 
 class HasRelationCountersTraitTest extends TestCase
@@ -92,14 +92,15 @@ class HasRelationCountersTraitTest extends TestCase
     public function test_syncRelatedModels_countsCreateEventForMorphPivotRelation(): void
     {
         // Given
-        $wr       = WorkflowRun::factory()->create();
+        $taskRun  = TaskRun::factory()->create();
         $artifact = Artifact::factory()->create();
 
         // When
-        $wr->artifacts()->syncWithoutDetaching([$artifact->id]);
+        $taskRun->inputArtifacts()->syncWithoutDetaching([$artifact->id]);
+        $taskRun->updateRelationCounter('inputArtifacts');
 
         // Then
-        $wr->refresh();
-        $this->assertEquals(1, $wr->artifacts_count);
+        $taskRun->refresh();
+        $this->assertEquals(1, $taskRun->input_artifacts_count);
     }
 }

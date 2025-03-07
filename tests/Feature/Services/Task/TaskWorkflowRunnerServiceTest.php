@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Services\Task;
 
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskWorkflow;
 use App\Models\Task\TaskWorkflowConnection;
 use App\Models\Task\TaskWorkflowNode;
-use App\Models\Workflow\Artifact;
 use App\Services\Task\TaskWorkflowRunnerService;
 use Newms87\Danx\Exceptions\ValidationError;
 use Tests\AuthenticatedTestCase;

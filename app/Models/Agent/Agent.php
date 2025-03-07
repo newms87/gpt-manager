@@ -7,13 +7,10 @@ use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Models\Team\Team;
-use App\Models\Workflow\WorkflowAssignment;
-use App\Models\Workflow\WorkflowJob;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
@@ -56,8 +53,7 @@ class Agent extends Model implements AuditableContract
     ];
 
     public array $relationCounters = [
-        AgentThread::class        => ['threads' => 'threads_count'],
-        WorkflowAssignment::class => ['assignments' => 'assignments_count'],
+        AgentThread::class => ['threads' => 'threads_count'],
     ];
 
     public function casts(): array
@@ -108,16 +104,6 @@ class Agent extends Model implements AuditableContract
     public function threads(): HasMany|AgentThread
     {
         return $this->hasMany(AgentThread::class);
-    }
-
-    public function assignments(): WorkflowAssignment|HasMany
-    {
-        return $this->hasMany(WorkflowAssignment::class);
-    }
-
-    public function workflowJobs(): BelongsToMany|WorkflowJob
-    {
-        return $this->belongsToMany(WorkflowJob::class)->withTimestamps();
     }
 
     public function formatTools(): array
@@ -179,17 +165,6 @@ class Agent extends Model implements AuditableContract
         ])->validate();
 
         return $this;
-    }
-
-    public function delete(): bool
-    {
-        $assignmentCount = $this->assignments()->count();
-
-        if ($assignmentCount) {
-            throw new Exception("Cannot delete Agent $this->name: there are $assignmentCount active assignments");
-        }
-
-        return parent::delete();
     }
 
     public static function booted(): void
