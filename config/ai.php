@@ -10,7 +10,9 @@ use App\Services\Task\Runners\AgentThreadTaskRunner;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
 use App\Services\Task\Runners\LoadFromDatabaseTaskRunner;
+use App\Services\Task\Runners\MergeArtifactsTaskRunner;
 use App\Services\Task\Runners\PageOrganizerTaskRunner;
+use App\Services\Task\Runners\SplitByFileTaskRunner;
 
 $million  = 1000000;
 $thousand = 1000;
@@ -100,6 +102,8 @@ return [
         ImageToTextTranscoderTaskRunner::RUNNER_NAME => ImageToTextTranscoderTaskRunner::class,
         PageOrganizerTaskRunner::RUNNER_NAME         => PageOrganizerTaskRunner::class,
         LoadFromDatabaseTaskRunner::RUNNER_NAME      => LoadFromDatabaseTaskRunner::class,
+        MergeArtifactsTaskRunner::RUNNER_NAME        => MergeArtifactsTaskRunner::class,
+        SplitByFileTaskRunner::RUNNER_NAME           => SplitByFileTaskRunner::class,
     ],
     'tools'         => [
         [

@@ -7,7 +7,7 @@
 		max-width="20rem"
 		name="workflow-canvas-sidebar"
 	>
-		<div class="h-full flex overflow-hidden flex-col flex-nowrap">
+		<div class="h-full flex overflow-hidden flex-col flex-nowrap px-4">
 			<div class="sidebar-title flex-shrink-0 text-center pt-4">
 				<div class="flex items-center justify-center w-full">
 					<ActionButton
