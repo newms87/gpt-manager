@@ -39,9 +39,13 @@ class Artifact extends Model implements AuditableContract
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
     }
 
-    public function getTaskProcessThatCreatedArtifact(): TaskProcess
+    public function getTaskProcessThatCreatedArtifact(): TaskProcess|null
     {
         $artifactable = $this->artifactables()->where('category', 'output')->where('artifactable_type', TaskProcess::class)->first();
+
+        if (!$artifactable) {
+            return null;
+        }
 
         return TaskProcess::find($artifactable->artifactable_id);
     }

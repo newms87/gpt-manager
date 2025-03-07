@@ -66,12 +66,12 @@ import {
 } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
-defineProps<{
+const props = defineProps<{
 	job: JobDispatch
 }>();
 
 const isShowingLogs = ref(false);
 const isShowingApiLogs = ref(false);
 const isShowingErrors = ref(false);
-const jobStatus = computed(() => JOB_DISPATCH_STATUS.resolve(job.status));
+const jobStatus = computed(() => JOB_DISPATCH_STATUS.resolve(props.job.status));
 </script>

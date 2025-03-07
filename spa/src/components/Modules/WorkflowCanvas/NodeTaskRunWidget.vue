@@ -32,9 +32,9 @@
 				<ShowHideButton
 					v-model="showTaskProcesses"
 					:show-icon="ProcessListIcon"
-					:label="''+taskRun.process_count"
 				>
 					<template #label>
+						<div class="ml-2">{{ taskRun.process_count }}</div>
 						<QMenu
 							self="center right"
 							max-height="80vh"
@@ -54,7 +54,7 @@
 									v-for="taskProcess in taskRun.processes"
 									:key="taskProcess.id"
 									:task-process="taskProcess"
-									class="bg-sky-950 p-4 my-2"
+									class="bg-slate-700 p-4 my-2 rounded-lg"
 								/>
 							</ListTransition>
 						</QMenu>
@@ -112,7 +112,7 @@ watch(() => props.taskRun, () => {
 		autoRefreshObject(
 			autoRefreshId,
 			props.taskRun,
-			(tr: TaskRun) => showTaskProcesses.value && (!tr.processes || ["Running", "Pending"].includes(tr.status)),
+			(tr: TaskRun) => showTaskProcesses.value && (!tr.processes?.length || ["Running", "Pending"].includes(tr.status)),
 			(tr: TaskRun) => dxTaskRun.routes.details(tr, {
 				processes: {
 					inputArtifacts: artifactsField,

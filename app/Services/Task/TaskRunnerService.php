@@ -10,6 +10,7 @@ use App\Models\Task\TaskRun;
 use App\Models\Task\WorkflowStatesContract;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
+use Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Models\Job\JobDispatch;
@@ -377,6 +378,7 @@ class TaskRunnerService
 
     /**
      * Split the artifacts into groups based on the split mode
+     * @param Artifact[]|Collection $artifacts
      */
     public static function splitArtifacts(string $splitMode, $artifacts)
     {
@@ -386,6 +388,12 @@ class TaskRunnerService
         } elseif ($splitMode === TaskDefinition::ARTIFACT_SPLIT_BY_NODE) {
             foreach($artifacts as $artifact) {
                 $taskProcess = $artifact->getTaskProcessThatCreatedArtifact();
+
+                if (!$taskProcess) {
+                    Log::debug("No task process found for artifact: $artifact");
+                    $artifactGroups['default'][] = $artifact;
+                    continue;
+                }
 
                 $artifactGroups[$taskProcess->taskRun->task_workflow_node_id][] = $artifact;
             }

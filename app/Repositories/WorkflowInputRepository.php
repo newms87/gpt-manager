@@ -5,8 +5,6 @@ namespace App\Repositories;
 use App\Models\Task\WorkflowInput;
 use App\Models\TeamObject\TeamObject;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\ActionRepository;
@@ -19,13 +17,6 @@ class WorkflowInputRepository extends ActionRepository
 	public function query(): Builder
 	{
 		return parent::query()->where('team_id', team()->id);
-	}
-
-	public function summaryQuery(array $filter = []): Builder|QueryBuilder
-	{
-		return parent::summaryQuery($filter)->addSelect([
-			DB::raw("SUM(workflow_runs_count) as workflow_runs_count"),
-		]);
 	}
 
 	public function applyAction(string $action, $model = null, ?array $data = null)

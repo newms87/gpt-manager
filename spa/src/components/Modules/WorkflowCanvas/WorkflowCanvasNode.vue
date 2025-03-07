@@ -74,7 +74,7 @@ function isTargetConnected(id) {
 	return targetEdges.value.some((edge) => edge.targetHandle === id);
 }
 
-const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_definition_id === props.node.data.task_definition_id));
+const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_workflow_node_id == +props.node.id));
 const isRunning = computed(() => ["Running"].includes(taskRun.value?.status));
 </script>
 

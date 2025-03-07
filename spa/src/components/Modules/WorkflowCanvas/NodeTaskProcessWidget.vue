@@ -7,7 +7,7 @@
 			:artifacts="taskProcess.inputArtifacts"
 		/>
 		<div class="flex-grow">
-			<div v-if="taskProcess.activity" class="flex-grow rounded p-2 bg-slate-900 text-slate-500">
+			<div v-if="taskProcess.activity" class="flex-grow rounded p-2 bg-slate-900 text-slate-400">
 				{{ taskProcess.activity }}
 			</div>
 			<div class="flex items-center flex-nowrap space-x-2 mt-2">

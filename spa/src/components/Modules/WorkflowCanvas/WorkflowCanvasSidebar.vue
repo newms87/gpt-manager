@@ -27,7 +27,7 @@
 				:class="{'overflow-y-hidden': isCollapsed}"
 			>
 				<LabelPillWidget
-					v-for="task in availableTasks"
+					v-for="task in taskDefinitions"
 					:key="task.id"
 					class="node-task flex items-center flex-nowrap cursor-pointer group max-w-full overflow-hidden flex-shrink-0"
 					color="sky"
@@ -69,10 +69,10 @@ import { TaskDefinition } from "@/types";
 import { TaskWorkflow } from "@/types/task-workflows";
 import { FaSolidSquareShareNodes as NodeTaskIcon } from "danx-icon";
 import { ActionButton, CollapsableSidebar, LabelPillWidget } from "quasar-ui-danx";
-import { computed, onMounted, ref, shallowRef, watch } from "vue";
+import { onMounted, ref, shallowRef } from "vue";
 
 const emit = defineEmits(["refresh"]);
-const props = defineProps<{
+defineProps<{
 	taskWorkflow: TaskWorkflow;
 }>();
 
@@ -82,12 +82,6 @@ const deleteTaskAction = dxTaskDefinition.getAction("delete", { onFinish: async 
 
 // The list of all tasks in the teams account
 const taskDefinitions = shallowRef([]);
-
-// All the task definitions minus the ones already added into the workflow
-const availableTasks = computed(() => taskDefinitions.value.filter((task: TaskDefinition) => !props.taskWorkflow.nodes.find((node) => node.task_definition_id === task.id)));
-
-// XXX: To recheck availableTasks when taskDefinitions.nodes changes
-watch(() => props.taskWorkflow, () => taskDefinitions.value = [...taskDefinitions.value], { deep: true });
 
 onMounted(loadTaskDefinitions);
 

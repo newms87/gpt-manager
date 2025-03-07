@@ -26,6 +26,7 @@ class TaskRunResource extends ActionResource
             'created_at'             => $taskRun->created_at,
             'updated_at'             => $taskRun->updated_at,
             'task_definition_id'     => $taskRun->task_definition_id,
+            'task_workflow_node_id'  => $taskRun->task_workflow_node_id,
             'input_artifacts_count'  => $taskRun->input_artifacts_count,
             'output_artifacts_count' => $taskRun->output_artifacts_count,
 
