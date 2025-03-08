@@ -7,7 +7,7 @@
 		max-width="20rem"
 		name="workflow-canvas-sidebar"
 	>
-		<div class="h-full flex overflow-hidden flex-col flex-nowrap px-4">
+		<div class="h-full flex overflow-hidden flex-col flex-nowrap">
 			<div class="sidebar-title flex-shrink-0 text-center pt-4">
 				<div class="flex items-center justify-center w-full">
 					<ActionButton
@@ -24,7 +24,7 @@
 			</div>
 			<div
 				class="node-task-list flex-grow overflow-y-auto overflow-x-hidden pt-4 flex flex-col flex-nowrap space-y-4"
-				:class="{'overflow-y-hidden': isCollapsed}"
+				:class="{'overflow-y-hidden': isCollapsed, 'px-4': !isCollapsed}"
 			>
 				<LabelPillWidget
 					v-for="task in taskDefinitions"

@@ -30,6 +30,11 @@ class JsonSchemaService
         return $this->useId && $this->requireName;
     }
 
+    public function isUsingCitations(): bool
+    {
+        return $this->useCitations;
+    }
+
     public function useDbFields(bool $use = true): self
     {
         return $this->useId($use)->requireName($use);

@@ -258,8 +258,9 @@ class AgentThreadService
         foreach($thread->messages()->get() as $message) {
             $formattedMessage = $apiFormatter->message($message);
 
+
             // For agents that rely on citing messages as sources, wrap the message in an AgentMessage tag
-            if ($agent->enable_message_sources && ($message->isUser() || $message->isTool())) {
+            if ($this->jsonSchemaService->isUsingCitations() && ($message->isUser() || $message->isTool())) {
                 $messages[] = $apiFormatter->wrapMessage("<AgentMessage id='$message->id'>", $formattedMessage, "</AgentMessage>");
             } else {
                 $messages[] = $formattedMessage;

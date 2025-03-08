@@ -38,8 +38,6 @@ class Agent extends Model implements AuditableContract
         'response_format',
         'response_schema_id',
         'response_schema_fragment_id',
-        'save_response_to_db',
-        'enable_message_sources',
         'tools',
         'retry_count',
     ];
@@ -59,10 +57,8 @@ class Agent extends Model implements AuditableContract
     public function casts(): array
     {
         return [
-            'tools'                  => 'json',
-            'save_response_to_db'    => 'boolean',
-            'enable_message_sources' => 'boolean',
-            'temperature'            => 'float',
+            'tools'       => 'json',
+            'temperature' => 'float',
         ];
     }
 
