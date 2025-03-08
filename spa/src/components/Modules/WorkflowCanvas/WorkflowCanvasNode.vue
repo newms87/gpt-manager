@@ -1,53 +1,62 @@
 <template>
-	<div class="workflow-canvas-node">
-		<div class="node-header flex flex-nowrap items-center space-x-2">
-			<span class="node-title flex-grow">{{ node.data.name }}</span>
-			<template v-if="isRunning">
-				<DotLottieVue
-					class="w-8 h-8 bg-sky-900 rounded-full"
-					autoplay
-					loop
-					src="https://lottie.host/e61ac963-4a56-4667-ab2f-b54431a0548d/RSumZz9y00.lottie"
+	<div class="workflow-canvas-node w-48">
+		<div class="node-content">
+			<NodeHeaderBar
+				:task-run="taskRun"
+				:temporary="isTemporary"
+				@edit="$emit('edit', node)"
+				@remove="$emit('remove', node)"
+			/>
+
+			<NodeArtifactsWidget class="node-body mt-4" :task-run="taskRun">
+				<ShowTaskProcessesButton v-if="taskRun" :task-run="taskRun" class="bg-sky-950 py-0" icon-class="w-3" />
+			</NodeArtifactsWidget>
+
+			<!-- Input Ports -->
+			<div class="ports input-ports">
+				<Handle
+					id="target-default"
+					type="target"
+					position="left"
+					class="node-handle"
+					:class="{'is-connected': isTargetConnected('target-default')}"
 				/>
-			</template>
-			<template v-else>
-				<ActionButton type="edit" color="sky" :disabled="isTemporary" @click.stop="$emit('edit', node)" />
-				<ActionButton type="trash" color="red" :disabled="isTemporary" @click.stop="$emit('remove', node)" />
-			</template>
+			</div>
+
+			<!-- Output Ports -->
+			<div class="ports output-ports">
+				<Handle
+					id="source-default"
+					type="source"
+					position="right"
+					class="node-handle"
+					:class="{'is-connected': isSourceConnected('source-default')}"
+				/>
+			</div>
 		</div>
-
-		<NodeTaskRunWidget class="node-body mt-4" :task-run="taskRun" />
-
-		<!-- Input Ports -->
-		<div class="ports input-ports">
-			<Handle
-				id="target-default"
-				type="target"
-				position="left"
-				class="node-handle"
-				:class="{'is-connected': isTargetConnected('target-default')}"
-			/>
-		</div>
-
-		<!-- Output Ports -->
-		<div class="ports output-ports">
-			<Handle
-				id="source-default"
-				type="source"
-				position="right"
-				class="node-handle"
-				:class="{'is-connected': isSourceConnected('source-default')}"
-			/>
+		<div class="mt-2">
+			<div class="node-title text-center">{{ node.data.name }}</div>
+			<div class="flex justify-center mt-2">
+				<WorkflowStatusTimerPill
+					v-if="taskRun"
+					:runner="taskRun"
+					class="text-xs"
+					status-class="rounded-full px-4"
+					timer-class="bg-slate-800 px-4 rounded-full"
+				/>
+			</div>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
-import NodeTaskRunWidget from "@/components/Modules/WorkflowCanvas/NodeTaskRunWidget";
+import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
+import { activeTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/store";
+import NodeArtifactsWidget from "@/components/Modules/WorkflowCanvas/NodeArtifactsWidget";
+import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
+import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
 import { TaskRun, TaskWorkflowRun } from "@/types";
-import { DotLottieVue } from "@lottiefiles/dotlottie-vue";
 import { Edge, Handle, Node, useVueFlow } from "@vue-flow/core";
-import { ActionButton } from "quasar-ui-danx";
 import { computed } from "vue";
 
 const { edges } = useVueFlow();
@@ -75,23 +84,27 @@ function isTargetConnected(id) {
 }
 
 const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_workflow_node_id == +props.node.id));
-const isRunning = computed(() => ["Running"].includes(taskRun.value?.status));
+const isWorkflowRunning = computed(() => ["Running"].includes(activeTaskWorkflowRun.value?.status));
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .workflow-canvas-node {
-	@apply border border-gray-300 rounded-xl p-4 bg-sky-800 text-lg;
-}
-
-.node-handle {
-	@apply w-4 h-4 bg-slate-400;
-
-	&:hover {
-		@apply bg-sky-800;
+	.node-content {
+		@apply border border-gray-300 rounded-xl p-4 bg-sky-900 text-lg;
 	}
 
-	&.is-connected {
-		@apply bg-green-500;
+	.node-handle {
+		@apply w-4 h-4 bg-slate-400;
+
+		&:hover {
+			@apply bg-sky-800;
+		}
+
+		&.is-connected {
+			@apply bg-green-500;
+		}
 	}
 }
+
+
 </style>

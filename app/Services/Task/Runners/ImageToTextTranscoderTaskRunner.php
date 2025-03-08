@@ -81,7 +81,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         }
 
         if (count($filesToTranscode) > 1) {
-            throw new ValidationError("Only one file can be transcoded at a time. Use the 'Split by file' option in the grouping settings.");
+            throw new ValidationError("Only one file can be transcoded at a time. Set Artifact Split Mode = 'Artifact' to transcode one artifact per process.");
         }
 
         if (empty($filesToTranscode)) {

@@ -2,7 +2,7 @@
 	<div class="flex flex-nowrap items-stretch">
 		<WorkflowStatusPill
 			:status="runner.status"
-			class="rounded-r-none w-28"
+			class="rounded-r-none"
 			:status-class="statusClass + ' ' + padding"
 			:inverse="inverse"
 			:restart="restart"
@@ -30,7 +30,7 @@ export interface WorkflowStatusTimerPillProps {
 
 defineEmits(["restart"]);
 withDefaults(defineProps<WorkflowStatusTimerPillProps>(), {
-	statusClass: "rounded-xl",
+	statusClass: "w-28 rounded-xl",
 	padding: "py-1.5",
 	timerClass: "bg-slate-900 w-28 rounded-r-xl"
 });

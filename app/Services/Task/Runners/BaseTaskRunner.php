@@ -94,6 +94,10 @@ class BaseTaskRunner implements TaskRunnerContract
             $this->taskRun->updateRelationCounter('outputArtifacts');
         }
 
+        if ($this->taskProcess->percent_complete < 100) {
+            $this->activity("Task completed successfully", 100);
+        }
+        
         // Finished running the process
         TaskRunnerService::processCompleted($this->taskProcess);
     }
