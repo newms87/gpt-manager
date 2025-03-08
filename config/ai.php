@@ -12,6 +12,7 @@ use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
 use App\Services\Task\Runners\LoadFromDatabaseTaskRunner;
 use App\Services\Task\Runners\MergeArtifactsTaskRunner;
 use App\Services\Task\Runners\PageOrganizerTaskRunner;
+use App\Services\Task\Runners\SaveToDatabaseTaskRunner;
 use App\Services\Task\Runners\SplitByFileTaskRunner;
 
 $million  = 1000000;
@@ -102,6 +103,7 @@ return [
         ImageToTextTranscoderTaskRunner::RUNNER_NAME => ImageToTextTranscoderTaskRunner::class,
         PageOrganizerTaskRunner::RUNNER_NAME         => PageOrganizerTaskRunner::class,
         LoadFromDatabaseTaskRunner::RUNNER_NAME      => LoadFromDatabaseTaskRunner::class,
+        SaveToDatabaseTaskRunner::RUNNER_NAME        => SaveToDatabaseTaskRunner::class,
         MergeArtifactsTaskRunner::RUNNER_NAME        => MergeArtifactsTaskRunner::class,
         SplitByFileTaskRunner::RUNNER_NAME           => SplitByFileTaskRunner::class,
     ],

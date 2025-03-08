@@ -26,6 +26,7 @@ class Artifact extends Model implements AuditableContract
     {
         return [
             'json_content' => 'json',
+            'meta'         => 'json',
         ];
     }
 

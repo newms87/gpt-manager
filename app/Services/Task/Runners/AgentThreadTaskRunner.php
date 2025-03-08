@@ -115,7 +115,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
         // Create the artifact and associate it with the task process
         if ($threadRun->lastMessage) {
-            return (new AgentThreadMessageToArtifactMapper)->setMessage($threadRun->lastMessage)->map();
+            return (new AgentThreadMessageToArtifactMapper)->setThreadRun($threadRun)->setMessage($threadRun->lastMessage)->map();
         }
 
         return null;

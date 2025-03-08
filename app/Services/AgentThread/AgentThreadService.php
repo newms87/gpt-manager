@@ -13,7 +13,6 @@ use App\Models\Agent\AgentThreadRun;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Repositories\AgentRepository;
-use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use App\Services\JsonSchema\JsonSchemaService;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -402,18 +401,6 @@ STR;
 
         if ($lastMessage->content) {
             $jsonData = $lastMessage->getJsonContent();
-
-            $hasDBFields = ($jsonData['type'] ?? false) && ($jsonData['id'] ?? false);
-
-            if ($hasDBFields && $this->jsonSchemaService->isUsingDbFields()) {
-                app(JSONSchemaDataToDatabaseMapper::class)
-                    ->setSchemaDefinition($this->responseSchema)
-                    ->saveTeamObjectUsingSchema($this->responseSchema?->schema, $jsonData, $threadRun);
-
-                // Update the last message to include the saved ids for each object
-                $lastMessage->content = json_encode($jsonData);
-                $lastMessage->save();
-            }
 
             // Call the response tools if they are set
             $responseTools = $jsonData['response_tools'] ?? [];

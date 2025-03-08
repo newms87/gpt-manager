@@ -2,9 +2,10 @@
 
 namespace App\Services\Task\Runners;
 
+use App\Models\Agent\AgentThreadRun;
 use App\Models\Task\Artifact;
-use App\Repositories\TeamObjectRepository;
-use App\Resources\TeamObject\TeamObjectForAgentsResource;
+use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
+use Newms87\Danx\Exceptions\ValidationError;
 
 class SaveToDatabaseTaskRunner extends BaseTaskRunner
 {
@@ -12,26 +13,25 @@ class SaveToDatabaseTaskRunner extends BaseTaskRunner
 
     public function run(): void
     {
+        $schemaDefinition = $this->taskProcess->taskDefinitionAgent?->outputSchemaAssociation?->schemaDefinition;
+
+        if (!$schemaDefinition) {
+            throw new ValidationError('No schema definition found for Save To Database task. Add an agent and set output schema to save to database.');
+        }
+
         $outputArtifacts = [];
         foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
-            $type = $inputArtifact->json_content['type'] ?? null;
-            $id   = $inputArtifact->json_content['id'] ?? null;
+            $threadRun   = AgentThreadRun::find($inputArtifact->meta['agent_thread_run_id'] ?? null);
+            $jsonContent = $inputArtifact->json_content;
+            app(JSONSchemaDataToDatabaseMapper::class)
+                ->setSchemaDefinition($schemaDefinition)
+                ->saveTeamObjectUsingSchema($schemaDefinition->schema ?? [], $jsonContent, $threadRun);
 
-            if (!$type || !$id) {
-                static::log("No ID or type found, skipping $inputArtifact");
-                continue;
-            }
-
-            $this->activity("Loading $type ($id)", $percent);
-
-            $teamObject        = app(TeamObjectRepository::class)->loadTeamObject($type, $id);
-            $loadedTeamObject  = TeamObjectForAgentsResource::make($teamObject);
             $outputArtifacts[] = Artifact::create([
-                'name'         => $teamObject->name . ' (' . $teamObject->id . ')',
-                'json_content' => $loadedTeamObject,
+                'name'         => $inputArtifact->name . ' (saved to DB)',
+                'json_content' => $jsonContent,
+                'meta'         => $inputArtifact->meta,
             ]);
-
-            $percent += $percentPerArtifact;
         }
 
         $this->complete($outputArtifacts);
