@@ -39,11 +39,19 @@
 			</template>
 
 			<Background variant="dots" />
+			<Panel position="top-right">
+				<BionicManRunningLottie
+					autoplay
+					class="w-40 relative right-[-1.5rem] opacity-0"
+					:class="{'opacity-100': isRunning}"
+				/>
+			</Panel>
 		</VueFlow>
 	</div>
 </template>
 
 <script setup lang="ts">
+import BionicManRunningLottie from "@/assets/dotlottie/BionicManRunningLottie";
 import { handleExternalDrop, onDragOver } from "@/components/Modules/WorkflowCanvas/dragNDrop";
 import {
 	connectWorkflowNodes,
@@ -54,10 +62,10 @@ import WorkflowCanvasConnectionLine from "@/components/Modules/WorkflowCanvas/Wo
 import WorkflowCanvasEdge from "@/components/Modules/WorkflowCanvas/WorkflowCanvasEdge";
 import { TaskWorkflow, TaskWorkflowConnection, TaskWorkflowNode, TaskWorkflowRun } from "@/types/task-workflows";
 import { Background } from "@vue-flow/background";
-import { Connection, Edge, EdgeProps, Node, VueFlow } from "@vue-flow/core";
+import { Connection, Edge, EdgeProps, Node, Panel, VueFlow } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import WorkflowCanvasNode from "./WorkflowCanvasNode.vue";
 
 const emit = defineEmits<{
@@ -69,11 +77,13 @@ const emit = defineEmits<{
 	(e: "connection-remove", connection: TaskWorkflowConnection): void;
 }>();
 
-defineProps<{
+const props = defineProps<{
 	taskWorkflowRun?: TaskWorkflowRun;
 }>();
 
 const taskWorkflow = defineModel<TaskWorkflow>();
+
+const isRunning = computed(() => props.taskWorkflowRun?.status === "Running");
 
 // Reference to internal Vue Flow nodes
 const nodes = ref<Node[]>([]);

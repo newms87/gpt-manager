@@ -17,7 +17,7 @@
 				@delete="taskWorkflow => deleteAction.trigger(taskWorkflow)"
 			/>
 			<div class="flex-grow" />
-			<TaskWorkflowRunsDrawer v-if="activeTaskWorkflow" />
+			<TaskWorkflowHeaderBar v-if="activeTaskWorkflow" />
 		</div>
 		<div class="flex flex-grow items-center justify-center overflow-hidden">
 			<TaskWorkflowEditor v-if="activeTaskWorkflow" :task-workflow="activeTaskWorkflow" />
@@ -34,7 +34,7 @@ import {
 	setActiveTaskWorkflow,
 	taskWorkflows
 } from "@/components/Modules/TaskWorkflows/store";
-import TaskWorkflowRunsDrawer from "@/components/Modules/TaskWorkflows/TaskWorkflowRunsDrawer";
+import TaskWorkflowHeaderBar from "@/components/Modules/TaskWorkflows/TaskWorkflowHeaderBar";
 import { TaskWorkflow } from "@/types/task-workflows";
 import { FaSolidAnkh as WorkflowIcon } from "danx-icon";
 import { SelectionMenuField } from "quasar-ui-danx";

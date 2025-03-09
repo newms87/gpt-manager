@@ -1,26 +1,19 @@
 <template>
 	<div class="node-header flex flex-nowrap items-center space-x-2">
-		<ShowTaskProcessesButton v-if="taskRun" :task-run="taskRun" class="bg-sky-950 py-0" icon-class="w-3" />
+		<div class="flex-grow">
+			<ShowTaskProcessesButton v-if="taskRun" :task-run="taskRun" class="bg-sky-950 py-0" icon-class="w-3" />
+		</div>
 		<template v-if="isWorkflowRunning">
-			<template v-if="isRunning">
-				<div class="flex-grow">
-					<DotLottieVue
-						class="w-8 h-8 bg-sky-900 rounded-full"
-						autoplay
-						loop
-						src="https://lottie.host/e61ac963-4a56-4667-ab2f-b54431a0548d/RSumZz9y00.lottie"
-					/>
-				</div>
-				<ActionButton
-					type="stop"
-					:disabled="!isRunning"
-					:action="stopAction"
-					:target="taskRun"
-					color="red"
-					tooltip="Stop task"
-					class="p-2"
-				/>
-			</template>
+			<ActionButton
+				v-if="isRunning"
+				type="stop"
+				:disabled="!isRunning"
+				:action="stopAction"
+				:target="taskRun"
+				color="red"
+				tooltip="Stop task"
+				class="p-2"
+			/>
 			<ActionButton
 				v-else-if="isStopped"
 				type="play"
@@ -30,9 +23,17 @@
 				tooltip="Continue running task"
 				class="p-2"
 			/>
+			<ActionButton
+				v-else-if="canBeRestarted"
+				type="refresh"
+				:action="restartAction"
+				:target="taskRun"
+				color="sky"
+				tooltip="Restart task"
+				class="p-2"
+			/>
 		</template>
 		<template v-else>
-			<div class="flex-grow"></div>
 			<template v-if="loading">
 				<QSpinner size="lg" />
 			</template>
@@ -49,7 +50,6 @@ import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config"
 import { activeTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/store";
 import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
 import { TaskRun } from "@/types";
-import { DotLottieVue } from "@lottiefiles/dotlottie-vue";
 import { ActionButton } from "quasar-ui-danx";
 import { computed } from "vue";
 
@@ -65,8 +65,10 @@ const props = defineProps<{
 
 const isWorkflowRunning = computed(() => ["Running"].includes(activeTaskWorkflowRun.value?.status));
 
+const restartAction = dxTaskRun.getAction("restart");
 const resumeAction = dxTaskRun.getAction("resume");
 const stopAction = dxTaskRun.getAction("stop");
-const isStopped = computed(() => props.taskRun?.status === "Stopped" || props.taskRun?.status === "Pending");
+const isStopped = computed(() => ["Stopped"].includes(props.taskRun?.status));
+const canBeRestarted = computed(() => ["Pending", "Failed", "Completed"].includes(props.taskRun?.status));
 const isRunning = computed(() => ["Running"].includes(props.taskRun?.status));
 </script>

@@ -76,20 +76,20 @@ watch(() => props.taskWorkflowRun, async () => {
 
 	if (newPercent === transitionPercent.value) return;
 
+	// If the new percent is less than the current percent, reset the transition as this is a different task run
+	if (newPercent < transitionPercent.value) {
+		transitionPercent.value = 0;
+	}
+
 	// Move the truck at a constant velocity. The duration is calculated based on the distance to travel.
-	const duration = (newPercent - transitionPercent.value) / 100 * 5000;
+	const duration = (newPercent - transitionPercent.value) / 100 * 3000;
 
 	// noinspection TypeScriptValidateTypes IDE doesn't recognize the Ref imported
 	await waitForRef(isTransitioning, false);
 
-	// The truck should only be animated moving forward
-	if (duration > 0) {
-		isTransitioning.value = true;
-		await executeTransition(transitionPercent, transitionPercent.value, newPercent, { duration });
-		isTransitioning.value = false;
-	} else {
-		transitionPercent.value = newPercent;
-	}
+	isTransitioning.value = true;
+	await executeTransition(transitionPercent, transitionPercent.value, newPercent, { duration });
+	isTransitioning.value = false;
 }, { deep: true });
 
 const path = ref(computePath());

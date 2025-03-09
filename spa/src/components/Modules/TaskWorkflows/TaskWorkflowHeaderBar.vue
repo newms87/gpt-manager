@@ -1,6 +1,6 @@
 <template>
 	<div class="relative h-18">
-		<div v-if="activeTaskWorkflow" class="flex items-center flex-nowrap space-x-4">
+		<div class="flex items-center flex-nowrap space-x-4">
 			<div v-if="activeTaskWorkflowRun" class="flex-grow flex items-center space-x-4 flex-nowrap">
 				<LabelPillWidget
 					:label="`TaskWorkflowRun: ${activeTaskWorkflowRun.id}`"
@@ -21,19 +21,16 @@
 			<div>
 				<ShowHideButton
 					v-model="isShowing"
-					:label="`${activeTaskWorkflow.runs?.length} Runs`"
-					class="bg-sky-700 text-sky-300"
+					:label="`${activeTaskWorkflow.runs?.length}`"
+					class="bg-green-700 text-green-300"
+					:show-icon="RunsIcon"
 				/>
 			</div>
-		</div>
-		<div v-else>
-			<div class="text-center text-sky-300">No Task Workflow Selected</div>
 		</div>
 		<div
 			class="absolute-top-right top-[120%] z-10 transition-all overflow-y-auto max-h-[80vh] w-[80vw] bg-sky-900 px-4"
 			:class="{'h-[5000%]': isShowing, 'h-0': !isShowing}"
 		>
-
 			<div v-if="isShowing" class="mt-4">
 				<div v-if="activeTaskWorkflow.runs?.length === 0" class="text-center text-sky-300">No Workflow Runs</div>
 				<div v-else>
@@ -67,6 +64,7 @@ import TaskWorkflowRunCard from "@/components/Modules/TaskWorkflows/TaskWorkflow
 import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
 import SelectWorkflowInputDialog from "@/components/Modules/TaskWorkflows/WorkflowInputs/SelectWorkflowInputDialog";
 import { WorkflowInput } from "@/types";
+import { FaSolidPersonRunning as RunsIcon } from "danx-icon";
 import { ActionButton, FlashMessages, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
