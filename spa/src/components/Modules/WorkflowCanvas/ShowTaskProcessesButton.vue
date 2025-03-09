@@ -5,13 +5,10 @@
 	>
 		<template #label>
 			<div class="ml-2">{{ taskRun.process_count }}</div>
-			<QMenu
-				self="center right"
-				max-height="80vh"
-				cover
-				:model-value="isShowingTaskProcesses"
-				@before-hide="isShowingTaskProcesses = false"
-				@hide="isShowingTaskProcesses = false"
+			<InfoDialog
+				v-if="isShowingTaskProcesses"
+				:title="`${taskRun.taskDefinition.name}: Task Processes`"
+				@close="isShowingTaskProcesses = false"
 			>
 				<ListTransition class="p-4 w-[70rem] h-[80vh] overflow-x-hidden overflow-y-auto">
 					<QSkeleton v-if="taskRun.processes?.length === undefined" class="h-12" />
@@ -28,7 +25,7 @@
 						class="bg-slate-700 p-4 my-2 rounded-lg"
 					/>
 				</ListTransition>
-			</QMenu>
+			</InfoDialog>
 		</template>
 	</ShowHideButton>
 </template>
@@ -38,7 +35,7 @@ import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config"
 import NodeTaskProcessWidget from "@/components/Modules/WorkflowCanvas/NodeTaskProcessWidget";
 import { TaskRun } from "@/types";
 import { FaSolidFileInvoice as ProcessListIcon } from "danx-icon";
-import { autoRefreshObject, ListTransition, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
+import { autoRefreshObject, InfoDialog, ListTransition, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
 import { onMounted, ref, watch } from "vue";
 
 const props = defineProps<{

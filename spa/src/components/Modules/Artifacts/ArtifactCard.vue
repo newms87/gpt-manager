@@ -1,10 +1,10 @@
 <template>
 	<div class="bg-slate-900 p-2 rounded-lg">
-		<div class="flex items-center mb-2 space-x-2">
-			<LabelPillWidget :label="`Artifact: ${artifact.id}`" color="sky" size="xs" />
-			<LabelPillWidget :label="fDateTime(artifact.created_at)" color="blue" size="xs" />
-			<div class="flex-grow">{{ artifact.name }}</div>
-			<ShowHideButton v-model="isShowing" class="bg-sky-900" />
+		<div class="flex items-center flex-nowrap mb-2 space-x-2 w-full max-w-full overflow-hidden">
+			<LabelPillWidget :label="`Artifact: ${artifact.id}`" color="sky" size="xs" class="flex-shrink-0" />
+			<LabelPillWidget :label="fDateTime(artifact.created_at)" color="blue" size="xs" class="flex-shrink-0" />
+			<div class="flex grow min-w-0 overflow-hidden">{{ artifact.name }}</div>
+			<ShowHideButton v-model="isShowing" class="bg-sky-900 flex-shrink-0" />
 		</div>
 		<ListTransition>
 			<div v-if="artifact.files?.length && isShowing">

@@ -1,6 +1,6 @@
 <template>
 	<div class="workflow-canvas-node w-48">
-		<div class="node-content">
+		<div class="node-content border border-gray-300 rounded-xl p-2 bg-sky-900 text-lg h-24">
 			<NodeHeaderBar
 				:task-run="taskRun"
 				:temporary="isTemporary"
@@ -8,33 +8,14 @@
 				@remove="$emit('remove', node)"
 			/>
 
-			<NodeArtifactsWidget class="node-body mt-4" :task-run="taskRun">
-				<ShowTaskProcessesButton v-if="taskRun" :task-run="taskRun" class="bg-sky-950 py-0" icon-class="w-3" />
-			</NodeArtifactsWidget>
-
-			<!-- Input Ports -->
-			<div class="ports input-ports">
-				<Handle
-					id="target-default"
-					type="target"
-					position="left"
-					class="node-handle"
-					:class="{'is-connected': isTargetConnected('target-default')}"
-				/>
-			</div>
-
-			<!-- Output Ports -->
-			<div class="ports output-ports">
-				<Handle
-					id="source-default"
-					type="source"
-					position="right"
-					class="node-handle"
-					:class="{'is-connected': isSourceConnected('source-default')}"
-				/>
-			</div>
+			<NodePortsWidget
+				class="node-body mt-4"
+				:task-run="taskRun"
+				:source-edges="sourceEdges"
+				:target-edges="targetEdges"
+			/>
 		</div>
-		<div class="mt-2">
+		<div class="mt-2 flex justify-center">
 			<div class="node-title text-center">{{ node.data.name }}</div>
 			<div class="flex justify-center mt-2">
 				<WorkflowStatusTimerPill
@@ -51,15 +32,12 @@
 
 <script setup lang="ts">
 import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
-import { activeTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/store";
-import NodeArtifactsWidget from "@/components/Modules/WorkflowCanvas/NodeArtifactsWidget";
+import { edges } from "@/components/Modules/WorkflowCanvas/helpers";
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
-import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
+import NodePortsWidget from "@/components/Modules/WorkflowCanvas/NodePortsWidget";
 import { TaskRun, TaskWorkflowRun } from "@/types";
-import { Edge, Handle, Node, useVueFlow } from "@vue-flow/core";
+import { Edge, Node } from "@vue-flow/core";
 import { computed } from "vue";
-
-const { edges } = useVueFlow();
 
 defineEmits<{
 	(e: "edit", node: Node): void;
@@ -76,35 +54,6 @@ const isTemporary = computed(() => !!props.node.id.match(/^td-/));
 
 const sourceEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.source === props.node.id.toString()));
 const targetEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.target === props.node.id.toString()));
-function isSourceConnected(id) {
-	return sourceEdges.value.some((edge) => edge.sourceHandle === id);
-}
-function isTargetConnected(id) {
-	return targetEdges.value.some((edge) => edge.targetHandle === id);
-}
-
 const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_workflow_node_id == +props.node.id));
-const isWorkflowRunning = computed(() => ["Running"].includes(activeTaskWorkflowRun.value?.status));
 </script>
 
-<style lang="scss" scoped>
-.workflow-canvas-node {
-	.node-content {
-		@apply border border-gray-300 rounded-xl p-4 bg-sky-900 text-lg;
-	}
-
-	.node-handle {
-		@apply w-4 h-4 bg-slate-400;
-
-		&:hover {
-			@apply bg-sky-800;
-		}
-
-		&.is-connected {
-			@apply bg-green-500;
-		}
-	}
-}
-
-
-</style>

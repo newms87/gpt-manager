@@ -1,9 +1,13 @@
-// Convert workflow model to Vue Flow format
 import { TaskWorkflowConnection, TaskWorkflowNode } from "@/types/task-workflows";
-import { Connection, Position } from "@vue-flow/core";
+import { Connection, Position, useVueFlow } from "@vue-flow/core";
 import { nanoid } from "nanoid";
 
-export function convertNodesToVueFlow(workflowNodes: TaskWorkflowNode[]) {
+const { edges } = useVueFlow();
+
+/**
+ *  Convert TaskWorkflowNodes to VueFlow nodes
+ */
+function convertNodesToVueFlow(workflowNodes: TaskWorkflowNode[]) {
 	const vueFlowNodes = [];
 	for (const workflowNode of workflowNodes) {
 		vueFlowNodes.push({
@@ -24,9 +28,12 @@ export function convertNodesToVueFlow(workflowNodes: TaskWorkflowNode[]) {
 	return vueFlowNodes;
 }
 
-export function convertEdgesToVueFlow(workflowEdges) {
+/**
+ *  Convert TaskWorkflowConnections to VueFlow edges
+ */
+function convertConnectionsToVueFlow(workflowConnections: TaskWorkflowConnection[]) {
 	const vueFlowEdges = [];
-	for (const workflowEdge of workflowEdges) {
+	for (const workflowEdge of workflowConnections) {
 		vueFlowEdges.push({
 			id: workflowEdge.id.toString(),
 			source: workflowEdge.source_node_id.toString(),
@@ -40,7 +47,7 @@ export function convertEdgesToVueFlow(workflowEdges) {
 	return vueFlowEdges;
 }
 
-export function connectWorkflowNodes(currentConnections: TaskWorkflowConnection[], newConnection: Connection) {
+function connectWorkflowNodes(currentConnections: TaskWorkflowConnection[], newConnection: Connection) {
 	if (!newConnection.sourceHandle.startsWith("source-")) {
 		return;
 	}
@@ -72,3 +79,10 @@ export function connectWorkflowNodes(currentConnections: TaskWorkflowConnection[
 	} as TaskWorkflowConnection);
 	return newConnections;
 }
+
+export {
+	edges,
+	convertNodesToVueFlow,
+	convertConnectionsToVueFlow,
+	connectWorkflowNodes
+};

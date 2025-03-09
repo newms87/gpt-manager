@@ -1,5 +1,6 @@
 <template>
 	<div class="node-header flex flex-nowrap items-center space-x-2">
+		<ShowTaskProcessesButton v-if="taskRun" :task-run="taskRun" class="bg-sky-950 py-0" icon-class="w-3" />
 		<template v-if="isWorkflowRunning">
 			<template v-if="isRunning">
 				<div class="flex-grow">
@@ -42,6 +43,7 @@
 <script setup lang="ts">
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import { activeTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/store";
+import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
 import { TaskRun } from "@/types";
 import { DotLottieVue } from "@lottiefiles/dotlottie-vue";
 import { ActionButton } from "quasar-ui-danx";

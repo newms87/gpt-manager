@@ -40,7 +40,7 @@
 import { handleExternalDrop, onDragOver } from "@/components/Modules/WorkflowCanvas/dragNDrop";
 import {
 	connectWorkflowNodes,
-	convertEdgesToVueFlow,
+	convertConnectionsToVueFlow,
 	convertNodesToVueFlow
 } from "@/components/Modules/WorkflowCanvas/helpers";
 import WorkflowCanvasConnectionLine from "@/components/Modules/WorkflowCanvas/WorkflowCanvasConnectionLine";
@@ -62,7 +62,7 @@ const emit = defineEmits<{
 	(e: "connection-remove", connection: TaskWorkflowConnection): void;
 }>();
 
-const props = defineProps<{
+defineProps<{
 	taskWorkflowRun?: TaskWorkflowRun;
 }>();
 
@@ -75,7 +75,7 @@ const edges = ref<Edge[]>([]);
 function convertToVueFlow() {
 	if (workflowDefinition.value?.nodes) {
 		nodes.value = convertNodesToVueFlow(workflowDefinition.value.nodes);
-		edges.value = convertEdgesToVueFlow(workflowDefinition.value.connections || []);
+		edges.value = convertConnectionsToVueFlow(workflowDefinition.value.connections || []);
 	}
 }
 

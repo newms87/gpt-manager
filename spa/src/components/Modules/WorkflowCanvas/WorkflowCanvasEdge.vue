@@ -1,6 +1,14 @@
 <template>
 	<!-- You can use the `BaseEdge` component to create your own custom edge more easily -->
-	<BaseEdge :id="edge.id" ref="edgeRef" :path="path[0]" :marker-end="edge.markerEnd as string" :style="edgeStyle" />
+	<BaseEdge
+		:id="edge.id"
+		ref="edgeRef"
+		:path="path[0]"
+		:marker-end="edge.markerEnd as string"
+		:style="edgeStyle"
+		class="base-edge-dan"
+		@mouseenter="isHoveringMenu = true"
+	/>
 
 	<!-- Use the `EdgeLabelRenderer` to escape the SVG world of edges and render your own custom label in a `<div>` ctx -->
 	<EdgeLabelRenderer>
