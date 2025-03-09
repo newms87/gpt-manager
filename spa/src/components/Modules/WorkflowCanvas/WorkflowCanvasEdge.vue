@@ -78,6 +78,7 @@ watch(() => props.taskWorkflowRun, async () => {
 	// Move the truck at a constant velocity. The duration is calculated based on the distance to travel.
 	const duration = (newPercent - transitionPercent.value) / 100 * 2000;
 
+	// noinspection TypeScriptValidateTypes IDE doesn't recognize the Ref imported
 	await waitForRef(isTransitioning, false);
 
 	// The truck should only be animated moving forward
