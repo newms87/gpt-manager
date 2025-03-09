@@ -23,7 +23,7 @@
 			}"
 		>
 			<div class="artifact-transit-icon relative inline-block">
-				🚚
+				<DeliveryBoyLottie :autoplay="isTransitioning" class="w-[7rem]" />
 			</div>
 		</div>
 
@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+import { DeliveryBoyLottie } from "@/assets/dotlottie";
 import { TaskWorkflowRun } from "@/types";
 import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath, Node, useVueFlow } from "@vue-flow/core";
 import { executeTransition } from "@vueuse/core";
@@ -76,7 +77,7 @@ watch(() => props.taskWorkflowRun, async () => {
 	if (newPercent === transitionPercent.value) return;
 
 	// Move the truck at a constant velocity. The duration is calculated based on the distance to travel.
-	const duration = (newPercent - transitionPercent.value) / 100 * 2000;
+	const duration = (newPercent - transitionPercent.value) / 100 * 5000;
 
 	// noinspection TypeScriptValidateTypes IDE doesn't recognize the Ref imported
 	await waitForRef(isTransitioning, false);

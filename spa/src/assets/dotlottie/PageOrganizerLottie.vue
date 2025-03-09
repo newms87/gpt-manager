@@ -1,7 +1,6 @@
 <template>
 	<DotLottieVue
 		:key="autoplay ? 'autoplay' : 'no-autoplay'"
-		class="bg-sky-900 rounded-full"
 		:autoplay="autoplay"
 		loop
 		:src="assetUrl"

@@ -11,7 +11,7 @@
 	</LabelPillWidget>
 </template>
 <script setup lang="ts">
-import { FaSolidTruckArrowRight as ArtifactIcon } from "danx-icon";
+import { FaSolidBoxArchive as ArtifactIcon } from "danx-icon";
 import { LabelPillWidget, LabelPillWidgetProps } from "quasar-ui-danx";
 
 const emit = defineEmits(["show"]);

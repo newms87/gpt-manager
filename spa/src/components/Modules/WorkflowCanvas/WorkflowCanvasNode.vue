@@ -1,6 +1,6 @@
 <template>
 	<div class="group workflow-canvas-node w-48">
-		<div class="node-content relative border border-gray-300 rounded-xl p-2 bg-sky-900 text-lg h-24">
+		<div class="node-content relative border border-gray-300 rounded-xl bg-sky-900 text-lg h-24">
 			<NodeHeaderBar
 				class="opacity-0 group-hover:opacity-100 transition-all absolute-top-left w-full p-2"
 				:task-run="taskRun"
@@ -10,7 +10,7 @@
 				@remove="$emit('remove', node)"
 			/>
 
-			<div class="flex justify-center items-center h-16">
+			<div class="flex justify-center items-center h-full">
 				<Component
 					:is="taskRunnerComponent"
 					:config="taskDefinition.task_runner_config"

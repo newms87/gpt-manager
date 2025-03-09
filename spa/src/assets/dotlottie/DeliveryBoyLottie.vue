@@ -3,7 +3,7 @@
 		:key="autoplay ? 'autoplay' : 'no-autoplay'"
 		:autoplay="autoplay"
 		loop
-		src="https://lottie.host/30368a65-c02b-41d4-8206-351e15c58765/KJRQpxxoBv.lottie"
+		src="https://lottie.host/b12bc2bd-1e4b-42d2-805a-9469b9955447/DKhDgl4wOZ.lottie"
 	/>
 </template>
 <script setup lang="ts">
