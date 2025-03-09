@@ -10,7 +10,6 @@ use App\Models\Task\TaskRun;
 use App\Models\Task\WorkflowStatesContract;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
-use Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Models\Job\JobDispatch;
@@ -347,13 +346,24 @@ class TaskRunnerService
         }
 
         // Split up the artifacts into the groups defined by the task definition
-        $artifactGroups = static::splitArtifacts($taskDefinition->artifact_split_mode ?: '', $artifacts);
+        $artifactGroups = ArtifactsSplitterService::split($taskDefinition->artifact_split_mode ?: '', $artifacts);
 
+        foreach($artifactGroups as $artifactGroup) {
+            foreach($artifactGroup as $artifact) {
+                if (!($artifact instanceof Artifact)) {
+                    dump($taskDefinition->artifact_split_mode . " " . $taskDefinition->name);
+                    dump("GROUPS: ", $artifactGroups);
+                    dump("ARTIFACTS: ", $artifacts);
+                    throw new ValidationError("Invalid artifact group");
+                }
+            }
+        }
         foreach($definitionAgents as $definitionAgent) {
             foreach($artifactGroups as $groupKey => $artifactsInGroup) {
+                $name        = ($definitionAgent?->agent->name ?: $taskDefinition->name);
                 $taskProcess = $taskRun->taskProcesses()->create([
-                    'name'                     => $groupKey,
-                    'activity'                 => "Preparing " . ($definitionAgent?->agent->name ?: $taskDefinition->name) . "...",
+                    'name'                     => $name . ": " . $groupKey,
+                    'activity'                 => "Preparing $name...",
                     'status'                   => WorkflowStatesContract::STATUS_PENDING,
                     'task_definition_agent_id' => $definitionAgent?->id,
                 ]);
@@ -374,33 +384,5 @@ class TaskRunnerService
         $taskRun->taskProcesses()->saveMany($taskProcesses);
 
         return $taskProcesses;
-    }
-
-    /**
-     * Split the artifacts into groups based on the split mode
-     * @param Artifact[]|Collection $artifacts
-     */
-    public static function splitArtifacts(string $splitMode, $artifacts)
-    {
-        $artifactGroups = [];
-        if ($splitMode === TaskDefinition::ARTIFACT_SPLIT_BY_ARTIFACT) {
-            $artifactGroups = $artifacts->groupBy('id');
-        } elseif ($splitMode === TaskDefinition::ARTIFACT_SPLIT_BY_NODE) {
-            foreach($artifacts as $artifact) {
-                $taskProcess = $artifact->getTaskProcessThatCreatedArtifact();
-
-                if (!$taskProcess) {
-                    Log::debug("No task process found for artifact: $artifact");
-                    $artifactGroups['default'][] = $artifact;
-                    continue;
-                }
-
-                $artifactGroups[$taskProcess->taskRun->task_workflow_node_id][] = $artifact;
-            }
-        } else {
-            $artifactGroups['default'] = $artifacts;
-        }
-
-        return $artifactGroups;
     }
 }

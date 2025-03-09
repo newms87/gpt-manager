@@ -26,15 +26,17 @@
 			/>
 		</div>
 		<div class="mt-2 flex justify-center">
-			<div class="node-title text-center">{{ node.data.name }}</div>
-			<div class="flex justify-center mt-2">
-				<WorkflowStatusTimerPill
-					v-if="taskRun"
-					:runner="taskRun"
-					class="text-xs"
-					status-class="rounded-full px-4"
-					timer-class="bg-slate-800 px-4 rounded-full"
-				/>
+			<div>
+				<div class="node-title text-center">{{ node.data.name }}</div>
+				<div class="flex justify-center mt-2">
+					<WorkflowStatusTimerPill
+						v-if="taskRun"
+						:runner="taskRun"
+						class="text-xs"
+						status-class="rounded-full px-4"
+						timer-class="bg-slate-800 px-4 rounded-full"
+					/>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -66,8 +68,8 @@ const props = defineProps<{
 const isTemporary = computed(() => !!props.node.id.match(/^td-/));
 
 const taskWorkflowNode = computed(() => props.taskWorkflow?.nodes.find((taskWorkflowNode) => taskWorkflowNode.id == +props.node.id));
-const taskDefinition = computed(() => taskWorkflowNode.value.taskDefinition);
-const taskRunnerComponent = computed(() => TaskRunners[taskDefinition.value.task_runner_class] || TaskRunners.Base);
+const taskDefinition = computed(() => taskWorkflowNode.value?.taskDefinition);
+const taskRunnerComponent = computed(() => TaskRunners[taskDefinition.value?.task_runner_class] || TaskRunners.Base);
 const sourceEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.source === props.node.id.toString()));
 const targetEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.target === props.node.id.toString()));
 const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_workflow_node_id == +props.node.id));

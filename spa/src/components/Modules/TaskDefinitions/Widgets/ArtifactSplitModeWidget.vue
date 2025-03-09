@@ -7,9 +7,10 @@
 				class="tab-buttons border-sky-900"
 				indicator-color="sky-900"
 			>
-				<QTab name="" label="Combine All" />
-				<QTab name="Node" label="By Node" />
-				<QTab name="Artifact" label="By Artifact" />
+				<QTab name="" label="All Together" />
+				<QTab name="Node" label="Group By Task" />
+				<QTab name="Artifact" label="One By One" />
+				<QTab name="Combinations" label="All Combinations" />
 			</QTabs>
 		</div>
 	</div>
