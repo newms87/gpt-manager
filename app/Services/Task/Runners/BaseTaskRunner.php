@@ -14,7 +14,7 @@ class BaseTaskRunner implements TaskRunnerContract
 {
     use HasDebugLogging;
 
-    const string RUNNER_NAME = 'Base Task Runner';
+    const string RUNNER_NAME = 'Base';
 
     protected TaskRun      $taskRun;
     protected ?TaskProcess $taskProcess;
@@ -97,7 +97,7 @@ class BaseTaskRunner implements TaskRunnerContract
         if ($this->taskProcess->percent_complete < 100) {
             $this->activity("Task completed successfully", 100);
         }
-        
+
         // Finished running the process
         TaskRunnerService::processCompleted($this->taskProcess);
     }

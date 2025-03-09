@@ -19,6 +19,7 @@
 			<template #node-custom="nodeProps">
 				<WorkflowCanvasNode
 					:node="nodeProps"
+					:task-workflow="taskWorkflow"
 					:task-workflow-run="taskWorkflowRun"
 					:loading="taskWorkflowRun && !taskWorkflowRun.taskRuns"
 					@edit="node => $emit('node-edit', resolveWorkflowNode(node))"
@@ -72,26 +73,26 @@ defineProps<{
 	taskWorkflowRun?: TaskWorkflowRun;
 }>();
 
-const workflowDefinition = defineModel<TaskWorkflow>();
+const taskWorkflow = defineModel<TaskWorkflow>();
 
 // Reference to internal Vue Flow nodes
 const nodes = ref<Node[]>([]);
 const edges = ref<Edge[]>([]);
 
 function convertToVueFlow() {
-	if (workflowDefinition.value?.nodes) {
-		nodes.value = convertNodesToVueFlow(workflowDefinition.value.nodes);
-		edges.value = convertConnectionsToVueFlow(workflowDefinition.value.connections || []);
+	if (taskWorkflow.value?.nodes) {
+		nodes.value = convertNodesToVueFlow(taskWorkflow.value.nodes);
+		edges.value = convertConnectionsToVueFlow(taskWorkflow.value.connections || []);
 	}
 }
 
 // Watch for changes in the prop model and update the flow
-watch(() => workflowDefinition.value, convertToVueFlow, { deep: true });
+watch(() => taskWorkflow.value, convertToVueFlow, { deep: true });
 onMounted(convertToVueFlow);
 
 /*********** Node Related Methods *********/
 function resolveWorkflowNode(node: Node) {
-	const workflowNode = workflowDefinition.value.nodes.find(n => n.id == +node.id);
+	const workflowNode = taskWorkflow.value.nodes.find(n => n.id == +node.id);
 
 	if (!workflowNode) {
 		throw new Error("Workflow node not found: " + node.id);
@@ -106,7 +107,7 @@ function onNodeDragStop({ node }) {
 
 /*********** Connection Related Methods *********/
 function resolveWorkflowConnection(edge: EdgeProps) {
-	const workflowNode = workflowDefinition.value.connections.find(c => c.id == +edge.id);
+	const workflowNode = taskWorkflow.value.connections.find(c => c.id == +edge.id);
 
 	if (!workflowNode) {
 		throw new Error("Workflow node not found: " + edge.id);
@@ -116,7 +117,7 @@ function resolveWorkflowConnection(edge: EdgeProps) {
 }
 
 function onConnectionAdd(connection: Connection) {
-	const connections = connectWorkflowNodes(workflowDefinition.value.connections, connection);
+	const connections = connectWorkflowNodes(taskWorkflow.value.connections, connection);
 	if (connections) {
 		emit("connection-add", connections.pop());
 	}
