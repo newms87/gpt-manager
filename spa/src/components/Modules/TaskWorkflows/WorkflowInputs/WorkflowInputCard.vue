@@ -53,14 +53,14 @@
 			/>
 			<SelectionMenuField
 				v-if="workflowInput.team_object_type"
-				:selected="workflowInput.teamObject"
+				:selected="selectedTeamObject"
 				selectable
 				clearable
 				:placeholder="`(Select ${workflowInput.team_object_type})`"
 				:select-icon="TeamObjectIcon"
 				select-class="bg-emerald-900 text-cyan-400"
 				label-class="text-slate-300"
-				:options="workflowInput.availableTeamObjects || []"
+				:options="availableTeamObjects"
 				:loading="updateAction.isApplying"
 				@update:selected="teamObject => updateAction.trigger(workflowInput, { team_object_id: teamObject?.id || null })"
 			/>
@@ -105,7 +105,7 @@ import {
 	SelectionMenuField,
 	ShowHideButton
 } from "quasar-ui-danx";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref, shallowRef } from "vue";
 
 defineEmits(["select", "remove"]);
 const props = defineProps<{
@@ -124,10 +124,13 @@ onMounted(() => {
 const updateAction = dxWorkflowInput.getAction("update");
 const debouncedUpdateAction = dxWorkflowInput.getAction("update", { debounce: 500 });
 const isEditing = ref(false);
+const availableTeamObjects = shallowRef([]);
+const selectedTeamObject = computed(() => availableTeamObjects.value.find(to => to.id === props.workflowInput.team_object_id));
 
 async function loadAvailableTeamObjects() {
-	if (props.workflowInput.team_object_type) {
+	if (props.workflowInput.team_object_type && !selectedTeamObject.value) {
 		await dxWorkflowInput.routes.details(props.workflowInput, { availableTeamObjects: true });
+		availableTeamObjects.value = props.workflowInput.availableTeamObjects;
 	}
 }
 

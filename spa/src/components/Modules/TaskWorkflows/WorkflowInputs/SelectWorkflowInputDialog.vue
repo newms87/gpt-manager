@@ -21,7 +21,7 @@
 				</TextField>
 			</div>
 			<ListTransition class="mt-4">
-				<template v-for="workflowInput in workflowInputs" :key="workflowInput?.id">
+				<template v-for="workflowInput in workflowInputs" :key="workflowInput.id">
 					<WorkflowInputCard
 						:workflow-input="workflowInput"
 						selectable
