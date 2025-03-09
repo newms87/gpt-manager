@@ -78,17 +78,18 @@ class BaseTaskRunner implements TaskRunnerContract
         static::log("Task process completed: $this->taskProcess");
 
         if ($artifacts) {
+            $artifactIds = [];
             foreach($artifacts as $artifact) {
                 if (!($artifact instanceof Artifact)) {
                     throw new ValidationError("Invalid artifact provided: artifacts should be instance of Artifact, instead received: " . (is_object($artifact) ? get_class($artifact) : json_encode($artifact)));
                 }
                 static::log("Attaching $artifact");
-                // Add the artifact to the list of output artifacts for this process
-                $this->taskProcess->outputArtifacts()->attach($artifact);
-
-                // Also add to the list of output artifacts for this task run
-                $this->taskRun->outputArtifacts()->attach($artifact);
+                $artifactIds[] = $artifact->id;
             }
+            // Add the artifact to the list of output artifacts for this process
+            $this->taskProcess->outputArtifacts()->syncWithoutDetaching($artifactIds);
+            // Also add to the list of output artifacts for this task run
+            $this->taskRun->outputArtifacts()->syncWithoutDetaching($artifactIds);
 
             $this->taskProcess->updateRelationCounter('outputArtifacts');
             $this->taskRun->updateRelationCounter('outputArtifacts');

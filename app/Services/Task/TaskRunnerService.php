@@ -348,16 +348,6 @@ class TaskRunnerService
         // Split up the artifacts into the groups defined by the task definition
         $artifactGroups = ArtifactsSplitterService::split($taskDefinition->artifact_split_mode ?: '', $artifacts);
 
-        foreach($artifactGroups as $artifactGroup) {
-            foreach($artifactGroup as $artifact) {
-                if (!($artifact instanceof Artifact)) {
-                    dump($taskDefinition->artifact_split_mode . " " . $taskDefinition->name);
-                    dump("GROUPS: ", $artifactGroups);
-                    dump("ARTIFACTS: ", $artifacts);
-                    throw new ValidationError("Invalid artifact group");
-                }
-            }
-        }
         foreach($definitionAgents as $definitionAgent) {
             foreach($artifactGroups as $groupKey => $artifactsInGroup) {
                 $name        = ($definitionAgent?->agent->name ?: $taskDefinition->name);
