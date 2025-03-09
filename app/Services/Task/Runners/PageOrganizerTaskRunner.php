@@ -39,9 +39,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 
         $artifacts = $this->organizeArtifactIntoGroups($agentThread, $artifact);
 
-        if ($artifacts) {
-            $this->complete($artifacts);
-        }
+        $this->complete($artifacts);
     }
 
     /**
@@ -67,7 +65,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 
             // If no pages were returned, something went wrong so we can return immediately with a failure
             if (!$pages) {
-                return null;
+                continue;
             }
 
             $this->addPagesToArtifact($inputArtifact, $pages);

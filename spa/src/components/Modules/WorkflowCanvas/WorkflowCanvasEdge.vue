@@ -12,6 +12,7 @@
 		<div
 			v-if="transitionPercent > 0 && tweenTransitionPosition < 100"
 			ref="labelRef"
+			class="z-[1000]"
 			:style="{
 				position: 'absolute',
 				zIndex: 1,
@@ -96,8 +97,8 @@ const isHoveringLine = ref(false);
 const isHovering = computed(() => isHoveringMenu.value || isHoveringLine.value);
 const { onEdgeMouseEnter, onEdgeMouseLeave } = useVueFlow();
 
-onEdgeMouseEnter(({ edge }) => +edge.id == edge.id && (isHoveringLine.value = true));
-onEdgeMouseLeave(({ edge }) => +edge.id == edge.id && (isHoveringLine.value = false));
+onEdgeMouseEnter(({ edge }) => +edge.id == +props.edge.id && (isHoveringLine.value = true));
+onEdgeMouseLeave(({ edge }) => +edge.id == +props.edge.id && (isHoveringLine.value = false));
 
 const edgeStyle = computed(() => {
 	return {
