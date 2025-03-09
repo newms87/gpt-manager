@@ -10,14 +10,14 @@
 
 	<EdgeLabelRenderer>
 		<div
-			v-if="transitionPercent > 0 && tweenTransitionPosition < 100"
+			v-if="transitionPercent > 0 && transitionPercent < 100"
 			ref="labelRef"
 			class="z-[1000]"
 			:style="{
 				position: 'absolute',
 				zIndex: 1,
 				offsetPath: `path('${path[0]}')`,
-				offsetDistance: `${tweenTransitionPosition}%`,
+				offsetDistance: `${transitionPercent}%`,
 				offsetRotate: '0deg',
 				offsetAnchor: 'center',
 			}"
@@ -51,8 +51,8 @@
 <script setup lang="ts">
 import { TaskWorkflowRun } from "@/types";
 import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath, Node, useVueFlow } from "@vue-flow/core";
-import { TransitionPresets, useTransition, UseTransitionOptions } from "@vueuse/core";
-import { ActionButton } from "quasar-ui-danx";
+import { executeTransition } from "@vueuse/core";
+import { ActionButton, waitForRef } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
 defineEmits<{ (e: "remove", edge: EdgeProps): void }>();
@@ -62,19 +62,31 @@ const props = defineProps<{ taskWorkflowRun?: TaskWorkflowRun, edge: EdgeProps; 
 const sourceTaskRun = computed(() => props.taskWorkflowRun?.taskRuns?.find((tr) => tr.task_workflow_node_id == +props.edge.source));
 const targetTaskRun = computed(() => props.taskWorkflowRun?.taskRuns?.find((tr) => tr.task_workflow_node_id == +props.edge.target));
 const transitionPercent = ref(0);
-const tweenTransitionPosition = useTransition(transitionPercent, {
-	duration: 2000,
-	easing: TransitionPresets.easeInOutCubic
-} as UseTransitionOptions);
-watch(() => props.taskWorkflowRun, () => {
+const isTransitioning = ref(false);
+watch(() => props.taskWorkflowRun, async () => {
+	let newPercent = 0;
 	if (["Completed", "Running"].includes(targetTaskRun.value?.status)) {
-		transitionPercent.value = 100;
+		newPercent = 100;
 	} else if (targetTaskRun.value?.status === "Pending") {
-		transitionPercent.value = 75;
+		newPercent = 75;
 	} else if (sourceTaskRun.value?.status === "Completed") {
-		transitionPercent.value = 25;
+		newPercent = 25;
+	}
+
+	if (newPercent === transitionPercent.value) return;
+
+	// Move the truck at a constant velocity. The duration is calculated based on the distance to travel.
+	const duration = (newPercent - transitionPercent.value) / 100 * 2000;
+
+	await waitForRef(isTransitioning, false);
+
+	// The truck should only be animated moving forward
+	if (duration > 0) {
+		isTransitioning.value = true;
+		await executeTransition(transitionPercent, transitionPercent.value, newPercent, { duration });
+		isTransitioning.value = false;
 	} else {
-		transitionPercent.value = 0;
+		transitionPercent.value = newPercent;
 	}
 }, { deep: true });
 
