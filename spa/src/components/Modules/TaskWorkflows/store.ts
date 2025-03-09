@@ -40,7 +40,7 @@ async function loadTaskWorkflows() {
 }
 
 async function loadTaskWorkflowRuns() {
-	await dxTaskWorkflow.routes.details(activeTaskWorkflow.value, { "*": false, runs: { taskRuns: true } });
+	await dxTaskWorkflow.routes.details(activeTaskWorkflow.value, { "*": false, runs: true });
 }
 
 watch(() => activeTaskWorkflowRun.value, autoRefreshTaskWorkflowRun);
@@ -50,8 +50,8 @@ async function autoRefreshTaskWorkflowRun() {
 		await autoRefreshObject(
 				AUTO_REFRESH_NAME,
 				activeTaskWorkflowRun.value,
-				(tr: TaskWorkflowRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value, WORKFLOW_STATUS.DISPATCHED.value].includes(tr.status),
-				(tr: TaskWorkflowRun) => dxTaskWorkflowRun.routes.details(tr)
+				(tr: TaskWorkflowRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value, WORKFLOW_STATUS.DISPATCHED.value].includes(tr.status) || !activeTaskWorkflowRun.value.taskRuns,
+				(tr: TaskWorkflowRun) => dxTaskWorkflowRun.routes.details(tr, { taskRuns: { taskDefinition: true } })
 		);
 	} else {
 		stopAutoRefreshObject(AUTO_REFRESH_NAME);

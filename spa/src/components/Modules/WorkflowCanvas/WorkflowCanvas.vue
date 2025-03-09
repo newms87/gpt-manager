@@ -20,6 +20,7 @@
 				<WorkflowCanvasNode
 					:node="nodeProps"
 					:task-workflow-run="taskWorkflowRun"
+					:loading="taskWorkflowRun && !taskWorkflowRun.taskRuns"
 					@edit="node => $emit('node-edit', resolveWorkflowNode(node))"
 					@remove="node => $emit('node-remove', resolveWorkflowNode(node))"
 				/>

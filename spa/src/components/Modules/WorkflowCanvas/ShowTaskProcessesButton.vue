@@ -10,7 +10,7 @@
 				:title="`${taskRun.taskDefinition.name}: Task Processes`"
 				@close="isShowingTaskProcesses = false"
 			>
-				<ListTransition class="p-4 w-[70rem] h-[80vh] overflow-x-hidden overflow-y-auto">
+				<ListTransition class="w-[70rem] h-[80vh] overflow-x-hidden overflow-y-auto">
 					<QSkeleton v-if="taskRun.processes?.length === undefined" class="h-12" />
 					<div
 						v-else-if="taskRun.processes.length === 0"

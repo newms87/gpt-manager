@@ -4,7 +4,6 @@ namespace App\Resources\TaskWorkflow;
 
 use App\Models\Task\TaskWorkflowRun;
 use App\Resources\TaskDefinition\TaskRunResource;
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
 class TaskWorkflowRunResource extends ActionResource
@@ -23,12 +22,5 @@ class TaskWorkflowRunResource extends ActionResource
             'updated_at'   => $taskWorkflowRun->updated_at,
             'taskRuns'     => fn($fields) => TaskRunResource::collection($taskWorkflowRun->taskRuns, $fields),
         ];
-    }
-
-    public static function details(Model $model, ?array $includeFields = null): array
-    {
-        return static::make($model, $includeFields ?? [
-            'taskRuns' => true,
-        ]);
     }
 }

@@ -31,11 +31,15 @@
 				class="p-2"
 			/>
 		</template>
-
 		<template v-else>
 			<div class="flex-grow"></div>
-			<ActionButton type="edit" color="sky" :disabled="temporary" @click.stop="$emit('edit')" />
-			<ActionButton type="trash" color="red" :disabled="temporary" @click.stop="$emit('remove')" />
+			<template v-if="loading">
+				<QSpinner size="lg" />
+			</template>
+			<template v-else>
+				<ActionButton type="edit" color="sky" :disabled="temporary" @click.stop="$emit('edit')" />
+				<ActionButton type="trash" color="red" :disabled="temporary" @click.stop="$emit('remove')" />
+			</template>
 		</template>
 	</div>
 </template>
@@ -56,6 +60,7 @@ defineEmits<{
 const props = defineProps<{
 	taskRun?: TaskRun;
 	temporary?: boolean;
+	loading?: boolean;
 }>();
 
 const isWorkflowRunning = computed(() => ["Running"].includes(activeTaskWorkflowRun.value?.status));

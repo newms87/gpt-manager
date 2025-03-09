@@ -4,6 +4,7 @@
 			<NodeHeaderBar
 				:task-run="taskRun"
 				:temporary="isTemporary"
+				:loading="loading"
 				@edit="$emit('edit', node)"
 				@remove="$emit('remove', node)"
 			/>
@@ -47,6 +48,7 @@ defineEmits<{
 const props = defineProps<{
 	node: Node;
 	taskWorkflowRun?: TaskWorkflowRun;
+	loading?: boolean;
 }>();
 
 // Is this node a temporary placeholder waiting for the backend to respond with the real node ID

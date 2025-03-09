@@ -11,27 +11,21 @@
 	</LabelPillWidget>
 </template>
 <script setup lang="ts">
-import { Artifact } from "@/types";
 import { FaSolidTruckArrowRight as ArtifactIcon } from "danx-icon";
 import { LabelPillWidget, LabelPillWidgetProps } from "quasar-ui-danx";
-import { ref } from "vue";
 
 const emit = defineEmits(["show"]);
 const props = withDefaults(defineProps<{
 	count?: number;
 	activeColor?: LabelPillWidgetProps["color"];
-	artifacts?: Artifact[];
 	disabled?: boolean;
 }>(), {
 	count: 0,
-	activeColor: "sky",
-	artifacts: null
+	activeColor: "sky"
 });
 
-const isShowing = ref(false);
 function onShow() {
 	if (props.disabled) return;
-	isShowing.value = true;
 	emit("show");
 }
 </script>

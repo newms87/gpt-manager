@@ -11,7 +11,6 @@
 			:count="count"
 			:active-color="type === 'target' ? 'sky' : 'green'"
 			:disabled="disabled"
-			:artifacts="artifacts"
 		/>
 	</Handle>
 </template>

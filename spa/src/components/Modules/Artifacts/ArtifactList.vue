@@ -1,22 +1,21 @@
 <template>
-	<ListTransition>
+	<ListTransition :class="dense ? 'space-y-2' : 'space-y-4'">
 		<QSkeleton v-if="!artifacts" class="h-20 my-2" />
 		<div v-else-if="artifacts.length === 0" class="text-xl text-center text-gray-500">No Artifacts</div>
 		<template v-else>
-			<div class="flex justify-end mb-8">
+			<div class="flex justify-end" :class="dense ? 'mb-4' : 'mb-8'">
 				<ShowHideButton
 					v-model="isShowingAll"
 					class="bg-sky-900"
 					icon-class="w-5"
 					label-class="text-base ml-2"
-					:label="isShowingAll ? 'Hide All' : 'Show All'"
+					:label="isShowingAll ? 'Collapse All' : 'Expand All'"
 				/>
 			</div>
 			<ArtifactCard
 				v-for="artifact in artifacts"
 				:key="artifact.id"
 				:show="isShowingAll"
-				class="mb-6"
 				:artifact="artifact"
 			/>
 		</template>
@@ -30,6 +29,7 @@ import { ref } from "vue";
 
 defineProps<{
 	artifacts?: Artifact[];
+	dense?: boolean;
 }>();
 
 const isShowingAll = ref(false);

@@ -26,7 +26,7 @@
 
 		<InfoDialog
 			v-if="artifactsToShow"
-			:title="`${isShowingInputArtifacts ? 'Input' : 'Output'} Artifacts ${taskRun.name}`"
+			:title="`${taskRun.taskDefinition.name}: ${isShowingInputArtifacts ? 'Input' : 'Output'} Artifacts`"
 			@close="hideArtifacts"
 		>
 			<ArtifactList :artifacts="artifactsToShow" class="w-[60rem] h-[80vh]" />

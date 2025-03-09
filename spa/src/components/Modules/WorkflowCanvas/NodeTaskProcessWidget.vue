@@ -4,7 +4,7 @@
 			:count="taskProcess.inputArtifacts.length"
 			active-color="sky"
 			:disabled="!taskProcess"
-			:artifacts="taskProcess.inputArtifacts"
+			@show="isShowingInputArtifacts = true"
 		/>
 		<div class="flex-grow">
 			<div v-if="taskProcess.activity" class="flex-grow flex items-center flex-nowrap space-x-2">
@@ -50,6 +50,12 @@
 					class="p-2"
 				/>
 			</div>
+			<ArtifactList
+				v-if="artifactsToShow"
+				dense
+				class="bg-slate-800 p-2 mt-4 rounded"
+				:artifacts="artifactsToShow"
+			/>
 			<JobDispatchList
 				v-if="isShowingJobDispatches"
 				class="p-2 border-t border-slate-400 mt-2"
@@ -60,12 +66,13 @@
 			:count="taskProcess.outputArtifacts.length"
 			active-color="green"
 			:disabled="!taskProcess"
-			:artifacts="taskProcess.outputArtifacts"
+			@show="isShowingOutputArtifacts = true"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
+import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import JobDispatchList from "@/components/Modules/Audits/JobDispatches/JobDispatchList";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
@@ -84,6 +91,16 @@ const stopAction = dxTaskProcess.getAction("stop");
 const isStopped = computed(() => props.taskProcess.status === "Stopped" || props.taskProcess.status === "Pending");
 const isRunning = computed(() => ["Running"].includes(props.taskProcess.status));
 const isShowingJobDispatches = ref(false);
+const isShowingInputArtifacts = ref(false);
+const isShowingOutputArtifacts = ref(false);
+const artifactsToShow = computed(() => {
+	if (isShowingInputArtifacts.value) {
+		return props.taskProcess.inputArtifacts;
+	} else if (isShowingOutputArtifacts.value) {
+		return props.taskProcess.outputArtifacts;
+	}
+	return null;
+});
 
 async function loadJobDispatches() {
 	await dxTaskProcess.routes.details(props.taskProcess, { jobDispatches: { logs: true, apiLogs: true, errors: true } });
