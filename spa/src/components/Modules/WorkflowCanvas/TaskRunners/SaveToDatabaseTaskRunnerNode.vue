@@ -1,6 +1,6 @@
 <template>
 	<BaseTaskRunnerNode :config="config">
-		<SaveToDbLottie class="w-[14rem] mt-[-.5rem]" :autoplay="autoplay" />
+		<SaveToDbLottie class="w-[14rem] mt-[-.5rem]" :autoplay="autoplay" :finished="finished" />
 	</BaseTaskRunnerNode>
 </template>
 <script setup lang="ts">
@@ -11,5 +11,6 @@ import { AnyObject } from "quasar-ui-danx";
 defineProps<{
 	config?: AnyObject;
 	autoplay?: boolean;
+	finished?: boolean;
 }>();
 </script>

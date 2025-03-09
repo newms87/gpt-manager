@@ -15,6 +15,7 @@
 					:is="taskRunnerComponent"
 					:config="taskDefinition.task_runner_config"
 					:autoplay="isTaskRunning"
+					:finished="isTaskCompleted"
 				/>
 			</div>
 			<NodePortsWidget
@@ -71,5 +72,6 @@ const sourceEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.sou
 const targetEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.target === props.node.id.toString()));
 const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_workflow_node_id == +props.node.id));
 const isTaskRunning = computed(() => taskRun.value?.status === "Running");
+const isTaskCompleted = computed(() => taskRun.value?.status === "Completed");
 </script>
 

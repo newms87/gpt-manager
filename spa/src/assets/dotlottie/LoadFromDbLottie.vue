@@ -1,15 +1,15 @@
 <template>
-	<DotLottieVue
-		:key="autoplay ? 'autoplay' : 'no-autoplay'"
+	<DotLottiePlayer
 		:autoplay="autoplay"
-		loop
 		src="https://lottie.host/69ba00e7-9ee5-4b1e-86ba-789f5e3289f6/0obrgcGaoj.lottie"
+		:finished="finished"
 	/>
 </template>
 <script setup lang="ts">
-import { DotLottieVue } from "@lottiefiles/dotlottie-vue";
+import DotLottiePlayer from "@/assets/dotlottie/DotLottiePlayer";
 
 defineProps<{
-	autoplay?: boolean
+	autoplay?: boolean;
+	finished?: boolean;
 }>();
 </script>

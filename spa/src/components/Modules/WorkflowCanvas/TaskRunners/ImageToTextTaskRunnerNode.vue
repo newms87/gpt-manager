@@ -1,6 +1,6 @@
 <template>
 	<BaseTaskRunnerNode :config="config">
-		<ImageToTextLottie class="w-[10rem]" :autoplay="autoplay" />
+		<ImageToTextLottie class="w-[10rem]" :autoplay="autoplay" :finished="finished" />
 	</BaseTaskRunnerNode>
 </template>
 <script setup lang="ts">
@@ -11,5 +11,6 @@ import { AnyObject } from "quasar-ui-danx";
 defineProps<{
 	config?: AnyObject;
 	autoplay?: boolean;
+	finished?: boolean;
 }>();
 </script>
