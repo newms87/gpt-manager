@@ -51,14 +51,30 @@
 <script setup lang="ts">
 import { DeliveryBoyLottie } from "@/assets/dotlottie";
 import { TaskWorkflowRun } from "@/types";
-import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath, Node, useVueFlow } from "@vue-flow/core";
+import {
+	BaseEdge,
+	EdgeLabelRenderer,
+	EdgeProps,
+	getBezierPath,
+	getSmoothStepPath,
+	Node,
+	useVueFlow
+} from "@vue-flow/core";
 import { executeTransition } from "@vueuse/core";
 import { ActionButton, waitForRef } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
 defineEmits<{ (e: "remove", edge: EdgeProps): void }>();
 
-const props = defineProps<{ taskWorkflowRun?: TaskWorkflowRun, edge: EdgeProps; nodes: Node[]; }>();
+const props = withDefaults(defineProps<{
+	pathType: "bezier" | "smoothstep";
+	taskWorkflowRun?: TaskWorkflowRun,
+	edge: EdgeProps;
+	nodes: Node[];
+}>(), {
+	pathType: "smoothstep",
+	taskWorkflowRun: null
+});
 
 const sourceTaskRun = computed(() => props.taskWorkflowRun?.taskRuns?.find((tr) => tr.task_workflow_node_id == +props.edge.source));
 const targetTaskRun = computed(() => props.taskWorkflowRun?.taskRuns?.find((tr) => tr.task_workflow_node_id == +props.edge.target));
@@ -96,14 +112,19 @@ const path = ref(computePath());
 watch(() => props.edge, () => path.value = computePath(), { deep: true });
 
 function computePath() {
-	return getBezierPath({
+	const params = {
 		sourceX: props.edge.sourceX,
 		sourceY: props.edge.sourceY,
 		sourcePosition: props.edge.sourcePosition,
 		targetX: props.edge.targetX,
 		targetY: props.edge.targetY,
 		targetPosition: props.edge.targetPosition
-	});
+	};
+
+	if (props.pathType === "smoothstep") {
+		return getSmoothStepPath(params);
+	}
+	return getBezierPath(params);
 }
 
 const isHoveringMenu = ref(false);

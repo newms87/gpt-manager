@@ -76,6 +76,7 @@ const createTaskWorkflowRunAction = dxTaskWorkflowRun.getAction("quick-create", 
 
 async function onCreateTaskWorkflowRun(workflowInput: WorkflowInput) {
 	if (!activeTaskWorkflow.value) return;
+	activeTaskWorkflowRun.value = null;
 
 	isSelectingWorkflowInput.value = false;
 
