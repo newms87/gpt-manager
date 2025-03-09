@@ -10,13 +10,13 @@
 
 	<EdgeLabelRenderer>
 		<div
-			v-if="transitionPercent > 0"
+			v-if="transitionPercent > 0 && tweenTransitionPosition < 100"
 			ref="labelRef"
 			:style="{
 				position: 'absolute',
 				zIndex: 1,
 				offsetPath: `path('${path[0]}')`,
-				offsetDistance: `${transitionPercent}%`,
+				offsetDistance: `${tweenTransitionPosition}%`,
 				offsetRotate: '0deg',
 				offsetAnchor: 'center',
 			}"
@@ -48,19 +48,34 @@
 </template>
 
 <script setup lang="ts">
+import { TaskWorkflowRun } from "@/types";
 import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath, Node, useVueFlow } from "@vue-flow/core";
+import { TransitionPresets, useTransition, UseTransitionOptions } from "@vueuse/core";
 import { ActionButton } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
 defineEmits<{ (e: "remove", edge: EdgeProps): void }>();
 
-const props = defineProps<{ edge: EdgeProps; nodes: Node[]; }>();
+const props = defineProps<{ taskWorkflowRun?: TaskWorkflowRun, edge: EdgeProps; nodes: Node[]; }>();
 
-const targetNode = computed(() => props.nodes.find((node) => node.id === props.edge.target));
+const sourceTaskRun = computed(() => props.taskWorkflowRun?.taskRuns?.find((tr) => tr.task_workflow_node_id == +props.edge.source));
+const targetTaskRun = computed(() => props.taskWorkflowRun?.taskRuns?.find((tr) => tr.task_workflow_node_id == +props.edge.target));
 const transitionPercent = ref(0);
-watch(() => targetNode.value, () => {
-	console.log("targetNode", targetNode.value);
-});
+const tweenTransitionPosition = useTransition(transitionPercent, {
+	duration: 2000,
+	easing: TransitionPresets.easeInOutCubic
+} as UseTransitionOptions);
+watch(() => props.taskWorkflowRun, () => {
+	if (["Completed", "Running"].includes(targetTaskRun.value?.status)) {
+		transitionPercent.value = 100;
+	} else if (targetTaskRun.value?.status === "Pending") {
+		transitionPercent.value = 75;
+	} else if (sourceTaskRun.value?.status === "Completed") {
+		transitionPercent.value = 25;
+	} else {
+		transitionPercent.value = 0;
+	}
+}, { deep: true });
 
 const path = ref(computePath());
 watch(() => props.edge, () => path.value = computePath(), { deep: true });

@@ -1,12 +1,13 @@
 <template>
-	<div class="flex items-center flex-nowrap space-x-4">
+	<div class="flex items-start flex-nowrap space-x-4">
 		<NodeArtifactsButton
+			class="mt-6"
 			:count="taskProcess.inputArtifacts.length"
 			active-color="sky"
 			:disabled="!taskProcess"
 			@show="isShowingInputArtifacts = true"
 		/>
-		<div class="flex-grow">
+		<div class="flex-grow min-w-0 overflow-hidden">
 			<div v-if="taskProcess.activity" class="flex-grow flex items-center flex-nowrap space-x-2">
 				<div class="flex-grow rounded p-2 bg-slate-900 text-slate-400">
 					{{ taskProcess.activity }}
@@ -53,7 +54,7 @@
 			<ArtifactList
 				v-if="artifactsToShow"
 				dense
-				class="bg-slate-800 p-2 mt-4 rounded"
+				class="bg-slate-800 p-2 mt-4 rounded max-w-full"
 				:artifacts="artifactsToShow"
 			/>
 			<JobDispatchList
@@ -63,6 +64,7 @@
 			/>
 		</div>
 		<NodeArtifactsButton
+			class="mt-6"
 			:count="taskProcess.outputArtifacts.length"
 			active-color="green"
 			:disabled="!taskProcess"

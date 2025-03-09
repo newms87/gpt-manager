@@ -26,7 +26,12 @@
 				/>
 			</template>
 			<template #edge-custom="edgeProps">
-				<WorkflowCanvasEdge :edge="edgeProps" :nodes="nodes" @remove="onConnectionRemove" />
+				<WorkflowCanvasEdge
+					:edge="edgeProps"
+					:nodes="nodes"
+					:task-workflow-run="taskWorkflowRun"
+					@remove="onConnectionRemove"
+				/>
 			</template>
 			<template #connection-line="connectionLineProps">
 				<WorkflowCanvasConnectionLine v-bind="connectionLineProps" />
