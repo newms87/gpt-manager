@@ -1,11 +1,11 @@
 <template>
-	<div class="flex items-start flex-nowrap space-x-4">
+	<div class="flex items-start flex-nowrap space-x-2">
 		<NodeArtifactsButton
-			class="mt-6"
+			class="mt-2"
 			:count="taskProcess.inputArtifacts.length"
 			active-color="sky"
 			:disabled="!taskProcess"
-			@show="isShowingInputArtifacts = true"
+			@show="isShowingInputArtifacts = !isShowingInputArtifacts"
 		/>
 		<div class="flex-grow min-w-0 overflow-hidden">
 			<div v-if="taskProcess.activity" class="flex-grow flex items-center flex-nowrap space-x-2">
@@ -18,6 +18,7 @@
 						:label="taskProcess.job_dispatch_count"
 						class="bg-slate-800 text-slate-400"
 						:show-icon="JobDispatchIcon"
+						size="sm"
 						@update:model-value="loadJobDispatches"
 					/>
 				</div>
@@ -38,7 +39,7 @@
 					:target="taskProcess"
 					color="green-invert"
 					tooltip="Continue running process"
-					class="p-2"
+					size="sm"
 				/>
 				<ActionButton
 					v-else
@@ -48,27 +49,39 @@
 					:target="taskProcess"
 					color="red"
 					tooltip="Stop process"
-					class="p-2"
+					size="sm"
 				/>
 			</div>
-			<ArtifactList
-				v-if="artifactsToShow"
-				dense
-				class="bg-slate-800 p-2 mt-4 rounded max-w-full"
-				:artifacts="artifactsToShow"
-			/>
-			<JobDispatchList
-				v-if="isShowingJobDispatches"
-				class="p-2 border-t border-slate-400 mt-2"
-				:jobs="taskProcess.jobDispatches"
-			/>
+			<ListTransition>
+				<ArtifactList
+					v-if="isShowingInputArtifacts"
+					title="Input Artifacts"
+					title-class="text-sky-300"
+					dense
+					class="bg-sky-950 p-2 rounded max-w-full mt-4"
+					:artifacts="taskProcess.inputArtifacts"
+				/>
+				<ArtifactList
+					v-if="isShowingOutputArtifacts"
+					title="Output Artifacts"
+					title-class="text-green-300"
+					dense
+					class="bg-green-950 p-2 rounded max-w-full mt-4"
+					:artifacts="taskProcess.outputArtifacts"
+				/>
+				<JobDispatchList
+					v-if="isShowingJobDispatches"
+					class="p-2 border-t border-slate-400 mt-2"
+					:jobs="taskProcess.jobDispatches"
+				/>
+			</ListTransition>
 		</div>
 		<NodeArtifactsButton
-			class="mt-6"
+			class="mt-2"
 			:count="taskProcess.outputArtifacts.length"
 			active-color="green"
 			:disabled="!taskProcess"
-			@show="isShowingOutputArtifacts = true"
+			@show="isShowingOutputArtifacts = !isShowingOutputArtifacts"
 		/>
 	</div>
 </template>
@@ -81,7 +94,7 @@ import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shar
 import NodeArtifactsButton from "@/components/Modules/WorkflowCanvas/NodeArtifactsButton";
 import { TaskProcess } from "@/types";
 import { FaSolidBusinessTime as JobDispatchIcon } from "danx-icon";
-import { ActionButton, fPercent, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
+import { ActionButton, fPercent, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{

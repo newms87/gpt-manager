@@ -21,7 +21,7 @@
 					v-for="taskProcess in taskRun.processes"
 					:key="taskProcess.id"
 					:task-process="taskProcess"
-					class="bg-slate-700 p-4 my-2 rounded-lg"
+					class="bg-slate-700 p-2 my-2 rounded-lg"
 				/>
 			</ListTransition>
 		</InfoDialog>

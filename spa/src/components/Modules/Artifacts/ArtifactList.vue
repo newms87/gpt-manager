@@ -3,13 +3,15 @@
 		<QSkeleton v-if="!artifacts" class="h-20 my-2" />
 		<div v-else-if="artifacts.length === 0" class="text-xl text-center text-gray-500">No Artifacts</div>
 		<template v-else>
-			<div class="flex justify-end" :class="dense ? 'mb-4' : 'mb-8'">
+			<div class="flex items-center flex-nowrap" :class="dense ? 'mb-4' : 'mb-8'">
+				<div class="flex-grow text-lg" :class="titleClass">{{ title }}</div>
 				<ShowHideButton
 					v-model="isShowingAll"
 					class="bg-sky-900"
 					icon-class="w-5"
 					label-class="text-base ml-2"
 					:label="isShowingAll ? 'Collapse All' : 'Expand All'"
+					size="sm"
 				/>
 			</div>
 			<ArtifactCard
@@ -27,10 +29,16 @@ import { Artifact } from "@/types";
 import { ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
-defineProps<{
+withDefaults(defineProps<{
+	title?: string;
+	titleClass?: string;
 	artifacts?: Artifact[];
 	dense?: boolean;
-}>();
+}>(), {
+	titleClass: "",
+	title: "Artifacts",
+	artifacts: null
+});
 
 const isShowingAll = ref(false);
 </script>

@@ -4,7 +4,7 @@
 			<LabelPillWidget :label="`Artifact: ${artifact.id}`" color="sky" size="xs" class="flex-shrink-0" />
 			<LabelPillWidget :label="fDateTime(artifact.created_at)" color="blue" size="xs" class="flex-shrink-0" />
 			<div class="flex grow min-w-0 overflow-hidden">{{ artifact.name }}</div>
-			<ShowHideButton v-model="isShowing" class="bg-sky-900 flex-shrink-0" />
+			<ShowHideButton v-model="isShowing" class="bg-sky-900 flex-shrink-0" size="sm" />
 		</div>
 		<ListTransition>
 			<div v-if="artifact.files?.length && isShowing">
