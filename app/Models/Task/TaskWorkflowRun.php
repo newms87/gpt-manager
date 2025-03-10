@@ -114,8 +114,6 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
             if ($taskRun->isFailed() || $taskRun->isTimeout()) {
                 $this->failed_at = now_ms();
                 $this->save();
-
-                return;
             } elseif (!$taskRun->isFinished()) {
                 $hasRunningTasks = true;
             } elseif ($taskRun->isStopped()) {

@@ -90,6 +90,39 @@ class TaskRunnerService
     }
 
     /**
+     * Restart the task run.
+     * This will restart the task run and remove all current task processes and create new task
+     * processes.
+     */
+    public static function restart(TaskRun $taskRun): void
+    {
+        static::log("Restarting $taskRun");
+
+        // Always start by acquiring the lock for the task run before checking if it can continue
+        // NOTE: This prevents allowing the TaskRun to continue if there was a race condition on failing/stopping the TaskRun
+        LockHelper::acquire($taskRun);
+
+        try {
+            // Remove the old task processes to make way for the new ones
+            $taskRun->taskProcesses()->each(fn(TaskProcess $taskProcess) => $taskProcess->delete());
+
+            // Clear out any old artifacts
+            $taskRun->outputArtifacts()->detach($taskRun->outputArtifacts()->pluck('artifacts.id')->toArray());
+
+            $taskRun->stopped_at   = null;
+            $taskRun->completed_at = null;
+            $taskRun->failed_at    = null;
+            $taskRun->started_at   = null;
+            $taskRun->save();
+            static::prepareTaskProcesses($taskRun, $taskRun->inputArtifacts()->get());
+        } finally {
+            LockHelper::release($taskRun);
+        }
+
+        static::continue($taskRun);
+    }
+
+    /**
      * Resume the task run. This will resume all task processes that were stopped
      */
     public static function resume(TaskRun $taskRun): void
