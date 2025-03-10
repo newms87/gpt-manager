@@ -67,7 +67,7 @@ import { computed, ref, watch } from "vue";
 defineEmits<{ (e: "remove", edge: EdgeProps): void }>();
 
 const props = withDefaults(defineProps<{
-	pathType: "bezier" | "smoothstep";
+	pathType?: "bezier" | "smoothstep";
 	taskWorkflowRun?: TaskWorkflowRun,
 	edge: EdgeProps;
 	nodes: Node[];

@@ -1,8 +1,14 @@
 <template>
-	<div class="group workflow-canvas-node w-48">
-		<div class="node-content relative border border-gray-300 rounded-xl bg-sky-900 text-lg h-24">
+	<div class="group workflow-canvas-node w-48 relative">
+		<div v-if="loading" class="absolute-top-left w-56 h-24 left-[-1rem] flex items-center justify-center z-[2000]">
+			<LoadingSandLottie class="w-32" autoplay />
+		</div>
+		<div
+			class="node-content relative border border-gray-300 rounded-xl bg-sky-900 text-lg h-24"
+			:class="{'opacity-50': loading}"
+		>
 			<NodeHeaderBar
-				class="opacity-0 group-hover:opacity-100 transition-all absolute-top-left w-full p-2"
+				class="opacity-0 group-hover:opacity-100 transition-all absolute-top-left w-full p-2 z-10"
 				:task-run="taskRun"
 				:temporary="isTemporary"
 				:loading="loading"
@@ -16,6 +22,7 @@
 					:config="taskDefinition.task_runner_config"
 					:autoplay="isTaskRunning"
 					:finished="isTaskCompleted"
+					:loading="loading"
 				/>
 			</div>
 			<NodePortsWidget
@@ -43,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+import LoadingSandLottie from "@/assets/dotlottie/LoadingSandLottie";
 import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
 import { edges } from "@/components/Modules/WorkflowCanvas/helpers";
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";

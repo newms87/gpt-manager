@@ -1,5 +1,5 @@
 <template>
-	<div class="flex items-center justify-center flex-nowrap">
+	<div class="flex items-center justify-center flex-nowrap relative">
 		<slot>
 			<BaseNodeIcon class="w-[4.4rem]" />
 		</slot>

@@ -21,7 +21,7 @@
 			<div>
 				<ShowHideButton
 					v-model="isShowing"
-					:label="`${activeTaskWorkflow.runs?.length}`"
+					:label="`${activeTaskWorkflow.runs?.length || 0}`"
 					class="bg-green-700 text-green-300"
 					:show-icon="RunsIcon"
 				/>

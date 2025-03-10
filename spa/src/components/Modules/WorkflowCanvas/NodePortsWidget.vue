@@ -25,7 +25,7 @@
 		</div>
 
 		<InfoDialog
-			v-if="artifactsToShow"
+			v-if="isShowingInputArtifacts || isShowingOutputArtifacts"
 			:title="`${taskRun.taskDefinition.name}: ${isShowingInputArtifacts ? 'Input' : 'Output'} Artifacts`"
 			@close="hideArtifacts"
 		>
