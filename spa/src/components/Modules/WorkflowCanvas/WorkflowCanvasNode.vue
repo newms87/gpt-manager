@@ -4,8 +4,8 @@
 			<LoadingSandLottie class="w-32" autoplay />
 		</div>
 		<div
-			class="node-content relative border border-gray-300 rounded-xl bg-sky-900 text-lg h-24"
-			:class="{'opacity-50': loading}"
+			class="node-content relative border  rounded-xl text-lg h-24"
+			:class="nodeClass"
 		>
 			<NodeHeaderBar
 				class="opacity-0 group-hover:opacity-100 transition-all absolute-top-left w-full p-2 z-10"
@@ -82,6 +82,18 @@ const sourceEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.sou
 const targetEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.target === props.node.id.toString()));
 const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_workflow_node_id == +props.node.id));
 const isTaskRunning = computed(() => taskRun.value?.status === "Running");
+const isTaskFailed = computed(() => taskRun.value?.status === "Failed");
 const isTaskCompleted = computed(() => taskRun.value?.status === "Completed");
+const isTaskPending = computed(() => !isTaskRunning.value && !isTaskCompleted.value && !isTaskFailed.value);
+
+const nodeClass = computed(() => {
+	return {
+		"opacity-50": props.loading,
+		"border-gray-300 bg-slate-700": isTaskPending.value,
+		"bg-sky-900 border-sky-400": isTaskRunning.value,
+		"bg-red-900 border-red-400": isTaskFailed.value,
+		"bg-green-900 border-green-400": isTaskCompleted.value
+	};
+});
 </script>
 
