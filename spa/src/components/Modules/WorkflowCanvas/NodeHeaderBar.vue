@@ -2,7 +2,7 @@
 	<div class="node-header">
 		<div class="flex flex-nowrap items-center space-x-2 h-8">
 			<div class="flex-grow flex items-center flex-nowrap space-x-1">
-				<ShowTaskProcessesButton v-if="taskRun" :task-run="taskRun" class="bg-sky-950 py-0" icon-class="w-3" />
+				<ShowTaskProcessesButton v-if="taskRun" :task-run="taskRun" class="bg-sky-950" size="xs" />
 				<ActionButton
 					v-if="isRunning"
 					type="stop"
@@ -11,7 +11,7 @@
 					:target="taskRun"
 					color="red"
 					tooltip="Stop task"
-					class="p-1.5"
+					size="xs"
 				/>
 				<ActionButton
 					v-else-if="isStopped"
@@ -20,7 +20,7 @@
 					:target="taskRun"
 					color="green-invert"
 					tooltip="Continue running task"
-					class="p-1.5"
+					size="xs"
 				/>
 				<ActionButton
 					v-if="canBeRestarted"
@@ -29,12 +29,34 @@
 					:target="taskRun"
 					color="sky"
 					tooltip="Restart task"
-					class="p-1.5"
+					size="xs"
 				/>
 			</div>
 			<template v-if="!isWorkflowRunning">
-				<ActionButton type="edit" color="sky" :disabled="temporary" @click.stop="$emit('edit')" />
-				<ActionButton type="trash" color="red" :disabled="temporary" @click.stop="$emit('remove')" />
+				<ActionButton
+					type="copy"
+					color="blue"
+					:disabled="temporary"
+					size="xs"
+					tooltip="Copy Task"
+					@click.stop="$emit('copy')"
+				/>
+				<ActionButton
+					type="edit"
+					color="sky"
+					:disabled="temporary"
+					size="xs"
+					tooltip="Edit Task"
+					@click.stop="$emit('edit')"
+				/>
+				<ActionButton
+					type="trash"
+					color="red"
+					:disabled="temporary"
+					size="xs"
+					tooltip="Remove Node From Workflow"
+					@click.stop="$emit('remove')"
+				/>
 			</template>
 		</div>
 	</div>
@@ -51,6 +73,7 @@ import { computed } from "vue";
 defineEmits<{
 	edit: void;
 	remove: void;
+	copy: void;
 }>();
 const props = defineProps<{
 	taskRun?: TaskRun;

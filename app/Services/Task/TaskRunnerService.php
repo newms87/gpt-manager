@@ -108,6 +108,7 @@ class TaskRunnerService
 
             // Clear out any old artifacts
             $taskRun->outputArtifacts()->detach($taskRun->outputArtifacts()->pluck('artifacts.id')->toArray());
+            $taskRun->updateRelationCounter('outputArtifacts');
 
             $taskRun->stopped_at   = null;
             $taskRun->completed_at = null;

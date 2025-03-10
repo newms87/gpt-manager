@@ -8,7 +8,7 @@
 			:class="nodeClass"
 		>
 			<NodeHeaderBar
-				class="opacity-0 group-hover:opacity-100 transition-all absolute-top-left w-full p-2 z-10"
+				class="opacity-0 group-hover:opacity-100 transition-all absolute-top-left w-52 z-10 top-[-2.5rem] left-[-.5rem]"
 				:task-run="taskRun"
 				:temporary="isTemporary"
 				:loading="loading"

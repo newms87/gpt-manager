@@ -42,6 +42,7 @@
 				color="red"
 				class="transition-all"
 				:class="{'opacity-100': isHovering, 'opacity-0': !isHovering}"
+				size="sm"
 				@click="$emit('remove', edge)"
 			/>
 		</div>

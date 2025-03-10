@@ -3,30 +3,28 @@
 		v-model="isShowingTaskProcesses"
 		:show-icon="ProcessListIcon"
 	>
-		<template #label>
-			<div class="ml-2">{{ taskRun.process_count }}</div>
-			<InfoDialog
-				v-if="isShowingTaskProcesses"
-				:title="`${taskRun.taskDefinition.name}: Task Processes`"
-				@close="isShowingTaskProcesses = false"
-			>
-				<ListTransition class="w-[70rem] h-[80vh] overflow-x-hidden overflow-y-auto">
-					<QSkeleton v-if="taskRun.processes?.length === undefined" class="h-12" />
-					<div
-						v-else-if="taskRun.processes.length === 0"
-						class="text-center text-gray-500 font-bold h-12 flex items-center justify-center"
-					>
-						There are no processes for this task
-					</div>
-					<NodeTaskProcessWidget
-						v-for="taskProcess in taskRun.processes"
-						:key="taskProcess.id"
-						:task-process="taskProcess"
-						class="bg-slate-700 p-4 my-2 rounded-lg"
-					/>
-				</ListTransition>
-			</InfoDialog>
-		</template>
+		<div class="ml-2">{{ taskRun.process_count }}</div>
+		<InfoDialog
+			v-if="isShowingTaskProcesses"
+			:title="`${taskRun.taskDefinition.name}: Task Processes`"
+			@close="isShowingTaskProcesses = false"
+		>
+			<ListTransition class="w-[70rem] h-[80vh] overflow-x-hidden overflow-y-auto">
+				<QSkeleton v-if="taskRun.processes?.length === undefined" class="h-12" />
+				<div
+					v-else-if="taskRun.processes.length === 0"
+					class="text-center text-gray-500 font-bold h-12 flex items-center justify-center"
+				>
+					There are no processes for this task
+				</div>
+				<NodeTaskProcessWidget
+					v-for="taskProcess in taskRun.processes"
+					:key="taskProcess.id"
+					:task-process="taskProcess"
+					class="bg-slate-700 p-4 my-2 rounded-lg"
+				/>
+			</ListTransition>
+		</InfoDialog>
 	</ShowHideButton>
 </template>
 
