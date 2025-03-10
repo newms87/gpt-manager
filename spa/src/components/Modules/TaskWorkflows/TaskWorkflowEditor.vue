@@ -4,6 +4,7 @@
 			v-if="activeTaskWorkflow"
 			:model-value="activeTaskWorkflow"
 			:task-workflow-run="activeTaskWorkflowRun"
+			:loading="isCreatingTaskWorkflowRun"
 			class="w-full h-full"
 			@node-position="onNodePosition"
 			@node-edit="node => nodeToEdit = node"
@@ -25,6 +26,7 @@ import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
 import {
 	activeTaskWorkflow,
 	activeTaskWorkflowRun,
+	isCreatingTaskWorkflowRun,
 	refreshActiveTaskWorkflow
 } from "@/components/Modules/TaskWorkflows/store";
 import { dxTaskWorkflowConnection } from "@/components/Modules/TaskWorkflows/TaskWorkflowConnections/config";

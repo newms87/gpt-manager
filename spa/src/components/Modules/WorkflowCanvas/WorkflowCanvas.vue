@@ -21,7 +21,7 @@
 					:node="nodeProps"
 					:task-workflow="taskWorkflow"
 					:task-workflow-run="taskWorkflowRun"
-					:loading="taskWorkflowRun && !taskWorkflowRun.taskRuns"
+					:loading="loading"
 					@edit="node => $emit('node-edit', resolveWorkflowNode(node))"
 					@remove="node => $emit('node-remove', resolveWorkflowNode(node))"
 				/>
@@ -79,6 +79,7 @@ const emit = defineEmits<{
 
 const props = defineProps<{
 	taskWorkflowRun?: TaskWorkflowRun;
+	loading?: boolean;
 }>();
 
 const taskWorkflow = defineModel<TaskWorkflow>();

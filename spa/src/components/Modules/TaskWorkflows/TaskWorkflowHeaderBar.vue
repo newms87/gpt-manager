@@ -7,7 +7,28 @@
 					color="sky"
 					size="xs"
 				/>
-				<WorkflowStatusTimerPill :runner="activeTaskWorkflowRun" />
+				<ActionButton
+					v-if="isRunning"
+					type="stop"
+					color="red"
+					size="sm"
+					tooltip="Stop Workflow"
+					:action="stopTaskWorkflowRun"
+					:target="activeTaskWorkflowRun"
+				/>
+				<ActionButton
+					v-if="isStopped"
+					type="play"
+					color="sky"
+					size="sm"
+					tooltip="Resume Workflow"
+					:action="resumeTaskWorkflowRun"
+					:target="activeTaskWorkflowRun"
+				/>
+				<WorkflowStatusTimerPill :runner="activeTaskWorkflowRun" timer-class="px-4 bg-slate-800 rounded-full" />
+			</div>
+			<div v-if="activeTaskWorkflowRun" class="px-2">
+				<QSeparator class="bg-slate-400 h-6" vertical />
 			</div>
 			<div>
 				<ActionButton
@@ -15,6 +36,7 @@
 					color="green"
 					label="Run Workflow"
 					size="sm"
+					:disabled="isRunning"
 					@click="isSelectingWorkflowInput = true"
 				/>
 			</div>
@@ -58,34 +80,29 @@ import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shar
 import {
 	activeTaskWorkflow,
 	activeTaskWorkflowRun,
-	loadTaskWorkflowRuns
+	createTaskWorkflowRun
 } from "@/components/Modules/TaskWorkflows/store";
 import TaskWorkflowRunCard from "@/components/Modules/TaskWorkflows/TaskWorkflowRunCard";
 import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
 import SelectWorkflowInputDialog from "@/components/Modules/TaskWorkflows/WorkflowInputs/SelectWorkflowInputDialog";
 import { WorkflowInput } from "@/types";
 import { FaSolidPersonRunning as RunsIcon } from "danx-icon";
-import { ActionButton, FlashMessages, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
-import { ref } from "vue";
+import { ActionButton, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
+import { computed, ref } from "vue";
 
 defineEmits(["confirm", "close"]);
 
 const isShowing = ref(false);
 const isSelectingWorkflowInput = ref(false);
-const createTaskWorkflowRunAction = dxTaskWorkflowRun.getAction("quick-create", { onFinish: loadTaskWorkflowRuns });
+const stopTaskWorkflowRun = dxTaskWorkflowRun.getAction("stop");
+const resumeTaskWorkflowRun = dxTaskWorkflowRun.getAction("resume");
+const isRunning = computed(() => ["Running", "Pending"].includes(activeTaskWorkflowRun.value?.status));
+const isStopped = computed(() => ["Stopped"].includes(activeTaskWorkflowRun.value?.status));
 
 async function onCreateTaskWorkflowRun(workflowInput: WorkflowInput) {
 	if (!activeTaskWorkflow.value) return;
-	activeTaskWorkflowRun.value = null;
-
 	isSelectingWorkflowInput.value = false;
 
-	FlashMessages.info("Creating Task Workflow Run...");
-	const result = await createTaskWorkflowRunAction.trigger(null, {
-		task_workflow_id: activeTaskWorkflow.value.id,
-		workflow_input_id: workflowInput.id
-	});
-	FlashMessages.success("Task Workflow Run Created");
-	activeTaskWorkflowRun.value = result.item;
+	await createTaskWorkflowRun(workflowInput);
 }
 </script>

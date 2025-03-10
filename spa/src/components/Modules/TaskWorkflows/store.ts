@@ -1,7 +1,7 @@
 import { dxTaskWorkflow } from "@/components/Modules/TaskWorkflows/config";
 import { dxTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/TaskWorkflowRuns/config";
 import { WORKFLOW_STATUS } from "@/components/Modules/TaskWorkflows/workflows";
-import { TaskDefinition } from "@/types";
+import { TaskDefinition, WorkflowInput } from "@/types";
 import { TaskWorkflow, TaskWorkflowNode, TaskWorkflowRun } from "@/types/task-workflows";
 import { autoRefreshObject, getItem, setItem, stopAutoRefreshObject, storeObjects } from "quasar-ui-danx";
 import { ref, watch } from "vue";
@@ -72,13 +72,31 @@ async function addWorkflowNode(taskDefinition: TaskDefinition, input: Partial<Ta
 	});
 }
 
+const createTaskWorkflowRunAction = dxTaskWorkflowRun.getAction("quick-create", { onFinish: loadTaskWorkflowRuns });
+const isCreatingTaskWorkflowRun = ref(false);
+async function createTaskWorkflowRun(workflowInput: WorkflowInput) {
+	if (!activeTaskWorkflow.value) return;
+	activeTaskWorkflowRun.value = null;
+
+	isCreatingTaskWorkflowRun.value = true;
+	const result = await createTaskWorkflowRunAction.trigger(null, {
+		task_workflow_id: activeTaskWorkflow.value.id,
+		workflow_input_id: workflowInput.id
+	});
+	isCreatingTaskWorkflowRun.value = false;
+
+	activeTaskWorkflowRun.value = result.item;
+}
+
 export {
 	isLoadingWorkflows,
+	isCreatingTaskWorkflowRun,
 	activeTaskWorkflow,
 	activeTaskWorkflowRun,
 	taskWorkflows,
 	initWorkflowState,
 	refreshActiveTaskWorkflow,
+	createTaskWorkflowRun,
 	loadTaskWorkflows,
 	loadTaskWorkflowRuns,
 	setActiveTaskWorkflow,

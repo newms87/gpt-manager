@@ -118,6 +118,8 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
                 return;
             } elseif (!$taskRun->isFinished()) {
                 $hasRunningTasks = true;
+            } elseif ($taskRun->isStopped()) {
+                $this->stopped_at = $taskRun->stopped_at;
             }
         }
 
