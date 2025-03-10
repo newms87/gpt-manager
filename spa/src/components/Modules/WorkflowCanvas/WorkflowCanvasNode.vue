@@ -19,11 +19,15 @@
 			<div class="flex justify-center items-center h-full">
 				<Component
 					:is="taskRunnerComponent"
+					v-if="taskDefinition"
 					:config="taskDefinition.task_runner_config"
 					:autoplay="isTaskRunning"
 					:finished="isTaskCompleted"
 					:loading="loading"
 				/>
+				<div v-else>
+					<LoadingSandLottie class="w-32 h-24" autoplay />
+				</div>
 			</div>
 			<NodePortsWidget
 				class="node-body mt-4"

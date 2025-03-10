@@ -8,6 +8,7 @@
 			:min-zoom="0.2"
 			:max-zoom="4"
 			snap-to-grid
+			fit-view-on-init
 			:snap-grid="[20, 20]"
 			class="workflow-canvas"
 			elevate-edges-on-select
