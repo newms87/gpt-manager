@@ -9,7 +9,7 @@ const availableAgents = shallowRef([]);
 async function loadAgents() {
 	if (isLoadingAgents.value) return;
 	isLoadingAgents.value = true;
-	availableAgents.value = (await dxAgent.routes.list()).data;
+	availableAgents.value = (await dxAgent.routes.list({ sort: [{ column: "name" }] })).data;
 	isLoadingAgents.value = false;
 }
 
