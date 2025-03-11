@@ -6,6 +6,7 @@
 				:selected="taskDefinitionAgent.agent"
 				selectable
 				editable
+				deletable
 				name-editable
 				creatable
 				class="flex-grow"
@@ -18,6 +19,7 @@
 				@update:selected="agent => onUpdateDefinitionAgent({ agent_id: agent.id })"
 				@update:editing="isTrue => (isTrue ? dxAgent.routes.details(taskDefinitionAgent.agent) : null)"
 				@update="input => updateAgentAction.trigger(taskDefinitionAgent.agent, input)"
+				@delete="agent => deleteAgentAction.trigger(agent)"
 			/>
 			<div class="flex items-center">
 				<ActionButton
@@ -152,6 +154,7 @@ const props = defineProps<{
 const isEditingAgent = ref(false);
 const createAgentAction = dxAgent.getAction("quick-create", { onFinish: loadAgents });
 const updateAgentAction = dxAgent.getAction("update");
+const deleteAgentAction = dxAgent.getAction("delete", { onFinish: loadAgents });
 const copyDefinitionAgentAction = dxTaskDefinition.getAction("copy-agent");
 const updateDefinitionAgentAction = dxTaskDefinition.getAction("update-agent");
 const removeDefinitionAgentAction = dxTaskDefinition.getAction("remove-agent");

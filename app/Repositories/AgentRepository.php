@@ -101,7 +101,12 @@ class AgentRepository extends ActionRepository
             'tools'       => [],
         ];
 
-        return $this->updateAgent($agent, $data);
+        $agent->fill($data);
+        $agent->name = ModelHelper::getNextModelName($agent);
+        $agent->api  = static::getApiForModel($agent->model);
+        $agent->validate()->save();
+
+        return $agent;
     }
 
     /**
@@ -109,10 +114,7 @@ class AgentRepository extends ActionRepository
      */
     public function updateAgent(Agent $agent, array $data): Agent
     {
-        $agent->fill($data);
-        $agent->api = AgentRepository::getApiForModel($agent->model);
-
-        $agent->validate()->save($data);
+        $agent->fill($data)->validate()->save($data);
 
         return $agent;
     }

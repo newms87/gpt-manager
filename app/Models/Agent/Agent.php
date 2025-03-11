@@ -7,6 +7,7 @@ use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Models\Team\Team;
+use App\Repositories\AgentRepository;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -167,6 +168,12 @@ class Agent extends Model implements AuditableContract
     {
         static::creating(function (Agent $agent) {
             $agent->team_id = $agent->team_id ?? team()->id;
+        });
+
+        static::saving(function (Agent $agent) {
+            if (!$agent->api || $agent->isDirty('model')) {
+                $agent->api = AgentRepository::getApiForModel($agent->model);
+            }
         });
     }
 
