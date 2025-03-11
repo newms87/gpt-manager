@@ -1,6 +1,6 @@
 <template>
 	<LabelPillWidget
-		:color="count > 0 ? activeColor : 'gray'"
+		:color="count > 0 ? activeColor : 'slate-mid'"
 		size="xs"
 		class="node-artifacts-button flex items-center justify-center flex-nowrap flex-shrink-1"
 		:class="{'cursor-pointer': !disabled, 'cursor-not-allowed': disabled}"

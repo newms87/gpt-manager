@@ -65,11 +65,12 @@
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { addWorkflowNode } from "@/components/Modules/TaskWorkflows/store";
 import { onDragStart } from "@/components/Modules/WorkflowCanvas/dragNDrop";
+import { loadTaskDefinitions, taskDefinitions } from "@/components/Modules/WorkflowCanvas/helpers";
 import { TaskDefinition } from "@/types";
 import { TaskWorkflow } from "@/types/task-workflows";
 import { FaSolidSquareShareNodes as NodeTaskIcon } from "danx-icon";
 import { ActionButton, CollapsableSidebar, LabelPillWidget } from "quasar-ui-danx";
-import { onMounted, ref, shallowRef } from "vue";
+import { onMounted, ref } from "vue";
 
 const emit = defineEmits(["refresh"]);
 defineProps<{
@@ -80,14 +81,7 @@ const isCollapsed = ref(false);
 const createTaskAction = dxTaskDefinition.getAction("create");
 const deleteTaskAction = dxTaskDefinition.getAction("delete", { onFinish: async () => emit("refresh") || await loadTaskDefinitions() });
 
-// The list of all tasks in the teams account
-const taskDefinitions = shallowRef([]);
-
 onMounted(loadTaskDefinitions);
-
-async function loadTaskDefinitions() {
-	taskDefinitions.value = (await dxTaskDefinition.routes.list()).data;
-}
 
 async function onAddTask(taskDefinition: TaskDefinition) {
 	await addWorkflowNode(taskDefinition);

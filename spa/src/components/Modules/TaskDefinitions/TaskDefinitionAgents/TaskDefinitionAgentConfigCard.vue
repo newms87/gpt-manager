@@ -17,7 +17,7 @@
 				:loading="isUpdatingAgent || isLoadingAgents"
 				@create="createAgentAction.trigger(null, {name: taskDefinition.name + ' Agent'})"
 				@update:selected="agent => onUpdateDefinitionAgent({ agent_id: agent.id })"
-				@update:editing="isTrue => (isTrue ? dxAgent.routes.details(taskDefinitionAgent.agent) : null)"
+				@update:editing="isTrue => isTrue ? loadAgentDetails(taskDefinitionAgent.agent) : null"
 				@update="input => updateAgentAction.trigger(taskDefinitionAgent.agent, input)"
 				@delete="agent => deleteAgentAction.trigger(agent)"
 			/>
@@ -38,8 +38,16 @@
 			</div>
 		</div>
 
-		<div v-if="isEditingAgent" class="mt-4 bg-slate-800 rounded">
-			<AgentPromptPanel :agent="taskDefinitionAgent.agent" />
+		<div v-if="isEditingAgent" class="mt-4 bg-slate-800 rounded p-8">
+			<QSkeleton v-if="!taskDefinitionAgent.agent.id === agentToLoadDetails?.id" class="h-16" />
+			<template v-else>
+				<ActionForm
+					:action="updateAgentAction"
+					:target="taskDefinitionAgent.agent"
+					:form="{fields: agentEditFields}"
+				/>
+				<AgentDirectiveField :agent="taskDefinitionAgent.agent" />
+			</template>
 		</div>
 		<div class="mt-4 flex items-center space-x-4">
 			<div>
@@ -135,15 +143,17 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { AgentPromptPanel, dxAgent } from "@/components/Modules/Agents";
+import { dxAgent } from "@/components/Modules/Agents";
+import { fields } from "@/components/Modules/Agents/config/fields";
+import AgentDirectiveField from "@/components/Modules/Agents/Fields/AgentDirectiveField";
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
 import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociations";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { TaskDefinition, TaskDefinitionAgent } from "@/types";
 import { FaSolidRobot as AgentIcon } from "danx-icon";
-import { ActionButton, SelectionMenuField } from "quasar-ui-danx";
+import { ActionButton, ActionForm, SelectionMenuField } from "quasar-ui-danx";
 import { ref } from "vue";
-import { availableAgents, isLoadingAgents, loadAgents } from "./agentStore";
+import { agentToLoadDetails, availableAgents, isLoadingAgents, loadAgentDetails, loadAgents } from "./agentStore";
 
 defineEmits(["update", "remove"]);
 const props = defineProps<{
@@ -151,6 +161,7 @@ const props = defineProps<{
 	taskDefinitionAgent: TaskDefinitionAgent;
 }>();
 
+const agentEditFields = fields.filter((field) => ["temperature", "model"].includes(field.name));
 const isEditingAgent = ref(false);
 const createAgentAction = dxAgent.getAction("quick-create", { onFinish: loadAgents });
 const updateAgentAction = dxAgent.getAction("update");

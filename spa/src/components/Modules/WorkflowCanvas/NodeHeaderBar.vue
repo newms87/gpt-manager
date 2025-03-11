@@ -1,5 +1,5 @@
 <template>
-	<div class="node-header">
+	<div class="node-header" draggable="false" @click.prevent.stop @mousedown.prevent.stop>
 		<div class="flex flex-nowrap items-center space-x-2 h-8">
 			<div class="flex-grow flex items-center flex-nowrap space-x-1">
 				<ShowTaskProcessesButton v-if="taskRun" :task-run="taskRun" class="bg-sky-950" size="xs" />
@@ -39,7 +39,8 @@
 					:disabled="temporary"
 					size="xs"
 					tooltip="Copy Task"
-					@click.stop="$emit('copy')"
+					:saving="isCopying"
+					@click.stop="onCopy"
 				/>
 				<ActionButton
 					type="edit"
@@ -68,9 +69,9 @@ import { activeTaskWorkflowRun, refreshActiveTaskWorkflowRun } from "@/component
 import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
 import { TaskRun } from "@/types";
 import { ActionButton } from "quasar-ui-danx";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
-defineEmits<{
+const emit = defineEmits<{
 	edit: void;
 	remove: void;
 	copy: void;
@@ -89,4 +90,11 @@ const stopAction = dxTaskRun.getAction("stop");
 const isStopped = computed(() => ["Stopped"].includes(props.taskRun?.status));
 const canBeRestarted = computed(() => ["Pending", "Stopped", "Failed", "Completed"].includes(props.taskRun?.status));
 const isRunning = computed(() => ["Running"].includes(props.taskRun?.status));
+
+const isCopying = ref(false);
+async function onCopy() {
+	emit("copy");
+	isCopying.value = true;
+	setTimeout(() => isCopying.value = false, 3000);
+}
 </script>

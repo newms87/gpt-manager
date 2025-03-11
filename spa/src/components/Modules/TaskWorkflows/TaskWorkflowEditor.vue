@@ -7,6 +7,7 @@
 			:loading="isCreatingTaskWorkflowRun"
 			class="w-full h-full"
 			@node-position="onNodePosition"
+			@node-copy="node => copyNodeAction.trigger(node)"
 			@node-edit="node => nodeToEdit = node"
 			@node-remove="workflowNode => removeNodeAction.trigger(workflowNode)"
 			@connection-add="onConnectionAdd"
@@ -31,6 +32,7 @@ import {
 } from "@/components/Modules/TaskWorkflows/store";
 import { dxTaskWorkflowConnection } from "@/components/Modules/TaskWorkflows/TaskWorkflowConnections/config";
 import { dxTaskWorkflowNode } from "@/components/Modules/TaskWorkflows/TaskWorkflowNodes/config";
+import { loadTaskDefinitions } from "@/components/Modules/WorkflowCanvas/helpers";
 import WorkflowCanvas from "@/components/Modules/WorkflowCanvas/WorkflowCanvas";
 import WorkflowCanvasSidebar from "@/components/Modules/WorkflowCanvas/WorkflowCanvasSidebar";
 import { TaskWorkflow, TaskWorkflowConnection, TaskWorkflowNode } from "@/types/task-workflows";
@@ -38,6 +40,7 @@ import { ref } from "vue";
 
 const nodeToEdit = ref<TaskWorkflowNode>(null);
 
+const copyNodeAction = dxTaskWorkflowNode.getAction("copy", { onFinish: () => Promise.all([refreshActiveTaskWorkflow(), loadTaskDefinitions()]) });
 const updateNodeAction = dxTaskWorkflowNode.getAction("update");
 const removeNodeAction = dxTaskWorkflowNode.getAction("quick-delete", {
 	onFinish: refreshActiveTaskWorkflow,

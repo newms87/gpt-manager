@@ -1,8 +1,17 @@
+import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { TaskWorkflowConnection, TaskWorkflowNode } from "@/types/task-workflows";
 import { Connection, Position, useVueFlow } from "@vue-flow/core";
 import { nanoid } from "nanoid";
+import { shallowRef } from "vue";
 
 const { edges } = useVueFlow();
+
+// The list of all tasks in the teams account
+const taskDefinitions = shallowRef([]);
+
+async function loadTaskDefinitions() {
+	taskDefinitions.value = (await dxTaskDefinition.routes.list()).data;
+}
 
 /**
  *  Convert TaskWorkflowNodes to VueFlow nodes
@@ -82,6 +91,8 @@ function connectWorkflowNodes(currentConnections: TaskWorkflowConnection[], newC
 
 export {
 	edges,
+	taskDefinitions,
+	loadTaskDefinitions,
 	convertNodesToVueFlow,
 	convertConnectionsToVueFlow,
 	connectWorkflowNodes

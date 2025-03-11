@@ -12,6 +12,7 @@
 				:task-run="taskRun"
 				:temporary="isTemporary"
 				:loading="loading"
+				@copy="$emit('copy', node)"
 				@edit="$emit('edit', node)"
 				@remove="$emit('remove', node)"
 			/>
@@ -65,6 +66,7 @@ import { Edge, Node } from "@vue-flow/core";
 import { computed } from "vue";
 
 defineEmits<{
+	(e: "copy", node: Node): void;
 	(e: "edit", node: Node): void;
 	(e: "remove", node: Node): void;
 }>();

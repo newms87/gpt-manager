@@ -23,6 +23,7 @@
 					:task-workflow="taskWorkflow"
 					:task-workflow-run="taskWorkflowRun"
 					:loading="loading"
+					@copy="node => $emit('node-copy', resolveWorkflowNode(node))"
 					@edit="node => $emit('node-edit', resolveWorkflowNode(node))"
 					@remove="node => $emit('node-remove', resolveWorkflowNode(node))"
 				/>
@@ -72,6 +73,7 @@ import WorkflowCanvasNode from "./WorkflowCanvasNode.vue";
 const emit = defineEmits<{
 	(e: "node-click", node: TaskWorkflowNode): void;
 	(e: "node-position", node: TaskWorkflowNode, position: { x: number, y: number }): void;
+	(e: "node-copy", node: TaskWorkflowNode): void;
 	(e: "node-edit", node: TaskWorkflowNode): void;
 	(e: "node-remove", node: TaskWorkflowNode): void;
 	(e: "connection-add", connection: TaskWorkflowConnection): void;
