@@ -79,7 +79,7 @@ import AgentDirectiveCard from "@/components/Modules/Agents/Fields/AgentDirectiv
 import { dxPromptDirective } from "@/components/Modules/Prompts/Directives";
 import { Agent } from "@/types/agents";
 import { ListItemDraggable, ListTransition, SelectField } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, ref, shallowRef } from "vue";
 
 const props = defineProps<{
 	agent: Agent,
@@ -88,12 +88,18 @@ const props = defineProps<{
 const saveDirectiveAction = dxAgent.getAction("save-directive");
 const updateDirectivesAction = dxAgent.getAction("update-directives");
 const removeDirectiveAction = dxAgent.getAction("remove-directive");
-const createDirectiveAction = dxPromptDirective.getAction("create", { onFinish: dxAgent.loadFieldOptions });
+const createDirectiveAction = dxPromptDirective.getAction("create", { onFinish: loadPromptDirectives });
 
-const availableDirectives = computed(() => dxAgent.getFieldOptions("promptDirectives").filter((directive) => !props.agent.directives?.find((agentDirective) => agentDirective.directive.id === directive.value)));
+const promptDirectives = shallowRef([]);
+const availableDirectives = computed(() => promptDirectives.value.filter((directive) => !props.agent.directives?.find((agentDirective) => agentDirective.directive.id === directive.value)));
 const topDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Top") || []);
 const bottomDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Bottom") || []);
 const isDragging = ref(false);
+
+async function loadPromptDirectives() {
+	promptDirectives.value = (await dxPromptDirective.routes.list()).data;
+}
+
 async function onCreateDirective() {
 	const { item: directive } = await createDirectiveAction.trigger();
 

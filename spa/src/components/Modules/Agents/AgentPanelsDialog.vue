@@ -21,5 +21,4 @@ export interface AgentPanelsDialogProps {
 defineEmits(["close"]);
 const props = defineProps<AgentPanelsDialogProps>();
 dxAgent.routes.details(props.agent);
-dxAgent.loadFieldOptions();
 </script>

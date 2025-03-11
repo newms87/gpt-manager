@@ -117,10 +117,7 @@ const props = defineProps<{
 	editableTeamObjects?: boolean;
 }>();
 
-onMounted(() => {
-	dxWorkflowInput.loadFieldOptions();
-	loadAvailableTeamObjects();
-});
+onMounted(loadAvailableTeamObjects);
 const updateAction = dxWorkflowInput.getAction("update");
 const debouncedUpdateAction = dxWorkflowInput.getAction("update", { debounce: 500 });
 const isEditing = ref(false);

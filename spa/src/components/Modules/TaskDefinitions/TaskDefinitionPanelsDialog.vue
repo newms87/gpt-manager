@@ -24,6 +24,5 @@ const props = defineProps<AgentPanelsDialogProps>();
 
 onMounted(async () => {
 	await dxTaskDefinition.routes.details(props.taskDefinition);
-	await dxTaskDefinition.loadFieldOptions();
 });
 </script>
