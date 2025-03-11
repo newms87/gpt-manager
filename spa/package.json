@@ -11,7 +11,8 @@
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "format": "prettier --write src/",
-    "postinstall": "./danx.sh"
+    "postinstall": "./danx.sh",
+    "preinstall": "cd ../../quasar-ui-danx/ui && yarn"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
@@ -37,7 +38,7 @@
     "danx-icon": "^1.0.2",
     "prism-themes": "^1.9.0",
     "quasar": "^2.15.2",
-    "quasar-ui-danx": "^0.4.45",
+    "quasar-ui-danx": "^0.4.46",
     "ts-node": "^10.9.2",
     "vue": "^3.4.21",
     "vue-router": "^4.3.2",

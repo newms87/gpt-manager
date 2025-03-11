@@ -25,7 +25,7 @@
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { fields } from "@/components/Modules/TaskDefinitions/config/fields";
-import TaskDefinitionAgentList from "@/components/Modules/TaskDefinitions/Panels/TaskDefinitionAgentList";
+import TaskDefinitionAgentList from "@/components/Modules/TaskDefinitions/TaskDefinitionAgents/TaskDefinitionAgentList";
 import ArtifactSplitModeWidget from "@/components/Modules/TaskDefinitions/Widgets/ArtifactSplitModeWidget";
 import { TaskDefinition } from "@/types";
 import { ActionForm, SelectField } from "quasar-ui-danx";

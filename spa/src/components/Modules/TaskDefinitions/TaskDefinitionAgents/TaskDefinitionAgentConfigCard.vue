@@ -6,30 +6,32 @@
 				:selected="taskDefinitionAgent.agent"
 				selectable
 				editable
+				name-editable
 				creatable
 				class="flex-grow"
 				:select-icon="AgentIcon"
 				select-class="bg-emerald-900 text-cyan-400"
 				label-class="text-slate-300"
-				:options="dxAgent.pagedItems.value?.data || []"
-				:loading="isUpdatingAgent"
+				:options="availableAgents"
+				:loading="isUpdatingAgent || isLoadingAgents"
 				@create="createAgentAction.trigger(null, {name: taskDefinition.name + ' Agent'})"
-				@update:selected="agent => onUpdateAgent({ agent_id: agent.id })"
+				@update:selected="agent => onUpdateDefinitionAgent({ agent_id: agent.id })"
 				@update:editing="isTrue => (isTrue ? dxAgent.routes.details(taskDefinitionAgent.agent) : null)"
+				@update="input => updateAgentAction.trigger(taskDefinitionAgent.agent, input)"
 			/>
 			<div class="flex items-center">
 				<ActionButton
 					type="copy"
 					color="sky"
 					class="mr-2"
-					:saving="copyAgentAction.isApplying"
-					@click="copyAgentAction.trigger(taskDefinition, {id: taskDefinitionAgent.id})"
+					:saving="copyDefinitionAgentAction.isApplying"
+					@click="copyDefinitionAgentAction.trigger(taskDefinition, {id: taskDefinitionAgent.id})"
 				/>
 				<ActionButton
 					type="trash"
 					color="red"
-					:saving="removeAgentAction.isApplying"
-					@click="removeAgentAction.trigger(taskDefinition, {id: taskDefinitionAgent.id})"
+					:saving="removeDefinitionAgentAction.isApplying"
+					@click="removeDefinitionAgentAction.trigger(taskDefinition, {id: taskDefinitionAgent.id})"
 				/>
 			</div>
 		</div>
@@ -43,7 +45,7 @@
 					:model-value="taskDefinitionAgent.include_text"
 					label="Include Text?"
 					class="text-slate-500"
-					@update:model-value="include_text => onUpdateAgent({ include_text })"
+					@update:model-value="include_text => onUpdateDefinitionAgent({ include_text })"
 				/>
 			</div>
 			<div>
@@ -51,7 +53,7 @@
 					:model-value="taskDefinitionAgent.include_files"
 					label="Include Files?"
 					class="text-slate-500"
-					@update:model-value="include_files => onUpdateAgent({ include_files })"
+					@update:model-value="include_files => onUpdateDefinitionAgent({ include_files })"
 				/>
 			</div>
 			<div>
@@ -59,7 +61,7 @@
 					:model-value="taskDefinitionAgent.include_data"
 					label="Include Data?"
 					class="text-slate-500"
-					@update:model-value="include_data => onUpdateAgent({ include_data })"
+					@update:model-value="include_data => onUpdateDefinitionAgent({ include_data })"
 				/>
 			</div>
 		</div>
@@ -139,6 +141,7 @@ import { TaskDefinition, TaskDefinitionAgent } from "@/types";
 import { FaSolidRobot as AgentIcon } from "danx-icon";
 import { ActionButton, SelectionMenuField } from "quasar-ui-danx";
 import { ref } from "vue";
+import { availableAgents, isLoadingAgents, loadAgents } from "./agentStore";
 
 defineEmits(["update", "remove"]);
 const props = defineProps<{
@@ -146,13 +149,12 @@ const props = defineProps<{
 	taskDefinitionAgent: TaskDefinitionAgent;
 }>();
 
-dxAgent.initialize();
-
 const isEditingAgent = ref(false);
-const createAgentAction = dxAgent.getAction("quick-create", { onFinish: dxAgent.loadList });
-const copyAgentAction = dxTaskDefinition.getAction("copy-agent");
-const updateAgentAction = dxTaskDefinition.getAction("update-agent");
-const removeAgentAction = dxTaskDefinition.getAction("remove-agent");
+const createAgentAction = dxAgent.getAction("quick-create", { onFinish: loadAgents });
+const updateAgentAction = dxAgent.getAction("update");
+const copyDefinitionAgentAction = dxTaskDefinition.getAction("copy-agent");
+const updateDefinitionAgentAction = dxTaskDefinition.getAction("update-agent");
+const removeDefinitionAgentAction = dxTaskDefinition.getAction("remove-agent");
 const createSchemaAssociationAction = dxSchemaAssociation.getAction("quick-create", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
 const updateSchemaAssociationAction = dxSchemaAssociation.getAction("update");
 const deleteSchemaAssociationAction = dxSchemaAssociation.getAction("delete", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
@@ -160,11 +162,14 @@ const deleteSchemaAssociationAction = dxSchemaAssociation.getAction("delete", { 
 const isUpdatingAgent = ref(false);
 const isSavingOutputSchema = ref(false);
 
-async function onUpdateAgent(data) {
+// Immediately load agents eagerly to prepare to show the agent selection menu
+loadAgents();
+
+async function onUpdateDefinitionAgent(data) {
 	if (data.agent_id) {
 		isUpdatingAgent.value = true;
 	}
-	await updateAgentAction.trigger(props.taskDefinition, { id: props.taskDefinitionAgent.id, ...data });
+	await updateDefinitionAgentAction.trigger(props.taskDefinition, { id: props.taskDefinitionAgent.id, ...data });
 	isUpdatingAgent.value = false;
 }
 
