@@ -4,11 +4,11 @@ namespace App\Models\Prompt;
 
 use App\Models\Agent\Agent;
 use App\Models\Team\Team;
-use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
@@ -47,11 +47,15 @@ class PromptDirective extends Model implements AuditableContract
         return $this->belongsToMany(Agent::class, 'agent_prompt_directives');
     }
 
+    public function agentPromptDirectives(): HasMany|AgentPromptDirective
+    {
+        return $this->hasMany(AgentPromptDirective::class);
+    }
+
     public function delete(): bool
     {
-        $agentsCount = $this->agents()->count();
-        if ($agentsCount) {
-            throw new Exception("Cannot delete Prompt Directive $this->name: there are $agentsCount agents with this directive assigned.");
+        foreach($this->agentPromptDirectives as $agentPromptDirective) {
+            $agentPromptDirective->delete();
         }
 
         return parent::delete();

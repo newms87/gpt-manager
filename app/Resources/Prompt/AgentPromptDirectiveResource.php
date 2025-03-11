@@ -11,7 +11,7 @@ class AgentPromptDirectiveResource extends ActionResource
     {
         return [
             'id'        => $promptDirective->id,
-            'directive' => PromptDirectiveResource::make($promptDirective->directive),
+            'directive' => $promptDirective->directive ? PromptDirectiveResource::make($promptDirective->directive) : null,
             'position'  => $promptDirective->position,
             'section'   => $promptDirective->section,
         ];

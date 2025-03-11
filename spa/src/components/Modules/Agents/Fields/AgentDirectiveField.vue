@@ -1,14 +1,15 @@
 <template>
 	<div>
-		<h6>Before Thread</h6>
-		<ListTransition
-			name="fade-down-list"
-			data-drop-zone="top-directives-dz"
-		>
-			<template v-if="isDragging && !topDirectives.length">
-				<div class="text-center text-gray-500 border-dashed border border-slate-500 p-4">Drag Directive Here</div>
-			</template>
-			<template v-else>
+		<h5>Directives</h5>
+		<div class="bg-slate-900 p-4 rounded mt-4 space-y-4">
+			<ActionButton
+				type="create"
+				color="green"
+				label="Before Thread"
+				size="sm"
+				@click="saveDirectiveAction.trigger(agent, { section: 'Top', name: agent.name + ' Directive' })"
+			/>
+			<ListTransition name="fade-down-list" data-drop-zone="top-directives-dz">
 				<ListItemDraggable
 					v-for="agentDirective in topDirectives"
 					:key="agentDirective.id"
@@ -16,28 +17,41 @@
 					drop-zone="top-directives-dz"
 					@update:list-items="onListPositionChange($event, 'Top')"
 					@drop-zone="onDropZoneChange"
-					@dragstart="onDragStart"
+					@dragstart="onDragStart('Top')"
 					@dragend="onDragEnd"
 				>
-					<AgentDirectiveCard
+					<SelectableAgentPromptDirectiveCard
+						:agent="agent"
 						:agent-directive="agentDirective"
-						class="my-2"
+						class="my-1"
 						:is-removing="removeDirectiveAction.isApplying"
 						@remove="removeDirectiveAction.trigger(agent, { id: agentDirective.directive.id })"
 					/>
 				</ListItemDraggable>
-			</template>
-		</ListTransition>
+				<div
+					v-if="isDraggingBottom"
+					class="text-center text-gray-500 border-dashed border border-slate-500 p-4"
+					:class="{'bg-green-900': isDraggingOverTop}"
+					@dragenter="isDraggingOverTop = true"
+					@dragleave="isDraggingOverTop = false"
+				>
+					Drag Directive Here
+				</div>
+			</ListTransition>
 
-		<h6 class="mt-4">After Thread</h6>
-		<ListTransition
-			name="fade-down-list"
-			data-drop-zone="bottom-directives-dz"
-		>
-			<template v-if="isDragging && !bottomDirectives.length">
-				<div class="text-center text-gray-500 border-dashed border border-slate-500 p-4">Drag Directive Here</div>
-			</template>
-			<template v-else>
+			<QSeparator class="bg-slate-400 my-4" />
+
+			<ActionButton
+				type="create"
+				color="green"
+				size="sm"
+				label="After Thread"
+				@click="saveDirectiveAction.trigger(agent, { section: 'Bottom', name: agent.name + ' Directive' })"
+			/>
+			<ListTransition
+				name="fade-down-list"
+				data-drop-zone="bottom-directives-dz"
+			>
 				<ListItemDraggable
 					v-for="(agentDirective) in bottomDirectives"
 					:key="agentDirective.id"
@@ -45,72 +59,51 @@
 					drop-zone="bottom-directives-dz"
 					@update:list-items="onListPositionChange($event, 'Bottom')"
 					@drop-zone="onDropZoneChange"
-					@dragstart="onDragStart"
+					@dragstart="onDragStart('Bottom')"
 					@dragend="onDragEnd"
 				>
-					<AgentDirectiveCard
+					<SelectableAgentPromptDirectiveCard
+						:agent="agent"
 						:agent-directive="agentDirective"
-						class="my-2"
+						class="my-1"
 						:is-removing="removeDirectiveAction.isApplying"
 						@remove="removeDirectiveAction.trigger(agent, { id: agentDirective.directive.id })"
 					/>
 				</ListItemDraggable>
-			</template>
-		</ListTransition>
-
-
-		<div class="flex items-stretch flex-nowrap mt-4">
-			<SelectField
-				class="flex-grow"
-				:options="availableDirectives"
-				:disable="!availableDirectives.length"
-				:placeholder="availableDirectives.length ? '+ Add Directive' : 'No Directives Available'"
-				@update="addAgentDirective"
-			/>
-			<QBtn class="bg-green-900 ml-4 w-1/5" :loading="createDirectiveAction.isApplying" @click="onCreateDirective">
-				Create Directive
-			</QBtn>
+				<div
+					v-if="isDraggingTop"
+					class="text-center text-gray-500 border-dashed border border-slate-500 p-4"
+					:class="{'bg-green-900': isDraggingOverBottom}"
+					@dragenter="isDraggingOverBottom = true"
+					@dragleave="isDraggingOverBottom = false"
+				>
+					Drag Directive Here
+				</div>
+			</ListTransition>
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import { dxAgent } from "@/components/Modules/Agents";
-import AgentDirectiveCard from "@/components/Modules/Agents/Fields/AgentDirectiveCard";
-import { dxPromptDirective } from "@/components/Modules/Prompts/Directives";
+import { refreshPromptDirectives } from "@/components/Modules/Agents/Fields/directivesStore";
+import SelectableAgentPromptDirectiveCard from "@/components/Modules/Agents/Fields/SelectableAgentPromptDirectiveCard";
 import { Agent } from "@/types/agents";
-import { ListItemDraggable, ListTransition, SelectField } from "quasar-ui-danx";
-import { computed, ref, shallowRef } from "vue";
+import { ActionButton, ListItemDraggable, ListTransition } from "quasar-ui-danx";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
 	agent: Agent,
 }>();
 
-const saveDirectiveAction = dxAgent.getAction("save-directive");
+const saveDirectiveAction = dxAgent.getAction("save-directive", { onFinish: refreshPromptDirectives });
 const updateDirectivesAction = dxAgent.getAction("update-directives");
 const removeDirectiveAction = dxAgent.getAction("remove-directive");
-const createDirectiveAction = dxPromptDirective.getAction("create", { onFinish: loadPromptDirectives });
-
-const promptDirectives = shallowRef([]);
-const availableDirectives = computed(() => promptDirectives.value.filter((directive) => !props.agent.directives?.find((agentDirective) => agentDirective.directive.id === directive.value)));
 const topDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Top") || []);
 const bottomDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Bottom") || []);
-const isDragging = ref(false);
-
-async function loadPromptDirectives() {
-	promptDirectives.value = (await dxPromptDirective.routes.list()).data;
-}
-
-async function onCreateDirective() {
-	const { item: directive } = await createDirectiveAction.trigger();
-
-	if (directive) {
-		await addAgentDirective(directive.id);
-	}
-}
-
-async function addAgentDirective(id) {
-	await saveDirectiveAction.trigger(props.agent, { id });
-}
+const isDraggingTop = ref(false);
+const isDraggingBottom = ref(false);
+const isDraggingOverTop = ref(false);
+const isDraggingOverBottom = ref(false);
 
 function onListPositionChange(directives, section) {
 	directives = directives.filter((directive) => directive.id);
@@ -135,12 +128,16 @@ function onDropZoneChange(event) {
 	});
 }
 
-function onDragStart() {
+function onDragStart(section: "Top" | "Bottom") {
 	setTimeout(() => {
-		isDragging.value = true;
+		if (section === "Top") isDraggingTop.value = true;
+		else isDraggingBottom.value = true;
 	}, 200);
 }
 function onDragEnd() {
-	isDragging.value = false;
+	isDraggingOverBottom.value = false;
+	isDraggingOverTop.value = false;
+	isDraggingTop.value = false;
+	isDraggingBottom.value = false;
 }
 </script>

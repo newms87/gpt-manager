@@ -60,7 +60,7 @@ class AgentRepository extends ActionRepository
             'update' => $this->updateAgent($model, $data),
             'copy' => $this->copyAgent($model),
             'create-thread' => app(ThreadRepository::class)->create($model),
-            'save-directive' => $this->saveDirective($model, $data['id'] ?? null, $data['section'] ?? null, $data['position'] ?? 0),
+            'save-directive' => $this->saveDirective($model, $data['agent_prompt_directive_id'] ?? null, $data),
             'update-directives' => $this->updateDirectives($model, $data['directives'] ?? []),
             'remove-directive' => $this->removeDirective($model, $data['id'] ?? null),
             default => parent::applyAction($action, $model, $data)
@@ -167,20 +167,57 @@ class AgentRepository extends ActionRepository
     /**
      * Add / Update a directive to an agent
      */
-    public function saveDirective(Agent $agent, $directiveId, $section = AgentPromptDirective::SECTION_TOP, $position = 0): AgentPromptDirective
+    public function saveDirective(Agent $agent, $agentPromptDirectiveId, array $input): AgentPromptDirective
     {
-        $directive = PromptDirective::where('team_id', team()->id)->find($directiveId);
+        if ($agentPromptDirectiveId) {
+            $agentPromptDirective = $agent->directives()->find($agentPromptDirectiveId);
 
-        if (!$directive) {
-            throw new ValidationError('Directive not found');
+            if (!$agentPromptDirective) {
+                throw new ValidationError("Agent Directive with ID $agentPromptDirectiveId not found");
+            }
+        } else {
+            $agentPromptDirective = $agent->directives()->make();
         }
 
-        return $agent->directives()->updateOrCreate([
-            'prompt_directive_id' => $directiveId,
-        ], [
-            'section'  => $section ?? AgentPromptDirective::SECTION_TOP,
-            'position' => $position,
-        ]);
+        $promptDirectiveId = $input['prompt_directive_id'] ?? null;
+        $section           = $input['section'] ?? ($agentPromptDirective?->section ?: AgentPromptDirective::SECTION_TOP);
+        $position          = $input['position'] ?? ($agentPromptDirective?->position ?: 0);
+        $name              = $input['name'] ?? '';
+
+        // Resolve or create the prompt directive
+        if ($promptDirectiveId) {
+            $promptDirective = PromptDirective::where('team_id', team()->id)->find($promptDirectiveId);
+            if (!$promptDirective) {
+                throw new ValidationError('Prompt Directive not found: ' . $promptDirectiveId);
+            }
+        } else {
+            $existingPromptDirective = PromptDirective::where('name', $name)->first();
+            $existingDirective       = null;
+            if ($existingPromptDirective) {
+                $existingDirective = $agent->directives()->where('prompt_directive_id', $existingPromptDirective->id)->first();
+            }
+
+            // Re-use an existing prompt directive if one was already created for this agent
+            if ($existingPromptDirective && !$existingDirective) {
+                $promptDirective = $existingPromptDirective;
+            } else {
+                $promptDirective = PromptDirective::make([
+                    'team_id' => team()->id,
+                    'name'    => $name,
+                ]);
+
+                $promptDirective->name = ModelHelper::getNextModelName($promptDirective);
+                $promptDirective->save();
+            }
+        }
+
+        $agentPromptDirective->fill([
+            'prompt_directive_id' => $promptDirective->id,
+            'section'             => $section,
+            'position'            => $position,
+        ])->save();
+
+        return $agentPromptDirective;
     }
 
     /**
