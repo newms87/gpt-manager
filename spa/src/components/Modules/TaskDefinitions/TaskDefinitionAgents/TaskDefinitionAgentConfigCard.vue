@@ -27,13 +27,13 @@
 					color="sky"
 					class="mr-2"
 					:saving="copyDefinitionAgentAction.isApplying"
-					@click="copyDefinitionAgentAction.trigger(taskDefinition, {id: taskDefinitionAgent.id})"
+					@click="copyDefinitionAgentAction.trigger(taskDefinitionAgent)"
 				/>
 				<ActionButton
 					type="trash"
 					color="red"
 					:saving="removeDefinitionAgentAction.isApplying"
-					@click="removeDefinitionAgentAction.trigger(taskDefinition, {id: taskDefinitionAgent.id})"
+					@click="removeDefinitionAgentAction.trigger(taskDefinitionAgent)"
 				/>
 			</div>
 		</div>
@@ -149,6 +149,7 @@ import AgentDirectiveField from "@/components/Modules/Agents/Fields/AgentDirecti
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
 import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociations";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
+import { dxTaskDefinitionAgent } from "@/components/Modules/TaskDefinitions/TaskDefinitionAgents/config";
 import { TaskDefinition, TaskDefinitionAgent } from "@/types";
 import { FaSolidRobot as AgentIcon } from "danx-icon";
 import { ActionButton, ActionForm, SelectionMenuField } from "quasar-ui-danx";
@@ -166,9 +167,9 @@ const isEditingAgent = ref(false);
 const createAgentAction = dxAgent.getAction("quick-create", { onFinish: loadAgents });
 const updateAgentAction = dxAgent.getAction("update");
 const deleteAgentAction = dxAgent.getAction("delete", { onFinish: loadAgents });
-const copyDefinitionAgentAction = dxTaskDefinition.getAction("copy-agent");
-const updateDefinitionAgentAction = dxTaskDefinition.getAction("update-agent");
-const removeDefinitionAgentAction = dxTaskDefinition.getAction("remove-agent");
+const copyDefinitionAgentAction = dxTaskDefinitionAgent.getAction("copy", { onFinish: refreshTaskDefinition });
+const updateDefinitionAgentAction = dxTaskDefinitionAgent.getAction("update");
+const removeDefinitionAgentAction = dxTaskDefinitionAgent.getAction("quick-delete", { optimisticDelete: true });
 const createSchemaAssociationAction = dxSchemaAssociation.getAction("quick-create", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
 const updateSchemaAssociationAction = dxSchemaAssociation.getAction("update");
 const deleteSchemaAssociationAction = dxSchemaAssociation.getAction("delete", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
@@ -179,11 +180,15 @@ const isSavingOutputSchema = ref(false);
 // Immediately load agents eagerly to prepare to show the agent selection menu
 loadAgents();
 
+async function refreshTaskDefinition() {
+	await dxTaskDefinition.routes.details(props.taskDefinition);
+}
+
 async function onUpdateDefinitionAgent(data) {
 	if (data.agent_id) {
 		isUpdatingAgent.value = true;
 	}
-	await updateDefinitionAgentAction.trigger(props.taskDefinition, { id: props.taskDefinitionAgent.id, ...data });
+	await updateDefinitionAgentAction.trigger(props.taskDefinitionAgent, data);
 	isUpdatingAgent.value = false;
 }
 
