@@ -2,14 +2,15 @@
 	<div class="relative h-full p-6 overflow-hidden flex flex-col flex-nowrap">
 		<SchemaEditorToolbox
 			v-model:editing="isEditingSchema"
+			class="max-h-full"
 			:model-value="activeSchema"
 			can-select
 			previewable
 			@update:model-value="onSelectSchemaDefinition"
 		/>
 
-		<div class="flex-grow overflow-y-auto overflow-x-hidden">
-			<TeamObjectsList v-if="activeSchema && !isEditingSchema" :schema-definition="activeSchema" />
+		<div v-if="activeSchema && !isEditingSchema" class="flex-grow overflow-y-auto overflow-x-hidden">
+			<TeamObjectsList :schema-definition="activeSchema" />
 		</div>
 	</div>
 </template>
