@@ -7,7 +7,9 @@
 				color="green"
 				label="Before Thread"
 				size="sm"
-				@click="saveDirectiveAction.trigger(agent, { section: 'Top', name: agent.name + ' Directive' })"
+				:action="saveDirectiveAction"
+				:target="agent"
+				:input="{ section: 'Top', name: agent.name + ' Directive' }"
 			/>
 			<ListTransition name="fade-down-list" data-drop-zone="top-directives-dz">
 				<ListItemDraggable
@@ -46,7 +48,9 @@
 				color="green"
 				size="sm"
 				label="After Thread"
-				@click="saveDirectiveAction.trigger(agent, { section: 'Bottom', name: agent.name + ' Directive' })"
+				:action="saveDirectiveAction"
+				:target="agent"
+				:input="{ section: 'Bottom', name: agent.name + ' Directive' }"
 			/>
 			<ListTransition
 				name="fade-down-list"
@@ -96,8 +100,8 @@ const props = defineProps<{
 }>();
 
 const saveDirectiveAction = dxAgent.getAction("save-directive", { onFinish: refreshPromptDirectives });
-const updateDirectivesAction = dxAgent.getAction("update-directives");
-const removeDirectiveAction = dxAgent.getAction("remove-directive");
+const updateDirectivesAction = dxAgent.getAction("update-directives", { optimistic: true });
+const removeDirectiveAction = dxAgent.getAction("remove-directive", { optimisticDelete: true });
 const topDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Top") || []);
 const bottomDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Bottom") || []);
 const isDraggingTop = ref(false);
@@ -109,11 +113,13 @@ function onListPositionChange(directives, section) {
 	directives = directives.filter((directive) => directive.id);
 	const top = section === "Top" ? directives : topDirectives.value;
 	const bottom = section === "Bottom" ? directives : bottomDirectives.value;
-	const updatedDirectives = [...top, ...bottom].map((directive, index) => ({
-		...directive,
-		position: index
-	}));
-	updateDirectivesAction.trigger(props.agent, { directives: updatedDirectives });
+	const updatedDirectives = [].concat(top).concat(bottom);
+	updatedDirectives.forEach((directive, index) => {
+		directive.position = index;
+	});
+	updateDirectivesAction.trigger(props.agent, {
+		directives: updatedDirectives
+	});
 }
 
 function onDropZoneChange(event) {

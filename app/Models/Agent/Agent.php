@@ -17,13 +17,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Helpers\StringHelper;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class Agent extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait, ActionModelTrait;
 
     const string
         RESPONSE_FORMAT_TEXT = 'text',

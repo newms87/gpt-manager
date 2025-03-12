@@ -6,11 +6,12 @@ use App\Models\Agent\Agent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
 class AgentPromptDirective extends Model implements AuditableContract
 {
-    use AuditableTrait;
+    use AuditableTrait, ActionModelTrait;
 
     const string
         SECTION_TOP = 'Top',

@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Newms87\Danx\Traits\ActionModelTrait;
 
 class SchemaAssociation extends Model
 {
-    use HasFactory;
+    use HasFactory, ActionModelTrait;
 
     protected $guarded = [
         'id',

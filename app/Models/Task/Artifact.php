@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Utilities\StoredFile;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
 class Artifact extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, ActionModelTrait, SoftDeletes;
 
     protected $guarded = [
         'id',

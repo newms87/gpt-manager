@@ -217,6 +217,10 @@ class AgentRepository extends ActionRepository
             'position'            => $position,
         ])->save();
 
+        // IMPORTANT: the UI expects the agent to be touched after a directive is modified for optimistic updates.
+        // Without this, the optimistic update will appear more recent than the returned agent, so the response and subsequent fetches of the agent will be ignored
+        $agent->touch();
+
         return $agentPromptDirective;
     }
 
@@ -238,6 +242,10 @@ class AgentRepository extends ActionRepository
             ]);
         }
 
+        // IMPORTANT: the UI expects the agent to be touched after a directive is modified for optimistic updates.
+        // Without this, the optimistic update will appear more recent than the returned agent, so the response and subsequent fetches of the agent will be ignored
+        $agent->touch();
+
         return true;
     }
 
@@ -246,6 +254,12 @@ class AgentRepository extends ActionRepository
      */
     public function removeDirective(Agent $agent, $directiveId): bool
     {
-        return $agent->directives()->where('prompt_directive_id', $directiveId)->delete();
+        $agent->directives()->where('prompt_directive_id', $directiveId)->delete();
+
+        // IMPORTANT: the UI expects the agent to be touched after a directive is modified for optimistic updates.
+        // Without this, the optimistic update will appear more recent than the returned agent, so the response and subsequent fetches of the agent will be ignored
+        $agent->touch();
+
+        return true;
     }
 }

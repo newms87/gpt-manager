@@ -12,13 +12,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class PromptDirective extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
+    use HasFactory, ActionModelTrait, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 
     protected $guarded = [
         'id',

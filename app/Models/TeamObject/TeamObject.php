@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
 /**
@@ -31,7 +32,7 @@ use Newms87\Danx\Traits\AuditableTrait;
  */
 class TeamObject extends Model implements AuditableContract
 {
-    use AuditableTrait, HasFactory, SoftDeletes;
+    use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
 
     protected $table   = 'team__objects';
     protected $guarded = [

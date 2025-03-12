@@ -23,7 +23,7 @@
 			<MarkdownEditor
 				:model-value="promptDirective.directive_text"
 				:max-length="64000"
-				@update:model-value="updatePromptDirectiveAction.trigger(promptDirective, {directive_text: $event})"
+				@update:model-value="debouncedUpdatePromptDirectiveAction.trigger(promptDirective, {directive_text: $event})"
 			/>
 		</div>
 	</div>
@@ -59,6 +59,7 @@ const isEditing = ref(false);
 
 const saveAgentDirectiveAction = dxAgent.getAction("save-directive", { onFinish: refreshPromptDirectives });
 const updatePromptDirectiveAction = dxPromptDirective.getAction("update");
+const debouncedUpdatePromptDirectiveAction = dxPromptDirective.getAction("update", { debounce: 500 });
 const deletePromptDirectiveAction = dxPromptDirective.getAction("delete", {
 	onFinish: async () => {
 		await refreshPromptDirectives();

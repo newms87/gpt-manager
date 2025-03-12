@@ -9,12 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class SchemaFragment extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes;
 
     protected $guarded = [
         'id',

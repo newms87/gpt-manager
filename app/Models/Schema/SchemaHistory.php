@@ -6,9 +6,12 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Newms87\Danx\Traits\ActionModelTrait;
 
 class SchemaHistory extends Model
 {
+    use ActionModelTrait;
+    
     protected $table = 'schema_history';
 
     protected $guarded = [

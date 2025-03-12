@@ -13,41 +13,42 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
 class Team extends Model implements AuditableContract
 {
-	use HasFactory, AuditableTrait, SoftDeletes;
+    use HasFactory, ActionModelTrait, AuditableTrait, SoftDeletes;
 
-	protected $guarded = ['id', 'created_at', 'updated_at', 'deleted_at'];
+    protected $guarded = ['id', 'created_at', 'updated_at', 'deleted_at'];
 
-	public function users(): BelongsToMany|User
-	{
-		return $this->belongsToMany(User::class)->withTimestamps();
-	}
+    public function users(): BelongsToMany|User
+    {
+        return $this->belongsToMany(User::class)->withTimestamps();
+    }
 
-	public function agents(): HasMany|Agent
-	{
-		return $this->hasMany(Agent::class);
-	}
+    public function agents(): HasMany|Agent
+    {
+        return $this->hasMany(Agent::class);
+    }
 
-	public function taskDefinitions(): HasMany|TaskDefinition
-	{
-		return $this->hasMany(TaskDefinition::class);
-	}
+    public function taskDefinitions(): HasMany|TaskDefinition
+    {
+        return $this->hasMany(TaskDefinition::class);
+    }
 
-	public function taskWorkflows(): HasMany|TaskWorkflow
-	{
-		return $this->hasMany(TaskWorkflow::class);
-	}
+    public function taskWorkflows(): HasMany|TaskWorkflow
+    {
+        return $this->hasMany(TaskWorkflow::class);
+    }
 
-	public function workflowInputs(): HasMany|WorkflowInput
-	{
-		return $this->hasMany(WorkflowInput::class);
-	}
+    public function workflowInputs(): HasMany|WorkflowInput
+    {
+        return $this->hasMany(WorkflowInput::class);
+    }
 
-	public function __toString()
-	{
-		return "<Team ($this->id) $this->name>";
-	}
+    public function __toString()
+    {
+        return "<Team ($this->id) $this->name>";
+    }
 }

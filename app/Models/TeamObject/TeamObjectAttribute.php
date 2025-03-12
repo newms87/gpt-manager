@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
 /**
@@ -28,7 +29,7 @@ use Newms87\Danx\Traits\AuditableTrait;
  */
 class TeamObjectAttribute extends Model implements AuditableContract
 {
-    use AuditableTrait, HasFactory, SoftDeletes;
+    use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
 
     protected $table   = 'team__object_attributes';
     protected $guarded = [
