@@ -22,16 +22,20 @@ class AgentThreadTaskRunner extends BaseTaskRunner
     public function prepareProcess(): void
     {
         $defAgent = $this->taskProcess->taskDefinitionAgent;
-        $agent    = $defAgent->agent;
-        $name     = "$agent->name ($agent->model)";
 
-        $outputSchema         = $defAgent->outputSchemaAssociation?->schemaDefinition;
-        $outputSchemaFragment = $defAgent->outputSchemaAssociation?->schemaFragment;
-        if ($outputSchema) {
-            $name .= ': ' . $outputSchema->name . ($outputSchemaFragment ? ' [' . $outputSchemaFragment->name . ']' : '');
+        if ($defAgent) {
+            $agent = $defAgent->agent;
+            $name  = "$agent->name ($agent->model)";
+
+            $outputSchema         = $defAgent->outputSchemaAssociation?->schemaDefinition;
+            $outputSchemaFragment = $defAgent->outputSchemaAssociation?->schemaFragment;
+            if ($outputSchema) {
+                $name .= ': ' . $outputSchema->name . ($outputSchemaFragment ? ' [' . $outputSchemaFragment->name . ']' : '');
+            }
+
+            $this->taskProcess->name = $name;
         }
-
-        $this->taskProcess->name = $name;
+        
         $this->activity("Preparing agent thread", 1);
     }
 
