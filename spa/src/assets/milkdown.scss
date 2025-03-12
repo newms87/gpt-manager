@@ -44,7 +44,7 @@
 	}
 
 	[contenteditable] {
-		@apply outline-none min-h-4 rounded transition-all bg-slate-450 text-slate-800 p-2;
+		@apply outline-none min-h-4 rounded transition-all p-2;
 
 		p {
 			@apply py-1.5;
@@ -64,8 +64,6 @@
 		}
 
 		&.ProseMirror-focused {
-			@apply text-slate-900;
-
 			[data-language] {
 				@apply bg-gray-700;
 			}

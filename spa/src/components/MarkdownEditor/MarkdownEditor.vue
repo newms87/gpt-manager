@@ -1,7 +1,9 @@
 <template>
 	<div
-		class="dx-markdown-editor"
+		class="dx-markdown-editor group"
 		:class="{'dx-markdown-code-only': format !== 'text', 'dx-markdown-invalid': validContent === false}"
+		draggable="true"
+		@dragstart.prevent.stop
 	>
 		<FieldLabel v-if="label" class="mb-2 text-sm" :label="label">
 			{{ label }}
@@ -24,7 +26,10 @@
 				autogrow
 				@update:model-value="updateContent"
 			/>
-			<div class="markdown-footer flex flex-nowrap items-center justify-end w-full -mt-4 relative z-50">
+			<div
+				class="markdown-footer flex flex-nowrap items-center justify-end w-full -mt-4 relative z-50 opacity-0 group-hover:opacity-100 transition-all"
+				:class="{'opacity-100': isEditing}"
+			>
 				<div class="px-2 bg-slate-800 flex items-center flex-nowrap rounded-tl">
 					<MaxLengthCounter v-if="maxLength" :length="contentLength" :max-length="maxLength" class="mr-4" />
 					<div class="text-[.7rem]">
@@ -59,7 +64,7 @@ export interface MarkdownEditorProps {
 }
 
 const props = withDefaults(defineProps<MarkdownEditorProps>(), {
-	editorClass: "w-full",
+	editorClass: "w-full bg-slate-450 text-slate-800",
 	format: "text",
 	maxLength: null,
 	label: null

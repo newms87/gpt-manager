@@ -12,19 +12,23 @@
 					class="mr-2 py-1"
 					@update:model-value="changeSelection"
 				/>
-				<div v-if="$slots.header" class="flex-grow">
-					<slot name="header" />
+				<div class="flex-grow">
+					<slot name="header">
+						<div class="py-1">
+							<EditableDiv
+								:readonly="readonly"
+								:model-value="schemaObject.title || ''"
+								color="slate-600"
+								class="min-w-20"
+								placeholder="(Enter Title)"
+								:debounce-delay="1000"
+								@update:model-value="title => onUpdate({title})"
+							/>
+						</div>
+					</slot>
 				</div>
-				<div v-if="!hideHeader" class="py-1">
-					<EditableDiv
-						:readonly="readonly"
-						:model-value="schemaObject.title || ''"
-						color="slate-600"
-						class="min-w-20"
-						placeholder="(Enter Title)"
-						:debounce-delay="1000"
-						@update:model-value="title => onUpdate({title})"
-					/>
+				<div class="ml-2">
+					<ShowHideButton v-model="showInlineDescriptions" size="xs" icon-class="w-4" />
 				</div>
 			</div>
 			<div v-if="!readonly || customPropertyNames.length > 0" class="py-2 px-4">
@@ -47,6 +51,7 @@
 							@update:list-items="items => onListPositionChange(items)"
 						>
 							<SchemaProperty
+								v-model:inline-description="showInlineDescriptions"
 								:readonly="readonly"
 								:model-value="objectProperties[name]"
 								:name="name"
@@ -125,7 +130,7 @@ import { useFragmentSelector } from "@/components/Modules/SchemaEditor/fragmentS
 import SchemaProperty from "@/components/Modules/SchemaEditor/SchemaProperty";
 import { FragmentSelector, JsonSchema } from "@/types";
 import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } from "danx-icon";
-import { cloneDeep, EditableDiv, ListItemDraggable, ListTransition } from "quasar-ui-danx";
+import { cloneDeep, EditableDiv, ListItemDraggable, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
 withDefaults(defineProps<{
@@ -142,6 +147,7 @@ withDefaults(defineProps<{
 });
 const schemaObject = defineModel<JsonSchema>();
 const fragmentSelector = defineModel<FragmentSelector | null>("fragmentSelector");
+const showInlineDescriptions = defineModel<boolean>("inlineDescriptions");
 const objectProperties = ref(cloneDeep(schemaObject.value.properties || schemaObject.value.items?.properties || {}));
 
 watch(() => schemaObject.value, (value) => {
