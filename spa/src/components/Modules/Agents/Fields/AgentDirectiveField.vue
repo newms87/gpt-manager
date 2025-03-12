@@ -99,9 +99,13 @@ const props = defineProps<{
 	agent: Agent,
 }>();
 
-const saveDirectiveAction = dxAgent.getAction("save-directive", { onFinish: refreshPromptDirectives });
+const saveDirectiveAction = dxAgent.getAction("save-directive", { onFinish: () => refreshPromptDirectives() });
 const updateDirectivesAction = dxAgent.getAction("update-directives", { optimistic: true });
-const removeDirectiveAction = dxAgent.getAction("remove-directive", { optimisticDelete: true });
+const removeDirectiveAction = dxAgent.getAction("remove-directive", {
+	optimistic: (action, target: Agent, input) => {
+		target.directives = target.directives.filter((d) => d.directive.id !== input.id);
+	}
+});
 const topDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Top") || []);
 const bottomDirectives = computed(() => props.agent.directives?.filter((directive) => directive.section === "Bottom") || []);
 const isDraggingTop = ref(false);

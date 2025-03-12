@@ -39,7 +39,7 @@
 		</div>
 
 		<div v-if="isEditingAgent" class="mt-4 bg-slate-800 rounded p-8">
-			<QSkeleton v-if="!taskDefinitionAgent.agent.id === agentToLoadDetails?.id" class="h-16" />
+			<QSkeleton v-if="taskDefinitionAgent.agent.id === agentToLoadDetails?.id" class="h-16" />
 			<template v-else>
 				<ActionForm
 					:action="updateAgentAction"
