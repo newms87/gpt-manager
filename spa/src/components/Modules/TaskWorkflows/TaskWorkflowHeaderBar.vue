@@ -35,7 +35,6 @@
 					type="play"
 					color="green"
 					label="Run Workflow"
-					size="sm"
 					:disabled="isRunning"
 					@click="isSelectingWorkflowInput = true"
 				/>
@@ -44,7 +43,7 @@
 				<ShowHideButton
 					v-model="isShowing"
 					:label="`${activeTaskWorkflow.runs?.length || 0}`"
-					class="bg-green-700 text-green-300"
+					color="green-invert"
 					:show-icon="RunsIcon"
 				/>
 			</div>

@@ -13,7 +13,6 @@ export interface WorkflowInput extends ActionTargetItem {
 	team_object_type?: string;
 	team_object_id?: number;
 	teamObject?: TeamObject;
-	availableTeamObjects?: TeamObject[];
 	created_at: string;
 	updated_at: string;
 }

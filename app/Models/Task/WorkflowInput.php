@@ -9,7 +9,6 @@ use App\Traits\HasObjectTags;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Validator;
@@ -44,11 +43,6 @@ class WorkflowInput extends Model implements AuditableContract
     public function teamObject(): BelongsTo
     {
         return $this->belongsTo(TeamObject::class, 'team_object_id');
-    }
-
-    public function availableTeamObjects(): HasMany
-    {
-        return $this->hasMany(TeamObject::class, 'type', 'team_object_type');
     }
 
     public function contentSource(): BelongsTo|ContentSource

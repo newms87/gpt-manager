@@ -29,7 +29,6 @@
 				type="confirm"
 				label="Select"
 				color="green"
-				size="sm"
 				class="py-1.5"
 				@click="$emit('select')"
 			/>
@@ -45,7 +44,7 @@
 		</div>
 		<div v-if="editableTeamObjects" class="mt-4 flex items-center flex-nowrap space-x-4">
 			<SelectField
-				select-class="dx-select-field-dense"
+				:loading="isLoadingTeamObjects"
 				placeholder="(Select Type)"
 				:options="dxWorkflowInput.getFieldOptions('teamObjectTypes')"
 				:model-value="workflowInput.team_object_type"
@@ -58,10 +57,10 @@
 				clearable
 				:placeholder="`(Select ${workflowInput.team_object_type})`"
 				:select-icon="TeamObjectIcon"
-				select-class="bg-emerald-900 text-cyan-400"
-				label-class="text-slate-300"
+				label-class="text-slate-300 text-lg"
+				size="lg"
 				:options="availableTeamObjects"
-				:loading="updateAction.isApplying"
+				:loading="isLoadingTeamObjects"
 				@update:selected="teamObject => updateAction.trigger(workflowInput, { team_object_id: teamObject?.id || null })"
 			/>
 		</div>
@@ -94,6 +93,11 @@
 <script setup lang="ts">
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { dxWorkflowInput } from "@/components/Modules/TaskWorkflows/WorkflowInputs/config";
+import {
+	availableTeamObjectsByType,
+	isLoadingAvailableTeamObjects,
+	loadAvailableTeamObjectsByType
+} from "@/components/Modules/TaskWorkflows/WorkflowInputs/teamObjectStore";
 import { WorkflowInput } from "@/types";
 import { FaSolidIndustry as TeamObjectIcon, FaSolidPencil as EditIcon } from "danx-icon";
 import {
@@ -105,7 +109,7 @@ import {
 	SelectionMenuField,
 	ShowHideButton
 } from "quasar-ui-danx";
-import { computed, onMounted, ref, shallowRef } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 defineEmits(["select", "remove"]);
 const props = defineProps<{
@@ -117,22 +121,21 @@ const props = defineProps<{
 	editableTeamObjects?: boolean;
 }>();
 
-onMounted(loadAvailableTeamObjects);
-const updateAction = dxWorkflowInput.getAction("update");
-const debouncedUpdateAction = dxWorkflowInput.getAction("update", { debounce: 500 });
+onMounted(() => loadAvailableTeamObjectsByType(props.workflowInput.team_object_type));
+watch(() => props.workflowInput.team_object_type, () => loadAvailableTeamObjectsByType(props.workflowInput.team_object_type));
+
+// State
 const isEditing = ref(false);
-const availableTeamObjects = shallowRef([]);
+const isLoadingTeamObjects = computed(() => updateAction.isApplying || isLoadingAvailableTeamObjects.value[props.workflowInput.team_object_type]);
+const availableTeamObjects = computed(() => availableTeamObjectsByType.value[props.workflowInput.team_object_type] || []);
 const selectedTeamObject = computed(() => availableTeamObjects.value.find(to => to.id === props.workflowInput.team_object_id));
 
-async function loadAvailableTeamObjects() {
-	if (props.workflowInput.team_object_type && !selectedTeamObject.value) {
-		await dxWorkflowInput.routes.details(props.workflowInput, { availableTeamObjects: true });
-		availableTeamObjects.value = props.workflowInput.availableTeamObjects;
-	}
-}
+// Actions
+const updateAction = dxWorkflowInput.getAction("update");
+const debouncedUpdateAction = dxWorkflowInput.getAction("update", { debounce: 500 });
 
+// Methods
 function onUpdateTeamObjectType(team_object_type) {
 	updateAction.trigger(props.workflowInput, { team_object_type, team_object_id: null });
-	loadAvailableTeamObjects();
 }
 </script>

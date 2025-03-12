@@ -17,21 +17,20 @@ class WorkflowInputResource extends ActionResource
         $storedFiles    = $workflowInput->storedFiles()->with($withTranscodes ? 'transcodes' : [])->get();
 
         return [
-            'id'                   => $workflowInput->id,
-            'name'                 => $workflowInput->name,
-            'description'          => $workflowInput->description,
-            'thumb'                => StoredFileResource::getThumb($storedFiles->first()),
-            'tags'                 => $workflowInput->objectTags()->pluck('name'),
-            'team_object_type'     => $workflowInput->team_object_type,
-            'team_object_id'       => $workflowInput->team_object_id,
-            'created_at'           => $workflowInput->created_at,
-            'updated_at'           => $workflowInput->updated_at,
+            'id'               => $workflowInput->id,
+            'name'             => $workflowInput->name,
+            'description'      => $workflowInput->description,
+            'thumb'            => StoredFileResource::getThumb($storedFiles->first()),
+            'tags'             => $workflowInput->objectTags()->pluck('name'),
+            'team_object_type' => $workflowInput->team_object_type,
+            'team_object_id'   => $workflowInput->team_object_id,
+            'created_at'       => $workflowInput->created_at,
+            'updated_at'       => $workflowInput->updated_at,
 
             // Optional fields
-            'files'                => fn($fields) => StoredFileResource::collection($storedFiles, $fields),
-            'content'              => fn() => $workflowInput->content,
-            'teamObject'           => fn($fields) => TeamObjectResource::make($workflowInput->teamObject, $fields),
-            'availableTeamObjects' => fn($fields) => TeamObjectResource::collection($workflowInput->availableTeamObjects, $fields),
+            'files'            => fn($fields) => StoredFileResource::collection($storedFiles, $fields),
+            'content'          => fn() => $workflowInput->content,
+            'teamObject'       => fn($fields) => TeamObjectResource::make($workflowInput->teamObject, $fields),
         ];
     }
 
