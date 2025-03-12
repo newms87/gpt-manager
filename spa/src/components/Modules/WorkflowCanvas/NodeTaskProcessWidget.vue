@@ -24,6 +24,8 @@
 				</div>
 			</div>
 			<div class="flex items-center flex-nowrap space-x-2 mt-2">
+				<LabelPillWidget :label="taskProcess.id" color="sky" size="xs" />
+				<LabelPillWidget :label="taskProcess.name" color="blue" size="xs" />
 				<div class="flex-grow overflow-hidden">
 					<QLinearProgress size="29px" :value="taskProcess.percent_complete / 100" class="w-full rounded bg-sky-950">
 						<div class="absolute-full flex flex-center">
@@ -33,8 +35,9 @@
 				</div>
 				<WorkflowStatusTimerPill :runner="taskProcess" class="text-xs" />
 				<ActionButton
-					v-if="isStopped"
+					v-if="!isRunning"
 					type="play"
+					:disabled="!isStopped"
 					:action="resumeAction"
 					:target="taskProcess"
 					color="green-invert"
@@ -44,11 +47,19 @@
 				<ActionButton
 					v-else
 					type="stop"
-					:disabled="!isRunning"
 					:action="stopAction"
 					:target="taskProcess"
 					color="red"
 					tooltip="Stop process"
+					size="sm"
+				/>
+				<ActionButton
+					type="refresh"
+					:disabled="isRunning"
+					:action="restartAction"
+					:target="taskProcess"
+					color="sky"
+					tooltip="Restart process. NOTE: This will delete any existing output artifacts created by this process."
 					size="sm"
 				/>
 			</div>
@@ -97,10 +108,12 @@ import { FaSolidBusinessTime as JobDispatchIcon } from "danx-icon";
 import { ActionButton, fPercent, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
+const emit = defineEmits<{ restart: void }>();
 const props = defineProps<{
 	taskProcess: TaskProcess;
 }>();
 
+const restartAction = dxTaskProcess.getAction("restart", { onFinish: async () => emit("restart") });
 const resumeAction = dxTaskProcess.getAction("resume");
 const stopAction = dxTaskProcess.getAction("stop");
 const isStopped = computed(() => props.taskProcess.status === "Stopped" || props.taskProcess.status === "Pending");
@@ -108,14 +121,6 @@ const isRunning = computed(() => ["Running"].includes(props.taskProcess.status))
 const isShowingJobDispatches = ref(false);
 const isShowingInputArtifacts = ref(false);
 const isShowingOutputArtifacts = ref(false);
-const artifactsToShow = computed(() => {
-	if (isShowingInputArtifacts.value) {
-		return props.taskProcess.inputArtifacts;
-	} else if (isShowingOutputArtifacts.value) {
-		return props.taskProcess.outputArtifacts;
-	}
-	return null;
-});
 
 async function loadJobDispatches() {
 	await dxTaskProcess.routes.details(props.taskProcess, { jobDispatches: { logs: true, apiLogs: true, errors: true } });

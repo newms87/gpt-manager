@@ -185,6 +185,34 @@ class TaskRunnerService
         }
     }
 
+    public static function restartProcess(TaskProcess $taskProcess): void
+    {
+        static::log("Restarting $taskProcess");
+
+        LockHelper::acquire($taskProcess);
+
+        try {
+            if ($taskProcess->isRunning()) {
+                throw new ValidationError("TaskProcess is currently running, cannot restart");
+            }
+            $taskProcess->outputArtifacts()->delete();
+            $taskProcess->updateRelationCounter('outputArtifacts');
+
+            $taskProcess->stopped_at = null;
+            $taskProcess->failed_at  = null;
+            $taskProcess->timeout_at = null;
+            // NOTE: we must reset the started_at and completed_at flag so the task process can be re-run
+            $taskProcess->started_at       = null;
+            $taskProcess->completed_at     = null;
+            $taskProcess->percent_complete = 0;
+            $taskProcess->save();
+        } finally {
+            LockHelper::release($taskProcess);
+        }
+
+        static::dispatchProcess($taskProcess);
+    }
+
     /**
      * Resume the task process. This will resume the task process if it was stopped
      */

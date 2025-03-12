@@ -13,7 +13,7 @@
 					@update:model-value="changeSelection"
 				/>
 				<div class="flex-grow">
-					<slot name="header">
+					<slot name="header" :inline-description="showInlineDescriptions">
 						<div class="py-1">
 							<EditableDiv
 								:readonly="readonly"
@@ -100,6 +100,7 @@
 						@update:list-items="items => onListPositionChange(items)"
 					>
 						<SchemaObject
+							:inline-descriptions="showInlineDescriptions"
 							:readonly="readonly"
 							:model-value="objectProperties[name]"
 							:relation-name="name"
@@ -109,8 +110,9 @@
 							@update:fragment-selector="selection => changeChildSelection(name, schemaObject.type, selection)"
 							@update:model-value="input => onUpdateProperty(name, name, input)"
 						>
-							<template #header>
+							<template #header="{inlineDescription}">
 								<SchemaProperty
+									:inline-description="inlineDescription || showInlineDescriptions"
 									:readonly="readonly"
 									:model-value="objectProperties[name]"
 									:name="name"

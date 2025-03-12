@@ -108,23 +108,42 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
     public function checkTaskRuns(): void
     {
         $hasRunningTasks = false;
+        $hasStoppedTasks = false;
+        $hasFailedTasks  = false;
 
         foreach($this->taskRuns()->get() as $taskRun) {
-            // If any process has failed or timed out, the task run has failed (we can stop checking)
-            if ($taskRun->isFailed() || $taskRun->isTimeout()) {
-                $this->failed_at = now_ms();
-                $this->save();
+            if ($taskRun->isStopped()) {
+                $hasStoppedTasks = true;
+            } elseif ($taskRun->isFailed()) {
+                // If any task has failed or timed out, the task run has failed (we can stop checking)
+                $hasFailedTasks = true;
             } elseif (!$taskRun->isFinished()) {
                 $hasRunningTasks = true;
-            } elseif ($taskRun->isStopped()) {
-                $this->stopped_at = $taskRun->stopped_at;
             }
         }
 
-        if ($hasRunningTasks) {
+        if ($hasFailedTasks) {
+            $this->completed_at = null;
+            $this->stopped_at   = null;
+            if (!$this->failed_at) {
+                $this->failed_at = now();
+            }
+        } elseif ($hasStoppedTasks) {
             $this->completed_at = null;
             $this->failed_at    = null;
+            if (!$this->stopped_at) {
+                $this->stopped_at = now();
+            }
+        } elseif ($hasRunningTasks) {
+            $this->failed_at    = null;
             $this->stopped_at   = null;
+            $this->completed_at = null;
+        } else {
+            $this->failed_at  = null;
+            $this->stopped_at = null;
+            if (!$this->completed_at) {
+                $this->completed_at = now();
+            }
         }
 
         $this->save();

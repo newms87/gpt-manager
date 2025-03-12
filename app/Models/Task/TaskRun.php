@@ -100,32 +100,46 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
      */
     public function checkProcesses(): void
     {
-        // If we are already in an end state, we don't need to check the processes
-        if ($this->isStopped() || $this->isTimeout()) {
-            return;
-        }
-
         $hasRunningProcesses = false;
-
-        // We always want to recheck for failed processes in case they have since been completed
-        $this->failed_at = null;
+        $hasStoppedProcesses = false;
+        $hasFailedProcesses  = false;
 
         foreach($this->taskProcesses()->get() as $taskProcess) {
-            // If any process has failed or timed out, the task run has failed (we can stop checking)
-            if ($taskProcess->isFailed() || $taskProcess->isTimeout()) {
-                $this->failed_at = now();
-                $this->save();
-
-                return;
+            if ($taskProcess->isStopped()) {
+                $hasStoppedProcesses = true;
+            } elseif ($taskProcess->isFailed() || $taskProcess->isTimeout()) {
+                // If any process has failed or timed out, the task run has failed (we can stop checking)
+                $hasFailedProcesses = true;
             } elseif (!$taskProcess->isFinished()) {
                 $hasRunningProcesses = true;
             }
         }
 
-        if (!$hasRunningProcesses && !$this->isFailed() && !$this->isStopped()) {
-            $this->completed_at = now();
-            $this->save();
+        if ($hasFailedProcesses) {
+            $this->completed_at = null;
+            $this->stopped_at   = null;
+            if (!$this->failed_at) {
+                $this->failed_at = now();
+            }
+        } elseif ($hasStoppedProcesses) {
+            $this->completed_at = null;
+            $this->failed_at    = null;
+            if (!$this->stopped_at) {
+                $this->stopped_at = now();
+            }
+        } elseif ($hasRunningProcesses) {
+            $this->failed_at    = null;
+            $this->stopped_at   = null;
+            $this->completed_at = null;
+        } else {
+            $this->failed_at  = null;
+            $this->stopped_at = null;
+            if (!$this->completed_at) {
+                $this->completed_at = now();
+            }
         }
+
+        $this->save();
     }
 
     /**

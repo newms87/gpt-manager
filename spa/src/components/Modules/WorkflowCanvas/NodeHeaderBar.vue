@@ -2,7 +2,13 @@
 	<div class="node-header" draggable="false" @click.prevent.stop @mousedown.prevent.stop>
 		<div class="flex flex-nowrap items-center space-x-2 h-8">
 			<div class="flex-grow flex items-center flex-nowrap space-x-1">
-				<ShowTaskProcessesButton v-if="taskRun" :task-run="taskRun" class="bg-sky-950" size="xs" />
+				<ShowTaskProcessesButton
+					v-if="taskRun"
+					:task-run="taskRun"
+					class="bg-sky-950"
+					size="xs"
+					@restart="$emit('restart')"
+				/>
 				<ActionButton
 					v-if="isRunning"
 					type="stop"
@@ -75,6 +81,7 @@ const emit = defineEmits<{
 	edit: void;
 	remove: void;
 	copy: void;
+	restart: void;
 }>();
 const props = defineProps<{
 	taskRun?: TaskRun;

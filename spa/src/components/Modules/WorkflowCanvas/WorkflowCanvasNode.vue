@@ -15,6 +15,7 @@
 				@copy="$emit('copy', node)"
 				@edit="$emit('edit', node)"
 				@remove="$emit('remove', node)"
+				@restart="refreshActiveTaskWorkflowRun"
 			/>
 
 			<div class="flex justify-center items-center h-full">
@@ -57,6 +58,7 @@
 <script setup lang="ts">
 import LoadingSandLottie from "@/assets/dotlottie/LoadingSandLottie";
 import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
+import { refreshActiveTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/store";
 import { edges } from "@/components/Modules/WorkflowCanvas/helpers";
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
 import NodePortsWidget from "@/components/Modules/WorkflowCanvas/NodePortsWidget";

@@ -14,6 +14,7 @@ class TaskProcessRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
+            'restart' => $this->restartTaskProcess($model),
             'resume' => $this->resumeTaskProcess($model),
             'stop' => $this->stopTaskProcess($model),
         };
@@ -33,6 +34,13 @@ class TaskProcessRepository extends ActionRepository
         }
 
         return false;
+    }
+
+    public function restartTaskProcess(TaskProcess $taskProcess): TaskProcess
+    {
+        TaskRunnerService::restartProcess($taskProcess);
+
+        return $taskProcess;
     }
 
     /**

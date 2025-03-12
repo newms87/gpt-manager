@@ -22,6 +22,7 @@
 					:key="taskProcess.id"
 					:task-process="taskProcess"
 					class="bg-slate-700 p-2 my-2 rounded-lg"
+					@restart="onRestart"
 				/>
 			</ListTransition>
 		</InfoDialog>
@@ -36,6 +37,7 @@ import { FaSolidFileInvoice as ProcessListIcon } from "danx-icon";
 import { autoRefreshObject, InfoDialog, ListTransition, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
 import { onMounted, ref, watch } from "vue";
 
+const emit = defineEmits<{ restart: void }>();
 const props = defineProps<{
 	taskRun: TaskRun;
 }>();
@@ -59,15 +61,23 @@ function registerAutoRefresh() {
 			autoRefreshId,
 			props.taskRun,
 			(tr: TaskRun) => isShowingTaskProcesses.value && (!tr.processes?.length || ["Running", "Pending"].includes(tr.status)),
-			(tr: TaskRun) => dxTaskRun.routes.details(tr, {
-				processes: {
-					inputArtifacts: artifactsField,
-					outputArtifacts: artifactsField
-				}
-			})
+			refreshTaskRun
 		);
 	} else if (autoRefreshId) {
 		stopAutoRefreshObject(autoRefreshId);
 	}
+}
+
+function onRestart() {
+	refreshTaskRun(props.taskRun);
+	emit("restart");
+}
+async function refreshTaskRun(taskRun: TaskRun) {
+	return await dxTaskRun.routes.details(taskRun, {
+		processes: {
+			inputArtifacts: artifactsField,
+			outputArtifacts: artifactsField
+		}
+	});
 }
 </script>

@@ -45,9 +45,14 @@ trait HasWorkflowStatesTrait
         return $this->timeout_at !== null;
     }
 
+    public function isAwaitingRunner(): bool
+    {
+        return $this->status === WorkflowStatesContract::STATUS_DISPATCHED;
+    }
+
     public function isFinished(): bool
     {
-        return $this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isTimeout();
+        return ($this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isTimeout()) && !$this->isAwaitingRunner();
     }
 
     public function canContinue(): bool
