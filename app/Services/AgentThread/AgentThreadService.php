@@ -3,7 +3,6 @@
 namespace App\Services\AgentThread;
 
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
-use App\Api\AgentApiContracts\AgentMessageFormatterContract;
 use App\Api\OpenAi\Classes\OpenAiToolCaller;
 use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\Agent;
@@ -190,7 +189,7 @@ class AgentThreadService
                 }
 
                 // Get the messages for the next iteration
-                $messages     = $this->getMessagesForApi($thread);
+                $messages     = $this->getMessagesForApi($thread, $threadRun);
                 $messageCount = count($messages);
                 Log::debug("$thread running with $messageCount messages for $agent");
 
@@ -240,7 +239,7 @@ class AgentThreadService
     /**
      * Format the messages to be sent to an AI completion API
      */
-    public function getMessagesForApi(AgentThread $thread): array
+    public function getMessagesForApi(AgentThread $thread, AgentThreadRun $agentThreadRun): array
     {
         $agent        = $thread->agent;
         $apiFormatter = $agent->getModelApi()->formatter();
@@ -275,7 +274,7 @@ class AgentThreadService
             }
         }
 
-        $responseMessage = $this->getResponseMessage($agent, $apiFormatter);
+        $responseMessage = $this->getResponseMessage($agentThreadRun);
 
         if ($responseMessage) {
             $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $responseMessage);
@@ -287,16 +286,11 @@ class AgentThreadService
     /**
      * Get the response message for the AI model
      */
-    public function getResponseMessage(Agent $agent, AgentMessageFormatterContract $apiFormatter): string
+    public function getResponseMessage(AgentThreadRun $agentThreadRun): string
     {
         $responseMessage = '';
 
-        // Include the Example response if we're in JSON object mode to help the agent understand the correct response format
-        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_OBJECT && $agent->responseSchema?->response_example) {
-            $responseMessage .= "\n\nExample Response:\n" . json_encode($agent->responseSchema->response_example);
-        }
-
-        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && $this->jsonSchemaService->isUsingDbFields()) {
+        if ($agentThreadRun->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && $this->jsonSchemaService->isUsingDbFields()) {
             $responseMessage .= <<<STR
 Your response will be saved to the DB. In order to save correctly, the `name` attribute must be set as the unique identifier for the object type.
 
@@ -320,7 +314,7 @@ STR;
 
         }
 
-        if ($agent->response_format !== 'text') {
+        if ($agentThreadRun->response_format !== 'text') {
             $responseMessage .= "\n\nOUTPUT IN JSON FORMAT ONLY! NO OTHER TEXT";
         }
 

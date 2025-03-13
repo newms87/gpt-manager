@@ -5,6 +5,13 @@
 				<AgentThreadResponseField v-model="agentResponse" />
 			</div>
 			<AiTokenUsageButton :usage="agentThread.usage" class="py-3 mr-3" />
+			<ShowHideButton
+				v-model="isShowingJobDispatch"
+				:loading="isLoadingJobDispatch"
+				:show-icon="JobDispatchIcon"
+				color="gray"
+				@show="refreshJobDispatch"
+			/>
 			<ActionButton
 				:action="runAction"
 				:input="agentThreadRunInput"
@@ -13,7 +20,6 @@
 				type="play"
 				color="green-invert"
 				label="Run"
-				class="mr-3 px-3"
 			/>
 			<ActionButton
 				v-if="agentThread.is_running"
@@ -21,8 +27,11 @@
 				:target="agentThread"
 				type="pause"
 				color="sky"
-				class="p-3"
 			/>
+		</div>
+		<div v-if="isShowingJobDispatch" class="mt-4">
+			<JobDispatchCard v-if="agentThread.jobDispatch" :job="agentThread.jobDispatch" class="mb-8" />
+			<QSkeleton v-else class="h-12" />
 		</div>
 		<div class="mt-4 flex-grow overflow-y-scroll -mr-10 pr-5">
 			<ThreadMessageCard
@@ -48,16 +57,20 @@
 import AgentThreadResponseField from "@/components/Modules/Agents/Fields/AgentThreadResponseField";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
+import JobDispatchCard from "@/components/Modules/Audits/JobDispatches/JobDispatchCard";
 import { AiTokenUsageButton } from "@/components/Shared";
 import { AgentThread, AgentThreadResponseFormat } from "@/types";
-import { FaRegularMessage as CreateIcon } from "danx-icon";
-import { ActionButton } from "quasar-ui-danx";
+import { FaRegularMessage as CreateIcon, FaSolidBusinessTime as JobDispatchIcon } from "danx-icon";
+import { ActionButton, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
-defineProps<{
+const props = defineProps<{
 	agentThread: AgentThread;
 }>();
 
+const isShowingJobDispatch = ref(false);
+const isLoadingJobDispatch = ref(false);
+// Actions
 const createMessageAction = dxAgentThread.getAction("create-message");
 const runAction = dxAgentThread.getAction("run");
 const stopAction = dxAgentThread.getAction("stop");
@@ -77,4 +90,13 @@ const agentThreadRunInput = computed(() => {
 		response_fragment_id: agentResponse.value.fragment?.id || null
 	};
 });
+
+async function refreshJobDispatch() {
+	isLoadingJobDispatch.value = true;
+	await dxAgentThread.routes.details(props.agentThread, {
+		"*": false,
+		jobDispatch: { logs: true, errors: true, apiLogs: true }
+	});
+	isLoadingJobDispatch.value = false;
+}
 </script>

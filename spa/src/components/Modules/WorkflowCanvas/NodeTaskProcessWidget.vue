@@ -110,6 +110,7 @@
 </template>
 
 <script setup lang="ts">
+import { AgentThreadFields } from "@/components/Modules/Agents/Threads/store";
 import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import JobDispatchList from "@/components/Modules/Audits/JobDispatches/JobDispatchList";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
@@ -141,15 +142,6 @@ async function loadJobDispatches() {
 }
 
 async function loadAgentThread() {
-	await dxTaskProcess.routes.details(props.taskProcess, {
-		agentThread: {
-			messages: {
-				files: {
-					thumb: true,
-					transcodes: true
-				}
-			}
-		}
-	});
+	await dxTaskProcess.routes.details(props.taskProcess, { agentThread: AgentThreadFields });
 }
 </script>

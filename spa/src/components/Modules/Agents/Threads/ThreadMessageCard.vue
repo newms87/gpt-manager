@@ -61,7 +61,7 @@
 				<MarkdownEditor
 					v-model="content"
 					:readonly="readonly"
-					editor-class="text-slate-200"
+					editor-class="text-slate-200 bg-slate-800 rounded"
 					:format="isJSON(content) ? 'yaml' : 'text'"
 					@update:model-value="updateDebouncedAction.trigger(message, {content})"
 				/>

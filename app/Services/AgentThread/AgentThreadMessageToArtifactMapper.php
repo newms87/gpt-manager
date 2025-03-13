@@ -44,7 +44,7 @@ class AgentThreadMessageToArtifactMapper
         $jsonContent = null;
         $textContent = null;
 
-        if ($this->agent->response_format === Agent::RESPONSE_FORMAT_TEXT) {
+        if ($this->threadRun->response_format === Agent::RESPONSE_FORMAT_TEXT) {
             $textContent = $this->message->getCleanContent();
         } else {
             $jsonContent = $this->message->getJsonContent();

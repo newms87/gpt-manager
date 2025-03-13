@@ -18,9 +18,13 @@ class MessageRepository extends ActionRepository
             'content' => '',
         ];
 
-        return $thread->messages()->create([
+        $message = $thread->messages()->create([
                 'role' => $role,
             ] + $input);
+
+        $thread->touch();
+
+        return $message;
     }
 
     public function saveFiles(AgentThreadMessage $message, $fileIds)
