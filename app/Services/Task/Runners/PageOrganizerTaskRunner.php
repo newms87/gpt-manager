@@ -61,7 +61,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
             $this->activity("Organizing pages for group of artifact $inputArtifact->id", $percentComplete);
 
             // Organize the pages for this group
-            $pages = $this->runOrganizingAgentThread($agentThread, $inputArtifact);
+            $pages = $this->runOrganizingAgentThread($agentThread, $inputArtifact, $fragmentSelector);
 
             // If no pages were returned, something went wrong so we can return immediately with a failure
             if (!$pages) {
@@ -86,11 +86,12 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
      *
      * @return array|null The list of pages that belong to the group
      */
-    public function runOrganizingAgentThread(AgentThread $agentThread, Artifact $inputArtifact): array|null
+    public function runOrganizingAgentThread(AgentThread $agentThread, Artifact $inputArtifact, $fragmentSelector = []): array|null
     {
+        $filteredInput = app(JsonSchemaService::class)->filterDataByFragmentSelector($inputArtifact->json_content, $fragmentSelector);
         app(ThreadRepository::class)->addMessageToThread(
             $agentThread,
-            "List the pages that relate to the group defined by the values in this artifact: " . json_encode($inputArtifact->json_content)
+            "List the pages that relate to the group defined by the values in this artifact: " . json_encode($filteredInput)
         );
 
         $schemaDefinition = SchemaDefinition::make([
@@ -129,15 +130,41 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 
         $artifact->json_content = ($artifact->json_content ?? []) + ['pages' => $pages];
 
+        // Keep track of each input artifacts text content for any input artifacts that have a StoredFile matching one of the page numbers in the list
+        // NOTE: only record each input artifact once so we do not duplicate the artifacts text.
+        // In the case an input artifact has more than 1 matching page, track the minimum page number for that artifact to sort the text content
+        $pagesText = [];
         foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+            $artifactMinPageNumber = INF;
+            $matchingPages         = [];
             foreach($inputArtifact->storedFiles as $storedFile) {
                 if (in_array($storedFile->page_number, $pages)) {
+                    $artifactMinPageNumber = min($storedFile->page_number, $artifactMinPageNumber);
                     static::log("Adding page $storedFile to $artifact");
                     $artifact->storedFiles()->attach($storedFile);
-                    $artifact->text_content = ($artifact->text_content ? "$artifact->text_content\n\n" : '') . "---\n### Page $storedFile->page_number (file_id: $storedFile->id)\n\n" . $inputArtifact->text_content;
-                    continue 2;
+                    $matchingPages[] = [
+                        'page_number' => $storedFile->page_number,
+                        'file_id'     => $storedFile->id,
+                    ];
                 }
             }
+
+            if ($artifactMinPageNumber !== INF) {
+                $pagesText[$artifactMinPageNumber] = [
+                    'pages'   => $matchingPages,
+                    'content' => $inputArtifact->text_content,
+                ];
+            }
+        }
+
+        ksort($pagesText);
+
+        foreach($pagesText as $match) {
+            $pageListStr = '';
+            foreach($match['pages'] as $pageItem) {
+                $pageListStr .= "### Page $pageItem[page_number] (file_id: $pageItem[file_id])\n";
+            }
+            $artifact->text_content = ($artifact->text_content ? "$artifact->text_content\n\n" : '') . "---\n$pageListStr\n\n" . $match['content'];
         }
         $artifact->save();
     }
