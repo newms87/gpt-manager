@@ -11,7 +11,9 @@
 			fit-view-on-init
 			:snap-grid="[20, 20]"
 			class="workflow-canvas"
+			:connect-on-click="false"
 			elevate-edges-on-select
+			:connection-mode="ConnectionMode.Strict"
 			@connect="onConnectionAdd"
 			@node-drag-stop="onNodeDragStop"
 			@dragover="onDragOver"
@@ -64,7 +66,7 @@ import WorkflowCanvasConnectionLine from "@/components/Modules/WorkflowCanvas/Wo
 import WorkflowCanvasEdge from "@/components/Modules/WorkflowCanvas/WorkflowCanvasEdge";
 import { TaskWorkflow, TaskWorkflowConnection, TaskWorkflowNode, TaskWorkflowRun } from "@/types/task-workflows";
 import { Background } from "@vue-flow/background";
-import { Connection, Edge, EdgeProps, Node, Panel, VueFlow } from "@vue-flow/core";
+import { Connection, ConnectionMode, Edge, EdgeProps, Node, Panel, VueFlow } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 import { computed, onMounted, ref, watch } from "vue";
