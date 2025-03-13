@@ -4368,10 +4368,10 @@ punycode@^2.1.0:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.1.tgz#027422e2faec0b25e1549c3e1bd8309b9133b6e5"
   integrity sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==
 
-quasar-ui-danx@^0.4.50:
-  version "0.4.50"
-  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.4.50.tgz#4f01871db9bcbd3a9e19b290f52cc6777f342b06"
-  integrity sha512-qOLea2P/6WLpDKscl7NcpSzCdrcgdQiX6pc3tEAcprqeCaoOuYguhAnZ4dbqmubkRl4rDLIT2T+u66uKT50X6A==
+quasar-ui-danx@^0.4.51:
+  version "0.4.51"
+  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.4.51.tgz#5d36e07b2fecd7f292e56166bcafbbcec79817bf"
+  integrity sha512-QZ9a1220wtghdwYBAN9ZKldvEJQb4xkVLxOeiC28JrHJAZbAy+/by5LmF4Lqa2CK13VPdlSUl1yp+geG3SlGxQ==
   dependencies:
     "@heroicons/vue" v1
     "@tinymce/tinymce-vue" "^5.1.1"
