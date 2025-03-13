@@ -1,7 +1,7 @@
 type: object
 title: Artifact Meta
 additionalProperties: false
-requiredProperties: [ name ]
+required: [ name ]
 properties:
   name:
     type: string

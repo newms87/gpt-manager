@@ -28,13 +28,6 @@ class JsonSchemaService
     protected array $artifactMetaDef = [];
     protected array $propertyMetaDef = [];
 
-    public function useArtifactMeta(bool $include = true): self
-    {
-        $this->useArtifactMeta = $include;
-
-        return $this;
-    }
-
     public function isUsingDbFields(): bool
     {
         return $this->useId && $this->requireName;
@@ -78,6 +71,13 @@ class JsonSchemaService
     public function usePropertyMeta(bool $use = true): self
     {
         $this->usePropertyMeta = $use;
+
+        return $this;
+    }
+
+    public function useArtifactMeta(bool $include = true): self
+    {
+        $this->useArtifactMeta = $include;
 
         return $this;
     }
@@ -302,6 +302,10 @@ class JsonSchemaService
      */
     public function formatRootSchemaObject($name, $schema, $propertiesSchema): array
     {
+        if ($this->useArtifactMeta) {
+            $propertiesSchema['__meta'] = $this->getArtifactMeta();
+        }
+
         $formattedSchema = [
             'type'                 => 'object',
             'additionalProperties' => false,
@@ -329,10 +333,6 @@ class JsonSchemaService
             // collapse all defs up to top level
             $formattedSchema['$defs'] += $propertyMeta['$defs'];
             unset($propertyMeta['$defs']);
-        }
-
-        if ($this->useArtifactMeta) {
-            $propertiesSchema['meta'] = $this->getArtifactMeta();
         }
 
         return [

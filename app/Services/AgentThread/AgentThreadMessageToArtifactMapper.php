@@ -56,7 +56,8 @@ class AgentThreadMessageToArtifactMapper
             return null;
         }
 
-        $jsonMeta = $jsonContent['meta'] ?? [];
+        $jsonMeta = $jsonContent['__meta'] ?? [];
+        unset($jsonContent['__meta']);
 
         // Resolve the name of the artifact preferring the meta response from the agent if it is set
         $name = $this->name;

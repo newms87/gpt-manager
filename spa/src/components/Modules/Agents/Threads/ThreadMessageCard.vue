@@ -24,15 +24,24 @@
 				{{ fDateTime(message.timestamp) }}
 			</div>
 			<ListTransition class="text-slate-300">
-				<ShowHideButton v-model="showMessage" :name="'thread-message-' + message.id" class="mr-2" />
+				<ShowHideButton v-model="showMessage" :name="'thread-message-' + message.id" />
 				<ShowHideButton
 					v-if="isUserMessage"
 					v-model="showFiles"
 					:name="'thread-files-' + message.id"
 					class="mr-2"
+					:label="files.length || 0"
 					:show-icon="AddImageIcon"
 					:hide-icon="HideImageIcon"
 					tooltip="Show / Hide Images"
+				/>
+				<ShowHideButton
+					v-model="showMetaFields"
+					name="show-meta-fields"
+					:show-icon="ToggleMetaFieldsIcon"
+					:hide-icon="ToggleMetaFieldsIcon"
+					class="bg-transparent"
+					:color="showMetaFields ? 'sky-invert' : ''"
 				/>
 				<template v-if="!readonly">
 					<ActionButton
@@ -60,6 +69,7 @@
 			<div class="text-sm flex-grow m-3">
 				<MarkdownEditor
 					v-model="content"
+					sync-model-changes
 					:readonly="readonly"
 					editor-class="text-slate-200 bg-slate-800 rounded"
 					:format="isJSON(content) ? 'yaml' : 'text'"
@@ -101,12 +111,14 @@ import { AgentThread, AgentThreadMessage } from "@/types/agents";
 import {
 	FaRegularImage as HideImageIcon,
 	FaRegularUser as UserIcon,
+	FaSolidFilePen as ToggleMetaFieldsIcon,
 	FaSolidImage as AddImageIcon,
 	FaSolidRobot as AssistantIcon,
 	FaSolidToolbox as ToolIcon
 } from "danx-icon";
 import {
 	ActionButton,
+	AnyObject,
 	EditOnClickTextField,
 	fDateTime,
 	isJSON,
@@ -115,7 +127,7 @@ import {
 	ShowHideButton,
 	UploadedFile
 } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
 	message: AgentThreadMessage;
@@ -123,7 +135,8 @@ const props = defineProps<{
 	readonly?: boolean;
 }>();
 
-const content = ref(props.message.content);
+const showMetaFields = ref(false);
+const content = ref(getFilteredContent());
 const summary = ref(props.message.summary);
 const files = ref<UploadedFile[]>(props.message.files || []);
 
@@ -158,4 +171,40 @@ const resetToMessageAction = dxAgentThread.getAction("reset-to-message");
 const updateAction = dxThreadMessage.getAction("update");
 const saveFilesAction = dxThreadMessage.getAction("save-files");
 const updateDebouncedAction = dxThreadMessage.getAction("update-debounced");
+
+// Property meta filtering
+
+watch(() => showMetaFields.value, () => {
+	content.value = getFilteredContent();
+});
+
+function getFilteredContent() {
+	let content = props.message.content;
+	if (!showMetaFields.value && isJSON(content)) {
+		if (typeof content === "string") {
+			content = JSON.parse(content);
+		}
+
+		return filterPropertyMeta(content as AnyObject);
+	}
+
+	return content;
+}
+
+/**
+ *  Recursively searches the property keys of the object and removes the property_meta field from each object
+ */
+function filterPropertyMeta(content: AnyObject = null) {
+	if (!content || typeof content !== "object") return content;
+	if (Array.isArray(content)) {
+		return content.map(filterPropertyMeta);
+	}
+
+	const newContent: AnyObject = {};
+	for (const key in content) {
+		if (key === "property_meta") continue;
+		newContent[key] = filterPropertyMeta(content[key]);
+	}
+	return newContent;
+}
 </script>
