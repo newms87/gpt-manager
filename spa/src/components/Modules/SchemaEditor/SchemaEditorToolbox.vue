@@ -112,6 +112,7 @@
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import SchemaResponseExampleCard from "@/components/Modules/SchemaEditor/SchemaResponseExampleCard";
 import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
+import { loadSchemaDefinitions, schemaDefinitions } from "@/components/Modules/Schemas/SchemaDefinitions/store";
 import { dxSchemaFragment } from "@/components/Modules/Schemas/SchemaFragments";
 import { routes } from "@/components/Modules/Schemas/SchemaFragments/config/routes";
 import { JsonSchema, SchemaDefinition, SchemaFragment } from "@/types";
@@ -142,7 +143,6 @@ const props = withDefaults(defineProps<{
 	excludeSchemaIds: null
 });
 
-onMounted(() => dxSchemaDefinition.initialize());
 const createSchemaAction = dxSchemaDefinition.getAction("create");
 const updateSchemaAction = dxSchemaDefinition.getAction("update");
 const deleteSchemaAction = dxSchemaDefinition.getAction("delete");
@@ -162,11 +162,14 @@ const schemaFormatOptions = [
 	{ label: "Typescript", value: "ts" }
 ];
 
-const allowedSchemaDefinitions = computed(() => (dxSchemaDefinition.pagedItems.value?.data || []).filter(s => !props.excludeSchemaIds?.includes(s.id)));
+const allowedSchemaDefinitions = computed(() => schemaDefinitions.value.filter(s => !props.excludeSchemaIds?.includes(s.id)));
 
 // Load fragments when the active schema changes
 const fragmentList = shallowRef([]);
-onMounted(loadFragments);
+onMounted(() => {
+	loadSchemaDefinitions();
+	loadFragments();
+});
 watch(() => activeSchema.value, loadFragments);
 
 // Create a new schema

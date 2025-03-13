@@ -19,7 +19,7 @@
 						tooltip="Manage Agent Thread"
 						color="sky"
 						size="sm"
-						@show="loadAgentThread"
+						@show="refreshAgentThreadRelation"
 					/>
 					<ShowHideButton
 						v-model="isShowingJobDispatches"
@@ -27,7 +27,7 @@
 						class="bg-slate-800 text-slate-400"
 						:show-icon="JobDispatchIcon"
 						size="sm"
-						@update:model-value="loadJobDispatches"
+						@update:model-value="refreshJobDispatchesRelation"
 					/>
 				</div>
 			</div>
@@ -120,7 +120,7 @@ import TaskProcessAgentThreadCard from "@/components/Modules/WorkflowCanvas/Task
 import { TaskProcess } from "@/types";
 import { FaSolidBusinessTime as JobDispatchIcon, FaSolidMessage as AgentThreadIcon } from "danx-icon";
 import { ActionButton, fPercent, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 const emit = defineEmits<{ restart: void }>();
 const props = defineProps<{
@@ -137,11 +137,22 @@ const isShowingJobDispatches = ref(false);
 const isShowingInputArtifacts = ref(false);
 const isShowingOutputArtifacts = ref(false);
 
-async function loadJobDispatches() {
+async function refreshJobDispatchesRelation() {
 	await dxTaskProcess.routes.details(props.taskProcess, { jobDispatches: { logs: true, apiLogs: true, errors: true } });
 }
 
-async function loadAgentThread() {
-	await dxTaskProcess.routes.details(props.taskProcess, { agentThread: AgentThreadFields });
+watch(() => props.taskProcess.status, () => {
+	if (isRunning.value && isShowingAgentThread.value && !props.taskProcess.agentThread?.is_running) {
+		refreshAgentThreadRelation();
+	}
+});
+
+async function refreshAgentThreadRelation() {
+	const result = await dxTaskProcess.routes.details(props.taskProcess, { agentThread: AgentThreadFields });
+
+	// If the process is running, but the thread is not, the thread is probably out of sync / or will start running soon, so keep checking until it is running or the process has stopped running.
+	if (isRunning.value && !result.agentThread.is_running) {
+		setTimeout(refreshAgentThreadRelation, 1000);
+	}
 }
 </script>

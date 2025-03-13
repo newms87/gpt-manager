@@ -17,7 +17,7 @@
 				>
 					There are no processes for this task
 				</div>
-				<NodeTaskProcessWidget
+				<NodeTaskProcessCard
 					v-for="taskProcess in taskRun.processes"
 					:key="taskProcess.id"
 					:task-process="taskProcess"
@@ -31,11 +31,11 @@
 
 <script setup lang="ts">
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
-import NodeTaskProcessWidget from "@/components/Modules/WorkflowCanvas/NodeTaskProcessWidget";
+import NodeTaskProcessCard from "@/components/Modules/WorkflowCanvas/NodeTaskProcessCard";
 import { TaskRun } from "@/types";
 import { FaSolidFileInvoice as ProcessListIcon } from "danx-icon";
 import { autoRefreshObject, InfoDialog, ListTransition, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
-import { onMounted, ref, watch } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 
 const emit = defineEmits<{ restart: void }>();
 const props = defineProps<{
@@ -53,6 +53,7 @@ const isShowingTaskProcesses = ref(false);
 let autoRefreshId = "";
 watch(() => props.taskRun, registerAutoRefresh);
 onMounted(registerAutoRefresh);
+onUnmounted(() => stopAutoRefreshObject(autoRefreshId));
 
 function registerAutoRefresh() {
 	if (props.taskRun) {

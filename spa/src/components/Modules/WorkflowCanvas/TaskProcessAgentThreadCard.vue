@@ -56,13 +56,14 @@
 <script setup lang="ts">
 import AgentThreadResponseField from "@/components/Modules/Agents/Fields/AgentThreadResponseField";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
+import { refreshAgentThread } from "@/components/Modules/Agents/Threads/store";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import JobDispatchCard from "@/components/Modules/Audits/JobDispatches/JobDispatchCard";
 import { AiTokenUsageButton } from "@/components/Shared";
 import { AgentThread, AgentThreadResponseFormat } from "@/types";
 import { FaRegularMessage as CreateIcon, FaSolidBusinessTime as JobDispatchIcon } from "danx-icon";
-import { ActionButton, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { ActionButton, autoRefreshObject, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 const props = defineProps<{
 	agentThread: AgentThread;
@@ -98,5 +99,18 @@ async function refreshJobDispatch() {
 		jobDispatch: { logs: true, errors: true, apiLogs: true }
 	});
 	isLoadingJobDispatch.value = false;
+}
+
+let autoRefreshId = "agent-thread:" + props.agentThread.id;
+onMounted(registerAutoRefresh);
+onUnmounted(() => stopAutoRefreshObject(autoRefreshId));
+
+function registerAutoRefresh() {
+	autoRefreshObject(
+		autoRefreshId,
+		props.agentThread,
+		(at: AgentThread) => console.log("checking agent", at.is_running) || at.is_running,
+		refreshAgentThread
+	);
 }
 </script>
