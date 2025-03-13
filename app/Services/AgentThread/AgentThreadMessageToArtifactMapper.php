@@ -56,14 +56,24 @@ class AgentThreadMessageToArtifactMapper
             return null;
         }
 
+        $jsonMeta = $jsonContent['meta'] ?? [];
+
+        // Resolve the name of the artifact preferring the meta response from the agent if it is set
+        $name = $this->name;
+        if (!empty($jsonMeta['name'])) {
+            $name = $jsonMeta['name'];
+        } elseif (!$name) {
+            $name = $this->message->agentThread->name . ' ' . DateHelper::formatDateTime();
+        }
+
         $artifact = Artifact::create([
-            'name'         => $this->name ?: $this->message->agentThread->name . ' ' . DateHelper::formatDateTime(),
+            'name'         => $name,
             'model'        => $this->agent->model,
             'text_content' => $textContent,
             'json_content' => $jsonContent,
             'meta'         => [
-                'agent_thread_run_id' => $this->threadRun?->id,
-            ],
+                    'agent_thread_run_id' => $this->threadRun?->id,
+                ] + $jsonMeta,
         ]);
 
         if ($jsonContent) {

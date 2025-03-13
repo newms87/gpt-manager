@@ -1,0 +1,21 @@
+type: object
+title: Artifact Meta
+additionalProperties: false
+requiredProperties: [ name ]
+properties:
+  name:
+    type: string
+    description: |
+      Given the entire output response, generate a concise and descriptive name that will be used to label the artifact encapsulating your response. The name should be clear and informative for a human to understand the contents at a glance.
+
+      Include the primary date (or date range) relevant to the response.
+      Include the primary subject(s) (e.g., person, place, or thing being referenced).
+      Ensure the name is succinct yet comprehensive enough to distinguish it from other artifacts.
+      Example Format:
+      [Date or Date Range] - [Primary Subject(s)] - [Brief Descriptor]
+
+      Example Outputs:
+
+      "2025-03-12 – Lake Powell Trip – Logistics Summary"
+      "Q1 2025 – AI Workflow Integration – Technical Report"
+      "2024-11-06 – Fantasy Football – Player Performance Outlook"

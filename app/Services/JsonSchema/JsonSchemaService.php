@@ -17,13 +17,23 @@ class JsonSchemaService
     protected bool $usePropertyMeta = false;
     /** @var bool  Make sure each object includes the name property */
     protected bool $requireName = false;
+    /** @var bool Include a meta.name field in the output to label the artifact */
+    protected bool $useArtifactMeta = false;
 
     static array $idDef = [
         'type'        => ['number', 'null'],
         'description' => 'ID must match an object from json_content with the same `type` (ie: the `title` property means `type` in this context). If no such object exists, set `id: null`',
     ];
 
+    protected array $artifactMetaDef = [];
     protected array $propertyMetaDef = [];
+
+    public function useArtifactMeta(bool $include = true): self
+    {
+        $this->useArtifactMeta = $include;
+
+        return $this;
+    }
 
     public function isUsingDbFields(): bool
     {
@@ -70,6 +80,16 @@ class JsonSchemaService
         $this->usePropertyMeta = $use;
 
         return $this;
+    }
+
+    public function getArtifactMeta(): array
+    {
+        if (!$this->artifactMetaDef) {
+            // Inject the property meta definition into the schema
+            $this->artifactMetaDef = FileHelper::parseYamlFile(app_path('Services/JsonSchema/artifact_meta.def.yaml'));
+        }
+
+        return $this->artifactMetaDef;
     }
 
     /**
@@ -309,6 +329,10 @@ class JsonSchemaService
             // collapse all defs up to top level
             $formattedSchema['$defs'] += $propertyMeta['$defs'];
             unset($propertyMeta['$defs']);
+        }
+
+        if ($this->useArtifactMeta) {
+            $propertiesSchema['meta'] = $this->getArtifactMeta();
         }
 
         return [

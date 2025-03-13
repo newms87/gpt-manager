@@ -37,3 +37,9 @@ export interface AgentThreadMessage extends ActionTargetItem {
 	files?: UploadedFile[];
 	timestamp: string;
 }
+
+export interface AgentThreadResponseFormat {
+	format: "text" | "json_schema";
+	schema?: SchemaDefinition;
+	fragment?: SchemaFragment;
+}

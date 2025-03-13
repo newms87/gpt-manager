@@ -5,6 +5,7 @@
 			class="flex-grow overflow-hidden"
 		>
 			<JSONSchemaEditor
+				:dialog="dialog"
 				:fragment-selector="activeFragment?.fragment_selector"
 				:readonly="!activeSchema || !isEditingSchema"
 				:hide-content="!isPreviewing && !isEditingSchema && !isEditingFragment"
@@ -15,74 +16,85 @@
 				:saved-at="activeSchema?.updated_at"
 				:saving="updateSchemaAction.isApplying"
 				:selectable="isEditingFragment"
+				:hide-save-state="hideSaveState"
 				@update:model-value="schema => activeSchema && updateSchemaAction.trigger(activeSchema, { schema })"
 				@update:fragment-selector="fragment_selector => activeFragment && updateFragmentAction.trigger(activeFragment, { fragment_selector })"
+				@close="onCloseDialog"
 			>
 				<template #header="{isShowingRaw}">
-					<div class="flex-grow flex items-center flex-nowrap">
+					<div class="flex-grow flex items-center flex-nowrap space-x-4">
 						<slot name="header-start" />
-						<SelectionMenuField
-							v-if="canSelect"
-							v-model:editing="isEditingSchema"
-							v-model:selected="activeSchema"
-							selectable
-							editable
-							creatable
-							:clearable="clearable"
-							deletable
-							name-editable
-							:select-icon="SchemaIcon"
-							label-class="text-slate-300"
-							:class="{'mr-4': clearable, 'mr-8': !clearable}"
-							:select-class="buttonColor"
-							:options="allowedSchemaDefinitions"
-							:loading="createSchemaAction.isApplying"
-							@create="onCreate"
-							@update="input => activeSchema && updateSchemaAction.trigger(activeSchema, input)"
-							@delete="selected => deleteSchemaAction.trigger(selected)"
-						/>
 
-						<template v-if="activeSchema && canSelectFragment">
+						<template v-if="!hideDefaultHeader">
+							<ShowHideButton
+								v-if="previewable"
+								v-model="isPreviewing"
+								:disable="!activeSchema"
+								:class="buttonColor"
+								tooltip="Preview Selection"
+							/>
 							<SelectionMenuField
 								v-if="canSelect"
-								v-model:editing="isEditingFragment"
-								v-model:selected="activeFragment"
+								v-model:editing="isEditingSchema"
+								v-model:selected="activeSchema"
 								selectable
 								editable
 								creatable
-								clearable
+								:clearable="clearable"
 								deletable
 								name-editable
-								:select-icon="FragmentIcon"
+								:select-icon="SchemaIcon"
 								label-class="text-slate-300"
+								:class="{'mr-4': clearable, 'mr-8': !clearable}"
 								:select-class="buttonColor"
-								:options="fragmentList"
-								:loading="createFragmentAction.isApplying"
-								@create="onCreateFragment"
-								@update="input => activeFragment && updateFragmentAction.trigger(activeFragment, input)"
-								@delete="selected => deleteFragmentAction.trigger(selected)"
-							>
-								<template #no-selection>
-									<div class="text-green-700 flex items-center flex-nowrap">
-										<FullSchemaIcon class="w-4 mr-2" />
-										Full schema
-									</div>
-								</template>
-							</SelectionMenuField>
-
-							<SelectField
-								v-if="isShowingRaw"
-								class="ml-4"
-								select-class="dx-select-field-dense"
-								:model-value="activeSchema.schema_format"
-								:options="schemaFormatOptions"
-								@update:model-value="schema_format => updateSchemaAction.trigger(activeSchema, {schema_format})"
+								:options="allowedSchemaDefinitions"
+								:loading="createSchemaAction.isApplying"
+								@create="onCreate"
+								@update="input => activeSchema && updateSchemaAction.trigger(activeSchema, input)"
+								@delete="selected => deleteSchemaAction.trigger(selected)"
 							/>
+
+							<template v-if="activeSchema && canSelectFragment">
+								<SelectionMenuField
+									v-if="canSelect"
+									v-model:editing="isEditingFragment"
+									v-model:selected="activeFragment"
+									selectable
+									editable
+									creatable
+									clearable
+									deletable
+									name-editable
+									:select-icon="FragmentIcon"
+									label-class="text-slate-300"
+									:select-class="buttonColor"
+									:options="fragmentList"
+									:loading="createFragmentAction.isApplying"
+									@create="onCreateFragment"
+									@update="input => activeFragment && updateFragmentAction.trigger(activeFragment, input)"
+									@delete="selected => deleteFragmentAction.trigger(selected)"
+								>
+									<template #no-selection>
+										<div class="text-green-700 flex items-center flex-nowrap text-no-wrap">
+											<FullSchemaIcon class="w-4 mr-2" />
+											Full schema
+										</div>
+									</template>
+								</SelectionMenuField>
+
+								<SelectField
+									v-if="isShowingRaw"
+									class="ml-4"
+									select-class="dx-select-field-dense"
+									:model-value="activeSchema.schema_format"
+									:options="schemaFormatOptions"
+									@update:model-value="schema_format => updateSchemaAction.trigger(activeSchema, {schema_format})"
+								/>
+							</template>
 						</template>
 					</div>
 				</template>
 				<template #actions>
-					<ShowHideButton v-if="previewable" v-model="isPreviewing" :class="buttonColor" tooltip="Preview Selection" />
 					<ShowHideButton
 						v-if="example"
 						v-model="isShowingExample"
@@ -122,6 +134,9 @@ const props = withDefaults(defineProps<{
 	loading?: boolean;
 	buttonColor?: string;
 	excludeSchemaIds?: string[] | number[];
+	dialog?: boolean;
+	hideDefaultHeader?: boolean;
+	hideSaveState?: boolean;
 }>(), {
 	buttonColor: "bg-sky-800",
 	excludeSchemaIds: null
@@ -184,5 +199,11 @@ async function loadFragments() {
 	// NOTE The use of abortOn is to avoid generating duplicate requests at the same time causing this request to abort, leaving this instance w/o any fragments
 	const fragments = await routes.list({ filter: { schema_definition_id: activeSchema.value.id } }, { abortOn: instanceId });
 	fragmentList.value = storeObjects(fragments.data);
+}
+
+function onCloseDialog() {
+	isPreviewing.value = false;
+	isEditingSchema.value = false;
+	isEditingFragment.value = false;
 }
 </script>

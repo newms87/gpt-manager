@@ -35,7 +35,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
             $this->taskProcess->name = $name;
         }
-        
+
         $this->activity("Preparing agent thread", 1);
     }
 
@@ -49,7 +49,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         $jsonSchemaService = app(JsonSchemaService::class);
 
         if ($schemaAssociation?->schemaDefinition) {
-            $jsonSchemaService->useCitations()->useDbFields();
+            $jsonSchemaService->useCitations()->useDbFields()->useArtifactMeta();
         }
 
         $this->activity("Communicating with AI agent in thread", 11);

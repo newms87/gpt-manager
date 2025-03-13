@@ -12,7 +12,15 @@
 				<div class="flex-grow rounded p-2 bg-slate-900 text-slate-400">
 					{{ taskProcess.activity }}
 				</div>
-				<div>
+				<div class="space-x-2">
+					<ShowHideButton
+						v-model="isShowingAgentThread"
+						:show-icon="AgentThreadIcon"
+						tooltip="Manage Agent Thread"
+						color="sky"
+						size="sm"
+						@show="loadAgentThread"
+					/>
 					<ShowHideButton
 						v-model="isShowingJobDispatches"
 						:label="taskProcess.job_dispatch_count"
@@ -63,13 +71,13 @@
 					size="sm"
 				/>
 			</div>
-			<ListTransition>
+			<ListTransition class="space-y-4 mt-4">
 				<ArtifactList
 					v-if="isShowingInputArtifacts"
 					title="Input Artifacts"
 					title-class="text-sky-300"
 					dense
-					class="bg-sky-950 p-2 rounded max-w-full mt-4"
+					class="bg-sky-950 p-2 rounded max-w-full"
 					:artifacts="taskProcess.inputArtifacts"
 				/>
 				<ArtifactList
@@ -77,14 +85,18 @@
 					title="Output Artifacts"
 					title-class="text-green-300"
 					dense
-					class="bg-green-950 p-2 rounded max-w-full mt-4"
+					class="bg-green-950 p-2 rounded max-w-full"
 					:artifacts="taskProcess.outputArtifacts"
 				/>
 				<JobDispatchList
 					v-if="isShowingJobDispatches"
-					class="p-2 border-t border-slate-400 mt-2"
+					class="p-2 border-t border-slate-400"
 					:jobs="taskProcess.jobDispatches"
 				/>
+				<div v-if="isShowingAgentThread" class="bg-slate-900 p-4 rounded">
+					<TaskProcessAgentThreadCard v-if="taskProcess.agentThread" :agent-thread="taskProcess.agentThread" />
+					<QSkeleton v-else class="h-24" />
+				</div>
 			</ListTransition>
 		</div>
 		<NodeArtifactsButton
@@ -103,8 +115,9 @@ import JobDispatchList from "@/components/Modules/Audits/JobDispatches/JobDispat
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
 import NodeArtifactsButton from "@/components/Modules/WorkflowCanvas/NodeArtifactsButton";
+import TaskProcessAgentThreadCard from "@/components/Modules/WorkflowCanvas/TaskProcessAgentThreadCard";
 import { TaskProcess } from "@/types";
-import { FaSolidBusinessTime as JobDispatchIcon } from "danx-icon";
+import { FaSolidBusinessTime as JobDispatchIcon, FaSolidMessage as AgentThreadIcon } from "danx-icon";
 import { ActionButton, fPercent, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
@@ -118,11 +131,25 @@ const resumeAction = dxTaskProcess.getAction("resume");
 const stopAction = dxTaskProcess.getAction("stop");
 const isStopped = computed(() => props.taskProcess.status === "Stopped" || props.taskProcess.status === "Pending");
 const isRunning = computed(() => ["Running"].includes(props.taskProcess.status));
+const isShowingAgentThread = ref(false);
 const isShowingJobDispatches = ref(false);
 const isShowingInputArtifacts = ref(false);
 const isShowingOutputArtifacts = ref(false);
 
 async function loadJobDispatches() {
 	await dxTaskProcess.routes.details(props.taskProcess, { jobDispatches: { logs: true, apiLogs: true, errors: true } });
+}
+
+async function loadAgentThread() {
+	await dxTaskProcess.routes.details(props.taskProcess, {
+		agentThread: {
+			messages: {
+				files: {
+					thumb: true,
+					transcodes: true
+				}
+			}
+		}
+	});
 }
 </script>

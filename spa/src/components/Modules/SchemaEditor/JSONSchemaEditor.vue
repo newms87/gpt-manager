@@ -13,13 +13,13 @@
 				</template>
 				<ShowHideButton v-if="!hideContent" v-model="isShowingRaw" class="bg-slate-700" :show-icon="RawCodeIcon" />
 				<slot name="actions" v-bind="{readonly}" />
-				<SaveStateIndicator :saving="saving" :saved-at="savedAt" class="ml-2 w-48" />
+				<SaveStateIndicator v-if="!hideSaveState" :saving="saving" :saved-at="savedAt" class="ml-2 w-48" />
 			</div>
 		</div>
 
-		<QSeparator v-if="!hideContent" class="bg-slate-600 my-4" />
+		<QSeparator v-if="isSchemaVisible && !dialog" class="bg-slate-600 my-4" />
 
-		<div v-if="!hideContent && editableSchema" class="flex-grow overflow-y-auto h-full pb-8">
+		<div v-if="isSchemaVisible && !dialog" class="flex-grow overflow-y-auto h-full pb-8">
 			<SchemaObject
 				v-if="!isShowingRaw"
 				v-model="editableSchema"
@@ -38,6 +38,31 @@
 				:format="schemaDefinition.schema_format"
 			/>
 		</div>
+		<FullScreenDialog
+			v-if="isSchemaVisible && dialog"
+			model-value
+			closeable
+			content-class="bg-slate-900 p-8"
+			@close="$emit('close')"
+		>
+			<SchemaObject
+				v-if="!isShowingRaw"
+				v-model="editableSchema"
+				v-model:fragment-selector="fragmentSelector"
+				:readonly="readonly"
+				:selectable="selectable"
+				class="min-w-64"
+			/>
+
+			<MarkdownEditor
+				v-else
+				v-model="editableSchema"
+				sync-model-changes
+				:readonly="readonly"
+				label=""
+				:format="schemaDefinition.schema_format"
+			/>
+		</FullScreenDialog>
 		<div
 			v-if="loading"
 			class="absolute top left w-full h-full flex items-center justify-center bg-slate-400 opacity-20 z-10"
@@ -54,10 +79,11 @@ import SchemaRevisionHistoryMenu from "@/components/Modules/SchemaEditor/SchemaR
 import SchemaUndoActions from "@/components/Modules/SchemaEditor/SchemaUndoActions";
 import { FragmentSelector, JsonSchema, SchemaDefinition } from "@/types";
 import { FaSolidCode as RawCodeIcon } from "danx-icon";
-import { SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
-import { ref, watch } from "vue";
+import { FullScreenDialog, SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
+import { computed, ref, watch } from "vue";
 
-defineProps<{
+defineEmits<{ close: void }>();
+const props = defineProps<{
 	schemaDefinition?: SchemaDefinition;
 	savedAt?: string;
 	saving: boolean;
@@ -67,10 +93,14 @@ defineProps<{
 	selectable?: boolean;
 	previewable?: boolean;
 	loading?: boolean;
+	dialog?: boolean;
+	hideSaveState?: boolean;
 }>();
+
 const schema = defineModel<JsonSchema>();
 const fragmentSelector = defineModel<FragmentSelector | null>("fragmentSelector");
 const isShowingRaw = ref(false);
+const isSchemaVisible = computed(() => !props.hideContent && !!editableSchema.value);
 
 // editableSchema is a 1-way binding to the parent component's schema prop but is initialized w/ the parent's schema value
 const editableSchema = ref<JsonSchema>(schema.value || null as JsonSchema);
