@@ -109,7 +109,7 @@ function registerAutoRefresh() {
 	autoRefreshObject(
 		autoRefreshId,
 		props.agentThread,
-		(at: AgentThread) => console.log("checking agent", at.is_running) || at.is_running,
+		(at: AgentThread) => at.is_running,
 		refreshAgentThread
 	);
 }
