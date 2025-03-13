@@ -2,6 +2,8 @@
 
 namespace App\Models\Agent;
 
+use App\Models\Schema\SchemaDefinition;
+use App\Models\Schema\SchemaFragment;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,6 +32,8 @@ class AgentThreadRun extends Model implements AuditableContract
         'output_tokens',
         'refreshed_at',
         'response_format',
+        'response_schema_id',
+        'response_fragment_id',
         'seed',
         'started_at',
         'status',
@@ -64,6 +68,16 @@ class AgentThreadRun extends Model implements AuditableContract
     public function jobDispatch(): BelongsTo|JobDispatch
     {
         return $this->belongsTo(JobDispatch::class);
+    }
+
+    public function responseSchema(): BelongsTo|SchemaDefinition
+    {
+        return $this->belongsTo(SchemaDefinition::class, 'response_schema_id');
+    }
+
+    public function responseFragment(): BelongsTo|SchemaFragment
+    {
+        return $this->belongsTo(SchemaFragment::class, 'response_fragment_id');
     }
 
     public function __toString(): string

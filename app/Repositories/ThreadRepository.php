@@ -45,7 +45,7 @@ class ThreadRepository extends ActionRepository
             'create-message' => app(MessageRepository::class)->create($model, $data['role'] ?? AgentThreadMessage::ROLE_USER),
             'reset-to-message' => $this->resetToMessage($model, $data['message_id']),
             'copy' => $this->copyThread($model),
-            'run' => app(AgentThreadService::class)->run($model),
+            'run' => app(AgentThreadService::class)->run($model, true, $data),
             'stop' => app(AgentThreadService::class)->stop($model),
             'resume' => app(AgentThreadService::class)->resume($model),
             default => parent::applyAction($action, $model, $data)

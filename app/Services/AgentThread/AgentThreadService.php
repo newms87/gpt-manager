@@ -26,8 +26,8 @@ use Throwable;
 class AgentThreadService
 {
     protected JsonSchemaService $jsonSchemaService;
-    protected ?SchemaDefinition $responseSchema         = null;
-    protected ?SchemaFragment   $responseSchemaFragment = null;
+    protected ?SchemaDefinition $responseSchema   = null;
+    protected ?SchemaFragment   $responseFragment = null;
 
     public function __construct(JsonSchemaService $jsonSchemaService = null)
     {
@@ -38,11 +38,11 @@ class AgentThreadService
      * Overrides the response format for the thread run.
      * This will replace the Agent's response format with the provided schema and fragment
      */
-    public function withResponseFormat(SchemaDefinition $responseSchema = null, SchemaFragment $responseSchemaFragment = null, JsonSchemaService $jsonSchemaService = null): static
+    public function withResponseFormat(SchemaDefinition $responseSchema = null, SchemaFragment $responseFragment = null, JsonSchemaService $jsonSchemaService = null): static
     {
-        $this->responseSchema         = $responseSchema;
-        $this->responseSchemaFragment = $responseSchemaFragment;
-        $this->jsonSchemaService      = $jsonSchemaService ?: $this->jsonSchemaService;
+        $this->responseSchema    = $responseSchema;
+        $this->responseFragment  = $responseFragment;
+        $this->jsonSchemaService = $jsonSchemaService ?: $this->jsonSchemaService;
 
         return $this;
     }
@@ -50,7 +50,7 @@ class AgentThreadService
     /**
      * Run the thread with the agent by calling the AI model API
      */
-    public function run(AgentThread $thread, $dispatch = true): AgentThreadRun
+    public function run(AgentThread $thread, $dispatch = true, $params = []): AgentThreadRun
     {
         LockHelper::acquire($thread);
 
@@ -61,14 +61,16 @@ class AgentThreadService
         $agent = $thread->agent;
 
         $threadRun = $thread->runs()->create([
-            'agent_model'     => $agent->model,
-            'status'          => AgentThreadRun::STATUS_RUNNING,
-            'temperature'     => $agent->temperature,
-            'tools'           => $agent->tools,
-            'tool_choice'     => 'auto',
-            'response_format' => $agent->response_format,
-            'seed'            => config('ai.seed'),
-            'started_at'      => now(),
+            'agent_model'          => $agent->model,
+            'status'               => AgentThreadRun::STATUS_RUNNING,
+            'temperature'          => $agent->temperature,
+            'tools'                => $agent->tools,
+            'tool_choice'          => 'auto',
+            'response_format'      => $params['response_format'] ?? 'text',
+            'response_schema_id'   => $params['response_schema_id'] ?? null,
+            'response_fragment_id' => $params['response_fragment_id'] ?? null,
+            'seed'                 => config('ai.seed'),
+            'started_at'           => now(),
         ]);
 
         // Execute the thread run in a job
@@ -128,22 +130,22 @@ class AgentThreadService
      * Resolve the response schema for the agent and thread run
      * NOTE: the agent's response schema can be overridden via withResponseFormat
      */
-    public function resolveResponseSchema(Agent $agent, JsonSchemaService $jsonSchemaService): array
+    public function resolveResponseSchema(AgentThreadRun $agentThreadRun, JsonSchemaService $jsonSchemaService): array
     {
         if ($this->responseSchema) {
-            $responseSchema         = $this->responseSchema;
-            $responseSchemaFragment = $this->responseSchemaFragment;
+            $responseSchema   = $this->responseSchema;
+            $responseFragment = $this->responseFragment;
         } else {
-            $responseSchema         = $agent->responseSchema;
-            $responseSchemaFragment = $agent->responseSchemaFragment;
+            $responseSchema   = $agentThreadRun->responseSchema;
+            $responseFragment = $agentThreadRun->responseFragment;
         }
 
         if (!$responseSchema?->schema) {
-            throw new Exception("JSON Schema response format requires a schema to be set on the agent: " . $agent . ": " . $agent->responseSchema);
+            throw new Exception("JSON Schema response format requires a schema to be set: " . $agentThreadRun);
         }
 
         // Configure the JSON schema service to require the name and id fields, and use citations for each property
-        return $jsonSchemaService->formatAndFilterSchema($responseSchema->name, $responseSchema->schema, $responseSchemaFragment?->fragment_selector);
+        return $jsonSchemaService->formatAndFilterSchema($responseSchema->name, $responseSchema->schema, $responseFragment?->fragment_selector);
     }
 
     /**
@@ -166,7 +168,7 @@ class AgentThreadService
             ];
 
             if ($threadRun->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA) {
-                $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = $this->resolveResponseSchema($agent, $this->jsonSchemaService);
+                $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = $this->resolveResponseSchema($threadRun, $this->jsonSchemaService);
             }
 
             $tools = $agent->formatTools();
@@ -288,19 +290,6 @@ class AgentThreadService
     public function getResponseMessage(Agent $agent, AgentMessageFormatterContract $apiFormatter): string
     {
         $responseMessage = '';
-
-        // JSON Object responses provide a schema for the response, but not via the json_schema structured response mechanics by Open AI (possibly others)
-        // So this is just a message to the LLM instead of a requirement built in
-        if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_OBJECT && $agent->responseSchema?->schema) {
-            $responseMessage .= "\n\nResponse Schema:\n" . json_encode($agent->responseSchema->schema);
-        }
-
-        // If the response format is JSON Schema, but the agent does not accept JSON schema, we need to format the response schema for the AI model
-        // and provide a message so the agent can see the schema (simulating response schema format)
-        // XXX: NOTE this is a hack for Perplexity AI, which does support JSON Schema, but does not seem to respond to it for their online models
-        elseif ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && !$apiFormatter->acceptsJsonSchema()) {
-            $responseMessage .= "\n\nResponse Schema:\n" . json_encode($this->resolveResponseSchema($agent, app(JsonSchemaService::class)));
-        }
 
         // Include the Example response if we're in JSON object mode to help the agent understand the correct response format
         if ($agent->response_format === Agent::RESPONSE_FORMAT_JSON_OBJECT && $agent->responseSchema?->response_example) {

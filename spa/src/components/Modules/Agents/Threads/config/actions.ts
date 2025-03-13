@@ -15,8 +15,8 @@ export const actions: ActionOptions[] = [
 	...withDefaultActions("Agent Thread"),
 	{
 		name: "run",
-		onAction: async (action, target) => {
-			const response = await routes.applyAction(action, target);
+		onAction: async (action, target, input) => {
+			const response = await routes.applyAction(action, target, input);
 
 			if (response.success) {
 				pollUntil(async () => {

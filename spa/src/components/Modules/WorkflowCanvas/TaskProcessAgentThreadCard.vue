@@ -54,9 +54,6 @@ import { FaRegularMessage as CreateIcon } from "danx-icon";
 import { ActionButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
-// TODO: Make close button
-defineEmits<{ close: void }>();
-
 defineProps<{
 	agentThread: AgentThread;
 }>();
@@ -65,6 +62,9 @@ const createMessageAction = dxAgentThread.getAction("create-message");
 const runAction = dxAgentThread.getAction("run");
 const stopAction = dxAgentThread.getAction("stop");
 
+// TODO: Fill defaults from taskDefinitionAgent
+
+
 const agentResponse = ref<AgentThreadResponseFormat>({
 	format: "text",
 	schema: null,
@@ -72,9 +72,9 @@ const agentResponse = ref<AgentThreadResponseFormat>({
 });
 const agentThreadRunInput = computed(() => {
 	return {
-		format: agentResponse.value.format,
-		schema_id: agentResponse.value.schema?.id || null,
-		schema_fragment_id: agentResponse.value.fragment?.id || null
+		response_format: agentResponse.value.format,
+		response_schema_id: agentResponse.value.schema?.id || null,
+		response_fragment_id: agentResponse.value.fragment?.id || null
 	};
 });
 </script>

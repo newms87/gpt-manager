@@ -10,15 +10,18 @@ class ThreadRunResource extends ActionResource
     public static function data(AgentThreadRun $threadRun): array
     {
         return [
-            'id'            => $threadRun->id,
-            'status'        => $threadRun->status,
-            'started_at'    => $threadRun->started_at,
-            'completed_at'  => $threadRun->completed_at,
-            'failed_at'     => $threadRun->failed_at,
-            'refreshed_at'  => $threadRun->refreshed_at,
-            'input_tokens'  => $threadRun->input_tokens,
-            'output_tokens' => $threadRun->output_tokens,
-            'thread'        => fn($fields) => AgentThreadResource::make($threadRun->agentThread, $fields),
+            'id'                   => $threadRun->id,
+            'status'               => $threadRun->status,
+            'started_at'           => $threadRun->started_at,
+            'completed_at'         => $threadRun->completed_at,
+            'failed_at'            => $threadRun->failed_at,
+            'refreshed_at'         => $threadRun->refreshed_at,
+            'input_tokens'         => $threadRun->input_tokens,
+            'output_tokens'        => $threadRun->output_tokens,
+            'response_format'      => $threadRun->response_format,
+            'response_schema_id'   => $threadRun->response_schema_id,
+            'response_fragment_id' => $threadRun->response_fragment_id,
+            'thread'               => fn($fields) => AgentThreadResource::make($threadRun->agentThread, $fields),
         ];
     }
 }
