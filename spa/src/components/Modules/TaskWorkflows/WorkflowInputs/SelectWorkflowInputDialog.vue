@@ -72,7 +72,11 @@ onMounted(loadWorkflowInputs);
 
 async function loadWorkflowInputs() {
 	isLoading.value = true;
-	workflowInputs.value = (await dxWorkflowInput.routes.list({ filter: filter.value, perPage: 10 })).data;
+	workflowInputs.value = (await dxWorkflowInput.routes.list({
+		fields: { files: { thumb: true, transcodes: true }, content: true, teamObject: true },
+		filter: filter.value,
+		perPage: 10
+	})).data;
 	isLoading.value = false;
 }
 </script>

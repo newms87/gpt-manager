@@ -8,14 +8,15 @@ properties:
     description: |
       Given the entire output response, generate a concise and descriptive name that will be used to label the artifact encapsulating your response. The name should be clear and informative for a human to understand the contents at a glance.
 
-      Include the primary date (or date range) relevant to the response.
-      Include the primary subject(s) (e.g., person, place, or thing being referenced).
+      Include the primary date (or date range) relevant to the response if there is a date given.
+      DO NOT use today's date (unless it is stated in the content as the relevant date to the subject / context).
+      If no date is explicitly stated from the input text, do not add a date in the name.
+      Include the primary subject(s) (e.g., person, place, or thing being referenced) if it is given.
       Ensure the name is succinct yet comprehensive enough to distinguish it from other artifacts.
-      Example Format:
-      [Date or Date Range] - [Primary Subject(s)] - [Brief Descriptor]
+      Cite who created the artifact if information is given about Agent Name, Schema Name and/or Fragment Name (NOTE: ignore any of these fields in the citation if they are not explicitly stated)
 
-      Example Outputs:
-
-      "2025-03-12 – Lake Powell Trip – Logistics Summary"
-      "Q1 2025 – AI Workflow Integration – Technical Report"
-      "2024-11-06 – Fantasy Football – Player Performance Outlook"
+      Example Format w/ date:
+      [Date or Date Range] - [Primary Subject(s)] - [Brief Descriptor] by [Agent Name] using [Schema Name] ([Fragment Name])
+        * "March 3rd, 2025 – Lake Powell Trip – Logistics Summary" by Travel Planning Agent using TravelPlans (Logistics)
+        * "Q1 2025 – AI Workflow Integration – Technical Report" by AI Integration Team using AIWorkflow
+        * "Daniel Newman - Client Data Extraction from Medical Summary" by Data Extraction Agent using Demand (Client)

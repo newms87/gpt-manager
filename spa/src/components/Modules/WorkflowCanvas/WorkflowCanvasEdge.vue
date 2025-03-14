@@ -98,8 +98,14 @@ watch(() => props.taskWorkflowRun, async () => {
 		transitionPercent.value = 0;
 	}
 
-	// Move the truck at a constant velocity. The duration is calculated based on the distance to travel.
-	const duration = (newPercent - transitionPercent.value) / 100 * 3000;
+
+	let duration = 0;
+
+	// If the workflow is completed, we want to leave duration at 0 (no animations)
+	if (props.taskWorkflowRun.status !== "Completed") {
+		// Move the truck at a constant velocity. The duration is calculated based on the distance to travel.
+		duration = (newPercent - transitionPercent.value) / 100 * 3000;
+	}
 
 	// noinspection TypeScriptValidateTypes IDE doesn't recognize the Ref imported
 	await waitForRef(isTransitioning, false);

@@ -252,6 +252,20 @@ class AgentThreadService
         $apiFormatter = $agent->getModelApi()->formatter();
 
         $corePrompt = "The current date and time is " . now()->toDateTimeString() . "\n\n";
+        $corePrompt .= "You're an agent created by a user to perform a task.\nYour Name: {$thread->agent->name}";
+
+        if ($thread->agent->description) {
+            $corePrompt .= "\nDescription: {$thread->agent->description}";
+        }
+
+        if ($agentThreadRun->responseSchema) {
+            $corePrompt .= "\nResponse Schema Name: {$agentThreadRun->responseSchema->name}";
+
+            if ($agentThreadRun->responseFragment) {
+                $corePrompt .= "\nResponse Fragment Name: {$agentThreadRun->responseFragment->name}";
+            }
+        }
+        
         $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $corePrompt);
 
         // Top Directives go before thread messages
