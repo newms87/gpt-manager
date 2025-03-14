@@ -2,7 +2,7 @@ fix-danx-ui:
 	cd ../quasar-ui-danx/ui && yarn
 
 danx-spa:
-	cd spa && yarn add quasar-ui-danx
+	cd spa && (yarn add quasar-ui-danx || yarn add quasar-ui-danx)
 
 danx-core:
 	vendor/bin/sail composer require newms87/danx

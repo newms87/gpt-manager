@@ -61,7 +61,12 @@ function registerAutoRefresh() {
 		autoRefreshObject(
 			autoRefreshId,
 			props.taskRun,
-			(tr: TaskRun) => isShowingTaskProcesses.value && (!tr.processes?.length || ["Running", "Pending"].includes(tr.status)),
+			(tr: TaskRun) =>
+				isShowingTaskProcesses.value &&
+				(!tr.processes?.length ||
+					["Running", "Pending"].includes(tr.status) ||
+					!!tr.processes.find(p => p.status === "Running")
+				),
 			refreshTaskRun
 		);
 	} else if (autoRefreshId) {
