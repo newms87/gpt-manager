@@ -95,7 +95,10 @@
 				/>
 				<div v-if="isShowingAgentThread" class="bg-slate-900 p-4 rounded">
 					<TaskProcessAgentThreadCard v-if="taskProcess.agentThread" :agent-thread="taskProcess.agentThread" />
-					<QSkeleton v-else class="h-24" />
+					<QSkeleton v-else-if="!hasLoadedAgentThread" class="h-24" />
+					<div v-else class="p-2 text-center">
+						No Agent Thread
+					</div>
 				</div>
 			</ListTransition>
 		</div>
@@ -147,9 +150,10 @@ watch(() => props.taskProcess.status, () => {
 	}
 });
 
+const hasLoadedAgentThread = ref(false);
 async function refreshAgentThreadRelation() {
 	const result = await dxTaskProcess.routes.details(props.taskProcess, { agentThread: AgentThreadFields });
-
+	hasLoadedAgentThread.value = true;
 	// If the process is running, but the thread is not, the thread is probably out of sync / or will start running soon, so keep checking until it is running or the process has stopped running.
 	if (isRunning.value && !result.agentThread.is_running) {
 		setTimeout(refreshAgentThreadRelation, 1000);

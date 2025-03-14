@@ -1,32 +1,13 @@
 <template>
 	<div class="task-process-agent-thread-card bg-transparent text-slate-300 flex flex-col flex-nowrap h-full">
-		<div class="flex items-center flex-nowrap space-x-2">
-			<div class="flex-grow">
-				<AgentThreadResponseField v-model="agentResponse" />
-			</div>
-			<AiTokenUsageButton :usage="agentThread.usage" class="py-3 mr-3" />
+		<div class="flex items-center justify-end flex-nowrap space-x-2">
+			<AiTokenUsageButton :usage="agentThread.usage" class="py-3" />
 			<ShowHideButton
 				v-model="isShowingJobDispatch"
 				:loading="isLoadingJobDispatch"
 				:show-icon="JobDispatchIcon"
 				color="gray"
 				@show="refreshJobDispatch"
-			/>
-			<ActionButton
-				:action="runAction"
-				:input="agentThreadRunInput"
-				:target="agentThread"
-				:saving="agentThread.is_running"
-				type="play"
-				color="green-invert"
-				label="Run"
-			/>
-			<ActionButton
-				v-if="agentThread.is_running"
-				:action="stopAction"
-				:target="agentThread"
-				type="pause"
-				color="sky"
 			/>
 		</div>
 		<div v-if="isShowingJobDispatch" class="mt-4">
@@ -41,14 +22,35 @@
 				:thread="agentThread"
 				class="mb-5"
 			/>
-			<ActionButton
-				:saving="agentThread.is_running"
-				:icon="CreateIcon"
-				:action="createMessageAction"
-				:target="agentThread"
-				class="bg-sky-700 text-slate-200 text-lg w-full"
-				label="Create Message"
-			/>
+			<div class="flex items-center flex-nowrap space-x-4">
+				<AgentThreadResponseField v-model="agentResponse" class="flex-grow" />
+				<ActionButton
+					:saving="agentThread.is_running"
+					:disabled="agentThread.is_running"
+					:icon="CreateIcon"
+					:action="createMessageAction"
+					:target="agentThread"
+					color="sky"
+				/>
+				<Transition mode="out-in">
+					<ActionButton
+						v-if="!agentThread.is_running"
+						:action="runAction"
+						:input="agentThreadRunInput"
+						:target="agentThread"
+						:saving="agentThread.is_running"
+						type="play"
+						color="green"
+					/>
+					<ActionButton
+						v-else
+						:action="stopAction"
+						:target="agentThread"
+						type="stop"
+						color="red"
+					/>
+				</Transition>
+			</div>
 		</div>
 	</div>
 </template>

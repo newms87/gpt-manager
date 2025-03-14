@@ -55,14 +55,17 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         $this->activity("Storing transcoded data for $fileToTranscode->filename", 100);
 
+        $transcodedFilename = preg_replace("/\\.[a-z0-9]+/", ".image-to-text-transcode.txt", $fileToTranscode->filename);
         // Save the transcoded record
         $transcodedFile = app(TranscodeFileService::class)->storeTranscodedFile(
             $fileToTranscode,
             static::RUNNER_NAME,
-            'image-to-text-transcode-' . uniqid() . '.txt',
+            $transcodedFilename,
             $artifact->text_content
         );
 
+        // The artifact name should be the name of the transcoded file
+        $artifact->name = $transcodedFile->filename;
         $artifact->storedFiles()->attach($transcodedFile->originalFile);
         $artifact->save();
 

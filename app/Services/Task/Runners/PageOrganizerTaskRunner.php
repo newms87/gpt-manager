@@ -8,6 +8,7 @@ use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Services\Task\ArtifactsToGroupsMapper;
+use Newms87\Danx\Exceptions\ValidationError;
 
 class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 {
@@ -61,14 +62,18 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
             $this->activity("Organizing pages for group of artifact $inputArtifact->id", $percentComplete);
 
             // Organize the pages for this group
-            $pages = $this->runOrganizingAgentThread($agentThread, $inputArtifact, $fragmentSelector);
+            $results = $this->runOrganizingAgentThread($agentThread, $inputArtifact, $fragmentSelector);
 
             // If no pages were returned, something went wrong so we can return immediately with a failure
-            if (!$pages) {
+            if (empty($results['pages'])) {
                 continue;
             }
 
+            $pages = $results['pages'];
+            sort($pages);
             $this->addPagesToArtifact($inputArtifact, $pages);
+            $inputArtifact->name = $results['name'] . " [pages: " . implode(', ', $pages) . "]";
+            $inputArtifact->save();
 
             $organizedArtifacts[] = $inputArtifact;
             $percentComplete      += $percentPerGroup;
@@ -99,7 +104,11 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
             'schema' => [
                 'type'       => 'object',
                 'properties' => [
-                    'pages' => [
+                    'artifact_name' => [
+                        'type'        => 'string',
+                        'description' => 'Give a name that would best describe this group of pages based on the given values that define this group of pages',
+                    ],
+                    'pages'         => [
                         'type'        => 'array',
                         'description' => 'The list of page numbers for the pages that belong to the group',
                         'items'       => ['type' => 'number'],
@@ -118,7 +127,19 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
             return null;
         }
 
-        return $outputArtifact->json_content['pages'];
+        $jsonContent = $outputArtifact->json_content;
+
+        if (empty($jsonContent['pages'])) {
+            throw new ValidationError("Pages list artifact must have a 'pages' array");
+        }
+        if (empty($jsonContent['artifact_name'])) {
+            throw new ValidationError("Pages list artifact must have a 'artifact_name' string");
+        }
+
+        return [
+            'pages' => $jsonContent['pages'],
+            'name'  => $jsonContent['artifact_name'],
+        ];
     }
 
     /**

@@ -179,10 +179,9 @@ class TaskWorkflowRunnerService
                 }
             }
 
-            // Mark the task workflow run as completed when all tasks have finished running
+            // Make sure to set the flag to indicate that all required tasks have been run so the workflow can know when it is completed
             if ($taskWorkflowRun->taskRuns()->whereIn('status', [WorkflowStatesContract::STATUS_PENDING, WorkflowStatesContract::STATUS_RUNNING])->doesntExist()) {
-                $taskWorkflowRun->status       = WorkflowStatesContract::STATUS_COMPLETED;
-                $taskWorkflowRun->completed_at = now_ms();
+                $taskWorkflowRun->has_run_all_tasks = true;
                 $taskWorkflowRun->save();
             }
         } finally {

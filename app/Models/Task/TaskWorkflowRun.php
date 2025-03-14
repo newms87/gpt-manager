@@ -141,7 +141,7 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
         } else {
             $this->failed_at  = null;
             $this->stopped_at = null;
-            if (!$this->completed_at) {
+            if (!$this->completed_at && $this->has_run_all_tasks) {
                 $this->completed_at = now();
             }
         }
@@ -153,6 +153,12 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
     {
         static::saving(function (TaskWorkflowRun $taskWorkflowRun) {
             $taskWorkflowRun->computeStatus();
+        });
+
+        static::saved(function (TaskWorkflowRun $taskWorkflowRun) {
+            if ($taskWorkflowRun->isDirty('has_run_all_tasks')) {
+                $taskWorkflowRun->checkTaskRuns();
+            }
         });
     }
 
