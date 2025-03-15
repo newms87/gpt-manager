@@ -1,5 +1,5 @@
 import { SchemaDefinition } from "@/types";
-import { fDate, fNumber, TableColumn } from "quasar-ui-danx";
+import { fDate, TableColumn } from "quasar-ui-danx";
 import { controls } from "./controls";
 
 const onEdit = (schemaDefinition: SchemaDefinition) => controls.activatePanel(schemaDefinition, "edit");
@@ -31,12 +31,6 @@ export const columns: TableColumn[] = [
 		label: "Schema Format",
 		sortable: true,
 		align: "left"
-	},
-	{
-		name: "agents_count",
-		label: "Agents",
-		format: fNumber,
-		sortable: true
 	},
 	{
 		name: "created_at",

@@ -6,7 +6,6 @@ export interface SchemaDefinition extends ActionTargetItem {
 	id: string;
 	name: string;
 	description: string;
-	agents_count: number;
 	schema_format: "text" | "json" | "yaml" | "ts";
 	schema: JsonSchema;
 	response_example: object | object[];

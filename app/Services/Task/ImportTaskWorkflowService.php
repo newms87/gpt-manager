@@ -83,7 +83,6 @@ class ImportTaskWorkflowService
                     ],
                         collect($responseSchemaData)->except('name')->toArray()
                     );
-                    $agent->responseSchema()->associate($responseSchema)->save();
 
                     // Fill in Response Schema Fragment
                     $responseSchemaFragmentData = $jobData['responseSchemaFragment'] ?? null;
@@ -95,7 +94,6 @@ class ImportTaskWorkflowService
                         ],
                             collect($responseSchemaFragmentData)->except('name')->toArray()
                         );
-                        $agent->responseSchemaFragment()->associate($responseSchemaFragment)->save();
                     }
                 }
 

@@ -149,7 +149,7 @@ class JSONSchemaDataToDatabaseMapper
 
         $citation   = $propertyMeta['citation'] ?? null;
         $reason     = $citation['reason'] ?? null;
-        $confidence = $citation['confidence'] ?? null;
+        $confidence = $citation['confidence'] ?? $attribute['confidence'] ?? null;
         $sources    = $citation['sources'] ?? [];
 
         $jsonValue = StringHelper::safeJsonDecode($value, maxEntrySize: 100000, forceJson: false);

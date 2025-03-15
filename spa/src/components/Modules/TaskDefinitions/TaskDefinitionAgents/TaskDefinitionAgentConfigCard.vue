@@ -145,7 +145,7 @@
 <script setup lang="ts">
 import { dxAgent } from "@/components/Modules/Agents";
 import { fields } from "@/components/Modules/Agents/config/fields";
-import AgentDirectiveField from "@/components/Modules/Agents/Fields/AgentDirectiveField";
+import { AgentDirectiveField } from "@/components/Modules/Agents/Fields";
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
 import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociations";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";

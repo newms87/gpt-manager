@@ -4,8 +4,6 @@ namespace App\Models\Agent;
 
 use App\Api\AgentApiContracts\AgentApiContract;
 use App\Models\Prompt\AgentPromptDirective;
-use App\Models\Schema\SchemaDefinition;
-use App\Models\Schema\SchemaFragment;
 use App\Models\Team\Team;
 use App\Repositories\AgentRepository;
 use Exception;
@@ -27,20 +25,12 @@ class Agent extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait, ActionModelTrait;
 
-    const string
-        RESPONSE_FORMAT_TEXT = 'text',
-        RESPONSE_FORMAT_JSON_SCHEMA = 'json_schema',
-        RESPONSE_FORMAT_JSON_OBJECT = 'json_object';
-
     protected $fillable = [
         'name',
         'description',
         'api',
         'model',
         'temperature',
-        'response_format',
-        'response_schema_id',
-        'response_schema_fragment_id',
         'tools',
         'retry_count',
     ];
@@ -50,7 +40,6 @@ class Agent extends Model implements AuditableContract
         'description',
         'api',
         'model',
-        'response_format',
     ];
 
     public array $relationCounters = [
@@ -73,16 +62,6 @@ class Agent extends Model implements AuditableContract
     public function knowledge(): BelongsTo|Knowledge
     {
         return $this->belongsTo(Knowledge::class);
-    }
-
-    public function responseSchema(): BelongsTo|SchemaDefinition
-    {
-        return $this->belongsTo(SchemaDefinition::class, 'response_schema_id');
-    }
-
-    public function responseSchemaFragment(): BelongsTo|SchemaFragment
-    {
-        return $this->belongsTo(SchemaFragment::class, 'response_schema_fragment_id');
     }
 
     public function directives(): HasMany|AgentPromptDirective

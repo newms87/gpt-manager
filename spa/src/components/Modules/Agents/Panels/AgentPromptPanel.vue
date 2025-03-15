@@ -4,8 +4,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import AgentDirectiveField from "@/components/Modules/Agents/Fields/AgentDirectiveField";
 import { Agent } from "@/types/agents";
+import { AgentDirectiveField } from "../Fields";
 
 defineProps<{
 	agent: Agent,

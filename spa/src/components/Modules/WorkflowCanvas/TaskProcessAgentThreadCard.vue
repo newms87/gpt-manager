@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import AgentThreadResponseField from "@/components/Modules/Agents/Fields/AgentThreadResponseField";
+import { AgentThreadResponseField } from "@/components/Modules/Agents/Fields";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { refreshAgentThread } from "@/components/Modules/Agents/Threads/store";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
@@ -77,9 +77,6 @@ const isLoadingJobDispatch = ref(false);
 const createMessageAction = dxAgentThread.getAction("create-message");
 const runAction = dxAgentThread.getAction("run");
 const stopAction = dxAgentThread.getAction("stop");
-
-// TODO: Fill defaults from taskDefinitionAgent
-
 
 const agentResponse = ref<AgentThreadResponseFormat>({
 	format: "text",

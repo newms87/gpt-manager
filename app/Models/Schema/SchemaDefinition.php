@@ -2,9 +2,7 @@
 
 namespace App\Models\Schema;
 
-use App\Models\Agent\Agent;
 use App\Models\Team\Team;
-use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -45,7 +43,6 @@ class SchemaDefinition extends Model implements AuditableContract
     ];
 
     public array $relationCounters = [
-        Agent::class             => ['agents' => 'agents_count'],
         SchemaFragment::class    => ['fragments' => 'fragments_count'],
         SchemaAssociation::class => ['associations' => 'associations_count'],
     ];
@@ -63,11 +60,6 @@ class SchemaDefinition extends Model implements AuditableContract
         return $this->belongsTo(Team::class);
     }
 
-    public function agents(): HasMany|Agent
-    {
-        return $this->hasMany(Agent::class, 'response_schema_id');
-    }
-
     public function schemaDefinitionRevisions(): HasMany|SchemaHistory
     {
         return $this->hasMany(SchemaHistory::class);
@@ -81,16 +73,6 @@ class SchemaDefinition extends Model implements AuditableContract
     public function associations(): SchemaAssociation|HasMany
     {
         return $this->hasMany(SchemaAssociation::class);
-    }
-
-    public function delete(): bool
-    {
-        $agentsCount = $this->agents()->count();
-        if ($agentsCount) {
-            throw new Exception("Cannot delete Schema Definition $this->name: there are $agentsCount agents with this schema assigned.");
-        }
-
-        return parent::delete();
     }
 
     public function validate(): static

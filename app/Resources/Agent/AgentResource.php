@@ -4,8 +4,6 @@ namespace App\Resources\Agent;
 
 use App\Models\Agent\Agent;
 use App\Resources\Prompt\AgentPromptDirectiveResource;
-use App\Resources\Schema\SchemaDefinitionResource;
-use App\Resources\Schema\SchemaFragmentResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
@@ -14,24 +12,21 @@ class AgentResource extends ActionResource
     public static function data(Agent $agent): array
     {
         return [
-            'id'              => $agent->id,
-            'knowledge_name'  => $agent->knowledge?->name,
-            'name'            => $agent->name,
-            'description'     => $agent->description,
-            'api'             => $agent->api,
-            'model'           => $agent->model,
-            'temperature'     => $agent->temperature,
-            'tools'           => $agent->tools ?: [],
-            'response_format' => $agent->response_format,
-            'retry_count'     => $agent->retry_count,
-            'threads_count'   => $agent->threads_count,
-            'created_at'      => $agent->created_at,
-            'updated_at'      => $agent->updated_at,
+            'id'             => $agent->id,
+            'knowledge_name' => $agent->knowledge?->name,
+            'name'           => $agent->name,
+            'description'    => $agent->description,
+            'api'            => $agent->api,
+            'model'          => $agent->model,
+            'temperature'    => $agent->temperature,
+            'tools'          => $agent->tools ?: [],
+            'retry_count'    => $agent->retry_count,
+            'threads_count'  => $agent->threads_count,
+            'created_at'     => $agent->created_at,
+            'updated_at'     => $agent->updated_at,
 
-            'responseSchema'         => fn($fields) => SchemaDefinitionResource::make($agent->responseSchema, $fields),
-            'responseSchemaFragment' => fn($fields) => SchemaFragmentResource::make($agent->responseSchemaFragment, $fields),
-            'directives'             => fn($fields) => AgentPromptDirectiveResource::collection($agent->directives->load('directive'), $fields),
-            'threads'                => fn($fields) => AgentThreadResource::collection($agent->threads()->orderByDesc('updated_at')->with('sortedMessages.storedFiles.transcodes')->limit(20)->get(), $fields),
+            'directives' => fn($fields) => AgentPromptDirectiveResource::collection($agent->directives->load('directive'), $fields),
+            'threads'    => fn($fields) => AgentThreadResource::collection($agent->threads()->orderByDesc('updated_at')->with('sortedMessages.storedFiles.transcodes')->limit(20)->get(), $fields),
         ];
     }
 

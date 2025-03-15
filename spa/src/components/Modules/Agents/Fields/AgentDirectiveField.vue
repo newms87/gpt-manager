@@ -89,8 +89,8 @@
 </template>
 <script setup lang="ts">
 import { dxAgent } from "@/components/Modules/Agents";
+import { SelectableAgentPromptDirectiveCard } from "@/components/Modules/Agents/Fields";
 import { refreshPromptDirectives } from "@/components/Modules/Agents/Fields/directivesStore";
-import SelectableAgentPromptDirectiveCard from "@/components/Modules/Agents/Fields/SelectableAgentPromptDirectiveCard";
 import { Agent } from "@/types/agents";
 import { ActionButton, ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed, ref } from "vue";

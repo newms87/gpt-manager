@@ -184,7 +184,6 @@ class TaskWorkflowRunnerService
                 static::log("All tasks have been run, setting flag");
                 $taskWorkflowRun->has_run_all_tasks = true;
                 $taskWorkflowRun->save();
-                static::log('SAVED');
             }
         } finally {
             LockHelper::release($taskWorkflowRun);

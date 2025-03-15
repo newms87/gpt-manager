@@ -16,7 +16,6 @@ class SchemaDefinitionResource extends ActionResource
             'schema_format'    => $schemaDefinition->schema_format,
             'schema'           => $schemaDefinition->schema,
             'response_example' => $schemaDefinition->response_example,
-            'agents_count'     => $schemaDefinition->agents_count,
             'created_at'       => $schemaDefinition->created_at,
             'updated_at'       => $schemaDefinition->updated_at,
 

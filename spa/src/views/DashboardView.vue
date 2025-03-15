@@ -17,6 +17,7 @@
 <script setup lang="ts">
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
 import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
+import { schemaDefinitions } from "@/components/Modules/Schemas/SchemaDefinitions/store";
 import TeamObjectsList from "@/components/Modules/TeamObjects/TeamObjectsList";
 import { until } from "@vueuse/core";
 import { getItem, setItem } from "quasar-ui-danx";
@@ -30,12 +31,11 @@ const isEditingSchema = ref(false);
 const activeSchema = computed(() => dxSchemaDefinition.activeItem.value);
 
 async function init() {
-	dxSchemaDefinition.initialize();
 	const storedSchemaDefinitionId = getItem(SCHEMA_DEFINITION_STORED_KEY);
 
 	if (storedSchemaDefinitionId) {
-		await until(dxSchemaDefinition.pagedItems).toMatch(pi => pi?.data.length > 0);
-		dxSchemaDefinition.setActiveItem(dxSchemaDefinition.pagedItems.value.data.find(ps => ps.id === storedSchemaDefinitionId));
+		await until(schemaDefinitions).toMatch(pi => pi?.length > 0);
+		dxSchemaDefinition.setActiveItem(schemaDefinitions.value.find(ps => ps.id === storedSchemaDefinitionId));
 	}
 }
 

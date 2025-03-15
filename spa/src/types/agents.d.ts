@@ -11,9 +11,6 @@ export interface Agent extends ActionTargetItem {
 	threads_count: number;
 	tools: string[];
 	threads: AgentThread[];
-	response_format: "text" | "json_object" | "json_schema";
-	responseSchema?: SchemaDefinition;
-	responseSchemaFragment?: SchemaFragment;
 	directives?: AgentPromptDirective[];
 }
 

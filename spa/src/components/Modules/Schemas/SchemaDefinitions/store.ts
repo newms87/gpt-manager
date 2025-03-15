@@ -16,7 +16,7 @@ async function loadSchemaDefinitions(): Promise<SchemaDefinition[]> {
 async function refreshSchemaDefinitions(): Promise<SchemaDefinition[]> {
 	if (isLoadingSchemaDefinitions.value) return;
 	isLoadingSchemaDefinitions.value = true;
-	schemaDefinitions.value = (await dxSchemaDefinition.routes.list()).data;
+	schemaDefinitions.value = (await dxSchemaDefinition.routes.list()).data || [];
 	isLoadingSchemaDefinitions.value = false;
 	return schemaDefinitions.value;
 }
