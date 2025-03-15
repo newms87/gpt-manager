@@ -60,7 +60,7 @@ class ArtifactsSplitterService
                 continue;
             }
 
-            $artifactGroups[$taskProcess->taskRun->task_workflow_node_id][] = $artifact;
+            $artifactGroups[$taskProcess->taskRun->workflow_node_id][] = $artifact;
         }
 
         return collect($artifactGroups)->values();

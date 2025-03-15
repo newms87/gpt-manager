@@ -2,6 +2,7 @@
 
 namespace App\Models\Task;
 
+use App\Models\Workflow\WorkflowNode;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -52,9 +53,9 @@ class TaskDefinition extends Model implements AuditableContract
         return $this->hasMany(TaskRun::class);
     }
 
-    public function workflowNodes(): HasMany|TaskWorkflowNode
+    public function workflowNodes(): HasMany|WorkflowNode
     {
-        return $this->hasMany(TaskWorkflowNode::class);
+        return $this->hasMany(WorkflowNode::class);
     }
 
     public function validate(): static
@@ -73,7 +74,7 @@ class TaskDefinition extends Model implements AuditableContract
 
     public function delete(): ?bool
     {
-        $this->workflowNodes()->each(fn(TaskWorkflowNode $wn) => $wn->delete());
+        $this->workflowNodes()->each(fn(WorkflowNode $wn) => $wn->delete());
 
         return parent::delete();
     }

@@ -3,6 +3,10 @@
 namespace App\Models\Task;
 
 use App\Models\Usage\UsageSummary;
+use App\Models\Workflow\WorkflowDefinition;
+use App\Models\Workflow\WorkflowNode;
+use App\Models\Workflow\WorkflowRun;
+use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\TaskRunnerContract;
 use App\Traits\HasWorkflowStatesTrait;
@@ -64,14 +68,14 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         return $this->belongsTo(TaskInput::class);
     }
 
-    public function taskWorkflowRun(): BelongsTo|TaskWorkflow
+    public function workflowRun(): BelongsTo|WorkflowDefinition
     {
-        return $this->belongsTo(TaskWorkflowRun::class);
+        return $this->belongsTo(WorkflowRun::class);
     }
 
-    public function taskWorkflowNode(): BelongsTo|TaskWorkflowNode
+    public function workflowNode(): BelongsTo|WorkflowNode
     {
-        return $this->belongsTo(TaskWorkflowNode::class);
+        return $this->belongsTo(WorkflowNode::class);
     }
 
     public function artifacts(): MorphToMany|Artifact
@@ -138,7 +142,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 $this->completed_at = now();
             }
         }
-        
+
         return $this;
     }
 
@@ -161,7 +165,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 
         static::saved(function (TaskRun $taskRun) {
             if ($taskRun->wasChanged('status')) {
-                $taskRun->taskWorkflowRun?->checkTaskRuns()->save();
+                $taskRun->workflowRun?->checkTaskRuns()->save();
             }
         });
     }

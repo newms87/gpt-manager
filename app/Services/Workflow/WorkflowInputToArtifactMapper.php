@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Services\Task;
+namespace App\Services\Workflow;
 
 use App\Models\Task\Artifact;
-use App\Models\Task\WorkflowInput;
+use App\Models\Workflow\WorkflowInput;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\DateHelper;
 

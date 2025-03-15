@@ -2,13 +2,13 @@
 
 namespace App\Repositories;
 
-use App\Models\Task\TaskWorkflowNode;
+use App\Models\Workflow\WorkflowNode;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
-class TaskWorkflowNodeRepository extends ActionRepository
+class WorkflowNodeRepository extends ActionRepository
 {
-    public static string $model = TaskWorkflowNode::class;
+    public static string $model = WorkflowNode::class;
 
     /**
      * @inheritdoc
@@ -25,13 +25,13 @@ class TaskWorkflowNodeRepository extends ActionRepository
      * Copies a WorkflowNode and creates a copied TaskDefinition w/ associated Agents + schema definitions
      * The copied node is still associated to the same workflow.
      */
-    public function copyNode(TaskWorkflowNode $taskWorkflowNode): TaskWorkflowNode
+    public function copyNode(WorkflowNode $workflowNode): WorkflowNode
     {
-        $newTaskDefinition       = $taskWorkflowNode->taskDefinition->replicate(['task_run_count', 'task_agent_count']);
+        $newTaskDefinition       = $workflowNode->taskDefinition->replicate(['task_run_count', 'task_agent_count']);
         $newTaskDefinition->name = ModelHelper::getNextModelName($newTaskDefinition);
         $newTaskDefinition->save();
 
-        foreach($taskWorkflowNode->taskDefinition->definitionAgents as $definitionAgent) {
+        foreach($workflowNode->taskDefinition->definitionAgents as $definitionAgent) {
             $newDefinitionAgent                     = $definitionAgent->replicate();
             $newDefinitionAgent->task_definition_id = $newTaskDefinition->id;
             $newDefinitionAgent->save();
@@ -47,18 +47,18 @@ class TaskWorkflowNodeRepository extends ActionRepository
             }
         }
 
-        $newTaskWorkflowNode                     = $taskWorkflowNode->replicate();
-        $newTaskWorkflowNode->name               = $newTaskDefinition->name;
-        $newTaskWorkflowNode->task_definition_id = $newTaskDefinition->id;
+        $newWorkflowNode                     = $workflowNode->replicate();
+        $newWorkflowNode->name               = $newTaskDefinition->name;
+        $newWorkflowNode->task_definition_id = $newTaskDefinition->id;
 
-        $settings = $newTaskWorkflowNode->settings;
+        $settings = $newWorkflowNode->settings;
         if (isset($settings['x'])) {
-            $settings['x']                 += 250;
-            $newTaskWorkflowNode->settings = $settings;
+            $settings['x']             += 250;
+            $newWorkflowNode->settings = $settings;
         }
 
-        $newTaskWorkflowNode->save();
+        $newWorkflowNode->save();
 
-        return $newTaskWorkflowNode;
+        return $newWorkflowNode;
     }
 }

@@ -2,16 +2,16 @@
 
 namespace App\Repositories;
 
-use App\Models\Task\TaskWorkflowRun;
-use App\Models\Task\WorkflowStatesContract;
-use App\Services\Task\TaskWorkflowRunnerService;
+use App\Models\Workflow\WorkflowRun;
+use App\Models\Workflow\WorkflowStatesContract;
+use App\Services\Workflow\WorkflowRunnerService;
 use DB;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Repositories\ActionRepository;
 
-class TaskWorkflowRunRepository extends ActionRepository
+class WorkflowRunRepository extends ActionRepository
 {
-    public static string $model = TaskWorkflowRun::class;
+    public static string $model = WorkflowRun::class;
 
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
@@ -23,31 +23,31 @@ class TaskWorkflowRunRepository extends ActionRepository
         };
     }
 
-    public function createRun(array $data): TaskWorkflowRun
+    public function createRun(array $data): WorkflowRun
     {
-        $taskWorkflow = team()->taskWorkflows()->find($data['task_workflow_id'] ?? null);
+        $workflowDefinition = team()->workflowDefinitions()->find($data['workflow_definition_id'] ?? null);
 
-        if (!$taskWorkflow) {
-            throw new ValidationError('Failed to run workflow: Task Workflow was not found');
+        if (!$workflowDefinition) {
+            throw new ValidationError('Failed to run workflow: Workflow Definition was not found');
         }
 
         $workflowInput = team()->workflowInputs()->find($data['workflow_input_id'] ?? null);
 
-        return TaskWorkflowRunnerService::start($taskWorkflow, $workflowInput);
+        return WorkflowRunnerService::start($workflowDefinition, $workflowInput);
     }
 
-    public function resumeRun(TaskWorkflowRun $taskWorkflowRun): TaskWorkflowRun
+    public function resumeRun(WorkflowRun $workflowRun): WorkflowRun
     {
-        TaskWorkflowRunnerService::resume($taskWorkflowRun);
+        WorkflowRunnerService::resume($workflowRun);
 
-        return $taskWorkflowRun;
+        return $workflowRun;
     }
 
-    public function stopRun(TaskWorkflowRun $taskWorkflowRun): TaskWorkflowRun
+    public function stopRun(WorkflowRun $workflowRun): WorkflowRun
     {
-        TaskWorkflowRunnerService::stop($taskWorkflowRun);
+        WorkflowRunnerService::stop($workflowRun);
 
-        return $taskWorkflowRun;
+        return $workflowRun;
     }
 
     /**
@@ -60,7 +60,7 @@ class TaskWorkflowRunRepository extends ActionRepository
         $failedStatus    = WorkflowStatesContract::STATUS_FAILED;
         $runningStatus   = WorkflowStatesContract::STATUS_RUNNING;
 
-        return TaskWorkflowRun::filter($filter)->select([
+        return WorkflowRun::filter($filter)->select([
             DB::raw('COUNT(*) as total_count'),
             DB::raw("SUM(IF(status = '$completedStatus', 1, 0)) as completed_count"),
             DB::raw("SUM(IF(status = '$pendingStatus', 1, 0)) as pending_count"),

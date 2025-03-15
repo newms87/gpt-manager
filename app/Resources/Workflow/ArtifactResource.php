@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Resources\TaskWorkflow;
+namespace App\Resources\Workflow;
 
 use App\Models\Task\Artifact;
 use Illuminate\Database\Eloquent\Model;

@@ -5,8 +5,8 @@ namespace App\Resources\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Resources\Agent\AgentThreadResource;
 use App\Resources\Audit\JobDispatchResource;
-use App\Resources\TaskWorkflow\ArtifactResource;
 use App\Resources\Usage\UsageSummaryResource;
+use App\Resources\Workflow\ArtifactResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 

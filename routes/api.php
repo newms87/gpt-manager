@@ -12,13 +12,13 @@ use App\Http\Controllers\Ai\TaskDefinitionsController;
 use App\Http\Controllers\Ai\TaskInputsController;
 use App\Http\Controllers\Ai\TaskProcessesController;
 use App\Http\Controllers\Ai\TaskRunsController;
-use App\Http\Controllers\Ai\TaskWorkflowConnectionsController;
-use App\Http\Controllers\Ai\TaskWorkflowNodesController;
-use App\Http\Controllers\Ai\TaskWorkflowRunsController;
-use App\Http\Controllers\Ai\TaskWorkflowsController;
 use App\Http\Controllers\Ai\TeamObjectsController;
 use App\Http\Controllers\Ai\ThreadsController;
+use App\Http\Controllers\Ai\WorkflowConnectionsController;
+use App\Http\Controllers\Ai\WorkflowDefinitionsController;
 use App\Http\Controllers\Ai\WorkflowInputsController;
+use App\Http\Controllers\Ai\WorkflowNodesController;
+use App\Http\Controllers\Ai\WorkflowRunsController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
 use Illuminate\Http\Request;
@@ -51,19 +51,19 @@ ActionRoute::routes('schemas/definitions', new SchemaDefinitionsController, func
 ActionRoute::routes('schemas/fragments', new SchemaFragmentsController);
 ActionRoute::routes('schemas/associations', new SchemaAssociationsController);
 
-// Task Definitions
+// Tasks
 ActionRoute::routes('task-definitions', new TaskDefinitionsController);
 ActionRoute::routes('task-definition-agents', new TaskDefinitionAgentsController);
 ActionRoute::routes('task-inputs', new TaskInputsController);
 ActionRoute::routes('task-runs', new TaskRunsController);
 ActionRoute::routes('task-processes', new TaskProcessesController);
 
-// Task Workflows
-ActionRoute::routes('task-workflows', new TaskWorkflowsController);
-ActionRoute::routes('task-workflow-nodes', new TaskWorkflowNodesController);
-ActionRoute::routes('task-workflow-connections', new TaskWorkflowConnectionsController);
-ActionRoute::routes('task-workflow-runs', new TaskWorkflowRunsController, function () {
-    Route::get('run-statuses', [TaskWorkflowRunsController::class, 'runStatuses'])->name('task-workflow-runs.run-statuses');
+// Workflows
+ActionRoute::routes('workflow-definitions', new WorkflowDefinitionsController);
+ActionRoute::routes('workflow-nodes', new WorkflowNodesController);
+ActionRoute::routes('workflow-connections', new WorkflowConnectionsController);
+ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
+    Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');
 });
 ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
 

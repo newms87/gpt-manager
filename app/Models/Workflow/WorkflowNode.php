@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Models\Task;
+namespace App\Models\Workflow;
 
+use App\Models\Task\TaskDefinition;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class TaskWorkflowNode extends Model implements AuditableContract
+class WorkflowNode extends Model implements AuditableContract
 {
     use HasFactory, ActionModelTrait, AuditableTrait;
 
@@ -30,19 +30,19 @@ class TaskWorkflowNode extends Model implements AuditableContract
         ];
     }
 
-    public function taskWorkflow(): BelongsTo|TaskWorkflow
+    public function workflowDefinition(): BelongsTo|WorkflowDefinition
     {
-        return $this->belongsTo(TaskWorkflow::class);
+        return $this->belongsTo(WorkflowDefinition::class);
     }
 
-    public function connectionsAsSource(): HasMany|TaskWorkflowConnection
+    public function connectionsAsSource(): HasMany|WorkflowConnection
     {
-        return $this->hasMany(TaskWorkflowConnection::class, 'source_node_id');
+        return $this->hasMany(WorkflowConnection::class, 'source_node_id');
     }
 
-    public function connectionsAsTarget(): HasMany|TaskWorkflowConnection
+    public function connectionsAsTarget(): HasMany|WorkflowConnection
     {
-        return $this->hasMany(TaskWorkflowConnection::class, 'target_node_id');
+        return $this->hasMany(WorkflowConnection::class, 'target_node_id');
     }
 
     public function taskDefinition(): BelongsTo|TaskDefinition
@@ -57,7 +57,6 @@ class TaskWorkflowNode extends Model implements AuditableContract
                 'required',
                 'max:80',
                 'string',
-                Rule::unique('task_workflows')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
             ],
         ])->validate();
 
@@ -66,6 +65,6 @@ class TaskWorkflowNode extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<TaskWorkflowNode id='$this->id' name='$this->name'>";
+        return "<WorkflowNode id='$this->id' name='$this->name'>";
     }
 }

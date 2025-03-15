@@ -2,7 +2,7 @@
 
 namespace App\Models\ContentSource;
 
-use App\Models\Task\WorkflowInput;
+use App\Models\Workflow\WorkflowInput;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;

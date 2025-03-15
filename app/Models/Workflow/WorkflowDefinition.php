@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Task;
+namespace App\Models\Workflow;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +12,7 @@ use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
-class TaskWorkflow extends Model implements AuditableContract
+class WorkflowDefinition extends Model implements AuditableContract
 {
     use ActionModelTrait, HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
 
@@ -21,31 +21,31 @@ class TaskWorkflow extends Model implements AuditableContract
     ];
 
     public array $relationCounters = [
-        TaskWorkflowRun::class => ['taskWorkflowRuns' => 'workflow_runs_count'],
+        WorkflowRun::class => ['workflowRuns' => 'workflow_runs_count'],
     ];
 
-    public function taskWorkflowRuns(): HasMany|TaskWorkflowRun
+    public function workflowRuns(): HasMany|WorkflowRun
     {
-        return $this->hasMany(TaskWorkflowRun::class);
+        return $this->hasMany(WorkflowRun::class);
     }
 
-    public function taskWorkflowNodes(): HasMany|TaskWorkflowNode
+    public function workflowNodes(): HasMany|WorkflowNode
     {
-        return $this->hasMany(TaskWorkflowNode::class);
+        return $this->hasMany(WorkflowNode::class);
     }
 
     /**
      * Get the starting nodes of the workflow (nodes that don't have any incoming connections)
      */
-    public function startingWorkflowNodes(): HasMany|TaskWorkflowNode
+    public function startingWorkflowNodes(): HasMany|WorkflowNode
     {
         // This is a starting node if it doesn't have any connections where it is the target
-        return $this->taskWorkflowNodes()->whereDoesntHave('connectionsAsTarget');
+        return $this->workflowNodes()->whereDoesntHave('connectionsAsTarget');
     }
 
-    public function taskWorkflowConnections(): HasMany|TaskWorkflowConnection
+    public function workflowConnections(): HasMany|WorkflowConnection
     {
-        return $this->hasMany(TaskWorkflowConnection::class);
+        return $this->hasMany(WorkflowConnection::class);
     }
 
     public function validate(): static
@@ -55,7 +55,7 @@ class TaskWorkflow extends Model implements AuditableContract
                 'required',
                 'max:80',
                 'string',
-                Rule::unique('task_workflows')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
+                Rule::unique('workflow_definitions')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
             ],
         ])->validate();
 
@@ -64,6 +64,6 @@ class TaskWorkflow extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<TaskWorkflow id='$this->id' name='$this->name'>";
+        return "<WorkflowDefinition id='$this->id' name='$this->name'>";
     }
 }

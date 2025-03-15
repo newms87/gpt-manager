@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Models\Task;
+namespace App\Models\Workflow;
 
+use App\Models\Task\Artifact;
+use App\Models\Task\TaskRun;
 use App\Models\Usage\UsageSummary;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Traits\ActionModelTrait;
 
-class TaskWorkflowRun extends Model implements WorkflowStatesContract
+class WorkflowRun extends Model implements WorkflowStatesContract
 {
     use SoftDeletes, ActionModelTrait, HasWorkflowStatesTrait;
 
@@ -33,9 +35,9 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
         ];
     }
 
-    public function taskWorkflow(): BelongsTo|TaskWorkflow
+    public function workflowDefinition(): BelongsTo|WorkflowDefinition
     {
-        return $this->belongsTo(TaskWorkflow::class);
+        return $this->belongsTo(WorkflowDefinition::class);
     }
 
     public function taskRuns(): HasMany|TaskRun
@@ -51,14 +53,14 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
     /**
      * Checks if the given target node is ready to be run by checking if all of its source nodes have completed running
      */
-    public function targetNodeReadyToRun(TaskWorkflowNode $targetNode): bool
+    public function targetNodeReadyToRun(WorkflowNode $targetNode): bool
     {
         // For all the target's source nodes, we want to check if they have all completed running in this workflow run.
         // If so, then we can run the target node
         foreach($targetNode->connectionsAsTarget as $connectionAsTarget) {
             // Check if this workflow run has a task run for the source node that has completed.
             // If not, the target node is not ready to be executed
-            if ($this->taskRuns()->where('task_workflow_node_id', $connectionAsTarget->source_node_id)->where('status', WorkflowStatesContract::STATUS_COMPLETED)->doesntExist()) {
+            if ($this->taskRuns()->where('workflow_node_id', $connectionAsTarget->source_node_id)->where('status', WorkflowStatesContract::STATUS_COMPLETED)->doesntExist()) {
                 return false;
             }
         }
@@ -70,7 +72,7 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
      * Get all the artifacts from the source nodes of the given target node
      * @return Collection<Artifact>
      */
-    public function collectOutputArtifactsFromSourceNodes(TaskWorkflowNode $targetNode): Collection
+    public function collectOutputArtifactsFromSourceNodes(WorkflowNode $targetNode): Collection
     {
         $artifacts = collect();
 
@@ -87,18 +89,18 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
      * Get all the artifacts from the source nodes of the given target node
      * @return Collection<Artifact>
      */
-    public function collectInputArtifactsForNode(TaskWorkflowNode $node): Collection
+    public function collectInputArtifactsForNode(WorkflowNode $node): Collection
     {
-        return $this->taskRuns()->where('task_workflow_node_id', $node->id)->first()->inputArtifacts()->get() ?? collect();
+        return $this->taskRuns()->where('workflow_node_id', $node->id)->first()->inputArtifacts()->get() ?? collect();
     }
 
     /**
      * Get all the artifacts from the source nodes of the given target node
      * @return Collection<Artifact>
      */
-    public function collectOutputArtifactsForNode(TaskWorkflowNode $node): Collection
+    public function collectOutputArtifactsForNode(WorkflowNode $node): Collection
     {
-        return $this->taskRuns()->where('task_workflow_node_id', $node->id)->first()->outputArtifacts()->get() ?? collect();
+        return $this->taskRuns()->where('workflow_node_id', $node->id)->first()->outputArtifacts()->get() ?? collect();
     }
 
     /**
@@ -151,16 +153,16 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
 
     public static function booted(): void
     {
-        static::saving(function (TaskWorkflowRun $taskWorkflowRun) {
-            $taskWorkflowRun->computeStatus();
-            if ($taskWorkflowRun->isDirty('has_run_all_tasks')) {
-                $taskWorkflowRun->checkTaskRuns();
+        static::saving(function (WorkflowRun $workflowRun) {
+            $workflowRun->computeStatus();
+            if ($workflowRun->isDirty('has_run_all_tasks')) {
+                $workflowRun->checkTaskRuns();
             }
         });
     }
 
     public function __toString()
     {
-        return "<TaskWorkflowRun id='$this->id' status='$this->status'>";
+        return "<WorkflowRun id='$this->id' status='$this->status'>";
     }
 }

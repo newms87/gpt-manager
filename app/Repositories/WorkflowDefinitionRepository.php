@@ -2,17 +2,17 @@
 
 namespace App\Repositories;
 
-use App\Models\Task\TaskWorkflow;
-use App\Models\Task\TaskWorkflowConnection;
-use App\Models\Task\TaskWorkflowNode;
+use App\Models\Workflow\WorkflowConnection;
+use App\Models\Workflow\WorkflowDefinition;
+use App\Models\Workflow\WorkflowNode;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
-class TaskWorkflowRepository extends ActionRepository
+class WorkflowDefinitionRepository extends ActionRepository
 {
-    public static string $model = TaskWorkflow::class;
+    public static string $model = WorkflowDefinition::class;
 
     public function query(): Builder
     {
@@ -25,8 +25,8 @@ class TaskWorkflowRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createTaskWorkflow($data ?? []),
-            'update' => $this->updateTaskWorkflow($model, $data),
+            'create' => $this->createWorkflowDefinition($data ?? []),
+            'update' => $this->updateWorkflowDefinition($model, $data),
             'add-node' => $this->addNode($model, $data),
             'add-connection' => $this->addConnection($model, $data),
             default => parent::applyAction($action, $model, $data)
@@ -34,35 +34,35 @@ class TaskWorkflowRepository extends ActionRepository
     }
 
     /**
-     * Create a task workflow applying business rules
+     * Create a workflow applying business rules
      */
-    public function createTaskWorkflow(array $input = []): TaskWorkflow
+    public function createWorkflowDefinition(array $input = []): WorkflowDefinition
     {
-        $taskWorkflow = TaskWorkflow::make()->forceFill([
+        $workflowDefinition = WorkflowDefinition::make()->forceFill([
             'team_id' => team()->id,
-            'name'    => 'New Task Workflow',
+            'name'    => 'New Workflow Definition',
         ]);
 
-        $taskWorkflow->name = ModelHelper::getNextModelName($taskWorkflow);
+        $workflowDefinition->name = ModelHelper::getNextModelName($workflowDefinition);
 
 
-        return $this->updateTaskWorkflow($taskWorkflow, $input);
+        return $this->updateWorkflowDefinition($workflowDefinition, $input);
     }
 
     /**
-     * Update a task workflow applying business rules
+     * Update a workflow applying business rules
      */
-    public function updateTaskWorkflow(TaskWorkflow $taskWorkflow, array $data): TaskWorkflow
+    public function updateWorkflowDefinition(WorkflowDefinition $workflowDefinition, array $data): WorkflowDefinition
     {
-        $taskWorkflow->fill($data)->validate()->save($data);
+        $workflowDefinition->fill($data)->validate()->save($data);
 
-        return $taskWorkflow;
+        return $workflowDefinition;
     }
 
     /**
-     * Add a node to a task workflow
+     * Add a node to a workflow definition
      */
-    public function addNode(TaskWorkflow $taskWorkflow, ?array $input = []): TaskWorkflowNode
+    public function addNode(WorkflowDefinition $workflowDefinition, ?array $input = []): WorkflowNode
     {
         // First we must guarantee we have an agent (from the users team) selected to add to the definition
         $taskDefinition = team()->taskDefinitions()->find($input['task_definition_id'] ?? null);
@@ -71,7 +71,7 @@ class TaskWorkflowRepository extends ActionRepository
             throw new Exception("You must choose a task definition to create task node.");
         }
 
-        return $taskWorkflow->taskWorkflowNodes()->create([
+        return $workflowDefinition->workflowNodes()->create([
             'task_definition_id' => $taskDefinition->id,
             'name'               => $input['name'] ?? $taskDefinition->name,
             'settings'           => $input['settings'] ?? null,
@@ -80,18 +80,18 @@ class TaskWorkflowRepository extends ActionRepository
     }
 
     /**
-     * Add a connection to a task workflow
+     * Add a connection to a workflow definition
      */
-    public function addConnection(TaskWorkflow $taskWorkflow, ?array $input = []): TaskWorkflowConnection
+    public function addConnection(WorkflowDefinition $workflowDefinition, ?array $input = []): WorkflowConnection
     {
-        $sourceNode = $taskWorkflow->taskWorkflowNodes()->find($input['source_node_id'] ?? null);
-        $targetNode = $taskWorkflow->taskWorkflowNodes()->find($input['target_node_id'] ?? null);
+        $sourceNode = $workflowDefinition->workflowNodes()->find($input['source_node_id'] ?? null);
+        $targetNode = $workflowDefinition->workflowNodes()->find($input['target_node_id'] ?? null);
 
         if (!$sourceNode || !$targetNode) {
             throw new Exception("You must choose a source and target node to create a connection.");
         }
 
-        return $taskWorkflow->taskWorkflowConnections()->create([
+        return $workflowDefinition->workflowConnections()->create([
             'source_node_id'     => $sourceNode->id,
             'target_node_id'     => $targetNode->id,
             'source_output_port' => $input['source_output_port'] ?? 'default',

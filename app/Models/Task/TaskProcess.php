@@ -4,6 +4,7 @@ namespace App\Models\Task;
 
 use App\Models\Agent\AgentThread;
 use App\Models\Usage\UsageSummary;
+use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Runners\TaskRunnerContract;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

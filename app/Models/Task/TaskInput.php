@@ -2,7 +2,8 @@
 
 namespace App\Models\Task;
 
-use App\Services\Task\WorkflowInputToArtifactMapper;
+use App\Models\Workflow\WorkflowInput;
+use App\Services\Workflow\WorkflowInputToArtifactMapper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

@@ -7,7 +7,8 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Models\Task\WorkflowStatesContract;
+use App\Models\Workflow\WorkflowStatesContract;
+use App\Services\Workflow\WorkflowRunnerService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -349,9 +350,9 @@ class TaskRunnerService
         $taskRun = $taskProcess->taskRun->refresh();
         static::continue($taskRun);
 
-        // If the task run is a part of a task workflow run and the task run is completed, then notify the task workflow run
-        if ($taskRun->task_workflow_run_id && $taskRun->isCompleted()) {
-            TaskWorkflowRunnerService::taskRunComplete($taskRun);
+        // If the task run is a part of a workflow run and the task run is completed, then notify the workflow run
+        if ($taskRun->workflow_run_id && $taskRun->isCompleted()) {
+            WorkflowRunnerService::taskRunComplete($taskRun);
         }
     }
 

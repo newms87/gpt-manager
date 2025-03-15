@@ -1,22 +1,24 @@
 <?php
 
-namespace App\Services\Task;
+namespace App\Services\Workflow;
 
 use App\Models\Agent\Agent;
 use App\Models\Prompt\PromptDirective;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
-use App\Models\Task\TaskWorkflow;
+use App\Models\Workflow\WorkflowDefinition;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\ModelHelper;
 
-class ImportTaskWorkflowService
+class ImportExportWorkflowService
 {
-    public function exportToJson(TaskWorkflow $taskWorkflow)
+    public function exportToJson(WorkflowDefinition $workflowDefinition)
     {
         // TODO: When exporting we need to set the owner_team_id fields to all relevant objects
         // importing will need to import that field as well to lock users out of seeing those objects
-        $data = [];
+        $data = [
+
+        ];
     }
 
     public function importFromJson(string $workflowJson): bool

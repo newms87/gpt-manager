@@ -2,8 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Models\Task\WorkflowInput;
 use App\Models\TeamObject\TeamObject;
+use App\Models\Workflow\WorkflowInput;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;

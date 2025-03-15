@@ -3,7 +3,7 @@
 namespace App\Resources\TaskDefinition;
 
 use App\Models\Task\TaskInput;
-use App\Resources\TaskWorkflow\WorkflowInputResource;
+use App\Resources\Workflow\WorkflowInputResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 

@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Models\Task;
+namespace App\Models\Workflow;
 
 use App\Models\ContentSource\ContentSource;
+use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
-use App\Services\Task\WorkflowInputToArtifactMapper;
+use App\Services\Workflow\WorkflowInputToArtifactMapper;
 use App\Traits\HasObjectTags;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

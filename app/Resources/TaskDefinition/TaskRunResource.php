@@ -3,9 +3,8 @@
 namespace App\Resources\TaskDefinition;
 
 use App\Models\Task\TaskRun;
-use App\Resources\TaskWorkflow\ArtifactResource;
 use App\Resources\Usage\UsageSummaryResource;
-use Illuminate\Database\Eloquent\Model;
+use App\Resources\Workflow\ArtifactResource;
 use Newms87\Danx\Resources\ActionResource;
 
 class TaskRunResource extends ActionResource
@@ -26,7 +25,7 @@ class TaskRunResource extends ActionResource
             'created_at'             => $taskRun->created_at,
             'updated_at'             => $taskRun->updated_at,
             'task_definition_id'     => $taskRun->task_definition_id,
-            'task_workflow_node_id'  => $taskRun->task_workflow_node_id,
+            'workflow_node_id'       => $taskRun->workflow_node_id,
             'input_artifacts_count'  => $taskRun->input_artifacts_count,
             'output_artifacts_count' => $taskRun->output_artifacts_count,
 
@@ -36,10 +35,5 @@ class TaskRunResource extends ActionResource
             'outputArtifacts' => fn($fields) => ArtifactResource::collection($taskRun->outputArtifacts, $fields),
             'usage'           => fn($fields) => UsageSummaryResource::make($taskRun->usageSummary, $fields),
         ];
-    }
-
-    public static function details(Model $model, ?array $includeFields = null): array
-    {
-        return static::make($model, $includeFields ?? []);
     }
 }

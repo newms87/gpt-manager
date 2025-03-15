@@ -3,7 +3,7 @@
 namespace App\Traits;
 
 use App\Models\Task\TaskProcess;
-use App\Models\Task\WorkflowStatesContract;
+use App\Models\Workflow\WorkflowStatesContract;
 
 /**
  * @mixin TaskProcess
