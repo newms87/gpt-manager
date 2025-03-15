@@ -10,9 +10,9 @@ class TeamObjectRelationshipFactory extends Factory
     public function definition(): array
     {
         return [
-            'relationship_name' => fake()->word,
-            'object_id'         => TeamObject::factory(),
-            'related_object_id' => TeamObject::factory(),
+            'relationship_name'      => fake()->word,
+            'team_object_id'         => TeamObject::factory(),
+            'related_team_object_id' => TeamObject::factory(),
         ];
     }
 }

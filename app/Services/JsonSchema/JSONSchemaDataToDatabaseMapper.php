@@ -155,9 +155,9 @@ class JSONSchemaDataToDatabaseMapper
         $jsonValue = StringHelper::safeJsonDecode($value, maxEntrySize: 100000, forceJson: false);
 
         $teamObjectAttribute = TeamObjectAttribute::updateOrCreate([
-            'object_id' => $teamObject->id,
-            'name'      => $name,
-            'date'      => $date,
+            'team_object_id' => $teamObject->id,
+            'name'           => $name,
+            'date'           => $date,
         ], [
             'text_value' => $jsonValue ? null : $value,
             'json_value' => $jsonValue ?: null,
@@ -240,9 +240,9 @@ class JSONSchemaDataToDatabaseMapper
 
         // Ensure the record is associated
         $relatedObject = TeamObjectRelationship::withTrashed()->firstOrNew([
-            'relationship_name' => $relationshipName,
-            'object_id'         => $teamObject->id,
-            'related_object_id' => $relatedObject->id,
+            'relationship_name'      => $relationshipName,
+            'team_object_id'         => $teamObject->id,
+            'related_team_object_id' => $relatedObject->id,
         ]);
 
         if ($relatedObject->deleted_at) {
@@ -295,7 +295,7 @@ class JSONSchemaDataToDatabaseMapper
             if (!$this->rootObject) {
                 $this->setRootObject($teamObject);
             }
-            
+
             if ($type && $teamObject->type !== $type) {
                 if ($threadRun) {
                     Log::warning("Team Object ($type: $id): type of object did not match: $type !== $teamObject->type. Setting id to null for LLM agent thread run and continuing...");

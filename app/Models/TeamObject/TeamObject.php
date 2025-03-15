@@ -3,8 +3,6 @@
 namespace App\Models\TeamObject;
 
 use App\Models\Schema\SchemaDefinition;
-use Carbon\Carbon;
-use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,41 +14,17 @@ use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
-/**
- * @property int    $id
- * @property int    schema_definition_id
- * @property int    root_object_id
- * @property string $type
- * @property string $name
- * @property Carbon $date
- * @property string $description
- * @property string $url
- * @property array  $meta
- * @property Carbon created_at
- * @property Carbon updated_at
- * @property Carbon deleted_at
- */
 class TeamObject extends Model implements AuditableContract
 {
     use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
 
-    protected $table   = 'team__objects';
+    protected $table   = 'team_objects';
     protected $guarded = [
         'id',
         'created_at',
         'updated_at',
         'deleted_at',
     ];
-
-    public function __construct(array $attributes = [])
-    {
-        if (!team()->namespace) {
-            throw new Exception("Cannot instantiate " . static::class . ": Team namespace is not set");
-        }
-
-        $this->table = team()->namespace . '__objects';
-        parent::__construct($attributes);
-    }
 
     public function casts(): array
     {
@@ -72,23 +46,23 @@ class TeamObject extends Model implements AuditableContract
 
     public function relationships(): HasMany|TeamObjectRelationship
     {
-        return $this->hasMany(TeamObjectRelationship::class, 'object_id');
+        return $this->hasMany(TeamObjectRelationship::class, 'team_object_id');
     }
 
     public function relatedToMe(): HasMany|TeamObject
     {
-        return $this->hasMany(TeamObjectRelationship::class, 'related_object_id');
+        return $this->hasMany(TeamObjectRelationship::class, 'related_team_object_id');
     }
 
     public function relatedObjects($relationshipName): TeamObject|HasManyThrough
     {
-        return $this->hasManyThrough(TeamObject::class, TeamObjectRelationship::class, 'object_id', 'id', 'id', 'related_object_id')
+        return $this->hasManyThrough(TeamObject::class, TeamObjectRelationship::class, 'team_object_id', 'id', 'id', 'related_team_object_id')
             ->where('relationship_name', $relationshipName);
     }
 
     public function attributes(): HasMany|TeamObjectAttribute
     {
-        return $this->hasMany(TeamObjectAttribute::class, 'object_id');
+        return $this->hasMany(TeamObjectAttribute::class, 'team_object_id');
     }
 
 

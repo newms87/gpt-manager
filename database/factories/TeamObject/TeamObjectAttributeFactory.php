@@ -10,7 +10,7 @@ class TeamObjectAttributeFactory extends Factory
     public function definition(): array
     {
         return [
-            'object_id'           => TeamObject::factory(),
+            'team_object_id'      => TeamObject::factory(),
             'name'                => fake()->unique()->name,
             'date'                => null,
             'text_value'          => fake()->sentence,

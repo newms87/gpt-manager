@@ -27,7 +27,7 @@ class TeamObjectForAgentsResource
      */
     public static function loadTeamObjectAttributes(TeamObject $teamObject): array
     {
-        $attributes = TeamObjectAttribute::where('object_id', $teamObject->id)->get();
+        $attributes = TeamObjectAttribute::where('team_object_id', $teamObject->id)->get();
 
         $loadedAttributes = [];
 
@@ -54,15 +54,15 @@ class TeamObjectForAgentsResource
      */
     public static function recursivelyLoadTeamObjectRelations(TeamObject $teamObject, array $schema = null, $maxDepth = 10): array
     {
-        $relationships = TeamObjectRelationship::where('object_id', $teamObject->id)->get();
+        $relationships = TeamObjectRelationship::where('team_object_id', $teamObject->id)->get();
 
         $loadedRelationships = [];
 
         foreach($relationships as $relationship) {
-            $relatedObject = TeamObject::find($relationship->related_object_id);
+            $relatedObject = TeamObject::find($relationship->related_team_object_id);
 
             if (!$relatedObject) {
-                Log::warning("Could not find related object with ID: $relationship->related_object_id");
+                Log::warning("Could not find related object with ID: $relationship->related_team_object_id");
                 continue;
             }
 
