@@ -32,7 +32,7 @@
 import TaskRunCard from "@/components/Modules/TaskDefinitions/Panels/TaskRunCard";
 import { routes } from "@/components/Modules/TaskDefinitions/TaskInputs/config/routes";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
-import { TaskDefinition, TaskInput } from "@/types/task-definitions";
+import { TaskDefinition, TaskInput } from "@/types";
 import { FaSolidPlay as RunTaskIcon } from "danx-icon";
 import { ListTransition } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";

@@ -28,7 +28,7 @@
 import { dxAgent } from "@/components/Modules/Agents";
 import AgentThreadCard from "@/components/Modules/Agents/Threads/AgentThreadCard";
 import router from "@/router";
-import { Agent } from "@/types/agents";
+import { Agent } from "@/types";
 import { FaRegularMessage as CreateIcon } from "danx-icon";
 import { ListTransition } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";

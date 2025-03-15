@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { DeliveryBoyLottie } from "@/assets/dotlottie";
-import { TaskWorkflowRun } from "@/types";
+import { WorkflowRun } from "@/types";
 import {
 	BaseEdge,
 	EdgeLabelRenderer,
@@ -69,19 +69,19 @@ defineEmits<{ (e: "remove", edge: EdgeProps): void }>();
 
 const props = withDefaults(defineProps<{
 	pathType?: "bezier" | "smoothstep";
-	taskWorkflowRun?: TaskWorkflowRun,
+	workflowRun?: WorkflowRun,
 	edge: EdgeProps;
 	nodes: Node[];
 }>(), {
 	pathType: "smoothstep",
-	taskWorkflowRun: null
+	workflowRun: null
 });
 
-const sourceTaskRun = computed(() => props.taskWorkflowRun?.taskRuns?.find((tr) => tr.task_workflow_node_id == +props.edge.source));
-const targetTaskRun = computed(() => props.taskWorkflowRun?.taskRuns?.find((tr) => tr.task_workflow_node_id == +props.edge.target));
+const sourceTaskRun = computed(() => props.workflowRun?.taskRuns?.find((tr) => tr.workflow_node_id == +props.edge.source));
+const targetTaskRun = computed(() => props.workflowRun?.taskRuns?.find((tr) => tr.workflow_node_id == +props.edge.target));
 const transitionPercent = ref(0);
 const isTransitioning = ref(false);
-watch(() => props.taskWorkflowRun, async () => {
+watch(() => props.workflowRun, async () => {
 	let newPercent = 0;
 	if (["Completed", "Running"].includes(targetTaskRun.value?.status)) {
 		newPercent = 100;
@@ -102,7 +102,7 @@ watch(() => props.taskWorkflowRun, async () => {
 	let duration = 0;
 
 	// If the workflow is completed, we want to leave duration at 0 (no animations)
-	if (props.taskWorkflowRun.status !== "Completed") {
+	if (props.workflowRun.status !== "Completed") {
 		// Move the truck at a constant velocity. The duration is calculated based on the distance to travel.
 		duration = (newPercent - transitionPercent.value) / 100 * 3000;
 	}

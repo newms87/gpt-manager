@@ -4,7 +4,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { Agent } from "@/types/agents";
+import { Agent } from "@/types";
 import { AgentDirectiveField } from "../Fields";
 
 defineProps<{

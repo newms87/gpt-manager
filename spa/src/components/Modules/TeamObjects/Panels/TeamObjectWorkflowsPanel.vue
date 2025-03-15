@@ -36,10 +36,10 @@
 	</div>
 </template>
 <script setup lang="ts">
-import WorkflowStatusProgressBar from "@/components/Modules/TaskWorkflows/Shared/WorkflowStatusProgressBar";
-import { dxWorkflowInput } from "@/components/Modules/TaskWorkflows/WorkflowInputs";
-import WorkflowInputCard from "@/components/Modules/TaskWorkflows/WorkflowInputs/WorkflowInputCard";
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
+import WorkflowStatusProgressBar from "@/components/Modules/WorkflowDefinitions/Shared/WorkflowStatusProgressBar";
+import { dxWorkflowInput } from "@/components/Modules/WorkflowDefinitions/WorkflowInputs";
+import WorkflowInputCard from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/WorkflowInputCard";
 import { WorkflowInput } from "@/types";
 import { FaSolidPlus as CreateIcon, FaSolidWorm as ShowWorkflowIcon } from "danx-icon";
 import { ActionButton, FlashMessages, ShowHideButton, storeObjects } from "quasar-ui-danx";

@@ -1,8 +1,5 @@
 import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
-import { Agent, AgentThread } from "@/types/agents";
-import { Artifact } from "@/types/artifacts";
-import { SchemaAssociation } from "@/types/prompts";
-import { WorkflowInput } from "@/types/workflow-inputs";
+import { Agent, AgentThread, Artifact, SchemaAssociation, WorkflowInput } from "@/types";
 import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
 
 export interface TaskDefinition extends ActionTargetItem {
@@ -49,7 +46,7 @@ export interface TaskRun extends TaskRunner {
 	processes?: TaskProcess[];
 	task_definition_id: number;
 	taskDefinition?: TaskDefinition;
-	task_workflow_node_id: number;
+	workflow_node_id: number;
 	input_artifacts_count: number;
 	output_artifacts_count: number;
 	inputArtifacts?: Artifact[];

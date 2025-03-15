@@ -1,5 +1,5 @@
 // Handle drag start event
-import { addWorkflowNode } from "@/components/Modules/TaskWorkflows/store";
+import { addWorkflowNode } from "@/components/Modules/WorkflowDefinitions/store";
 import { TaskDefinition } from "@/types";
 import { useVueFlow } from "@vue-flow/core";
 import { ref } from "vue";

@@ -22,8 +22,8 @@
 			<template #node-custom="nodeProps">
 				<WorkflowCanvasNode
 					:node="nodeProps"
-					:task-workflow="taskWorkflow"
-					:task-workflow-run="taskWorkflowRun"
+					:workflow-definition="workflowDefinition"
+					:workflow-run="workflowRun"
 					:loading="loading"
 					@copy="node => $emit('node-copy', resolveWorkflowNode(node))"
 					@edit="node => $emit('node-edit', resolveWorkflowNode(node))"
@@ -34,7 +34,7 @@
 				<WorkflowCanvasEdge
 					:edge="edgeProps"
 					:nodes="nodes"
-					:task-workflow-run="taskWorkflowRun"
+					:workflow-run="workflowRun"
 					@remove="onConnectionRemove"
 				/>
 			</template>
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import BionicManRunningLottie from "@/assets/dotlottie/BionicManRunningLottie";
+import { BionicManRunningLottie } from "@/assets/dotlottie";
 import { handleExternalDrop, onDragOver } from "@/components/Modules/WorkflowCanvas/dragNDrop";
 import {
 	connectWorkflowNodes,
@@ -64,7 +64,7 @@ import {
 } from "@/components/Modules/WorkflowCanvas/helpers";
 import WorkflowCanvasConnectionLine from "@/components/Modules/WorkflowCanvas/WorkflowCanvasConnectionLine";
 import WorkflowCanvasEdge from "@/components/Modules/WorkflowCanvas/WorkflowCanvasEdge";
-import { TaskWorkflow, TaskWorkflowConnection, TaskWorkflowNode, TaskWorkflowRun } from "@/types/task-workflows";
+import { WorkflowConnection, WorkflowDefinition, WorkflowNode, WorkflowRun } from "@/types";
 import { Background } from "@vue-flow/background";
 import { Connection, ConnectionMode, Edge, EdgeProps, Node, Panel, VueFlow } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
@@ -73,42 +73,42 @@ import { computed, onMounted, ref, watch } from "vue";
 import WorkflowCanvasNode from "./WorkflowCanvasNode.vue";
 
 const emit = defineEmits<{
-	(e: "node-click", node: TaskWorkflowNode): void;
-	(e: "node-position", node: TaskWorkflowNode, position: { x: number, y: number }): void;
-	(e: "node-copy", node: TaskWorkflowNode): void;
-	(e: "node-edit", node: TaskWorkflowNode): void;
-	(e: "node-remove", node: TaskWorkflowNode): void;
-	(e: "connection-add", connection: TaskWorkflowConnection): void;
-	(e: "connection-remove", connection: TaskWorkflowConnection): void;
+	(e: "node-click", node: WorkflowNode): void;
+	(e: "node-position", node: WorkflowNode, position: { x: number, y: number }): void;
+	(e: "node-copy", node: WorkflowNode): void;
+	(e: "node-edit", node: WorkflowNode): void;
+	(e: "node-remove", node: WorkflowNode): void;
+	(e: "connection-add", connection: WorkflowConnection): void;
+	(e: "connection-remove", connection: WorkflowConnection): void;
 }>();
 
 const props = defineProps<{
-	taskWorkflowRun?: TaskWorkflowRun;
+	workflowRun?: WorkflowRun;
 	loading?: boolean;
 }>();
 
-const taskWorkflow = defineModel<TaskWorkflow>();
+const workflowDefinition = defineModel<WorkflowDefinition>();
 
-const isRunning = computed(() => props.taskWorkflowRun?.status === "Running");
+const isRunning = computed(() => props.workflowRun?.status === "Running");
 
 // Reference to internal Vue Flow nodes
 const nodes = ref<Node[]>([]);
 const edges = ref<Edge[]>([]);
 
 function convertToVueFlow() {
-	if (taskWorkflow.value?.nodes) {
-		nodes.value = convertNodesToVueFlow(taskWorkflow.value.nodes);
-		edges.value = convertConnectionsToVueFlow(taskWorkflow.value.connections || []);
+	if (workflowDefinition.value?.nodes) {
+		nodes.value = convertNodesToVueFlow(workflowDefinition.value.nodes);
+		edges.value = convertConnectionsToVueFlow(workflowDefinition.value.connections || []);
 	}
 }
 
 // Watch for changes in the prop model and update the flow
-watch(() => taskWorkflow.value, convertToVueFlow, { deep: true });
+watch(() => workflowDefinition.value, convertToVueFlow, { deep: true });
 onMounted(convertToVueFlow);
 
 /*********** Node Related Methods *********/
 function resolveWorkflowNode(node: Node) {
-	const workflowNode = taskWorkflow.value.nodes.find(n => n.id == +node.id);
+	const workflowNode = workflowDefinition.value.nodes.find(n => n.id == +node.id);
 
 	if (!workflowNode) {
 		throw new Error("Workflow node not found: " + node.id);
@@ -123,7 +123,7 @@ function onNodeDragStop({ node }) {
 
 /*********** Connection Related Methods *********/
 function resolveWorkflowConnection(edge: EdgeProps) {
-	const workflowNode = taskWorkflow.value.connections.find(c => c.id == +edge.id);
+	const workflowNode = workflowDefinition.value.connections.find(c => c.id == +edge.id);
 
 	if (!workflowNode) {
 		throw new Error("Workflow node not found: " + edge.id);
@@ -133,7 +133,7 @@ function resolveWorkflowConnection(edge: EdgeProps) {
 }
 
 function onConnectionAdd(connection: Connection) {
-	const connections = connectWorkflowNodes(taskWorkflow.value.connections, connection);
+	const connections = connectWorkflowNodes(workflowDefinition.value.connections, connection);
 	if (connections) {
 		emit("connection-add", connections.pop());
 	}

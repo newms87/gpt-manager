@@ -71,8 +71,8 @@
 
 <script setup lang="ts">
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
-import { activeTaskWorkflowRun, refreshActiveTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/store";
 import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
+import { activeWorkflowRun, refreshActiveWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
 import { TaskRun } from "@/types";
 import { ActionButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
@@ -89,10 +89,10 @@ const props = defineProps<{
 	loading?: boolean;
 }>();
 
-const isWorkflowRunning = computed(() => ["Running"].includes(activeTaskWorkflowRun.value?.status));
+const isWorkflowRunning = computed(() => ["Running"].includes(activeWorkflowRun.value?.status));
 
-const restartAction = dxTaskRun.getAction("restart", { onFinish: refreshActiveTaskWorkflowRun });
-const resumeAction = dxTaskRun.getAction("resume", { onFinish: refreshActiveTaskWorkflowRun });
+const restartAction = dxTaskRun.getAction("restart", { onFinish: refreshActiveWorkflowRun });
+const resumeAction = dxTaskRun.getAction("resume", { onFinish: refreshActiveWorkflowRun });
 const stopAction = dxTaskRun.getAction("stop");
 const isStopped = computed(() => ["Stopped"].includes(props.taskRun?.status));
 const canBeRestarted = computed(() => ["Pending", "Stopped", "Failed", "Completed"].includes(props.taskRun?.status));

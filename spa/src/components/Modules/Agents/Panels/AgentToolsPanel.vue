@@ -26,7 +26,7 @@
 </template>
 <script setup lang="ts">
 import { dxAgent } from "@/components/Modules/Agents";
-import { Agent } from "@/types/agents";
+import { Agent } from "@/types";
 import { ActionForm } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 

@@ -11,7 +11,7 @@ import {
 	PageNotFoundView,
 	SchemaDefinitionsView,
 	TaskDefinitionsView,
-	TaskWorkflowView,
+	WorkflowDefinitionsView,
 	WorkflowInputsView
 } from "@/views";
 import { FlashMessages } from "quasar-ui-danx";
@@ -46,10 +46,10 @@ const router = createRouter({
 					meta: { title: "Workflow Inputs", type: "WorkflowInputResource" }
 				},
 				{
-					path: "/task-workflows/:id?/:panel?",
-					name: "task-workflows",
-					component: TaskWorkflowView,
-					meta: { title: "Task Workflows", type: "TaskWorkflowResource" }
+					path: "/workflow-definitions/:id?/:panel?",
+					name: "workflow-definitions",
+					component: WorkflowDefinitionsView,
+					meta: { title: "Workflow Definitions", type: "WorkflowDefinitionResource" }
 				},
 				{
 					path: "/task-definitions/:id?/:panel?",

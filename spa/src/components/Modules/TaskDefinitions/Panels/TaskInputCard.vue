@@ -19,8 +19,8 @@
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import TaskInputTaskRunsList from "@/components/Modules/TaskDefinitions/Panels/TaskInputTaskRunsList";
-import WorkflowInputCard from "@/components/Modules/TaskWorkflows/WorkflowInputs/WorkflowInputCard";
-import { TaskDefinition, TaskInput } from "@/types/task-definitions";
+import WorkflowInputCard from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/WorkflowInputCard";
+import { TaskDefinition, TaskInput } from "@/types";
 import { FaSolidPersonRunning as RunIcon } from "danx-icon";
 import { ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";

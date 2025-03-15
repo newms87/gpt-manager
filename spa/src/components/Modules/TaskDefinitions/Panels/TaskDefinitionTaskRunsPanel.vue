@@ -31,8 +31,9 @@
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import TaskInputCard from "@/components/Modules/TaskDefinitions/Panels/TaskInputCard";
-import SelectWorkflowInputDialog from "@/components/Modules/TaskWorkflows/WorkflowInputs/SelectWorkflowInputDialog";
-import { TaskDefinition } from "@/types/task-definitions";
+import SelectWorkflowInputDialog
+	from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/SelectWorkflowInputDialog";
+import { TaskDefinition } from "@/types";
 import { FaSolidPlus as AddIcon } from "danx-icon";
 import { ListTransition } from "quasar-ui-danx";
 import { ref } from "vue";

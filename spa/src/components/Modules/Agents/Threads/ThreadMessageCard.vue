@@ -107,7 +107,7 @@
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { dxThreadMessage } from "@/components/Modules/Agents/Threads/ThreadMessage/config";
-import { AgentThread, AgentThreadMessage } from "@/types/agents";
+import { AgentThread, AgentThreadMessage } from "@/types";
 import {
 	FaRegularImage as HideImageIcon,
 	FaRegularUser as UserIcon,

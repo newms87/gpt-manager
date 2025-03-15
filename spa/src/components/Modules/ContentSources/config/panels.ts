@@ -1,5 +1,5 @@
 import { ContentSourceApiConfigPanel, ContentSourceInfoPanel } from "@/components/Modules/ContentSources/Panels";
-import { ContentSource } from "@/types/content-sources";
+import { ContentSource } from "@/types";
 import { h } from "vue";
 
 export const panels = [

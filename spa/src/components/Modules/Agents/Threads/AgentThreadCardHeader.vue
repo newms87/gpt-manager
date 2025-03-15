@@ -53,7 +53,7 @@
 <script setup lang="ts">
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { AiTokenUsageButton } from "@/components/Shared";
-import { AgentThread } from "@/types/agents";
+import { AgentThread } from "@/types";
 import { FaSolidFileCircleCheck as ShowLogsIcon, FaSolidFileCircleXmark as HideLogsIcon } from "danx-icon";
 import { ActionButton, ActionMenu, EditOnClickTextField, fDateTime, ShowHideButton } from "quasar-ui-danx";
 

@@ -1,5 +1,5 @@
 import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
-import { AgentPromptDirective, SchemaDefinition, SchemaFragment } from "@/types/prompts";
+import { AgentPromptDirective, SchemaDefinition, SchemaFragment } from "@/types";
 import { ActionTargetItem, AnyObject, UploadedFile } from "quasar-ui-danx";
 
 export interface Agent extends ActionTargetItem {

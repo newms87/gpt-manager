@@ -20,6 +20,7 @@ applyCssVars(colors, "tw-");
 
 const baseUrl = import.meta.env.VITE_API_URL;
 configure({
+	// @ts-expect-error this is fine
 	router,
 	request: {
 		baseUrl: baseUrl,

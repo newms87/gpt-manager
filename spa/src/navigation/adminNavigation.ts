@@ -4,9 +4,8 @@ import {
 	FaSolidDatabase as SchemaDefinitionsIcon,
 	FaSolidDownload as WorkflowInputsIcon,
 	FaSolidGear as TaskDefinitionsIcon,
-	FaSolidPallet as TaskWorkflowsIcon,
+	FaSolidPallet as WorkflowDefinitionsIcon,
 	FaSolidRobot as AgentsIcon,
-	FaSolidTableCells as ContentSourcesIcon,
 	FaSolidToiletPaperSlash as AuditsIcon
 } from "danx-icon";
 
@@ -17,19 +16,14 @@ export default [
 		route: { name: "home" }
 	},
 	{
-		label: "Content Sources",
-		icon: ContentSourcesIcon,
-		route: { name: "content-sources" }
-	},
-	{
 		label: "Workflow Inputs",
 		icon: WorkflowInputsIcon,
 		route: { name: "workflow-inputs" }
 	},
 	{
-		label: "Task Workflows",
-		icon: TaskWorkflowsIcon,
-		route: { name: "task-workflows" }
+		label: "Workflow Definitions",
+		icon: WorkflowDefinitionsIcon,
+		route: { name: "workflow-definitions" }
 	},
 	{
 		label: "Task Definitions",

@@ -15,7 +15,7 @@
 				@copy="$emit('copy', node)"
 				@edit="$emit('edit', node)"
 				@remove="$emit('remove', node)"
-				@restart="refreshActiveTaskWorkflowRun"
+				@restart="refreshActiveWorkflowRun"
 			/>
 
 			<div class="flex justify-center items-center h-full">
@@ -57,13 +57,13 @@
 
 <script setup lang="ts">
 import LoadingSandLottie from "@/assets/dotlottie/LoadingSandLottie";
-import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
-import { refreshActiveTaskWorkflowRun } from "@/components/Modules/TaskWorkflows/store";
 import { edges } from "@/components/Modules/WorkflowCanvas/helpers";
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
 import NodePortsWidget from "@/components/Modules/WorkflowCanvas/NodePortsWidget";
 import { TaskRunners } from "@/components/Modules/WorkflowCanvas/TaskRunners";
-import { TaskRun, TaskWorkflow, TaskWorkflowRun } from "@/types";
+import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
+import { refreshActiveWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
+import { TaskRun, WorkflowDefinition, WorkflowRun } from "@/types";
 import { Edge, Node } from "@vue-flow/core";
 import { computed } from "vue";
 
@@ -75,20 +75,20 @@ defineEmits<{
 
 const props = defineProps<{
 	node: Node;
-	taskWorkflow: TaskWorkflow;
-	taskWorkflowRun?: TaskWorkflowRun;
+	workflowDefinition: WorkflowDefinition;
+	workflowRun?: WorkflowRun;
 	loading?: boolean;
 }>();
 
 // Is this node a temporary placeholder waiting for the backend to respond with the real node ID
 const isTemporary = computed(() => !!props.node.id.match(/^td-/));
 
-const taskWorkflowNode = computed(() => props.taskWorkflow?.nodes.find((taskWorkflowNode) => taskWorkflowNode.id == +props.node.id));
-const taskDefinition = computed(() => taskWorkflowNode.value?.taskDefinition);
+const workflowNode = computed(() => props.workflowDefinition?.nodes.find((wn) => wn.id == +props.node.id));
+const taskDefinition = computed(() => workflowNode.value?.taskDefinition);
 const taskRunnerComponent = computed(() => TaskRunners[taskDefinition.value?.task_runner_class] || TaskRunners.Base);
 const sourceEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.source === props.node.id.toString()));
 const targetEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.target === props.node.id.toString()));
-const taskRun = computed<TaskRun>(() => props.taskWorkflowRun?.taskRuns?.find((taskRun) => taskRun.task_workflow_node_id == +props.node.id));
+const taskRun = computed<TaskRun>(() => props.workflowRun?.taskRuns?.find((tr) => tr.workflow_node_id == +props.node.id));
 const isTaskRunning = computed(() => taskRun.value?.status === "Running");
 const isTaskFailed = computed(() => taskRun.value?.status === "Failed");
 const isTaskCompleted = computed(() => taskRun.value?.status === "Completed");

@@ -113,10 +113,10 @@ import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessage
 import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import JobDispatchList from "@/components/Modules/Audits/JobDispatches/JobDispatchList";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
-import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
-import { WORKFLOW_STATUS } from "@/components/Modules/TaskWorkflows/workflows";
+import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
+import { WORKFLOW_STATUS } from "@/components/Modules/WorkflowDefinitions/workflows";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
-import { TaskProcess } from "@/types/task-definitions";
+import { TaskProcess } from "@/types";
 import {
 	FaSolidArrowsRotate as ResumeProcessIcon,
 	FaSolidMessage as AgentThreadIcon,

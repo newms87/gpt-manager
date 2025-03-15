@@ -8,7 +8,7 @@
 				mode="out-in"
 				:duration="300"
 			>
-				<main :key="$route.name.split('.')[0]" class="flex-grow overflow-hidden">
+				<main :key="$route.name?.split('.')[0]" class="flex-grow overflow-hidden">
 					<slot>
 						<RouterView />
 					</slot>

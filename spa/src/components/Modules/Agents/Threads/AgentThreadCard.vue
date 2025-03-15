@@ -34,7 +34,7 @@ import AgentThreadCardHeader from "@/components/Modules/Agents/Threads/AgentThre
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import JobDispatchCard from "@/components/Modules/Audits/JobDispatches/JobDispatchCard";
-import { AgentThread } from "@/types/agents";
+import { AgentThread } from "@/types";
 import { FaRegularMessage as CreateIcon } from "danx-icon";
 import { ActionButton } from "quasar-ui-danx";
 import { ref } from "vue";

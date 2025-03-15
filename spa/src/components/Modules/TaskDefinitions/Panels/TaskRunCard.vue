@@ -65,8 +65,8 @@
 <script setup lang="ts">
 import TaskProcessCard from "@/components/Modules/TaskDefinitions/Panels/TaskProcessCard";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
-import { WorkflowStatusTimerPill } from "@/components/Modules/TaskWorkflows/Shared";
-import { WORKFLOW_STATUS } from "@/components/Modules/TaskWorkflows/workflows";
+import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
+import { WORKFLOW_STATUS } from "@/components/Modules/WorkflowDefinitions/workflows";
 import { AiTokenUsageButton } from "@/components/Shared";
 import { TaskRun } from "@/types";
 import {

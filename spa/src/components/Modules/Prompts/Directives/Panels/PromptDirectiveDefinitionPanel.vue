@@ -10,7 +10,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxPromptDirective } from "@/components/Modules/Prompts/Directives";
-import { PromptDirective } from "@/types/prompts";
+import { PromptDirective } from "@/types";
 import { ActionForm, Form, TextField } from "quasar-ui-danx";
 import { h } from "vue";
 

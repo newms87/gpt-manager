@@ -63,18 +63,17 @@
 
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
-import { addWorkflowNode } from "@/components/Modules/TaskWorkflows/store";
 import { onDragStart } from "@/components/Modules/WorkflowCanvas/dragNDrop";
 import { loadTaskDefinitions, taskDefinitions } from "@/components/Modules/WorkflowCanvas/helpers";
-import { TaskDefinition } from "@/types";
-import { TaskWorkflow } from "@/types/task-workflows";
+import { addWorkflowNode } from "@/components/Modules/WorkflowDefinitions/store";
+import { TaskDefinition, WorkflowDefinition } from "@/types";
 import { FaSolidSquareShareNodes as NodeTaskIcon } from "danx-icon";
 import { ActionButton, CollapsableSidebar, LabelPillWidget } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
 
 const emit = defineEmits(["refresh"]);
 defineProps<{
-	taskWorkflow: TaskWorkflow;
+	workflowDefinition: WorkflowDefinition;
 }>();
 
 const isCollapsed = ref(false);
