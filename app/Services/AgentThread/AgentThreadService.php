@@ -5,7 +5,6 @@ namespace App\Services\AgentThread;
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use App\Api\OpenAi\Classes\OpenAiToolCaller;
 use App\Jobs\ExecuteThreadRunJob;
-use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
 use App\Models\Agent\AgentThreadRun;
@@ -168,13 +167,13 @@ class AgentThreadService
             $options = [
                 'temperature'     => $threadRun->temperature,
                 'response_format' => [
-                    'type' => $threadRun->response_format ?: Agent::RESPONSE_FORMAT_TEXT,
+                    'type' => $threadRun->response_format ?: AgentThreadRun::RESPONSE_FORMAT_TEXT,
                 ],
                 'seed'            => (int)$threadRun->seed,
             ];
 
-            if ($threadRun->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA) {
-                $options['response_format'][Agent::RESPONSE_FORMAT_JSON_SCHEMA] = $this->resolveResponseSchema($threadRun);
+            if ($threadRun->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA) {
+                $options['response_format'][AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA] = $this->resolveResponseSchema($threadRun);
             }
 
             $tools = $agent->formatTools();
@@ -265,7 +264,7 @@ class AgentThreadService
                 $corePrompt .= "\nResponse Fragment Name: {$agentThreadRun->responseFragment->name}";
             }
         }
-        
+
         $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $corePrompt);
 
         // Top Directives go before thread messages
@@ -311,7 +310,7 @@ class AgentThreadService
     {
         $responseMessage = '';
 
-        if ($agentThreadRun->response_format === Agent::RESPONSE_FORMAT_JSON_SCHEMA && $this->getJsonSchemaService()->isUsingDbFields()) {
+        if ($agentThreadRun->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA && $this->getJsonSchemaService()->isUsingDbFields()) {
             $responseMessage .= <<<STR
 Your response will be saved to the DB. In order to save correctly, the `name` attribute must be set as the unique identifier for the object type.
 

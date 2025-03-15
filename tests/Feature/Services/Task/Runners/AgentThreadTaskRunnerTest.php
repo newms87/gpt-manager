@@ -3,7 +3,7 @@
 namespace Feature\Services\Task\Runners;
 
 use App\Models\Agent\Agent;
-use App\Models\Schema\SchemaDefinition;
+use App\Models\Agent\AgentThreadRun;
 use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Task\TaskProcess;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
@@ -81,16 +81,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
     public function test_setupAgentThread_withDefinitionAgentOutputFragment_completeApiCallHasFilteredStructuredOutput(): void
     {
         // Given
-        $inputSchema            = SchemaDefinition::factory()->create([
-            'schema' => [
-                'type'       => 'object',
-                'properties' => [
-                    'phone' => ['type' => 'string'],
-                    'email' => ['type' => 'string'],
-                ],
-            ],
-        ]);
-        $agent                  = Agent::factory()->withJsonSchemaResponse($inputSchema)->create();
+        $agent                  = Agent::factory()->create();
         $outputSchema           = [
             'type'       => 'object',
             'properties' => [
@@ -112,7 +103,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         // Then
         $this->partialMock(TestAiApi::class)
             ->shouldReceive('complete')->withArgs(function ($model, $messages, $options) {
-                $this->assertEquals(Agent::RESPONSE_FORMAT_JSON_SCHEMA, $options['response_format']['type'] ?? null);
+                $this->assertEquals(AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA, $options['response_format']['type'] ?? null);
                 $this->assertNull($options['response_format']['json_schema']['schema']['properties']['phone'] ?? null, 'Phone should NOT be in the response schema');
                 $this->assertNotNull($options['response_format']['json_schema']['schema']['properties']['email'] ?? null, 'Email should be in the response schema');
                 $this->assertNotNull($options['response_format']['json_schema']['schema']['properties']['dob'] ?? null, 'DOB should be in the response schema');

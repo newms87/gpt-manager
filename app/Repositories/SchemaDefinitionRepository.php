@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaDefinition;
 use App\Resources\Schema\SchemaDefinitionResource;
 use App\Services\AgentThread\AgentThreadService;
@@ -86,10 +85,9 @@ class SchemaDefinitionRepository extends ActionRepository
         $agent = team()->agents()->firstOrCreate([
             'name' => 'Schema Response Example Generator [GENERATED]',
         ], [
-            'api'             => config('ai.default_api'),
-            'model'           => config('ai.default_model'),
-            'temperature'     => 0,
-            'response_format' => Agent::RESPONSE_FORMAT_JSON_OBJECT,
+            'api'         => config('ai.default_api'),
+            'model'       => config('ai.default_model'),
+            'temperature' => 0,
         ]);
 
         $threadRepo = app(ThreadRepository::class);

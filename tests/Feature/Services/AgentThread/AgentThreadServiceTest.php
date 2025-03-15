@@ -7,6 +7,7 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
 use App\Models\Agent\AgentThreadRun;
+use App\Models\Schema\SchemaAssociation;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\JsonSchema\JsonSchemaService;
 use Illuminate\Support\Facades\Queue;
@@ -20,10 +21,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         // Given
         $temperature = .7;
-        $agent       = Agent::factory()->create([
-            'temperature'     => $temperature,
-            'response_format' => Agent::RESPONSE_FORMAT_JSON_OBJECT,
-        ]);
+        $agent       = Agent::factory()->create(['temperature' => $temperature]);
         $thread      = AgentThread::factory()->create(['agent_id' => $agent->id]);
         $thread->messages()->create(['role' => AgentThreadMessage::ROLE_USER, 'content' => 'Test message']);
 
@@ -36,7 +34,29 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
         $this->assertEquals($temperature, $threadRun->temperature);
         $this->assertEquals($agent->tools, $threadRun->tools);
-        $this->assertEquals(Agent::RESPONSE_FORMAT_JSON_OBJECT, $threadRun->response_format);
+        $this->assertEquals(AgentThreadRun::RESPONSE_FORMAT_TEXT, $threadRun->response_format);
+    }
+
+    public function test_run_setsResponseFormatToJsonSchemaWithCorrectSchemaAndFragment()
+    {
+        // Given
+        $agent             = Agent::factory()->create();
+        $thread            = AgentThread::factory()->withMessages(1)->create(['agent_id' => $agent->id]);
+        $schemaAssociation = SchemaAssociation::factory()->withSchema(['type' => 'object', 'properties' => []])->create();
+        $service           = new AgentThreadService();
+        $params            = [
+            'response_format'      => AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA,
+            'response_schema_id'   => $schemaAssociation->schema_definition_id,
+            'response_fragment_id' => $schemaAssociation->schema_fragment_id,
+        ];
+
+        // When
+        $threadRun = $service->run($thread, true, $params);
+
+        // Then
+        $this->assertEquals(AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA, $threadRun->response_format);
+        $this->assertEquals($params['response_schema_id'], $threadRun->response_schema_id);
+        $this->assertEquals($params['response_fragment_id'], $threadRun->response_fragment_id);
     }
 
     public function test_run_throwsExceptionWhenThreadIsAlreadyRunning()
@@ -82,20 +102,6 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
-    }
-
-    public function test_run_setsResponseFormatToTextWhenAgentResponseFormatIsText()
-    {
-        // Given
-        $agent   = Agent::factory()->create(['response_format' => Agent::RESPONSE_FORMAT_TEXT]);
-        $thread  = AgentThread::factory()->withMessages(1)->create(['agent_id' => $agent->id]);
-        $service = new AgentThreadService();
-
-        // When
-        $threadRun = $service->run($thread);
-
-        // Then
-        $this->assertEquals(Agent::RESPONSE_FORMAT_TEXT, $threadRun->response_format);
     }
 
     public function test_run_setsJobDispatchIdWhenDispatchIsTrue()

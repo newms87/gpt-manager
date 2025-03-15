@@ -16,6 +16,11 @@ use Newms87\Danx\Traits\AuditableTrait;
 class AgentThreadRun extends Model implements AuditableContract
 {
     use HasFactory, AuditableTrait, SoftDeletes, ActionModelTrait;
+    
+    const string
+        RESPONSE_FORMAT_TEXT = 'text',
+        RESPONSE_FORMAT_JSON_SCHEMA = 'json_schema',
+        RESPONSE_FORMAT_JSON_OBJECT = 'json_object';
 
     const string
         STATUS_RUNNING = 'Running',

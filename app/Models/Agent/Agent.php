@@ -21,6 +21,7 @@ use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
+use Tests\Feature\Api\TestAi\TestAiApi;
 
 class Agent extends Model implements AuditableContract
 {
@@ -173,7 +174,7 @@ class Agent extends Model implements AuditableContract
 
         static::saving(function (Agent $agent) {
             if (!$agent->api || $agent->isDirty('model')) {
-                $agent->api = AgentRepository::getApiForModel($agent->model);
+                $agent->api = AgentRepository::getApiForModel($agent->model) ?: TestAiApi::$serviceName;
             }
         });
     }
