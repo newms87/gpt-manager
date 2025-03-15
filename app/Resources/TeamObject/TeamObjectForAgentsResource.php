@@ -32,18 +32,7 @@ class TeamObjectForAgentsResource
         $loadedAttributes = [];
 
         foreach($attributes as $attribute) {
-            $currentValue = $loadedAttributes[$attribute->name] ?? null;
-
-            // If this is not a time-series, just set the value directly
-            if (is_array($currentValue)) {
-                // This means their are other values in a time-series, but this value is the default value for the attribute
-                $currentValue['value'] = $attribute->getValue();
-            } else {
-                // Set the value directly if not in a time-series
-                $currentValue = $attribute->getValue();
-            }
-
-            $loadedAttributes[$attribute->name] = $currentValue;
+            $loadedAttributes[$attribute->name] = $attribute->getValue();
         }
 
         return $loadedAttributes;

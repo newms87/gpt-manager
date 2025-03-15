@@ -19,7 +19,6 @@ abstract class TeamObjectAttributeResource extends ActionResource
         return [
             'id'         => $teamObjectAttribute->id,
             'name'       => $teamObjectAttribute->name,
-            'date'       => $teamObjectAttribute->date,
             'value'      => $teamObjectAttribute->json_value ?? $teamObjectAttribute->text_value,
             'confidence' => $teamObjectAttribute->confidence,
             'reason'     => $teamObjectAttribute->reason,

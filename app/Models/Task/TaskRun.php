@@ -98,7 +98,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
      * Whenever a process state has changed, call this method to check if the task run has completed or has changed
      * state as well
      */
-    public function checkProcesses(): void
+    public function checkProcesses(): static
     {
         $hasRunningProcesses = false;
         $hasStoppedProcesses = false;
@@ -138,8 +138,8 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 $this->completed_at = now();
             }
         }
-
-        $this->save();
+        
+        return $this;
     }
 
     /**
@@ -161,7 +161,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 
         static::saved(function (TaskRun $taskRun) {
             if ($taskRun->wasChanged('status')) {
-                $taskRun->taskWorkflowRun?->checkTaskRuns();
+                $taskRun->taskWorkflowRun?->checkTaskRuns()->save();
             }
         });
     }

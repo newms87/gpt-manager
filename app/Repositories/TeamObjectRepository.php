@@ -139,7 +139,7 @@ class TeamObjectRepository extends ActionRepository
     }
 
     /**
-     * Create or Update the value, date, confidence and sources for a Team Object Attribute record based on team object
+     * Create or Update the value, confidence and sources for a Team Object Attribute record based on team object
      * and property name
      */
     public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $attribute, ?array $meta = []): ?TeamObjectAttribute

@@ -12,7 +12,6 @@ class TeamObjectAttributeFactory extends Factory
         return [
             'team_object_id'      => TeamObject::factory(),
             'name'                => fake()->unique()->name,
-            'date'                => null,
             'text_value'          => fake()->sentence,
             'json_value'          => null,
             'reason'              => fake()->sentence,

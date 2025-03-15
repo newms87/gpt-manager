@@ -105,7 +105,7 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
      * Whenever a task run state has changed, call this method to check if the workflow run has completed or has changed
      * state as well
      */
-    public function checkTaskRuns(): void
+    public function checkTaskRuns(): static
     {
         $hasRunningTasks = false;
         $hasStoppedTasks = false;
@@ -146,16 +146,13 @@ class TaskWorkflowRun extends Model implements WorkflowStatesContract
             }
         }
 
-        $this->save();
+        return $this;
     }
 
     public static function booted(): void
     {
         static::saving(function (TaskWorkflowRun $taskWorkflowRun) {
             $taskWorkflowRun->computeStatus();
-        });
-
-        static::saved(function (TaskWorkflowRun $taskWorkflowRun) {
             if ($taskWorkflowRun->isDirty('has_run_all_tasks')) {
                 $taskWorkflowRun->checkTaskRuns();
             }

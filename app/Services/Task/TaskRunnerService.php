@@ -319,7 +319,9 @@ class TaskRunnerService
         // Run the task process
         try {
             $taskProcess->getRunner()->run();
+            static::log("TaskProcess finished running: $taskProcess");
         } catch(Throwable $throwable) {
+            static::log("TaskProcess failed: $taskProcess");
             $taskProcess->failed_at = now();
             $taskProcess->save();
             throw $throwable;

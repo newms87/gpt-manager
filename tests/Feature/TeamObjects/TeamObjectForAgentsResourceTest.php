@@ -64,11 +64,11 @@ class TeamObjectForAgentsResourceTest extends AuthenticatedTestCase
     {
         // Given
         $repo   = app(TeamObjectRepository::class);
-        $parent = TeamObject::create([
+        $parent = TeamObject::factory()->create([
             'type' => 'ParentType',
             'name' => 'ParentName',
         ]);
-        $child  = TeamObject::create([
+        $child  = TeamObject::factory()->create([
             'type' => 'ChildType',
             'name' => 'ChildName',
         ]);
@@ -96,7 +96,7 @@ class TeamObjectForAgentsResourceTest extends AuthenticatedTestCase
     public function test_loadTeamObjectAttributes_loadsAttributesAndSources(): void
     {
         // Given
-        $teamObject = TeamObject::create([
+        $teamObject = TeamObject::factory()->create([
             'type' => 'TestType',
             'name' => 'TestName',
         ]);

@@ -446,7 +446,6 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $expectedPropertyMeta = $response['property_meta'][0];
         $this->assertNotNull($dobAttribute, "The 'dob' attribute should have been created");
         $this->assertEquals($response['dob']['value'], $dobAttribute->getValue(), "The 'dob' attribute should have the correct value");
-        $this->assertEquals($expectedPropertyMeta['citation']['date'], $dobAttribute->date?->toDateString(), "The 'dob' attribute should have the correct date");
         $this->assertEquals($expectedPropertyMeta['citation']['reason'], $dobAttribute->reason, "The 'dob' attribute should have the correct reason");
         $this->assertEquals($expectedPropertyMeta['citation']['confidence'], $dobAttribute->confidence, "The 'dob' attribute should have the correct confidence");
 
@@ -466,7 +465,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     public function test_saveTeamObjectAttribute_savesAttributeAndSources(): void
     {
         // Given
-        $teamObject   = TeamObject::create([
+        $teamObject   = TeamObject::factory()->create([
             'type' => 'TestType',
             'name' => 'TestName',
         ]);
@@ -496,7 +495,6 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $this->assertInstanceOf(TeamObjectAttribute::class, $attribute);
         $this->assertEquals($data['name'], $attribute->name);
         $this->assertEquals($data['value'], $attribute->getValue());
-        $this->assertEquals($citation['date'], $attribute->date?->toDateString());
         $this->assertEquals($citation['reason'], $attribute->reason);
         $this->assertEquals($citation['confidence'], $attribute->confidence);
 
@@ -580,7 +578,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     public function test_loadTeamObject_returnsTeamObjectIfFound(): void
     {
         // Given
-        $teamObject = TeamObject::create([
+        $teamObject = TeamObject::factory()->create([
             'type' => 'TestType',
             'name' => 'TestName',
         ]);
@@ -596,7 +594,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     public function test_createRelation_throwsValidationErrorIfNoRelationshipName(): void
     {
         // Given
-        $parent = TeamObject::create([
+        $parent = TeamObject::factory()->create([
             'type' => 'ParentType',
             'name' => 'ParentName',
         ]);

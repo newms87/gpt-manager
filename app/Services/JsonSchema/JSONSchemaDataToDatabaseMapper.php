@@ -90,6 +90,7 @@ class JSONSchemaDataToDatabaseMapper
                 }
             } else {
                 $teamObject = TeamObject::make([
+                    'team_id'              => team()->id,
                     'type'                 => $type,
                     'name'                 => $name,
                     'root_object_id'       => $this->rootObject?->id,
@@ -133,7 +134,7 @@ class JSONSchemaDataToDatabaseMapper
     }
 
     /**
-     * Create or Update the value, date, confidence and sources for a Team Object Attribute record based on team object
+     * Create or Update the value, confidence and sources for a Team Object Attribute record based on team object
      * and property name
      */
     public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $attribute, ?array $meta = []): ?TeamObjectAttribute
@@ -147,7 +148,6 @@ class JSONSchemaDataToDatabaseMapper
         $propertyMeta = collect($meta)->firstWhere('property_name', $name);
 
         $citation   = $propertyMeta['citation'] ?? null;
-        $date       = $citation['date'] ?? null;
         $reason     = $citation['reason'] ?? null;
         $confidence = $citation['confidence'] ?? null;
         $sources    = $citation['sources'] ?? [];
@@ -157,7 +157,6 @@ class JSONSchemaDataToDatabaseMapper
         $teamObjectAttribute = TeamObjectAttribute::updateOrCreate([
             'team_object_id' => $teamObject->id,
             'name'           => $name,
-            'date'           => $date,
         ], [
             'text_value' => $jsonValue ? null : $value,
             'json_value' => $jsonValue ?: null,

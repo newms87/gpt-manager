@@ -162,7 +162,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
         static::saved(function (TaskProcess $taskProcess) {
             if ($taskProcess->wasChanged('status')) {
-                $taskProcess->taskRun->checkProcesses();
+                $taskProcess->taskRun->checkProcesses()->save();
             }
         });
     }

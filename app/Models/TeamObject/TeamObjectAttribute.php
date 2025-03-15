@@ -27,7 +27,6 @@ class TeamObjectAttribute extends Model implements AuditableContract
     public function casts(): array
     {
         return [
-            'date'       => 'datetime',
             'json_value' => 'json',
         ];
     }
