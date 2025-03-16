@@ -6,8 +6,10 @@ use App\Models\Workflow\WorkflowDefinition;
 use App\Repositories\WorkflowDefinitionRepository;
 use App\Resources\Workflow\WorkflowDefinitionResource;
 use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowImportService;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Http\Controllers\ActionController;
+use Newms87\Danx\Requests\PagerRequest;
 
 class WorkflowDefinitionsController extends ActionController
 {
@@ -21,5 +23,12 @@ class WorkflowDefinitionsController extends ActionController
         }
 
         return app(WorkflowExportService::class)->exportToJson($workflowDefinition);
+    }
+
+    public function importFromJson(PagerRequest $pagerRequest)
+    {
+        $json = $pagerRequest->getJson('workflowDefinitionJson');
+
+        return app(WorkflowImportService::class)->importFromJson($json);
     }
 }
