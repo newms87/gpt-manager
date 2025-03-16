@@ -41,6 +41,10 @@ export interface WorkflowRun extends TaskRunner {
 	taskRuns?: TaskRun[];
 }
 
+export interface WorkflowDefinitionRoutes extends ListControlsRoutes<WorkflowDefinition> {
+	exportToJson(workflowDefinition: WorkflowDefinition): Promise<AnyObject>;
+}
+
 export interface WorkflowRunRoutes extends ListControlsRoutes<WorkflowRun> {
 	runStatuses(filter: AnyObject): Promise<WorkflowRunStatuses>;
 }

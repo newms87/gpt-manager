@@ -16,7 +16,13 @@
 				@update="input => updateAction.trigger(activeWorkflowDefinition, input)"
 				@delete="workflowDefinition => deleteAction.trigger(workflowDefinition)"
 			/>
-			<div class="flex-grow" />
+			<div class="flex-grow">
+				<ActionButton
+					type="export"
+					color="sky-invert"
+					@click="onExportToJson"
+				/>
+			</div>
 			<WorkflowDefinitionHeaderBar v-if="activeWorkflowDefinition" />
 		</div>
 		<div class="flex flex-grow items-center justify-center overflow-hidden">
@@ -40,12 +46,26 @@ import {
 } from "@/components/Modules/WorkflowDefinitions/store";
 import { WorkflowDefinition } from "@/types";
 import { FaSolidAnkh as WorkflowIcon } from "danx-icon";
-import { SelectionMenuField } from "quasar-ui-danx";
-import { onMounted } from "vue";
+import { ActionButton, download, FlashMessages, SelectionMenuField } from "quasar-ui-danx";
+import { onMounted, ref } from "vue";
 
 onMounted(initWorkflowState);
 
 const createAction = dxWorkflowDefinition.getAction("quick-create", { onFinish: loadWorkflowDefinitions });
 const updateAction = dxWorkflowDefinition.getAction("update");
 const deleteAction = dxWorkflowDefinition.getAction("delete", { onFinish: loadWorkflowDefinitions });
+
+const isExporting = ref(false);
+async function onExportToJson() {
+	isExporting.value = true;
+	const json = await dxWorkflowDefinition.routes.exportToJson(activeWorkflowDefinition.value);
+	isExporting.value = false;
+	if (json.error) {
+		FlashMessages.error(json.message);
+	} else if (!json.definition) {
+		FlashMessages.error("The export failed for an unknown reason. The data was empty.");
+	} else {
+		download(JSON.stringify(json), `${activeWorkflowDefinition.value.name}.json`);
+	}
+}
 </script>

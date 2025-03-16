@@ -59,7 +59,9 @@ ActionRoute::routes('task-runs', new TaskRunsController);
 ActionRoute::routes('task-processes', new TaskProcessesController);
 
 // Workflows
-ActionRoute::routes('workflow-definitions', new WorkflowDefinitionsController);
+ActionRoute::routes('workflow-definitions', new WorkflowDefinitionsController, function () {
+    Route::get('{workflowDefinition}/export-to-json', [WorkflowDefinitionsController::class, 'exportToJson']);
+});
 ActionRoute::routes('workflow-nodes', new WorkflowNodesController);
 ActionRoute::routes('workflow-connections', new WorkflowConnectionsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {

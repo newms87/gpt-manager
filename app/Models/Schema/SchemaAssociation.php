@@ -40,7 +40,7 @@ class SchemaAssociation extends Model
         return [
             'category'         => $this->category,
             'schemaDefinition' => $this->schemaDefinition->exportToJson(),
-            'schemaFragment'   => $this->schemaFragment->exportToJson(),
+            'schemaFragment'   => $this->schemaFragment?->exportToJson(),
         ];
     }
 }

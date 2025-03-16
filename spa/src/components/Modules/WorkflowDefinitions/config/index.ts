@@ -1,4 +1,4 @@
-import { WorkflowDefinition } from "@/types";
+import { WorkflowDefinition, WorkflowDefinitionRoutes } from "@/types";
 import { DanxController } from "quasar-ui-danx";
 import { actionControls, batchActions, menuActions } from "./actions";
 import { controls } from "./controls";
@@ -12,4 +12,4 @@ export const dxWorkflowDefinition = {
 	batchActions,
 	filters,
 	routes
-} as DanxController<WorkflowDefinition>;
+} as DanxController<WorkflowDefinition> & { routes: WorkflowDefinitionRoutes };
