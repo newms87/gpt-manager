@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Ai;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Repositories\WorkflowDefinitionRepository;
 use App\Resources\Workflow\WorkflowDefinitionResource;
-use App\Services\Workflow\ImportExportWorkflowService;
+use App\Services\Workflow\WorkflowExportService;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Http\Controllers\ActionController;
 
@@ -20,6 +20,6 @@ class WorkflowDefinitionsController extends ActionController
             throw new ValidationError('You do not have permission to export this workflow');
         }
 
-        return app(ImportExportWorkflowService::class)->exportToJson($workflowDefinition);
+        return app(WorkflowExportService::class)->exportToJson($workflowDefinition);
     }
 }

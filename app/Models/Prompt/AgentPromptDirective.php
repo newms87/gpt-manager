@@ -3,6 +3,7 @@
 namespace App\Models\Prompt;
 
 use App\Models\Agent\Agent;
+use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Newms87\Danx\Contracts\AuditableContract;
@@ -33,13 +34,13 @@ class AgentPromptDirective extends Model implements AuditableContract
         return $this->belongsTo(PromptDirective::class, 'prompt_directive_id');
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
+        return $service->register($this, [
             'section'   => $this->section,
             'position'  => $this->position,
-            'directive' => $this->directive->exportToJson(),
-        ];
+            'directive' => $this->directive->exportToJson($service),
+        ]);
     }
 
     public function __toString(): string

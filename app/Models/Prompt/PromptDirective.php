@@ -4,6 +4,7 @@ namespace App\Models\Prompt;
 
 use App\Models\Agent\Agent;
 use App\Models\Team\Team;
+use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -84,12 +85,12 @@ class PromptDirective extends Model implements AuditableContract
         });
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
+        return $service->register($this, [
             'name'           => $this->name,
             'directive_text' => $this->directive_text,
-        ];
+        ]);
     }
 
     public function __toString(): string

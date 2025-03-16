@@ -62,7 +62,7 @@ async function onExportToJson() {
 	isExporting.value = false;
 	if (json.error) {
 		FlashMessages.error(json.message);
-	} else if (!json.definition) {
+	} else if (!json.definitions) {
 		FlashMessages.error("The export failed for an unknown reason. The data was empty.");
 	} else {
 		download(JSON.stringify(json), `${activeWorkflowDefinition.value.name}.json`);

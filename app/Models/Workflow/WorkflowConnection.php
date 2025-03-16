@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,15 +32,15 @@ class WorkflowConnection extends Model implements AuditableContract
         return $this->belongsTo(WorkflowNode::class, 'target_node_id');
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
+        return $service->register($this, [
             'name'               => $this->name,
             'source_node_id'     => $this->source_node_id,
             'target_node_id'     => $this->target_node_id,
             'source_output_port' => $this->source_output_port,
             'target_input_port'  => $this->target_input_port,
-        ];
+        ]);
     }
 
     public function __toString()

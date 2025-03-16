@@ -6,6 +6,7 @@ use App\Api\AgentApiContracts\AgentApiContract;
 use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Team\Team;
 use App\Repositories\AgentRepository;
+use App\Services\Workflow\WorkflowExportService;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -158,17 +159,17 @@ class Agent extends Model implements AuditableContract
         });
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
+        return $service->register($this, [
             'name'        => $this->name,
             'description' => $this->description,
             'api'         => $this->api,
             'model'       => $this->model,
             'temperature' => $this->temperature,
             'retry_count' => $this->retry_count,
-            'directives'  => $this->directives->map(fn(AgentPromptDirective $agentPromptDirective) => $agentPromptDirective->exportToJson())->values(),
-        ];
+            'directives'  => $this->directives->map(fn(AgentPromptDirective $agentPromptDirective) => $agentPromptDirective->exportToJson($service))->values(),
+        ]);
     }
 
     public function __toString(): string

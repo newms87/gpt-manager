@@ -3,6 +3,7 @@
 namespace App\Models\Task;
 
 use App\Models\Workflow\WorkflowNode;
+use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -79,17 +80,17 @@ class TaskDefinition extends Model implements AuditableContract
         return parent::delete();
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
+        return $service->register($this, [
             'name'                  => $this->name,
             'description'           => $this->description,
             'task_runner_class'     => $this->task_runner_class,
             'task_runner_config'    => $this->task_runner_config,
             'artifact_split_mode'   => $this->artifact_split_mode,
             'timeout_after_seconds' => $this->timeout_after_seconds,
-            'definitionAgents'      => $this->definitionAgents->map(fn(TaskDefinitionAgent $taskDefinitionAgent) => $taskDefinitionAgent->exportToJson())->values(),
-        ];
+            'definitionAgents'      => $this->definitionAgents->map(fn(TaskDefinitionAgent $taskDefinitionAgent) => $taskDefinitionAgent->exportToJson($service))->values(),
+        ]);
     }
 
     public function __toString()

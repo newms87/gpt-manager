@@ -3,6 +3,7 @@
 namespace App\Models\Workflow;
 
 use App\Models\Task\TaskDefinition;
+use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -63,14 +64,14 @@ class WorkflowNode extends Model implements AuditableContract
         return $this;
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
+        return $service->register($this, [
             'name'           => $this->name,
             'settings'       => $this->settings,
             'params'         => $this->params,
-            'taskDefinition' => $this->taskDefinition->exportToJson(),
-        ];
+            'taskDefinition' => $this->taskDefinition->exportToJson($service),
+        ]);
     }
 
     public function __toString()

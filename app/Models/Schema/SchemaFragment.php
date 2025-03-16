@@ -2,6 +2,7 @@
 
 namespace App\Models\Schema;
 
+use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -59,12 +60,12 @@ class SchemaFragment extends Model implements AuditableContract
         return $this;
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
+        return $service->register($this, [
             'name'              => $this->name,
             'fragment_selector' => $this->fragment_selector,
-        ];
+        ]);
     }
 
     public function __toString(): string

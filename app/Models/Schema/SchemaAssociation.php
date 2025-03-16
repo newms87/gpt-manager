@@ -2,6 +2,7 @@
 
 namespace App\Models\Schema;
 
+use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,12 +36,12 @@ class SchemaAssociation extends Model
         return $this->belongsTo(SchemaFragment::class);
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
+        return $service->register($this, [
             'category'         => $this->category,
-            'schemaDefinition' => $this->schemaDefinition->exportToJson(),
-            'schemaFragment'   => $this->schemaFragment?->exportToJson(),
-        ];
+            'schemaDefinition' => $this->schemaDefinition->exportToJson($service),
+            'schemaFragment'   => $this->schemaFragment?->exportToJson($service),
+        ]);
     }
 }

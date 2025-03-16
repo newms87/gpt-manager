@@ -5,6 +5,7 @@ namespace App\Models\Task;
 use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
+use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -65,15 +66,15 @@ class TaskDefinitionAgent extends Model implements AuditableContract
         return $fragmentSelector;
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
+        return $service->register($this, [
             'include_text'       => $this->include_text,
             'include_files'      => $this->include_files,
             'include_data'       => $this->include_data,
-            'agent'              => $this->agent->exportToJson(),
-            'schemaAssociations' => $this->schemaAssociations->map(fn(SchemaAssociation $schemaAssociation) => $schemaAssociation->exportToJson())->values(),
-        ];
+            'agent'              => $this->agent->exportToJson($service),
+            'schemaAssociations' => $this->schemaAssociations->map(fn(SchemaAssociation $schemaAssociation) => $schemaAssociation->exportToJson($service))->values(),
+        ]);
     }
 
     public function __toString()

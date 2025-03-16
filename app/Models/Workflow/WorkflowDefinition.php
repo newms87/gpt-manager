@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -63,14 +64,14 @@ class WorkflowDefinition extends Model implements AuditableContract
         return $this;
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
-            'name'        => $this->name,
-            'description' => $this->description,
-            'nodes'       => $this->workflowNodes->map(fn(WorkflowNode $workflowNode) => $workflowNode->exportToJson())->values(),
-            'connections' => $this->workflowConnections->map(fn(WorkflowConnection $workflowConnection) => $workflowConnection->exportToJson())->values(),
-        ];
+        return $service->register($this, [
+            'name'                => $this->name,
+            'description'         => $this->description,
+            'workflowNodes'       => $this->workflowNodes->map(fn(WorkflowNode $node) => $node->exportToJson($service))->values(),
+            'workflowConnections' => $this->workflowConnections->map(fn(WorkflowConnection $connection) => $connection->exportToJson($service))->values(),
+        ]);
     }
 
     public function __toString()

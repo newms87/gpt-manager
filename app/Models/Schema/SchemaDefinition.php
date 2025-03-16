@@ -3,6 +3,7 @@
 namespace App\Models\Schema;
 
 use App\Models\Team\Team;
+use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -104,15 +105,15 @@ class SchemaDefinition extends Model implements AuditableContract
         });
     }
 
-    public function exportToJson(): array
+    public function exportToJson(WorkflowExportService $service): int
     {
-        return [
+        return $service->register($this, [
             'type'          => $this->type,
             'name'          => $this->name,
             'description'   => $this->description,
             'schema_format' => $this->schema_format,
             'schema'        => $this->schema,
-        ];
+        ]);
     }
 
     public function __toString(): string
