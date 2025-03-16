@@ -3,6 +3,7 @@
 namespace App\Models\Task;
 
 use App\Models\Agent\Agent;
+use App\Models\CanExportToJsonContract;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
 use App\Services\Workflow\WorkflowExportService;
@@ -16,7 +17,7 @@ use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class TaskDefinitionAgent extends Model implements AuditableContract
+class TaskDefinitionAgent extends Model implements AuditableContract, CanExportToJsonContract
 {
     use ActionModelTrait, HasFactory, AuditableTrait;
 
@@ -68,12 +69,14 @@ class TaskDefinitionAgent extends Model implements AuditableContract
 
     public function exportToJson(WorkflowExportService $service): int
     {
+        $service->registerRelatedModels($this->schemaAssociations);
+
         return $service->register($this, [
             'include_text'       => $this->include_text,
             'include_files'      => $this->include_files,
             'include_data'       => $this->include_data,
-            'agent'              => $this->agent->exportToJson($service),
-            'schemaAssociations' => $this->schemaAssociations->map(fn(SchemaAssociation $schemaAssociation) => $schemaAssociation->exportToJson($service))->values(),
+            'task_definition_id' => $service->registerRelatedModel($this->taskDefinition),
+            'agent_id'           => $service->registerRelatedModel($this->agent),
         ]);
     }
 

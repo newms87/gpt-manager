@@ -2,6 +2,7 @@
 
 namespace App\Models\Task;
 
+use App\Models\CanExportToJsonContract;
 use App\Models\Workflow\WorkflowNode;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,7 +16,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
 
-class TaskDefinition extends Model implements AuditableContract
+class TaskDefinition extends Model implements AuditableContract, CanExportToJsonContract
 {
     use ActionModelTrait, HasFactory, AuditableTrait, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
 
@@ -82,6 +83,8 @@ class TaskDefinition extends Model implements AuditableContract
 
     public function exportToJson(WorkflowExportService $service): int
     {
+        $service->registerRelatedModels($this->definitionAgents);
+
         return $service->register($this, [
             'name'                  => $this->name,
             'description'           => $this->description,
@@ -89,7 +92,6 @@ class TaskDefinition extends Model implements AuditableContract
             'task_runner_config'    => $this->task_runner_config,
             'artifact_split_mode'   => $this->artifact_split_mode,
             'timeout_after_seconds' => $this->timeout_after_seconds,
-            'definitionAgents'      => $this->definitionAgents->map(fn(TaskDefinitionAgent $taskDefinitionAgent) => $taskDefinitionAgent->exportToJson($service))->values(),
         ]);
     }
 

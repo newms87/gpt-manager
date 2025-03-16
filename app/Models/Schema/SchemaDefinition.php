@@ -2,6 +2,7 @@
 
 namespace App\Models\Schema;
 
+use App\Models\CanExportToJsonContract;
 use App\Models\Team\Team;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +17,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
 
-class SchemaDefinition extends Model implements AuditableContract
+class SchemaDefinition extends Model implements AuditableContract, CanExportToJsonContract
 {
     use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 
@@ -28,12 +29,12 @@ class SchemaDefinition extends Model implements AuditableContract
     const string
         TYPE_AGENT_RESPONSE = 'Agent Response';
 
-    protected $guarded = [
-        'id',
-        'created_at',
-        'updated_at',
-        'deleted_at',
-        'agents_count',
+    protected $fillable = [
+        'type',
+        'name',
+        'description',
+        'schema_format',
+        'schema',
     ];
 
     protected array $keywordFields = [

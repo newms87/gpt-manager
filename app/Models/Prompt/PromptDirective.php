@@ -3,6 +3,7 @@
 namespace App\Models\Prompt;
 
 use App\Models\Agent\Agent;
+use App\Models\CanExportToJsonContract;
 use App\Models\Team\Team;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,16 +19,13 @@ use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
 
-class PromptDirective extends Model implements AuditableContract
+class PromptDirective extends Model implements AuditableContract, CanExportToJsonContract
 {
     use HasFactory, ActionModelTrait, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 
     protected $guarded = [
-        'id',
-        'created_at',
-        'updated_at',
-        'deleted_at',
-        'agents_count',
+        'name',
+        'directive_text',
     ];
 
     protected array $keywordFields = [

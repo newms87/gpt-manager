@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Models\CanExportToJsonContract;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class WorkflowConnection extends Model implements AuditableContract
+class WorkflowConnection extends Model implements AuditableContract, CanExportToJsonContract
 {
     use HasFactory, ActionModelTrait, AuditableTrait;
 
@@ -22,6 +23,11 @@ class WorkflowConnection extends Model implements AuditableContract
         'target_input_port',
     ];
 
+    public function workflowDefinition(): BelongsTo|WorkflowDefinition
+    {
+        return $this->belongsTo(WorkflowDefinition::class);
+    }
+    
     public function sourceNode(): BelongsTo|WorkflowNode
     {
         return $this->belongsTo(WorkflowNode::class, 'source_node_id');
@@ -35,11 +41,12 @@ class WorkflowConnection extends Model implements AuditableContract
     public function exportToJson(WorkflowExportService $service): int
     {
         return $service->register($this, [
-            'name'               => $this->name,
-            'source_node_id'     => $this->source_node_id,
-            'target_node_id'     => $this->target_node_id,
-            'source_output_port' => $this->source_output_port,
-            'target_input_port'  => $this->target_input_port,
+            'workflow_definition_id' => $service->registerRelatedModel($this->workflowDefinition),
+            'source_node_id'         => $service->registerRelatedModel($this->sourceNode),
+            'target_node_id'         => $service->registerRelatedModel($this->targetNode),
+            'name'                   => $this->name,
+            'source_output_port'     => $this->source_output_port,
+            'target_input_port'      => $this->target_input_port,
         ]);
     }
 

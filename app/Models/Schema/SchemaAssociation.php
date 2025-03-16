@@ -2,6 +2,7 @@
 
 namespace App\Models\Schema;
 
+use App\Models\CanExportToJsonContract;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,16 +10,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Newms87\Danx\Traits\ActionModelTrait;
 
-class SchemaAssociation extends Model
+class SchemaAssociation extends Model implements CanExportToJsonContract
 {
     use HasFactory, ActionModelTrait;
 
-    protected $guarded = [
-        'id',
-        'object_id',
-        'object_type',
-        'created_at',
-        'updated_at',
+    protected $fillable = [
+        'schema_definition_id',
+        'schema_fragment_id',
+        'category',
     ];
 
     public function associatedObject(): MorphTo
@@ -39,9 +38,11 @@ class SchemaAssociation extends Model
     public function exportToJson(WorkflowExportService $service): int
     {
         return $service->register($this, [
-            'category'         => $this->category,
-            'schemaDefinition' => $this->schemaDefinition->exportToJson($service),
-            'schemaFragment'   => $this->schemaFragment?->exportToJson($service),
+            'schema_definition_id' => $service->registerRelatedModel($this->schemaDefinition),
+            'schema_fragment_id'   => $service->registerRelatedModel($this->schemaFragment),
+            'object_type'          => $this->object_type,
+            'object_id'            => $service->registerRelatedModel($this->associatedObject),
+            'category'             => $this->category,
         ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models\Prompt;
 
 use App\Models\Agent\Agent;
+use App\Models\CanExportToJsonContract;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,7 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class AgentPromptDirective extends Model implements AuditableContract
+class AgentPromptDirective extends Model implements AuditableContract, CanExportToJsonContract
 {
     use AuditableTrait, ActionModelTrait;
 
@@ -18,10 +19,9 @@ class AgentPromptDirective extends Model implements AuditableContract
         SECTION_TOP = 'Top',
         SECTION_BOTTOM = 'Bottom';
 
-    protected $guarded = [
-        'id',
-        'created_at',
-        'updated_at',
+    protected $fillable = [
+        'section',
+        'position',
     ];
 
     public function agent(): BelongsTo|Agent
@@ -37,9 +37,10 @@ class AgentPromptDirective extends Model implements AuditableContract
     public function exportToJson(WorkflowExportService $service): int
     {
         return $service->register($this, [
-            'section'   => $this->section,
-            'position'  => $this->position,
-            'directive' => $this->directive->exportToJson($service),
+            'agent_id'            => $service->registerRelatedModel($this->agent),
+            'prompt_directive_id' => $service->registerRelatedModel($this->directive),
+            'section'             => $this->section,
+            'position'            => $this->position,
         ]);
     }
 

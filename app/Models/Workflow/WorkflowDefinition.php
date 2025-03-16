@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Models\CanExportToJsonContract;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
-class WorkflowDefinition extends Model implements AuditableContract
+class WorkflowDefinition extends Model implements AuditableContract, CanExportToJsonContract
 {
     use ActionModelTrait, HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
 
@@ -66,11 +67,12 @@ class WorkflowDefinition extends Model implements AuditableContract
 
     public function exportToJson(WorkflowExportService $service): int
     {
+        $service->registerRelatedModels($this->workflowNodes);
+        $service->registerRelatedModels($this->workflowConnections);
+
         return $service->register($this, [
-            'name'                => $this->name,
-            'description'         => $this->description,
-            'workflowNodes'       => $this->workflowNodes->map(fn(WorkflowNode $node) => $node->exportToJson($service))->values(),
-            'workflowConnections' => $this->workflowConnections->map(fn(WorkflowConnection $connection) => $connection->exportToJson($service))->values(),
+            'name'        => $this->name,
+            'description' => $this->description,
         ]);
     }
 

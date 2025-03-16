@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Models\CanExportToJsonContract;
 use App\Models\Task\TaskDefinition;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,7 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class WorkflowNode extends Model implements AuditableContract
+class WorkflowNode extends Model implements AuditableContract, CanExportToJsonContract
 {
     use HasFactory, ActionModelTrait, AuditableTrait;
 
@@ -67,10 +68,11 @@ class WorkflowNode extends Model implements AuditableContract
     public function exportToJson(WorkflowExportService $service): int
     {
         return $service->register($this, [
-            'name'           => $this->name,
-            'settings'       => $this->settings,
-            'params'         => $this->params,
-            'taskDefinition' => $this->taskDefinition->exportToJson($service),
+            'workflow_definition_id' => $service->registerRelatedModel($this->workflowDefinition),
+            'task_definition_id'     => $service->registerRelatedModel($this->taskDefinition),
+            'name'                   => $this->name,
+            'settings'               => $this->settings,
+            'params'                 => $this->params,
         ]);
     }
 

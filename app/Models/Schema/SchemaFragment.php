@@ -2,6 +2,7 @@
 
 namespace App\Models\Schema;
 
+use App\Models\CanExportToJsonContract;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,15 +15,13 @@ use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
-class SchemaFragment extends Model implements AuditableContract
+class SchemaFragment extends Model implements AuditableContract, CanExportToJsonContract
 {
     use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes;
 
-    protected $guarded = [
-        'id',
-        'created_at',
-        'updated_at',
-        'deleted_at',
+    protected $fillable = [
+        'name',
+        'fragment_selector',
     ];
 
     public array $relationCounters = [
@@ -63,8 +62,9 @@ class SchemaFragment extends Model implements AuditableContract
     public function exportToJson(WorkflowExportService $service): int
     {
         return $service->register($this, [
-            'name'              => $this->name,
-            'fragment_selector' => $this->fragment_selector,
+            'schema_definition_id' => $service->registerRelatedModel($this->schemaDefinition),
+            'name'                 => $this->name,
+            'fragment_selector'    => $this->fragment_selector,
         ]);
     }
 

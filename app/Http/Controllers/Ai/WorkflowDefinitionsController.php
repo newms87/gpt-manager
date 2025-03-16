@@ -25,10 +25,10 @@ class WorkflowDefinitionsController extends ActionController
         return app(WorkflowExportService::class)->exportToJson($workflowDefinition);
     }
 
-    public function importFromJson(PagerRequest $pagerRequest)
+    public function importFromJson(PagerRequest $pagerRequest): array
     {
         $json = $pagerRequest->getJson('workflowDefinitionJson');
 
-        return app(WorkflowImportService::class)->importFromJson($json);
+        return WorkflowDefinitionResource::make(app(WorkflowImportService::class)->importFromJson($json));
     }
 }
