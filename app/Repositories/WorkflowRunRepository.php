@@ -31,9 +31,15 @@ class WorkflowRunRepository extends ActionRepository
             throw new ValidationError('Failed to run workflow: Workflow Definition was not found');
         }
 
+        $artifacts = [];
+
         $workflowInput = team()->workflowInputs()->find($data['workflow_input_id'] ?? null);
 
-        return WorkflowRunnerService::start($workflowDefinition, $workflowInput);
+        if ($workflowInput) {
+            $artifacts[] = $workflowInput->toArtifact();
+        }
+
+        return WorkflowRunnerService::start($workflowDefinition, $artifacts);
     }
 
     public function resumeRun(WorkflowRun $workflowRun): WorkflowRun

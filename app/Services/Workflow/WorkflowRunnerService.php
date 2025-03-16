@@ -4,7 +4,6 @@ namespace App\Services\Workflow;
 
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowDefinition;
-use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowStatesContract;
@@ -22,7 +21,7 @@ class WorkflowRunnerService
     /**
      * Start a workflow run
      */
-    public static function start(WorkflowDefinition $workflowDefinition, WorkflowInput $workflowInput = null, Collection|array $artifacts = []): WorkflowRun
+    public static function start(WorkflowDefinition $workflowDefinition, Collection|array $artifacts = []): WorkflowRun
     {
         static::log("Starting $workflowDefinition");
 
@@ -35,11 +34,6 @@ class WorkflowRunnerService
             'name'       => $workflowDefinition->name,
             'started_at' => now_ms(),
         ]);
-
-        // Add the workflow input to the list of artifacts
-        if ($workflowInput) {
-            $artifacts[] = app(WorkflowInputToArtifactMapper::class)->setWorkflowInput($workflowInput)->map();
-        }
 
         // Start all the starting nodes
         foreach($workflowDefinition->startingWorkflowNodes as $workflowNode) {
@@ -150,9 +144,12 @@ class WorkflowRunnerService
         }
     }
 
+    /**
+     * Handle the completion of a workflow run
+     */
     public static function onComplete(WorkflowRun $workflowRun): void
     {
-
+        static::log("Completed $workflowRun");
     }
 
     /**

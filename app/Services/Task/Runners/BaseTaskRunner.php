@@ -4,6 +4,7 @@ namespace App\Services\Task\Runners;
 
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
+use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Traits\HasDebugLogging;
@@ -71,6 +72,11 @@ class BaseTaskRunner implements TaskRunnerContract
     public function run(): void
     {
         $this->complete($this->taskProcess->inputArtifacts);
+    }
+
+    public function eventTriggered(TaskProcessListener $taskProcessListener): void
+    {
+        static::log("Event Triggered $taskProcessListener");
     }
 
     public function complete(array|Collection $artifacts = []): void

@@ -2,6 +2,8 @@
 
 namespace App\Services\Task\Runners;
 
+use App\Models\Task\TaskProcessListener;
+
 interface TaskRunnerContract
 {
     /**
@@ -18,4 +20,11 @@ interface TaskRunnerContract
      * Prepare the task process for processing
      */
     public function prepareProcess(): void;
+
+    /**
+     * Fire the event the task process was listening to.
+     * If the task process is complete after this call, call the TaskProcessRunnerService::complete method when
+     * finished successfully
+     */
+    public function eventTriggered(TaskProcessListener $taskProcessListener): void;
 }

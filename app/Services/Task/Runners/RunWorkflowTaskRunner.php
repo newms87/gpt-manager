@@ -2,6 +2,10 @@
 
 namespace App\Services\Task\Runners;
 
+use App\Models\Task\TaskProcessListener;
+use App\Models\Workflow\WorkflowRun;
+use App\Models\Workflow\WorkflowStatesContract;
+use App\Services\Workflow\WorkflowRunnerService;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class RunWorkflowTaskRunner extends BaseTaskRunner
@@ -21,6 +25,41 @@ class RunWorkflowTaskRunner extends BaseTaskRunner
 
         $this->activity("Running workflow $workflowDefinition->name w/ " . $inputArtifacts->count() . ' artifacts', 1);
 
-        $this->complete($artifacts);
+        $workflowRun = WorkflowRunnerService::start($workflowDefinition, $inputArtifacts);
+
+        $this->taskProcess->taskProcessListeners()->create([
+            'event_type' => WorkflowRun::class,
+            'event_id'   => $workflowRun->id,
+        ]);
+    }
+
+    public function eventTriggered(TaskProcessListener $taskProcessListener): void
+    {
+        static::log("Handling Event $taskProcessListener");
+
+        $workflowRun = $taskProcessListener->getEventObject();
+
+        if (!$workflowRun) {
+            throw new ValidationError('Workflow run not found: ' . $taskProcessListener->event_id);
+        }
+
+        if (!($workflowRun instanceof WorkflowRun)) {
+            throw new ValidationError('Invalid event object: ' . $workflowRun);
+        }
+
+        if ($workflowRun->isCompleted()) {
+            $this->complete($workflowRun->collectFinalOutputArtifacts());
+        } elseif ($workflowRun->isStopped()) {
+            $this->taskProcess->stopped_at = now();
+        } elseif ($workflowRun->isFailed()) {
+            $this->taskProcess->failed_at = now();
+        } else {
+            $totalTasks     = $workflowRun->taskRuns()->count();
+            $completedTasks = $workflowRun->taskRuns()->where('status', WorkflowStatesContract::STATUS_COMPLETED)->count();
+
+            $percentComplete = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
+
+            $this->activity("$completedTasks / $totalTasks have completed", $percentComplete);
+        }
     }
 }

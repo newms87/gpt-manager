@@ -12,6 +12,7 @@ use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
 use App\Services\Task\Runners\LoadFromDatabaseTaskRunner;
 use App\Services\Task\Runners\MergeArtifactsTaskRunner;
 use App\Services\Task\Runners\PageOrganizerTaskRunner;
+use App\Services\Task\Runners\RunWorkflowTaskRunner;
 use App\Services\Task\Runners\SaveToDatabaseTaskRunner;
 use App\Services\Task\Runners\SplitByFileTaskRunner;
 
@@ -98,13 +99,14 @@ return [
         PerplexityAiApi::$serviceName => PerplexityAiApi::class,
     ],
     'runners'       => [
-        BaseTaskRunner::RUNNER_NAME                  => BaseTaskRunner::class,
         AgentThreadTaskRunner::RUNNER_NAME           => AgentThreadTaskRunner::class,
+        BaseTaskRunner::RUNNER_NAME                  => BaseTaskRunner::class,
         ImageToTextTranscoderTaskRunner::RUNNER_NAME => ImageToTextTranscoderTaskRunner::class,
-        PageOrganizerTaskRunner::RUNNER_NAME         => PageOrganizerTaskRunner::class,
         LoadFromDatabaseTaskRunner::RUNNER_NAME      => LoadFromDatabaseTaskRunner::class,
-        SaveToDatabaseTaskRunner::RUNNER_NAME        => SaveToDatabaseTaskRunner::class,
         MergeArtifactsTaskRunner::RUNNER_NAME        => MergeArtifactsTaskRunner::class,
+        PageOrganizerTaskRunner::RUNNER_NAME         => PageOrganizerTaskRunner::class,
+        RunWorkflowTaskRunner::RUNNER_NAME           => RunWorkflowTaskRunner::class,
+        SaveToDatabaseTaskRunner::RUNNER_NAME        => SaveToDatabaseTaskRunner::class,
         SplitByFileTaskRunner::RUNNER_NAME           => SplitByFileTaskRunner::class,
     ],
     'tools'         => [

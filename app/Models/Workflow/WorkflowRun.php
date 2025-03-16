@@ -3,13 +3,16 @@
 namespace App\Models\Workflow;
 
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Usage\UsageSummary;
+use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Workflow\WorkflowRunnerService;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
@@ -49,6 +52,11 @@ class WorkflowRun extends Model implements WorkflowStatesContract
     public function usageSummary(): MorphOne
     {
         return $this->morphOne(UsageSummary::class, 'object');
+    }
+
+    public function taskProcessListeners(): MorphMany
+    {
+        return $this->morphMany(TaskProcessListener::class, 'event');
     }
 
     /**
@@ -102,6 +110,25 @@ class WorkflowRun extends Model implements WorkflowStatesContract
     public function collectOutputArtifactsForNode(WorkflowNode $node): Collection
     {
         return $this->taskRuns()->where('workflow_node_id', $node->id)->first()->outputArtifacts()->get() ?? collect();
+    }
+
+    /**
+     * Collect all the final output artifacts from the workflow run
+     */
+    public function collectFinalOutputArtifacts(): Collection
+    {
+        $outputArtifacts = collect();
+
+        foreach($this->taskRuns as $taskRun) {
+            // Only consider task runs that do not have any target nodes that depend on them
+            if ($taskRun->workflowNode->connectionsAsSource()->exists()) {
+                continue;
+            }
+
+            $outputArtifacts = $outputArtifacts->merge($taskRun->outputArtifacts()->get());
+        }
+
+        return $outputArtifacts;
     }
 
     /**
@@ -164,8 +191,16 @@ class WorkflowRun extends Model implements WorkflowStatesContract
 
         static::saved(function (WorkflowRun $workflowRun) {
             // If the workflow run was recently completed, let the service know so we can trigger any events
-            if ($workflowRun->wasChanged('status') && $workflowRun->isCompleted()) {
-                WorkflowRunnerService::onComplete($workflowRun);
+            if ($workflowRun->wasChanged('status')) {
+                if ($workflowRun->isCompleted()) {
+                    WorkflowRunnerService::onComplete($workflowRun);
+                }
+
+                if ($workflowRun->taskProcessListeners->isNotEmpty()) {
+                    foreach($workflowRun->taskProcessListeners as $taskProcessListener) {
+                        TaskProcessRunnerService::eventTriggered($taskProcessListener);
+                    }
+                }
             }
         });
     }

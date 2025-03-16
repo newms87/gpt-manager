@@ -69,7 +69,7 @@ class WorkflowRunnerServiceTest extends AuthenticatedTestCase
         $connection          = WorkflowConnection::factory()->connect($workflowDefinition, $workflowNodeA, $workflowNodeB)->create();
 
         // When
-        $workflowRun = WorkflowRunnerService::start($workflowDefinition, null, [$artifact]);
+        $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$artifact]);
 
         // Then
         $sourceOutputArtifacts = $workflowRun->collectOutputArtifactsFromSourceNodes($connection->targetNode);

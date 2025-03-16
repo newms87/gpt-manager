@@ -34,6 +34,11 @@ class TaskProcessListener extends Model implements AuditableContract
         ];
     }
 
+    public function taskProcess(): BelongsTo|TaskProcess
+    {
+        return $this->belongsTo(TaskProcess::class);
+    }
+
     public function getEventObject()
     {
         return $this->event_type::find($this->event_id);

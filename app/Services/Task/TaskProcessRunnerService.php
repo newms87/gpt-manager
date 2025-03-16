@@ -5,6 +5,7 @@ namespace App\Services\Task;
 use App\Jobs\ExecuteTaskProcessJob;
 use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Task\TaskProcess;
+use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Traits\HasDebugLogging;
@@ -104,6 +105,34 @@ class TaskProcessRunnerService
             static::log("TaskProcess finished running: $taskProcess");
         } catch(Throwable $throwable) {
             static::log("TaskProcess failed: $taskProcess");
+            $taskProcess->failed_at = now();
+            $taskProcess->save();
+            throw $throwable;
+        }
+    }
+
+    /**
+     * Run the task process. This will execute the task process.
+     * NOTE: The task runner itself should mark the process as completed when finished successfully
+     */
+    public static function eventTriggered(TaskProcessListener $taskProcessListener): void
+    {
+        static::log("Event Triggered $taskProcessListener");
+
+        $taskProcess = $taskProcessListener->taskProcess;
+
+        if (!$taskProcess->isRunning()) {
+            static::log("TaskProcess is $taskProcess->status, ignoring event");
+
+            return;
+        }
+
+        // Run the task process
+        try {
+            $taskProcess->getRunner()->eventTriggered($taskProcessListener);
+            static::log("TaskProcess finished handling event: $taskProcessListener");
+        } catch(Throwable $throwable) {
+            static::log("TaskProcess event handler failed: $taskProcess");
             $taskProcess->failed_at = now();
             $taskProcess->save();
             throw $throwable;
