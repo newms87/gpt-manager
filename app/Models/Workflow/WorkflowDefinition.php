@@ -18,6 +18,7 @@ class WorkflowDefinition extends Model implements AuditableContract
 
     protected $fillable = [
         'name',
+        'description',
     ];
 
     public array $relationCounters = [
@@ -60,6 +61,16 @@ class WorkflowDefinition extends Model implements AuditableContract
         ])->validate();
 
         return $this;
+    }
+
+    public function exportToJson(): array
+    {
+        return [
+            'name'        => $this->name,
+            'description' => $this->description,
+            'nodes'       => $this->workflowNodes->map(fn(WorkflowNode $workflowNode) => $workflowNode->exportToJson())->values(),
+            'connections' => $this->workflowConnections->map(fn(WorkflowConnection $workflowConnection) => $workflowConnection->exportToJson())->values(),
+        ];
     }
 
     public function __toString()

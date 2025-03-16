@@ -104,6 +104,17 @@ class SchemaDefinition extends Model implements AuditableContract
         });
     }
 
+    public function exportToJson(): array
+    {
+        return [
+            'type'          => $this->type,
+            'name'          => $this->name,
+            'description'   => $this->description,
+            'schema_format' => $this->schema_format,
+            'schema'        => $this->schema,
+        ];
+    }
+
     public function __toString(): string
     {
         return "<SchemaDefinition $this->name>";

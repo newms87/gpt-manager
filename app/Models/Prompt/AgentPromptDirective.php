@@ -33,6 +33,15 @@ class AgentPromptDirective extends Model implements AuditableContract
         return $this->belongsTo(PromptDirective::class, 'prompt_directive_id');
     }
 
+    public function exportToJson(): array
+    {
+        return [
+            'section'   => $this->section,
+            'position'  => $this->position,
+            'directive' => $this->directive->exportToJson(),
+        ];
+    }
+
     public function __toString(): string
     {
         return "<AgentPromptDirective {$this->directive->name} position='$this->position' section='$this->section'>";

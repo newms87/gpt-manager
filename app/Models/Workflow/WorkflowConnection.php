@@ -31,6 +31,17 @@ class WorkflowConnection extends Model implements AuditableContract
         return $this->belongsTo(WorkflowNode::class, 'target_node_id');
     }
 
+    public function exportToJson(): array
+    {
+        return [
+            'name'               => $this->name,
+            'source_node_id'     => $this->source_node_id,
+            'target_node_id'     => $this->target_node_id,
+            'source_output_port' => $this->source_output_port,
+            'target_input_port'  => $this->target_input_port,
+        ];
+    }
+
     public function __toString()
     {
         return "<WorkflowConnection id='$this->id' name='$this->name' source-id='$this->source_node_id' target-id='$this->target_node_id'>";

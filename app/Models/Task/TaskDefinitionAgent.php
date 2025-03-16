@@ -65,6 +65,17 @@ class TaskDefinitionAgent extends Model implements AuditableContract
         return $fragmentSelector;
     }
 
+    public function exportToJson(): array
+    {
+        return [
+            'include_text'       => $this->include_text,
+            'include_files'      => $this->include_files,
+            'include_data'       => $this->include_data,
+            'agent'              => $this->agent->exportToJson(),
+            'schemaAssociations' => $this->schemaAssociations->map(fn(SchemaAssociation $schemaAssociation) => $schemaAssociation->exportToJson())->values(),
+        ];
+    }
+
     public function __toString()
     {
         $fragmentSelector = json_encode($this->getInputFragmentSelector());

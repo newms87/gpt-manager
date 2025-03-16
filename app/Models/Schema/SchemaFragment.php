@@ -59,6 +59,14 @@ class SchemaFragment extends Model implements AuditableContract
         return $this;
     }
 
+    public function exportToJson(): array
+    {
+        return [
+            'name'              => $this->name,
+            'fragment_selector' => $this->fragment_selector,
+        ];
+    }
+
     public function __toString(): string
     {
         return "<SchemaFragment ($this->id) $this->name>";

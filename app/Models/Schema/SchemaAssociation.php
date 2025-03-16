@@ -34,4 +34,13 @@ class SchemaAssociation extends Model
     {
         return $this->belongsTo(SchemaFragment::class);
     }
+
+    public function exportToJson(): array
+    {
+        return [
+            'category'         => $this->category,
+            'schemaDefinition' => $this->schemaDefinition->exportToJson(),
+            'schemaFragment'   => $this->schemaFragment->exportToJson(),
+        ];
+    }
 }

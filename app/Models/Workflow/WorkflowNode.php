@@ -63,6 +63,16 @@ class WorkflowNode extends Model implements AuditableContract
         return $this;
     }
 
+    public function exportToJson(): array
+    {
+        return [
+            'name'           => $this->name,
+            'settings'       => $this->settings,
+            'params'         => $this->params,
+            'taskDefinition' => $this->taskDefinition->exportToJson(),
+        ];
+    }
+
     public function __toString()
     {
         return "<WorkflowNode id='$this->id' name='$this->name'>";

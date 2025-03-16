@@ -84,6 +84,14 @@ class PromptDirective extends Model implements AuditableContract
         });
     }
 
+    public function exportToJson(): array
+    {
+        return [
+            'name'           => $this->name,
+            'directive_text' => $this->directive_text,
+        ];
+    }
+
     public function __toString(): string
     {
         return "<PromptDirective $this->name>";

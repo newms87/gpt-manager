@@ -79,6 +79,19 @@ class TaskDefinition extends Model implements AuditableContract
         return parent::delete();
     }
 
+    public function exportToJson(): array
+    {
+        return [
+            'name'                  => $this->name,
+            'description'           => $this->description,
+            'task_runner_class'     => $this->task_runner_class,
+            'task_runner_config'    => $this->task_runner_config,
+            'artifact_split_mode'   => $this->artifact_split_mode,
+            'timeout_after_seconds' => $this->timeout_after_seconds,
+            'definitionAgents'      => $this->definitionAgents->map(fn(TaskDefinitionAgent $taskDefinitionAgent) => $taskDefinitionAgent->exportToJson())->values(),
+        ];
+    }
+
     public function __toString()
     {
         return "<TaskDefinition id='$this->id' name='$this->name' runner='$this->task_runner_class'>";

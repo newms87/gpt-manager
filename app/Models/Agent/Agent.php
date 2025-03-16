@@ -158,6 +158,19 @@ class Agent extends Model implements AuditableContract
         });
     }
 
+    public function exportToJson(): array
+    {
+        return [
+            'name'        => $this->name,
+            'description' => $this->description,
+            'api'         => $this->api,
+            'model'       => $this->model,
+            'temperature' => $this->temperature,
+            'retry_count' => $this->retry_count,
+            'directives'  => $this->directives->map(fn(AgentPromptDirective $agentPromptDirective) => $agentPromptDirective->exportToJson())->values(),
+        ];
+    }
+
     public function __toString(): string
     {
         return "<Agent ($this->id) " . StringHelper::limitText(20, $this->name) . ": $this->api $this->model>";
