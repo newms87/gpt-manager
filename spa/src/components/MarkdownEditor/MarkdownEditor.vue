@@ -2,8 +2,6 @@
 	<div
 		class="dx-markdown-editor group"
 		:class="{'dx-markdown-code-only': format !== 'text', 'dx-markdown-invalid': validContent === false}"
-		draggable="true"
-		@dragstart.prevent.stop
 	>
 		<FieldLabel v-if="label" class="mb-2 text-sm" :label="label">
 			{{ label }}

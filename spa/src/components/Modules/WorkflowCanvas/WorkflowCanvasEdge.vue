@@ -102,7 +102,7 @@ watch(() => props.workflowRun, async () => {
 	let duration = 0;
 
 	// If the workflow is completed, we want to leave duration at 0 (no animations)
-	if (props.workflowRun.status !== "Completed") {
+	if (props.workflowRun?.status !== "Completed") {
 		// Move the truck at a constant velocity. The duration is calculated based on the distance to travel.
 		duration = (newPercent - transitionPercent.value) / 100 * 3000;
 	}
