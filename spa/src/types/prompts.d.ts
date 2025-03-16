@@ -2,7 +2,6 @@ import { Agent, JsonSchema, JsonSchemaType } from "@/types";
 import { ActionTargetItem, ListControlsRoutes } from "quasar-ui-danx";
 
 export interface SchemaDefinition extends ActionTargetItem {
-	id: string;
 	name: string;
 	description: string;
 	schema_format: "text" | "json" | "yaml" | "ts";

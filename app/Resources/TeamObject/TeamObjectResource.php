@@ -11,17 +11,18 @@ abstract class TeamObjectResource extends ActionResource
     public static function data(TeamObject $teamObject): array
     {
         return [
-            'id'          => $teamObject->id,
-            'type'        => $teamObject->type,
-            'name'        => $teamObject->name,
-            'description' => $teamObject->description,
-            'date'        => $teamObject->date?->toDateTimeString(),
-            'url'         => $teamObject->url,
-            'meta'        => $teamObject->meta,
-            'created_at'  => $teamObject->created_at,
-            'updated_at'  => $teamObject->updated_at,
-            'attributes'  => static::loadAttributes($teamObject),
-            'relations'   => static::loadRelations($teamObject),
+            'id'                   => $teamObject->id,
+            'type'                 => $teamObject->type,
+            'name'                 => $teamObject->name,
+            'description'          => $teamObject->description,
+            'date'                 => $teamObject->date?->toDateTimeString(),
+            'url'                  => $teamObject->url,
+            'meta'                 => $teamObject->meta,
+            'created_at'           => $teamObject->created_at,
+            'updated_at'           => $teamObject->updated_at,
+            'schema_definition_id' => $teamObject->schema_definition_id,
+            'attributes'           => static::loadAttributes($teamObject),
+            'relations'            => static::loadRelations($teamObject),
         ];
     }
 

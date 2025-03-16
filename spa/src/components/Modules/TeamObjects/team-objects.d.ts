@@ -3,6 +3,7 @@ import { ActionTargetItem, UploadedFile } from "quasar-ui-danx";
 
 interface TeamObject extends ActionTargetItem {
 	id: number;
+	schema_definition_id: number;
 	type: string;
 	name: string;
 	description: string | null;

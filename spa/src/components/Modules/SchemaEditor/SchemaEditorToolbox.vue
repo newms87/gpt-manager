@@ -112,7 +112,11 @@
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import SchemaResponseExampleCard from "@/components/Modules/SchemaEditor/SchemaResponseExampleCard";
 import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
-import { loadSchemaDefinitions, schemaDefinitions } from "@/components/Modules/Schemas/SchemaDefinitions/store";
+import {
+	loadSchemaDefinitions,
+	refreshSchemaDefinitions,
+	schemaDefinitions
+} from "@/components/Modules/Schemas/SchemaDefinitions/store";
 import { dxSchemaFragment } from "@/components/Modules/Schemas/SchemaFragments";
 import { routes } from "@/components/Modules/Schemas/SchemaFragments/config/routes";
 import { JsonSchema, SchemaDefinition, SchemaFragment } from "@/types";
@@ -143,10 +147,17 @@ const props = withDefaults(defineProps<{
 	excludeSchemaIds: null
 });
 
-const createSchemaAction = dxSchemaDefinition.getAction("create");
+const createSchemaAction = dxSchemaDefinition.getAction("create", { onFinish: refreshSchemaDefinitions });
 const updateSchemaAction = dxSchemaDefinition.getAction("update");
-const deleteSchemaAction = dxSchemaDefinition.getAction("delete");
-const createFragmentAction = dxSchemaFragment.getAction("quick-create");
+const deleteSchemaAction = dxSchemaDefinition.getAction("delete", {
+	onFinish: async () => {
+		await refreshSchemaDefinitions();
+		if (!schemaDefinitions.value.find(s => s.id === activeSchema.value.id)) {
+			activeSchema.value = null;
+		}
+	}
+});
+const createFragmentAction = dxSchemaFragment.getAction("quick-create", { onFinish: loadFragments });
 const updateFragmentAction = dxSchemaFragment.getAction("update");
 const deleteFragmentAction = dxSchemaFragment.getAction("delete", { onFinish: loadFragments });
 const activeSchema = defineModel<SchemaDefinition>();
@@ -166,10 +177,7 @@ const allowedSchemaDefinitions = computed(() => schemaDefinitions.value.filter(s
 
 // Load fragments when the active schema changes
 const fragmentList = shallowRef([]);
-onMounted(() => {
-	loadSchemaDefinitions();
-	loadFragments();
-});
+onMounted(refreshSchemaDefinitionsAndFragments);
 watch(() => activeSchema.value, loadFragments);
 
 // Create a new schema
@@ -193,6 +201,10 @@ async function onCreateFragment() {
 
 	activeFragment.value = response.item;
 	fragmentList.value.push(response.item);
+}
+
+function refreshSchemaDefinitionsAndFragments() {
+	return Promise.all([loadSchemaDefinitions(), loadFragments()]);
 }
 
 // Load the fragments for the current active schema

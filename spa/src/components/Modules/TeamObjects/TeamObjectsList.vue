@@ -62,7 +62,10 @@ const activeTeamObject = computed(() => dxTeamObject.activeItem.value);
 const activePanel = ref("workflows");
 
 async function init() {
-	dxTeamObject.setActiveFilter({ type: teamObjectType.value });
+	dxTeamObject.setActiveFilter({
+		schema_definition_id: props.schemaDefinition.id,
+		type: teamObjectType.value
+	});
 
 	dxTeamObject.initialize({
 		isDetailsEnabled: false,
@@ -82,8 +85,17 @@ async function loadTeamObjects() {
 		return;
 	}
 
+	const firstObject = teamObjects.value?.[0];
+	if (firstObject?.schema_definition_id !== props.schemaDefinition.id) {
+		// Clear the current team objects if the type has changed
+		dxTeamObject.pagedItems.value = null;
+	}
+
 	// Trigger loading the new team objects
 	dxTeamObject.setOptions({ isListEnabled: true });
-	dxTeamObject.setActiveFilter({ type: teamObjectType.value });
+	dxTeamObject.setActiveFilter({
+		schema_definition_id: props.schemaDefinition.id,
+		type: teamObjectType.value
+	});
 }
 </script>
