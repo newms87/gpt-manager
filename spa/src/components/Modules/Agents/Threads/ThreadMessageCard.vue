@@ -166,14 +166,13 @@ const avatar = computed<{
 	}
 });
 
-const deleteAction = dxThreadMessage.getAction("delete");
+const deleteAction = dxThreadMessage.getAction("quick-delete");
 const resetToMessageAction = dxAgentThread.getAction("reset-to-message");
 const updateAction = dxThreadMessage.getAction("update");
 const saveFilesAction = dxThreadMessage.getAction("save-files");
 const updateDebouncedAction = dxThreadMessage.getAction("update-debounced");
 
 // Property meta filtering
-
 watch(() => showMetaFields.value, () => {
 	content.value = getFilteredContent();
 });

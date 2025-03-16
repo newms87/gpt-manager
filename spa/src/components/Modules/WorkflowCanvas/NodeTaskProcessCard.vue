@@ -2,7 +2,7 @@
 	<div class="flex items-start flex-nowrap space-x-2">
 		<NodeArtifactsButton
 			class="mt-2"
-			:count="taskProcess.inputArtifacts.length"
+			:count="taskProcess.inputArtifacts?.length || 0"
 			active-color="sky"
 			:disabled="!taskProcess"
 			@show="isShowingInputArtifacts = !isShowingInputArtifacts"
@@ -104,7 +104,7 @@
 		</div>
 		<NodeArtifactsButton
 			class="mt-2"
-			:count="taskProcess.outputArtifacts.length"
+			:count="taskProcess.outputArtifacts?.length"
 			active-color="green"
 			:disabled="!taskProcess"
 			@show="isShowingOutputArtifacts = !isShowingOutputArtifacts"

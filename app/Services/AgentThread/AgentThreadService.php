@@ -277,8 +277,7 @@ class AgentThreadService
         // AgentThread messages are inserted between the directives
         foreach($thread->messages()->get() as $message) {
             $formattedMessage = $apiFormatter->message($message);
-
-
+            
             // For agents that rely on citing messages as sources, wrap the message in an AgentMessage tag
             if ($this->getJsonSchemaService()->isUsingCitations() && ($message->isUser() || $message->isTool())) {
                 $messages[] = $apiFormatter->wrapMessage("<AgentMessage id='$message->id'>", $formattedMessage, "</AgentMessage>");

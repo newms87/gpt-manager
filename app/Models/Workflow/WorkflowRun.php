@@ -154,10 +154,11 @@ class WorkflowRun extends Model implements WorkflowStatesContract
     public static function booted(): void
     {
         static::saving(function (WorkflowRun $workflowRun) {
-            $workflowRun->computeStatus();
             if ($workflowRun->isDirty('has_run_all_tasks')) {
                 $workflowRun->checkTaskRuns();
             }
+            
+            $workflowRun->computeStatus();
         });
     }
 

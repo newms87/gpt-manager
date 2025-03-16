@@ -50,9 +50,24 @@ class ArtifactFilter
         return $this;
     }
 
+    public function hasFiles(): bool
+    {
+        return $this->includeFiles && $this->artifact->storedFiles->isNotEmpty();
+    }
+
+    public function hasJson(): bool
+    {
+        return $this->includeJson && $this->artifact->json_content;
+    }
+
+    public function hasText(): bool
+    {
+        return $this->includeText && $this->artifact->text_content;
+    }
+
     public function isTextOnly(): bool
     {
-        return $this->includeText && !$this->includeFiles && !$this->includeJson;
+        return $this->includeText && !$this->hasFiles() && !$this->hasJson();
     }
 
     public function getTextContent(): ?string
@@ -96,15 +111,15 @@ class ArtifactFilter
         } else {
             $data = [];
 
-            if ($this->includeText) {
+            if ($this->hasText()) {
                 $data['text_content'] = $this->getTextContent();
             }
 
-            if ($this->includeFiles) {
+            if ($this->hasFiles()) {
                 $data['files'] = $this->artifact->storedFiles;
             }
 
-            if ($this->includeJson) {
+            if ($this->hasJson()) {
                 $data['json_content'] = $this->getFilteredData();
             }
 

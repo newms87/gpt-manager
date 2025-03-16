@@ -99,7 +99,10 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
         foreach($inputArtifacts as $inputArtifact) {
             $artifactFilter->setArtifact($inputArtifact);
-            app(ThreadRepository::class)->addMessageToThread($agentThread, $artifactFilter->filter());
+            $filteredMessage = $artifactFilter->filter();
+            if ($filteredMessage) {
+                app(ThreadRepository::class)->addMessageToThread($agentThread, $filteredMessage);
+            }
         }
 
         $this->taskProcess->agentThread()->associate($agentThread)->save();
