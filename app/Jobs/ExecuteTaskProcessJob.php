@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Task\TaskProcess;
-use App\Services\Task\TaskRunnerService;
+use App\Services\Task\TaskProcessRunnerService;
 use Newms87\Danx\Jobs\Job;
 
 class ExecuteTaskProcessJob extends Job
@@ -23,8 +23,8 @@ class ExecuteTaskProcessJob extends Job
         return 'execute-task-process:' . $this->taskProcess->id;
     }
 
-    public function run()
+    public function run(): void
     {
-        TaskRunnerService::runProcess($this->taskProcess);
+        TaskProcessRunnerService::run($this->taskProcess);
     }
 }

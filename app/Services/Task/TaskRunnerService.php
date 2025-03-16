@@ -2,7 +2,6 @@
 
 namespace App\Services\Task;
 
-use App\Jobs\ExecuteTaskProcessJob;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
@@ -13,21 +12,81 @@ use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
-use Newms87\Danx\Models\Job\JobDispatch;
-use Throwable;
 
 class TaskRunnerService
 {
     use HasDebugLogging;
 
     /**
+     * Prepare a task run for the task definition. Creates a TaskRun object w/ TaskProcess objects
+     */
+    public static function prepare(TaskDefinition $taskDefinition, $artifacts = []): TaskRun
+    {
+        $artifacts = collect($artifacts);
+        static::log("Prepare $taskDefinition");
+
+        $taskRun = $taskDefinition->taskRuns()->make([
+            'status' => WorkflowStatesContract::STATUS_PENDING,
+        ]);
+
+        $taskRun->getRunner()->prepareRun();
+        $taskRun->save();
+
+        $taskRun->inputArtifacts()->sync($artifacts->pluck('id'));
+        $taskRun->updateRelationCounter('inputArtifacts');
+
+        static::prepareTaskProcesses($taskRun, $artifacts);
+
+        return $taskRun;
+    }
+
+    /**
+     * Prepare task processes for the task run. Each process will receive its own Artifacts / Agent AgentThread
+     * based on the input groups and the assigned agents for the TaskDefinition
+     * @param TaskRun               $taskRun
+     * @param Artifact[]|Collection $artifacts
+     * @return array
+     * @throws ValidationError
+     */
+    public static function prepareTaskProcesses(TaskRun $taskRun, $artifacts = []): array
+    {
+        $artifacts = collect($artifacts);
+        static::log("Preparing task processes for $taskRun");
+
+        static::validateArtifacts($artifacts);
+
+        $taskProcesses = [];
+
+        $taskDefinition   = $taskRun->taskDefinition;
+        $definitionAgents = $taskDefinition->definitionAgents;
+
+        // NOTE: If there are no agents assigned to the task definition, create an array w/ null entry as a convenience so the loop will create a single process with no agent
+        if ($definitionAgents->isEmpty()) {
+            $definitionAgents = [null];
+        }
+
+        // Split up the artifacts into the groups defined by the task definition
+        $artifactGroups = ArtifactsSplitterService::split($taskDefinition->artifact_split_mode ?: '', $artifacts);
+
+        foreach($definitionAgents as $definitionAgent) {
+            foreach($artifactGroups as $artifactsInGroup) {
+                $taskProcesses[] = TaskProcessRunnerService::prepare($taskRun, $definitionAgent, $artifactsInGroup);
+            }
+        }
+
+        $taskRun->taskProcesses()->saveMany($taskProcesses);
+
+        return $taskProcesses;
+    }
+
+    /**
      * Start a task run for the task definition. This will create a task run and dispatch the task processes
      */
     public static function start(TaskDefinition $taskDefinition, $artifacts = []): TaskRun
     {
-        static::log("Starting for $taskDefinition");
+        static::log("Start $taskDefinition");
 
-        $taskRun = static::prepareTaskRun($taskDefinition, $artifacts);
+        $taskRun = static::prepare($taskDefinition, $artifacts);
 
         $taskRun->started_at = now();
         $taskRun->save();
@@ -39,12 +98,13 @@ class TaskRunnerService
     }
 
     /**
-     * Continue the task run by executing the next set of processes.
-     * NOTE: This will not dispatch the next processes if the task run is stopped or failed
+     * Continue the task run by dispatching any Pending processes and ensuring any timed out processes are flagged
+     *
+     * NOTE: This will not dispatch any processes if the task run is stopped or failed
      */
     public static function continue(TaskRun $taskRun): void
     {
-        static::log("Continuing $taskRun");
+        static::log("Continue $taskRun");
 
         // Always start by acquiring the lock for the task run before checking if it can continue
         // NOTE: This prevents allowing the TaskRun to continue if there was a race condition on failing/stopping the TaskRun
@@ -78,7 +138,7 @@ class TaskRunnerService
 
                 // Only dispatch a task process if it is pending
                 if ($taskProcess->isPending()) {
-                    static::dispatchProcess($taskProcess);
+                    TaskProcessRunnerService::dispatch($taskProcess);
                 } elseif ($taskProcess->isPastTimeout()) {
                     static::log("TaskProcess $taskProcess timed out, stopping TaskRun $taskRun");
                     $taskProcess->timeout_at = now();
@@ -97,7 +157,7 @@ class TaskRunnerService
      */
     public static function restart(TaskRun $taskRun): void
     {
-        static::log("Restarting $taskRun");
+        static::log("Restart $taskRun");
 
         // Always start by acquiring the lock for the task run before checking if it can continue
         // NOTE: This prevents allowing the TaskRun to continue if there was a race condition on failing/stopping the TaskRun
@@ -129,7 +189,7 @@ class TaskRunnerService
      */
     public static function resume(TaskRun $taskRun): void
     {
-        static::log("Resuming $taskRun");
+        static::log("Resume $taskRun");
 
         LockHelper::acquire($taskRun);
 
@@ -161,7 +221,7 @@ class TaskRunnerService
      */
     public static function stop(TaskRun $taskRun): void
     {
-        static::log("Stopping $taskRun");
+        static::log("Stop $taskRun");
 
         LockHelper::acquire($taskRun);
 
@@ -186,212 +246,25 @@ class TaskRunnerService
         }
     }
 
-    public static function restartProcess(TaskProcess $taskProcess): void
-    {
-        static::log("Restarting $taskProcess");
-
-        LockHelper::acquire($taskProcess);
-
-        try {
-            if ($taskProcess->isRunning()) {
-                throw new ValidationError("TaskProcess is currently running, cannot restart");
-            }
-            $taskProcess->outputArtifacts()->delete();
-            $taskProcess->updateRelationCounter('outputArtifacts');
-
-            $taskProcess->stopped_at = null;
-            $taskProcess->failed_at  = null;
-            $taskProcess->timeout_at = null;
-            // NOTE: we must reset the started_at and completed_at flag so the task process can be re-run
-            $taskProcess->started_at       = null;
-            $taskProcess->completed_at     = null;
-            $taskProcess->percent_complete = 0;
-            $taskProcess->save();
-        } finally {
-            LockHelper::release($taskProcess);
-        }
-
-        static::dispatchProcess($taskProcess);
-    }
-
     /**
-     * Resume the task process. This will resume the task process if it was stopped
+     * When a task run has completed, check to see if there are connections for the given node and execute them
      */
-    public static function resumeProcess(TaskProcess $taskProcess): void
+    public static function onComplete(TaskRun $taskRun): void
     {
-        static::log("Resuming $taskProcess");
+        static::log("Completed $taskRun");
 
-        LockHelper::acquire($taskProcess);
+        $workflowRun = $taskRun->workflowRun;
 
-        try {
-            if (!$taskProcess->canResume()) {
-                static::log("TaskProcess is not in a resumable state, skipping resume");
-
-                return;
-            }
-
-            $taskProcess->stopped_at = null;
-            $taskProcess->failed_at  = null;
-            $taskProcess->timeout_at = null;
-            // NOTE: we must reset the started_at and completed_at flag so the task process can be re-run
-            $taskProcess->started_at   = null;
-            $taskProcess->completed_at = null;
-            $taskProcess->save();
-        } finally {
-            LockHelper::release($taskProcess);
-        }
-
-        static::dispatchProcess($taskProcess);
-    }
-
-    /**
-     * Stop the task process. This will prevent the task process from executing further
-     */
-    public static function stopProcess(TaskProcess $taskProcess): void
-    {
-        static::log("Stopping $taskProcess");
-
-        LockHelper::acquire($taskProcess);
-
-        try {
-            if ($taskProcess->isStopped()) {
-                static::log("TaskProcess is already stopped");
-
-                return;
-            }
-
-            $taskProcess->stopped_at = now();
-            $taskProcess->save();
-        } finally {
-            LockHelper::release($taskProcess);
+        if ($workflowRun) {
+            WorkflowRunnerService::onNodeComplete($workflowRun, $taskRun->workflowNode);
         }
     }
 
     /**
-     * Dispatch a task process to be executed by the job queue
+     * Ensures all artifacts are instances of Artifact
      */
-    public static function dispatchProcess(TaskProcess $taskProcess): ?JobDispatch
+    public static function validateArtifacts($artifacts): void
     {
-        static::log("Dispatching: $taskProcess");
-
-        // associate job dispatch before dispatching in case of synchronous job execution
-        $job = (new ExecuteTaskProcessJob($taskProcess));
-
-        // Associate JobDispatch to TaskProcess
-        $jobDispatch = $job->getJobDispatch();
-        if ($jobDispatch) {
-            // track the most recent dispatch for easier referencing
-            $taskProcess->last_job_dispatch_id = $jobDispatch->id;
-            $taskProcess->save();
-
-            // Associate all job dispatches with the task process for logging purposes
-            $taskProcess->jobDispatches()->attach($jobDispatch->id);
-            $taskProcess->updateRelationCounter('jobDispatches');
-        }
-
-        // Dispatch the job
-        $job->dispatch();
-
-        return $jobDispatch;
-    }
-
-    /**
-     * Run the task process. This will execute the task process and mark it as completed when finished
-     */
-    public static function runProcess(TaskProcess $taskProcess): void
-    {
-        static::log("Running: $taskProcess");
-
-        LockHelper::acquire($taskProcess);
-
-        try {
-            if (!$taskProcess->canBeRun()) {
-                static::log("TaskProcess is $taskProcess->status, skipping execution");
-
-                return;
-            }
-
-            $taskProcess->started_at = now();
-            $taskProcess->save();
-        } finally {
-            LockHelper::release($taskProcess);
-        }
-
-        // Run the task process
-        try {
-            $taskProcess->getRunner()->run();
-            static::log("TaskProcess finished running: $taskProcess");
-        } catch(Throwable $throwable) {
-            static::log("TaskProcess failed: $taskProcess");
-            $taskProcess->failed_at = now();
-            $taskProcess->save();
-            throw $throwable;
-        }
-    }
-
-    /**
-     * Process the completion of a task process.
-     * This will mark the task process completed and continue the task run
-     */
-    public static function processCompleted(TaskProcess $taskProcess): void
-    {
-        static::log("TaskProcess completed w/ " . $taskProcess->outputArtifacts()->count() . " artifacts: $taskProcess");
-
-        LockHelper::acquire($taskProcess);
-
-        try {
-            $taskProcess->completed_at = now();
-            $taskProcess->save();
-        } finally {
-            LockHelper::release($taskProcess);
-        }
-
-        // Continue the task run if there are more processes to run
-        $taskRun = $taskProcess->taskRun->refresh();
-        static::continue($taskRun);
-
-        // If the task run is a part of a workflow run and the task run is completed, then notify the workflow run
-        if ($taskRun->workflow_run_id && $taskRun->isCompleted()) {
-            WorkflowRunnerService::taskRunComplete($taskRun);
-        }
-    }
-
-    /**
-     * Prepare a task run for the task definition. Creates a TaskRun object w/ TaskProcess objects
-     */
-    public static function prepareTaskRun(TaskDefinition $taskDefinition, $artifacts = []): TaskRun
-    {
-        $artifacts = collect($artifacts);
-        static::log("Preparing task run for $taskDefinition");
-
-        $taskRun = $taskDefinition->taskRuns()->make([
-            'status' => WorkflowStatesContract::STATUS_PENDING,
-        ]);
-
-        $taskRun->getRunner()->prepareRun();
-        $taskRun->save();
-
-        $taskRun->inputArtifacts()->sync($artifacts->pluck('id'));
-        $taskRun->updateRelationCounter('inputArtifacts');
-
-        static::prepareTaskProcesses($taskRun, $artifacts);
-
-        return $taskRun;
-    }
-
-    /**
-     * Prepare task processes for the task run. Each process will receive its own Artifacts / Agent AgentThread
-     * based on the input groups and the assigned agents for the TaskDefinition
-     * @param TaskRun               $taskRun
-     * @param Artifact[]|Collection $artifacts
-     * @return array
-     * @throws ValidationError
-     */
-    public static function prepareTaskProcesses(TaskRun $taskRun, $artifacts = []): array
-    {
-        $artifacts = collect($artifacts);
-        static::log("Preparing task processes for $taskRun");
-
         // Validate the artifacts are all Artifact instances
         foreach($artifacts as $artifact) {
             // Only accept Artifact instances here. The input should have already converted content into an Artifact
@@ -399,45 +272,5 @@ class TaskRunnerService
                 throw new ValidationError("Invalid artifact provided: All artifacts should be an instance of Artifact: " . (is_object($artifact) ? get_class($artifact) : json_encode($artifact)));
             }
         }
-
-        $taskProcesses = [];
-
-        $taskDefinition   = $taskRun->taskDefinition;
-        $definitionAgents = $taskDefinition->definitionAgents;
-
-        // NOTE: If there are no agents assigned to the task definition, create an array w/ null entry as a convenience so the loop will create a single process with no agent
-        if ($definitionAgents->isEmpty()) {
-            $definitionAgents = [null];
-        }
-
-        // Split up the artifacts into the groups defined by the task definition
-        $artifactGroups = ArtifactsSplitterService::split($taskDefinition->artifact_split_mode ?: '', $artifacts);
-
-        foreach($definitionAgents as $definitionAgent) {
-            foreach($artifactGroups as $groupKey => $artifactsInGroup) {
-                $name        = ($definitionAgent?->agent->name ?: $taskDefinition->name);
-                $taskProcess = $taskRun->taskProcesses()->create([
-                    'name'                     => $name . ": " . $groupKey,
-                    'activity'                 => "Preparing $name...",
-                    'status'                   => WorkflowStatesContract::STATUS_PENDING,
-                    'task_definition_agent_id' => $definitionAgent?->id,
-                ]);
-
-                if ($artifacts->isNotEmpty()) {
-                    $taskProcess->inputArtifacts()->saveMany($artifactsInGroup);
-                    $taskProcess->updateRelationCounter('inputArtifacts');
-                }
-
-                static::log("Prepared task process w/ " . count($artifactsInGroup) . " artifact(s): $taskProcess");
-
-                $taskProcess->getRunner()->prepareProcess();
-
-                $taskProcesses[] = $taskProcess;
-            }
-        }
-
-        $taskRun->taskProcesses()->saveMany($taskProcesses);
-
-        return $taskProcesses;
     }
 }

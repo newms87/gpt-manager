@@ -16,7 +16,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $taskDefinition = TaskDefinition::factory()->create();
 
         // When
-        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition);
+        $taskRun = TaskRunnerService::prepare($taskDefinition);
 
         // Then
         $taskRun->refresh();
@@ -36,7 +36,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
             ->create();
 
         // When
-        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition);
+        $taskRun = TaskRunnerService::prepare($taskDefinition);
 
         // Then
         $taskRun->refresh();
@@ -60,7 +60,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $artifacts      = Artifact::factory()->count(2)->create();
 
         // When
-        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition, $artifacts);
+        $taskRun = TaskRunnerService::prepare($taskDefinition, $artifacts);
 
         // Then
         $taskRun->refresh();
@@ -84,7 +84,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $artifacts      = Artifact::factory()->count(2)->create();
 
         // When
-        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition, $artifacts);
+        $taskRun = TaskRunnerService::prepare($taskDefinition, $artifacts);
 
         // Then
         $taskRun->refresh();
@@ -103,7 +103,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
     {
         // Given
         $taskDefinition = TaskDefinition::factory()->create();
-        $taskRun        = TaskRunnerService::prepareTaskRun($taskDefinition);
+        $taskRun        = TaskRunnerService::prepare($taskDefinition);
         $taskProcess    = $taskRun->taskProcesses->first();
 
         // When
@@ -127,7 +127,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
     {
         // Given
         $taskDefinition = TaskDefinition::factory()->create();
-        $taskRun        = TaskRunnerService::prepareTaskRun($taskDefinition);
+        $taskRun        = TaskRunnerService::prepare($taskDefinition);
         $taskRun->update(['stopped_at' => now()]);
         $taskProcess = $taskRun->taskProcesses->first();
 
@@ -142,7 +142,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
     {
         // Given
         $taskDefinition = TaskDefinition::factory()->create();
-        $taskRun        = TaskRunnerService::prepareTaskRun($taskDefinition);
+        $taskRun        = TaskRunnerService::prepare($taskDefinition);
         $taskRun->update(['failed_at' => now()]);
         $taskProcess = $taskRun->taskProcesses->first();
 
@@ -157,7 +157,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
     {
         // Given
         $taskDefinition = TaskDefinition::factory()->withDefinitionAgent()->create();
-        $taskRun        = TaskRunnerService::prepareTaskRun($taskDefinition);
+        $taskRun        = TaskRunnerService::prepare($taskDefinition);
         $taskProcess    = $taskRun->taskProcesses->first();
 
         // When

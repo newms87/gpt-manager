@@ -5,7 +5,7 @@ namespace App\Services\Task\Runners;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Services\Task\TaskRunnerService;
+use App\Services\Task\TaskProcessRunnerService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -100,6 +100,6 @@ class BaseTaskRunner implements TaskRunnerContract
         }
 
         // Finished running the process
-        TaskRunnerService::processCompleted($this->taskProcess);
+        TaskProcessRunnerService::complete($this->taskProcess);
     }
 }

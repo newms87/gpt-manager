@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Task\TaskProcess;
-use App\Services\Task\TaskRunnerService;
+use App\Services\Task\TaskProcessRunnerService;
 use Log;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -38,7 +38,7 @@ class TaskProcessRepository extends ActionRepository
 
     public function restartTaskProcess(TaskProcess $taskProcess): TaskProcess
     {
-        TaskRunnerService::restartProcess($taskProcess);
+        TaskProcessRunnerService::restart($taskProcess);
 
         return $taskProcess;
     }
@@ -48,7 +48,7 @@ class TaskProcessRepository extends ActionRepository
      */
     public function resumeTaskProcess(TaskProcess $taskProcess): TaskProcess
     {
-        TaskRunnerService::resumeProcess($taskProcess);
+        TaskProcessRunnerService::resume($taskProcess);
 
         return $taskProcess;
     }
@@ -58,7 +58,7 @@ class TaskProcessRepository extends ActionRepository
      */
     public function stopTaskProcess(TaskProcess $taskProcess): TaskProcess
     {
-        TaskRunnerService::stopProcess($taskProcess);
+        TaskProcessRunnerService::stop($taskProcess);
 
         return $taskProcess;
     }

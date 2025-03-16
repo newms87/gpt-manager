@@ -60,7 +60,7 @@ class WorkflowRunnerService
         $artifacts = collect($artifacts)->merge($workflowRun->collectOutputArtifactsFromSourceNodes($workflowNode));
 
         // Then run the node
-        $taskRun = TaskRunnerService::prepareTaskRun($workflowNode->taskDefinition, $artifacts);
+        $taskRun = TaskRunnerService::prepare($workflowNode->taskDefinition, $artifacts);
         $taskRun->workflowRun()->associate($workflowRun)->save();
         $taskRun->workflowNode()->associate($workflowNode)->save();
         TaskRunnerService::continue($taskRun);
@@ -150,20 +150,23 @@ class WorkflowRunnerService
         }
     }
 
+    public static function onComplete(WorkflowRun $workflowRun): void
+    {
+
+    }
+
     /**
      * When a task run has completed, check to see if there are connections for the given node and execute them
      */
-    public static function taskRunComplete(TaskRun $taskRun): void
+    public static function onNodeComplete(WorkflowRun $workflowRun, WorkflowNode $workflowNode): void
     {
-        static::log("Received TaskRun Completed: $taskRun");
-
-        $workflowRun = $taskRun->workflowRun;
+        static::log("Node Completed $workflowNode");
 
         LockHelper::acquire($workflowRun);
 
         try {
             // For every connection on the workflow node, start the target node if it is ready to run
-            foreach($taskRun->workflowNode->connectionsAsSource as $workflowConnection) {
+            foreach($workflowNode->connectionsAsSource as $workflowConnection) {
                 $targetNode = $workflowConnection->targetNode;
 
                 // If this workflow node has already been started, we don't want to start it again
@@ -174,7 +177,7 @@ class WorkflowRunnerService
 
                 // If this node is ready to run, start it
                 if ($workflowRun->targetNodeReadyToRun($targetNode)) {
-                    static::startNode($workflowRun, $targetNode);
+                    WorkflowRunnerService::startNode($workflowRun, $targetNode);
                 } else {
                     static::log("Waiting for sources before running target $targetNode");
                 }

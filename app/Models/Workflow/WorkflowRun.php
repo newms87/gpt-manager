@@ -5,6 +5,7 @@ namespace App\Models\Workflow;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskRun;
 use App\Models\Usage\UsageSummary;
+use App\Services\Workflow\WorkflowRunnerService;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -157,8 +158,15 @@ class WorkflowRun extends Model implements WorkflowStatesContract
             if ($workflowRun->isDirty('has_run_all_tasks')) {
                 $workflowRun->checkTaskRuns();
             }
-            
+
             $workflowRun->computeStatus();
+        });
+
+        static::saved(function (WorkflowRun $workflowRun) {
+            // If the workflow run was recently completed, let the service know so we can trigger any events
+            if ($workflowRun->wasChanged('status') && $workflowRun->isCompleted()) {
+                WorkflowRunnerService::onComplete($workflowRun);
+            }
         });
     }
 
