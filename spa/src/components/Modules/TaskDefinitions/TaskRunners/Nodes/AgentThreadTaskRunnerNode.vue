@@ -5,8 +5,8 @@
 </template>
 <script setup lang="ts">
 import { AgentThreadRunnerLottie } from "@/assets/dotlottie";
-import BaseTaskRunnerNode from "@/components/Modules/WorkflowCanvas/TaskRunners/BaseTaskRunnerNode";
 import { AnyObject } from "quasar-ui-danx";
+import BaseTaskRunnerNode from "./BaseTaskRunnerNode";
 
 defineProps<{
 	config?: AnyObject;

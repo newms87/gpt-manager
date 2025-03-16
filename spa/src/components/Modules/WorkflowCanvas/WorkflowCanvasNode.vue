@@ -57,10 +57,10 @@
 
 <script setup lang="ts">
 import LoadingSandLottie from "@/assets/dotlottie/LoadingSandLottie";
+import { TaskRunners } from "@/components/Modules/TaskDefinitions/TaskRunners";
 import { edges } from "@/components/Modules/WorkflowCanvas/helpers";
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
 import NodePortsWidget from "@/components/Modules/WorkflowCanvas/NodePortsWidget";
-import { TaskRunners } from "@/components/Modules/WorkflowCanvas/TaskRunners";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
 import { refreshActiveWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
 import { TaskRun, WorkflowDefinition, WorkflowRun } from "@/types";
@@ -85,7 +85,7 @@ const isTemporary = computed(() => !!props.node.id.match(/^td-/));
 
 const workflowNode = computed(() => props.workflowDefinition?.nodes.find((wn) => wn.id == +props.node.id));
 const taskDefinition = computed(() => workflowNode.value?.taskDefinition);
-const taskRunnerComponent = computed(() => TaskRunners[taskDefinition.value?.task_runner_class] || TaskRunners.Base);
+const taskRunnerComponent = computed(() => TaskRunners[taskDefinition.value?.task_runner_class]?.node || TaskRunners.Base.node);
 const sourceEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.source === props.node.id.toString()));
 const targetEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.target === props.node.id.toString()));
 const taskRun = computed<TaskRun>(() => props.workflowRun?.taskRuns?.find((tr) => tr.workflow_node_id == +props.node.id));

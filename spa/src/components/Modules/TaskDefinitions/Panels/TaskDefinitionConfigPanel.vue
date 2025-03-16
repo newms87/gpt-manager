@@ -18,23 +18,24 @@
 				:loading="!dxTaskDefinition.getFieldOptions('runners')"
 				@update="task_runner_class => updateAction.trigger(taskDefinition, {task_runner_class})"
 			/>
-			<TaskDefinitionAgentList v-if="showAgentList" class="mt-8" :task-definition="taskDefinition" />
+
+			<Component :is="TaskRunnerConfigComponent" :task-definition="taskDefinition" />
 		</ActionForm>
 	</div>
 </template>
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { fields } from "@/components/Modules/TaskDefinitions/config/fields";
-import TaskDefinitionAgentList from "@/components/Modules/TaskDefinitions/TaskDefinitionAgents/TaskDefinitionAgentList";
+import { TaskRunners } from "@/components/Modules/TaskDefinitions/TaskRunners";
 import ArtifactSplitModeWidget from "@/components/Modules/TaskDefinitions/Widgets/ArtifactSplitModeWidget";
 import { TaskDefinition } from "@/types";
 import { ActionForm, SelectField } from "quasar-ui-danx";
-import { ref } from "vue";
+import { computed } from "vue";
 
-defineProps<{
+const props = defineProps<{
 	taskDefinition: TaskDefinition,
 }>();
 
 const updateAction = dxTaskDefinition.getAction("update");
-const showAgentList = ref(true);
+const TaskRunnerConfigComponent = computed(() => TaskRunners[props.taskDefinition.task_runner_class]?.config || TaskRunners.Base.config);
 </script>

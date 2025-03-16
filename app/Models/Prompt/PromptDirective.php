@@ -23,7 +23,7 @@ class PromptDirective extends Model implements AuditableContract, CanExportToJso
 {
     use HasFactory, ActionModelTrait, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 
-    protected $guarded = [
+    protected $fillable = [
         'name',
         'directive_text',
     ];

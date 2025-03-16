@@ -9,6 +9,7 @@ use App\Models\Task\TaskRun;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as EloquentCollection;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class BaseTaskRunner implements TaskRunnerContract
@@ -79,7 +80,7 @@ class BaseTaskRunner implements TaskRunnerContract
         static::log("Event Triggered $taskProcessListener");
     }
 
-    public function complete(array|Collection $artifacts = []): void
+    public function complete(array|Collection|EloquentCollection $artifacts = []): void
     {
         static::log("Task process completed: $this->taskProcess");
 

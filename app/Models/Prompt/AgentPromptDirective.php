@@ -20,6 +20,7 @@ class AgentPromptDirective extends Model implements AuditableContract, CanExport
         SECTION_BOTTOM = 'Bottom';
 
     protected $fillable = [
+        'prompt_directive_id',
         'section',
         'position',
     ];

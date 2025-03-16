@@ -18,7 +18,7 @@ class AgentRepository extends ActionRepository
 
     public function query(): Builder
     {
-        return parent::query()->where('team_id', team()->id);
+        return parent::query()->where('team_id', team()->id)->whereNull('owner_team_id');
     }
 
     public function summaryQuery(array $filter = []): Builder|QueryBuilder
@@ -191,16 +191,17 @@ class AgentRepository extends ActionRepository
                 throw new ValidationError('Prompt Directive not found: ' . $promptDirectiveId);
             }
         } else {
-            $existingPromptDirective = PromptDirective::where('name', $name)->first();
-            $existingDirective       = null;
-            if ($existingPromptDirective) {
-                $existingDirective = $agent->directives()->where('prompt_directive_id', $existingPromptDirective->id)->first();
+            // Lookup the prompt directive by name to see if there is a matching directive
+            $promptDirective              = PromptDirective::where('name', $name)->first();
+            $existingAgentPromptDirective = null;
+
+            // If the prompt directive exists, maybe it already is associated to the agent?
+            if ($promptDirective) {
+                $existingAgentPromptDirective = $agent->directives()->where('prompt_directive_id', $promptDirective->id)->first();
             }
 
-            // Re-use an existing prompt directive if one was already created for this agent
-            if ($existingPromptDirective && !$existingDirective) {
-                $promptDirective = $existingPromptDirective;
-            } else {
+            // If there was no matching prompt directive or the prompt directive has already been associated to the agent, just create a new one as the user requested
+            if (!$promptDirective || $existingAgentPromptDirective) {
                 $promptDirective = PromptDirective::make([
                     'team_id' => team()->id,
                     'name'    => $name,
@@ -216,10 +217,6 @@ class AgentRepository extends ActionRepository
             'section'             => $section,
             'position'            => $position,
         ])->save();
-
-        // IMPORTANT: the UI expects the agent to be touched after a directive is modified for optimistic updates.
-        // Without this, the optimistic update will appear more recent than the returned agent, so the response and subsequent fetches of the agent will be ignored
-        $agent->touch();
 
         return $agentPromptDirective;
     }
@@ -242,10 +239,6 @@ class AgentRepository extends ActionRepository
             ]);
         }
 
-        // IMPORTANT: the UI expects the agent to be touched after a directive is modified for optimistic updates.
-        // Without this, the optimistic update will appear more recent than the returned agent, so the response and subsequent fetches of the agent will be ignored
-        $agent->touch();
-
         return true;
     }
 
@@ -255,10 +248,6 @@ class AgentRepository extends ActionRepository
     public function removeDirective(Agent $agent, $directiveId): bool
     {
         $agent->directives()->where('prompt_directive_id', $directiveId)->delete();
-
-        // IMPORTANT: the UI expects the agent to be touched after a directive is modified for optimistic updates.
-        // Without this, the optimistic update will appear more recent than the returned agent, so the response and subsequent fetches of the agent will be ignored
-        $agent->touch();
 
         return true;
     }

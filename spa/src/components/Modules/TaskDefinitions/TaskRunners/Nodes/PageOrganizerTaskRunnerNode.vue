@@ -1,12 +1,12 @@
 <template>
 	<BaseTaskRunnerNode :config="config">
-		<ImageToTextLottie class="w-[10rem]" :autoplay="autoplay" :finished="finished" />
+		<PageOrganizerLottie class="w-[10rem]" :autoplay="autoplay" :finished="finished" />
 	</BaseTaskRunnerNode>
 </template>
 <script setup lang="ts">
-import { ImageToTextLottie } from "@/assets/dotlottie";
-import BaseTaskRunnerNode from "@/components/Modules/WorkflowCanvas/TaskRunners/BaseTaskRunnerNode";
+import { PageOrganizerLottie } from "@/assets/dotlottie";
 import { AnyObject } from "quasar-ui-danx";
+import BaseTaskRunnerNode from "./BaseTaskRunnerNode";
 
 defineProps<{
 	config?: AnyObject;

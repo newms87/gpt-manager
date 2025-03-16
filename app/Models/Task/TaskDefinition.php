@@ -40,6 +40,13 @@ class TaskDefinition extends Model implements AuditableContract, CanExportToJson
         TaskDefinitionAgent::class => ['definitionAgents' => 'task_agent_count'],
     ];
 
+    public function casts()
+    {
+        return [
+            'task_runner_config' => 'json',
+        ];
+    }
+
     public function definitionAgents(): HasMany|TaskDefinitionAgent
     {
         return $this->hasMany(TaskDefinitionAgent::class);
