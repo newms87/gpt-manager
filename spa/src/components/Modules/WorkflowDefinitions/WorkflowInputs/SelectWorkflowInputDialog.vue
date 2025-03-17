@@ -1,6 +1,6 @@
 <template>
 	<InfoDialog
-		:disable="loading || saving"
+		:disabled="loading || saving"
 		title="Select Input"
 		content-class="w-[50rem]"
 		done-class="bg-slate-700"

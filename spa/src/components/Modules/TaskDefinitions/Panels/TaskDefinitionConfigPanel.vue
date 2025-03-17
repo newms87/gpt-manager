@@ -3,7 +3,7 @@
 		<ActionForm
 			:action="updateAction"
 			:target="taskDefinition"
-			:form="{fields}"
+			:form="formDefinition"
 		>
 			<ArtifactSplitModeWidget
 				class="mt-4"
@@ -14,7 +14,7 @@
 				class="mt-8"
 				:model-value="taskDefinition.task_runner_class"
 				:options="dxTaskDefinition.getFieldOptions('runners')"
-				:disable="updateAction.isApplying"
+				:disabled="updateAction.isApplying"
 				:loading="!dxTaskDefinition.getFieldOptions('runners')"
 				@update="task_runner_class => updateAction.trigger(taskDefinition, {task_runner_class})"
 			/>
@@ -30,11 +30,13 @@ import { TaskRunners } from "@/components/Modules/TaskDefinitions/TaskRunners";
 import ArtifactSplitModeWidget from "@/components/Modules/TaskDefinitions/Widgets/ArtifactSplitModeWidget";
 import { TaskDefinition } from "@/types";
 import { ActionForm, SelectField } from "quasar-ui-danx";
-import { computed } from "vue";
+import { computed, shallowRef } from "vue";
 
 const props = defineProps<{
 	taskDefinition: TaskDefinition,
 }>();
+
+const formDefinition = shallowRef({ fields });
 
 const updateAction = dxTaskDefinition.getAction("update");
 const TaskRunnerConfigComponent = computed(() => TaskRunners[props.taskDefinition.task_runner_class]?.config || TaskRunners.Base.config);

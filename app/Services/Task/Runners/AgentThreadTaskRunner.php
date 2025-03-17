@@ -45,11 +45,11 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         $agent             = $agentThread->agent;
         $schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
 
-        // The default agent thread task runner will use the JsonSchemaService with citations, id, and the name so we are enabling database I/O w/ citations
+        // The default agent thread task runner will use the JsonSchemaService with the database fields (ie: id and name) so we are enabling database I/O
         $jsonSchemaService = app(JsonSchemaService::class);
 
         if ($schemaAssociation?->schemaDefinition) {
-            $jsonSchemaService->useCitations()->useDbFields()->useArtifactMeta();
+            $jsonSchemaService->useDbFields()->useArtifactMeta();
         }
 
         $this->activity("Communicating with AI agent in thread", 11);

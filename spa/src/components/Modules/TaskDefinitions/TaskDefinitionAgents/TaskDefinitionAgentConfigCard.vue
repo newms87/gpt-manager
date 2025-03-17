@@ -172,7 +172,7 @@ const updateDefinitionAgentAction = dxTaskDefinitionAgent.getAction("update");
 const removeDefinitionAgentAction = dxTaskDefinitionAgent.getAction("quick-delete", { optimisticDelete: true });
 const createSchemaAssociationAction = dxSchemaAssociation.getAction("quick-create", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
 const updateSchemaAssociationAction = dxSchemaAssociation.getAction("update");
-const deleteSchemaAssociationAction = dxSchemaAssociation.getAction("delete", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
+const deleteSchemaAssociationAction = dxSchemaAssociation.getAction("quick-delete", { onFinish: () => dxTaskDefinition.routes.details(props.taskDefinition) });
 
 const isUpdatingAgent = ref(false);
 const isSavingOutputSchema = ref(false);

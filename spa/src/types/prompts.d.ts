@@ -8,6 +8,10 @@ export interface SchemaDefinition extends ActionTargetItem {
 	schema: JsonSchema;
 	response_example: object | object[];
 	agents: Agent[];
+	can: {
+		view: boolean;
+		edit: boolean;
+	};
 }
 
 export interface SchemaFragment extends ActionTargetItem {

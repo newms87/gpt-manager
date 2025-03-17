@@ -29,9 +29,9 @@
 							<ShowHideButton
 								v-if="previewable"
 								v-model="isPreviewing"
-								:disable="!activeSchema"
+								:disabled="!activeSchema || !canView"
 								:class="buttonColor"
-								tooltip="Preview Selection"
+								:tooltip="canView ? 'Preview Selection' : 'Preview disabled: You do not have permission to view this schema.'"
 							/>
 							<SelectionMenuField
 								v-if="canSelect"
@@ -43,6 +43,7 @@
 								:clearable="clearable"
 								deletable
 								name-editable
+								:edit-disabled="!canEdit"
 								:select-icon="SchemaIcon"
 								label-class="text-slate-300"
 								:class="{'mr-4': clearable, 'mr-8': !clearable}"
@@ -65,6 +66,7 @@
 									clearable
 									deletable
 									name-editable
+									:edit-disabled="!canEdit"
 									:select-icon="FragmentIcon"
 									label-class="text-slate-300"
 									:select-class="buttonColor"
@@ -147,6 +149,9 @@ const props = withDefaults(defineProps<{
 	excludeSchemaIds: null
 });
 
+const canView = computed(() => activeSchema.value?.can?.view !== false);
+const canEdit = computed(() => activeSchema.value?.can?.edit !== false);
+
 const createSchemaAction = dxSchemaDefinition.getAction("create", { onFinish: refreshSchemaDefinitions });
 const updateSchemaAction = dxSchemaDefinition.getAction("update");
 const deleteSchemaAction = dxSchemaDefinition.getAction("delete", {
@@ -177,7 +182,10 @@ const allowedSchemaDefinitions = computed(() => schemaDefinitions.value.filter(s
 
 // Load fragments when the active schema changes
 const fragmentList = shallowRef([]);
-onMounted(refreshSchemaDefinitionsAndFragments);
+onMounted(() => {
+	loadSchemaDefinitions();
+	loadFragments();
+});
 watch(() => activeSchema.value, loadFragments);
 
 // Create a new schema
@@ -201,10 +209,6 @@ async function onCreateFragment() {
 
 	activeFragment.value = response.item;
 	fragmentList.value.push(response.item);
-}
-
-function refreshSchemaDefinitionsAndFragments() {
-	return Promise.all([loadSchemaDefinitions(), loadFragments()]);
 }
 
 // Load the fragments for the current active schema

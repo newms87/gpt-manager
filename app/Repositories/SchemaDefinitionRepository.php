@@ -17,7 +17,7 @@ class SchemaDefinitionRepository extends ActionRepository
 
     public function query(): Builder
     {
-        return parent::query()->where('team_id', team()->id)->whereNull('owner_team_id');
+        return parent::query()->where('team_id', team()->id);
     }
 
     public function summaryQuery(array $filter = []): Builder|QueryBuilder

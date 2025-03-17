@@ -67,7 +67,7 @@
 		<MultiFileField
 			v-if="!readonly || workflowInput.files?.length > 0 || !!workflowInput.thumb"
 			:readonly="readonly"
-			:disable="!isEditing"
+			:disabled="!isEditing"
 			:model-value="workflowInput.files || (workflowInput.thumb ? [workflowInput.thumb] : [])"
 			:width="70"
 			:height="60"
