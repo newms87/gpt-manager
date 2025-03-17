@@ -30,11 +30,6 @@
 					<LoadingSandLottie class="w-32 h-24" autoplay />
 				</div>
 			</div>
-			<NodePortsWidget
-				:task-run="taskRun"
-				:source-edges="sourceEdges"
-				:target-edges="targetEdges"
-			/>
 		</div>
 		<div class="mt-2 flex justify-center">
 			<div>
@@ -56,7 +51,6 @@
 <script setup lang="ts">
 import LoadingSandLottie from "@/assets/dotlottie/LoadingSandLottie";
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
-import NodePortsWidget from "@/components/Modules/WorkflowCanvas/NodePortsWidget";
 import { useWorkflowNode } from "@/components/Modules/WorkflowCanvas/useWorkflowNode";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
 import { refreshActiveWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";

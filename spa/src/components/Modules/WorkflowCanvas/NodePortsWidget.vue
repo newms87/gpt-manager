@@ -1,10 +1,12 @@
 <template>
-	<div class="flex items-center flex-nowrap space-x-2">
-		<div class="ports input-ports">
+	<div class="node-ports-widget flex items-center flex-nowrap space-x-2 h-[5rem]">
+		<div v-if="!hideTarget" class="ports input-ports">
 			<NodePortWidget
-				port-id="default"
+				v-for="targetPort in targetPorts"
+				:key="`port-${targetPort}`"
+				:port-id="targetPort"
 				type="target"
-				:is-connected="isTargetConnected('target-default')"
+				:is-connected="isTargetConnected('target-' + targetPort)"
 				:count="taskRun?.input_artifacts_count"
 				:disabled="!taskRun"
 				:artifacts="taskRun?.inputArtifacts"
@@ -12,11 +14,13 @@
 			/>
 		</div>
 
-		<div class="ports output-ports">
+		<div v-if="!hideSource" class="ports output-ports">
 			<NodePortWidget
-				port-id="default"
+				v-for="sourcePort in sourcePorts"
+				:key="`port-${sourcePort}`"
+				:port-id="sourcePort"
 				type="source"
-				:is-connected="isSourceConnected('source-default')"
+				:is-connected="isSourceConnected('source-' + sourcePort)"
 				:count="taskRun?.output_artifacts_count"
 				:disabled="!taskRun"
 				:artifacts="taskRun?.outputArtifacts"
@@ -43,11 +47,19 @@ import { Edge } from "@vue-flow/core";
 import { InfoDialog } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
 	taskRun?: TaskRun;
 	sourceEdges: Edge[];
 	targetEdges: Edge[];
-}>();
+	hideSource?: boolean;
+	hideTarget?: boolean;
+	sourcePorts?: string[];
+	targetPorts?: string[];
+}>(), {
+	taskRun: null,
+	sourcePorts: () => ["default"],
+	targetPorts: () => ["default"]
+});
 
 function isSourceConnected(id) {
 	return props.sourceEdges.some((edge) => edge.sourceHandle === id);
