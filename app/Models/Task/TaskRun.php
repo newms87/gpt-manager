@@ -9,6 +9,7 @@ use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\TaskRunnerContract;
+use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Task\TaskRunnerService;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -171,6 +172,12 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 // If the task run was recently completed, let the service know so we can trigger any events
                 if ($taskRun->isCompleted()) {
                     TaskRunnerService::onComplete($taskRun);
+                }
+
+                if ($taskRun->workflowRun?->taskProcessListeners->isNotEmpty()) {
+                    foreach($taskRun->workflowRun->taskProcessListeners as $taskProcessListener) {
+                        TaskProcessRunnerService::eventTriggered($taskProcessListener);
+                    }
                 }
             }
         });
