@@ -1,4 +1,4 @@
-import { BaseTaskRunnerConfig, RunWorkflowTaskRunnerConfig } from "./Configs";
+import { AgentThreadTaskRunnerConfig, BaseTaskRunnerConfig, RunWorkflowTaskRunnerConfig } from "./Configs";
 import {
 	AgentThreadTaskRunnerNode,
 	BaseTaskRunnerNode,
@@ -13,7 +13,7 @@ import {
 export const TaskRunners = {
 	"AI Agent": {
 		node: AgentThreadTaskRunnerNode,
-		config: BaseTaskRunnerConfig
+		config: AgentThreadTaskRunnerConfig
 	},
 	"Base": {
 		node: BaseTaskRunnerNode,
@@ -21,7 +21,7 @@ export const TaskRunners = {
 	},
 	"Image To Text Transcoder": {
 		node: ImageToTextTaskRunnerNode,
-		config: BaseTaskRunnerConfig
+		config: AgentThreadTaskRunnerConfig
 	},
 	"Load From Database": {
 		node: LoadFromDatabaseTaskRunnerNode,
@@ -29,7 +29,7 @@ export const TaskRunners = {
 	},
 	"Pages Organizer": {
 		node: PageOrganizerTaskRunnerNode,
-		config: BaseTaskRunnerConfig
+		config: AgentThreadTaskRunnerConfig
 	},
 	"Run Workflow": {
 		node: RunWorkflowTaskRunnerNode,

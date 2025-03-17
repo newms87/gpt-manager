@@ -10,8 +10,6 @@ class SplitByFileTaskRunner extends BaseTaskRunner
 
     public function run(): void
     {
-        $config = $this->taskRun->taskDefinition->task_runner_config;
-
         $outputArtifacts = [];
 
         foreach($this->taskProcess->inputArtifacts as $inputArtifact) {

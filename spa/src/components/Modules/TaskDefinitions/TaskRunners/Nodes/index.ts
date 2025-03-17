@@ -6,3 +6,4 @@ export { default as PageOrganizerTaskRunnerNode } from "./PageOrganizerTaskRunne
 export { default as RunWorkflowTaskRunnerNode } from "./RunWorkflowTaskRunnerNode.vue";
 export { default as SaveToDatabaseTaskRunnerNode } from "./SaveToDatabaseTaskRunnerNode.vue";
 export { default as SplitByFileTaskRunnerNode } from "./SplitByFileTaskRunnerNode.vue";
+export { default as WorkflowInputTaskRunnerNode } from "./WorkflowInputTaskRunnerNode.vue";
