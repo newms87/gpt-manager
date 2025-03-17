@@ -8,6 +8,7 @@ use App\Models\TeamObject\TeamObjectAttribute;
 use App\Resources\TeamObject\TeamObjectAttributeResource;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use BadFunctionCallException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\ModelHelper;
@@ -16,6 +17,11 @@ use Newms87\Danx\Repositories\ActionRepository;
 class TeamObjectRepository extends ActionRepository
 {
     public static string $model = TeamObject::class;
+
+    public function query(): Builder
+    {
+        return parent::query()->where('team_id', team()->id)->whereDoesntHave('schemaDefinition', fn(Builder $builder) => $builder->whereNotNull('owner_team_id'));
+    }
 
     public function applyAction(string $action, TeamObject|Model|array|null $model = null, ?array $data = null)
     {
