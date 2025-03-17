@@ -3,7 +3,9 @@
 namespace App\Models\Workflow;
 
 use App\Models\CanExportToJsonContract;
+use App\Services\Task\Runners\WorkflowInputTaskRunner;
 use App\Services\Workflow\WorkflowExportService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,7 +45,9 @@ class WorkflowDefinition extends Model implements AuditableContract, CanExportTo
     public function startingWorkflowNodes(): HasMany|WorkflowNode
     {
         // This is a starting node if it doesn't have any connections where it is the target
-        return $this->workflowNodes()->whereDoesntHave('connectionsAsTarget');
+        return $this->workflowNodes()
+            ->whereDoesntHave('connectionsAsTarget')
+            ->whereHas('taskDefinition', fn(Builder $builder) => $builder->where('task_runner_class', WorkflowInputTaskRunner::RUNNER_NAME));
     }
 
     public function workflowConnections(): HasMany|WorkflowConnection
