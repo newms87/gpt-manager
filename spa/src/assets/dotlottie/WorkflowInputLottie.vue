@@ -1,10 +1,10 @@
 <template>
 	<DotLottiePlayer
 		:autoplay="autoplay"
-		src="https://lottie.host/48dd2e58-415d-46e2-9ca3-59c4320ebf1f/NcvOSAIbN7.lottie"
 		:finished="finished"
-		:start-frame="14"
-		:final-frame="14"
+		src="https://lottie.host/753a35cd-ca97-4aa7-af21-b8341d6b76a3/c2RtM7r4qw.lottie"
+		:start-frame="21"
+		:final-frame="60"
 	/>
 </template>
 <script setup lang="ts">

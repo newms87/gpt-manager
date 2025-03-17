@@ -7,3 +7,4 @@ export { default as PageOrganizerLottie } from "./PageOrganizerLottie.vue";
 export { default as RunWorkflowLottie } from "./RunWorkflowLottie.vue";
 export { default as SaveToDbLottie } from "./SaveToDbLottie.vue";
 export { default as SplitByFileLottie } from "./SplitByFileLottie.vue";
+export { default as WorkflowInputLottie } from "./WorkflowInputLottie.vue";

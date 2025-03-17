@@ -1,16 +1,20 @@
 <template>
-	<BaseTaskRunnerNode :config="config">
-		<ImageToTextLottie class="w-[10rem]" :autoplay="autoplay" :finished="finished" />
+	<BaseTaskRunnerNode :task-run="taskRun" :workflow-node="workflowNode">
+		<ImageToTextLottie class="w-[10rem]" :autoplay="isTaskRunning" :finished="isTaskCompleted" />
 	</BaseTaskRunnerNode>
 </template>
 <script setup lang="ts">
 import { ImageToTextLottie } from "@/assets/dotlottie";
-import { AnyObject } from "quasar-ui-danx";
+import { useWorkflowNode } from "@/components/Modules/WorkflowCanvas/useWorkflowNode";
+import { TaskRun, WorkflowNode } from "@/types";
+import { toRefs } from "vue";
 import BaseTaskRunnerNode from "./BaseTaskRunnerNode";
 
-defineProps<{
-	config?: AnyObject;
-	autoplay?: boolean;
-	finished?: boolean;
+const props = defineProps<{
+	workflowNode: WorkflowNode;
+	taskRun?: TaskRun;
 }>();
+
+const { workflowNode, taskRun } = toRefs(props);
+const { isTaskCompleted, isTaskRunning } = useWorkflowNode(workflowNode, taskRun);
 </script>

@@ -2,7 +2,6 @@ import { TaskDefinition, TaskRun, TaskRunner } from "@/types";
 import { ActionTargetItem, AnyObject, ListControlsRoutes } from "quasar-ui-danx";
 
 export interface WorkflowDefinition extends ActionTargetItem {
-	id: string;
 	name: string;
 	description: string;
 	created_at: string;
@@ -12,7 +11,6 @@ export interface WorkflowDefinition extends ActionTargetItem {
 }
 
 export interface WorkflowNode extends ActionTargetItem {
-	id: string;
 	name: string;
 	settings?: WorkflowNodeSettings;
 	params?: AnyObject;
@@ -22,7 +20,6 @@ export interface WorkflowNode extends ActionTargetItem {
 }
 
 export interface WorkflowConnection extends ActionTargetItem {
-	id: string;
 	sourceNode?: WorkflowNode;
 	targetNode?: WorkflowNode;
 	source_node_id: number;

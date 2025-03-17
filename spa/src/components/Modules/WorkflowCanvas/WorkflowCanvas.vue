@@ -1,12 +1,13 @@
 <template>
 	<div class="workflow-editor overflow-hidden relative">
 		<VueFlow
+			v-if="workflowDefinition"
 			id="workflow-canvas-vf"
 			v-model="nodes"
 			v-model:edges="edges"
 			:default-zoom="1"
 			:min-zoom="0.2"
-			:max-zoom="4"
+			:max-zoom="2"
 			snap-to-grid
 			fit-view-on-init
 			:snap-grid="[20, 20]"
@@ -14,6 +15,7 @@
 			:connect-on-click="false"
 			elevate-edges-on-select
 			:connection-mode="ConnectionMode.Strict"
+			@pane-ready="onPaneReady"
 			@connect="onConnectionAdd"
 			@node-drag-stop="onNodeDragStop"
 			@dragover="onDragOver"
@@ -87,6 +89,7 @@ const props = defineProps<{
 	loading?: boolean;
 }>();
 
+let vueFlowInstance = null;
 const workflowDefinition = defineModel<WorkflowDefinition>();
 
 const isRunning = computed(() => props.workflowRun?.status === "Running");
@@ -95,10 +98,17 @@ const isRunning = computed(() => props.workflowRun?.status === "Running");
 const nodes = ref<Node[]>([]);
 const edges = ref<Edge[]>([]);
 
+const previousWorkflowDefinitionId = ref<number | null>(null);
 function convertToVueFlow() {
 	if (workflowDefinition.value?.nodes) {
 		nodes.value = convertNodesToVueFlow(workflowDefinition.value.nodes);
 		edges.value = convertConnectionsToVueFlow(workflowDefinition.value.connections || []);
+	}
+
+	// Correct the viewport when the workflowDefinition has changed (after it is finished loading - ie w/ nodes)
+	if (previousWorkflowDefinitionId.value !== workflowDefinition.value?.id && workflowDefinition.value?.nodes?.length > 0) {
+		previousWorkflowDefinitionId.value = workflowDefinition.value?.id as number;
+		setTimeout(() => vueFlowInstance?.fitView(), 200);
 	}
 }
 
@@ -143,4 +153,8 @@ function onConnectionRemove(edge: EdgeProps) {
 	emit("connection-remove", resolveWorkflowConnection(edge));
 }
 
+function onPaneReady(vfi) {
+	vueFlowInstance = vfi;
+	vueFlowInstance.fitView();
+}
 </script>

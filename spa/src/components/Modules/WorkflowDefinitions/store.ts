@@ -20,7 +20,13 @@ async function setActiveWorkflowDefinition(workflowDefinition: string | number |
 	const workflowDefinitionId = typeof workflowDefinition === "object" ? workflowDefinition?.id : workflowDefinition;
 	setItem(ACTIVE_WORKFLOW_DEFINITION_KEY, workflowDefinitionId);
 
+	// Clear active run if the definition has changed
+	if (activeWorkflowDefinition.value?.id !== workflowDefinitionId) {
+		activeWorkflowRun.value = null;
+	}
+
 	activeWorkflowDefinition.value = workflowDefinitions.value.find((tw) => tw.id === workflowDefinitionId) || null;
+
 	if (activeWorkflowDefinition.value) {
 		await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value);
 		await loadWorkflowRuns();

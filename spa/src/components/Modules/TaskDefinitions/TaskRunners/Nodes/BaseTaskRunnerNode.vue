@@ -6,10 +6,11 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { TaskRun, WorkflowNode } from "@/types";
 import { FaSolidSquareShareNodes as BaseNodeIcon } from "danx-icon";
-import { AnyObject } from "quasar-ui-danx";
 
 defineProps<{
-	config?: AnyObject;
+	workflowNode: WorkflowNode;
+	taskRun?: TaskRun;
 }>();
 </script>
