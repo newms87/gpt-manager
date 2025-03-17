@@ -36,7 +36,7 @@
 					color="green"
 					label="Run Workflow"
 					:disabled="isRunning"
-					@click="isSelectingWorkflowInput = true"
+					@click="onRunWorkflow"
 				/>
 			</div>
 			<div>
@@ -98,8 +98,19 @@ const stopWorkflowRunAction = dxWorkflowRun.getAction("stop");
 const resumeWorkflowRunAction = dxWorkflowRun.getAction("resume");
 const isRunning = computed(() => ["Running", "Pending"].includes(activeWorkflowRun.value?.status));
 const isStopped = computed(() => ["Stopped"].includes(activeWorkflowRun.value?.status));
+const hasWorkflowInputNode = computed(() => !!activeWorkflowDefinition.value?.nodes.find((node) => node.taskDefinition.task_runner_class === "Workflow Input"));
 
-async function onCreateWorkflowRun(workflowInput: WorkflowInput) {
+function onRunWorkflow() {
+	if (!activeWorkflowDefinition.value) return;
+
+	if (hasWorkflowInputNode.value) {
+		isSelectingWorkflowInput.value = true;
+	} else {
+		onCreateWorkflowRun();
+	}
+}
+
+async function onCreateWorkflowRun(workflowInput?: WorkflowInput) {
 	if (!activeWorkflowDefinition.value) return;
 	isSelectingWorkflowInput.value = false;
 

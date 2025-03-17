@@ -7,7 +7,8 @@ import {
 	PageOrganizerTaskRunnerNode,
 	RunWorkflowTaskRunnerNode,
 	SaveToDatabaseTaskRunnerNode,
-	SplitByFileTaskRunnerNode
+	SplitByFileTaskRunnerNode,
+	WorkflowInputTaskRunnerNode
 } from "./Nodes";
 
 export const TaskRunners = {
@@ -41,6 +42,10 @@ export const TaskRunners = {
 	},
 	"Split By File": {
 		node: SplitByFileTaskRunnerNode,
+		config: BaseTaskRunnerConfig
+	},
+	"Workflow Input": {
+		node: WorkflowInputTaskRunnerNode,
 		config: BaseTaskRunnerConfig
 	}
 };

@@ -15,6 +15,7 @@ use App\Services\Task\Runners\PageOrganizerTaskRunner;
 use App\Services\Task\Runners\RunWorkflowTaskRunner;
 use App\Services\Task\Runners\SaveToDatabaseTaskRunner;
 use App\Services\Task\Runners\SplitByFileTaskRunner;
+use App\Services\Task\Runners\WorkflowInputTaskRunner;
 
 $million  = 1000000;
 $thousand = 1000;
@@ -108,6 +109,7 @@ return [
         RunWorkflowTaskRunner::RUNNER_NAME           => RunWorkflowTaskRunner::class,
         SaveToDatabaseTaskRunner::RUNNER_NAME        => SaveToDatabaseTaskRunner::class,
         SplitByFileTaskRunner::RUNNER_NAME           => SplitByFileTaskRunner::class,
+        WorkflowInputTaskRunner::RUNNER_NAME         => WorkflowInputTaskRunner::class,
     ],
     'tools'         => [
         [

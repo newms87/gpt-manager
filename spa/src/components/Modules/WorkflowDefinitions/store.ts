@@ -85,14 +85,14 @@ async function addWorkflowNode(taskDefinition: TaskDefinition, input: Partial<Wo
 
 const createWorkflowRunAction = dxWorkflowRun.getAction("quick-create", { onFinish: loadWorkflowRuns });
 const isCreatingWorkflowRun = ref(false);
-async function createWorkflowRun(workflowInput: WorkflowInput) {
+async function createWorkflowRun(workflowInput?: WorkflowInput) {
 	if (!activeWorkflowDefinition.value) return;
 	activeWorkflowRun.value = null;
 
 	isCreatingWorkflowRun.value = true;
 	const result = await createWorkflowRunAction.trigger(null, {
 		workflow_definition_id: activeWorkflowDefinition.value.id,
-		workflow_input_id: workflowInput.id
+		workflow_input_id: workflowInput?.id
 	});
 	isCreatingWorkflowRun.value = false;
 
