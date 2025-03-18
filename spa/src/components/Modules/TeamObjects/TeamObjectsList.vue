@@ -10,6 +10,9 @@
 				:input="{ type: teamObjectType, schema_definition_id: schemaDefinition.id }"
 			/>
 		</div>
+		<QBanner v-else-if="schemaDefinition.can?.view === false" class="bg-yellow-800 text-slate-300 mt-8">
+			You are not allowed to view this schema
+		</QBanner>
 		<QBanner v-else class="bg-red-800 text-slate-300 mt-8">
 			Please update the schema to include the title property at the top level
 		</QBanner>

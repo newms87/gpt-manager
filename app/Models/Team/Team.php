@@ -7,6 +7,7 @@ use App\Models\Task\TaskDefinition;
 use App\Models\User;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -18,9 +19,14 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class Team extends Model implements AuditableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait, SoftDeletes;
+    use HasFactory, ActionModelTrait, AuditableTrait, SoftDeletes, HasUuids;
 
     protected $guarded = ['id', 'created_at', 'updated_at', 'deleted_at'];
+
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
 
     public function users(): BelongsToMany|User
     {
