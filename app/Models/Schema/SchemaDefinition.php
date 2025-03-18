@@ -129,6 +129,6 @@ class SchemaDefinition extends Model implements AuditableContract, CanExportToJs
 
     public function __toString(): string
     {
-        return "<SchemaDefinition $this->name>";
+        return "<SchemaDefinition id='$this->id' name='$this->name'>";
     }
 }

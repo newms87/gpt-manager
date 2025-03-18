@@ -74,6 +74,9 @@ class AgentThreadService
             // Save a snapshot of the resolved JSON Schema to use as the agent's response schema,
             // and so we can clearly see what the schema was at the time of running the request
             if ($this->responseSchema) {
+                if (!$this->responseSchema->schema) {
+                    throw new ValidationError("Response schema has no schema defined: " . $this->responseSchema);
+                }
                 $agentThreadRun->response_json_schema = $agentThreadRun->renderResponseJsonSchema($this->responseSchema->name, $this->responseSchema->schema, $this->responseFragment?->fragment_selector);
             }
 

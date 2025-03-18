@@ -283,7 +283,7 @@ class JSONSchemaDataToDatabaseMapper
         $name         = $object['name']['value'] ?? $object['name'] ?? null;
         $propertyMeta = $object['property_meta'] ?? null;
 
-        Log::debug("Saving TeamObject: $type" . ($id ? "($id)" : '') . " $name");
+        Log::debug("Saving TeamObject: $type" . ($id ? "($id)" : '(new)') . " $name");
 
         // If an ID is set, resolve the existing team object
         if ($id) {
@@ -371,11 +371,6 @@ class JSONSchemaDataToDatabaseMapper
                 $relatedObject = $this->saveTeamObjectUsingSchema($property, $object[$propertyName], $threadRun);
                 $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
             } else {
-                if (!$propertyMeta || !array_filter($propertyMeta, fn($meta) => $meta['property_name'] === $propertyName)) {
-                    Log::debug("Property meta was null: Skipping save to DB for $propertyName");
-                    continue;
-                }
-
                 // NOTE: we are no longer referencing the object! Any changes here will not affect the output object
                 $propertyValue = $object[$propertyName];
 

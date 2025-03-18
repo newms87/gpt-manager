@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class SchemaDefinitionRepository extends ActionRepository
@@ -66,6 +67,10 @@ class SchemaDefinitionRepository extends ActionRepository
      */
     public function updateSchemaDefinition(SchemaDefinition $schemaDefinition, array $input): SchemaDefinition
     {
+        if (!$schemaDefinition->canEdit()) {
+            throw new ValidationError('You do not have permission to edit this schema.');
+        }
+        
         $schemaDefinition->fill($input);
 
         $schemaDefinition->validate()->save($input);

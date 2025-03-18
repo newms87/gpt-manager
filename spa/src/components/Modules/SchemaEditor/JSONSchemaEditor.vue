@@ -104,7 +104,12 @@ const isSchemaVisible = computed(() => !props.hideContent && !!editableSchema.va
 
 // editableSchema is a 1-way binding to the parent component's schema prop but is initialized w/ the parent's schema value
 const editableSchema = ref<JsonSchema>(schema.value || null as JsonSchema);
-watch(editableSchema, () => schema.value = editableSchema.value);
+watch(editableSchema, () => {
+	// If there has been a change, then update the original schema
+	if (JSON.stringify(editableSchema.value) !== JSON.stringify(schema.value)) {
+		schema.value = editableSchema.value;
+	}
+});
 
 watch(schema, () => {
 	if (editableSchema.value?.title !== schema.value?.title) {
