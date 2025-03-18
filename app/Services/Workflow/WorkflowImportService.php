@@ -27,6 +27,10 @@ class WorkflowImportService
 
     protected array $importedIdMap = [];
 
+    /**
+     * Resolves the resource package for the given resource package ID.
+     * If one does not exist, it will be created using the name and team UUID
+     */
     protected function resolveResourcePackage(string $id, string $teamUuid, string $name): ResourcePackage
     {
         return ResourcePackage::firstOrCreate(['id' => $id], [
@@ -35,6 +39,10 @@ class WorkflowImportService
         ]);
     }
 
+    /**
+     * Resolves the resource package version for the given resource package version ID
+     * If one does not exist, it will be created using the version and definitions
+     */
     protected function resolveResourcePackageVersion(string $id, string $version, array $definitions): ResourcePackageVersion
     {
         return ResourcePackageVersion::firstOrCreate(['id' => $id], [
@@ -60,6 +68,9 @@ class WorkflowImportService
         ]);
     }
 
+    /**
+     * Import a workflow definition from the JSON data
+     */
     public function importFromJson(array $workflowDefinitionJson): WorkflowDefinition
     {
         $resourcePackageId        = $workflowDefinitionJson['resource_package_id'] ?? null;

@@ -3,21 +3,65 @@
 namespace App\Services\Workflow;
 
 use App\Models\CanExportToJsonContract;
+use App\Models\ResourcePackage\ResourcePackage;
+use App\Models\ResourcePackage\ResourcePackageVersion;
 use App\Models\Workflow\WorkflowDefinition;
 
 class WorkflowExportService
 {
     protected array $definitions = [];
 
+    /**
+     * Resolves the resource package for the given workflow definition
+     */
+    protected function resolveResourcePackage(WorkflowDefinition $workflowDefinition): ResourcePackage
+    {
+        return ResourcePackage::firstOrCreate([
+            'team_uuid'     => team()->uuid,
+            'resource_type' => WorkflowDefinition::class,
+            'resource_id'   => $workflowDefinition->id,
+        ], [
+            'name' => $workflowDefinition->name,
+        ]);
+    }
+
+    /**
+     * Resolves the resource package version for the resolved definitions
+     */
+    protected function resolveResourcePackageVersion(ResourcePackage $resourcePackage): ResourcePackageVersion
+    {
+        $versionHash = md5(json_encode($this->definitions));
+
+        $resourcePackageVersion = $resourcePackage->resourcePackageVersions()->firstOrNew([
+            'version_hash' => $versionHash,
+        ]);
+
+        if ($resourcePackageVersion) {
+            return $resourcePackageVersion;
+        }
+
+        $resourcePackageVersion->version     = '0.0.1';
+        $resourcePackageVersion->definitions = $this->definitions;
+        $resourcePackageVersion->save();
+
+        return $resourcePackageVersion;
+    }
+
     public function exportToJson(WorkflowDefinition $workflowDefinition): array
     {
+        // This will load the definitions into the $this->definitions array
         $workflowDefinition->exportToJson($this);
 
+        $resourcePackage        = $this->resolveResourcePackage($workflowDefinition);
+        $resourcePackageVersion = $this->resolveResourcePackageVersion($resourcePackage);
+
         return [
-            'version_hash'  => md5(json_encode($this->definitions)),
-            'version_date'  => now()->toDateString(),
-            'owner_team_id' => $workflowDefinition->team_id,
-            'definitions'   => $this->definitions,
+            'resource_package_id'         => $resourcePackage->id,
+            'resource_package_version_id' => $resourcePackageVersion->id,
+            'team_uuid'                   => team()->uuid,
+            'name'                        => $resourcePackage->name,
+            'version'                     => $resourcePackageVersion->version,
+            'definitions'                 => $this->definitions,
         ];
     }
 
