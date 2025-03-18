@@ -7,7 +7,7 @@ use App\Services\Workflow\WorkflowExportService;
 /**
  * @property int id
  */
-interface CanExportToJsonContract
+interface ResourcePackageableContract
 {
     public function exportToJson(WorkflowExportService $service): int;
 }

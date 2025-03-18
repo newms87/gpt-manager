@@ -2,7 +2,7 @@
 
 namespace App\Models\Workflow;
 
-use App\Models\CanExportToJsonContract;
+use App\Models\ResourcePackageableContract;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +11,7 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class WorkflowConnection extends Model implements AuditableContract, CanExportToJsonContract
+class WorkflowConnection extends Model implements AuditableContract, ResourcePackageableContract
 {
     use HasFactory, ActionModelTrait, AuditableTrait;
 
@@ -27,7 +27,7 @@ class WorkflowConnection extends Model implements AuditableContract, CanExportTo
     {
         return $this->belongsTo(WorkflowDefinition::class);
     }
-    
+
     public function sourceNode(): BelongsTo|WorkflowNode
     {
         return $this->belongsTo(WorkflowNode::class, 'source_node_id');

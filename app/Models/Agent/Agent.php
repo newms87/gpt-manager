@@ -3,8 +3,8 @@
 namespace App\Models\Agent;
 
 use App\Api\AgentApiContracts\AgentApiContract;
-use App\Models\CanExportToJsonContract;
 use App\Models\Prompt\AgentPromptDirective;
+use App\Models\ResourcePackageableContract;
 use App\Models\Team\Team;
 use App\Repositories\AgentRepository;
 use App\Services\Workflow\WorkflowExportService;
@@ -23,7 +23,7 @@ use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
 use Tests\Feature\Api\TestAi\TestAiApi;
 
-class Agent extends Model implements AuditableContract, CanExportToJsonContract
+class Agent extends Model implements AuditableContract, ResourcePackageableContract
 {
     use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait, ActionModelTrait;
 
@@ -163,7 +163,7 @@ class Agent extends Model implements AuditableContract, CanExportToJsonContract
     public function exportToJson(WorkflowExportService $service): int
     {
         $service->registerRelatedModels($this->directives);
-        
+
         return $service->register($this, [
             'name'        => $this->name,
             'description' => $this->description,

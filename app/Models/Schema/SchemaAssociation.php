@@ -2,7 +2,7 @@
 
 namespace App\Models\Schema;
 
-use App\Models\CanExportToJsonContract;
+use App\Models\ResourcePackageableContract;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Newms87\Danx\Traits\ActionModelTrait;
 
-class SchemaAssociation extends Model implements CanExportToJsonContract
+class SchemaAssociation extends Model implements ResourcePackageableContract
 {
     use HasFactory, ActionModelTrait;
 

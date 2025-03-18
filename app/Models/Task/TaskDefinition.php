@@ -2,7 +2,7 @@
 
 namespace App\Models\Task;
 
-use App\Models\CanExportToJsonContract;
+use App\Models\ResourcePackageableContract;
 use App\Models\Workflow\WorkflowNode;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +16,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
 
-class TaskDefinition extends Model implements AuditableContract, CanExportToJsonContract
+class TaskDefinition extends Model implements AuditableContract, ResourcePackageableContract
 {
     use ActionModelTrait, HasFactory, AuditableTrait, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
 

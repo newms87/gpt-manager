@@ -3,7 +3,7 @@
 namespace App\Models\Prompt;
 
 use App\Models\Agent\Agent;
-use App\Models\CanExportToJsonContract;
+use App\Models\ResourcePackageableContract;
 use App\Models\Team\Team;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +19,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
 
-class PromptDirective extends Model implements AuditableContract, CanExportToJsonContract
+class PromptDirective extends Model implements AuditableContract, ResourcePackageableContract
 {
     use HasFactory, ActionModelTrait, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 

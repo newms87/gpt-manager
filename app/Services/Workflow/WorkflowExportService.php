@@ -2,9 +2,9 @@
 
 namespace App\Services\Workflow;
 
-use App\Models\CanExportToJsonContract;
 use App\Models\ResourcePackage\ResourcePackage;
 use App\Models\ResourcePackage\ResourcePackageVersion;
+use App\Models\ResourcePackageableContract;
 use App\Models\Workflow\WorkflowDefinition;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\StringHelper;
@@ -79,14 +79,14 @@ class WorkflowExportService
         ];
     }
 
-    public function register(CanExportToJsonContract $model, array $data): int
+    public function register(ResourcePackageableContract $model, array $data): int
     {
         $this->definitions[$model::class][$model->id] = $data;
 
         return $model->id;
     }
 
-    public function registerRelatedModel(CanExportToJsonContract $model = null): string|null
+    public function registerRelatedModel(ResourcePackageableContract $model = null): string|null
     {
         if (!$model) {
             return null;
@@ -105,7 +105,7 @@ class WorkflowExportService
      * NOTE: These models should associate themselves in their exportToJson() method to the model that has called this
      * method.
      *
-     * @param CanExportToJsonContract[] $models
+     * @param ResourcePackageableContract[] $models
      */
     public function registerRelatedModels($models): void
     {

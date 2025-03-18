@@ -18,7 +18,10 @@ class ArtifactResource extends ActionResource
             'model'        => $artifact->model,
             'created_at'   => $artifact->created_at,
             'text_content' => fn() => $artifact->text_content,
-            'json_content' => fn() => $artifact->json_content,
+            'json_content' => fn() => $artifact->canView() ? $artifact->json_content : [
+                'message'          => 'You are not allowed to view this schema',
+                'schemaDefinition' => $artifact->schemaDefinition->only(['id', 'type', 'name']),
+            ],
             'files'        => fn($fields) => StoredFileResource::collection($artifact->storedFiles->load('transcodes'), $fields),
         ];
     }

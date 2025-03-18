@@ -3,7 +3,7 @@
 namespace App\Models\Prompt;
 
 use App\Models\Agent\Agent;
-use App\Models\CanExportToJsonContract;
+use App\Models\ResourcePackageableContract;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +11,7 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class AgentPromptDirective extends Model implements AuditableContract, CanExportToJsonContract
+class AgentPromptDirective extends Model implements AuditableContract, ResourcePackageableContract
 {
     use AuditableTrait, ActionModelTrait;
 

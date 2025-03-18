@@ -2,8 +2,10 @@
 
 namespace App\Models\Task;
 
+use App\Models\Schema\SchemaDefinition;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -29,6 +31,20 @@ class Artifact extends Model implements AuditableContract
             'json_content' => 'json',
             'meta'         => 'json',
         ];
+    }
+
+    public function canView(): bool
+    {
+        if (!$this->schema_definition_id) {
+            return true;
+        }
+
+        return $this->schemaDefinition()->withTrashed()->first()->canView();
+    }
+
+    public function schemaDefinition(): BelongsTo|SchemaDefinition
+    {
+        return $this->belongsTo(SchemaDefinition::class);
     }
 
     public function artifactables(): HasMany|Artifactable

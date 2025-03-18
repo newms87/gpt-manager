@@ -2,7 +2,7 @@
 
 namespace App\Models\Schema;
 
-use App\Models\CanExportToJsonContract;
+use App\Models\ResourcePackageableContract;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +15,7 @@ use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
-class SchemaFragment extends Model implements AuditableContract, CanExportToJsonContract
+class SchemaFragment extends Model implements AuditableContract, ResourcePackageableContract
 {
     use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes;
 

@@ -3,7 +3,7 @@
 namespace App\Models\Task;
 
 use App\Models\Agent\Agent;
-use App\Models\CanExportToJsonContract;
+use App\Models\ResourcePackageableContract;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
 use App\Services\Workflow\WorkflowExportService;
@@ -17,7 +17,7 @@ use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class TaskDefinitionAgent extends Model implements AuditableContract, CanExportToJsonContract
+class TaskDefinitionAgent extends Model implements AuditableContract, ResourcePackageableContract
 {
     use ActionModelTrait, HasFactory, AuditableTrait;
 

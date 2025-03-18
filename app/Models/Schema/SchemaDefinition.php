@@ -2,7 +2,7 @@
 
 namespace App\Models\Schema;
 
-use App\Models\CanExportToJsonContract;
+use App\Models\ResourcePackageableContract;
 use App\Models\Team\Team;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +17,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
 
-class SchemaDefinition extends Model implements AuditableContract, CanExportToJsonContract
+class SchemaDefinition extends Model implements AuditableContract, ResourcePackageableContract
 {
     use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 
@@ -119,7 +119,7 @@ class SchemaDefinition extends Model implements AuditableContract, CanExportToJs
 
     public function canView(): bool
     {
-        return $this->resource_package_import_id === null;
+        return $this->resource_package_import_id === null || $this->resourcePackage;
     }
 
     public function canEdit(): bool
