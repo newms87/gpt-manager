@@ -99,7 +99,7 @@
 						:model-value="inputSchemaAssociation.schema"
 						:fragment="inputSchemaAssociation.fragment"
 						:loading="inputSchemaAssociation.isSaving"
-						@update:model-value="schema => updateSchemaAssociationAction.trigger(inputSchemaAssociation, { schema_definition_id: schema?.id })"
+						@update:model-value="schema => updateSchemaAssociationAction.trigger(inputSchemaAssociation, { schema_definition_id: schema?.id, schema_fragment_id: null })"
 						@update:fragment="(fragment) => updateSchemaAssociationAction.trigger(inputSchemaAssociation, { schema_fragment_id: fragment?.id || null })"
 					>
 						<template #header-start>
@@ -198,7 +198,10 @@ async function onSelectOutputSchema(schema) {
 		if (!schema) {
 			await deleteSchemaAssociationAction.trigger(props.taskDefinitionAgent.outputSchemaAssociation);
 		} else {
-			await updateSchemaAssociationAction.trigger(props.taskDefinitionAgent.outputSchemaAssociation, { schema_definition_id: schema?.id });
+			await updateSchemaAssociationAction.trigger(props.taskDefinitionAgent.outputSchemaAssociation, {
+				schema_definition_id: schema?.id,
+				schema_fragment_id: null
+			});
 		}
 	} else {
 		await createSchemaAssociationAction.trigger(null, {

@@ -92,6 +92,15 @@ class AgentThreadRun extends Model implements AuditableContract
         return app(JsonSchemaService::class)->setConfig($this->json_schema_config);
     }
 
+    public function getResponseJsonSchema(): ?array
+    {
+        if (!$this->responseSchema) {
+            return null;
+        }
+
+        return $this->getJsonSchemaService()->formatAndFilterSchema($this->responseSchema->name, $this->responseSchema->schema, $this->responseFragment?->fragment_selector);
+    }
+
     public function __toString(): string
     {
         return "<ThreadRun $this->id $this->status thread='{$this->agentThread->name}'>";

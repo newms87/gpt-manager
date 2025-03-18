@@ -145,28 +145,6 @@ class AgentThreadService
     }
 
     /**
-     * Resolve the response schema for the agent and thread run
-     * NOTE: the agent's response schema can be overridden via withResponseFormat
-     */
-    public function resolveResponseSchema(AgentThreadRun $agentThreadRun): array
-    {
-        if ($this->responseSchema) {
-            $responseSchema   = $this->responseSchema;
-            $responseFragment = $this->responseFragment;
-        } else {
-            $responseSchema   = $agentThreadRun->responseSchema;
-            $responseFragment = $agentThreadRun->responseFragment;
-        }
-
-        if (!$responseSchema?->schema) {
-            throw new Exception("JSON Schema response format requires a schema to be set: " . $agentThreadRun);
-        }
-
-        // Configure the JSON schema service to require the name and id fields, and use citations for each property
-        return $agentThreadRun->getJsonSchemaService()->formatAndFilterSchema($responseSchema->name, $responseSchema->schema, $responseFragment?->fragment_selector);
-    }
-
-    /**
      * Execute the thread run to completion
      */
     public function executeThreadRun(AgentThreadRun $agentThreadRun): void
@@ -189,7 +167,13 @@ class AgentThreadService
             ];
 
             if ($agentThreadRun->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA) {
-                $options['response_format'][AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA] = $this->resolveResponseSchema($agentThreadRun);
+                $jsonSchema = $agentThreadRun->getResponseJsonSchema();
+
+                if (!$jsonSchema) {
+                    throw new Exception("JSON Schema response format requires a schema to be set: " . $agentThreadRun);
+                }
+
+                $options['response_format'][AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA] = $jsonSchema;
             }
 
             $tools = $agent->formatTools();
