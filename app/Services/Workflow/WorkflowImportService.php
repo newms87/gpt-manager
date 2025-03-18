@@ -31,11 +31,13 @@ class WorkflowImportService
      * Resolves the resource package for the given resource package ID.
      * If one does not exist, it will be created using the name and team UUID
      */
-    protected function resolveResourcePackage(string $id, string $teamUuid, string $name): ResourcePackage
+    protected function resolveResourcePackage(string $id, string $teamUuid, string $name, string $resourceType, string $resourceId): ResourcePackage
     {
         return ResourcePackage::firstOrCreate(['id' => $id], [
-            'name'      => $name,
-            'team_uuid' => $teamUuid,
+            'name'          => $name,
+            'team_uuid'     => $teamUuid,
+            'resource_type' => $resourceType,
+            'resource_id'   => $resourceId,
         ]);
     }
 
@@ -46,9 +48,10 @@ class WorkflowImportService
     protected function resolveResourcePackageVersion(string $id, string $version, array $definitions): ResourcePackageVersion
     {
         return ResourcePackageVersion::firstOrCreate(['id' => $id], [
-            'version'      => $version,
-            'version_hash' => md5(json_encode($definitions)),
-            'definitions'  => $definitions,
+            'resource_package_id' => $this->resourcePackage->id,
+            'version'             => $version,
+            'version_hash'        => md5(json_encode($definitions)),
+            'definitions'         => $definitions,
         ]);
     }
 
@@ -77,13 +80,19 @@ class WorkflowImportService
         $resourcePackageVersionId = $workflowDefinitionJson['resource_package_version_id'] ?? null;
         $teamUuid                 = $workflowDefinitionJson['team_uuid'] ?? null;
         $name                     = $workflowDefinitionJson['name'] ?? null;
+        $resourceType             = $workflowDefinitionJson['resource_type'] ?? null;
+        $resourceId               = $workflowDefinitionJson['resource_id'] ?? null;
         $version                  = $workflowDefinitionJson['version'] ?? null;
         $definitions              = $workflowDefinitionJson['definitions'] ?? [];
+
+        if (!$resourcePackageId || !$resourcePackageVersionId || !$teamUuid || !$name || !$resourceType || !$resourceId || !$version) {
+            throw new ValidationError('Invalid resource package: Missing required fields');
+        }
 
         $this->versionName = "$name - $version";
 
         // Resolve the resource package locally
-        $this->resourcePackage        = $this->resolveResourcePackage($resourcePackageId, $teamUuid, $name);
+        $this->resourcePackage        = $this->resolveResourcePackage($resourcePackageId, $teamUuid, $name, $resourceType, (string)$resourceId);
         $this->resourcePackageVersion = $this->resolveResourcePackageVersion($resourcePackageVersionId, $version, $definitions);
 
         // This defines the correct order to import so the relationships are resolved correctly

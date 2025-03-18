@@ -5,6 +5,7 @@ namespace App\Services\Task\Runners;
 use App\Models\Task\Artifact;
 use App\Repositories\TeamObjectRepository;
 use App\Resources\TeamObject\TeamObjectForAgentsResource;
+use Newms87\Danx\Exceptions\ValidationError;
 
 class LoadFromDatabaseTaskRunner extends BaseTaskRunner
 {
@@ -20,13 +21,18 @@ class LoadFromDatabaseTaskRunner extends BaseTaskRunner
             $id   = $inputArtifact->json_content['id'] ?? null;
 
             if (!$type || !$id) {
-                static::log("No ID or type found, skipping $inputArtifact");
+                $this->activity("No ID or type found, skipping $inputArtifact", $percent);
                 continue;
             }
 
             $this->activity("Loading $type ($id)", $percent);
 
-            $teamObject        = app(TeamObjectRepository::class)->loadTeamObject($type, $id);
+            $teamObject = app(TeamObjectRepository::class)->loadTeamObject($type, $id);
+
+            if (!$teamObject) {
+                throw new ValidationError("Could not find $type with ID $id");
+            }
+
             $loadedTeamObject  = TeamObjectForAgentsResource::make($teamObject);
             $outputArtifacts[] = Artifact::create([
                 'name'         => $teamObject->name . ' (' . $teamObject->id . ')',

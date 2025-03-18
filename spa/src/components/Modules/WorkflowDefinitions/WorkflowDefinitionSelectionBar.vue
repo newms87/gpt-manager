@@ -15,8 +15,9 @@
 			@update="input => updateAction.trigger(activeWorkflowDefinition, input)"
 			@delete="workflowDefinition => deleteAction.trigger(workflowDefinition)"
 		/>
-		<div v-if="activeWorkflowDefinition" class="flex space-x-4">
+		<div class="flex space-x-4">
 			<ActionButton
+				v-if="activeWorkflowDefinition"
 				type="export"
 				color="sky-invert"
 				label="Export"

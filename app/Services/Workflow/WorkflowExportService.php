@@ -70,6 +70,8 @@ class WorkflowExportService
         return [
             'resource_package_id'         => $resourcePackage->id,
             'resource_package_version_id' => $resourcePackageVersion->id,
+            'resource_type'               => WorkflowDefinition::class,
+            'resource_id'                 => $workflowDefinition->id,
             'team_uuid'                   => team()->uuid,
             'name'                        => $resourcePackage->name,
             'version'                     => $resourcePackageVersion->version,

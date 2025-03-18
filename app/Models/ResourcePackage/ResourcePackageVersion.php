@@ -14,7 +14,13 @@ class ResourcePackageVersion extends Model implements AuditableContract
 {
     use AuditableTrait, SoftDeletes, HasUuids;
 
-    protected $fillable = ['version', 'version_hash', 'definitions'];
+    protected $fillable = [
+        'id',
+        'resource_package_id',
+        'version',
+        'version_hash',
+        'definitions',
+    ];
 
     public function casts()
     {
