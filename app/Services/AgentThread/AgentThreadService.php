@@ -12,6 +12,7 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Repositories\AgentRepository;
 use App\Services\JsonSchema\JsonSchemaService;
+use App\Traits\HasDebugLogging;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ApiRequestException;
@@ -23,6 +24,8 @@ use Throwable;
 
 class AgentThreadService
 {
+    use HasDebugLogging;
+
     protected ?JsonSchemaService $jsonSchemaService = null;
     protected ?SchemaDefinition  $responseSchema    = null;
     protected ?SchemaFragment    $responseFragment  = null;
@@ -52,49 +55,67 @@ class AgentThreadService
         return $this->jsonSchemaService;
     }
 
-    /**
-     * Run the thread with the agent by calling the AI model API
-     */
-    public function run(AgentThread $thread, $dispatch = true, $params = []): AgentThreadRun
+    public function prepareAgentThreadRun(AgentThread $agentThread): AgentThreadRun
     {
-        LockHelper::acquire($thread);
+        LockHelper::acquire($agentThread);
 
-        if ($thread->isRunning()) {
-            throw new ValidationError('The thread is already running.');
+        try {
+            if ($agentThread->isRunning()) {
+                throw new ValidationError("Thread is already running: $agentThread");
+            }
+
+            $agent = $agentThread->agent;
+
+            $agentThreadRun = $agentThread->runs()->create([
+                'agent_model'          => $agent->model,
+                'status'               => AgentThreadRun::STATUS_RUNNING,
+                'temperature'          => $agent->temperature,
+                'tools'                => $agent->tools,
+                'tool_choice'          => 'auto',
+                'response_format'      => $this->responseSchema ? 'json_schema' : 'text',
+                'response_schema_id'   => $this->responseSchema?->id,
+                'response_fragment_id' => $this->responseFragment?->id,
+                'seed'                 => config('ai.seed'),
+                'started_at'           => now(),
+            ]);
+        } finally {
+            LockHelper::release($agentThread);
         }
 
-        $agent = $thread->agent;
+        return $agentThreadRun;
+    }
 
-        $threadRun = $thread->runs()->create([
-            'agent_model'          => $agent->model,
-            'status'               => AgentThreadRun::STATUS_RUNNING,
-            'temperature'          => $agent->temperature,
-            'tools'                => $agent->tools,
-            'tool_choice'          => 'auto',
-            'response_format'      => $params['response_format'] ?? ($this->responseSchema ? 'json_schema' : 'text'),
-            'response_schema_id'   => $params['response_schema_id'] ?? $this->responseSchema?->id,
-            'response_fragment_id' => $params['response_fragment_id'] ?? $this->responseFragment?->id,
-            'seed'                 => config('ai.seed'),
-            'started_at'           => now(),
-        ]);
+    /**
+     * Dispatch an agent thread run to run asynchronously in a job. Returns the pending agent thread run.
+     */
+    public function dispatch(AgentThread $agentThread): AgentThreadRun
+    {
+        $agentThreadRun = $this->prepareAgentThreadRun($agentThread);
 
         // Execute the thread run in a job
-        if ($dispatch) {
-            $job                        = (new ExecuteThreadRunJob($threadRun))->dispatch();
-            $threadRun->job_dispatch_id = $job->getJobDispatch()?->id;
-            $threadRun->save();
-        } else {
-            // If we are currently in a running job, attach the job dispatch ID to the thread run
-            if (Job::$runningJob) {
-                $threadRun->job_dispatch_id = Job::$runningJob->id;
-                $threadRun->save();
-            }
-            $this->executeThreadRun($threadRun);
+        $job                             = (new ExecuteThreadRunJob($agentThreadRun))->dispatch();
+        $agentThreadRun->job_dispatch_id = $job->getJobDispatch()?->id;
+        $agentThreadRun->save();
+
+        return $agentThreadRun;
+    }
+
+    /**
+     * Run an agent thread run immediately and return the completed agent thread run
+     */
+    public function run(AgentThread $agentThread): AgentThreadRun
+    {
+        $agentThreadRun = $this->prepareAgentThreadRun($agentThread);
+
+        // If we are currently in a running job, attach the job dispatch ID to the thread run
+        if (Job::$runningJob) {
+            $agentThreadRun->job_dispatch_id = Job::$runningJob->id;
+            $agentThreadRun->save();
         }
 
-        LockHelper::release($thread);
+        $this->executeThreadRun($agentThreadRun);
 
-        return $threadRun;
+        return $agentThreadRun;
     }
 
     /**
@@ -156,30 +177,33 @@ class AgentThreadService
     /**
      * Execute the thread run to completion
      */
-    public function executeThreadRun(AgentThreadRun $threadRun): void
+    public function executeThreadRun(AgentThreadRun $agentThreadRun): void
     {
         try {
-            Log::debug("Executing $threadRun");
+            LockHelper::acquire($agentThreadRun->agentThread);
+            LockHelper::acquire($agentThreadRun);
 
-            $thread = $threadRun->agentThread;
-            $agent  = $thread->agent;
+            static::log("Executing $agentThreadRun");
+
+            $agentThread = $agentThreadRun->agentThread;
+            $agent       = $agentThread->agent;
 
             $options = [
-                'temperature'     => $threadRun->temperature,
+                'temperature'     => $agentThreadRun->temperature,
                 'response_format' => [
-                    'type' => $threadRun->response_format ?: AgentThreadRun::RESPONSE_FORMAT_TEXT,
+                    'type' => $agentThreadRun->response_format ?: AgentThreadRun::RESPONSE_FORMAT_TEXT,
                 ],
-                'seed'            => (int)$threadRun->seed,
+                'seed'            => (int)$agentThreadRun->seed,
             ];
 
-            if ($threadRun->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA) {
-                $options['response_format'][AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA] = $this->resolveResponseSchema($threadRun);
+            if ($agentThreadRun->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA) {
+                $options['response_format'][AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA] = $this->resolveResponseSchema($agentThreadRun);
             }
 
             $tools = $agent->formatTools();
 
             if ($tools) {
-                $options['tool_choice'] = $threadRun->tool_choice;
+                $options['tool_choice'] = $agentThreadRun->tool_choice;
                 $options['tools']       = $tools;
             }
 
@@ -188,16 +212,16 @@ class AgentThreadService
             $status500retries = 3;
 
             do {
-                $threadRun->refresh();
-                if ($threadRun->status !== AgentThreadRun::STATUS_RUNNING) {
-                    Log::debug("$threadRun is no longer running: " . $threadRun->status);
+                $agentThreadRun->refresh();
+                if ($agentThreadRun->status !== AgentThreadRun::STATUS_RUNNING) {
+                    static::log("$agentThreadRun is no longer running: " . $agentThreadRun->status);
                     break;
                 }
 
                 // Get the messages for the next iteration
-                $messages     = $this->getMessagesForApi($thread, $threadRun);
+                $messages     = $this->getMessagesForApi($agentThread, $agentThreadRun);
                 $messageCount = count($messages);
-                Log::debug("$thread running with $messageCount messages for $agent");
+                static::log("$agentThread running with $messageCount messages for $agent");
 
                 try {
                     // Filter out excluded options from the agent configuration
@@ -225,20 +249,23 @@ class AgentThreadService
                 }
 
                 if ($response->isMessageEmpty() && ($retries-- > 0)) {
-                    Log::debug("Empty response from AI model. Retrying... (retries left: $retries)");
+                    static::log("Empty response from AI model. Retrying... (retries left: $retries)");
                     continue;
                 } elseif ($response->isFinished()) {
                     // If we have a non-empty finished response, no need to retry
                     $retries = 0;
                 }
 
-                $this->handleResponse($thread, $threadRun, $response);
+                $this->handleResponse($agentThread, $agentThreadRun, $response);
             } while(!$response?->isFinished() || $retries > 0);
         } catch(Throwable $throwable) {
-            $threadRun->status    = AgentThreadRun::STATUS_FAILED;
-            $threadRun->failed_at = now();
-            $threadRun->save();
+            $agentThreadRun->status    = AgentThreadRun::STATUS_FAILED;
+            $agentThreadRun->failed_at = now();
+            $agentThreadRun->save();
             throw $throwable;
+        } finally {
+            LockHelper::release($agentThreadRun);
+            LockHelper::release($agentThreadRun->agentThread);
         }
     }
 
@@ -277,7 +304,7 @@ class AgentThreadService
         // AgentThread messages are inserted between the directives
         foreach($thread->messages()->get() as $message) {
             $formattedMessage = $apiFormatter->message($message);
-            
+
             // For agents that rely on citing messages as sources, wrap the message in an AgentMessage tag
             if ($this->getJsonSchemaService()->isUsingCitations() && ($message->isUser() || $message->isTool())) {
                 $messages[] = $apiFormatter->wrapMessage("<AgentMessage id='$message->id'>", $formattedMessage, "</AgentMessage>");
@@ -348,7 +375,7 @@ STR;
         $inputTokens  = $threadRun->input_tokens + $response->inputTokens();
         $outputTokens = $threadRun->output_tokens + $response->outputTokens();
 
-        Log::debug("Handling response from AI model. input: " . $inputTokens . ", output: " . $outputTokens);
+        static::log("Handling response from AI model. input: " . $inputTokens . ", output: " . $outputTokens);
 
         $threadRun->update([
             'agent_model'   => $thread->agent->model,
@@ -379,7 +406,7 @@ STR;
                 $this->finishThreadResponse($threadRun, $lastMessage);
             } else {
                 $this->callToolsWithToolResponse($thread, $threadRun, $response);
-                Log::debug("Tool call response completed.");
+                static::log("Tool call response completed.");
             }
         }
 
@@ -393,7 +420,7 @@ STR;
      */
     public function finishThreadResponse(AgentThreadRun $threadRun, AgentThreadMessage $lastMessage): void
     {
-        Log::debug("Finishing thread response...");
+        static::log("Finishing thread response...");
 
         $threadRun->update([
             'status'          => AgentThreadRun::STATUS_COMPLETED,
@@ -411,7 +438,7 @@ STR;
             }
         }
 
-        Log::debug("AgentThread response is finished");
+        static::log("AgentThread response is finished");
     }
 
     /**
@@ -419,7 +446,7 @@ STR;
      */
     public function callResponseTools(AgentThreadRun $threadRun, array $responseTools): void
     {
-        Log::debug("Finishing thread response with " . count($responseTools) . " response tools");
+        static::log("Finishing thread response with " . count($responseTools) . " response tools");
 
         foreach($responseTools as $tool) {
             $toolName = $tool['name'] ?? null;
@@ -428,7 +455,7 @@ STR;
                 throw new Exception("Response tool name is required: \n" . json_encode($tool));
             }
 
-            Log::debug("Handling tool call: " . $toolName);
+            static::log("Handling tool call: " . $toolName);
 
             $toolCaller = new OpenAiToolCaller(
                 '',
@@ -445,7 +472,7 @@ STR;
      */
     public function callToolsWithToolResponse(AgentThread $thread, AgentThreadRun $threadRun, AgentCompletionResponseContract $response): void
     {
-        Log::debug("Completion Response: Handling " . count($response->getToolCallerFunctions()) . " tool calls");
+        static::log("Completion Response: Handling " . count($response->getToolCallerFunctions()) . " tool calls");
 
         // Additional messages that support the tool response, such as images
         // These messages must appear after all tool responses,
@@ -454,7 +481,7 @@ STR;
 
         // Call the tool functions
         foreach($response->getToolCallerFunctions() as $toolCallerFunction) {
-            Log::debug("Handling tool call: " . $toolCallerFunction->getName());
+            static::log("Handling tool call: " . $toolCallerFunction->getName());
 
             $messages = $toolCallerFunction->call($threadRun);
 

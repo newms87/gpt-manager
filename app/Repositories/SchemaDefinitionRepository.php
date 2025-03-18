@@ -98,7 +98,7 @@ class SchemaDefinitionRepository extends ActionRepository
         $threadRepo->addMessageToThread($thread, $message);
         $threadRepo->addMessageToThread($thread, $schemaDefinition->schema);
 
-        $threadRun = app(AgentThreadService::class)->run($thread, dispatch: false);
+        $threadRun = app(AgentThreadService::class)->run($thread);
 
         $schemaDefinition->response_example = $threadRun->lastMessage->getJsonContent() ?: [];
         $schemaDefinition->save();

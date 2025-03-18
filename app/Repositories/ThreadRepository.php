@@ -5,8 +5,10 @@ namespace App\Repositories;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
+use App\Models\Agent\AgentThreadRun;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\DateHelper;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Helpers\StringHelper;
@@ -45,11 +47,41 @@ class ThreadRepository extends ActionRepository
             'create-message' => app(MessageRepository::class)->create($model, $data['role'] ?? AgentThreadMessage::ROLE_USER),
             'reset-to-message' => $this->resetToMessage($model, $data['message_id']),
             'copy' => $this->copyThread($model),
-            'run' => app(AgentThreadService::class)->run($model, true, $data),
+            'run' => $this->runAgentThread($model, $data),
             'stop' => app(AgentThreadService::class)->stop($model),
             'resume' => app(AgentThreadService::class)->resume($model),
             default => parent::applyAction($action, $model, $data)
         };
+    }
+
+    /**
+     * Run an agent thread
+     */
+    public function runAgentThread(AgentThread $agentThread, $data): AgentThreadRun
+    {
+        $responseDefinitionId = $data['response_schema_id'] ?? null;
+        $responseFragmentId   = $data['response_fragment_id'] ?? null;
+
+        $schemaDefinition = null;
+        $schemaFragment   = null;
+
+        if ($responseDefinitionId) {
+            $schemaDefinition = team()->schemaDefinitions()->find($responseDefinitionId);
+
+            if (!$schemaDefinition) {
+                throw new ValidationError("Schema definition not found: $responseDefinitionId");
+            }
+        }
+
+        if ($schemaDefinition && $responseFragmentId) {
+            $schemaFragment = $schemaDefinition->fragments()->find($responseFragmentId);
+
+            if (!$schemaFragment) {
+                throw new ValidationError("Schema fragment not found: $responseFragmentId");
+            }
+        }
+
+        return app(AgentThreadService::class)->withResponseFormat($schemaDefinition, $schemaFragment)->dispatch($agentThread);
     }
 
     /**

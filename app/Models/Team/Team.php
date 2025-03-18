@@ -3,6 +3,7 @@
 namespace App\Models\Team;
 
 use App\Models\Agent\Agent;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\TaskDefinition;
 use App\Models\User;
 use App\Models\Workflow\WorkflowDefinition;
@@ -38,6 +39,11 @@ class Team extends Model implements AuditableContract
         return $this->hasMany(Agent::class);
     }
 
+    public function schemaDefinitions(): HasMany|SchemaDefinition
+    {
+        return $this->hasMany(SchemaDefinition::class);
+    }
+    
     public function taskDefinitions(): HasMany|TaskDefinition
     {
         return $this->hasMany(TaskDefinition::class);

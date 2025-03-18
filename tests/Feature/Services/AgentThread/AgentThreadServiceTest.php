@@ -9,7 +9,6 @@ use App\Models\Agent\AgentThreadMessage;
 use App\Models\Agent\AgentThreadRun;
 use App\Models\Schema\SchemaAssociation;
 use App\Services\AgentThread\AgentThreadService;
-use App\Services\JsonSchema\JsonSchemaService;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -17,7 +16,21 @@ use Tests\AuthenticatedTestCase;
 
 class AgentThreadServiceTest extends AuthenticatedTestCase
 {
-    public function test_run_createsThreadRunSuccessfully()
+    public function test_dispatch_setsJobDispatch()
+    {
+        // Given
+        Queue::fake();
+        $thread  = AgentThread::factory()->withMessages(1)->create();
+        $service = new AgentThreadService();
+
+        // When
+        $threadRun = $service->dispatch($thread);
+
+        // Then
+        $this->assertNotNull($threadRun->job_dispatch_id);
+    }
+    
+    public function test_dispatch_createsThreadRunSuccessfully()
     {
         // Given
         $temperature = .7;
@@ -28,13 +41,58 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $service = new AgentThreadService();
 
         // When
-        $threadRun = $service->run($thread);
+        $threadRun = $service->dispatch($thread);
 
         // Then
         $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
         $this->assertEquals($temperature, $threadRun->temperature);
         $this->assertEquals($agent->tools, $threadRun->tools);
         $this->assertEquals(AgentThreadRun::RESPONSE_FORMAT_TEXT, $threadRun->response_format);
+    }
+
+    public function test_dispatch_throwsExceptionWhenThreadIsAlreadyRunning()
+    {
+        // Given
+        $agentThreadRun = AgentThreadRun::factory()->create(['status' => AgentThreadRun::STATUS_RUNNING]);
+        $service        = new AgentThreadService();
+
+        // Expect
+        $this->expectException(ValidationError::class);
+        $this->expectExceptionMessage('already running');
+
+        // When
+        $service->dispatch($agentThreadRun->agentThread);
+    }
+
+    public function test_dispatch_dispatchesJobAndRunsThread()
+    {
+        // Given
+        Queue::fake();
+        $thread  = AgentThread::factory()->withMessages(1)->create();
+        $service = new AgentThreadService();
+
+        // When
+        $threadRun = $service->dispatch($thread);
+
+        // Then
+        Queue::assertPushed(ExecuteThreadRunJob::class, function ($job) use ($threadRun) {
+            return $job->threadRun->id === $threadRun->id;
+        });
+        $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
+    }
+
+    public function test_run_executesThreadRunWhenRunImmediately()
+    {
+        // Given
+        $thread  = AgentThread::factory()->withMessages(1)->create();
+        $service = Mockery::mock(AgentThreadService::class)->makePartial();
+        $service->shouldReceive('executeThreadRun')->once();
+
+        // When
+        $threadRun = $service->run($thread);
+
+        // Then
+        $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
     }
 
     public function test_run_setsResponseFormatToJsonSchemaWithCorrectSchemaAndFragment()
@@ -44,323 +102,13 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $thread            = AgentThread::factory()->withMessages(1)->create(['agent_id' => $agent->id]);
         $schemaAssociation = SchemaAssociation::factory()->withSchema(['type' => 'object', 'properties' => []])->create();
         $service           = new AgentThreadService();
-        $params            = [
-            'response_format'      => AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA,
-            'response_schema_id'   => $schemaAssociation->schema_definition_id,
-            'response_fragment_id' => $schemaAssociation->schema_fragment_id,
-        ];
 
         // When
-        $threadRun = $service->run($thread, true, $params);
+        $threadRun = $service->withResponseFormat($schemaAssociation->schemaDefinition, $schemaAssociation->schemaFragment)->run($thread);
 
         // Then
         $this->assertEquals(AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA, $threadRun->response_format);
-        $this->assertEquals($params['response_schema_id'], $threadRun->response_schema_id);
-        $this->assertEquals($params['response_fragment_id'], $threadRun->response_fragment_id);
-    }
-
-    public function test_run_throwsExceptionWhenThreadIsAlreadyRunning()
-    {
-        // Given
-        $threadRun = AgentThreadRun::factory()->create(['status' => AgentThreadRun::STATUS_RUNNING]);
-        $service   = new AgentThreadService();
-
-        // Expect
-        $this->expectException(ValidationError::class);
-        $this->expectExceptionMessage('The thread is already running.');
-
-        // When
-        $service->run($threadRun->agentThread);
-    }
-
-    public function test_run_dispatchesJobWhenDispatchIsTrue()
-    {
-        // Given
-        Queue::fake();
-        $thread  = AgentThread::factory()->withMessages(1)->create();
-        $service = new AgentThreadService();
-
-        // When
-        $threadRun = $service->run($thread);
-
-        // Then
-        Queue::assertPushed(ExecuteThreadRunJob::class, function ($job) use ($threadRun) {
-            return $job->threadRun->id === $threadRun->id;
-        });
-        $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
-    }
-
-    public function test_run_executesThreadRunWhenDispatchIsFalse()
-    {
-        // Given
-        $thread  = AgentThread::factory()->withMessages(1)->create();
-        $service = Mockery::mock(AgentThreadService::class)->makePartial();
-        $service->shouldReceive('executeThreadRun')->once();
-
-        // When
-        $threadRun = $service->run($thread, false);
-
-        // Then
-        $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
-    }
-
-    public function test_run_setsJobDispatchIdWhenDispatchIsTrue()
-    {
-        // Given
-        Queue::fake();
-        $thread  = AgentThread::factory()->withMessages(1)->create();
-        $service = new AgentThreadService();
-
-        // When
-        $threadRun = $service->run($thread);
-
-        // Then
-        $this->assertNotNull($threadRun->job_dispatch_id);
-    }
-
-    public function test_cleanContent_providesValidJsonWithExtraBackticksPresent(): void
-    {
-        // Given
-        $content = "```json\n{\"key\": \"value\"}\n```";
-        $message = new AgentThreadMessage(['content' => $content]);
-
-        // When
-        $cleanedContent = $message->getCleanContent();
-
-        // Then
-        $this->assertEquals('{"key": "value"}', $cleanedContent);
-    }
-
-    public function test_cleanContent_providesValidJsonWithoutExtraBackticksPresent(): void
-    {
-        // Given
-        $content = "{\"key\": \"value\"}";
-        $message = new AgentThreadMessage(['content' => $content]);
-
-        // When
-        $cleanedContent = $message->getCleanContent();
-
-        // Then
-        $this->assertEquals('{"key": "value"}', $cleanedContent);
-    }
-
-    public function test_formatResponseSchema_providesValidJsonSchema(): void
-    {
-        // Given
-        $name     = 'test-schema';
-        $response = [
-            'key' => [
-                'type' => 'string',
-            ],
-        ];
-
-        // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
-
-        // Then
-        $this->assertEquals([
-            'name'   => $name,
-            'strict' => true,
-            'schema' => [
-                'type'                 => 'object',
-                'properties'           => [
-                    'key' => [
-                        'type' => ['string', 'null'],
-                    ],
-                ],
-                'required'             => ['key'],
-                'additionalProperties' => false,
-            ],
-        ], $formattedResponse);
-    }
-
-    public function test_formatResponseSchema_requiresAllPropertiesOfNestedObjects(): void
-    {
-        // Given
-        $name     = 'test-schema';
-        $response = [
-            'key' => [
-                'type'       => 'object',
-                'properties' => [
-                    'nested_a' => [
-                        'type' => 'string',
-                    ],
-                    'nested_b' => [
-                        'type'       => 'object',
-                        'properties' => [
-                            'nested-key' => [
-                                'type' => 'string',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-        // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
-
-        // Then
-        $this->assertEquals([
-            'name'   => $name,
-            'strict' => true,
-            'schema' => [
-                'type'                 => 'object',
-                'properties'           => [
-                    'key' => [
-                        'type'                 => ['object', 'null'],
-                        'properties'           => [
-                            'nested_a' => [
-                                'type' => ['string', 'null'],
-                            ],
-                            'nested_b' => [
-                                'type'                 => ['object', 'null'],
-                                'properties'           => [
-                                    'nested-key' => [
-                                        'type' => ['string', 'null'],
-                                    ],
-                                ],
-                                'required'             => ['nested-key'],
-                                'additionalProperties' => false,
-                            ],
-                        ],
-                        'required'             => ['nested_a', 'nested_b'],
-                        'additionalProperties' => false,
-                    ],
-                ],
-                'required'             => ['key'],
-                'additionalProperties' => false,
-            ],
-        ], $formattedResponse);
-    }
-
-    public function test_formatResponseSchema_requiresAllPropertiesOfNestedArrays(): void
-    {
-        // Given
-        $name     = 'test-schema';
-        $response = [
-            'key' => [
-                'type'  => 'array',
-                'items' => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'nested_a' => [
-                            'type' => 'string',
-                        ],
-                        'nested_b' => [
-                            'type'       => 'object',
-                            'properties' => [
-                                'nested-key' => [
-                                    'type' => 'string',
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-        // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
-
-        // Then
-        $this->assertEquals([
-            'name'   => $name,
-            'strict' => true,
-            'schema' => [
-                'type'                 => 'object',
-                'properties'           => [
-                    'key' => [
-                        'type'  => ['array', 'null'],
-                        'items' => [
-                            'type'                 => ['object', 'null'],
-                            'properties'           => [
-                                'nested_a' => [
-                                    'type' => ['string', 'null'],
-                                ],
-                                'nested_b' => [
-                                    'type'                 => ['object', 'null'],
-                                    'properties'           => [
-                                        'nested-key' => [
-                                            'type' => ['string', 'null'],
-                                        ],
-                                    ],
-                                    'required'             => ['nested-key'],
-                                    'additionalProperties' => false,
-                                ],
-                            ],
-                            'required'             => ['nested_a', 'nested_b'],
-                            'additionalProperties' => false,
-                        ],
-                    ],
-                ],
-                'required'             => ['key'],
-                'additionalProperties' => false,
-            ],
-        ], $formattedResponse);
-    }
-
-    public function test_formatResponseSchema_addsDescriptionToProperties(): void
-    {
-        // Given
-        $name     = 'test-schema';
-        $response = [
-            'key' => [
-                'type'        => 'string',
-                'description' => 'A test description',
-            ],
-        ];
-
-        // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
-
-        // Then
-        $this->assertEquals([
-            'name'   => $name,
-            'strict' => true,
-            'schema' => [
-                'type'                 => 'object',
-                'properties'           => [
-                    'key' => [
-                        'type'        => ['string', 'null'],
-                        'description' => 'A test description',
-                    ],
-                ],
-                'required'             => ['key'],
-                'additionalProperties' => false,
-            ],
-        ], $formattedResponse);
-    }
-
-    public function test_formatResponseSchema_addsEnumToProperties()
-    {
-        // Given
-        $name     = 'test-schema';
-        $response = [
-            'key' => [
-                'type' => 'string',
-                'enum' => ['value1', 'value2'],
-            ],
-        ];
-
-        // When
-        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
-
-        // Then
-        $this->assertEquals([
-            'name'   => $name,
-            'strict' => true,
-            'schema' => [
-                'type'                 => 'object',
-                'properties'           => [
-                    'key' => [
-                        'type' => ['string', 'null'],
-                        'enum' => ['value1', 'value2'],
-                    ],
-                ],
-                'required'             => ['key'],
-                'additionalProperties' => false,
-            ],
-        ], $formattedResponse);
+        $this->assertEquals($schemaAssociation->schema_definition_id, $threadRun->response_schema_id);
+        $this->assertEquals($schemaAssociation->schema_fragment_id, $threadRun->response_fragment_id);
     }
 }

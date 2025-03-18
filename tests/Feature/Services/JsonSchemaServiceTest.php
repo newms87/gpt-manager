@@ -7,6 +7,226 @@ use Tests\AuthenticatedTestCase;
 
 class JsonSchemaServiceTest extends AuthenticatedTestCase
 {
+    public function test_formatAndCleanSchema_providesValidJsonSchema(): void
+    {
+        // Given
+        $name     = 'test-schema';
+        $response = [
+            'key' => [
+                'type' => 'string',
+            ],
+        ];
+
+        // When
+        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'key' => [
+                        'type' => ['string', 'null'],
+                    ],
+                ],
+                'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatAndCleanSchema_requiresAllPropertiesOfNestedObjects(): void
+    {
+        // Given
+        $name     = 'test-schema';
+        $response = [
+            'key' => [
+                'type'       => 'object',
+                'properties' => [
+                    'nested_a' => [
+                        'type' => 'string',
+                    ],
+                    'nested_b' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'nested-key' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'key' => [
+                        'type'                 => ['object', 'null'],
+                        'properties'           => [
+                            'nested_a' => [
+                                'type' => ['string', 'null'],
+                            ],
+                            'nested_b' => [
+                                'type'                 => ['object', 'null'],
+                                'properties'           => [
+                                    'nested-key' => [
+                                        'type' => ['string', 'null'],
+                                    ],
+                                ],
+                                'required'             => ['nested-key'],
+                                'additionalProperties' => false,
+                            ],
+                        ],
+                        'required'             => ['nested_a', 'nested_b'],
+                        'additionalProperties' => false,
+                    ],
+                ],
+                'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatAndCleanSchema_requiresAllPropertiesOfNestedArrays(): void
+    {
+        // Given
+        $name     = 'test-schema';
+        $response = [
+            'key' => [
+                'type'  => 'array',
+                'items' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'nested_a' => [
+                            'type' => 'string',
+                        ],
+                        'nested_b' => [
+                            'type'       => 'object',
+                            'properties' => [
+                                'nested-key' => [
+                                    'type' => 'string',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When
+        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'key' => [
+                        'type'  => ['array', 'null'],
+                        'items' => [
+                            'type'                 => ['object', 'null'],
+                            'properties'           => [
+                                'nested_a' => [
+                                    'type' => ['string', 'null'],
+                                ],
+                                'nested_b' => [
+                                    'type'                 => ['object', 'null'],
+                                    'properties'           => [
+                                        'nested-key' => [
+                                            'type' => ['string', 'null'],
+                                        ],
+                                    ],
+                                    'required'             => ['nested-key'],
+                                    'additionalProperties' => false,
+                                ],
+                            ],
+                            'required'             => ['nested_a', 'nested_b'],
+                            'additionalProperties' => false,
+                        ],
+                    ],
+                ],
+                'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatAndCleanSchema_addsDescriptionToProperties(): void
+    {
+        // Given
+        $name     = 'test-schema';
+        $response = [
+            'key' => [
+                'type'        => 'string',
+                'description' => 'A test description',
+            ],
+        ];
+
+        // When
+        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'key' => [
+                        'type'        => ['string', 'null'],
+                        'description' => 'A test description',
+                    ],
+                ],
+                'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+
+    public function test_formatAndCleanSchema_addsEnumToProperties()
+    {
+        // Given
+        $name     = 'test-schema';
+        $response = [
+            'key' => [
+                'type' => 'string',
+                'enum' => ['value1', 'value2'],
+            ],
+        ];
+
+        // When
+        $formattedResponse = app(JsonSchemaService::class)->formatAndCleanSchema($name, $response);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'key' => [
+                        'type' => ['string', 'null'],
+                        'enum' => ['value1', 'value2'],
+                    ],
+                ],
+                'required'             => ['key'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedResponse);
+    }
+    
     public function test_formatAndCleanSchema_withAdditionalObjectProperty_additionalPropertyShouldBeOptional(): void
     {
         // Given

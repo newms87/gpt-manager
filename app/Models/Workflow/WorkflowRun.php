@@ -16,11 +16,13 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
+use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
+use Newms87\Danx\Traits\AuditableTrait;
 
-class WorkflowRun extends Model implements WorkflowStatesContract
+class WorkflowRun extends Model implements WorkflowStatesContract, AuditableContract
 {
-    use SoftDeletes, ActionModelTrait, HasWorkflowStatesTrait;
+    use SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowStatesTrait;
 
     protected $fillable = [
         'started_at',
@@ -152,7 +154,11 @@ class WorkflowRun extends Model implements WorkflowStatesContract
             }
         }
 
-        if ($hasFailedTasks) {
+        if ($hasRunningTasks) {
+            $this->failed_at    = null;
+            $this->stopped_at   = null;
+            $this->completed_at = null;
+        } elseif ($hasFailedTasks) {
             $this->completed_at = null;
             $this->stopped_at   = null;
             if (!$this->failed_at) {
@@ -164,10 +170,6 @@ class WorkflowRun extends Model implements WorkflowStatesContract
             if (!$this->stopped_at) {
                 $this->stopped_at = now();
             }
-        } elseif ($hasRunningTasks) {
-            $this->failed_at    = null;
-            $this->stopped_at   = null;
-            $this->completed_at = null;
         } else {
             $this->failed_at  = null;
             $this->stopped_at = null;

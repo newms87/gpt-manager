@@ -121,7 +121,12 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
             }
         }
 
-        if ($hasFailedProcesses) {
+
+        if ($hasRunningProcesses) {
+            $this->failed_at    = null;
+            $this->stopped_at   = null;
+            $this->completed_at = null;
+        } elseif ($hasFailedProcesses) {
             $this->completed_at = null;
             $this->stopped_at   = null;
             if (!$this->failed_at) {
@@ -133,10 +138,6 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
             if (!$this->stopped_at) {
                 $this->stopped_at = now();
             }
-        } elseif ($hasRunningProcesses) {
-            $this->failed_at    = null;
-            $this->stopped_at   = null;
-            $this->completed_at = null;
         } else {
             $this->failed_at  = null;
             $this->stopped_at = null;
