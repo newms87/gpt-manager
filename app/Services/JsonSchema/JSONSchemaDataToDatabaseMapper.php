@@ -13,6 +13,7 @@ use Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Helpers\LockHelper;
+use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\FileRepository;
@@ -128,7 +129,16 @@ class JSONSchemaDataToDatabaseMapper
             $input['date'] = carbon($input['date']);
         }
 
-        $teamObject->fill($input)->validate()->save();
+        try {
+            $teamObject->fill($input)->validate();
+        } catch(ValidationError $exception) {
+            // If there is a naming conflict, then resolve the name
+            if ($exception->getCode() === 409) {
+                $teamObject->name = ModelHelper::getNextModelName($teamObject);
+            }
+        }
+
+        $teamObject->save();
 
         return $teamObject;
     }
@@ -279,7 +289,7 @@ class JSONSchemaDataToDatabaseMapper
     public function saveTeamObjectUsingSchema(array $schema, array &$object, AgentThreadRun $threadRun = null): TeamObject
     {
         $id           = $object['id'] ?? null;
-        $type         = $schema['title'] ?? null;
+        $type         = $schema['title'] ?? $object['type'] ?? null;
         $name         = $object['name']['value'] ?? $object['name'] ?? null;
         $propertyMeta = $object['property_meta'] ?? null;
 
@@ -308,6 +318,9 @@ class JSONSchemaDataToDatabaseMapper
                 }
             }
 
+            // Be sure the type is loaded on the object (for database retrieval purposes from artifacts)
+            $object['type'] = $teamObject->type;
+
             Log::debug("Loaded for update: $teamObject");
             $this->updateTeamObject($teamObject, $object);
         } else {
@@ -318,6 +331,7 @@ class JSONSchemaDataToDatabaseMapper
             $teamObject = $this->createTeamObject($type, $name, $object, true);
 
             $object['id']                   = $teamObject->id;
+            $object['type']                 = $teamObject->type;
             $object['was_recently_created'] = $teamObject->wasRecentlyCreated;
 
             // If there was no root object before, that means this is the root object

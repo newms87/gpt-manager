@@ -93,8 +93,8 @@ class TeamObject extends Model implements AuditableContract
             $query->whereNull('root_object_id');
         }
 
-        if ($query->exists()) {
-            throw new ValidationError("A $this->type with the name $this->name already exists");
+        if ($existingObject = $query->first()) {
+            throw new ValidationError("Failed to validate $this->type ($this->id): A $this->type with the name $this->name already exists: $existingObject", 409);
         }
 
         return $this;

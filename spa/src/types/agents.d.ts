@@ -22,6 +22,10 @@ export interface AgentThread extends ActionTargetItem {
 	is_running: boolean;
 	timestamp: string;
 	jobDispatch?: JobDispatch;
+	can: {
+		view: boolean;
+		edit: boolean;
+	};
 }
 
 export interface AgentThreadMessage extends ActionTargetItem {

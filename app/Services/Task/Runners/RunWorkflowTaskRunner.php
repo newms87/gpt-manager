@@ -51,15 +51,18 @@ class RunWorkflowTaskRunner extends BaseTaskRunner
             $this->complete($workflowRun->collectFinalOutputArtifacts());
         } elseif ($workflowRun->isStopped()) {
             $this->taskProcess->stopped_at = now();
+            $this->taskProcess->save();
         } elseif ($workflowRun->isFailed()) {
             $this->taskProcess->failed_at = now();
+            $this->taskProcess->save();
         } else {
-            $totalTasks     = $workflowRun->taskRuns()->count();
+            $totalTasks     = $workflowRun->workflowDefinition->workflowNodes()->count();
+            $runningTasks   = $workflowRun->taskRuns()->where('status', WorkflowStatesContract::STATUS_RUNNING)->count();
             $completedTasks = $workflowRun->taskRuns()->where('status', WorkflowStatesContract::STATUS_COMPLETED)->count();
 
             $percentComplete = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
 
-            $this->activity("$completedTasks / $totalTasks have completed", $percentComplete);
+            $this->activity("$runningTasks Running and $completedTasks Completed of $totalTasks total tasks", $percentComplete);
         }
     }
 }

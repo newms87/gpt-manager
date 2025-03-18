@@ -20,6 +20,7 @@
 				:key="message.id"
 				:message="message"
 				:thread="agentThread"
+				:readonly="!agentThread.can.edit"
 				class="mb-5"
 			/>
 			<div class="flex items-center flex-nowrap space-x-4">

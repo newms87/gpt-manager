@@ -25,6 +25,44 @@ class AgentThread extends Model implements AuditableContract
 
     protected array $usage = [];
 
+    protected array $can = [
+        'view' => null,
+        'edit' => null,
+    ];
+
+    public function can($type = null): bool|array
+    {
+        if ($this->can['view'] === null) {
+            $this->can['view'] = true;
+            $this->can['edit'] = true;
+
+            $runs = $this->runs()->whereHas('responseSchema.resourcePackageImport')->with('responseSchema.resourcePackageImport.resourcePackage')->get();
+
+            foreach($runs as $run) {
+                if (!$run->responseSchema->resourcePackageImport->canView()) {
+                    $this->can['view'] = false;
+
+                }
+
+                if (!$run->responseSchema->resourcePackageImport->canEdit()) {
+                    $this->can['edit'] = false;
+                }
+            }
+        }
+
+        return $type ? $this->can[$type] : $this->can;
+    }
+
+    public function canView(): bool
+    {
+        return $this->can('view');
+    }
+
+    public function canEdit(): bool
+    {
+        return $this->can('edit');
+    }
+
     public function team(): BelongsTo|Team
     {
         return $this->belongsTo(Team::class);
