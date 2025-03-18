@@ -15,6 +15,10 @@ class SchemaDefinitionsController extends ActionController
 
     public function history(SchemaDefinition $schemaDefinition)
     {
-        return SchemaDefinitionRevisionResource::collection($schemaDefinition->schemaDefinitionRevisions()->orderByDesc('id')->get());
+        if ($schemaDefinition->canEdit()) {
+            return SchemaDefinitionRevisionResource::collection($schemaDefinition->schemaDefinitionRevisions()->orderByDesc('id')->get());
+        }
+
+        return [];
     }
 }

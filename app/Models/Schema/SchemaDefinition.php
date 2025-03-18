@@ -117,6 +117,16 @@ class SchemaDefinition extends Model implements AuditableContract, CanExportToJs
         ]);
     }
 
+    public function canView(): bool
+    {
+        return $this->resource_package_import_id === null;
+    }
+
+    public function canEdit(): bool
+    {
+        return $this->resource_package_import_id === null;
+    }
+
     public function __toString(): string
     {
         return "<SchemaDefinition $this->name>";

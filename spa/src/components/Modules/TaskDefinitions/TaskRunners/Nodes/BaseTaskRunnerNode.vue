@@ -1,8 +1,10 @@
 <template>
-	<div class="flex items-center justify-center flex-nowrap relative h-full w-full">
-		<slot>
-			<BaseNodeIcon class="w-[4.4rem]" />
-		</slot>
+	<div class="base-task-runner-node relative h-full w-full">
+		<div class="flex items-center justify-center flex-nowrap h-full w-full">
+			<slot>
+				<BaseNodeIcon class="w-[4.4rem]" />
+			</slot>
+		</div>
 
 		<slot name="ports">
 			<NodePortsWidget
