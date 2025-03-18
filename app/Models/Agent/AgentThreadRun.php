@@ -4,6 +4,7 @@ namespace App\Models\Agent;
 
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
+use App\Services\JsonSchema\JsonSchemaService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -38,6 +39,7 @@ class AgentThreadRun extends Model implements AuditableContract
         'response_format',
         'response_schema_id',
         'response_fragment_id',
+        'json_schema_config',
         'seed',
         'started_at',
         'status',
@@ -50,12 +52,13 @@ class AgentThreadRun extends Model implements AuditableContract
     public function casts(): array
     {
         return [
-            'tools'        => 'json',
-            'temperature'  => 'float',
-            'started_at'   => 'datetime',
-            'completed_at' => 'datetime',
-            'failed_at'    => 'datetime',
-            'refreshed_at' => 'datetime',
+            'tools'              => 'json',
+            'json_schema_config' => 'json',
+            'temperature'        => 'float',
+            'started_at'         => 'datetime',
+            'completed_at'       => 'datetime',
+            'failed_at'          => 'datetime',
+            'refreshed_at'       => 'datetime',
         ];
     }
 
@@ -82,6 +85,11 @@ class AgentThreadRun extends Model implements AuditableContract
     public function responseFragment(): BelongsTo|SchemaFragment
     {
         return $this->belongsTo(SchemaFragment::class, 'response_fragment_id');
+    }
+
+    public function getJsonSchemaService(): JsonSchemaService
+    {
+        return app(JsonSchemaService::class)->setConfig($this->json_schema_config);
     }
 
     public function __toString(): string

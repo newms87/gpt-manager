@@ -26,9 +26,9 @@ class AgentThreadService
 {
     use HasDebugLogging;
 
-    protected ?JsonSchemaService $jsonSchemaService = null;
     protected ?SchemaDefinition  $responseSchema    = null;
     protected ?SchemaFragment    $responseFragment  = null;
+    protected ?JsonSchemaService $jsonSchemaService = null;
 
     /**
      * Overrides the response format for the thread run.
@@ -36,25 +36,16 @@ class AgentThreadService
      */
     public function withResponseFormat(SchemaDefinition $responseSchema = null, SchemaFragment $responseFragment = null, JsonSchemaService $jsonSchemaService = null): static
     {
-        $this->responseSchema   = $responseSchema;
-        $this->responseFragment = $responseFragment;
-
-        if ($jsonSchemaService) {
-            $this->jsonSchemaService = $jsonSchemaService;
-        }
+        $this->responseSchema    = $responseSchema;
+        $this->responseFragment  = $responseFragment;
+        $this->jsonSchemaService = $jsonSchemaService;
 
         return $this;
     }
 
-    public function getJsonSchemaService(): JsonSchemaService
-    {
-        if (!$this->jsonSchemaService) {
-            $this->jsonSchemaService = app(JsonSchemaService::class);
-        }
-
-        return $this->jsonSchemaService;
-    }
-
+    /**
+     * Creates an agent thread run based on the defined parameters configured for the service
+     */
     public function prepareAgentThreadRun(AgentThread $agentThread): AgentThreadRun
     {
         LockHelper::acquire($agentThread);
@@ -75,6 +66,7 @@ class AgentThreadService
                 'response_format'      => $this->responseSchema ? 'json_schema' : 'text',
                 'response_schema_id'   => $this->responseSchema?->id,
                 'response_fragment_id' => $this->responseFragment?->id,
+                'json_schema_config'   => $this->jsonSchemaService?->getConfig(),
                 'seed'                 => config('ai.seed'),
                 'started_at'           => now(),
             ]);
@@ -171,7 +163,7 @@ class AgentThreadService
         }
 
         // Configure the JSON schema service to require the name and id fields, and use citations for each property
-        return $this->getJsonSchemaService()->formatAndFilterSchema($responseSchema->name, $responseSchema->schema, $responseFragment?->fragment_selector);
+        return $agentThreadRun->getJsonSchemaService()->formatAndFilterSchema($responseSchema->name, $responseSchema->schema, $responseFragment?->fragment_selector);
     }
 
     /**
@@ -306,7 +298,7 @@ class AgentThreadService
             $formattedMessage = $apiFormatter->message($message);
 
             // For agents that rely on citing messages as sources, wrap the message in an AgentMessage tag
-            if ($this->getJsonSchemaService()->isUsingCitations() && ($message->isUser() || $message->isTool())) {
+            if ($agentThreadRun->getJsonSchemaService()->isUsingCitations() && ($message->isUser() || $message->isTool())) {
                 $messages[] = $apiFormatter->wrapMessage("<AgentMessage id='$message->id'>", $formattedMessage, "</AgentMessage>");
             } else {
                 $messages[] = $formattedMessage;
@@ -336,7 +328,7 @@ class AgentThreadService
     {
         $responseMessage = '';
 
-        if ($agentThreadRun->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA && $this->getJsonSchemaService()->isUsingDbFields()) {
+        if ($agentThreadRun->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA && $agentThreadRun->getJsonSchemaService()->isUsingDbFields()) {
             $responseMessage .= <<<STR
 Your response will be saved to the DB. In order to save correctly, the `name` attribute must be set as the unique identifier for the object type.
 

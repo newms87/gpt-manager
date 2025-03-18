@@ -28,6 +28,30 @@ class JsonSchemaService
     protected array $artifactMetaDef = [];
     protected array $propertyMetaDef = [];
 
+    public function getConfig(): array
+    {
+        return [
+            'useId'           => $this->useId,
+            'requireName'     => $this->requireName,
+            'useCitations'    => $this->useCitations,
+            'usePropertyMeta' => $this->usePropertyMeta,
+            'useArtifactMeta' => $this->useArtifactMeta,
+        ];
+    }
+
+    public function setConfig(array $config = []): static
+    {
+        $config = $config ?: [];
+
+        $this->useId           = $config['useId'] ?? $this->useId;
+        $this->requireName     = $config['requireName'] ?? $this->requireName;
+        $this->useCitations    = $config['useCitations'] ?? $this->useCitations;
+        $this->usePropertyMeta = $config['usePropertyMeta'] ?? $this->usePropertyMeta;
+        $this->useArtifactMeta = $config['useArtifactMeta'] ?? $this->useArtifactMeta;
+
+        return $this;
+    }
+
     public function isUsingDbFields(): bool
     {
         return $this->useId && $this->requireName;
