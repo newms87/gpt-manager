@@ -57,7 +57,7 @@ class AgentThreadService
 
             $agent = $agentThread->agent;
 
-            $agentThreadRun = $agentThread->runs()->create([
+            $agentThreadRun = $agentThread->runs()->make([
                 'agent_model'          => $agent->model,
                 'status'               => AgentThreadRun::STATUS_RUNNING,
                 'temperature'          => $agent->temperature,
@@ -70,6 +70,14 @@ class AgentThreadService
                 'seed'                 => config('ai.seed'),
                 'started_at'           => now(),
             ]);
+
+            // Save a snapshot of the resolved JSON Schema to use as the agent's response schema,
+            // and so we can clearly see what the schema was at the time of running the request
+            if ($this->responseSchema) {
+                $agentThreadRun->response_json_schema = $agentThreadRun->renderResponseJsonSchema($this->responseSchema->name, $this->responseSchema->schema, $this->responseFragment?->fragment_selector);
+            }
+
+            $agentThreadRun->save();
         } finally {
             LockHelper::release($agentThread);
         }
@@ -167,7 +175,7 @@ class AgentThreadService
             ];
 
             if ($agentThreadRun->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA) {
-                $jsonSchema = $agentThreadRun->getResponseJsonSchema();
+                $jsonSchema = $agentThreadRun->response_json_schema;
 
                 if (!$jsonSchema) {
                     throw new Exception("JSON Schema response format requires a schema to be set: " . $agentThreadRun);

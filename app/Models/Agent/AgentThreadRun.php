@@ -40,6 +40,7 @@ class AgentThreadRun extends Model implements AuditableContract
         'response_schema_id',
         'response_fragment_id',
         'json_schema_config',
+        'response_json_schema',
         'seed',
         'started_at',
         'status',
@@ -52,13 +53,14 @@ class AgentThreadRun extends Model implements AuditableContract
     public function casts(): array
     {
         return [
-            'tools'              => 'json',
-            'json_schema_config' => 'json',
-            'temperature'        => 'float',
-            'started_at'         => 'datetime',
-            'completed_at'       => 'datetime',
-            'failed_at'          => 'datetime',
-            'refreshed_at'       => 'datetime',
+            'tools'                => 'json',
+            'json_schema_config'   => 'json',
+            'response_json_schema' => 'json',
+            'temperature'          => 'float',
+            'started_at'           => 'datetime',
+            'completed_at'         => 'datetime',
+            'failed_at'            => 'datetime',
+            'refreshed_at'         => 'datetime',
         ];
     }
 
@@ -92,13 +94,9 @@ class AgentThreadRun extends Model implements AuditableContract
         return app(JsonSchemaService::class)->setConfig($this->json_schema_config);
     }
 
-    public function getResponseJsonSchema(): ?array
+    public function renderResponseJsonSchema(string $name, array $schema, array $fragmentSelector = null): ?array
     {
-        if (!$this->responseSchema) {
-            return null;
-        }
-
-        return $this->getJsonSchemaService()->formatAndFilterSchema($this->responseSchema->name, $this->responseSchema->schema, $this->responseFragment?->fragment_selector);
+        return $this->getJsonSchemaService()->formatAndFilterSchema($name, $schema, $fragmentSelector);
     }
 
     public function __toString(): string
