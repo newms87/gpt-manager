@@ -29,19 +29,19 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertNotNull($threadRun->job_dispatch_id);
     }
-    
+
     public function test_dispatch_createsThreadRunSuccessfully()
     {
         // Given
         $temperature = .7;
         $agent       = Agent::factory()->create(['temperature' => $temperature]);
-        $thread      = AgentThread::factory()->create(['agent_id' => $agent->id]);
-        $thread->messages()->create(['role' => AgentThreadMessage::ROLE_USER, 'content' => 'Test message']);
+        $agentThread = AgentThread::factory()->create(['agent_id' => $agent->id]);
+        $agentThread->messages()->create(['role' => AgentThreadMessage::ROLE_USER, 'content' => 'Test message']);
 
         $service = new AgentThreadService();
 
         // When
-        $threadRun = $service->dispatch($thread);
+        $threadRun = $service->dispatch($agentThread);
 
         // Then
         $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);

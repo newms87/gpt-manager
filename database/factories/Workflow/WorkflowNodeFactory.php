@@ -4,6 +4,7 @@ namespace Database\Factories\Workflow;
 
 use App\Models\Task\TaskDefinition;
 use App\Models\Workflow\WorkflowDefinition;
+use App\Services\Task\Runners\WorkflowInputTaskRunner;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class WorkflowNodeFactory extends Factory
@@ -17,5 +18,16 @@ class WorkflowNodeFactory extends Factory
             'settings'               => [],
             'params'                 => [],
         ];
+    }
+
+    public function startingNode(): static
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'task_definition_id' => TaskDefinition::factory()->create([
+                    'task_runner_class' => WorkflowInputTaskRunner::RUNNER_NAME,
+                ]),
+            ];
+        });
     }
 }

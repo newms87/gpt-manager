@@ -39,7 +39,7 @@ class JsonSchemaService
         ];
     }
 
-    public function setConfig(array $config = []): static
+    public function setConfig(?array $config = []): static
     {
         $config = $config ?: [];
 

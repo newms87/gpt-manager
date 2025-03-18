@@ -9,18 +9,27 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 
 class WorkflowDefinitionFactory extends Factory
 {
-	public function definition(): array
-	{
-		return [
-			'team_id' => Team::factory(),
-			'name'    => fake()->unique()->name,
-		];
-	}
+    public function definition(): array
+    {
+        return [
+            'team_id' => Team::factory(),
+            'name'    => fake()->unique()->name,
+        ];
+    }
 
-	public function withNodes(int $count = 2): static
-	{
-		return $this->afterCreating(function (WorkflowDefinition $workflowDefinition) use ($count) {
-			WorkflowNode::factory()->count($count)->create(['workflow_definition_id' => $workflowDefinition]);
-		});
-	}
+    public function withStartingNode(): static
+    {
+        return $this->afterCreating(function (WorkflowDefinition $workflowDefinition) {
+            WorkflowNode::factory()->startingNode()->create([
+                'workflow_definition_id' => $workflowDefinition,
+            ]);
+        });
+    }
+
+    public function withNodes(int $count = 2): static
+    {
+        return $this->afterCreating(function (WorkflowDefinition $workflowDefinition) use ($count) {
+            WorkflowNode::factory()->count($count)->create(['workflow_definition_id' => $workflowDefinition]);
+        });
+    }
 }

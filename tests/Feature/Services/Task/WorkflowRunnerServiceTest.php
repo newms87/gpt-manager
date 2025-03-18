@@ -30,7 +30,7 @@ class WorkflowRunnerServiceTest extends AuthenticatedTestCase
     public function test_start_withSingleNode_singleTaskRunCreatedAndCompleted(): void
     {
         // Given
-        $workflowDefinition = WorkflowDefinition::factory()->withNodes(1)->create();
+        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create();
 
         // When
         $workflowRun = WorkflowRunnerService::start($workflowDefinition);
@@ -45,7 +45,7 @@ class WorkflowRunnerServiceTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create();
-        $workflowNodeA      = WorkflowNode::factory()->recycle($workflowDefinition)->create();
+        $workflowNodeA      = WorkflowNode::factory()->recycle($workflowDefinition)->startingNode()->create();
         $workflowNodeB      = WorkflowNode::factory()->recycle($workflowDefinition)->create();
         WorkflowConnection::factory()->connect($workflowDefinition, $workflowNodeA, $workflowNodeB)->create();
 
@@ -64,7 +64,7 @@ class WorkflowRunnerServiceTest extends AuthenticatedTestCase
         $artifactJsonContent = ['hello' => 'world'];
         $artifact            = Artifact::factory()->create(['json_content' => $artifactJsonContent]);
         $workflowDefinition  = WorkflowDefinition::factory()->create();
-        $workflowNodeA       = WorkflowNode::factory()->recycle($workflowDefinition)->create();
+        $workflowNodeA       = WorkflowNode::factory()->recycle($workflowDefinition)->startingNode()->create();
         $workflowNodeB       = WorkflowNode::factory()->recycle($workflowDefinition)->create();
         $connection          = WorkflowConnection::factory()->connect($workflowDefinition, $workflowNodeA, $workflowNodeB)->create();
 
