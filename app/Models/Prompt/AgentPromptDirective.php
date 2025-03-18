@@ -3,7 +3,8 @@
 namespace App\Models\Prompt;
 
 use App\Models\Agent\Agent;
-use App\Models\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class AgentPromptDirective extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use AuditableTrait, ActionModelTrait;
+    use AuditableTrait, ActionModelTrait, ResourcePackageableTrait;
 
     const string
         SECTION_TOP = 'Top',

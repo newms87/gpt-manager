@@ -2,7 +2,8 @@
 
 namespace App\Models\Schema;
 
-use App\Models\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Team\Team;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +20,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class SchemaDefinition extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
+    use HasFactory, AuditableTrait, ActionModelTrait, ResourcePackageableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 
     const string
         FORMAT_JSON = 'json',
@@ -115,16 +116,6 @@ class SchemaDefinition extends Model implements AuditableContract, ResourcePacka
             'schema_format' => $this->schema_format,
             'schema'        => $this->schema,
         ]);
-    }
-
-    public function canView(): bool
-    {
-        return $this->resource_package_import_id === null || $this->resourcePackage;
-    }
-
-    public function canEdit(): bool
-    {
-        return $this->resource_package_import_id === null;
     }
 
     public function __toString(): string

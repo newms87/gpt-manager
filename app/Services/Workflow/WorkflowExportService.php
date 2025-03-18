@@ -3,8 +3,8 @@
 namespace App\Services\Workflow;
 
 use App\Models\ResourcePackage\ResourcePackage;
+use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageVersion;
-use App\Models\ResourcePackageableContract;
 use App\Models\Workflow\WorkflowDefinition;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\StringHelper;

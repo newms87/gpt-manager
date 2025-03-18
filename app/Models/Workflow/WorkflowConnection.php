@@ -2,7 +2,8 @@
 
 namespace App\Models\Workflow;
 
-use App\Models\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowConnection extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait;
+    use HasFactory, ActionModelTrait, AuditableTrait, ResourcePackageableTrait;
 
     protected $fillable = [
         'source_node_id',

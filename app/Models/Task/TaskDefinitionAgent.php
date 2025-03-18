@@ -3,7 +3,8 @@
 namespace App\Models\Task;
 
 use App\Models\Agent\Agent;
-use App\Models\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
 use App\Services\Workflow\WorkflowExportService;
@@ -19,7 +20,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskDefinitionAgent extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use ActionModelTrait, HasFactory, AuditableTrait;
+    use ActionModelTrait, HasFactory, AuditableTrait, ResourcePackageableTrait;
 
     protected $fillable = [
         'agent_id',

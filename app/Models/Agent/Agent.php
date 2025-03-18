@@ -4,7 +4,8 @@ namespace App\Models\Agent;
 
 use App\Api\AgentApiContracts\AgentApiContract;
 use App\Models\Prompt\AgentPromptDirective;
-use App\Models\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Team\Team;
 use App\Repositories\AgentRepository;
 use App\Services\Workflow\WorkflowExportService;
@@ -25,7 +26,7 @@ use Tests\Feature\Api\TestAi\TestAiApi;
 
 class Agent extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait, ActionModelTrait;
+    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, ResourcePackageableTrait, KeywordSearchTrait, ActionModelTrait;
 
     protected $fillable = [
         'name',

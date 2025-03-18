@@ -3,7 +3,8 @@
 namespace App\Models\Prompt;
 
 use App\Models\Agent\Agent;
-use App\Models\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Team\Team;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,7 +22,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class PromptDirective extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
+    use HasFactory, ActionModelTrait, AuditableTrait, ResourcePackageableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
 
     protected $fillable = [
         'name',

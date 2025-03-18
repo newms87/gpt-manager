@@ -2,7 +2,8 @@
 
 namespace App\Models\Schema;
 
-use App\Models\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Newms87\Danx\Traits\ActionModelTrait;
 
 class SchemaAssociation extends Model implements ResourcePackageableContract
 {
-    use HasFactory, ActionModelTrait;
+    use HasFactory, ActionModelTrait, ResourcePackageableTrait;
 
     protected $fillable = [
         'schema_definition_id',

@@ -2,7 +2,8 @@
 
 namespace App\Models\Task;
 
-use App\Models\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableContract;
+use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Workflow\WorkflowNode;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +19,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class TaskDefinition extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use ActionModelTrait, HasFactory, AuditableTrait, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
+    use ActionModelTrait, HasFactory, AuditableTrait, ResourcePackageableTrait, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
 
     protected $fillable = [
         'name',
