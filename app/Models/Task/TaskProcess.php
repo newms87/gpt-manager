@@ -128,16 +128,16 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
     public function computeStatus(): static
     {
-        if (!$this->isDispatched()) {
+        if ($this->isStopped()) {
+            $this->status = WorkflowStatesContract::STATUS_STOPPED;
+        } elseif ($this->isFailed()) {
+            $this->status = WorkflowStatesContract::STATUS_FAILED;
+        } elseif ($this->isTimeout()) {
+            $this->status = WorkflowStatesContract::STATUS_TIMEOUT;
+        } elseif (!$this->isDispatched()) {
             $this->status = WorkflowStatesContract::STATUS_PENDING;
         } elseif (!$this->isStarted()) {
             $this->status = WorkflowStatesContract::STATUS_DISPATCHED;
-        } elseif ($this->isFailed()) {
-            $this->status = WorkflowStatesContract::STATUS_FAILED;
-        } elseif ($this->isStopped()) {
-            $this->status = WorkflowStatesContract::STATUS_STOPPED;
-        } elseif ($this->isTimeout()) {
-            $this->status = WorkflowStatesContract::STATUS_TIMEOUT;
         } elseif (!$this->isCompleted()) {
             $this->status = WorkflowStatesContract::STATUS_RUNNING;
         } else {
