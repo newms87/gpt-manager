@@ -122,9 +122,9 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
             if ($artifact && $schemaDefinition) {
                 $artifact->schemaDefinition()->associate($schemaDefinition)->save();
-
-                return $artifact;
             }
+
+            return $artifact;
         }
 
         return null;

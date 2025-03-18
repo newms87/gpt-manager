@@ -85,6 +85,6 @@ class TaskDefinitionAgent extends Model implements AuditableContract, ResourcePa
     {
         $fragmentSelector = json_encode($this->getInputFragmentSelector());
 
-        return "<TaskDefinitionAgent id='$this->id' agent-name='{$this->agent->name}' include-data='$this->include_data' include-files='$this->include_files' include-text='$this->include_text' fragment-selector='$fragmentSelector'>";
+        return "<TaskDefinitionAgent id='$this->id' agent-name='{$this->agent->name}' include-data='$this->include_data' include-files='$this->include_files' include-text='$this->include_text'>";
     }
 }

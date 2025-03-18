@@ -121,12 +121,6 @@ class TaskProcessRunnerService
 
         $taskProcess = $taskProcessListener->taskProcess;
 
-        if (!$taskProcess->isRunning()) {
-            static::log("TaskProcess is $taskProcess->status, ignoring event");
-
-            return;
-        }
-
         // Run the task process
         try {
             $taskProcess->getRunner()->eventTriggered($taskProcessListener);
