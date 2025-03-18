@@ -20,7 +20,7 @@ class TeamObjectRepository extends ActionRepository
 
     public function query(): Builder
     {
-        return parent::query()->where('team_id', team()->id)->whereDoesntHave('schemaDefinition', fn(Builder $builder) => $builder->whereNotNull('owner_team_id'));
+        return parent::query()->where('team_id', team()->id)->whereDoesntHave('schemaDefinition', fn(Builder $builder) => $builder->whereNotNull('resource_package_import_id'));
     }
 
     public function applyAction(string $action, TeamObject|Model|array|null $model = null, ?array $data = null)

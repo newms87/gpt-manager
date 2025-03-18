@@ -165,6 +165,11 @@ class WorkflowImportService
 
             $localObject->save();
             $this->importedIdMap[$objectType][$sourceId] = $localObject->id;
+
+            // Update the resource package import record with the local object ID so we can track future imports / updates
+            $resourcePackageImport->local_object_id             = $localObject->id;
+            $resourcePackageImport->resource_package_version_id = $this->resourcePackageVersion->id;
+            $resourcePackageImport->save();
         }
     }
 }

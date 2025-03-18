@@ -23,11 +23,10 @@ return new class extends Migration {
 
         Schema::create('resource_packages', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->unsignedBigInteger('team_uuid');
+            $table->uuid('team_uuid');
             $table->string('resource_type');
             $table->string('resource_id');
             $table->string('name');
-            $table->uuid('latest_version_id');
             $table->timestamps(3);
             $table->softDeletes();
         });

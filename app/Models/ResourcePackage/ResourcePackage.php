@@ -15,7 +15,7 @@ class ResourcePackage extends Model implements AuditableContract
 {
     use AuditableTrait, SoftDeletes, HasUuids;
 
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'team_uuid', 'resource_type', 'resource_id'];
 
     public function team(): BelongsTo|Team
     {
@@ -25,5 +25,10 @@ class ResourcePackage extends Model implements AuditableContract
     public function resourcePackageVersions(): HasMany|ResourcePackageVersion
     {
         return $this->hasMany(ResourcePackageVersion::class);
+    }
+
+    public function getLatestVersion(): ?ResourcePackageVersion
+    {
+        return $this->resourcePackageVersions()->latest()->first();
     }
 }

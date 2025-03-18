@@ -13,7 +13,12 @@ class ResourcePackageImport extends Model implements AuditableContract
 {
     use AuditableTrait, SoftDeletes, HasUuids;
 
-    protected $guarded = ['*'];
+    protected $fillable = [
+        'team_uuid',
+        'resource_package_id',
+        'object_type',
+        'source_object_id',
+    ];
 
     public function resourcePackage(): BelongsTo|ResourcePackage
     {

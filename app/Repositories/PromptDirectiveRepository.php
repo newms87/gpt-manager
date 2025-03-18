@@ -15,7 +15,7 @@ class PromptDirectiveRepository extends ActionRepository
 
     public function query(): Builder
     {
-        return parent::query()->where('team_id', team()->id)->whereNull('owner_team_id');
+        return parent::query()->where('team_id', team()->id)->whereNull('resource_package_import_id');
     }
 
     public function summaryQuery(array $filter = []): Builder|QueryBuilder

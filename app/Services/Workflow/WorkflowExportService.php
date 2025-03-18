@@ -6,6 +6,8 @@ use App\Models\CanExportToJsonContract;
 use App\Models\ResourcePackage\ResourcePackage;
 use App\Models\ResourcePackage\ResourcePackageVersion;
 use App\Models\Workflow\WorkflowDefinition;
+use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Helpers\StringHelper;
 
 class WorkflowExportService
 {
@@ -36,11 +38,16 @@ class WorkflowExportService
             'version_hash' => $versionHash,
         ]);
 
-        if ($resourcePackageVersion) {
+        if ($resourcePackageVersion->exists) {
             return $resourcePackageVersion;
         }
 
-        $resourcePackageVersion->version     = '0.0.1';
+        $latestVersion = $resourcePackage->getLatestVersion();
+        if ($latestVersion) {
+            $resourcePackageVersion->version = StringHelper::incrementSemver($latestVersion->version);
+        } else {
+            $resourcePackageVersion->version = '0.0.1';
+        }
         $resourcePackageVersion->definitions = $this->definitions;
         $resourcePackageVersion->save();
 
@@ -49,6 +56,11 @@ class WorkflowExportService
 
     public function exportToJson(WorkflowDefinition $workflowDefinition): array
     {
+        if ($workflowDefinition->resource_package_import_id) {
+            throw new ValidationError('You do not own this workflow definition and cannot export it');
+
+        }
+
         // This will load the definitions into the $this->definitions array
         $workflowDefinition->exportToJson($this);
 
