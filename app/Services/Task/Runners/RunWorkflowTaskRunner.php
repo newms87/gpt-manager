@@ -49,20 +49,30 @@ class RunWorkflowTaskRunner extends BaseTaskRunner
 
         if ($workflowRun->isCompleted()) {
             $this->complete($workflowRun->collectFinalOutputArtifacts());
+            $this->taskProcess->stopped_at = null;
+            $this->taskProcess->failed_at  = null;
+            $this->taskProcess->timeout_at = null;
         } elseif ($workflowRun->isStopped()) {
+            $this->taskProcess->failed_at  = null;
+            $this->taskProcess->timeout_at = null;
             $this->taskProcess->stopped_at = now();
-            $this->taskProcess->save();
         } elseif ($workflowRun->isFailed()) {
-            $this->taskProcess->failed_at = now();
-            $this->taskProcess->save();
+            $this->taskProcess->timeout_at = null;
+            $this->taskProcess->stopped_at = null;
+            $this->taskProcess->failed_at  = now();
         } else {
-            $totalTasks     = $workflowRun->workflowDefinition->workflowNodes()->count();
-            $runningTasks   = $workflowRun->taskRuns()->where('status', WorkflowStatesContract::STATUS_RUNNING)->count();
-            $completedTasks = $workflowRun->taskRuns()->where('status', WorkflowStatesContract::STATUS_COMPLETED)->count();
+            $this->taskProcess->stopped_at = null;
+            $this->taskProcess->failed_at  = null;
+            $this->taskProcess->timeout_at = null;
+            $totalTasks                    = $workflowRun->workflowDefinition->workflowNodes()->count();
+            $runningTasks                  = $workflowRun->taskRuns()->where('status', WorkflowStatesContract::STATUS_RUNNING)->count();
+            $completedTasks                = $workflowRun->taskRuns()->where('status', WorkflowStatesContract::STATUS_COMPLETED)->count();
 
             $percentComplete = $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0;
 
             $this->activity("$runningTasks Running and $completedTasks Completed of $totalTasks total tasks", $percentComplete);
         }
+
+        $this->taskProcess->save();
     }
 }

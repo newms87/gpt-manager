@@ -12,6 +12,7 @@ use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\ArtifactFilter;
 use App\Services\JsonSchema\JsonSchemaService;
 use Exception;
+use Newms87\Danx\Helpers\StringHelper;
 
 class AgentThreadTaskRunner extends BaseTaskRunner
 {
@@ -30,7 +31,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
             $outputSchema         = $defAgent->outputSchemaAssociation?->schemaDefinition;
             $outputSchemaFragment = $defAgent->outputSchemaAssociation?->schemaFragment;
             if ($outputSchema) {
-                $name .= ': ' . $outputSchema->name . ($outputSchemaFragment ? ' [' . $outputSchemaFragment->name . ']' : '');
+                $name = StringHelper::limitText(100, $name, ': ' . $outputSchema->name . ($outputSchemaFragment ? ' [' . $outputSchemaFragment->name . ']' : ''));
             }
 
             $this->taskProcess->name = $name;
