@@ -263,7 +263,9 @@ class JSONSchemaDataToDatabaseMapper
 
         $teamObjects = [];
         foreach($objects as &$object) {
-            $teamObjects[] = $this->saveTeamObjectUsingSchema($schema, $object, $threadRun);
+            if ($object) {
+                $teamObjects[] = $this->saveTeamObjectUsingSchema($schema, $object, $threadRun);
+            }
         }
 
         return $teamObjects;
@@ -349,14 +351,23 @@ class JSONSchemaDataToDatabaseMapper
                 continue;
             }
 
+            // Special case where the property is supposed to be an array but has been reduced to an object because there was only 1 array entry
+            if ($type === 'array' && array_key_exists('id', $object[$propertyName])) {
+                // Flag as an object so we can continue. This is ok!
+                $type     = 'object';
+                $property = $property['items'];
+            }
+
             if ($type === 'array') {
                 // If the property is an array, then save each item in the array as a related object
+                // NOTE: The object is still be referenced here and passing to the child as a reference so we can update the ID inline!
                 $relatedObjects = $this->saveTeamObjectsUsingSchema($property['items'], $object[$propertyName], $threadRun);
                 foreach($relatedObjects as $relatedObject) {
                     $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
                 }
             } elseif ($type === 'object') {
                 // If the property is an object, then save the object as a related object
+                // NOTE: The object is still be referenced here and passing to the child as a reference so we can update the ID inline!
                 $relatedObject = $this->saveTeamObjectUsingSchema($property, $object[$propertyName], $threadRun);
                 $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
             } else {
@@ -365,6 +376,7 @@ class JSONSchemaDataToDatabaseMapper
                     continue;
                 }
 
+                // NOTE: we are no longer referencing the object! Any changes here will not affect the output object
                 $propertyValue = $object[$propertyName];
 
                 // If saving a primitive value type, then convert it to an array with a value key
