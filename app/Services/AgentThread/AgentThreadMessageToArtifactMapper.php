@@ -8,6 +8,7 @@ use App\Models\Agent\AgentThreadRun;
 use App\Models\Task\Artifact;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Helpers\DateHelper;
+use Newms87\Danx\Helpers\StringHelper;
 
 class AgentThreadMessageToArtifactMapper
 {
@@ -62,7 +63,7 @@ class AgentThreadMessageToArtifactMapper
         // Resolve the name of the artifact preferring the meta response from the agent if it is set
         $name = $this->name;
         if (!empty($jsonMeta['name'])) {
-            $name = $jsonMeta['name'];
+            $name = StringHelper::limitText(100, $jsonMeta['name']);
         } elseif (!$name) {
             $name = $this->message->agentThread->name . ' ' . DateHelper::formatDateTime();
         }
