@@ -29,6 +29,7 @@ class LoadFromDatabaseTaskRunner extends BaseTaskRunner
         // Handle the base case where there were no identified objects to load
         if (!$uniqueTeamObjects) {
             $this->activity("No unique team objects found", 100);
+            $this->complete();
 
             return;
         }

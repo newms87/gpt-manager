@@ -47,7 +47,7 @@ const router = useRouter();
 const input = ref({
 	email: "",
 	password: "",
-	team_name: authTeam.value.name
+	team_name: authTeam.value?.name
 });
 
 const isLoggingIn = ref(false);
