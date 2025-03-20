@@ -9,7 +9,7 @@ use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadMessageToArtifactMapper;
 use App\Services\AgentThread\AgentThreadService;
-use App\Services\AgentThread\ArtifactFilter;
+use App\Services\AgentThread\ArtifactFilterService;
 use App\Services\JsonSchema\JsonSchemaService;
 use Exception;
 use Newms87\Danx\Helpers\StringHelper;
@@ -88,7 +88,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         $inputArtifacts = $this->taskProcess->inputArtifacts()->get();
 
         static::log("\tAdding " . count($inputArtifacts) . " input artifacts for " . $definitionAgent);
-        $artifactFilter = (new ArtifactFilter())
+        $artifactFilter = (new ArtifactFilterService())
             ->includePageNumbers($this->includePageNumbersInThread)
             ->includeText($definitionAgent->include_text)
             ->includeFiles($definitionAgent->include_files)

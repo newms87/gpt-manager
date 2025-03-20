@@ -4,7 +4,7 @@ namespace App\Services\Task\Runners;
 
 use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
-use App\Services\AgentThread\ArtifactFilter;
+use App\Services\AgentThread\ArtifactFilterService;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -108,7 +108,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         $this->activity("Setup agent thread with Stored File $file->id" . ($file->page_number ? " (page: $file->page_number)" : ''), 5);
 
-        $artifactFilter = (new ArtifactFilter())
+        $artifactFilter = (new ArtifactFilterService())
             ->includeText($definitionAgent->include_text)
             ->includeJson($definitionAgent->include_data, $definitionAgent->getInputFragmentSelector());
 

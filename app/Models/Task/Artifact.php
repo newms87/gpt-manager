@@ -47,6 +47,11 @@ class Artifact extends Model implements AuditableContract
         return $this->belongsTo(SchemaDefinition::class);
     }
 
+    public function taskDefinition(): BelongsTo|TaskDefinition
+    {
+        return $this->belongsTo(TaskDefinition::class);
+    }
+
     public function artifactables(): HasMany|Artifactable
     {
         return $this->hasMany(Artifactable::class);

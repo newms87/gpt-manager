@@ -3,9 +3,10 @@
 namespace App\Services\AgentThread;
 
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskArtifactFilter;
 use App\Services\JsonSchema\JsonSchemaService;
 
-class ArtifactFilter
+class ArtifactFilterService
 {
     private ?Artifact $artifact           = null;
     private bool      $includePageNumbers = false;
@@ -13,6 +14,16 @@ class ArtifactFilter
     private bool      $includeFiles       = false;
     private bool      $includeJson        = false;
     private array     $fragmentSelector   = [];
+
+    public function setFilter(TaskArtifactFilter $artifactFilter): static
+    {
+        $this->includeFiles     = $artifactFilter->include_files;
+        $this->includeJson      = $artifactFilter->include_json;
+        $this->includeText      = $artifactFilter->include_text;
+        $this->fragmentSelector = $artifactFilter->fragment_selector;
+
+        return $this;
+    }
 
     public function setArtifact(Artifact $artifact): static
     {
