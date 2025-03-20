@@ -63,6 +63,16 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         return $this->hasMany(TaskRun::class);
     }
 
+    public function taskArtifactFiltersAsSource(): HasMany|TaskArtifactFilter
+    {
+        return $this->hasMany(TaskArtifactFilter::class, 'source_task_definition_id');
+    }
+
+    public function taskArtifactFiltersAsTarget(): HasMany|TaskArtifactFilter
+    {
+        return $this->hasMany(TaskArtifactFilter::class, 'target_task_definition_id');
+    }
+
     public function workflowNodes(): HasMany|WorkflowNode
     {
         return $this->hasMany(WorkflowNode::class);

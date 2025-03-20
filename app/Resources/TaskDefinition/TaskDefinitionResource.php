@@ -23,21 +23,23 @@ class TaskDefinitionResource extends ActionResource
             'created_at'            => $taskDefinition->created_at,
             'updated_at'            => $taskDefinition->updated_at,
 
-            'taskAgents' => fn($fields) => TaskDefinitionAgentResource::collection($taskDefinition->definitionAgents, $fields),
-            'taskInputs' => fn($fields) => TaskInputResource::collection($taskDefinition->taskInputs, $fields),
-            'taskRuns'   => fn($fields) => TaskRunResource::collection($taskDefinition->taskRuns, $fields),
+            'taskAgents'                  => fn($fields) => TaskDefinitionAgentResource::collection($taskDefinition->definitionAgents, $fields),
+            'taskInputs'                  => fn($fields) => TaskInputResource::collection($taskDefinition->taskInputs, $fields),
+            'taskRuns'                    => fn($fields) => TaskRunResource::collection($taskDefinition->taskRuns, $fields),
+            'taskArtifactFiltersAsSource' => fn($fields) => TaskArtifactFilterResource::collection($taskDefinition->taskArtifactFiltersAsSource, $fields),
         ];
     }
 
     public static function details(Model $model, ?array $includeFields = null): array
     {
         return static::make($model, $includeFields ?? [
-            'taskAgents' => [
+            'taskAgents'                  => [
                 'agent'                   => true,
                 'inputSchemaAssociations' => true,
                 'outputSchemaAssociation' => true,
             ],
-            'taskInputs' => true,
+            'taskInputs'                  => true,
+            'taskArtifactFiltersAsSource' => true,
         ]);
     }
 }
