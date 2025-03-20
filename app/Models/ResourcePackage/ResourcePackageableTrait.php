@@ -19,11 +19,11 @@ trait ResourcePackageableTrait
 
     public function canView(): bool
     {
-        return $this->resource_package_import_id === null || $this->resourcePackageImport->canView();
+        return $this->resource_package_import_id === null || $this->resourcePackageImport->canView() || can('view_imported_schemas');
     }
 
     public function canEdit(): bool
     {
-        return $this->resource_package_import_id === null;
+        return $this->resource_package_import_id === null || can('edit_imported_schemas');
     }
 }
