@@ -96,7 +96,9 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
         $filteredInput = app(JsonSchemaService::class)->filterDataByFragmentSelector($inputArtifact->json_content, $fragmentSelector);
         app(ThreadRepository::class)->addMessageToThread(
             $agentThread,
-            "List the pages that relate to the group defined by the values in this artifact: " . json_encode($filteredInput)
+            "List the pages that relate to the group defined by the values in this artifact: " . json_encode($filteredInput) .
+            "If there is no clear indicator on a given page that would correlate it to the group, you can assume that page is related to the preceding pages and should be added into the group." .
+            " For example if the group is defined by a date and page 1 has the date clearly stated, but page 2 and page 3 do not, include all 3 pages in the group indicated on page 1."
         );
 
         $schemaDefinition = SchemaDefinition::make([

@@ -94,6 +94,11 @@ class AgentThreadTaskRunner extends BaseTaskRunner
             ->includeFiles($definitionAgent->include_files)
             ->includeJson($definitionAgent->include_data, $definitionAgent->getInputFragmentSelector());
 
+        if ($this->includePageNumbersInThread) {
+            // The name of the artifact should include the Page number to sort on (or some identifiable piece of information that will allow sorting)
+            $inputArtifacts = $inputArtifacts->sortBy('name');
+        }
+
         foreach($inputArtifacts as $inputArtifact) {
             $artifactFilter->setArtifact($inputArtifact);
             $filteredMessage = $artifactFilter->filter();
