@@ -16,7 +16,8 @@ export interface WorkflowNode extends ActionTargetItem {
 	params?: AnyObject;
 	task_definition_id: number;
 	taskDefinition: TaskDefinition;
-	connections?: WorkflowConnection[];
+	connectionsAsTarget?: WorkflowConnection[];
+	connectionsAsSource?: WorkflowConnection[];
 }
 
 export interface WorkflowConnection extends ActionTargetItem {

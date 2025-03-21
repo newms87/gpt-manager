@@ -19,7 +19,9 @@ class WorkflowNodeResource extends ActionResource
             'updated_at'         => $workflowNode->updated_at,
             'task_definition_id' => $workflowNode->task_definition_id,
 
-            'taskDefinition' => fn($fields) => TaskDefinitionResource::make($workflowNode->taskDefinition, $fields),
+            'taskDefinition'      => fn($fields) => TaskDefinitionResource::make($workflowNode->taskDefinition, $fields),
+            'connectionsAsTarget' => fn($fields) => WorkflowConnectionResource::collection($workflowNode->connectionsAsTarget, $fields),
+            'connectionsAsSource' => fn($fields) => WorkflowConnectionResource::collection($workflowNode->connectionsAsSource, $fields),
         ];
     }
 

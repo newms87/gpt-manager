@@ -17,6 +17,7 @@
 		<TaskDefinitionPanelsDialog
 			v-if="nodeToEdit?.taskDefinition"
 			:task-definition="nodeToEdit.taskDefinition"
+			:workflow-node="nodeToEdit"
 			@close="nodeToEdit = null"
 		/>
 	</div>
