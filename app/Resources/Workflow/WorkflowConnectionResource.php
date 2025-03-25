@@ -17,8 +17,8 @@ class WorkflowConnectionResource extends ActionResource
             'target_input_port'  => $workflowConnection->target_input_port,
             'source_node_id'     => $workflowConnection->source_node_id,
             'target_node_id'     => $workflowConnection->target_node_id,
-            'sourceNode'         => fn($fields) => WorkflowNodeResource::data($workflowConnection->sourceNode, $fields),
-            'targetNode'         => fn($fields) => WorkflowNodeResource::data($workflowConnection->targetNode, $fields),
+            'sourceNode'         => fn($fields) => WorkflowNodeResource::make($workflowConnection->sourceNode, $fields),
+            'targetNode'         => fn($fields) => WorkflowNodeResource::make($workflowConnection->targetNode, $fields),
         ];
     }
 

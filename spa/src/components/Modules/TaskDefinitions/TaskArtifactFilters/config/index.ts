@@ -1,9 +1,9 @@
-import { TaskRun } from "@/types";
+import { TaskArtifactFilter } from "@/types";
 import { DanxController } from "quasar-ui-danx";
 import { actionControls } from "./actions";
 import { controls } from "./controls";
 
-export const dxTaskRun = {
+export const dxTaskArtifactFilter = {
 	...controls,
 	...actionControls
-} as DanxController<TaskRun>;
+} as DanxController<TaskArtifactFilter>;

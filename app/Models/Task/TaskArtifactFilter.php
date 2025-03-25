@@ -11,36 +11,37 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskArtifactFilter extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait;
+	use HasFactory, AuditableTrait, ActionModelTrait;
 
-    protected $guarded = [
-        'id',
-        'created_at',
-        'updated_at',
-    ];
+	protected $fillable = [
+		'include_text',
+		'include_files',
+		'include_json',
+		'fragment_selector',
+	];
 
-    public function casts(): array
-    {
-        return [
-            'include_text'      => 'boolean',
-            'include_files'     => 'boolean',
-            'include_json'      => 'boolean',
-            'fragment_selector' => 'json',
-        ];
-    }
+	public function casts(): array
+	{
+		return [
+			'include_text'      => 'boolean',
+			'include_files'     => 'boolean',
+			'include_json'      => 'boolean',
+			'fragment_selector' => 'json',
+		];
+	}
 
-    public function sourceTaskDefinition(): BelongsTo|TaskDefinition
-    {
-        return $this->belongsTo(TaskDefinition::class, 'source_task_definition_id');
-    }
+	public function sourceTaskDefinition(): BelongsTo|TaskDefinition
+	{
+		return $this->belongsTo(TaskDefinition::class, 'source_task_definition_id');
+	}
 
-    public function targetTaskDefinition(): BelongsTo|TaskDefinition
-    {
-        return $this->belongsTo(TaskDefinition::class, 'target_task_definition_id');
-    }
+	public function targetTaskDefinition(): BelongsTo|TaskDefinition
+	{
+		return $this->belongsTo(TaskDefinition::class, 'target_task_definition_id');
+	}
 
-    public function __toString()
-    {
-        return "<ArtifactFilter ($this->id) text='$this->include_text' files='$this->include_files' json='$this->include_json'>";
-    }
+	public function __toString()
+	{
+		return "<ArtifactFilter ($this->id) text='$this->include_text' files='$this->include_files' json='$this->include_json'>";
+	}
 }

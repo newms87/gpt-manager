@@ -26,6 +26,7 @@ class TaskDefinitionResource extends ActionResource
             'taskAgents'                  => fn($fields) => TaskDefinitionAgentResource::collection($taskDefinition->definitionAgents, $fields),
             'taskInputs'                  => fn($fields) => TaskInputResource::collection($taskDefinition->taskInputs, $fields),
             'taskRuns'                    => fn($fields) => TaskRunResource::collection($taskDefinition->taskRuns, $fields),
+            'taskArtifactFiltersAsTarget' => fn($fields) => TaskArtifactFilterResource::collection($taskDefinition->taskArtifactFiltersAsTarget, $fields),
             'taskArtifactFiltersAsSource' => fn($fields) => TaskArtifactFilterResource::collection($taskDefinition->taskArtifactFiltersAsSource, $fields),
         ];
     }
@@ -39,7 +40,7 @@ class TaskDefinitionResource extends ActionResource
                 'outputSchemaAssociation' => true,
             ],
             'taskInputs'                  => true,
-            'taskArtifactFiltersAsSource' => true,
+            'taskArtifactFiltersAsTarget' => true,
         ]);
     }
 }
