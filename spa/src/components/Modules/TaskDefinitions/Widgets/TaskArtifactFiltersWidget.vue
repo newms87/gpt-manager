@@ -7,6 +7,7 @@
 			:source-task-definition="sourceTaskDefinition"
 			:target-task-definition="targetTaskDefinition"
 			:task-artifact-filter="findTaskArtifactFilter(sourceTaskDefinition)"
+			class="p-2"
 		/>
 	</div>
 </template>

@@ -1,6 +1,6 @@
 <template>
 	<div class="p-6">
-		<SchemaEditorToolbox editing :model-value="schemaDefinition" />
+		<SchemaEditorToolbox editing editable :model-value="schemaDefinition" />
 	</div>
 </template>
 <script setup lang="ts">

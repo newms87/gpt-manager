@@ -7,6 +7,7 @@
 			can-select
 			can-select-fragment
 			previewable
+			editable
 			dialog
 			hide-save-state
 			:hide-default-header="response.format === 'text'"

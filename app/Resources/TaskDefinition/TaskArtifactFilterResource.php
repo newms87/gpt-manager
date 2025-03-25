@@ -3,6 +3,7 @@
 namespace App\Resources\TaskDefinition;
 
 use App\Models\Task\TaskArtifactFilter;
+use App\Resources\Schema\SchemaFragmentResource;
 use Newms87\Danx\Resources\ActionResource;
 
 class TaskArtifactFilterResource extends ActionResource
@@ -16,7 +17,7 @@ class TaskArtifactFilterResource extends ActionResource
             'include_files'             => $taskArtifactFilter->include_files,
             'include_text'              => $taskArtifactFilter->include_text,
             'include_json'              => $taskArtifactFilter->include_json,
-            'fragment_selector'         => $taskArtifactFilter->fragment_selector,
+            'schemaFragment'            => SchemaFragmentResource::make($taskArtifactFilter->schemaFragment),
         ];
     }
 }

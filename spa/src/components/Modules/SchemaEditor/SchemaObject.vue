@@ -53,6 +53,7 @@
 							<SchemaProperty
 								v-model:inline-description="showInlineDescriptions"
 								:readonly="readonly"
+								:readonly-description="readonlyDescription"
 								:model-value="objectProperties[name]"
 								:name="name"
 								:selectable="selectable"
@@ -102,6 +103,7 @@
 						<SchemaObject
 							:inline-descriptions="showInlineDescriptions"
 							:readonly="readonly"
+							:readonly-description="readonlyDescription"
 							:model-value="objectProperties[name]"
 							:relation-name="name"
 							:selectable="selectable"
@@ -114,6 +116,7 @@
 								<SchemaProperty
 									:inline-description="inlineDescription || showInlineDescriptions"
 									:readonly="readonly"
+									:readonly-description="readonlyDescription"
 									:model-value="objectProperties[name]"
 									:name="name"
 									@update="input => onUpdateProperty(name, input.name, input.property)"
@@ -138,6 +141,7 @@ import { computed, ref, watch } from "vue";
 withDefaults(defineProps<{
 	hideHeader?: boolean;
 	readonly?: boolean;
+	readonlyDescription?: boolean;
 	relationName?: string;
 	selectable?: boolean;
 	selectedClass?: string;

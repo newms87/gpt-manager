@@ -16,6 +16,7 @@ export interface SchemaDefinition extends ActionTargetItem {
 
 export interface SchemaFragment extends ActionTargetItem {
 	id: string;
+	schema_definition_id: string;
 	name: string;
 	fragment_selector: FragmentSelector;
 }

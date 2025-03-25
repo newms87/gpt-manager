@@ -1,9 +1,6 @@
 <template>
 	<div class="flex flex-col flex-nowrap w-full" :class="{'h-full': isEditingSchema}">
-		<div
-			v-if="isEditingFragment || isEditingSchema || previewable || isPreviewing"
-			class="flex-grow overflow-hidden"
-		>
+		<div class="flex-grow overflow-hidden">
 			<JSONSchemaEditor
 				:dialog="dialog"
 				:fragment-selector="activeFragment?.fragment_selector"
@@ -38,7 +35,7 @@
 								v-model:editing="isEditingSchema"
 								v-model:selected="activeSchema"
 								selectable
-								editable
+								:editable="editable"
 								creatable
 								:clearable="clearable"
 								deletable
@@ -46,6 +43,7 @@
 								:edit-disabled="!canEdit"
 								:select-icon="SchemaIcon"
 								label-class="text-slate-300"
+								:placeholder="placeholder"
 								:class="{'mr-4': clearable, 'mr-8': !clearable}"
 								:select-class="buttonColor"
 								:options="allowedSchemaDefinitions"
@@ -61,7 +59,7 @@
 									v-model:editing="isEditingFragment"
 									v-model:selected="activeFragment"
 									selectable
-									editable
+									:editable
 									creatable
 									clearable
 									deletable
@@ -137,6 +135,7 @@ const props = withDefaults(defineProps<{
 	canSelectFragment?: boolean;
 	previewable?: boolean;
 	clearable?: boolean;
+	editable?: boolean;
 	example?: boolean;
 	loading?: boolean;
 	buttonColor?: string;
@@ -144,9 +143,11 @@ const props = withDefaults(defineProps<{
 	dialog?: boolean;
 	hideDefaultHeader?: boolean;
 	hideSaveState?: boolean;
+	placeholder?: string;
 }>(), {
 	buttonColor: "bg-sky-800",
-	excludeSchemaIds: null
+	excludeSchemaIds: null,
+	placeholder: "(Select Schema)"
 });
 
 const canView = computed(() => activeSchema.value?.can?.view !== false);

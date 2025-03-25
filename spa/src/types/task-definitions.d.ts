@@ -1,5 +1,5 @@
 import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
-import { Agent, AgentThread, Artifact, FragmentSelector, SchemaAssociation, WorkflowInput } from "@/types";
+import { Agent, AgentThread, Artifact, SchemaAssociation, SchemaFragment, WorkflowInput } from "@/types";
 import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
 
 export interface TaskDefinition extends ActionTargetItem {
@@ -24,7 +24,8 @@ export interface TaskArtifactFilter extends ActionTargetItem {
 	include_text: boolean;
 	include_files: boolean;
 	include_json: boolean;
-	fragment_selector?: FragmentSelector;
+	schema_fragment_id?: string;
+	schemaFragment?: SchemaFragment;
 }
 
 export type ArtifactSplitMode = "" | "Node" | "Artifact";

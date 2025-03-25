@@ -95,6 +95,7 @@
 						can-select
 						can-select-fragment
 						previewable
+						editable
 						button-color="bg-sky-900 text-sky-200"
 						:model-value="inputSchemaAssociation.schema"
 						:fragment="inputSchemaAssociation.fragment"
@@ -128,6 +129,7 @@
 				can-select-fragment
 				previewable
 				clearable
+				editable
 				button-color="bg-green-900 text-green-200"
 				:model-value="taskDefinitionAgent.outputSchemaAssociation?.schema"
 				:fragment="taskDefinitionAgent.outputSchemaAssociation?.fragment"

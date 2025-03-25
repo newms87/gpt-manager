@@ -11,7 +11,12 @@
 						@select="revision => editableSchema = revision.schema"
 					/>
 				</template>
-				<ShowHideButton v-if="!hideContent" v-model="isShowingRaw" class="bg-slate-700" :show-icon="RawCodeIcon" />
+				<ShowHideButton
+					v-if="!hideContent && toggleRawJson"
+					v-model="isShowingRaw"
+					class="bg-slate-700"
+					:show-icon="RawCodeIcon"
+				/>
 				<slot name="actions" v-bind="{readonly}" />
 				<SaveStateIndicator v-if="!hideSaveState" :saving="saving" :saved-at="savedAt" class="ml-2 w-48" />
 			</div>
@@ -50,6 +55,7 @@
 				v-model="editableSchema"
 				v-model:fragment-selector="fragmentSelector"
 				:readonly="readonly"
+				:readonly-description="readonlyDescription"
 				:selectable="selectable"
 				class="min-w-64"
 			/>
@@ -86,12 +92,14 @@ defineEmits<{ close: void }>();
 const props = defineProps<{
 	schemaDefinition?: SchemaDefinition;
 	savedAt?: string;
-	saving: boolean;
+	saving?: boolean;
 	readonly?: boolean;
+	readonlyDescription?: boolean;
 	hideContent?: boolean;
 	hideActions?: boolean;
 	selectable?: boolean;
 	previewable?: boolean;
+	toggleRawJson?: boolean;
 	loading?: boolean;
 	dialog?: boolean;
 	hideSaveState?: boolean;

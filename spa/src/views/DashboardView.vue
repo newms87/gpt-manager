@@ -2,6 +2,7 @@
 	<div class="relative h-full p-6 overflow-hidden flex flex-col flex-nowrap">
 		<SchemaEditorToolbox
 			v-model:editing="isEditingSchema"
+			editable
 			class="max-h-full"
 			:model-value="activeSchema"
 			can-select

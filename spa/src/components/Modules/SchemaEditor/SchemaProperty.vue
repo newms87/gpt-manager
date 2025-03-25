@@ -24,10 +24,14 @@
 					class="bg-transparent ml-2"
 					:class="{[descriptionText ? 'text-sky-600' : 'text-slate-500']: true}"
 				/>
-				<InfoDialog v-if="isViewingDescription" :backdrop-dismiss="readonly" @close="isViewingDescription = false">
+				<InfoDialog
+					v-if="isViewingDescription"
+					:backdrop-dismiss="readonlyDescription"
+					@close="isViewingDescription = false"
+				>
 					<MarkdownEditor
 						class="w-96 h-96"
-						:readonly="readonly"
+						:readonly="readonlyDescription"
 						:model-value="descriptionText"
 						format="text"
 						@update:model-value="description => onUpdate({description: description as string})"
@@ -45,7 +49,7 @@
 		</div>
 		<div v-if="shouldShowInlineDescription" class="ml-9">
 			<MarkdownEditor
-				:readonly="readonly"
+				:readonly="readonlyDescription"
 				:model-value="descriptionText"
 				editor-class="text-slate-400 rounded w-full"
 				format="text"
@@ -67,7 +71,12 @@ const emit = defineEmits(["update", "remove"]);
 const property = defineModel<JsonSchema>();
 const fragmentSelector = defineModel<FragmentSelector | null>("fragmentSelector");
 const showInlineDescription = defineModel<boolean>("inlineDescription");
-const props = defineProps<{ name: string, readonly?: boolean, selectable?: boolean }>();
+const props = defineProps<{
+	name: string;
+	readonly?: boolean;
+	readonlyDescription?: boolean;
+	selectable?: boolean;
+}>();
 
 const descriptionText = computed(() => property.value.items?.description || property.value.description || "");
 const isViewingDescription = ref(false);

@@ -2,6 +2,7 @@
 
 namespace App\Models\Task;
 
+use App\Models\Schema\SchemaFragment;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,17 +18,21 @@ class TaskArtifactFilter extends Model implements AuditableContract
 		'include_text',
 		'include_files',
 		'include_json',
-		'fragment_selector',
+		'schema_fragment_id',
 	];
 
 	public function casts(): array
 	{
 		return [
-			'include_text'      => 'boolean',
-			'include_files'     => 'boolean',
-			'include_json'      => 'boolean',
-			'fragment_selector' => 'json',
+			'include_text'  => 'boolean',
+			'include_files' => 'boolean',
+			'include_json'  => 'boolean',
 		];
+	}
+
+	public function schemaFragment(): BelongsTo|SchemaFragment
+	{
+		return $this->belongsTo(SchemaFragment::class);
 	}
 
 	public function sourceTaskDefinition(): BelongsTo|TaskDefinition
