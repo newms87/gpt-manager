@@ -19,7 +19,7 @@ class LoadFromDatabaseTaskRunner extends BaseTaskRunner
             $id   = $inputArtifact->json_content['id'] ?? null;
 
             if (!$type || !$id) {
-                $this->activity("No ID or type found, skipping $inputArtifact");
+                $this->activity("No ID or type found, skipping $inputArtifact->id");
                 continue;
             }
 
