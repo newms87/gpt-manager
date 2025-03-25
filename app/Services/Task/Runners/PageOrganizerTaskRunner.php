@@ -9,6 +9,7 @@ use App\Repositories\ThreadRepository;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Services\Task\ArtifactsToGroupsMapper;
 use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Helpers\StringHelper;
 
 class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 {
@@ -72,7 +73,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
             $pages = $results['pages'];
             sort($pages);
             $this->addPagesToArtifact($inputArtifact, $pages);
-            $inputArtifact->name = $results['name'] . " [pages: " . implode(', ', $pages) . "]";
+            $inputArtifact->name = StringHelper::limitText(150, $results['name'], " [pages: " . StringHelper::formatPageRanges($pages) . "]");
             $inputArtifact->save();
 
             $organizedArtifacts[] = $inputArtifact;
