@@ -22,7 +22,7 @@
 				@close="onCloseDialog"
 			>
 				<template #header="{isShowingRaw}">
-					<div class="flex-grow flex items-center flex-nowrap space-x-4">
+					<div class="flex-grow flex-x space-x-4">
 						<slot name="header-start" />
 
 						<template v-if="!hideDefaultHeader">
@@ -77,7 +77,7 @@
 									@delete="selected => deleteFragmentAction.trigger(selected)"
 								>
 									<template #no-selection>
-										<div class="text-green-700 flex items-center flex-nowrap text-no-wrap">
+										<div class="text-green-700 flex-x text-no-wrap">
 											<FullSchemaIcon class="w-4 mr-2" />
 											Full schema
 										</div>

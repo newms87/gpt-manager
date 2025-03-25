@@ -9,7 +9,7 @@
 			@restart="$emit('restart')"
 		/>
 		<ElapsedTimePill
-			:timer-class="timerClass + ' rounded-l-none flex items-center flex-nowrap text-no-wrap justify-center'"
+			:timer-class="timerClass + ' rounded-l-none flex-x text-no-wrap justify-center'"
 			:start="runner.started_at"
 			:end="runner.failed_at || runner.completed_at || runner.timeout_at || runner.stopped_at"
 		/>

@@ -1,7 +1,7 @@
 <template>
 	<QCard class="bg-slate-700 p-3">
-		<div class="flex items-center flex-nowrap overflow-hidden">
-			<div class="flex items-center flex-nowrap space-x-3 flex-grow">
+		<div class="flex-x overflow-hidden">
+			<div class="flex-x space-x-3 flex-grow">
 				<div class="rounded-2xl px-3 py-1" :class="methodClass">{{ apiLog.method }}</div>
 				<div
 					class="rounded-2xl px-3 py-1"
@@ -14,7 +14,7 @@
 					{{ apiLog.status_code }}
 				</div>
 			</div>
-			<div class="flex items-center flex-nowrap flex-shrink-0">
+			<div class="flex-x flex-shrink-0">
 				<ShowHideButton v-model="showRequest" label="Request" class="bg-slate-800 mr-2" />
 				<ShowHideButton v-model="showResponse" label="Response" class="bg-slate-800 mr-2" />
 				<div class="bg-slate-900 px-4 py-1 rounded-2xl text-no-wrap">
@@ -27,7 +27,7 @@
 			<QTooltip>{{ decodedUrl }}</QTooltip>
 		</div>
 		<div class="mt-5">
-			<div v-for="header in requestHeaders" :key="header.name" class="flex items-center flex-nowrap space-x-2 py-1">
+			<div v-for="header in requestHeaders" :key="header.name" class="flex-x space-x-2 py-1">
 				<div class="text-slate-400 min-w-32">{{ header.name }}:</div>
 				<div>{{ header.value }}</div>
 			</div>

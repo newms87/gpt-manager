@@ -3,7 +3,7 @@
 		<QSkeleton v-if="!artifacts" class="h-20 my-2" />
 		<div v-else-if="artifacts.length === 0" class="text-xl text-center text-gray-500">No Artifacts</div>
 		<template v-else>
-			<div class="flex items-center flex-nowrap" :class="dense ? 'mb-4' : 'mb-8'">
+			<div class="flex-x" :class="dense ? 'mb-4' : 'mb-8'">
 				<div class="flex-grow text-lg" :class="titleClass">{{ title }}</div>
 				<ShowHideButton
 					v-model="isShowingAll"

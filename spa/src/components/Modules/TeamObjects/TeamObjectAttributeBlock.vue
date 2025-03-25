@@ -1,7 +1,7 @@
 <template>
 	<LabelValueBlock :label="resolvedLabel">
 		<template #label>
-			<div class="flex items-center flex-nowrap">
+			<div class="flex-x">
 				{{ resolvedLabel }}
 				<div class="ml-1">
 					<HighConfidenceIcon v-if="attribute?.confidence === 'High'" class="text-green-600 w-3" />

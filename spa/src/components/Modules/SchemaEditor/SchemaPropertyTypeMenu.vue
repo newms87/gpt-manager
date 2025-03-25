@@ -5,7 +5,7 @@
 			<div
 				v-for="type in allowedTypeOptions"
 				:key="type.value"
-				class="flex items-center flex-nowrap space-x-2 py-2 px-4 cursor-pointer hover:bg-slate-700"
+				class="flex-x space-x-2 py-2 px-4 cursor-pointer hover:bg-slate-700"
 				:class="{ 'bg-slate-600': isType(property, type) }"
 				@click="onUpdate(type)"
 			>

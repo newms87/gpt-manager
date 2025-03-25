@@ -23,7 +23,7 @@
 				:readonly="!agentThread.can.edit"
 				class="mb-5"
 			/>
-			<div class="flex items-center flex-nowrap space-x-4">
+			<div class="flex-x space-x-4">
 				<AgentThreadResponseField v-model="agentResponse" class="flex-grow" />
 				<ActionButton
 					:saving="agentThread.is_running"

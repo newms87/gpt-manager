@@ -28,7 +28,7 @@
 				class="markdown-footer flex flex-nowrap items-center justify-end w-full -mt-4 relative z-50 opacity-0 group-hover:opacity-100 transition-all"
 				:class="{'opacity-100': isEditing}"
 			>
-				<div class="px-2 bg-slate-800 flex items-center flex-nowrap rounded-tl">
+				<div class="px-2 bg-slate-800 flex-x rounded-tl">
 					<MaxLengthCounter v-if="maxLength" :length="contentLength" :max-length="maxLength" class="mr-4" />
 					<div class="text-[.7rem]">
 						<a v-if="isRaw" @click="isRaw = false">Markdown</a>

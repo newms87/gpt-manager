@@ -65,7 +65,7 @@
 						</ListItemDraggable>
 					</template>
 				</ListTransition>
-				<div v-if="!readonly" class="flex items-center flex-nowrap pl-5 mt-2">
+				<div v-if="!readonly" class="flex-x pl-5 mt-2">
 					<div class="flex-grow">
 						<QBtn class="bg-green-900 text-sm" @click="onAddProperty('string', 'prop')">
 							<AddPropertyIcon class="w-3" />

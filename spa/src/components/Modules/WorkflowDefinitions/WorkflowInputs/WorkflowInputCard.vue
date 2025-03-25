@@ -1,7 +1,7 @@
 <template>
 	<div>
-		<div class="flex items-center flex-nowrap space-x-2">
-			<div class="flex-grow flex items-center flex-nowrap space-x-4">
+		<div class="flex-x space-x-2">
+			<div class="flex-grow flex-x space-x-4">
 				<ShowHideButton v-if="!readonly" v-model="isEditing" :show-icon="EditIcon" class="bg-slate-700" />
 				<QBtn v-if="readonly" class="rounded-full bg-sky-800 text-sky-200 px-4 py-2">
 					{{ workflowInput.name }}
@@ -42,7 +42,7 @@
 				@always="$emit('remove')"
 			/>
 		</div>
-		<div v-if="editableTeamObjects" class="mt-4 flex items-center flex-nowrap space-x-4">
+		<div v-if="editableTeamObjects" class="mt-4 flex-x space-x-4">
 			<SelectField
 				:loading="isLoadingTeamObjects"
 				placeholder="(Select Type)"

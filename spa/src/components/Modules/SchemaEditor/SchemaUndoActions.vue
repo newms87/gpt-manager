@@ -1,5 +1,5 @@
 <template>
-	<div class="flex items-center flex-nowrap space-x-2">
+	<div class="flex-x space-x-2">
 		<QBtn class="bg-sky-800" :disable="!canUndo">
 			<UndoIcon class="w-4 cursor-pointer" @click="undo" />
 			<QTooltip>Ctrl+Z</QTooltip>

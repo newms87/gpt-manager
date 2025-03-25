@@ -1,8 +1,8 @@
 <template>
 	<div class="flex flex-col flex-nowrap relative" :class="{'h-full': !hideContent}">
-		<div class="flex items-center flex-nowrap space-x-2">
+		<div class="flex-x space-x-2">
 			<slot name="header" v-bind="{isShowingRaw}" />
-			<div v-if="!hideActions" class="flex items-center flex-nowrap space-x-2">
+			<div v-if="!hideActions" class="flex-x space-x-2">
 				<template v-if="!readonly">
 					<SchemaUndoActions v-model="editableSchema" />
 					<SchemaRevisionHistoryMenu

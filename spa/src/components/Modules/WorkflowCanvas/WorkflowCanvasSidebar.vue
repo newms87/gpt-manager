@@ -29,7 +29,7 @@
 				<LabelPillWidget
 					v-for="task in taskDefinitions"
 					:key="task.id"
-					class="node-task flex items-center flex-nowrap cursor-pointer group max-w-full overflow-hidden flex-shrink-0"
+					class="node-task flex-x cursor-pointer group max-w-full overflow-hidden flex-shrink-0"
 					color="sky"
 					size="sm"
 					draggable="true"
@@ -40,7 +40,7 @@
 						<NodeTaskIcon class="w-6" />
 						<QTooltip v-if="isCollapsed">{{ task.name }}</QTooltip>
 					</div>
-					<div v-if="!isCollapsed" class="flex items-center flex-nowrap ml-2 flex-grow max-w-full overflow-hidden">
+					<div v-if="!isCollapsed" class="flex-x ml-2 flex-grow max-w-full overflow-hidden">
 						<div class="flex-grow max-w-full overflow-hidden">
 							<div class="node-item-title whitespace-nowrap">{{ task.name }}</div>
 							<QTooltip v-if="task.description" class="text-sm text-slate-300 bg-slate-700 p-3 rounded">

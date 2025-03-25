@@ -4,7 +4,7 @@
 			<HistoryIcon class="w-4" />
 			<QMenu>
 				<div class="flex flex-col max-h-[50rem] flex-nowrap p-4">
-					<div class="flex items-center flex-nowrap text-xl font-bold pb-4">
+					<div class="flex-x text-xl font-bold pb-4">
 						<HistoryIcon class="w-4 mr-3" />
 						Revision History
 					</div>
@@ -15,7 +15,7 @@
 						<div
 							v-for="revision in history"
 							:key="revision.id"
-							class="flex items-center flex-nowrap py-2 px-4 cursor-pointer my-2 mx-4 rounded-xl"
+							class="flex-x py-2 px-4 cursor-pointer my-2 mx-4 rounded-xl"
 							:class="isMatch(revision) ? 'bg-green-900' : 'bg-slate-600 hover:bg-slate-700'"
 							@click="$emit('select', revision)"
 						>

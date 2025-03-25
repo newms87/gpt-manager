@@ -33,3 +33,7 @@ h6 {
 	font-size: 1rem;
 	font-weight: bold;
 }
+
+.flex-x {
+	@apply flex items-center flex-nowrap;
+}

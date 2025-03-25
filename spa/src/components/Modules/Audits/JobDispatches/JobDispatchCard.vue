@@ -1,7 +1,7 @@
 <template>
 	<QCard class="bg-slate-800">
 		<div class="flex items-center p-3 flex-nowrap">
-			<div class="flex-grow flex items-center flex-nowrap space-x-2">
+			<div class="flex-grow flex-x space-x-2">
 				<LabelPillWidget :label="`JobDispatch: ${job.id}`" color="sky" size="xs" />
 				<LabelPillWidget v-if="job.job_batch_id" :label="`JobBatch: ${job.job_batch_id}`" color="blue" size="xs" />
 				<LabelPillWidget :label="job.ref" color="green" size="xs" />

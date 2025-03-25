@@ -1,6 +1,6 @@
 <template>
 	<div class="schema-property">
-		<div class="flex items-center flex-nowrap group">
+		<div class="flex-x group">
 			<QCheckbox
 				v-if="selectable"
 				dense
@@ -8,7 +8,7 @@
 				class="mr-2 py-1"
 				@update:model-value="changeSelection"
 			/>
-			<div class="flex items-center flex-nowrap flex-grow">
+			<div class="flex-x flex-grow">
 				<SchemaPropertyTypeMenu :readonly="readonly" :property="property" class="mr-2" @update="onUpdate" />
 				<EditableDiv
 					:readonly="readonly"

@@ -68,7 +68,7 @@
 		</div>
 
 		<div v-if="isShowingAgentThread" class="p-2 border-t border-slate-400 mt-2">
-			<div class="flex items-center flex-nowrap mb-2 space-x-2">
+			<div class="flex-x mb-2 space-x-2">
 				<ShowHideButton v-model="isEditingAgentThread" class="bg-slate-800 text-slate-300" />
 				<ActionButton
 					:action="resumeProcessAction"

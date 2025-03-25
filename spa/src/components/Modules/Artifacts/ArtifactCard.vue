@@ -1,6 +1,6 @@
 <template>
 	<div class="bg-slate-900 p-2 rounded-lg">
-		<div class="flex items-center flex-nowrap mb-2 space-x-2 w-full max-w-full overflow-hidden">
+		<div class="flex-x mb-2 space-x-2 w-full max-w-full overflow-hidden">
 			<LabelPillWidget :label="`Artifact: ${artifact.id}`" color="sky" size="xs" class="flex-shrink-0" />
 			<LabelPillWidget :label="fDateTime(artifact.created_at)" color="blue" size="xs" class="flex-shrink-0" />
 			<div class="flex grow min-w-0 overflow-hidden">{{ artifact.name }}</div>

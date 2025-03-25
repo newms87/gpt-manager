@@ -5,7 +5,7 @@
 				<LogoImage :src="authTeam.logo" class="h-16" image-class="max-h-full" />
 			</div>
 			<div class="pl-3 py-4 flex-grow">{{ authTeam?.name || "GPT Manager" }}</div>
-			<div class="px-3 flex items-center flex-nowrap">
+			<div class="px-3 flex-x">
 				<div class="mr-4">
 					<div v-if="authUser" class="text-sm">{{ authUser.email }}</div>
 					<div v-if="authTeam" class="text-xs text-slate-400">{{ authTeam.name }}</div>

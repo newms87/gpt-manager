@@ -1,7 +1,14 @@
 <template>
 	<div class="bg-sky-950 p-4 rounded">
-		<div>{{ sourceTaskDefinition.name }}</div>
-		<div class="flex items-center flex-nowrap space-x-4">
+		<div class="flex-x">
+			<Component
+				:is="TaskRunners.resolve(sourceTaskDefinition.task_runner_class).lottie"
+				class="w-10 h-10"
+				play-on-hover
+			/>
+			{{ sourceTaskDefinition.name }}
+		</div>
+		<div class="flex-x space-x-4">
 			<div>
 				<QCheckbox
 					v-model="editableTaskArtifactFilter.include_text"
@@ -34,6 +41,7 @@
 import LoadingSandLottie from "@/assets/dotlottie/LoadingSandLottie";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { dxTaskArtifactFilter } from "@/components/Modules/TaskDefinitions/TaskArtifactFilters/config";
+import { TaskRunners } from "@/components/Modules/TaskDefinitions/TaskRunners";
 import { TaskArtifactFilter, TaskDefinition } from "@/types";
 import { ref } from "vue";
 

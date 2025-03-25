@@ -1,5 +1,5 @@
 <template>
-	<div class="node-ports-widget flex items-center flex-nowrap space-x-2 h-[5rem]">
+	<div class="node-ports-widget flex-x space-x-2 h-[5rem]">
 		<div v-if="!hideTarget" class="ports input-ports">
 			<NodePortWidget
 				v-for="targetPort in targetPorts"

@@ -6,6 +6,8 @@
 		:segment="segment"
 		:src="src"
 		:mode="mode"
+		@mouseover="onHoverIn"
+		@mouseout="onHoverOut"
 	/>
 </template>
 <script setup lang="ts">
@@ -22,6 +24,7 @@ const props = withDefaults(defineProps<{
 	startFrame?: number;
 	finalFrame?: number;
 	finished?: boolean;
+	playOnHover?: boolean;
 }>(), {
 	loop: true,
 	segment: null,
@@ -66,5 +69,18 @@ function emitLoop() {
 
 function emitComplete() {
 	emit("complete", player.value);
+}
+
+function onHoverIn() {
+	if (props.playOnHover) {
+		player.value.play();
+	}
+}
+
+function onHoverOut() {
+	if (props.playOnHover) {
+		player.value.stop();
+		setStoppedFrame();
+	}
 }
 </script>

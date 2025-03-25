@@ -24,7 +24,7 @@
 			<div
 				v-for="(trace, index) in stackTrace"
 				:key="index"
-				class="flex items-center flex-nowrap space-x-2 text-sm bg-slate-800 my-1 px-3 py-1 rounded"
+				class="flex-x space-x-2 text-sm bg-slate-800 my-1 px-3 py-1 rounded"
 			>
 				<div class="flex-grow flex-nowrap flex items-center space-x-1">
 					<div class="text-sky-600">{{ trace.file }}</div>

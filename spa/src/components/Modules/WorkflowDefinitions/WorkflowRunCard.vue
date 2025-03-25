@@ -1,6 +1,6 @@
 <template>
 	<div class="py-2 px-4 border rounded-lg bg-slate-800">
-		<div class="flex items-center flex-nowrap space-x-2">
+		<div class="flex-x space-x-2">
 			<LabelPillWidget :label="`WorkflowRun: ${workflowRun.id}`" color="sky" size="xs" />
 			<div class="flex-grow">{{ workflowRun.name }}</div>
 			<WorkflowStatusTimerPill :runner="workflowRun" />

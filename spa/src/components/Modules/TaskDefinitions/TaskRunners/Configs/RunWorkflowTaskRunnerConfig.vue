@@ -1,6 +1,6 @@
 <template>
 	<BaseTaskRunnerConfig :task-definition="taskDefinition">
-		<div class="flex items-center flex-nowrap text-lg font-bold mt-8">
+		<div class="flex-x text-lg font-bold mt-8">
 			<RunWorkflowLottie class="w-[6rem] mr-4" />
 			<SelectionMenuField
 				:selected="selectedWorkflowDefinition"

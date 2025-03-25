@@ -10,7 +10,7 @@
 		<div v-for="workflowInput in workflowInputs" :key="workflowInput.id">
 			<div class="flex items-start flex-nowrap">
 				<WorkflowInputCard :workflow-input="workflowInput" class="flex-grow" />
-				<div class="flex items-center flex-nowrap py-6">
+				<div class="flex-x py-6">
 					<ShowHideButton
 						:model-value="activeWorkflowInput?.id === workflowInput.id"
 						:show-icon="ShowWorkflowIcon"

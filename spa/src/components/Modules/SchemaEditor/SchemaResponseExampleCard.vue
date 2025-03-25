@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="flex items-center flex-nowrap gap-x-4">
+		<div class="flex-x gap-x-4">
 			<h6>Example Response</h6>
 			<ActionButton
 				:action="generateExampleAction"

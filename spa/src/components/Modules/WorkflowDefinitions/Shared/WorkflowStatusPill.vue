@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex items-center flex-nowrap justify-center"
+		class="flex-x justify-center"
 		:class="mainClass"
 	>
 		{{ status }}

@@ -8,7 +8,7 @@
 			@show="isShowingInputArtifacts = !isShowingInputArtifacts"
 		/>
 		<div class="flex-grow min-w-0 overflow-hidden">
-			<div v-if="taskProcess.activity" class="flex-grow flex items-center flex-nowrap space-x-2">
+			<div v-if="taskProcess.activity" class="flex-grow flex-x space-x-2">
 				<div class="flex-grow rounded p-2 bg-slate-900 text-slate-400">
 					{{ taskProcess.activity }}
 				</div>
@@ -31,7 +31,7 @@
 					/>
 				</div>
 			</div>
-			<div class="flex items-center flex-nowrap space-x-2 mt-2">
+			<div class="flex-x space-x-2 mt-2">
 				<LabelPillWidget :label="taskProcess.id" color="sky" size="xs" />
 				<LabelPillWidget :label="taskProcess.name" color="blue" size="xs" />
 				<div class="flex-grow overflow-hidden">

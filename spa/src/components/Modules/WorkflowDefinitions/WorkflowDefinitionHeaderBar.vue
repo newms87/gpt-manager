@@ -1,6 +1,6 @@
 <template>
 	<div class="relative h-18">
-		<div class="flex items-center flex-nowrap space-x-4">
+		<div class="flex-x space-x-4">
 			<div v-if="activeWorkflowRun" class="flex-grow flex items-center space-x-4 flex-nowrap">
 				<LabelPillWidget
 					:label="`WorkflowRun: ${activeWorkflowRun.id}`"

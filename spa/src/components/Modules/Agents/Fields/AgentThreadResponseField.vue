@@ -1,5 +1,5 @@
 <template>
-	<div class="agent-thread-response-field flex items-center flex-nowrap space-x-4">
+	<div class="agent-thread-response-field flex-x space-x-4">
 		<SchemaEditorToolbox
 			v-model:isEditingSchema="isEditingSchema"
 			v-model="response.schema"

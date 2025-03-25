@@ -1,5 +1,5 @@
 <template>
-	<div class="flex items-center flex-nowrap cursor-pointer">
+	<div class="flex-x cursor-pointer">
 		<h5 class="flex-grow overflow-hidden overflow-ellipsis text-no-wrap mr-3">
 			<EditOnClickTextField
 				:model-value="thread.name"
