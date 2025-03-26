@@ -94,9 +94,10 @@ class BaseTaskRunner implements TaskRunnerContract
                 $artifactIds[] = $artifact->id;
 
                 $artifact->task_definition_id = $this->taskProcess->taskRun->task_definition_id;
+                $artifact->position           = $this->resolveArtifactPosition($artifact, $artifacts);
                 $artifact->save();
             }
-            
+
             // Add the artifact to the list of output artifacts for this process
             $this->taskProcess->outputArtifacts()->syncWithoutDetaching($artifactIds);
             // Also add to the list of output artifacts for this task run
@@ -112,5 +113,31 @@ class BaseTaskRunner implements TaskRunnerContract
 
         // Finished running the process
         TaskProcessRunnerService::complete($this->taskProcess);
+    }
+
+    /**
+     * Resolve the position of the artifact relative to the list of artifacts
+     *
+     * @param Artifact[] $artifactList
+     */
+    public function resolveArtifactPosition(Artifact $targetArtifact, $artifactList): int
+    {
+        if ($targetArtifact->storedFiles) {
+            $minPage = INF;
+            foreach($targetArtifact->storedFiles as $storedFile) {
+                $minPage = min($minPage, $storedFile->page_number ?? 0);
+            }
+
+            return $minPage;
+        }
+
+        $artifactsBefore = 0;
+        foreach($artifactList as $refArtifact) {
+            if ($targetArtifact->name > $refArtifact->name || $refArtifact->storedFiles) {
+                $artifactsBefore++;
+            }
+        }
+
+        return $artifactsBefore;
     }
 }

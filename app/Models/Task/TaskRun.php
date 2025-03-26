@@ -82,7 +82,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 
     public function artifacts(): MorphToMany|Artifact
     {
-        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps();
+        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps()->orderBy('position');
     }
 
     public function inputArtifacts(): MorphToMany|Artifact

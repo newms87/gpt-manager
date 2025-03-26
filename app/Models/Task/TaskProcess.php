@@ -83,7 +83,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
     public function artifacts(): MorphToMany|Artifact
     {
-        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps();
+        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps()->orderBy('position');
     }
 
     public function inputArtifacts(): MorphToMany|Artifact

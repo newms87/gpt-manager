@@ -72,7 +72,6 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         $this->complete([$artifact]);
     }
 
-
     public function getFileToTranscode(): StoredFile
     {
         $filesToTranscode = [];
