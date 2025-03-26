@@ -494,4 +494,53 @@ class JsonSchemaService
 
         return $this->formatAndCleanSchema(Str::slug($name), $schema);
     }
+
+    /**
+     * Identify the objects in the hierarchy that do not have the id field set
+     * and populate the ID in the $jsonContent using the ID (if available) in the $referenceJsonContent
+     */
+    public function hydrateIdsInJsonContent(array $jsonContent, ?array $referenceJsonContent): array
+    {
+        if (!$referenceJsonContent || !$jsonContent) {
+            return [];
+        }
+
+        if (!array_key_exists('id', $jsonContent) && array_key_exists('id', $referenceJsonContent)) {
+            $jsonContent['id'] = $referenceJsonContent['id'];
+        }
+
+        foreach($jsonContent as $propertyKey => $propertyValue) {
+            $referencePropertyValue = $referenceJsonContent[$propertyKey] ?? null;
+
+            // Skip if the property is not in the data
+            if (!$propertyValue || !is_array($propertyValue) || !$referencePropertyValue || !is_array($referencePropertyValue)) {
+                continue;
+            }
+
+            if (is_associative_array($propertyValue)) {
+
+                // If our object is an associate array, but the reference is not, then we need to get the first value from the reference and assume it will match the main object structure
+                if (!is_associative_array($referencePropertyValue)) {
+                    $referencePropertyValue = reset($referencePropertyValue);
+                }
+
+                $jsonContent[$propertyKey] = $this->hydrateIdsInJsonContent($propertyValue, $referencePropertyValue);
+            } else {
+                // Make the reference property into a list if it is not already so we match the structure of the main object
+                if (is_associative_array($referencePropertyValue)) {
+                    $referencePropertyValue = [$referencePropertyValue];
+                }
+
+                $mappedItems = [];
+
+                foreach($propertyValue as $index => $item) {
+                    $mappedItems[$index] = $this->hydrateIdsInJsonContent($item, $referencePropertyValue[$index] ?? null);
+                }
+
+                $jsonContent[$propertyKey] = $mappedItems;
+            }
+        }
+
+        return $jsonContent;
+    }
 }

@@ -53,6 +53,12 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         $artifact = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment, $jsonSchemaService);
 
         if ($artifact) {
+            $schemaType = $schemaAssociation?->schemaDefinition?->schema['title'] ?? null;
+
+            if ($schemaType) {
+                $this->hydrateArtifactJsonContentIds($artifact, $schemaType);
+            }
+
             $this->activity("Received response from $agent->name", 100);
             $this->complete([$artifact]);
         } else {
@@ -134,5 +140,32 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         }
 
         return null;
+    }
+
+    /**
+     * Hydrate the artifact's json content with the ids from the reference json content.
+     */
+    protected function hydrateArtifactJsonContentIds(Artifact $artifact, string $schemaType): void
+    {
+        if ($artifact->json_content) {
+            static::log("Hydrate artifact json content with reference data for $schemaType: $artifact");
+
+            $referenceArtifact = null;
+            foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+                $jsonContentType = $inputArtifact->json_content['type'] ?? null;
+                if ($inputArtifact->json_content && $jsonContentType === $schemaType) {
+                    $referenceArtifact = $inputArtifact;
+                    break;
+                }
+            }
+
+            static::log("Resolved reference artifact for $schemaType: $referenceArtifact");
+
+            if ($referenceArtifact) {
+                $artifact->json_content = app(JsonSchemaService::class)->hydrateIdsInJsonContent($artifact->json_content, $referenceArtifact->json_content);
+                $artifact->save();
+                static::log("Hydration completed");
+            }
+        }
     }
 }

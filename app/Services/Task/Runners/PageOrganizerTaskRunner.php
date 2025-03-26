@@ -39,6 +39,12 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
             return;
         }
 
+        $schemaType = $schemaAssociation?->schemaDefinition?->schema['title'] ?? null;
+
+        if ($schemaType) {
+            $this->hydrateArtifactJsonContentIds($artifact, $schemaType);
+        }
+
         $artifacts = $this->organizeArtifactIntoGroups($agentThread, $artifact);
 
         $this->complete($artifacts);

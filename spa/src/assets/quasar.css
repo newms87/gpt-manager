@@ -10551,7 +10551,6 @@ body.body--dark .inset-shadow-down {
 
 .row, .column, .flex {
     display: flex;
-    flex-wrap: wrap;
 }
 
 .row.inline, .column.inline, .flex.inline {
