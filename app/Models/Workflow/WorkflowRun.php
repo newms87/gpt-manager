@@ -92,14 +92,19 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         // Loop through all the source nodes of the target node to gather the output artifacts of each one
         foreach($targetNode->connectionsAsTarget as $connectionAsTarget) {
             $taskArtifactFilter = $artifactFilters->firstWhere('source_task_definition_id', $connectionAsTarget->sourceNode->task_definition_id);
-            
+
             $outputArtifacts = $this->collectOutputArtifactsForNode($connectionAsTarget->sourceNode);
 
             // Apply artifact filters for the source task <=> target task connection definition
             if ($taskArtifactFilter) {
                 $filteredArtifacts = [];
                 foreach($outputArtifacts as $outputArtifact) {
-                    $filteredArtifacts[] = (new ArtifactFilterService)->setArtifact($outputArtifact)->setFilter($taskArtifactFilter)->toFilteredArtifact();
+                    $filteredArtifact = (new ArtifactFilterService)->setArtifact($outputArtifact)->setFilter($taskArtifactFilter)->toFilteredArtifact();
+
+                    // Only add artifacts that have content to the list
+                    if ($filteredArtifact) {
+                        $filteredArtifacts[] = $filteredArtifact;
+                    }
                 }
                 $artifacts = $artifacts->merge($filteredArtifacts);
             } else {

@@ -81,6 +81,26 @@ class ArtifactFilterService
         return $this->includeText && !$this->hasFiles() && !$this->hasJson();
     }
 
+    /**
+     * Determines if after applying the filter to the artifact, if the artifact will be empty
+     */
+    public function willBeEmpty(): bool
+    {
+        if (!$this->artifact) {
+            return true;
+        }
+
+        if ($this->hasText() || $this->hasFiles()) {
+            return false;
+        }
+
+        if ($this->hasJson() && $this->getFilteredData()) {
+            return false;
+        }
+
+        return true;
+    }
+
     public function getTextContent(): ?string
     {
         $textContent = $this->artifact->text_content;
@@ -111,13 +131,12 @@ class ArtifactFilterService
         return $this->artifact->json_content;
     }
 
-
     /**
      * Create a new artifact with the filtered content
      */
     public function toFilteredArtifact(): ?Artifact
     {
-        if (!$this->artifact) {
+        if ($this->willBeEmpty()) {
             return null;
         }
 
@@ -145,7 +164,7 @@ class ArtifactFilterService
 
     public function filter(): array|string|null
     {
-        if (!$this->artifact) {
+        if ($this->willBeEmpty()) {
             return null;
         }
 
