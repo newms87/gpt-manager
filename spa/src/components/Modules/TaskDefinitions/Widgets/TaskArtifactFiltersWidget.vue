@@ -1,5 +1,5 @@
 <template>
-	<div class="bg-sky-950 p-4 rounded">
+	<div class="task-artifact-filters-widget">
 		<div>Source Artifact Filters</div>
 		<TaskArtifactFilterForm
 			v-for="sourceTaskDefinition in sourceTaskDefinitions"

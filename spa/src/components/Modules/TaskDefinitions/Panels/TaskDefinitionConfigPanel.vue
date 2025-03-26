@@ -5,16 +5,19 @@
 			:target="taskDefinition"
 			:form="formDefinition"
 		>
-			<ArtifactSplitModeWidget
-				class="mt-4"
-				:model-value="taskDefinition.artifact_split_mode"
-				@update:model-value="artifact_split_mode => updateAction.trigger(taskDefinition, {artifact_split_mode})"
-			/>
-			<TaskArtifactFiltersWidget
-				v-if="sourceTaskDefinitions"
-				:target-task-definition="taskDefinition"
-				:source-task-definitions="sourceTaskDefinitions"
-			/>
+			<div class="bg-sky-950 p-4 rounded">
+				<ArtifactSplitModeWidget
+					class="mt-4"
+					:model-value="taskDefinition.artifact_split_mode"
+					@update:model-value="artifact_split_mode => updateAction.trigger(taskDefinition, {artifact_split_mode})"
+				/>
+				<TaskArtifactFiltersWidget
+					v-if="sourceTaskDefinitions"
+					class="mt-8"
+					:target-task-definition="taskDefinition"
+					:source-task-definitions="sourceTaskDefinitions"
+				/>
+			</div>
 			<SelectField
 				class="mt-8"
 				:model-value="taskDefinition.task_runner_class"
@@ -53,8 +56,6 @@ const sourceTaskDefinitions = computed(() => props.workflowNode?.connectionsAsTa
 onMounted(async () => {
 	if (props.workflowNode) {
 		await dxWorkflowNode.routes.details(props.workflowNode, { connectionsAsTarget: { sourceNode: { taskDefinition: true } } });
-
-		console.log("computed sources", sourceTaskDefinitions.value, props.workflowNode);
 	}
 });
 </script>

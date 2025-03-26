@@ -26,7 +26,6 @@ class TaskArtifactFilterRepository extends ActionRepository
 		$includeText            = $input['include_text'] ?? true;
 		$includeFiles           = $input['include_files'] ?? true;
 		$includeJson            = $input['include_json'] ?? true;
-		$fragmentSelector       = $input['fragment_selector'] ?? null;
 
 		if (TaskArtifactFilter::where([
 			'source_task_definition_id' => $sourceTaskDefinitionId,
@@ -41,7 +40,6 @@ class TaskArtifactFilterRepository extends ActionRepository
 			'include_text'              => $includeText,
 			'include_files'             => $includeFiles,
 			'include_json'              => $includeJson,
-			'fragment_selector'         => $fragmentSelector,
 		]);
 
 		if (!$taskArtifactFilter->sourceTaskDefinition) {

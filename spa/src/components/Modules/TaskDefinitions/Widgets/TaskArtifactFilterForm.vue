@@ -8,7 +8,7 @@
 			/>
 			{{ sourceTaskDefinition.name }}
 		</div>
-		<div class="w-full mt-2 ml-4">
+		<div class="w-full mt-2">
 
 			<div>
 				<SchemaEditorToolbox
@@ -19,12 +19,14 @@
 					editable
 					can-select-fragment
 					clearable
-					:previewing="!!editableTaskArtifactFilter.schemaFragment"
+					:hide-default-header="!editableTaskArtifactFilter.include_json"
+					:previewing="!!editableTaskArtifactFilter.schemaFragment && editableTaskArtifactFilter.include_json"
 					placeholder="Include All Data"
 					@update:model-value="onUpdate"
 					@update:fragment="onUpdate"
 				>
 					<template #header-start>
+						<LoadingSandLottie class="w-8 h-8 opacity-0 ml-1" :class="{'opacity-100': isSaving}" />
 						<div>
 							<QCheckbox
 								v-model="editableTaskArtifactFilter.include_text"
@@ -52,7 +54,6 @@
 					</template>
 				</SchemaEditorToolbox>
 			</div>
-			<LoadingSandLottie v-if="isSaving" class="w-12" />
 		</div>
 	</div>
 </template>

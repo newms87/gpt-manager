@@ -1,5 +1,5 @@
 <template>
-	<div class="bg-sky-950 p-4 rounded">
+	<div class="artifact-split-mode-widget">
 		<div class="flex">
 			<div class="pr-4 py-4">Artifact Split Mode:</div>
 			<QTabs
