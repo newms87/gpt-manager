@@ -109,6 +109,10 @@ class WorkflowExportService
      */
     public function registerRelatedModels($models): void
     {
+        if (!$models) {
+            return;
+        }
+
         foreach($models as $model) {
             if (empty($this->definitions[$model::class][$model->id])) {
                 $model->exportToJson($this);
