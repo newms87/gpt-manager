@@ -92,7 +92,11 @@ class BaseTaskRunner implements TaskRunnerContract
                 }
                 static::log("Attaching $artifact");
                 $artifactIds[] = $artifact->id;
+
+                $artifact->task_definition_id = $this->taskProcess->taskRun->task_definition_id;
+                $artifact->save();
             }
+            
             // Add the artifact to the list of output artifacts for this process
             $this->taskProcess->outputArtifacts()->syncWithoutDetaching($artifactIds);
             // Also add to the list of output artifacts for this task run

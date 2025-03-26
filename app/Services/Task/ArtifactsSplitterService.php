@@ -5,7 +5,6 @@ namespace App\Services\Task;
 use App\Models\Task\Artifact;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
-use Log;
 use Newms87\Danx\Helpers\ArrayHelper;
 
 class ArtifactsSplitterService
@@ -52,15 +51,7 @@ class ArtifactsSplitterService
     {
         $artifactGroups = [];
         foreach($artifacts as $artifact) {
-            $taskProcess = $artifact->getTaskProcessThatCreatedArtifact();
-
-            if (!$taskProcess) {
-                Log::debug("No task process found for artifact: $artifact");
-                $artifactGroups['default'][] = $artifact;
-                continue;
-            }
-
-            $artifactGroups[$taskProcess->taskRun->workflow_node_id][] = $artifact;
+            $artifactGroups[$artifact->task_definition_id ?? 'default'][] = $artifact;
         }
 
         return collect($artifactGroups)->values();
@@ -86,6 +77,6 @@ class ArtifactsSplitterService
     {
         $artifactGroups = static::byNode($artifacts);
 
-        return ArrayHelper::crossProduct($artifactGroups);
+        return collect(ArrayHelper::crossProduct($artifactGroups->all()));
     }
 }
