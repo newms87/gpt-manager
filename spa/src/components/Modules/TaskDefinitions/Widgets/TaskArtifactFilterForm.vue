@@ -88,7 +88,7 @@ const selectedSchemaDefinition = shallowRef<SchemaDefinition>(null);
 
 onMounted(async () => {
 	await loadSchemaDefinitions();
-	if (props.taskArtifactFilter.schemaFragment) {
+	if (props.taskArtifactFilter?.schemaFragment) {
 		selectedSchemaDefinition.value = schemaDefinitions.value.find(sd => sd.id === props.taskArtifactFilter.schemaFragment.schema_definition_id);
 	}
 });

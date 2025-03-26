@@ -153,7 +153,7 @@ class TaskRunnerService
     /**
      * Restart the task run.
      * This will restart the task run and remove all current task processes and create new task
-     * processes.
+     * processes. This will also clear all current output artifacts and recreate the input artifacts.
      */
     public static function restart(TaskRun $taskRun): void
     {
@@ -167,9 +167,16 @@ class TaskRunnerService
             // Remove the old task processes to make way for the new ones
             $taskRun->taskProcesses()->each(fn(TaskProcess $taskProcess) => $taskProcess->delete());
 
-            // Clear out any old artifacts
-            $taskRun->outputArtifacts()->detach($taskRun->outputArtifacts()->pluck('artifacts.id')->toArray());
+            // Clear out old output artifacts
+            $taskRun->outputArtifacts()->detach();
             $taskRun->updateRelationCounter('outputArtifacts');
+
+            // If this task run is part of a workflow run, collect the output artifacts from the source nodes and replace the current input artifacts
+            if ($taskRun->workflow_run_id) {
+                $artifacts = $taskRun->workflowRun->collectOutputArtifactsFromSourceNodes($taskRun->workflowNode);
+                $taskRun->inputArtifacts()->sync($artifacts->pluck('id')->toArray());
+                $taskRun->updateRelationCounter('inputArtifacts');
+            }
 
             $taskRun->stopped_at   = null;
             $taskRun->completed_at = null;

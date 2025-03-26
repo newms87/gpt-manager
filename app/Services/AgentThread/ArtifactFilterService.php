@@ -20,7 +20,7 @@ class ArtifactFilterService
         $this->includeFiles     = $artifactFilter->include_files;
         $this->includeJson      = $artifactFilter->include_json;
         $this->includeText      = $artifactFilter->include_text;
-        $this->fragmentSelector = $artifactFilter->fragment_selector;
+        $this->fragmentSelector = $artifactFilter->schemaFragment?->fragment_selector ?? [];
 
         return $this;
     }
@@ -109,6 +109,38 @@ class ArtifactFilterService
         }
 
         return $this->artifact->json_content;
+    }
+
+
+    /**
+     * Create a new artifact with the filtered content
+     */
+    public function toFilteredArtifact(): ?Artifact
+    {
+        if (!$this->artifact) {
+            return null;
+        }
+
+        $filteredArtifact = $this->artifact->replicate();
+
+        if (!$this->hasText()) {
+            $filteredArtifact->text_content = null;
+        }
+
+        if ($this->hasJson()) {
+            $filteredArtifact->json_content = $this->getFilteredData();
+        } else {
+            $filteredArtifact->json_content = null;
+        }
+
+        // Save all items on the artifact (before adding files, so we have an ID to associate to)
+        $filteredArtifact->save();
+
+        if ($this->hasFiles()) {
+            $filteredArtifact->storedFiles()->sync($this->artifact->storedFiles->pluck('id'));
+        }
+
+        return $filteredArtifact;
     }
 
     public function filter(): array|string|null
