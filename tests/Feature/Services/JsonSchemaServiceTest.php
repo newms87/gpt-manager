@@ -226,7 +226,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
             ],
         ], $formattedResponse);
     }
-    
+
     public function test_formatAndCleanSchema_withAdditionalObjectProperty_additionalPropertyShouldBeOptional(): void
     {
         // Given
@@ -445,6 +445,117 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 'additionalProperties' => false,
             ],
         ], $formattedResponse);
+    }
+
+    public function test_formatAndFilterSchema_allowCreationOfObject_objectIdIsNullAndNameIsRequiredInSchema(): void
+    {
+        // Given
+        $schema           = [
+            'type'        => 'object',
+            'title'       => 'Person',
+            'description' => 'The important person',
+            'properties'  => [
+                'dob' => [
+                    'type' => 'string',
+                ],
+            ],
+        ];
+        $fragmentSelector = [
+            'type'   => 'object',
+            'create' => true,
+        ];
+
+        // When
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema('', $schema, $fragmentSelector);
+
+        // Then
+        $this->assertEquals([
+            'type'                 => 'object',
+            'title'                => 'Person',
+            'description'          => 'The important person',
+            'properties'           => [
+                'id'   => JsonSchemaService::$idCreateDef,
+                'name' => [
+                    'type'        => 'string',
+                    'description' => 'Name of the Person',
+                ],
+            ],
+            'required'             => ['id', 'name'],
+            'additionalProperties' => false,
+        ], $formattedResponse['schema'] ?? null);
+    }
+
+    public function test_formatAndFilterSchema_allowUpdatingAnObject_objectIdIsRequiredInSchema(): void
+    {
+        // Given
+        $schema           = [
+            'type'        => 'object',
+            'title'       => 'Person',
+            'description' => 'The important person',
+            'properties'  => [
+                'dob' => [
+                    'type' => 'string',
+                ],
+            ],
+        ];
+        $fragmentSelector = [
+            'type'   => 'object',
+            'update' => true,
+        ];
+
+        // When
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema('', $schema, $fragmentSelector);
+
+        // Then
+        $this->assertEquals([
+            'type'                 => 'object',
+            'title'                => 'Person',
+            'description'          => 'The important person',
+            'properties'           => [
+                'id' => JsonSchemaService::$idUpdateDef,
+            ],
+            'required'             => ['id'],
+            'additionalProperties' => false,
+        ], $formattedResponse['schema'] ?? null);
+    }
+
+    public function test_formatAndFilterSchema_allowUpdateAndCreateObject_objectIdAndNameAreBothOptionalInSchema(): void
+    {
+        // Given
+        $schema           = [
+            'type'        => 'object',
+            'title'       => 'Person',
+            'description' => 'The important person',
+            'properties'  => [
+                'dob' => [
+                    'type' => 'string',
+                ],
+            ],
+        ];
+        $fragmentSelector = [
+            'type'   => 'object',
+            'create' => true,
+            'update' => true,
+        ];
+
+        // When
+        $formattedResponse = app(JsonSchemaService::class)->formatAndFilterSchema('', $schema, $fragmentSelector);
+
+        // Then
+        $this->assertEquals([
+            'type'                 => 'object',
+            'title'                => 'Person',
+            'description'          => 'The important person',
+            'properties'           => [
+                'id'   => JsonSchemaService::$idCreateOrUpdateDef,
+                'name' => [
+                    'type'        => ['string', 'null'],
+                    'description' => 'Name of the Person. ' . JsonSchemaService::$nameOptionalDescription,
+                ],
+            ],
+            'required'             => ['id', 'name'],
+            'additionalProperties' => false,
+        ], $formattedResponse['schema'] ?? null);
     }
 
     public function test_formatAndFilterSchema_onlySelectedObjectsAreReturned(): void

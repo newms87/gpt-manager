@@ -28,7 +28,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
         $schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
 
         $this->activity("Using agent to organize: $agent->name", 10);
-        $jsonSchemaService = app(JsonSchemaService::class)->useDbFields()->useArtifactMeta();
+        $jsonSchemaService = app(JsonSchemaService::class)->useArtifactMeta();
         $artifact          = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment, $jsonSchemaService);
 
         // If we didn't receive an artifact from the agent, record the failure

@@ -20,10 +20,22 @@ class JsonSchemaService
     /** @var bool Include a meta.name field in the output to label the artifact */
     protected bool $useArtifactMeta = false;
 
-    static array $idDef = [
+    static array $idCreateOrUpdateDef = [
         'type'        => ['number', 'null'],
-        'description' => 'ID must match an object from json_content with the same `type` (ie: the `title` property means `type` in this context). If no such object exists, set `id: null`',
+        'description' => 'ID must match an object from json_content with the same `type` (ie: the `title` property is an alias for `type` as it may appear as either). If no such object exists, set `id: null`',
     ];
+
+    static array $idCreateDef = [
+        'type'        => 'null',
+        'description' => 'Set ID to null, this indicates no existing record and a new record should be created',
+    ];
+
+    static array $idUpdateDef = [
+        'type'        => 'number',
+        'description' => 'ID must match an object from json_content with the same `type` (ie: the `title` property is an alias for `type` as it may appear as either).',
+    ];
+
+    static string $nameOptionalDescription = 'If creating a new record and setting ID to null, the name is required. Otherwise set name to null (ie: just updating an existing record and giving an existing record ID)';
 
     protected array $artifactMetaDef = [];
     protected array $propertyMetaDef = [];
@@ -142,15 +154,33 @@ class JsonSchemaService
         if (!$fragmentSelector) {
             return $schema;
         }
+        // The list of allowed properties to be included in the schema
+        $filteredProperties = [];
 
-        if (empty($fragmentSelector['children'])) {
-            return [];
+        $children = $fragmentSelector['children'] ?? [];
+
+        // If create object is enabled, then add a null ID to the schema
+        $canCreate = $fragmentSelector['create'] ?? false;
+        $canUpdate = $fragmentSelector['update'] ?? false;
+
+        $nameDescription = 'Name of the ' . ($schema['title'] ?? 'Object');
+
+        // Set the ID field based on if the schema is allowing creation / updating of an existing object
+        if ($canCreate && $canUpdate) {
+            $filteredProperties['id']   = static::$idCreateOrUpdateDef;
+            $filteredProperties['name'] = ['type' => ['string', 'null'], 'description' => $nameDescription . '. ' . static::$nameOptionalDescription];
+        } elseif ($canUpdate) {
+            $filteredProperties['id'] = static::$idUpdateDef;
+        } elseif ($canCreate) {
+            $filteredProperties['id'] = static::$idCreateDef;
+            // In the case of creation, the name is required, so set that here (can be overridden by the 'name' property in the fragment selector)
+            $filteredProperties['name'] = ['type' => 'string', 'description' => $nameDescription];
         }
 
+        // The total set of properties defined in the JSON Schema for this object
         $properties = $schema['properties'] ?? [];
-        $filtered   = [];
 
-        foreach($fragmentSelector['children'] as $selectedKey => $selectedProperty) {
+        foreach($children as $selectedKey => $selectedProperty) {
             if (empty($selectedProperty['type'])) {
                 throw new Exception("Fragment selector must have a type: $selectedKey: " . json_encode($selectedProperty));
             }
@@ -177,19 +207,24 @@ class JsonSchemaService
 
             if ($result) {
                 if ($selectedProperty['type'] === 'array') {
-                    $filtered[$selectedKey] = [
+                    $filteredProperties[$selectedKey] = [
                         ...$schemaProperty,
                         'type'  => 'array',
                         'items' => $result,
                     ];
                 } else {
-                    $filtered[$selectedKey] = $result;
+                    $filteredProperties[$selectedKey] = $result;
                 }
             }
         }
 
+        // If there were no properties selected, then return an empty array
+        if (!$filteredProperties) {
+            return [];
+        }
+
         // Take advantage of copy on write to avoid modifying the original schema, and return the updated schema with filtered properties
-        $schema['properties'] = $filtered;
+        $schema['properties'] = $filteredProperties;
 
         return $schema;
     }
@@ -289,8 +324,9 @@ class JsonSchemaService
 
         // Ensures all properties (and sub properties) are both required and have no additional properties. It does this recursively.
         foreach($properties as $key => $value) {
-            $childName     = $name . '.' . $key;
-            $formattedItem = $this->formatAndCleanSchemaItem($childName, $value, $depth, $key === 'name');
+            $childName = $name . '.' . $key;
+            // Id and name are special keys that will have their types explicitly set to null when needed. All other fields should be allowed to be null
+            $formattedItem = $this->formatAndCleanSchemaItem($childName, $value, $depth, !in_array($key, ['id', 'name']));
             if ($formattedItem) {
                 $propertiesSchema[$key] = $formattedItem;
             }
@@ -347,7 +383,7 @@ class JsonSchemaService
         }
 
         if ($this->useId) {
-            $formattedSchema['$defs']['id'] = static::$idDef;
+            $formattedSchema['$defs']['id'] = static::$idCreateOrUpdateDef;
         }
 
         if ($this->usePropertyMeta) {
@@ -369,7 +405,7 @@ class JsonSchemaService
     /**
      * Format and clean the schema property entry or array item to match the requirements of a strict JSON schema
      */
-    public function formatAndCleanSchemaItem($name, $value, $depth = 0, $required = false): array|null
+    public function formatAndCleanSchemaItem($name, $value, $depth = 0, $allowNull = true): array|null
     {
         $type        = $value['type'] ?? null;
         $title       = $value['title'] ?? null;
@@ -378,12 +414,34 @@ class JsonSchemaService
         $properties  = $value['properties'] ?? [];
         $items       = $value['items'] ?? [];
 
-        $resolvedType = is_array($type) ? $type[0] : $type;
+        $hasNull  = false;
+        $mainType = $type;
+
+        if (is_array($type)) {
+            $mainType = null;
+            foreach($type as $typeName) {
+                if ($typeName === 'null') {
+                    $hasNull = true;
+                } elseif (!$mainType) {
+                    $mainType = $typeName;
+                }
+            }
+        }
+
+        $isArray  = $mainType === 'array';
+        $isObject = $mainType === 'object';
 
         // The type should always be allowed to be null except when it is a required field
-        $typeList = $required ? $type : [$type, 'null'];
+        $typeList = $type;
 
-        $item = match ($resolvedType) {
+        if ($allowNull && !$hasNull) {
+            if (!is_array($typeList)) {
+                $typeList = [$typeList];
+            }
+            $typeList[] = 'null';
+        }
+
+        $item = match ($mainType) {
             'object' => [
                 'type'                 => $typeList,
                 'properties'           => $this->formatAndCleanSchema("$name.properties", $properties, $depth + 1),
@@ -391,19 +449,19 @@ class JsonSchemaService
             ],
             'array' => [
                 'type'  => $typeList,
-                'items' => $this->formatAndCleanSchemaItem("$name.items", $items, $depth + 1, $required),
+                'items' => $this->formatAndCleanSchemaItem("$name.items", $items, $depth + 1, $allowNull),
             ],
             'string', 'number', 'integer', 'boolean', 'null' => ['type' => $typeList],
-            default => throw new Exception("Unknown type at path $name: " . ($type ?: '(empty)')),
+            default => throw new Exception("Unknown type at path $name: " . ($mainType ?: '(empty)')),
         };
 
         // If the type is an object with no properties, it is an empty object and can be ignored
-        if ($resolvedType === 'array' && !$item['items'] ||
-            $resolvedType === 'object' && !$item['properties']) {
+        if ($isArray && !$item['items'] ||
+            $isObject && !$item['properties']) {
             return null;
         }
 
-        if ($resolvedType === 'object') {
+        if ($isObject) {
             $item['required'] = array_keys($item['properties']);
         }
 
