@@ -12,7 +12,33 @@
 					class="mr-2 py-1"
 					@update:model-value="changeSelection"
 				/>
-				<div class="flex-grow">
+				<ShowHideButton
+					v-if="selectable || allowCreate"
+					:model-value="allowCreate"
+					:disable="!selectable"
+					:show-icon="AllowCreateIcon"
+					:hide-icon="AllowCreateIcon"
+					size="sm"
+					class="h-[1.7rem] w-[1.7rem] mr-1"
+					:class="{'text-slate-500': !allowCreate, 'text-green-500': !!allowCreate}"
+					tooltip="Allow creating new records. (If update is not chosen, this will force creating a new record every time)."
+					tooltip-class="text-base"
+					@update:model-value="changeAllowCreate"
+				/>
+				<ShowHideButton
+					v-if="selectable || allowUpdate"
+					:disable="!selectable"
+					:model-value="allowUpdate"
+					:show-icon="AllowUpdateIcon"
+					:hide-icon="AllowUpdateIcon"
+					:class="{'text-slate-500': !allowUpdate, 'text-green-500': !!allowUpdate}"
+					size="sm"
+					class="h-[1.7rem] w-[1.7rem]"
+					tooltip="Allow choosing an existing record to update. NOTE: Unselecting this option will indicate a record already exists and has already been chosen for update."
+					tooltip-class="text-base"
+					@update:model-value="changeAllowUpdate"
+				/>
+				<div class="flex-grow" :class="{'ml-2': allowCreate || allowUpdate || selectable}">
 					<slot name="header" :inline-description="showInlineDescriptions">
 						<div class="py-1">
 							<EditableDiv
@@ -118,6 +144,7 @@
 									:readonly="readonly"
 									:readonly-description="readonlyDescription"
 									:model-value="objectProperties[name]"
+									:create-update-options="selectable"
 									:name="name"
 									@update="input => onUpdateProperty(name, input.name, input.property)"
 									@remove="onRemoveProperty(name)"
@@ -134,7 +161,12 @@
 import { useFragmentSelector } from "@/components/Modules/SchemaEditor/fragmentSelector";
 import SchemaProperty from "@/components/Modules/SchemaEditor/SchemaProperty";
 import { FragmentSelector, JsonSchema } from "@/types";
-import { FaSolidArrowRight as AddObjectIcon, FaSolidPlus as AddPropertyIcon } from "danx-icon";
+import {
+	FaSolidArrowRight as AddObjectIcon,
+	FaSolidArrowsRotate as AllowUpdateIcon,
+	FaSolidCirclePlus as AllowCreateIcon,
+	FaSolidPlus as AddPropertyIcon
+} from "danx-icon";
 import { cloneDeep, EditableDiv, ListItemDraggable, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
@@ -167,7 +199,11 @@ const customPropertyNames = computed(() => sortedPropertyNames.value.filter(p =>
 const {
 	isSelected,
 	changeSelection,
-	changeChildSelection
+	changeChildSelection,
+	allowCreate,
+	allowUpdate,
+	changeAllowUpdate,
+	changeAllowCreate
 } = useFragmentSelector(fragmentSelector, schemaObject.value);
 
 function onUpdate(input: Partial<JsonSchema>) {

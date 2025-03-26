@@ -4,6 +4,8 @@ import { computed, Ref } from "vue";
 export function useFragmentSelector(fragmentSelector: Ref<FragmentSelector>, schema: JsonSchema | null) {
 	const type = schema?.type;
 	const isSelected = computed(() => !!fragmentSelector.value);
+	const allowCreate = computed(() => isSelected.value && !!fragmentSelector.value.create);
+	const allowUpdate = computed(() => isSelected.value && !!fragmentSelector.value.update);
 	const selectedObjectCount = computed(() => recursiveSelectedObjectCount(fragmentSelector.value));
 	const selectedPropertyCount = computed(() => recursiveSelectedPropertyCount(fragmentSelector.value));
 
@@ -21,6 +23,16 @@ export function useFragmentSelector(fragmentSelector: Ref<FragmentSelector>, sch
 		}
 	}
 
+	function changeAllowCreate() {
+		if (!fragmentSelector.value) return;
+		fragmentSelector.value = { ...fragmentSelector.value, create: !allowCreate.value };
+	}
+
+	function changeAllowUpdate() {
+		if (!fragmentSelector.value) return;
+		fragmentSelector.value = { ...fragmentSelector.value, update: !allowUpdate.value };
+	}
+
 	/**
 	 *  Change the selection of a child in the current selection.
 	 *  If the selection is not null, this will add/replace the entry for the child in the selection set
@@ -28,6 +40,8 @@ export function useFragmentSelector(fragmentSelector: Ref<FragmentSelector>, sch
 	 */
 	function changeChildSelection(childName: string, type: JsonSchemaType, selection: FragmentSelector | null) {
 		const children = { ...fragmentSelector.value?.children };
+		const create = fragmentSelector.value?.create || false;
+		const update = fragmentSelector.value?.update || false;
 
 		if (selection) {
 			// Add the child and its selection to the parent's selected children list
@@ -39,6 +53,8 @@ export function useFragmentSelector(fragmentSelector: Ref<FragmentSelector>, sch
 
 		fragmentSelector.value = {
 			type,
+			create,
+			update,
 			children
 		};
 	}
@@ -147,12 +163,16 @@ export function useFragmentSelector(fragmentSelector: Ref<FragmentSelector>, sch
 	return {
 		changeSelection,
 		changeChildSelection,
+		changeAllowCreate,
+		changeAllowUpdate,
 		selectAllChildren,
 		selectAllProperties,
 		recursiveSelectedObjectCount,
 		recursiveSelectedPropertyCount,
 		selectedObjectCount,
 		selectedPropertyCount,
-		isSelected
+		isSelected,
+		allowCreate,
+		allowUpdate
 	};
 }
