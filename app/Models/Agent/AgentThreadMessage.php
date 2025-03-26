@@ -69,11 +69,17 @@ class AgentThreadMessage extends Model implements AuditableContract
         return preg_replace("/}assistant\s*\{/", '', $content);
     }
 
-    public function getJsonContent(): ?array
+    public function getJsonContent(): array|string|null
     {
         $content = $this->getCleanContent();
 
-        return json_decode($content, true) ?? ['text_content' => $content];
+        $result = json_decode($content, true);
+
+        if ($result) {
+            return is_array($result) ? $result : ['text_content' => (string)$result];
+        }
+
+        return ['text_content' => $content];
     }
 
     public function __toString()

@@ -22,12 +22,12 @@ class ResourcePackageImport extends Model implements AuditableContract
 
     public function canView(): bool
     {
-        return $this->resourcePackage->team_uuid === team()->uuid;
+        return $this->resourcePackage->team_uuid === team()->uuid || $this->can_view;
     }
 
     public function canEdit(): bool
     {
-        return $this->resourcePackage->team_uuid === team()->uuid;
+        return $this->resourcePackage->team_uuid === team()->uuid || $this->can_edit;
     }
 
     public function resourcePackage(): BelongsTo|ResourcePackage

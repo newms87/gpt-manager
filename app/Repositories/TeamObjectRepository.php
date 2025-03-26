@@ -20,7 +20,12 @@ class TeamObjectRepository extends ActionRepository
 
     public function query(): Builder
     {
-        return parent::query()->where('team_id', team()->id)->whereDoesntHave('schemaDefinition', fn(Builder $builder) => $builder->whereNotNull('resource_package_import_id'));
+        $query = parent::query()->where('team_id', team()->id);
+        if (!can('view_imported_schemas')) {
+            $query->whereDoesntHave('schemaDefinition.resourcePackageImport', fn(Builder $builder) => $builder->where('can_view', 0));
+        }
+
+        return $query;
     }
 
     public function applyAction(string $action, TeamObject|Model|array|null $model = null, ?array $data = null)
