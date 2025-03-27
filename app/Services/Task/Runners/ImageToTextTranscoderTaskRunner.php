@@ -2,6 +2,7 @@
 
 namespace App\Services\Task\Runners;
 
+use App\Api\ImageToText\ImageToTextOcrApi;
 use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\ArtifactFilterService;
@@ -25,6 +26,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         // If the file is already transcoded, just return the completed transcode immediately
         if ($transcodedFile) {
             $this->activity("File already transcoded", 100);
+            static::log("$transcodedFile");
             $artifact = Artifact::create([
                 'name'            => $transcodedFile->filename,
                 'task_process_id' => $this->taskProcess->id,
@@ -36,7 +38,8 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
             return;
         }
 
-        $agentThread = $this->setupThreadForFile($fileToTranscode);
+        $ocrTranscode = $this->getOcrTranscode($fileToTranscode);
+        $agentThread  = $this->setupThreadForFile($fileToTranscode, $ocrTranscode);
 
         $agent             = $agentThread->agent;
         $schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
@@ -93,7 +96,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         return $filesToTranscode[0];
     }
 
-    public function setupThreadForFile(StoredFile $file)
+    public function setupThreadForFile(StoredFile $file, StoredFile $ocrTranscodedFile)
     {
         $definitionAgent = $this->taskProcess->taskDefinitionAgent;
         $definition      = $definitionAgent?->taskDefinition;
@@ -107,23 +110,51 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         $this->activity("Setup agent thread with Stored File $file->id" . ($file->page_number ? " (page: $file->page_number)" : ''), 5);
 
+        // Add the OCR transcode text to the thread
+        $ocrPrompt = "OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ";
+        app(ThreadRepository::class)->addMessageToThread($agentThread, $ocrPrompt . $ocrTranscodedFile->getContents());
+
+        // Add the input artifacts to the thread
         $artifactFilter = (new ArtifactFilterService())
             ->includeText($definitionAgent->include_text)
             ->includeJson($definitionAgent->include_data, $definitionAgent->getInputFragmentSelector());
 
         foreach($this->taskProcess->inputArtifacts as $index => $inputArtifact) {
-            $artifact = $artifactFilter->setArtifact($inputArtifact)->filter();
+            $artifactData = $artifactFilter->setArtifact($inputArtifact)->filter();
 
             // Only set file on the first artifact (only process one time)
             if ($index === 0) {
-                $artifact['files'] = [$file];
+                $artifactData['files'] = [$file];
             }
 
-            app(ThreadRepository::class)->addMessageToThread($agentThread, $artifact);
+            app(ThreadRepository::class)->addMessageToThread($agentThread, $artifactData);
         }
 
         $this->taskProcess->agentThread()->associate($agentThread)->save();
 
         return $agentThread;
+    }
+
+    /**
+     * Get the OCR transcode for the given file using the ImageToText OCR API
+     */
+    public function getOcrTranscode(StoredFile $storedFile)
+    {
+        $ocrTranscode = $storedFile->transcodes()->where('transcode_name', 'OCR')->first();
+
+        if (!$ocrTranscode) {
+            $ocrText            = app(ImageToTextOcrApi::class)->convert($storedFile->url);
+            $transcodedFilename = preg_replace("/\\.[a-z0-9]+/", ".ocr.txt", $storedFile->filename);
+            // Save the transcoded record
+            $ocrTranscode = app(TranscodeFileService::class)->storeTranscodedFile(
+                $storedFile,
+                'OCR',
+                $transcodedFilename,
+                $ocrText,
+                $storedFile->page_number
+            );
+        }
+
+        return $ocrTranscode;
     }
 }
