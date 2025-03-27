@@ -11,6 +11,7 @@ use App\Models\ResourcePackage\ResourcePackageVersion;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
+use App\Models\Task\TaskArtifactFilter;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Workflow\WorkflowConnection;
@@ -103,6 +104,7 @@ class WorkflowImportService
             SchemaFragment::class       => [],
             TaskDefinition::class       => ['is_team' => true],
             TaskDefinitionAgent::class  => [],
+            TaskArtifactFilter::class   => [],
             SchemaAssociation::class    => [],
             AgentPromptDirective::class => [],
             WorkflowDefinition::class   => ['is_team' => true],
@@ -149,7 +151,6 @@ class WorkflowImportService
             }
 
             foreach($definition as $key => $value) {
-
                 // First check if the value is a reference to another object
                 // (ie: The value is in the form "App\\Models\\Workflow\\WorkflowDefinition::3")
                 if ($value && is_string($value)) {
@@ -169,6 +170,7 @@ class WorkflowImportService
                 if ($key === 'name') {
                     $value .= ' (' . $this->versionName . ')';
                 }
+
                 $localObject->$key = $value;
             }
 

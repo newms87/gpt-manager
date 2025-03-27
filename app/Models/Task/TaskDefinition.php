@@ -95,6 +95,8 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     public function delete(): ?bool
     {
         $this->workflowNodes()->each(fn(WorkflowNode $wn) => $wn->delete());
+        $this->taskArtifactFiltersAsSource()->each(fn(TaskArtifactFilter $taf) => $taf->delete());
+        $this->taskArtifactFiltersAsTarget()->each(fn(TaskArtifactFilter $taf) => $taf->delete());
 
         return parent::delete();
     }
