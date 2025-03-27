@@ -108,7 +108,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         $agentThread = app(ThreadRepository::class)->create($agent, "$definition->name: $agent->name");
 
-        $this->activity("Setup agent thread with Stored File $file->id" . ($file->page_number ? " (page: $file->page_number)" : ''), 5);
+        $this->activity("Setup agent thread with Stored File $file->id" . ($file->page_number ? " (page: $file->page_number)" : ''), 15);
 
         // Add the OCR transcode text to the thread
         $ocrPrompt = "OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ";
@@ -143,6 +143,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         $ocrTranscode = $storedFile->transcodes()->where('transcode_name', 'OCR')->first();
 
         if (!$ocrTranscode) {
+            $this->activity("Transcoding $storedFile->filename to text", 10);
             $ocrText            = app(ImageToTextOcrApi::class)->convert($storedFile->url);
             $transcodedFilename = preg_replace("/\\.[a-z0-9]+/", ".ocr.txt", $storedFile->filename);
             // Save the transcoded record
