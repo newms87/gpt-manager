@@ -116,6 +116,8 @@ class WorkflowImportService
             $this->importResource($objectType, $config, $definitions[$objectType] ?? []);
         }
 
+        $this->removeOrphanedImportedObjects($this->resourcePackageVersion);
+
         $workflowDefinitions  = $this->importedIdMap[WorkflowDefinition::class] ?? [];
         $workflowDefinitionId = reset($workflowDefinitions);
         $workflowDefinition   = WorkflowDefinition::find($workflowDefinitionId);
@@ -181,6 +183,24 @@ class WorkflowImportService
             $resourcePackageImport->local_object_id             = $localObject->id;
             $resourcePackageImport->resource_package_version_id = $this->resourcePackageVersion->id;
             $resourcePackageImport->save();
+        }
+    }
+
+    /**
+     * Given the most recent resource package version, remove any imported objects that are no longer in use.
+     * NOTE: This will delete any imported objects related to the resource package that are not part of this version
+     * (weather or not it is the more recent version). It is just assumed the most recent version is given
+     */
+    public function removeOrphanedImportedObjects(ResourcePackageVersion $resourcePackageVersion): void
+    {
+        $orphanedObjectImports = ResourcePackageImport::where('resource_package_version_id', '!=', $resourcePackageVersion->id)->where('resource_package_id', $resourcePackageVersion->resource_package_id)->get();
+
+        foreach($orphanedObjectImports as $orphanedObjectImport) {
+            // Delete the local object
+            $orphanedObjectImport->getLocalObject()?->delete();
+
+            // Clean up the imported objects list
+            $orphanedObjectImport->delete();
         }
     }
 }
