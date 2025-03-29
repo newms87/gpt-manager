@@ -122,8 +122,8 @@ class BaseTaskRunner implements TaskRunnerContract
      */
     public function resolveArtifactPosition(Artifact $targetArtifact, $artifactList): int
     {
-        if ($targetArtifact->storedFiles) {
-            $minPage = INF;
+        if ($targetArtifact->storedFiles->isNotEmpty()) {
+            $minPage = 9999999;
             foreach($targetArtifact->storedFiles as $storedFile) {
                 $minPage = min($minPage, $storedFile->page_number ?? 0);
             }
