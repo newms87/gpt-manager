@@ -39,12 +39,10 @@ class RunWorkflowTaskRunner extends BaseTaskRunner
 
         $workflowRun = $taskProcessListener->getEventObject();
 
-        if (!$workflowRun) {
-            throw new ValidationError('Workflow run not found: ' . $taskProcessListener->event_id);
-        }
-
         if (!($workflowRun instanceof WorkflowRun)) {
-            throw new ValidationError('Invalid event object: ' . $workflowRun);
+            static::log("Ignoring event: event was not a WorkflowRun");
+
+            return;
         }
 
         if ($workflowRun->isCompleted()) {

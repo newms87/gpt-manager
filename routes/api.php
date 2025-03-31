@@ -64,6 +64,7 @@ ActionRoute::routes('task-processes', new TaskProcessesController);
 ActionRoute::routes('workflow-definitions', new WorkflowDefinitionsController, function () {
     Route::get('{workflowDefinition}/export-to-json', [WorkflowDefinitionsController::class, 'exportToJson']);
     Route::post('/import-from-json', [WorkflowDefinitionsController::class, 'importFromJson']);
+    Route::post('{workflowDefinition}/invoke', [WorkflowDefinitionsController::class, 'invoke']);
 });
 ActionRoute::routes('workflow-nodes', new WorkflowNodesController);
 ActionRoute::routes('workflow-connections', new WorkflowConnectionsController);

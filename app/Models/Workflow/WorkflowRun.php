@@ -13,6 +13,7 @@ use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -40,6 +41,11 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
             'completed_at' => 'datetime:Y-m-d H:i:s.v',
             'failed_at'    => 'datetime:Y-m-d H:i:s.v',
         ];
+    }
+
+    public function workflowApiInvocation(): HasOne|WorkflowApiInvocation
+    {
+        return $this->hasOne(WorkflowApiInvocation::class);
     }
 
     public function workflowDefinition(): BelongsTo|WorkflowDefinition
@@ -135,6 +141,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
 
     /**
      * Collect all the final output artifacts from the workflow run
+     * @return Collection|Artifact[]
      */
     public function collectFinalOutputArtifacts(): Collection
     {

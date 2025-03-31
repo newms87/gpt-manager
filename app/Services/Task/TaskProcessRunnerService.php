@@ -3,6 +3,7 @@
 namespace App\Services\Task;
 
 use App\Jobs\ExecuteTaskProcessJob;
+use App\Jobs\WorkflowApiInvocationWebhookJob;
 use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
@@ -124,6 +125,12 @@ class TaskProcessRunnerService
         // Run the task process
         try {
             $taskProcess->getRunner()->eventTriggered($taskProcessListener);
+            
+            $invocation = $taskProcess->taskRun->workflowRun?->workflowApiInvocation;
+
+            if ($invocation) {
+                (new WorkflowApiInvocationWebhookJob($invocation))->dispatch();
+            }
             static::log("TaskProcess finished handling event: $taskProcessListener");
         } catch(Throwable $throwable) {
             static::log("TaskProcess event handler failed: $taskProcess");
