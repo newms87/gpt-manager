@@ -62,12 +62,12 @@ trait HasWorkflowStatesTrait
 
     public function computeStatus(): static
     {
-        if (!$this->isStarted()) {
-            $this->status = WorkflowStatesContract::STATUS_PENDING;
-        } elseif ($this->isFailed()) {
+        if ($this->isFailed()) {
             $this->status = WorkflowStatesContract::STATUS_FAILED;
         } elseif ($this->isStopped()) {
             $this->status = WorkflowStatesContract::STATUS_STOPPED;
+        } elseif (!$this->isStarted()) {
+            $this->status = WorkflowStatesContract::STATUS_PENDING;
         } elseif (!$this->isCompleted()) {
             $this->status = WorkflowStatesContract::STATUS_RUNNING;
         } else {

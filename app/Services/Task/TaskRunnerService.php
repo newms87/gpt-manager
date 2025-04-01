@@ -243,7 +243,7 @@ class TaskRunnerService
             $taskRun->save();
 
             foreach($taskRun->taskProcesses as $taskProcess) {
-                if ($taskProcess->isStarted() || $taskProcess->isDispatched()) {
+                if ($taskProcess->isStarted() || $taskProcess->isDispatched() || $taskProcess->isPending()) {
                     $taskProcess->stopped_at = now();
                     $taskProcess->save();
                 }
