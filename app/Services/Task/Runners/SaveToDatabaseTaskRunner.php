@@ -19,6 +19,8 @@ class SaveToDatabaseTaskRunner extends BaseTaskRunner
             throw new ValidationError('No schema definition found for Save To Database task. Add an agent and set output schema to save to database.');
         }
 
+        static::log("Saving to database using schema definition $schemaDefinition");
+        
         $outputArtifacts = [];
         foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
             $threadRun   = AgentThreadRun::find($inputArtifact->meta['agent_thread_run_id'] ?? null);
