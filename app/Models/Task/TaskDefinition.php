@@ -5,6 +5,7 @@ namespace App\Models\Task;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Workflow\WorkflowNode;
+use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -114,6 +115,19 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
             'artifact_split_mode'   => $this->artifact_split_mode,
             'timeout_after_seconds' => $this->timeout_after_seconds,
         ]);
+    }
+
+    public function getRunner(): BaseTaskRunner
+    {
+        $runners     = config('ai.runners');
+        $runnerClass = $runners[$this->task_runner_class] ?? BaseTaskRunner::class;
+
+        return app($runnerClass);
+    }
+
+    public function isTrigger(): bool
+    {
+        return $this->getRunner()->isTrigger();
     }
 
     public function __toString()

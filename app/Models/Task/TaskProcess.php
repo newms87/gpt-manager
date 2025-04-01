@@ -152,7 +152,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
      */
     public function getRunner(): TaskRunnerContract
     {
-        return $this->taskRun->getRunner($this);
+        return $this->taskRun->getRunner()->setTaskProcess($this);
     }
 
     public static function booted(): void

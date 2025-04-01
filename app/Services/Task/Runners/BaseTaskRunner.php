@@ -18,18 +18,22 @@ class BaseTaskRunner implements TaskRunnerContract
 
     const string RUNNER_NAME = 'Base';
 
-    protected TaskRun      $taskRun;
+    // Indicates if the class is a workflow trigger
+    const bool   IS_TRIGGER = false;
+
+    protected ?TaskRun     $taskRun;
     protected ?TaskProcess $taskProcess;
 
-    public function __construct(TaskRun $taskRun, TaskProcess $taskProcess = null)
+    public function isTrigger(): bool
     {
-        $this->taskRun     = $taskRun;
-        $this->taskProcess = $taskProcess;
+        return static::IS_TRIGGER;
     }
 
-    public static function make(TaskRun $taskRun, TaskProcess $taskProcess = null): TaskRunnerContract
+    public function setTaskRun(TaskRun $taskRun): static
     {
-        return app()->makeWith(static::class, ['taskRun' => $taskRun, 'taskProcess' => $taskProcess]);
+        $this->taskRun = $taskRun;
+
+        return $this;
     }
 
     public function setTaskProcess(TaskProcess $taskProcess): static

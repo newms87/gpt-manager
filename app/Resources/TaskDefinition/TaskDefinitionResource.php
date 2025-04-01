@@ -14,6 +14,7 @@ class TaskDefinitionResource extends ActionResource
             'id'                    => $taskDefinition->id,
             'name'                  => $taskDefinition->name,
             'description'           => $taskDefinition->description,
+            'is_trigger'            => $taskDefinition->isTrigger(),
             'task_runner_class'     => $taskDefinition->task_runner_class,
             'task_runner_config'    => $taskDefinition->task_runner_config,
             'artifact_split_mode'   => $taskDefinition->artifact_split_mode,

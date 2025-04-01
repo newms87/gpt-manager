@@ -5,27 +5,27 @@
 			:target="taskDefinition"
 			:form="formDefinition"
 		>
-			<div class="bg-sky-950 p-4 rounded">
-				<ArtifactSplitModeWidget
-					class="mt-4"
-					:model-value="taskDefinition.artifact_split_mode"
-					@update:model-value="artifact_split_mode => updateAction.trigger(taskDefinition, {artifact_split_mode})"
-				/>
-				<TaskArtifactFiltersWidget
-					v-if="sourceTaskDefinitions"
-					class="mt-8"
-					:target-task-definition="taskDefinition"
-					:source-task-definitions="sourceTaskDefinitions"
-				/>
-			</div>
 			<SelectField
-				class="mt-8"
+				class="mt-4"
 				:model-value="taskDefinition.task_runner_class"
 				:options="dxTaskDefinition.getFieldOptions('runners')"
 				:disabled="updateAction.isApplying"
 				:loading="!dxTaskDefinition.getFieldOptions('runners')"
 				@update="task_runner_class => updateAction.trigger(taskDefinition, {task_runner_class})"
 			/>
+
+			<div v-if="!taskDefinition.is_trigger" class="mt-4 bg-sky-950 p-4 rounded">
+				<ArtifactSplitModeWidget
+					:model-value="taskDefinition.artifact_split_mode"
+					@update:model-value="artifact_split_mode => updateAction.trigger(taskDefinition, {artifact_split_mode})"
+				/>
+				<TaskArtifactFiltersWidget
+					v-if="sourceTaskDefinitions?.length > 0"
+					class="mt-8"
+					:target-task-definition="taskDefinition"
+					:source-task-definitions="sourceTaskDefinitions"
+				/>
+			</div>
 
 			<Component :is="TaskRunnerConfigComponent" :task-definition="taskDefinition" />
 		</ActionForm>

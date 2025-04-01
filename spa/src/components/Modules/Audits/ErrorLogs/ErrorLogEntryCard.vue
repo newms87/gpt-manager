@@ -28,14 +28,14 @@
 			>
 				<div class="flex-grow flex-nowrap flex items-center space-x-1">
 					<div class="text-sky-600">
-						{{ trace.file.replace(/^.*\//, "") }}
+						{{ trace.file?.replace(/^.*\//, "") }}
 						<QTooltip>{{ trace.file }}</QTooltip>
 					</div>
 					<div class="text-sky-500 text-no-wrap">@ {{ trace.line }}</div>
 				</div>
 				<div class="flex items-center space-x-2 text-slate-400">
 					<div>
-						{{ trace.type.replace(/^.*\//, "") }}
+						{{ trace.type?.replace(/^.*\//, "") }}
 						<QTooltip>{{ trace.type }}</QTooltip>
 					</div>
 					<div>{{ trace.class }}</div>

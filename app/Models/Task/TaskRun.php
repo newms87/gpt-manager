@@ -7,7 +7,6 @@ use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowStatesContract;
-use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\TaskRunnerContract;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Task\TaskRunnerService;
@@ -152,12 +151,9 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
     /**
      * Get the TaskRunner class instance for the task run
      */
-    public function getRunner(TaskProcess $taskProcess = null): TaskRunnerContract
+    public function getRunner(): TaskRunnerContract
     {
-        $runners     = config('ai.runners');
-        $runnerClass = $runners[$this->taskDefinition->task_runner_class] ?? BaseTaskRunner::class;
-
-        return app()->makeWith($runnerClass, ['taskRun' => $this, 'taskProcess' => $taskProcess]);
+        return $this->taskDefinition->getRunner()->setTaskRun($this);
     }
 
     public static function booted(): void
