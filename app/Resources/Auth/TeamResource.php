@@ -11,6 +11,7 @@ class TeamResource extends ActionResource
     {
         return [
             'id'        => $team->id,
+            'uuid'      => $team->uuid,
             'name'      => $team->name,
             'namespace' => $team->namespace,
             'logo'      => $team->logo,

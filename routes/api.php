@@ -22,6 +22,7 @@ use App\Http\Controllers\Ai\WorkflowNodesController;
 use App\Http\Controllers\Ai\WorkflowRunsController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
+use App\Http\Controllers\Team\TeamsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Newms87\Danx\Http\Routes\ActionRoute;
@@ -41,6 +42,9 @@ Route::get('/dashboard', function () {
 
 // Utility
 FileUploadRoute::routes();
+
+// Teams
+Route::any('teams/list', [TeamsController::class, 'list'])->name('teams.list')->withoutMiddleware('auth:sanctum');
 
 // Content Sources
 ActionRoute::routes('content-sources', new ContentSourcesController);

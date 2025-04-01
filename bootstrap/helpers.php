@@ -28,7 +28,7 @@ if (!function_exists('team')) {
             if ($token) {
                 $user->setCurrentTeam($token->name);
             } else {
-                $user->setCurrentTeam($user->teams()->first()?->name);
+                $user->setCurrentTeam($user->teams()->first()?->uuid);
             }
         }
 

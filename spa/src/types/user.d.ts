@@ -6,6 +6,7 @@ export interface AuthUser {
 
 export interface AuthTeam {
 	id: number;
+	uuid: string;
 	name: string;
 	namespace: string;
 	logo: string;

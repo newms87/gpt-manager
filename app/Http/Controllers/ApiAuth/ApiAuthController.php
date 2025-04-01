@@ -11,14 +11,14 @@ class ApiAuthController extends Controller
     public function login()
     {
         $credentials = request(['email', 'password']);
-        $teamName    = request()->get('team_name');
+        $teamUuid    = request()->get('team_uuid');
 
         if (!auth()->attempt($credentials)) {
             return response()->json(['error' => 'Invalid Credentials'], 401);
         }
 
-        if ($teamName) {
-            $team = user()->teams()->firstWhere('name', $teamName) ?: user()->teams()->first();
+        if ($teamUuid) {
+            $team = user()->teams()->firstWhere('uuid', $teamUuid) ?: user()->teams()->first();
         } else {
             $team = user()->teams()->first();
         }
@@ -28,7 +28,7 @@ class ApiAuthController extends Controller
         }
 
         return response()->json([
-            'token' => user()->createToken($team->name)->plainTextToken,
+            'token' => user()->createToken($team->uuid)->plainTextToken,
             'team'  => TeamResource::make($team),
             'user'  => UserResource::make(user()),
         ]);

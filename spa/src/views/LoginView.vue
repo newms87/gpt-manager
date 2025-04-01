@@ -36,10 +36,10 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { authTeam, setAuthTeam, setAuthToken, setAuthUser } from "@/helpers/auth";
+import { authTeam, loadAuthTeam, setAuthTeam, setAuthToken, setAuthUser } from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
 import { TextField } from "quasar-ui-danx";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -47,8 +47,10 @@ const router = useRouter();
 const input = ref({
 	email: "",
 	password: "",
-	team_name: authTeam.value?.name
+	team_uuid: ""
 });
+
+onMounted(async () => input.value.team_uuid = (await loadAuthTeam()).uuid);
 
 const isLoggingIn = ref(false);
 const passwordField = ref(null);

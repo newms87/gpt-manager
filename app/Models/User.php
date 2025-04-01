@@ -102,9 +102,9 @@ class User extends Authenticatable
         Cache::forget("user_permissions:$this->id");
     }
 
-    public function setCurrentTeam($name): static
+    public function setCurrentTeam($uuid): static
     {
-        $this->currentTeam = $name ? $this->teams()->firstWhere('name', $name) : null;
+        $this->currentTeam = $uuid ? $this->teams()->firstWhere('uuid', $uuid) : null;
 
         return $this;
     }
