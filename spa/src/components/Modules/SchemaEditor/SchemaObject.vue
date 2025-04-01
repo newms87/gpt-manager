@@ -23,7 +23,7 @@
 					:class="{'text-slate-500': !allowCreate, 'text-green-500': !!allowCreate}"
 					tooltip="Allow creating new records. (If update is not chosen, this will force creating a new record every time)."
 					tooltip-class="text-base"
-					@update:model-value="changeAllowCreate"
+					@update:model-value="onChangeAllowCreate"
 				/>
 				<ShowHideButton
 					v-if="selectable || allowUpdate"
@@ -206,6 +206,14 @@ const {
 	changeAllowCreate
 } = useFragmentSelector(fragmentSelector, schemaObject.value);
 
+function onChangeAllowCreate() {
+	// If we are about to enable allow creating, we have to make sure the Name property exists
+	if (!allowCreate.value && !objectProperties.value.name) {
+		onUpdateProperty(null, "name", { type: "string", title: "Name", position: -1 });
+	}
+
+	changeAllowCreate();
+}
 function onUpdate(input: Partial<JsonSchema>) {
 	const newSchemaObject = { ...schemaObject.value, ...input };
 	if (JSON.stringify(newSchemaObject) === JSON.stringify(schemaObject.value)) {

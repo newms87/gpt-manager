@@ -113,7 +113,11 @@ class TaskDefinitionRepository extends ActionRepository
         if (!$agent) {
             $agent = team()->agents()->first();
             if (!$agent) {
-                throw new Exception("You must create an agent before adding an agent to a task definition.");
+                $agent = team()->agents()->make([
+                    'name'    => $taskDefinition->name . ' Agent',
+                    'team_id' => team()->id,
+                ]);
+                $agent->resetModel()->save();
             }
             $input['agent_id'] = $agent->id;
         }

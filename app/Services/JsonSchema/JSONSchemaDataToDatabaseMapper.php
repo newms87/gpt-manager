@@ -305,10 +305,6 @@ class JSONSchemaDataToDatabaseMapper
 
             if (!$this->rootObject) {
                 $this->setRootObject($teamObject);
-
-                if (!$schema) {
-                    $schema = $teamObject->schemaDefinition?->schema ?? [];
-                }
             }
 
             if ($type && $teamObject->type !== $type) {

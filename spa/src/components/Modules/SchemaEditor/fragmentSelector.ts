@@ -25,7 +25,15 @@ export function useFragmentSelector(fragmentSelector: Ref<FragmentSelector>, sch
 
 	function changeAllowCreate() {
 		if (!fragmentSelector.value) return;
-		fragmentSelector.value = { ...fragmentSelector.value, create: !allowCreate.value };
+		// If the selection is a primitive type, we need to add the name to the selection
+		fragmentSelector.value = {
+			...fragmentSelector.value,
+			create: !allowCreate.value,
+			children: {
+				...fragmentSelector.value.children,
+				name: fragmentSelector.value.children.name || (!allowCreate.value ? { type: "string" } : undefined)
+			}
+		};
 	}
 
 	function changeAllowUpdate() {

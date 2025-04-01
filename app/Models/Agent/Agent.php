@@ -105,6 +105,14 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
         return $tools;
     }
 
+    public function resetModel(): static
+    {
+        $this->api   = config('ai.default_api');
+        $this->model = config('ai.default_model');
+
+        return $this;
+    }
+
     public function getModelConfig($key = null, $default = null): ?array
     {
         $config = config('ai.models')[$this->api][$this->model] ?? [];
