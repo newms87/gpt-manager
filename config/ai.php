@@ -14,8 +14,8 @@ use App\Services\Task\Runners\MergeArtifactsTaskRunner;
 use App\Services\Task\Runners\PageOrganizerTaskRunner;
 use App\Services\Task\Runners\RunWorkflowTaskRunner;
 use App\Services\Task\Runners\SaveToDatabaseTaskRunner;
+use App\Services\Task\Runners\SplitArtifactsByJsonContentTaskRunner;
 use App\Services\Task\Runners\SplitByFileTaskRunner;
-use App\Services\Task\Runners\SplitByJsonContentTaskRunner;
 use App\Services\Task\Runners\WorkflowInputTaskRunner;
 
 $million  = 1000000;
@@ -101,17 +101,17 @@ return [
         PerplexityAiApi::$serviceName => PerplexityAiApi::class,
     ],
     'runners'       => [
-        AgentThreadTaskRunner::RUNNER_NAME           => AgentThreadTaskRunner::class,
-        BaseTaskRunner::RUNNER_NAME                  => BaseTaskRunner::class,
-        ImageToTextTranscoderTaskRunner::RUNNER_NAME => ImageToTextTranscoderTaskRunner::class,
-        LoadFromDatabaseTaskRunner::RUNNER_NAME      => LoadFromDatabaseTaskRunner::class,
-        MergeArtifactsTaskRunner::RUNNER_NAME        => MergeArtifactsTaskRunner::class,
-        PageOrganizerTaskRunner::RUNNER_NAME         => PageOrganizerTaskRunner::class,
-        RunWorkflowTaskRunner::RUNNER_NAME           => RunWorkflowTaskRunner::class,
-        SaveToDatabaseTaskRunner::RUNNER_NAME        => SaveToDatabaseTaskRunner::class,
-        SplitByFileTaskRunner::RUNNER_NAME           => SplitByFileTaskRunner::class,
-        SplitByJsonContentTaskRunner::RUNNER_NAME    => SplitByJsonContentTaskRunner::class,
-        WorkflowInputTaskRunner::RUNNER_NAME         => WorkflowInputTaskRunner::class,
+        AgentThreadTaskRunner::RUNNER_NAME                 => AgentThreadTaskRunner::class,
+        BaseTaskRunner::RUNNER_NAME                        => BaseTaskRunner::class,
+        ImageToTextTranscoderTaskRunner::RUNNER_NAME       => ImageToTextTranscoderTaskRunner::class,
+        LoadFromDatabaseTaskRunner::RUNNER_NAME            => LoadFromDatabaseTaskRunner::class,
+        MergeArtifactsTaskRunner::RUNNER_NAME              => MergeArtifactsTaskRunner::class,
+        PageOrganizerTaskRunner::RUNNER_NAME               => PageOrganizerTaskRunner::class,
+        RunWorkflowTaskRunner::RUNNER_NAME                 => RunWorkflowTaskRunner::class,
+        SaveToDatabaseTaskRunner::RUNNER_NAME              => SaveToDatabaseTaskRunner::class,
+        SplitByFileTaskRunner::RUNNER_NAME                 => SplitByFileTaskRunner::class,
+        SplitArtifactsByJsonContentTaskRunner::RUNNER_NAME => SplitArtifactsByJsonContentTaskRunner::class,
+        WorkflowInputTaskRunner::RUNNER_NAME               => WorkflowInputTaskRunner::class,
     ],
     'tools'         => [
         [

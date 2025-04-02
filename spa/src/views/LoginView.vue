@@ -50,7 +50,7 @@ const input = ref({
 	team_uuid: ""
 });
 
-onMounted(async () => input.value.team_uuid = (await loadAuthTeam()).uuid);
+onMounted(async () => input.value.team_uuid = (await loadAuthTeam())?.uuid);
 
 const isLoggingIn = ref(false);
 const passwordField = ref(null);

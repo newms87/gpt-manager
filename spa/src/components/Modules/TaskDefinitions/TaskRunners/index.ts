@@ -12,7 +12,7 @@ import {
 	AgentThreadTaskRunnerConfig,
 	BaseTaskRunnerConfig,
 	RunWorkflowTaskRunnerConfig,
-	SplitByJsonContentTaskRunnerConfig
+	SplitArtifactsByJsonContentTaskRunnerConfig
 } from "./Configs";
 import {
 	AgentThreadTaskRunnerNode,
@@ -70,10 +70,10 @@ export const TaskRunners = {
 		node: SplitByFileTaskRunnerNode,
 		config: BaseTaskRunnerConfig
 	},
-	"Split By Json Content": {
+	"Split Artifacts By Json Content": {
 		lottie: SplitByFileLottie,
 		node: SplitByFileTaskRunnerNode,
-		config: SplitByJsonContentTaskRunnerConfig
+		config: SplitArtifactsByJsonContentTaskRunnerConfig
 	},
 	"Workflow Input": {
 		lottie: WorkflowInputLottie,

@@ -4,9 +4,9 @@ namespace App\Services\Task\Runners;
 
 use App\Services\Task\ArtifactsToGroupsMapper;
 
-class SplitByJsonContentTaskRunner extends BaseTaskRunner
+class SplitArtifactsByJsonContentTaskRunner extends BaseTaskRunner
 {
-    const string RUNNER_NAME = 'Split By Json Content';
+    const string RUNNER_NAME = 'Split Artifacts By Json Content';
 
     public function run(): void
     {
