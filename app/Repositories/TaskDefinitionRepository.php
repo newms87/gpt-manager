@@ -4,7 +4,6 @@ namespace App\Repositories;
 
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\TaskDefinition;
-use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Task\TaskInput;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use Exception;
@@ -117,29 +116,6 @@ class TaskDefinitionRepository extends ActionRepository
             'schema_definition_id' => $taskDefinition->schema_definition_id,
             'schema_fragment_id'   => $input['schema_fragment_id'] ?? null,
         ]);
-    }
-
-    /**
-     * Add an agent to a task definition
-     */
-    public function addAgent(TaskDefinition $taskDefinition, ?array $input = []): TaskDefinitionAgent
-    {
-        // First we must guarantee we have an agent (from the users team) selected to add to the definition
-        $agent = team()->agents()->find($input['agent_id'] ?? null);
-
-        if (!$agent) {
-            $agent = team()->agents()->first();
-            if (!$agent) {
-                $agent = team()->agents()->make([
-                    'name'    => $taskDefinition->name . ' Agent',
-                    'team_id' => team()->id,
-                ]);
-                $agent->resetModel()->save();
-            }
-            $input['agent_id'] = $agent->id;
-        }
-
-        return $taskDefinition->definitionAgents()->create($input ?? []);
     }
 
     /**

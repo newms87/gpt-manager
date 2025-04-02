@@ -22,20 +22,23 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
     public function prepareProcess(): void
     {
-        $defAgent = $this->taskProcess->taskDefinitionAgent;
+        // Fragment and agent are used for naming the process
+        $fragment = $this->taskProcess->outputSchemaAssociation?->schemaFragment;
+        $agent    = $this->taskRun->taskDefinition->agent;
 
-        if ($defAgent) {
-            $agent = $defAgent->agent;
-            $name  = "$agent->name ($agent->model)";
-
-            $outputSchema         = $defAgent->outputSchemaAssociation?->schemaDefinition;
-            $outputSchemaFragment = $defAgent->outputSchemaAssociation?->schemaFragment;
-            if ($outputSchema) {
-                $name = StringHelper::limitText(100, $name, ': ' . $outputSchema->name . ($outputSchemaFragment ? ' [' . $outputSchemaFragment->name . ']' : ''));
-            }
-
-            $this->taskProcess->name = $name;
+        if (!$agent) {
+            throw new Exception("AgentThreadTaskRunner: Agent not found for TaskRun: $this->taskRun");
         }
+
+        // Process named based on agent
+        $name = "$agent->name ($agent->model)";
+
+        // Add the fragment to the name if it is set
+        if ($fragment) {
+            $name = StringHelper::limitText(100, $name, ': ' . $fragment->name);
+        }
+
+        $this->taskProcess->name = $name;
 
         $this->activity("Preparing agent thread", 1);
     }
@@ -44,16 +47,21 @@ class AgentThreadTaskRunner extends BaseTaskRunner
     {
         $agentThread       = $this->setupAgentThread();
         $agent             = $agentThread->agent;
-        $schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
+        $schemaDefinition  = $this->taskRun->taskDefinition->schemaDefinition;
+        $schemaAssociation = $this->taskProcess->outputSchemaAssociation;
+
+        if ($schemaDefinition?->id !== $schemaAssociation?->schema_definition_id) {
+            throw new Exception("AgentThreadTaskRunner: Schema definition mismatch for TaskProcess: $this->taskProcess");
+        }
 
         // The default agent thread task runner will use the JsonSchemaService with the database fields (ie: id and name) so we are enabling database I/O
         $jsonSchemaService = app(JsonSchemaService::class)->useArtifactMeta();
 
         $this->activity("Communicating with AI agent in thread", 11);
-        $artifact = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment, $jsonSchemaService);
+        $artifact = $this->runAgentThreadWithSchema($agentThread, $schemaDefinition, $schemaAssociation?->schemaFragment, $jsonSchemaService);
 
         if ($artifact) {
-            $schemaType = $schemaAssociation?->schemaDefinition?->schema['title'] ?? null;
+            $schemaType = $schemaDefinition?->schema['title'] ?? null;
 
             if ($schemaType) {
                 $this->hydrateArtifactJsonContentIds($artifact, $schemaType);
@@ -78,9 +86,8 @@ class AgentThreadTaskRunner extends BaseTaskRunner
             return $this->taskProcess->agentThread;
         }
 
-        $definitionAgent = $this->taskProcess->taskDefinitionAgent;
-        $definition      = $definitionAgent?->taskDefinition;
-        $agent           = $definitionAgent?->agent;
+        $taskDefinition = $this->taskRun->taskDefinition;
+        $agent          = $taskDefinition->agent;
 
         if (!$agent) {
             throw new Exception("AgentThreadTaskRunner: Agent not found for TaskProcess: $this->taskProcess");
@@ -88,17 +95,17 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
         $this->activity("Setting up agent thread for: $agent->name", 5);
 
-        $threadName  = $definition->name . ': ' . $agent->name;
+        $threadName  = $taskDefinition->name . ': ' . $agent->name;
         $agentThread = app(ThreadRepository::class)->create($agent, $threadName);
 
         $inputArtifacts = $this->taskProcess->inputArtifacts()->get();
 
-        static::log("\tAdding " . count($inputArtifacts) . " input artifacts for " . $definitionAgent);
+        static::log("\tAdding " . count($inputArtifacts) . " input artifacts for " . $taskDefinition);
         $artifactFilter = (new ArtifactFilterService())
             ->includePageNumbers($this->includePageNumbersInThread)
-            ->includeText($definitionAgent->include_text)
-            ->includeFiles($definitionAgent->include_files)
-            ->includeJson($definitionAgent->include_data, $definitionAgent->getInputFragmentSelector());
+            ->includeText()
+            ->includeFiles()
+            ->includeJson();
 
         foreach($inputArtifacts as $inputArtifact) {
             $artifactFilter->setArtifact($inputArtifact);

@@ -8,7 +8,6 @@ use App\Http\Controllers\Ai\SchemaAssociationsController;
 use App\Http\Controllers\Ai\SchemaDefinitionsController;
 use App\Http\Controllers\Ai\SchemaFragmentsController;
 use App\Http\Controllers\Ai\TaskArtifactFiltersController;
-use App\Http\Controllers\Ai\TaskDefinitionAgentsController;
 use App\Http\Controllers\Ai\TaskDefinitionsController;
 use App\Http\Controllers\Ai\TaskInputsController;
 use App\Http\Controllers\Ai\TaskProcessesController;
@@ -59,7 +58,6 @@ ActionRoute::routes('schemas/associations', new SchemaAssociationsController);
 
 // Tasks
 ActionRoute::routes('task-definitions', new TaskDefinitionsController);
-ActionRoute::routes('task-definition-agents', new TaskDefinitionAgentsController);
 ActionRoute::routes('task-artifact-filters', new TaskArtifactFiltersController);
 ActionRoute::routes('task-inputs', new TaskInputsController);
 ActionRoute::routes('task-runs', new TaskRunsController);

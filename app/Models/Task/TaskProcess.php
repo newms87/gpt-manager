@@ -3,6 +3,7 @@
 namespace App\Models\Task;
 
 use App\Models\Agent\AgentThread;
+use App\Models\Schema\SchemaAssociation;
 use App\Models\Usage\UsageSummary;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Runners\TaskRunnerContract;
@@ -66,11 +67,6 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         return $this->hasMany(TaskProcessListener::class);
     }
 
-    public function taskDefinitionAgent(): BelongsTo|TaskDefinitionAgent
-    {
-        return $this->belongsTo(TaskDefinitionAgent::class);
-    }
-
     public function agentThread(): BelongsTo|AgentThread
     {
         return $this->belongsTo(AgentThread::class, 'agent_thread_id');
@@ -94,6 +90,11 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
     public function outputArtifacts(): MorphToMany|Artifact
     {
         return $this->artifacts()->withPivotValue('category', 'output');
+    }
+
+    public function outputSchemaAssociation(): MorphOne|SchemaAssociation
+    {
+        return $this->morphOne(SchemaAssociation::class, 'object')->where('category', 'output');
     }
 
     public function usageSummary(): MorphOne

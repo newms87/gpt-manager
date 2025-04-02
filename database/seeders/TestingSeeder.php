@@ -22,7 +22,6 @@ class TestingSeeder extends Seeder
             $user->teams()->syncWithoutDetaching([$team->id]);
         }
 
-        app(TortguardSeeder::class)->run();
         app(OnDemandsSeeder::class)->run();
     }
 }

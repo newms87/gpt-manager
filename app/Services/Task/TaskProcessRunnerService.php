@@ -4,7 +4,7 @@ namespace App\Services\Task;
 
 use App\Jobs\ExecuteTaskProcessJob;
 use App\Jobs\WorkflowApiInvocationWebhookJob;
-use App\Models\Task\TaskDefinitionAgent;
+use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
@@ -20,22 +20,30 @@ class TaskProcessRunnerService
     use HasDebugLogging;
 
     /**
-     * Prepare task processes for the task run. Each process will receive its own Artifacts / Agent AgentThread
-     * based on the input groups and the assigned agents for the TaskDefinition
+     * Prepare task processes for the task run. Each process will receive its own Artifacts / AgentThread
+     * based on the input groups and the schema associations for the TaskDefinition
      */
-    public static function prepare(TaskRun $taskRun, TaskDefinitionAgent $taskDefinitionAgent = null, $artifacts = []): TaskProcess
+    public static function prepare(TaskRun $taskRun, SchemaAssociation $schemaAssociation = null, $artifacts = []): TaskProcess
     {
         $artifacts = collect($artifacts);
         static::log("Prepare task process for $taskRun w/ " . $artifacts->count() . " artifacts");
 
         $taskDefinition = $taskRun->taskDefinition;
-        $name           = ($taskDefinitionAgent?->agent->name ?: $taskDefinition->name);
+        $name           = ($schemaAssociation?->schemaFragment?->name ?: $taskDefinition->name);
         $taskProcess    = $taskRun->taskProcesses()->create([
-            'name'                     => $name,
-            'activity'                 => "Preparing $name...",
-            'status'                   => WorkflowStatesContract::STATUS_PENDING,
-            'task_definition_agent_id' => $taskDefinitionAgent?->id,
+            'name'     => $name,
+            'activity' => "Preparing $name...",
+            'status'   => WorkflowStatesContract::STATUS_PENDING,
         ]);
+
+        // Associate an identical schema association to the task process
+        if ($schemaAssociation) {
+            $schemaAssociation->replicate()->fill([
+                'object_id'   => $taskProcess->id,
+                'object_type' => TaskProcess::class,
+                'category'    => 'output',
+            ]);
+        }
 
         if ($artifacts->isNotEmpty()) {
             $taskProcess->inputArtifacts()->saveMany($artifacts);
@@ -125,7 +133,7 @@ class TaskProcessRunnerService
         // Run the task process
         try {
             $taskProcess->getRunner()->eventTriggered($taskProcessListener);
-            
+
             $invocation = $taskProcess->taskRun->workflowRun?->workflowApiInvocation;
 
             if ($invocation) {

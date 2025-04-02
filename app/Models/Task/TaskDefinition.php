@@ -45,8 +45,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     ];
 
     public array $relationCounters = [
-        TaskRun::class             => ['taskRuns' => 'task_run_count'],
-        TaskDefinitionAgent::class => ['definitionAgents' => 'task_agent_count'],
+        TaskRun::class => ['taskRuns' => 'task_run_count'],
     ];
 
     public function casts()
@@ -69,11 +68,6 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     public function schemaAssociations(): MorphMany|SchemaAssociation
     {
         return $this->morphMany(SchemaAssociation::class, 'object');
-    }
-
-    public function definitionAgents(): HasMany|TaskDefinitionAgent
-    {
-        return $this->hasMany(TaskDefinitionAgent::class);
     }
 
     public function taskInputs(): HasMany|TaskInput
@@ -126,7 +120,6 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
 
     public function exportToJson(WorkflowExportService $service): int
     {
-        $service->registerRelatedModels($this->definitionAgents);
         $service->registerRelatedModels($this->taskArtifactFiltersAsTarget);
 
         return $service->register($this, [

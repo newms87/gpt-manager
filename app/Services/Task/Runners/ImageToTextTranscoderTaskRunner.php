@@ -42,7 +42,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         $agentThread  = $this->setupThreadForFile($fileToTranscode, $ocrTranscode);
 
         $agent             = $agentThread->agent;
-        $schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
+        $schemaAssociation = $this->taskProcess->outputSchemaAssociation;
 
         $this->activity("Using agent to transcode $agent->name", 10);
         $artifact = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment);
@@ -98,15 +98,14 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
     public function setupThreadForFile(StoredFile $file, StoredFile $ocrTranscodedFile)
     {
-        $definitionAgent = $this->taskProcess->taskDefinitionAgent;
-        $definition      = $definitionAgent?->taskDefinition;
-        $agent           = $definitionAgent?->agent;
+        $taskDefinition = $this->taskRun->taskDefinition;
+        $agent          = $taskDefinition->agent;
 
         if (!$agent) {
             throw new Exception(static::class . ": Agent not found for TaskProcess: $this->taskProcess");
         }
 
-        $agentThread = app(ThreadRepository::class)->create($agent, "$definition->name: $agent->name");
+        $agentThread = app(ThreadRepository::class)->create($agent, "$taskDefinition->name: $agent->name");
 
         $this->activity("Setup agent thread with Stored File $file->id" . ($file->page_number ? " (page: $file->page_number)" : ''), 15);
 
@@ -116,8 +115,8 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         // Add the input artifacts to the thread
         $artifactFilter = (new ArtifactFilterService())
-            ->includeText($definitionAgent->include_text)
-            ->includeJson($definitionAgent->include_data, $definitionAgent->getInputFragmentSelector());
+            ->includeText()
+            ->includeJson();
 
         foreach($this->taskProcess->inputArtifacts as $index => $inputArtifact) {
             $artifactData = $artifactFilter->setArtifact($inputArtifact)->filter();

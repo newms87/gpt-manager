@@ -28,6 +28,10 @@ class ApiAuthController extends Controller
             return response()->json(['error' => 'User does not have a team'], 401);
         }
 
+        if (user()->roles()->doesntExist()) {
+            return response()->json(['error' => 'User does not have a role'], 401);
+        }
+
         return response()->json([
             'token'        => user()->createToken($team->uuid)->plainTextToken,
             'team'         => TeamResource::make($team),
@@ -36,7 +40,7 @@ class ApiAuthController extends Controller
         ]);
     }
 
-    public function logInToTeam()
+    public function loginToTeam()
     {
         $teamUuid = request()->get('team_uuid');
         if (!user()->teams()->firstWhere('uuid', $teamUuid)) {

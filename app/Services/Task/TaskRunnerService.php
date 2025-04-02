@@ -41,8 +41,8 @@ class TaskRunnerService
     }
 
     /**
-     * Prepare task processes for the task run. Each process will receive its own Artifacts / Agent AgentThread
-     * based on the input groups and the assigned agents for the TaskDefinition
+     * Prepare task processes for the task run. Each process will receive its own Artifacts / AgentThread
+     * based on the input groups and the assigned schema associations for the TaskDefinition
      * @param TaskRun               $taskRun
      * @param Artifact[]|Collection $artifacts
      * @return array
@@ -57,20 +57,20 @@ class TaskRunnerService
 
         $taskProcesses = [];
 
-        $taskDefinition   = $taskRun->taskDefinition;
-        $definitionAgents = $taskDefinition->definitionAgents;
+        $taskDefinition     = $taskRun->taskDefinition;
+        $schemaAssociations = $taskDefinition->schemaAssociations;
 
-        // NOTE: If there are no agents assigned to the task definition, create an array w/ null entry as a convenience so the loop will create a single process with no agent
-        if ($definitionAgents->isEmpty()) {
-            $definitionAgents = [null];
+        // NOTE: If there are no schema associations assigned to the task definition, create an array w/ null entry as a convenience so the loop will create a single process with no schema
+        if ($schemaAssociations->isEmpty()) {
+            $schemaAssociations = [null];
         }
 
         // Split up the artifacts into the groups defined by the task definition
         $artifactGroups = ArtifactsSplitterService::split($taskDefinition->artifact_split_mode ?: '', $artifacts);
 
-        foreach($definitionAgents as $definitionAgent) {
+        foreach($schemaAssociations as $schemaAssociation) {
             foreach($artifactGroups as $artifactsInGroup) {
-                $taskProcesses[] = TaskProcessRunnerService::prepare($taskRun, $definitionAgent, $artifactsInGroup);
+                $taskProcesses[] = TaskProcessRunnerService::prepare($taskRun, $schemaAssociation, $artifactsInGroup);
             }
         }
 

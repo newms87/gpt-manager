@@ -2,10 +2,7 @@
 
 namespace Database\Factories\Task;
 
-use App\Models\Task\TaskDefinition;
-use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Team\Team;
-use App\Services\Task\Runners\AgentThreadTaskRunner;
 use App\Services\Task\Runners\BaseTaskRunner;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,17 +18,5 @@ class TaskDefinitionFactory extends Factory
             'task_runner_config'  => null,
             'artifact_split_mode' => '',
         ];
-    }
-
-    public function withDefinitionAgent($attributes = [], $count = 1): TaskDefinitionFactory
-    {
-        return $this->state(function (array $attributes) {
-            return [
-                'task_runner_class' => AgentThreadTaskRunner::class,
-            ];
-        })->afterCreating(function (TaskDefinition $taskDefinition) use ($attributes, $count) {
-            $definitionAgent = TaskDefinitionAgent::factory()->count($count)->create($attributes);
-            $taskDefinition->definitionAgents()->saveMany($definitionAgent);
-        });
     }
 }

@@ -22,29 +22,20 @@ class WorkflowNodeRepository extends ActionRepository
     }
 
     /**
-     * Copies a WorkflowNode and creates a copied TaskDefinition w/ associated Agents + schema definitions
+     * Copies a WorkflowNode and creates a copied TaskDefinition w/ associated schema definitions
      * The copied node is still associated to the same workflow.
      */
     public function copyNode(WorkflowNode $workflowNode): WorkflowNode
     {
-        $newTaskDefinition       = $workflowNode->taskDefinition->replicate(['task_run_count', 'task_agent_count']);
+        $newTaskDefinition       = $workflowNode->taskDefinition->replicate(['task_run_count']);
         $newTaskDefinition->name = ModelHelper::getNextModelName($newTaskDefinition);
         $newTaskDefinition->save();
 
-        foreach($workflowNode->taskDefinition->definitionAgents as $definitionAgent) {
-            $newDefinitionAgent                     = $definitionAgent->replicate();
-            $newDefinitionAgent->task_definition_id = $newTaskDefinition->id;
-            $newDefinitionAgent->save();
-
-            $newOutputSchemaAssociation            = $definitionAgent->outputSchemaAssociation->replicate();
-            $newOutputSchemaAssociation->object_id = $newDefinitionAgent->id;
-            $newOutputSchemaAssociation->save();
-
-            foreach($definitionAgent->inputSchemaAssociations as $inputSchemaAssociation) {
-                $newInputSchemaAssociation            = $inputSchemaAssociation->replicate();
-                $newInputSchemaAssociation->object_id = $newDefinitionAgent->id;
-                $newInputSchemaAssociation->save();
-            }
+        foreach($workflowNode->taskDefinition->schemaAssociations as $schemaAssociation) {
+            $newTaskDefinition->schemaAssociations()->create([
+                'schema_definition_id' => $schemaAssociation->schema_definition_id,
+                'schema_fragment_id'   => $schemaAssociation->schema_fragment_id,
+            ]);
         }
 
         $newWorkflowNode                     = $workflowNode->replicate();

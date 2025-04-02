@@ -17,15 +17,15 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 
     public function run(): void
     {
-        $taskDefinitionAgent = $this->taskProcess->taskDefinitionAgent;
-        $agent               = $taskDefinitionAgent->agent;
+        $taskDefinition = $this->taskRun->taskDefinition;
+        $agent          = $taskDefinition->agent;
 
         // Make sure to include page numbers in the agent thread so the agent can reference them
         $this->includePageNumbersInThread = true;
 
         // Setup the thread
         $agentThread       = $this->setupAgentThread();
-        $schemaAssociation = $this->taskProcess->taskDefinitionAgent->outputSchemaAssociation;
+        $schemaAssociation = $this->taskProcess->outputSchemaAssociation;
 
         $this->activity("Using agent to organize: $agent->name", 10);
         $jsonSchemaService = app(JsonSchemaService::class)->useArtifactMeta();
@@ -55,8 +55,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
      */
     public function organizeArtifactIntoGroups(AgentThread $agentThread, Artifact $artifact): array|null
     {
-        $taskDefinitionAgent = $this->taskProcess->taskDefinitionAgent;
-        $fragmentSelector    = $taskDefinitionAgent->outputSchemaAssociation->schemaFragment->fragment_selector;
+        $fragmentSelector = $this->taskProcess->outputSchemaAssociation->schemaFragment->fragment_selector;
 
         $groups = app(ArtifactsToGroupsMapper::class)->setGroupingKeys([$fragmentSelector])->map([$artifact]);
 

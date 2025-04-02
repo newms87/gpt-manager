@@ -13,7 +13,6 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Models\Task\TaskArtifactFilter;
 use App\Models\Task\TaskDefinition;
-use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Workflow\WorkflowConnection;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
@@ -103,7 +102,6 @@ class WorkflowImportService
             SchemaDefinition::class     => ['is_team' => true],
             SchemaFragment::class       => [],
             TaskDefinition::class       => ['is_team' => true],
-            TaskDefinitionAgent::class  => [],
             TaskArtifactFilter::class   => [],
             SchemaAssociation::class    => [],
             AgentPromptDirective::class => [],
