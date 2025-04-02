@@ -10,7 +10,7 @@ return [
         'import_workflows'        => ['Import Workflows', 'Can import workflows from a resource package'],
     ],
     'roles'       => [
-        'dev'    => [
+        'dev'                    => [
             'display'     => ['Developer', 'Developer Role'],
             'permissions' => [
                 'view_imported_schemas',
@@ -21,18 +21,25 @@ return [
                 'import_workflows',
             ],
         ],
-        'admin'  => [
+        'prompt-engineer-tester' => [
+            'display'     => ['Prompt Engineer Helper', 'Is allowed to view data related to prompt engineering for testing'],
+            'permissions' => [
+                'view_imported_schemas',
+                'view_imported_workflows',
+            ],
+        ],
+        'admin'                  => [
             'display'     => ['Admin', 'Manage all objects in the account and add users to teams'],
             'permissions' => [
                 'export_workflows',
                 'import_workflows',
             ],
         ],
-        'editor' => [
+        'editor'                 => [
             'display'     => ['Editor', 'Editor Role'],
             'permissions' => [],
         ],
-        'viewer' => [
+        'viewer'                 => [
             'display'     => ['Viewer', 'Viewer Role'],
             'permissions' => [],
         ],
