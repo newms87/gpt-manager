@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskDefinitionAgent;
 use App\Models\Task\TaskInput;
@@ -55,6 +56,7 @@ class TaskDefinitionRepository extends ActionRepository
             'create' => $this->createTaskDefinition($data),
             'update' => $this->updateTaskDefinition($model, $data),
             'copy' => $this->copyTaskDefinition($model),
+            'add-fragment' => $this->addFragment($model, $data),
             'add-agent' => $this->addAgent($model, $data),
             'add-input' => $this->addInput($model, $data),
             'remove-input' => $this->removeInput($model, $data),
@@ -100,6 +102,21 @@ class TaskDefinitionRepository extends ActionRepository
         $newTaskDefinition->save();
 
         return $newTaskDefinition;
+    }
+
+    /**
+     * Add a schema fragment to a task definition via a schema association
+     */
+    public function addFragment(TaskDefinition $taskDefinition, array $input = []): SchemaAssociation
+    {
+        if (!$taskDefinition->schema_definition_id) {
+            throw new ValidationError("Failed to add fragment: First add a schema definition to the task.");
+        }
+
+        return $taskDefinition->schemaAssociations()->create([
+            'schema_definition_id' => $taskDefinition->schema_definition_id,
+            'schema_fragment_id'   => $input['schema_fragment_id'] ?? null,
+        ]);
     }
 
     /**

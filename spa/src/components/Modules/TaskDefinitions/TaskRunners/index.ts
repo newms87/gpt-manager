@@ -8,7 +8,12 @@ import {
 	SplitByFileLottie,
 	WorkflowInputLottie
 } from "@/assets/dotlottie";
-import { AgentThreadTaskRunnerConfig, BaseTaskRunnerConfig, RunWorkflowTaskRunnerConfig } from "./Configs";
+import {
+	AgentThreadTaskRunnerConfig,
+	BaseTaskRunnerConfig,
+	RunWorkflowTaskRunnerConfig,
+	SplitByJsonContentTaskRunnerConfig
+} from "./Configs";
 import {
 	AgentThreadTaskRunnerNode,
 	BaseTaskRunnerNode,
@@ -64,6 +69,11 @@ export const TaskRunners = {
 		lottie: SplitByFileLottie,
 		node: SplitByFileTaskRunnerNode,
 		config: BaseTaskRunnerConfig
+	},
+	"Split By Json Content": {
+		lottie: SplitByFileLottie,
+		node: SplitByFileTaskRunnerNode,
+		config: SplitByJsonContentTaskRunnerConfig
 	},
 	"Workflow Input": {
 		lottie: WorkflowInputLottie,

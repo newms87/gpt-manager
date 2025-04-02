@@ -55,7 +55,6 @@
 
 							<template v-if="activeSchema && canSelectFragment">
 								<SelectionMenuField
-									v-if="canSelect"
 									v-model:editing="isEditingFragment"
 									v-model:selected="activeFragment"
 									selectable
@@ -209,7 +208,9 @@ async function onCreateFragment() {
 	}
 
 	activeFragment.value = response.item;
-	fragmentList.value.push(response.item);
+	if (!fragmentList.value.find(f => f.id === response.item.id)) {
+		fragmentList.value.push(response.item);
+	}
 }
 
 // Load the fragments for the current active schema

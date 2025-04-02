@@ -3,6 +3,7 @@
 namespace App\Services\Task;
 
 use App\Models\Task\Artifact;
+use Illuminate\Database\Eloquent\Collection;
 use Log;
 use Newms87\Danx\Helpers\ArrayHelper;
 
@@ -102,10 +103,10 @@ class ArtifactsToGroupsMapper
     }
 
     /**
-     * @param Artifact[] $artifacts
+     * @param Artifact[]|Collection $artifacts
      * @return Artifact[][] An array of groups of artifacts
      */
-    public function map(array $artifacts): array
+    public function map($artifacts): array
     {
         $schemaDefinitionId = null;
 
@@ -193,10 +194,10 @@ class ArtifactsToGroupsMapper
     /**
      * Add the files from the artifacts to the groups of artifacts
      *
-     * @param Artifact[]   $artifacts
-     * @param Artifact[][] $groupsOfArtifacts
+     * @param Artifact[]|Collection $artifacts
+     * @param Artifact[][]          $groupsOfArtifacts
      */
-    public function addFilesToGroups(array $artifacts, array $groupsOfArtifacts): array
+    public function addFilesToGroups($artifacts, array $groupsOfArtifacts): array
     {
         $allFiles = [];
         foreach($artifacts as $artifact) {

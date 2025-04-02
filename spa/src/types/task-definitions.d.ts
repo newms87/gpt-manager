@@ -1,5 +1,13 @@
 import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
-import { Agent, AgentThread, Artifact, SchemaAssociation, SchemaFragment, WorkflowInput } from "@/types";
+import {
+	Agent,
+	AgentThread,
+	Artifact,
+	SchemaAssociation,
+	SchemaDefinition,
+	SchemaFragment,
+	WorkflowInput
+} from "@/types";
 import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
 
 export interface TaskDefinition extends ActionTargetItem {
@@ -15,8 +23,10 @@ export interface TaskDefinition extends ActionTargetItem {
 	task_agent_count: number;
 	taskRuns?: TaskRun[];
 	taskInputs?: TaskInput[];
-	taskAgents?: TaskDefinitionAgent[];
 	taskArtifactFiltersAsTarget: TaskArtifactFilter[];
+	taskAgents?: TaskDefinitionAgent[];
+	schemaDefinition?: SchemaDefinition;
+	schemaAssociations?: SchemaAssociation[];
 }
 
 export interface TaskArtifactFilter extends ActionTargetItem {

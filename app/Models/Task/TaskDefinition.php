@@ -2,14 +2,19 @@
 
 namespace App\Models\Task;
 
+use App\Models\Agent\Agent;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
+use App\Models\Schema\SchemaAssociation;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Workflow\WorkflowNode;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
@@ -29,6 +34,8 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         'task_runner_config',
         'artifact_split_mode',
         'timeout_after_seconds',
+        'schema_definition_id',
+        'agent_id',
     ];
 
     protected array $keywordFields = [
@@ -47,6 +54,21 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         return [
             'task_runner_config' => 'json',
         ];
+    }
+
+    public function agent(): BelongsTo|Agent
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    public function schemaDefinition(): BelongsTo|SchemaDefinition
+    {
+        return $this->belongsTo(SchemaDefinition::class);
+    }
+
+    public function schemaAssociations(): MorphMany|SchemaAssociation
+    {
+        return $this->morphMany(SchemaAssociation::class, 'object');
     }
 
     public function definitionAgents(): HasMany|TaskDefinitionAgent

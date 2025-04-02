@@ -3,6 +3,8 @@
 namespace App\Resources\TaskDefinition;
 
 use App\Models\Task\TaskDefinition;
+use App\Resources\Schema\SchemaAssociationResource;
+use App\Resources\Schema\SchemaDefinitionResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 
@@ -29,6 +31,8 @@ class TaskDefinitionResource extends ActionResource
             'taskRuns'                    => fn($fields) => TaskRunResource::collection($taskDefinition->taskRuns, $fields),
             'taskArtifactFiltersAsTarget' => fn($fields) => TaskArtifactFilterResource::collection($taskDefinition->taskArtifactFiltersAsTarget, $fields),
             'taskArtifactFiltersAsSource' => fn($fields) => TaskArtifactFilterResource::collection($taskDefinition->taskArtifactFiltersAsSource, $fields),
+            'schemaDefinition'            => fn($fields) => SchemaDefinitionResource::make($taskDefinition->schemaDefinition, $fields),
+            'schemaAssociations'          => fn($fields) => SchemaAssociationResource::collection($taskDefinition->schemaAssociations, $fields),
         ];
     }
 
@@ -42,6 +46,8 @@ class TaskDefinitionResource extends ActionResource
             ],
             'taskInputs'                  => true,
             'taskArtifactFiltersAsTarget' => true,
+            'schemaDefinition'            => true,
+            'schemaAssociations'          => true,
         ]);
     }
 }
