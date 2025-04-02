@@ -14,6 +14,28 @@
 					<AccountIcon class="w-4" />
 
 					<QMenu>
+						<div class="bg-sky-300">
+							<div class="flex-x text-sky-600 font-bold text-base px-4 py-2">
+								<TeamsIcon class="w-4 mr-2" />
+								Teams
+							</div>
+							<div class="bg-sky-800">
+								<div
+									v-for="team in authTeamList"
+									:key="team.id"
+									@click="onLogInToTeam(team)"
+								>
+									<div v-if="authTeam.id === team.id" class="text-sky-300 flex-x gap-2 py-2 px-4">
+										<AuthTeamIcon class="w-4" />
+										{{ team.name }}
+									</div>
+									<div v-else class="cursor-pointer hover:bg-sky-900 py-2 px-4">
+										{{ team.name }}
+										<QTooltip>Log in to {{ team.name }}</QTooltip>
+									</div>
+								</div>
+							</div>
+						</div>
 						<a
 							v-ripple
 							class="p-3 block hover:bg-slate-600 text-slate-300"
@@ -29,16 +51,25 @@
 </template>
 <script setup lang="ts">
 import { LogoImage } from "@/components/Shared";
-import { authTeam, authUser } from "@/helpers";
+import { authTeam, authTeamList, authUser, loginToTeam } from "@/helpers";
 import router from "@/router";
-import { FaSolidUser as AccountIcon } from "danx-icon";
+import { AuthTeam } from "@/types";
+import { FaSolidUser as AccountIcon, FaSolidUserCheck as AuthTeamIcon, FaSolidUsers as TeamsIcon } from "danx-icon";
 import { QToolbar, QToolbarTitle } from "quasar";
 import { ref } from "vue";
 
+const isLoggingIn = ref(false);
 const isLoggingOut = ref(false);
+
 function onLogout() {
 	isLoggingOut.value = true;
 	router.push({ name: "auth.logout" });
 	isLoggingOut.value = false;
+}
+
+async function onLogInToTeam(team: AuthTeam) {
+	isLoggingIn.value = true;
+	await loginToTeam(team);
+	isLoggingIn.value = false;
 }
 </script>

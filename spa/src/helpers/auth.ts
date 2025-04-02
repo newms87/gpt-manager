@@ -1,15 +1,20 @@
 import { dxTeam } from "@/components/Modules/Teams/config";
+import { AuthRoutes } from "@/routes/authRoutes";
 import { AuthTeam, AuthUser } from "@/types";
-import { danxOptions, getItem, getUrlParam, setItem, sleep } from "quasar-ui-danx";
+import { danxOptions, FlashMessages, getItem, getUrlParam, setItem, sleep } from "quasar-ui-danx";
 import { ref, shallowRef } from "vue";
 
 const AUTH_TOKEN_KEY = "auth-token";
 const AUTH_TEAM_LIST_KEY = "auth-team-list";
+const AUTH_TEAM_KEY = "auth-team";
 const AUTH_USER_KEY = "auth-user";
 export const authTeamList = shallowRef(getItem(AUTH_TEAM_LIST_KEY) || []);
 export const authToken = ref(getAuthToken() || "");
-export const authTeam = ref<AuthTeam>(getAuthTeam());
+export const authTeam = ref<AuthTeam>();
 export const authUser = ref<AuthUser>(getAuthUser());
+
+// Immediately resolve the current auth team
+authTeam.value = getAuthTeam();
 
 // Set the Authorization header for all requests
 if (isAuthenticated()) {
@@ -81,10 +86,20 @@ export async function loadAuthTeam(uuid: string = null): Promise<AuthTeam | null
 export function getAuthTeam(uuid: string = null): AuthTeam | null {
 	uuid = uuid || getUrlParam("team_id");
 
+	if (uuid) {
+		return authTeamList.value.find((team: AuthTeam) => team.uuid === uuid);
+	}
+
+	if (authTeam.value) {
+		return authTeam.value;
+	}
+
+	const storedTeam = getItem(AUTH_TEAM_KEY);
+	if (storedTeam) {
+		return storedTeam;
+	}
+
 	if (authTeamList.value.length > 0) {
-		if (uuid) {
-			return authTeamList.value.find((team: AuthTeam) => team.uuid === uuid);
-		}
 		return authTeamList.value[0];
 	}
 
@@ -101,6 +116,7 @@ export function setAuthTeam(team: AuthTeam) {
 	}
 
 	authTeam.value = team;
+	setItem(AUTH_TEAM_KEY, team);
 }
 
 /**
@@ -109,6 +125,21 @@ export function setAuthTeam(team: AuthTeam) {
 export function setAuthTeamList(teams: AuthTeam[]) {
 	authTeamList.value = teams;
 	setItem(AUTH_TEAM_LIST_KEY, teams);
+}
+
+/**
+ *  Log the user into the team (if they are authorized to do so) and update the auth token
+ */
+export async function loginToTeam(team: AuthTeam) {
+	const result = await AuthRoutes.loginToTeam({ team_uuid: team.uuid });
+
+	if (result.token) {
+		setAuthToken(result.token);
+		setAuthTeam(team);
+		location.reload();
+	} else {
+		FlashMessages.error("Failed to log in to team.");
+	}
 }
 
 /**

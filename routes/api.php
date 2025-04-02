@@ -33,6 +33,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/login', [ApiAuthController::class, 'login'])->withoutMiddleware('auth:sanctum');
+Route::post('/login-to-team', [ApiAuthController::class, 'loginToTeam']);
 Route::any('/logout', [ApiAuthController::class, 'logout']);
 
 // Dashboard

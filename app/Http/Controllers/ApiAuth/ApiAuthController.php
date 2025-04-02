@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ApiAuth;
 use App\Http\Controllers\Controller;
 use App\Resources\Auth\TeamResource;
 use App\Resources\Auth\UserResource;
+use Newms87\Danx\Exceptions\ValidationError;
 
 class ApiAuthController extends Controller
 {
@@ -32,6 +33,18 @@ class ApiAuthController extends Controller
             'team'         => TeamResource::make($team),
             'user'         => UserResource::make(user()),
             'authTeamList' => TeamResource::collection(user()->teams()->get()),
+        ]);
+    }
+
+    public function logInToTeam()
+    {
+        $teamUuid = request()->get('team_uuid');
+        if (!user()->teams()->firstWhere('uuid', $teamUuid)) {
+            throw new ValidationError('You do not have permission to access this team');
+        }
+
+        return response()->json([
+            'token' => user()->createToken($teamUuid)->plainTextToken,
         ]);
     }
 
