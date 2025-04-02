@@ -1,11 +1,12 @@
 import { dxTeam } from "@/components/Modules/Teams/config";
 import { AuthTeam, AuthUser } from "@/types";
 import { danxOptions, getItem, getUrlParam, setItem, sleep } from "quasar-ui-danx";
-import { ref } from "vue";
+import { ref, shallowRef } from "vue";
 
 const AUTH_TOKEN_KEY = "auth-token";
 const AUTH_TEAM_LIST_KEY = "auth-team-list";
 const AUTH_USER_KEY = "auth-user";
+export const authTeamList = shallowRef(getItem(AUTH_TEAM_LIST_KEY) || []);
 export const authToken = ref(getAuthToken() || "");
 export const authTeam = ref<AuthTeam>(getAuthTeam());
 export const authUser = ref<AuthUser>(getAuthUser());
@@ -16,7 +17,7 @@ if (isAuthenticated()) {
 } else if (!authTeam.value) {
 	// Async resolve the desired team if not already set
 	(async () => {
-		authTeam.value = await loadAuthTeam(getUrlParam("team_id"));
+		authTeam.value = await loadAuthTeam();
 	})();
 }
 
@@ -57,7 +58,7 @@ export async function loadAuthTeam(uuid: string = null): Promise<AuthTeam | null
 	const teamList = await dxTeam.routes.list({ filter: { uuid } });
 
 	// If the request was aborted, that means multiple calls were made, so wait a little bit and return the loaded value
-	if (teamList.abort) {
+	if (teamList?.abort) {
 		for (let i = 0; i < 50; i++) {
 			await sleep(300);
 			if ((authTeam = getAuthTeam(uuid))) {
@@ -79,28 +80,35 @@ export async function loadAuthTeam(uuid: string = null): Promise<AuthTeam | null
  */
 export function getAuthTeam(uuid: string = null): AuthTeam | null {
 	uuid = uuid || getUrlParam("team_id");
-	const teamList = getItem(AUTH_TEAM_LIST_KEY);
 
-	if (teamList?.length) {
+	if (authTeamList.value.length > 0) {
 		if (uuid) {
-			return teamList.find((team: AuthTeam) => team.uuid === uuid);
+			return authTeamList.value.find((team: AuthTeam) => team.uuid === uuid);
 		}
-		return teamList[0];
+		return authTeamList.value[0];
 	}
+
+	return null;
 }
 
 /**
  * Set the authentication team in local storage
  */
 export function setAuthTeam(team: AuthTeam) {
-	const teamList = getItem(AUTH_TEAM_LIST_KEY) || [];
-
-	if (!teamList.find((t: AuthTeam) => t.uuid === team.uuid)) {
-		teamList.push(team);
-		setItem(AUTH_TEAM_LIST_KEY, teamList);
+	if (!authTeamList.value.find((t: AuthTeam) => t.uuid === team.uuid)) {
+		authTeamList.value.push(team);
+		setItem(AUTH_TEAM_LIST_KEY, authTeamList.value);
 	}
 
 	authTeam.value = team;
+}
+
+/**
+ *  Set the authentication team list in local storage
+ */
+export function setAuthTeamList(teams: AuthTeam[]) {
+	authTeamList.value = teams;
+	setItem(AUTH_TEAM_LIST_KEY, teams);
 }
 
 /**

@@ -4,7 +4,7 @@
 			<QCardSection>
 				<div class="pb-3">
 					<h4>Log In</h4>
-					<div v-if="authTeam" class="mt-3">{{ authTeam.name }}</div>
+					<SelectTeamMenu v-if="authTeamList.length > 0" v-model="authTeam" class="mt-4" />
 				</div>
 				<div class="mt-3">
 					<div>
@@ -36,7 +36,16 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { authTeam, loadAuthTeam, setAuthTeam, setAuthToken, setAuthUser } from "@/helpers/auth";
+import SelectTeamMenu from "@/components/Modules/Teams/SelectTeamMenu";
+import {
+	authTeam,
+	authTeamList,
+	loadAuthTeam,
+	setAuthTeam,
+	setAuthTeamList,
+	setAuthToken,
+	setAuthUser
+} from "@/helpers/auth";
 import { AuthRoutes } from "@/routes/authRoutes";
 import { TextField } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
@@ -46,11 +55,10 @@ const router = useRouter();
 
 const input = ref({
 	email: "",
-	password: "",
-	team_uuid: ""
+	password: ""
 });
 
-onMounted(async () => input.value.team_uuid = (await loadAuthTeam())?.uuid);
+onMounted(loadAuthTeam);
 
 const isLoggingIn = ref(false);
 const passwordField = ref(null);
@@ -58,7 +66,7 @@ const errorMsg = ref("");
 
 async function onLogin() {
 	isLoggingIn.value = true;
-	const result = await AuthRoutes.login(input.value);
+	const result = await AuthRoutes.login({ ...input.value, team_uuid: authTeam.value?.uuid });
 
 	if (!result || result.error) {
 		if (!result || result.exception) {
@@ -73,6 +81,9 @@ async function onLogin() {
 		}
 		if (result.user) {
 			setAuthUser(result.user);
+		}
+		if (result.authTeamList) {
+			setAuthTeamList(result.authTeamList);
 		}
 		await router.push({ name: "home" });
 	}

@@ -28,9 +28,10 @@ class ApiAuthController extends Controller
         }
 
         return response()->json([
-            'token' => user()->createToken($team->uuid)->plainTextToken,
-            'team'  => TeamResource::make($team),
-            'user'  => UserResource::make(user()),
+            'token'        => user()->createToken($team->uuid)->plainTextToken,
+            'team'         => TeamResource::make($team),
+            'user'         => UserResource::make(user()),
+            'authTeamList' => TeamResource::collection(user()->teams()->get()),
         ]);
     }
 
