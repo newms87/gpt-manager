@@ -11,7 +11,6 @@
 			class="flex-grow"
 			:select-icon="AgentIcon"
 			select-text="Agent"
-			select-class="bg-emerald-900 text-cyan-400"
 			label-class="text-slate-300"
 			:options="availableAgents"
 			:loading="isLoading"

@@ -41,6 +41,7 @@
 								deletable
 								name-editable
 								:edit-disabled="!canEdit"
+								select-text="Schema"
 								:select-icon="SchemaIcon"
 								label-class="text-slate-300"
 								:placeholder="placeholder"
@@ -66,6 +67,7 @@
 									:edit-disabled="!canEdit"
 									:select-icon="FragmentIcon"
 									label-class="text-slate-300"
+									select-text="Fragment"
 									:select-class="buttonColor"
 									:options="fragmentList"
 									:loading="createFragmentAction.isApplying"

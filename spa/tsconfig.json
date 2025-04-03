@@ -46,6 +46,9 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "baseUrl": ".",
     "paths": {
+      "quasar-ui-danx": [
+        "./node_modules/quasar-ui-danx/ui/src/*"
+      ],
       "@/*": [
         "./src/*",
         "src/*"

@@ -150,6 +150,19 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         return $this->getRunner()->isTrigger();
     }
 
+    public static function booted()
+    {
+        static::saved(function (TaskDefinition $taskDefinition) {
+            if ($taskDefinition->wasChanged('schema_definition_id')) {
+                foreach($taskDefinition->schemaAssociations as $schemaAssociation) {
+                    if ($schemaAssociation->schema_definition_id != $taskDefinition->schema_definition_id) {
+                        $schemaAssociation->delete();
+                    }
+                }
+            }
+        });
+    }
+
     public function __toString()
     {
         return "<TaskDefinition id='$this->id' name='$this->name' runner='$this->task_runner_class'>";

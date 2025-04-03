@@ -8,23 +8,21 @@
 			hide-save-state
 			button-color="bg-sky-900 text-sky-200"
 			:model-value="taskDefinition.schemaDefinition"
-			:fragment="taskDefinition.schemaAssociations?.length > 0 ? taskDefinition.schemaAssociations[0].fragment : null"
+			:fragment="maxFragments === 1 ? taskDefinition.schemaAssociations[0].fragment : null"
 			:loading="taskDefinition.isSaving"
-			@update:model-value="schema => updateTaskDefinitionAction.trigger(taskDefinition, { schema_definition_id: schema?.id })"
+			@update:model-value="onChangeSchema"
 			@update:fragment="fragment => onUpdateFragment(fragment)"
 		/>
 
-		<ListTransition v-if="maxFragments > 1" class="ml-4 space-y-4 mt-4">
-			<h6>Fragments</h6>
-
+		<ListTransition v-if="maxFragments > 1" class="space-y-4 mt-4">
 			<div
 				v-for="schemaAssociation in taskDefinition.schemaAssociations"
 				:key="schemaAssociation.id"
 				class="flex items-start flex-nowrap"
 			>
 				<ActionButton
-					type="trash"
-					color="white"
+					type="minus"
+					color="orange"
 					:action="deleteSchemaAssociationAction"
 					:target="schemaAssociation"
 					class="mr-4"
@@ -61,7 +59,7 @@
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
 import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociations";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
-import { SchemaAssociation, SchemaFragment, TaskDefinition } from "@/types";
+import { SchemaAssociation, SchemaDefinition, SchemaFragment, TaskDefinition } from "@/types";
 import { ActionButton, ListTransition } from "quasar-ui-danx";
 import { computed } from "vue";
 
@@ -78,6 +76,10 @@ const updateTaskDefinitionAction = dxTaskDefinition.getAction("update");
 const addSchemaAssociationAction = dxTaskDefinition.getAction("add-fragment");
 const updateSchemaAssociationAction = dxSchemaAssociation.getAction("update");
 const deleteSchemaAssociationAction = dxSchemaAssociation.getAction("quick-delete", { onFinish: async () => dxTaskDefinition.routes.details(props.taskDefinition) });
+
+async function onChangeSchema(schemaDefinition: SchemaDefinition) {
+	await updateTaskDefinitionAction.trigger(props.taskDefinition, { schema_definition_id: schemaDefinition?.id });
+}
 
 async function onUpdateFragment(fragment: SchemaFragment, schemaAssociation?: SchemaAssociation) {
 	if (!schemaAssociation) {

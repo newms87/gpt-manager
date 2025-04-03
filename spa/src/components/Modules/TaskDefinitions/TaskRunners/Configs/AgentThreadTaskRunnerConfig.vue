@@ -11,16 +11,16 @@
 			<div class="font-bold mb-2">Directives</div>
 			<TaskDefinitionDirectivesConfigField :task-definition="taskDefinition" />
 		</div>
+		<SchemaAndFragmentsConfigField class="mt-4" :task-definition="taskDefinition" />
 	</BaseTaskRunnerConfig>
 </template>
 <script setup lang="ts">
 import { availableAgents } from "@/components/Modules/Agents/store";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
-import { TaskDefinitionDirectivesConfigField } from "@/components/Modules/TaskDefinitions/TaskRunners/Configs/Fields";
 import { TaskDefinition } from "@/types";
 import { storeObject } from "quasar-ui-danx";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
-import { AgentConfigField } from "./Fields";
+import { AgentConfigField, SchemaAndFragmentsConfigField, TaskDefinitionDirectivesConfigField } from "./Fields";
 
 const props = defineProps<{
 	taskDefinition: TaskDefinition;
