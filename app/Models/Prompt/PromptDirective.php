@@ -5,6 +5,7 @@ namespace App\Models\Prompt;
 use App\Models\Agent\Agent;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
+use App\Models\Task\TaskDefinitionDirective;
 use App\Models\Team\Team;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -53,10 +54,19 @@ class PromptDirective extends Model implements AuditableContract, ResourcePackag
         return $this->hasMany(AgentPromptDirective::class);
     }
 
+    public function taskDefinitionDirectives(): HasMany|TaskDefinitionDirective
+    {
+        return $this->hasMany(TaskDefinitionDirective::class);
+    }
+
     public function delete(): bool
     {
         foreach($this->agentPromptDirectives as $agentPromptDirective) {
             $agentPromptDirective->delete();
+        }
+
+        foreach($this->taskDefinitionDirectives as $taskDefinitionDirective) {
+            $taskDefinitionDirective->delete();
         }
 
         return parent::delete();

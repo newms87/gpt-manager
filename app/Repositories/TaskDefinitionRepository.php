@@ -240,9 +240,9 @@ class TaskDefinitionRepository extends ActionRepository
     /**
      * Remove a directive from a task definition
      */
-    public function removeDirective(TaskDefinition $taskDefinition, $directiveId): bool
+    public function removeDirective(TaskDefinition $taskDefinition, $taskDefinitionDirectiveId): bool
     {
-        $taskDefinition->taskDefinitionDirectives()->where('prompt_directive_id', $directiveId)->delete();
+        $taskDefinition->taskDefinitionDirectives()->find($taskDefinitionDirectiveId)?->delete();
 
         return true;
     }

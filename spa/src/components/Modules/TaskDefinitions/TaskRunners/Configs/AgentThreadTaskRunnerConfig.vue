@@ -1,12 +1,16 @@
 <template>
 	<BaseTaskRunnerConfig :task-definition="taskDefinition">
+		<QSeparator class="bg-slate-400 my-4" />
 		<AgentConfigField
 			class="mt-8"
 			:new-agent-name="`${taskDefinition.name} Agent`"
 			:model-value="taskDefinition.agent"
 			@update:model-value="setAgent"
 		/>
-		<TaskDefinitionDirectivesConfigField :task-definition="taskDefinition" />
+		<div class="bg-sky-950 p-3 rounded mt-4">
+			<div class="font-bold mb-2">Directives</div>
+			<TaskDefinitionDirectivesConfigField :task-definition="taskDefinition" />
+		</div>
 	</BaseTaskRunnerConfig>
 </template>
 <script setup lang="ts">

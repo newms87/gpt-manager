@@ -1,90 +1,87 @@
 <template>
-	<div>
-		<h5>Directives</h5>
-		<div class="bg-slate-900 p-4 rounded mt-4 space-y-4">
-			<ActionButton
-				type="create"
-				color="green"
-				label="Before Thread"
-				size="sm"
-				:action="saveDirectiveAction"
-				:target="taskDefinition"
-				:input="{ section: 'Top', name: taskDefinition.name + ' Directive' }"
-			/>
-			<ListTransition name="fade-down-list" data-drop-zone="top-directives-dz">
-				<ListItemDraggable
-					v-for="taskDefinitionDirective in topDirectives"
-					:key="taskDefinitionDirective.id"
-					:list-items="topDirectives"
-					drop-zone="top-directives-dz"
-					@update:list-items="onListPositionChange($event, 'Top')"
-					@drop-zone="onDropZoneChange"
-					@dragstart="onDragStart('Top')"
-					@dragend="onDragEnd"
-				>
-					<PromptDirectiveConfigField
-						:model-value="taskDefinitionDirective.directive"
-						class="my-1"
-						:loading="removeDirectiveAction.isApplying"
-						@update:model-value="pd => onDirectiveChange(taskDefinitionDirective, pd)"
-						@deleted="dxPromptDirective.routes.details(taskDefinition, {'*': false, taskDefinitionDirectives: true})"
-					/>
-				</ListItemDraggable>
-				<div
-					v-if="isDraggingBottom"
-					class="text-center text-gray-500 border-dashed border border-slate-500 p-4"
-					:class="{'bg-green-900': isDraggingOverTop}"
-					@dragenter="isDraggingOverTop = true"
-					@dragleave="isDraggingOverTop = false"
-				>
-					Drag Directive Here
-				</div>
-			</ListTransition>
-
-			<QSeparator class="bg-slate-400 my-4" />
-
-			<ActionButton
-				type="create"
-				color="green"
-				size="sm"
-				label="After Thread"
-				:action="saveDirectiveAction"
-				:target="taskDefinition"
-				:input="{ section: 'Bottom', name: taskDefinition.name + ' Directive' }"
-			/>
-			<ListTransition
-				name="fade-down-list"
-				data-drop-zone="bottom-directives-dz"
+	<div class="task-definition-directives-config-field space-y-4">
+		<ActionButton
+			type="create"
+			color="green"
+			label="Before Thread"
+			size="sm"
+			:action="saveDirectiveAction"
+			:target="taskDefinition"
+			:input="{ section: 'Top', name: taskDefinition.name + ' Directive' }"
+		/>
+		<ListTransition name="fade-down-list" data-drop-zone="top-directives-dz">
+			<ListItemDraggable
+				v-for="taskDefinitionDirective in topDirectives"
+				:key="taskDefinitionDirective.id"
+				:list-items="topDirectives"
+				drop-zone="top-directives-dz"
+				@update:list-items="onListPositionChange($event, 'Top')"
+				@drop-zone="onDropZoneChange"
+				@dragstart="onDragStart('Top')"
+				@dragend="onDragEnd"
 			>
-				<ListItemDraggable
-					v-for="taskDefinitionDirective in bottomDirectives"
-					:key="taskDefinitionDirective.id"
-					:list-items="bottomDirectives"
-					drop-zone="bottom-directives-dz"
-					@update:list-items="onListPositionChange($event, 'Bottom')"
-					@drop-zone="onDropZoneChange"
-					@dragstart="onDragStart('Bottom')"
-					@dragend="onDragEnd"
-				>
-					<PromptDirectiveConfigField
-						:model-value="taskDefinitionDirective.directive"
-						class="my-1"
-						:loading="removeDirectiveAction.isApplying"
-						@update:model-value="pd => onDirectiveChange(taskDefinitionDirective, pd)"
-						@deleted="dxPromptDirective.routes.details(taskDefinition, {'*': false, taskDefinitionDirectives: true})"
-					/>
-				</ListItemDraggable>
-				<div
-					v-if="isDraggingTop"
-					class="text-center text-gray-500 border-dashed border border-slate-500 p-4"
-					:class="{'bg-green-900': isDraggingOverBottom}"
-					@dragenter="isDraggingOverBottom = true"
-					@dragleave="isDraggingOverBottom = false"
-				>
-					Drag Directive Here
-				</div>
-			</ListTransition>
-		</div>
+				<PromptDirectiveConfigField
+					:model-value="taskDefinitionDirective.directive"
+					class="my-1"
+					:loading="removeDirectiveAction.isApplying"
+					@update:model-value="pd => onDirectiveChange(taskDefinitionDirective, pd)"
+					@deleted="dxTaskDefinition.routes.details(taskDefinition, {'*': false, taskDefinitionDirectives: true})"
+				/>
+			</ListItemDraggable>
+			<div
+				v-if="isDraggingBottom"
+				class="text-center text-gray-500 border-dashed border border-slate-500 p-4"
+				:class="{'bg-green-900': isDraggingOverTop}"
+				@dragenter="isDraggingOverTop = true"
+				@dragleave="isDraggingOverTop = false"
+			>
+				Drag Directive Here
+			</div>
+		</ListTransition>
+
+		<QSeparator class="bg-slate-400 my-4" />
+
+		<ActionButton
+			type="create"
+			color="green"
+			size="sm"
+			label="After Thread"
+			:action="saveDirectiveAction"
+			:target="taskDefinition"
+			:input="{ section: 'Bottom', name: taskDefinition.name + ' Directive' }"
+		/>
+		<ListTransition
+			name="fade-down-list"
+			data-drop-zone="bottom-directives-dz"
+		>
+			<ListItemDraggable
+				v-for="taskDefinitionDirective in bottomDirectives"
+				:key="taskDefinitionDirective.id"
+				:list-items="bottomDirectives"
+				drop-zone="bottom-directives-dz"
+				@update:list-items="onListPositionChange($event, 'Bottom')"
+				@drop-zone="onDropZoneChange"
+				@dragstart="onDragStart('Bottom')"
+				@dragend="onDragEnd"
+			>
+				<PromptDirectiveConfigField
+					:model-value="taskDefinitionDirective.directive"
+					class="my-1"
+					:loading="removeDirectiveAction.isApplying"
+					@update:model-value="pd => onDirectiveChange(taskDefinitionDirective, pd)"
+					@deleted="dxTaskDefinition.routes.details(taskDefinition, {'*': false, taskDefinitionDirectives: true})"
+				/>
+			</ListItemDraggable>
+			<div
+				v-if="isDraggingTop"
+				class="text-center text-gray-500 border-dashed border border-slate-500 p-4"
+				:class="{'bg-green-900': isDraggingOverBottom}"
+				@dragenter="isDraggingOverBottom = true"
+				@dragleave="isDraggingOverBottom = false"
+			>
+				Drag Directive Here
+			</div>
+		</ListTransition>
 	</div>
 </template>
 <script setup lang="ts">
@@ -103,7 +100,7 @@ const saveDirectiveAction = dxTaskDefinition.getAction("save-directive", { onFin
 const updateDirectivesAction = dxTaskDefinition.getAction("update-directives", { optimistic: true });
 const removeDirectiveAction = dxTaskDefinition.getAction("remove-directive", {
 	optimistic: (action, target: TaskDefinition, input) => {
-		target.taskDefinitionDirectives = target.taskDefinitionDirectives.filter((d) => d.directive.id !== input.id);
+		target.taskDefinitionDirectives = target.taskDefinitionDirectives.filter((d) => d.id !== input.id);
 	}
 });
 const topDirectives = computed(() => props.taskDefinition.taskDefinitionDirectives?.filter((directive) => directive.section === "Top") || []);
@@ -115,12 +112,12 @@ const isDraggingOverBottom = ref(false);
 
 function onDirectiveChange(taskDefinitionDirective: TaskDefinitionDirective, promptDirective?: PromptDirective) {
 	if (promptDirective) {
-		removeDirectiveAction.trigger(props.taskDefinition);
-	} else {
 		saveDirectiveAction.trigger(props.taskDefinition, {
 			task_definition_directive_id: taskDefinitionDirective.id,
 			prompt_directive_id: promptDirective.id
 		});
+	} else {
+		removeDirectiveAction.trigger(props.taskDefinition, { id: taskDefinitionDirective.id });
 	}
 }
 function onListPositionChange(directives, section) {
