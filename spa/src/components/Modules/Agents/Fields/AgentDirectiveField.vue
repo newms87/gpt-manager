@@ -28,6 +28,7 @@
 						class="my-1"
 						:is-removing="removeDirectiveAction.isApplying"
 						@remove="removeDirectiveAction.trigger(agent, { id: agentDirective.directive.id })"
+						@deleted="dxAgent.routes.details(agent, {directives: true})"
 					/>
 				</ListItemDraggable>
 				<div
@@ -72,6 +73,7 @@
 						class="my-1"
 						:is-removing="removeDirectiveAction.isApplying"
 						@remove="removeDirectiveAction.trigger(agent, { id: agentDirective.directive.id })"
+						@deleted="dxAgent.routes.details(agent, {directives: true})"
 					/>
 				</ListItemDraggable>
 				<div
@@ -90,7 +92,7 @@
 <script setup lang="ts">
 import { dxAgent } from "@/components/Modules/Agents";
 import { SelectableAgentPromptDirectiveCard } from "@/components/Modules/Agents/Fields";
-import { refreshPromptDirectives } from "@/components/Modules/Prompts/Directives/config/store";
+import { dxPromptDirective } from "@/components/Modules/Prompts";
 import { Agent } from "@/types";
 import { ActionButton, ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed, ref } from "vue";
@@ -99,7 +101,7 @@ const props = defineProps<{
 	agent: Agent,
 }>();
 
-const saveDirectiveAction = dxAgent.getAction("save-directive", { onFinish: () => refreshPromptDirectives() });
+const saveDirectiveAction = dxAgent.getAction("save-directive", { onFinish: dxPromptDirective.store.refreshItems });
 const updateDirectivesAction = dxAgent.getAction("update-directives", { optimistic: true });
 const removeDirectiveAction = dxAgent.getAction("remove-directive", {
 	optimistic: (action, target: Agent, input) => {

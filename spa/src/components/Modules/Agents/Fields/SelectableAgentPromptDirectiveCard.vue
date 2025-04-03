@@ -41,6 +41,7 @@ import { computed, onMounted, ref } from "vue";
 const emit = defineEmits<{
 	change: PromptDirective;
 	remove: void;
+	deleted: void;
 }>();
 const props = defineProps<{
 	agent: Agent;
@@ -59,6 +60,7 @@ const deletePromptDirectiveAction = dxPromptDirective.getAction("delete", {
 	onFinish: async () => {
 		await refreshItems();
 		await dxPromptDirective.routes.details(promptDirective.value);
+		emit("deleted");
 	}
 });
 

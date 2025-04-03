@@ -10,7 +10,6 @@ const DEV_MODE = false;
 
 console.log("Checking quasar-ui-danx existence:", fs.existsSync("./node_modules/quasar-ui-danx/src"));
 
-
 // https://vitejs.dev/config/
 export default ({ command }: ConfigEnv) => {
 
