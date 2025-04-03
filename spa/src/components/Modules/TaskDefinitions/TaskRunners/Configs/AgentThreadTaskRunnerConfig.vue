@@ -8,8 +8,8 @@
 	</BaseTaskRunnerConfig>
 </template>
 <script setup lang="ts">
+import { availableAgents } from "@/components/Modules/Agents/store";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
-import { availableAgents, loadAgents } from "@/components/Modules/TaskDefinitions/TaskDefinitionAgents/agentStore";
 import AgentConfig from "@/components/Modules/TaskDefinitions/TaskRunners/Configs/AgentConfig";
 import { TaskDefinition } from "@/types";
 import { storeObject } from "quasar-ui-danx";
@@ -35,7 +35,4 @@ async function setAgent(agent) {
 		storeObject({ ...props.taskDefinition, agent: null });
 	}
 }
-
-// Immediately load agents
-loadAgents();
 </script>

@@ -40,7 +40,7 @@ import {
 	isLoadingAgents,
 	loadAgentDetails,
 	loadAgents
-} from "@/components/Modules/TaskDefinitions/TaskDefinitionAgents/agentStore";
+} from "@/components/Modules/Agents/store";
 import { Agent } from "@/types";
 import { FaSolidRobot as AgentIcon } from "danx-icon";
 import { ActionForm, SelectionMenuField } from "quasar-ui-danx";

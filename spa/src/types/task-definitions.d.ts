@@ -41,16 +41,6 @@ export interface TaskArtifactFilter extends ActionTargetItem {
 
 export type ArtifactSplitMode = "" | "Node" | "Artifact";
 
-export interface TaskDefinitionAgent extends ActionTargetItem {
-	id: string;
-	agent: Agent;
-	include_text: boolean;
-	include_files: boolean;
-	include_data: boolean;
-	inputSchemaAssociations?: SchemaAssociation[];
-	outputSchemaAssociation?: SchemaAssociation;
-}
-
 export interface TaskInput extends ActionTargetItem {
 	id: string;
 	taskDefinition: TaskDefinition;
