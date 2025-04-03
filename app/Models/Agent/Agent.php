@@ -6,6 +6,7 @@ use App\Api\AgentApiContracts\AgentApiContract;
 use App\Models\Prompt\AgentPromptDirective;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
+use App\Models\Task\TaskDefinition;
 use App\Models\Team\Team;
 use App\Repositories\AgentRepository;
 use App\Services\Workflow\WorkflowExportService;
@@ -65,6 +66,11 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
     public function knowledge(): BelongsTo|Knowledge
     {
         return $this->belongsTo(Knowledge::class);
+    }
+
+    public function taskDefinitions(): HasMany|TaskDefinition
+    {
+        return $this->hasMany(TaskDefinition::class);
     }
 
     public function directives(): HasMany|AgentPromptDirective
@@ -181,6 +187,13 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
             'temperature' => $this->temperature,
             'retry_count' => $this->retry_count,
         ]);
+    }
+
+    public function delete(): bool
+    {
+        $this->taskDefinitions()->each(fn(TaskDefinition $taskDefinition) => $taskDefinition->agent()->disassociate()->save());
+
+        return parent::delete();
     }
 
     public function __toString(): string

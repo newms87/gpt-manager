@@ -24,7 +24,7 @@ export interface TaskDefinition extends ActionTargetItem {
 	taskRuns?: TaskRun[];
 	taskInputs?: TaskInput[];
 	taskArtifactFiltersAsTarget: TaskArtifactFilter[];
-	taskAgents?: TaskDefinitionAgent[];
+	agent?: Agent;
 	schemaDefinition?: SchemaDefinition;
 	schemaAssociations?: SchemaAssociation[];
 }
