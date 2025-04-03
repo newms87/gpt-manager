@@ -29,7 +29,6 @@ class TaskDefinitionRepository extends ActionRepository
     {
         return parent::summaryQuery($filter)->addSelect([
             DB::raw("SUM(task_run_count) as task_run_count"),
-            DB::raw("SUM(task_agent_count) as task_agent_count"),
         ]);
     }
 

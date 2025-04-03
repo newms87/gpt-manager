@@ -6,10 +6,10 @@ use App\Models\Agent\AgentThread;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Models\Task\Artifact;
-use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadMessageToArtifactMapper;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\ArtifactFilterService;
+use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
 use App\Services\JsonSchema\JsonSchemaService;
 use Exception;
 use Newms87\Danx\Helpers\StringHelper;
@@ -87,33 +87,19 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         }
 
         $taskDefinition = $this->taskRun->taskDefinition;
-        $agent          = $taskDefinition->agent;
+        $this->activity("Setting up agent thread for: {$taskDefinition->agent->name}", 5);
 
-        if (!$agent) {
-            throw new Exception("AgentThreadTaskRunner: Agent not found for TaskProcess: $this->taskProcess");
-        }
-
-        $this->activity("Setting up agent thread for: $agent->name", 5);
-
-        $threadName  = $taskDefinition->name . ': ' . $agent->name;
-        $agentThread = app(ThreadRepository::class)->create($agent, $threadName);
-
-        $inputArtifacts = $this->taskProcess->inputArtifacts()->get();
-
-        static::log("\tAdding " . count($inputArtifacts) . " input artifacts for " . $taskDefinition);
-        $artifactFilter = (new ArtifactFilterService())
+        $artifactFilterService = (new ArtifactFilterService())
             ->includePageNumbers($this->includePageNumbersInThread)
             ->includeText()
             ->includeFiles()
             ->includeJson();
 
-        foreach($inputArtifacts as $inputArtifact) {
-            $artifactFilter->setArtifact($inputArtifact);
-            $filteredMessage = $artifactFilter->filter();
-            if ($filteredMessage) {
-                app(ThreadRepository::class)->addMessageToThread($agentThread, $filteredMessage);
-            }
-        }
+        $agentThread = app(TaskDefinitionToAgentThreadMapper::class)
+            ->setTaskDefinition($this->taskRun->taskDefinition)
+            ->setArtifacts($this->taskProcess->inputArtifacts()->get())
+            ->setArtifactFilterService($artifactFilterService)
+            ->map();
 
         $this->taskProcess->agentThread()->associate($agentThread)->save();
 

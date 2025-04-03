@@ -72,7 +72,17 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
 
     public function taskDefinitionDirectives(): HasMany|TaskDefinitionDirective
     {
-        return $this->hasMany(TaskDefinitionDirective::class);
+        return $this->hasMany(TaskDefinitionDirective::class)->orderBy('position');
+    }
+
+    public function beforeThreadDirectives(): HasMany|TaskDefinitionDirective
+    {
+        return $this->hasMany(TaskDefinitionDirective::class)->where('section', TaskDefinitionDirective::SECTION_TOP);
+    }
+
+    public function afterThreadDirectives(): HasMany|TaskDefinitionDirective
+    {
+        return $this->hasMany(TaskDefinitionDirective::class)->where('section', TaskDefinitionDirective::SECTION_BOTTOM);
     }
 
     public function taskInputs(): HasMany|TaskInput

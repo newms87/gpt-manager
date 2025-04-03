@@ -3,7 +3,9 @@
 namespace Tests\Feature\Services\Task\Runners;
 
 use App\Models\Agent\AgentThreadRun;
+use App\Models\Prompt\PromptDirective;
 use App\Models\Schema\SchemaAssociation;
+use App\Models\Task\TaskDefinitionDirective;
 use App\Models\Task\TaskProcess;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use Tests\AuthenticatedTestCase;
@@ -42,6 +44,58 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $messages = $taskProcess->agentThread->messages;
         $this->assertCount(2, $messages, 'AgentThread should be 2 messages: the artifact and the agent response');
         $this->assertEquals($artifactContent, $messages->first()->content, 'First message should be the artifact content');
+    }
+
+    public function test_run_withTaskDefinitionDirectives_directivesAreAddedToThread(): void
+    {
+        // Given
+        $directiveContent = 'Do as i say, not as i do.';
+        $taskProcess      = TaskProcess::factory()->withAgent()->create();
+        $promptDirective  = PromptDirective::factory()->create(['directive_text' => $directiveContent]);
+        $taskProcess->taskRun->taskDefinition->taskDefinitionDirectives()->create([
+            'prompt_directive_id' => $promptDirective->id,
+        ]);
+
+        // When
+        AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
+
+        // Then
+        $taskProcess->refresh();
+        $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
+        $messages = $taskProcess->agentThread->messages;
+        $this->assertCount(2, $messages, 'AgentThread should have 2 messages: The directive task and the agent response');
+        $this->assertEquals($directiveContent, $messages->first()->content, 'First message should be the directive content');
+    }
+
+    public function test_run_withTaskDefinitionDirectives_beforeAndAfterDirectiveSectionsAreRespected(): void
+    {
+        // Given
+        $beforeContent         = 'Do as i say, not as i do.';
+        $artifactContent       = "Hey There";
+        $afterContent          = 'why would you do that?';
+        $beforePromptDirective = PromptDirective::factory()->create(['directive_text' => $beforeContent]);
+        $afterPromptDirective  = PromptDirective::factory()->create(['directive_text' => $afterContent]);
+        $taskProcess           = TaskProcess::factory()->withAgent()->withInputArtifacts(['text_content' => $artifactContent])->create();
+        $taskProcess->taskRun->taskDefinition->taskDefinitionDirectives()->create([
+            'prompt_directive_id' => $beforePromptDirective->id,
+            'section'             => TaskDefinitionDirective::SECTION_TOP,
+        ]);
+        $taskProcess->taskRun->taskDefinition->taskDefinitionDirectives()->create([
+            'prompt_directive_id' => $afterPromptDirective->id,
+            'section'             => TaskDefinitionDirective::SECTION_BOTTOM,
+        ]);
+
+        // When
+        AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
+
+        // Then
+        $taskProcess->refresh();
+        $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
+        $messages = $taskProcess->agentThread->messages;
+        $this->assertCount(4, $messages, 'AgentThread should have 4 messages: Before directive, artifact content, after directive and the agent response');
+        $this->assertEquals($beforeContent, $messages[0]->content, 'First message should be the before directive content');
+        $this->assertEquals($artifactContent, $messages[1]->content, 'Second message should be the artifact content');
+        $this->assertEquals($afterContent, $messages[2]->content, 'Third message should be the after directive content');
     }
 
     public function test_setupAgentThread_withDefinitionAgentOutputFragment_completeApiCallHasFilteredStructuredOutput(): void

@@ -23,7 +23,6 @@ class TaskDefinitionResource extends ActionResource
             'artifact_split_mode'   => $taskDefinition->artifact_split_mode,
             'timeout_after_seconds' => $taskDefinition->timeout_after_seconds,
             'task_run_count'        => $taskDefinition->task_run_count,
-            'task_agent_count'      => $taskDefinition->task_agent_count,
             'created_at'            => $taskDefinition->created_at,
             'updated_at'            => $taskDefinition->updated_at,
 

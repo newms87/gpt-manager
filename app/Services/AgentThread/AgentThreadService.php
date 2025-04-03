@@ -281,13 +281,6 @@ class AgentThreadService
 
         $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $corePrompt);
 
-        // Top Directives go before thread messages
-        foreach($agent->topDirectives()->get() as $topDirective) {
-            if ($topDirective->directive->directive_text) {
-                $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $topDirective->directive->directive_text);
-            }
-        }
-
         // AgentThread messages are inserted between the directives
         foreach($thread->messages()->get() as $message) {
             $formattedMessage = $apiFormatter->message($message);
@@ -299,14 +292,7 @@ class AgentThreadService
                 $messages[] = $formattedMessage;
             }
         }
-
-        // Bottom Directives go after thread messages
-        foreach($agent->bottomDirectives()->get() as $bottomDirective) {
-            if ($bottomDirective->directive->directive_text) {
-                $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $bottomDirective->directive->directive_text);
-            }
-        }
-
+        
         $responseMessage = $this->getResponseMessage($agentThreadRun);
 
         if ($responseMessage) {
