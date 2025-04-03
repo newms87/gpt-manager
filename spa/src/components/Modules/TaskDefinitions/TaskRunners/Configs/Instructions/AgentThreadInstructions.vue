@@ -19,8 +19,16 @@
 					<span>1. Choose Agent</span>
 					<div>
 						<HelpIcon class="w-4" />
-						<QTooltip>
-							Pick which LLM (like OpenAI 4o or Claude) will do the work. Set a temperature for creativity vs precision.
+						<QTooltip class="text-base">
+							<div class="max-w-xs">
+								Choose the language model that will process your task.
+								<ul class="list-disc ml-4 mt-2 text-slate-100">
+									<li><strong>OpenAI GPT-4o</strong> is powerful and precise.</li>
+									<li><strong>Claude</strong> is great for summarization and reasoning.</li>
+									<li><strong>Temperature</strong> controls randomness. Lower is more factual, higher is more creative.
+									</li>
+								</ul>
+							</div>
 						</QTooltip>
 					</div>
 				</div>
@@ -38,17 +46,23 @@
 					<div>
 						<HelpIcon class="w-4" />
 						<QTooltip class="text-base">
-							Use "Before" for instructions before the agent sees data. Use "After" for formatting or follow-ups.
+							<div class="max-w-sm">
+								<strong>Before Thread</strong> are instructions given to the agent <em>before</em> it sees the content.
+								Think of them as reading instructions: what to watch for, how to think, what to extract.
+								<br class="my-1" />
+								<strong>After Thread</strong> happens <em>after</em> reading—they tell the agent how to respond. You can
+								use this to format answers, enforce JSON output, or highlight which fields to include.
+							</div>
 						</QTooltip>
 					</div>
 				</div>
 
 				<div class="text-sm space-y-2">
 					<div class="bg-sky-900 border-l-4 border-sky-600 p-2 rounded">
-						📌 <strong>Before:</strong> "You're a legal assistant. Analyze and summarize the claim."
+						📌 <strong>Before:</strong> "You're a medical coder. Read carefully and identify relevant claim details."
 					</div>
 					<div class="bg-sky-900 border-l-4 border-sky-600 p-2 rounded">
-						📌 <strong>After:</strong> "Respond using JSON format per the schema."
+						📌 <strong>After:</strong> "Return structured JSON per the schema fields: patient, diagnosis, treatments."
 					</div>
 				</div>
 			</div>
@@ -61,8 +75,14 @@
 					<div>
 						<HelpIcon class="w-4" />
 						<QTooltip class="text-base">
-							Choose how the agent should reply: free text or a structured JSON format. You can also edit or create
-							schemas.
+							<div class="max-w-sm">
+								Choose how the agent should return its answer:
+								<ul class="list-disc ml-4 mt-1 text-slate-100">
+									<li><strong>Text:</strong> Freeform answer in the agent's own words.</li>
+									<li><strong>JSON Schema:</strong> Structured response, easy to parse and reuse.</li>
+								</ul>
+								<p class="mt-2">You can edit or create schemas to match exactly what fields you need.</p>
+							</div>
 						</QTooltip>
 					</div>
 				</div>
@@ -81,8 +101,16 @@
 					<div>
 						<HelpIcon class="w-4" />
 						<QTooltip class="text-base">
-							Choose 1+ schema fields for the agent to focus on. Each fragment = separate agent task. Results can be
-							merged later.
+							<div class="max-w-sm">
+								Use fragments to split your schema into smaller, focused groups of data points.
+								<ul class="list-disc ml-4 mt-2 text-slate-100">
+									<li>Each fragment is run as its own agent task.</li>
+									<li>Helps the agent stay focused and more accurate.</li>
+									<li>Ideal fragment size: <strong>3 to 8 related fields</strong>.</li>
+								</ul>
+								<p class="mt-2">Encouraged: break large schemas into multiple fragments to improve clarity and control
+									prompt behavior for each part.</p>
+							</div>
 						</QTooltip>
 					</div>
 				</div>
@@ -93,7 +121,7 @@
 						results.
 					</div>
 					<div class="bg-sky-900 border-l-4 border-sky-600 p-2 rounded">
-						📌 <strong>Pro Tip:</strong> One fragment per agent = more accurate and clean results.
+						📌 <strong>Pro Tip:</strong> Smaller, focused fragments = better output and more reusable results.
 					</div>
 				</div>
 			</div>
@@ -101,6 +129,7 @@
 		</div>
 	</div>
 </template>
+
 <script setup lang="ts">
 import {
 	FaSolidCircleQuestion as HelpIcon,
