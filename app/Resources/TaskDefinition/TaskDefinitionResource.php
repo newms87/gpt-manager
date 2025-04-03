@@ -46,6 +46,7 @@ class TaskDefinitionResource extends ActionResource
             'taskArtifactFiltersAsTarget' => true,
             'schemaDefinition'            => true,
             'schemaAssociations'          => true,
+            'taskDefinitionDirectives'    => true,
         ]);
     }
 }

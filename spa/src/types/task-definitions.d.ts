@@ -3,6 +3,7 @@ import {
 	Agent,
 	AgentThread,
 	Artifact,
+	PromptDirective,
 	SchemaAssociation,
 	SchemaDefinition,
 	SchemaFragment,
@@ -27,6 +28,14 @@ export interface TaskDefinition extends ActionTargetItem {
 	agent?: Agent;
 	schemaDefinition?: SchemaDefinition;
 	schemaAssociations?: SchemaAssociation[];
+	taskDefinitionDirectives?: TaskDefinitionDirective[];
+}
+
+export interface TaskDefinitionDirective extends ActionTargetItem {
+	id: string;
+	directive: PromptDirective;
+	position: number;
+	section: string;
 }
 
 export interface TaskArtifactFilter extends ActionTargetItem {

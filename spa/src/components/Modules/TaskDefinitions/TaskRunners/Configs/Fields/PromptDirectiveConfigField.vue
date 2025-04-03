@@ -13,7 +13,7 @@
 			size="sm"
 			:select-icon="DirectiveIcon"
 			:options="promptDirectives"
-			:loading="isRefreshingPromptDirectives || isRemoving"
+			:loading="isRefreshing || loading"
 			@create="createPromptDirectiveAction.trigger"
 			@update="input => updatePromptDirectiveAction.trigger(promptDirective, input)"
 			@delete="onDelete"
@@ -30,26 +30,21 @@
 
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
-import { dxAgent } from "@/components/Modules/Agents";
 import { dxPromptDirective } from "@/components/Modules/Prompts/Directives";
-import {
-	isRefreshingPromptDirectives,
-	loadPromptDirectives,
-	promptDirectives,
-	refreshPromptDirectives
-} from "@/components/Modules/Prompts/Directives/config/store";
 import { Agent, PromptDirective } from "@/types";
 import { FaSolidFileLines as DirectiveIcon } from "danx-icon";
 import { SelectionMenuField } from "quasar-ui-danx";
 import { ref } from "vue";
 
-const props = defineProps<{
-	agent: Agent;
-	isRemoving: boolean;
+const emit = defineEmits(["deleted"]);
+defineProps<{
+	loading: boolean;
 }>();
 
+const { loadItems, refreshItems, listItems: promptDirectives, isRefreshing } = dxPromptDirective.store;
+
 // Immediately load prompt directives
-loadPromptDirectives();
+loadItems();
 
 const promptDirective = defineModel<PromptDirective>();
 const isEditing = ref(false);
@@ -59,8 +54,8 @@ const updatePromptDirectiveAction = dxPromptDirective.getAction("update");
 const debouncedUpdatePromptDirectiveAction = dxPromptDirective.getAction("update", { debounce: 500 });
 const deletePromptDirectiveAction = dxPromptDirective.getAction("delete", {
 	onFinish: async () => {
-		await refreshPromptDirectives();
-		await dxAgent.routes.details(props.agent);
+		await refreshItems();
+		emit("deleted");
 	}
 });
 
@@ -71,7 +66,7 @@ async function onDelete(deletedAgent: Agent) {
 		if (promptDirective.value?.id === deletedAgent.id) {
 			promptDirective.value = null;
 		}
-		await loadPromptDirectives();
+		await loadItems();
 	}
 }
 </script>

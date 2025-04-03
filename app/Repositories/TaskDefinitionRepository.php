@@ -2,8 +2,10 @@
 
 namespace App\Repositories;
 
+use App\Models\Prompt\PromptDirective;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\TaskDefinition;
+use App\Models\Task\TaskDefinitionDirective;
 use App\Models\Task\TaskInput;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use Exception;
@@ -56,9 +58,11 @@ class TaskDefinitionRepository extends ActionRepository
             'update' => $this->updateTaskDefinition($model, $data),
             'copy' => $this->copyTaskDefinition($model),
             'add-fragment' => $this->addFragment($model, $data),
-            'add-agent' => $this->addAgent($model, $data),
             'add-input' => $this->addInput($model, $data),
             'remove-input' => $this->removeInput($model, $data),
+            'save-directive' => $this->saveDirective($model, $data['task_definition_directive_id'] ?? null, $data),
+            'update-directives' => $this->updateDirectives($model, $data['taskDefinitionDirectives'] ?? []),
+            'remove-directive' => $this->removeDirective($model, $data['id'] ?? null),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -150,6 +154,95 @@ class TaskDefinitionRepository extends ActionRepository
         }
 
         $taskInput->delete();
+
+        return true;
+    }
+
+
+    /**
+     * Add / Update a directive to a task definition
+     */
+    public function saveDirective(TaskDefinition $taskDefinition, $taskDefinitionDirectiveId, array $input): TaskDefinitionDirective
+    {
+        if ($taskDefinitionDirectiveId) {
+            $taskDefinitionDirective = $taskDefinition->taskDefinitionDirectives()->find($taskDefinitionDirectiveId);
+
+            if (!$taskDefinitionDirective) {
+                throw new ValidationError("Task Definition Directive with ID $taskDefinitionDirectiveId not found");
+            }
+        } else {
+            $taskDefinitionDirective = $taskDefinition->taskDefinitionDirectives()->make();
+        }
+
+        $promptDirectiveId = $input['prompt_directive_id'] ?? null;
+        $section           = $input['section'] ?? ($taskDefinitionDirective?->section ?: TaskDefinitionDirective::SECTION_TOP);
+        $position          = $input['position'] ?? ($taskDefinitionDirective?->position ?: 0);
+        $name              = $input['name'] ?? '';
+
+        // Resolve or create the prompt directive
+        if ($promptDirectiveId) {
+            $promptDirective = PromptDirective::where('team_id', team()->id)->find($promptDirectiveId);
+            if (!$promptDirective) {
+                throw new ValidationError('Prompt Directive not found: ' . $promptDirectiveId);
+            }
+        } else {
+            // Lookup the prompt directive by name to see if there is a matching directive
+            $promptDirective                 = PromptDirective::where('name', $name)->first();
+            $existingTaskDefinitionDirective = null;
+
+            // If the prompt directive exists, maybe it already is associated to the agent?
+            if ($promptDirective) {
+                $existingTaskDefinitionDirective = $taskDefinition->taskDefinitionDirectives()->where('prompt_directive_id', $promptDirective->id)->first();
+            }
+
+            // If there was no matching prompt directive or the prompt directive has already been associated to the task definition, just create a new one as the user requested
+            if (!$promptDirective || $existingTaskDefinitionDirective) {
+                $promptDirective = PromptDirective::make([
+                    'team_id' => team()->id,
+                    'name'    => $name,
+                ]);
+
+                $promptDirective->name = ModelHelper::getNextModelName($promptDirective);
+                $promptDirective->save();
+            }
+        }
+
+        $taskDefinitionDirective->fill([
+            'prompt_directive_id' => $promptDirective->id,
+            'section'             => $section,
+            'position'            => $position,
+        ])->save();
+
+        return $taskDefinitionDirective;
+    }
+
+    /**
+     * Update the order of directives in a task definition
+     */
+    public function updateDirectives(TaskDefinition $taskDefinition, $taskDefinitionDirectives): bool
+    {
+        foreach($taskDefinitionDirectives as $position => $directive) {
+            $taskDefinitionDirective = $taskDefinition->taskDefinitionDirectives()->find($directive['id']);
+
+            if (!$taskDefinitionDirective) {
+                throw new ValidationError("TaskDefinitionDirective with ID $directive[id] not found");
+            }
+
+            $taskDefinitionDirective->update([
+                'section'  => $directive['section'],
+                'position' => $position,
+            ]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Remove a directive from a task definition
+     */
+    public function removeDirective(TaskDefinition $taskDefinition, $directiveId): bool
+    {
+        $taskDefinition->taskDefinitionDirectives()->where('prompt_directive_id', $directiveId)->delete();
 
         return true;
     }
