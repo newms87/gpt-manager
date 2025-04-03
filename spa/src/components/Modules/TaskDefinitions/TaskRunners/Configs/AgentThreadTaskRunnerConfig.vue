@@ -1,6 +1,7 @@
 <template>
 	<BaseTaskRunnerConfig :task-definition="taskDefinition">
 		<QSeparator class="bg-slate-400 my-4" />
+		<AgentThreadInstructions />
 		<AgentConfigField
 			class="mt-8"
 			:new-agent-name="`${taskDefinition.name} Agent`"
@@ -21,6 +22,7 @@ import { TaskDefinition } from "@/types";
 import { storeObject } from "quasar-ui-danx";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
 import { AgentConfigField, SchemaAndFragmentsConfigField, TaskDefinitionDirectivesConfigField } from "./Fields";
+import { AgentThreadInstructions } from "./Instructions";
 
 const props = defineProps<{
 	taskDefinition: TaskDefinition;
