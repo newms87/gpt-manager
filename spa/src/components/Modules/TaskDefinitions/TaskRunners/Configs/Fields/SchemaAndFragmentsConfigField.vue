@@ -8,7 +8,7 @@
 			hide-save-state
 			button-color="bg-sky-900 text-sky-200"
 			:model-value="taskDefinition.schemaDefinition"
-			:fragment="maxFragments === 1 ? taskDefinition.schemaAssociations[0].fragment : null"
+			:fragment="(maxFragments === 1 && taskDefinition.schemaAssociations?.length > 0) ? taskDefinition.schemaAssociations[0].fragment : null"
 			:loading="taskDefinition.isSaving"
 			@update:model-value="onChangeSchema"
 			@update:fragment="fragment => onUpdateFragment(fragment)"
