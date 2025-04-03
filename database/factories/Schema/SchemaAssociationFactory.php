@@ -6,6 +6,7 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Models\Task\TaskDefinition;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 
 class SchemaAssociationFactory extends Factory
 {
@@ -25,6 +26,15 @@ class SchemaAssociationFactory extends Factory
         return $this->state([
             'schema_definition_id' => $schema instanceof SchemaDefinition ? $schema : SchemaDefinition::factory()->create(['schema' => $schema]),
             'schema_fragment_id'   => $fragment instanceof SchemaFragment ? $fragment : SchemaFragment::factory()->create(['fragment_selector' => $fragment]),
+        ]);
+    }
+
+    public function withObject(Model $model, $category = '')
+    {
+        return $this->state([
+            'object_type' => $model::class,
+            'object_id'   => $model->getKey(),
+            'category'    => $category,
         ]);
     }
 }

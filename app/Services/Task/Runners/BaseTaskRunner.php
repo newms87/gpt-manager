@@ -24,6 +24,11 @@ class BaseTaskRunner implements TaskRunnerContract
     protected ?TaskRun     $taskRun;
     protected ?TaskProcess $taskProcess;
 
+    public static function make(): static
+    {
+        return app(static::class);
+    }
+
     public function isTrigger(): bool
     {
         return static::IS_TRIGGER;

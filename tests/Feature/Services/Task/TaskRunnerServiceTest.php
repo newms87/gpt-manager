@@ -3,9 +3,11 @@
 namespace Tests\Feature\Services\Task;
 
 use App\Models\Agent\Agent;
+use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Services\Task\TaskRunnerService;
+use Illuminate\Database\Eloquent\Builder;
 use Tests\AuthenticatedTestCase;
 
 class TaskRunnerServiceTest extends AuthenticatedTestCase
@@ -25,15 +27,12 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $this->assertEquals(1, $taskRun->process_count, 'TaskRun should have a process count of 1');
     }
 
-    public function test_prepareTaskRun_createsTaskRunWithOneProcessForEachAgent(): void
+    public function test_prepareTaskRun_createsTaskRunWithOneProcessForEachSchemaAssociation(): void
     {
         // Given
-        $agentA         = Agent::factory()->create();
-        $agentB         = Agent::factory()->create();
-        $taskDefinition = TaskDefinition::factory()
-            ->withDefinitionAgent(['agent_id' => $agentA])
-            ->withDefinitionAgent(['agent_id' => $agentB])
-            ->create();
+        $taskDefinition = TaskDefinition::factory()->create();
+        $schemaB        = SchemaAssociation::factory()->withObject($taskDefinition, 'output')->create();
+        $schemaA        = SchemaAssociation::factory()->withObject($taskDefinition, 'output')->create();
 
         // When
         $taskRun = TaskRunnerService::prepare($taskDefinition);
@@ -41,22 +40,21 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         // Then
         $taskRun->refresh();
         $this->assertNotNull($taskRun, 'TaskRun should be created');
-        $this->assertCount(2, $taskRun->taskProcesses, 'TaskRun should have 2 processes: 1 for each agent');
+        $this->assertCount(2, $taskRun->taskProcesses, 'TaskRun should have 2 processes: 1 for each schema association');
         $this->assertEquals(2, $taskRun->process_count, 'The process_count should reflect the 2 processes created');
 
-        $processes = $taskRun->taskProcesses;
-        $processA  = $processes->filter(fn($process) => $process->taskDefinitionAgent->agent_id === $agentA->id)->first();
-        $processB  = $processes->filter(fn($process) => $process->taskDefinitionAgent->agent_id === $agentB->id)->first();
+        $taskProcessSchemaAExists = $taskRun->taskProcesses()->whereHas('outputSchemaAssociation', fn(Builder $builder) => $builder->where('schema_fragment_id', $schemaA->schema_fragment_id))->exists();
+        $taskProcessSchemaBExists = $taskRun->taskProcesses()->whereHas('outputSchemaAssociation', fn(Builder $builder) => $builder->where('schema_fragment_id', $schemaB->schema_fragment_id))->exists();
 
-        $this->assertNotNull($processA, 'Process A should have been found matching agent A');
-        $this->assertNotNull($processB, 'Process B should have been found matching agent B');
+        $this->assertTrue($taskProcessSchemaAExists, 'A Task Process should have been found with schema association A');
+        $this->assertTrue($taskProcessSchemaBExists, 'A Task Process should have been found with schema association B');
     }
 
     public function test_prepareTaskRun_withArtifacts_createsOneProcessForAllArtifacts(): void
     {
         // Given
         $agentA         = Agent::factory()->create();
-        $taskDefinition = TaskDefinition::factory()->withDefinitionAgent(['agent_id' => $agentA])->create();
+        $taskDefinition = TaskDefinition::factory()->create();
         $artifacts      = Artifact::factory()->count(2)->create();
 
         // When
@@ -72,15 +70,12 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $this->assertEquals(2, $process->inputArtifacts()->count(), 'Process should have 2 input artifacts');
     }
 
-    public function test_prepareTaskRun_withArtifactsAndMultipleAgents_createsAProcessWithAllArtifactsForEachAgent(): void
+    public function test_prepareTaskRun_withArtifactsAndMultipleSchemaAssociations_createsAProcessWithAllArtifactsForEachSchemaAssociation(): void
     {
         // Given
-        $agentA         = Agent::factory()->create();
-        $agentB         = Agent::factory()->create();
-        $taskDefinition = TaskDefinition::factory()
-            ->withDefinitionAgent(['agent_id' => $agentA])
-            ->withDefinitionAgent(['agent_id' => $agentB])
-            ->create();
+        $taskDefinition = TaskDefinition::factory()->create();
+        $schemaA        = SchemaAssociation::factory()->withObject($taskDefinition)->create();
+        $schemaB        = SchemaAssociation::factory()->withObject($taskDefinition)->create();
         $artifacts      = Artifact::factory()->count(2)->create();
 
         // When
@@ -92,9 +87,10 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $this->assertCount(2, $taskRun->taskProcesses, 'TaskRun should have 2 processes: 1 for each agent');
 
         $processes = $taskRun->taskProcesses;
-        $processA  = $processes->filter(fn($process) => $process->taskDefinitionAgent->agent_id === $agentA->id)->first();
-        $processB  = $processes->filter(fn($process) => $process->taskDefinitionAgent->agent_id === $agentB->id)->first();
+        $processA  = $processes->filter(fn($process) => $process->outputSchemaAssociation->schema_fragment_id === $schemaA->schema_fragment_id)->first();
+        $processB  = $processes->filter(fn($process) => $process->outputSchemaAssociation->schema_fragment_id === $schemaB->schema_fragment_id)->first();
 
+        $this->assertNotEquals($processA->id, $processB->id, 'Processes should be different');
         $this->assertEquals(2, $processA->inputArtifacts()->count(), 'Process A should have 2 input artifacts');
         $this->assertEquals(2, $processB->inputArtifacts()->count(), 'Process B should have 2 input artifacts');
     }
@@ -156,7 +152,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
     public function test_continue_whenRunningAgentThread_completedTaskHasOutputArtifact(): void
     {
         // Given
-        $taskDefinition = TaskDefinition::factory()->withDefinitionAgent()->create();
+        $taskDefinition = TaskDefinition::factory()->create();
         $taskRun        = TaskRunnerService::prepare($taskDefinition);
         $taskProcess    = $taskRun->taskProcesses->first();
 

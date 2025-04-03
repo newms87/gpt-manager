@@ -38,11 +38,11 @@ class TaskProcessRunnerService
 
         // Associate an identical schema association to the task process
         if ($schemaAssociation) {
-            $schemaAssociation->replicate()->fill([
+            $schemaAssociation->replicate()->forceFill([
                 'object_id'   => $taskProcess->id,
                 'object_type' => TaskProcess::class,
                 'category'    => 'output',
-            ]);
+            ])->save();
         }
 
         if ($artifacts->isNotEmpty()) {

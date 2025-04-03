@@ -1,10 +1,9 @@
 <?php
 
-namespace Feature\Services\Task\Runners;
+namespace Tests\Feature\Services\Task\Runners;
 
-use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThreadRun;
-use App\Models\Task\TaskDefinitionAgent;
+use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\TaskProcess;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use Tests\AuthenticatedTestCase;
@@ -16,10 +15,10 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
     public function test_run_withEmptyThread_agentResponds(): void
     {
         // Given
-        $taskProcess = TaskProcess::factory()->forTaskDefinitionAgent()->create();
+        $taskProcess = TaskProcess::factory()->withAgent()->create();
 
         // When
-        AgentThreadTaskRunner::make($taskProcess->taskRun, $taskProcess)->run();
+        AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
 
         // Then
         $taskProcess->refresh();
@@ -32,12 +31,10 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
     {
         // Given
         $artifactContent = 'hello world';
-        $taskProcess     = TaskProcess::factory()->withInputArtifacts(['text_content' => $artifactContent])->forTaskDefinitionAgent([
-            'include_text' => true,
-        ])->create();
+        $taskProcess     = TaskProcess::factory()->withAgent()->withInputArtifacts(['text_content' => $artifactContent])->create();
 
         // When
-        AgentThreadTaskRunner::make($taskProcess->taskRun, $taskProcess)->run();
+        AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
 
         // Then
         $taskProcess->refresh();
@@ -47,41 +44,9 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $this->assertEquals($artifactContent, $messages->first()->content, 'First message should be the artifact content');
     }
 
-    public function test_setupAgentThread_withDefinitionAgentInputFragment_threadHasFilteredInputData(): void
-    {
-        // Given
-        $artifactAttributes = [
-            'text_content' => 'nothing',
-            'json_content' => [
-                'name'  => 'John Doe',
-                'email' => 'john@doe.com',
-            ],
-        ];
-
-        $fragmentSelector = [
-            'type'     => 'object',
-            'children' => [
-                'email' => ['type' => 'string'],
-            ],
-        ];
-
-        $taskDefinitionAgent = TaskDefinitionAgent::factory()->withInputSchema([], $fragmentSelector)->create(['include_data' => true]);
-        $taskProcess         = TaskProcess::factory()->withInputArtifacts($artifactAttributes)->create(['task_definition_agent_id' => $taskDefinitionAgent]);
-
-        // When
-        AgentThreadTaskRunner::make($taskProcess->taskRun, $taskProcess)->run();
-
-        // Then
-        $taskProcess->refresh();
-        $messages = $taskProcess->agentThread?->messages ?? [];
-        $this->assertCount(2, $messages, 'AgentThread should be 2 messages: the artifact and the agent response');
-        $this->assertEquals(['json_content' => ['email' => $artifactAttributes['json_content']['email']]], $messages->first()->getJsonContent(), 'First message should be the artifact content');
-    }
-
     public function test_setupAgentThread_withDefinitionAgentOutputFragment_completeApiCallHasFilteredStructuredOutput(): void
     {
         // Given
-        $agent                  = Agent::factory()->create();
         $outputSchema           = [
             'type'       => 'object',
             'properties' => [
@@ -97,8 +62,10 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
                 'dob'   => ['type' => 'string'],
             ],
         ];
-        $taskDefinitionAgent    = TaskDefinitionAgent::factory()->withOutputSchema($outputSchema, $outputFragmentSelector)->create(['agent_id' => $agent]);
-        $taskProcess            = TaskProcess::factory()->create(['task_definition_agent_id' => $taskDefinitionAgent]);
+        $taskProcess            = TaskProcess::factory()->withAgent()->create();
+        $schemaAssociation      = SchemaAssociation::factory()->withObject($taskProcess, 'output')->withSchema($outputSchema, $outputFragmentSelector)->create();
+        $taskProcess->taskRun->taskDefinition->schemaDefinition()->associate($schemaAssociation->schemaDefinition)->save();
+
 
         // Then
         $this->partialMock(TestAiApi::class)
@@ -112,6 +79,6 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
             })->andReturn(new TestAiCompletionResponse());
 
         // When
-        AgentThreadTaskRunner::make($taskProcess->taskRun, $taskProcess)->run();
+        AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
     }
 }

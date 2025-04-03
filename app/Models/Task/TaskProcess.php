@@ -27,7 +27,6 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
     protected $fillable = [
         'name',
-        'task_definition_agent_id',
         'started_at',
         'stopped_at',
         'completed_at',
