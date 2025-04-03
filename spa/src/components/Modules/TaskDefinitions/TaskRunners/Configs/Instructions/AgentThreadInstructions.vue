@@ -1,95 +1,112 @@
 <template>
-	<div class="mt-8 bg-slate-800 rounded-xl shadow-md p-6">
-		<div class="flex-x gap-2 mb-4">
-			<span class="text-green-400">🧠</span>
-			<h1 class="text-xl font-semibold">Configure an Agent Thread Task</h1>
+	<div class="mt-8 bg-slate-800 rounded-xl shadow-lg p-6">
+		<div class="flex gap-2 items-center mb-6">
+			<span class="text-green-400 text-2xl">🧠</span>
+			<h1 class="text-2xl font-bold text-white">Configure Agent Thread Task</h1>
 		</div>
 
-		<p class="mb-4 text-sm text-slate-400">
-			This task lets you run an agent (LLM) with instructions and structure to generate smart, useful output based on
-			your data. Here's how:
+		<p class="mb-6 text-sm text-slate-300">
+			Guide the agent to produce smart output using structured steps. Everything flows from left to right — just follow
+			the path!
 		</p>
 
-		<div class="flex flex-col gap-8 text-slate-400">
+		<div class="flex gap-10 justify-between text-slate-200">
 
-			<!-- Step 1 -->
-			<div>
-				<strong>1. Choose an Agent</strong>:
-				<p class="mt-2 text-sm">
-					Select which LLM (like OpenAI 4o, Claude, etc.) will run this task.
-					<QTooltip>Each model has its own strengths — choose faster, cheaper models for light tasks or more powerful
-						ones like GPT-4o for deep analysis.
-					</QTooltip>
+			<!-- Step 1: Agent -->
+			<div class="flex-1 min-w-[250px]">
+				<div class="flex items-center gap-2 mb-2 text-sky-300 font-semibold text-lg">
+					<AgentIcon class="w-5 text-sky-500" />
+					<span>1. Choose Agent</span>
+					<div>
+						<HelpIcon class="w-4" />
+						<QTooltip>
+							Pick which LLM (like OpenAI 4o or Claude) will do the work. Set a temperature for creativity vs precision.
+						</QTooltip>
+					</div>
+				</div>
+
+				<p class="text-sm text-slate-400 mb-2">
+					🧪 <strong>Example:</strong> Use GPT-4o + temperature <code>0.3</code> for analytical tasks.
 				</p>
+			</div>
 
-				<div class="mt-3 bg-slate-900 text-cyan-400 rounded p-3 text-xs">
-					⚙️ <strong>Example:</strong> Pick <em>OpenAI GPT-4o</em> with <code>temperature = 0.3</code> for creative but
-					controlled responses.
+			<!-- Step 2: Directives -->
+			<div class="flex-1 min-w-[250px]">
+				<div class="flex items-center gap-2 mb-2 text-sky-300 font-semibold text-lg">
+					<DirectiveIcon class="w-5 text-sky-500" />
+					<span>2. Add Directives</span>
+					<div>
+						<HelpIcon class="w-4" />
+						<QTooltip class="text-base">
+							Use "Before" for instructions before the agent sees data. Use "After" for formatting or follow-ups.
+						</QTooltip>
+					</div>
+				</div>
+
+				<div class="text-sm space-y-2">
+					<div class="bg-sky-900 border-l-4 border-sky-600 p-2 rounded">
+						📌 <strong>Before:</strong> "You're a legal assistant. Analyze and summarize the claim."
+					</div>
+					<div class="bg-sky-900 border-l-4 border-sky-600 p-2 rounded">
+						📌 <strong>After:</strong> "Respond using JSON format per the schema."
+					</div>
 				</div>
 			</div>
 
-			<!-- Step 2 -->
-			<div>
-				<strong>2. Add Directives</strong>:
-				<p class="mt-2 text-sm">
-					Give instructions to the agent before or after it sees the main content.
-					<QTooltip>Use <strong>Before Thread</strong> for setup instructions, and <strong>After Thread</strong> for
-						follow-up or format-specific guidance.
-					</QTooltip>
-				</p>
-
-				<div class="grid grid-cols-1 gap-4 mt-3">
-					<div class="bg-sky-900 border-l-4 border-sky-500 p-3 text-sm">
-						<p>📌 <strong>Before Thread Example:</strong> "You are a medical claim expert. Extract details carefully."
-						</p>
-					</div>
-					<div class="bg-sky-900 border-l-4 border-sky-500 p-3 text-sm">
-						<p>📌 <strong>After Thread Example:</strong> "Respond only in JSON format, following the schema fields."</p>
+			<!-- Step 3: Schema + Fragments -->
+			<div class="flex-1 min-w-[250px]">
+				<div class="flex items-center gap-2 mb-2 text-sky-300 font-semibold text-lg">
+					<SchemaIcon class="w-5 text-sky-500" />
+					<span>3. Output Schema</span>
+					<div>
+						<HelpIcon class="w-4" />
+						<QTooltip class="text-base">
+							Choose how the agent should reply: free text or a structured JSON format. You can also edit or create
+							schemas.
+						</QTooltip>
 					</div>
 				</div>
-			</div>
 
-			<!-- Step 3 -->
-			<div>
-				<strong>3. Define Output Schema & Fragments</strong>:
-				<p class="mt-2 text-sm">
-					Choose how the agent should respond: free text or structured data using a <strong>JSON Schema</strong>.
-					<QTooltip>If you want to structure the output into clean fields (like a database), use a schema. Otherwise,
-						leave it as text.
-					</QTooltip>
-				</p>
-
-				<div class="mt-3 bg-slate-900 text-sky-400 rounded p-3 text-xs overflow-x-auto">
+				<div class="bg-slate-900 text-sky-400 rounded p-3 text-xs overflow-x-auto mb-3">
 					{
 					"patient_name": "John Doe",
 					"diagnosis": "Hypertension",
-					"prescriptions": ["Lisinopril", "Amlodipine"]
+					"prescriptions": ["Lisinopril"]
 					}
 				</div>
 
-				<p class="mt-4 text-sm">
-					You can refine this even further using <strong>Fragments</strong>.
-					<QTooltip>Fragments are parts of the schema you want the agent to focus on separately. Each fragment creates
-						its own request, letting the agent go deeper on one part at a time.
-					</QTooltip>
-				</p>
-
-				<div class="grid grid-cols-1 gap-4 mt-3">
-					<div class="bg-sky-900 border-l-4 border-sky-500 p-3 text-sm">
-						<p>📌 <strong>Example 1:</strong> Selecting fragments <code>Referrals</code> and <code>Prescriptions</code>
-							will create two separate agent runs.</p>
-					</div>
-					<div class="bg-sky-900 border-l-4 border-sky-500 p-3 text-sm">
-						<p>📌 <strong>Example 2:</strong> Use a full schema for one unified response if you don't need to split it.
-						</p>
+				<div class="flex items-center gap-2 mb-2 text-sky-300 font-semibold text-lg">
+					<FragmentIcon class="w-5 text-sky-500" />
+					<span>Fragments</span>
+					<div>
+						<HelpIcon class="w-4" />
+						<QTooltip class="text-base">
+							Choose 1+ schema fields for the agent to focus on. Each fragment = separate agent task. Results can be
+							merged later.
+						</QTooltip>
 					</div>
 				</div>
 
-				<p class="mt-4 text-sm">
-					You can also <strong>create or update schemas</strong> right here as needed.
-					<QTooltip>Click the pencil ✏️ icon next to a schema or fragment to edit the structure or fields.</QTooltip>
-				</p>
+				<div class="text-sm space-y-2">
+					<div class="bg-sky-900 border-l-4 border-sky-600 p-2 rounded">
+						📌 <strong>Example:</strong> Select <code>Referrals</code> and <code>Prescriptions</code> to get focused
+						results.
+					</div>
+					<div class="bg-sky-900 border-l-4 border-sky-600 p-2 rounded">
+						📌 <strong>Pro Tip:</strong> One fragment per agent = more accurate and clean results.
+					</div>
+				</div>
 			</div>
+
 		</div>
 	</div>
 </template>
+<script setup lang="ts">
+import {
+	FaSolidCircleQuestion as HelpIcon,
+	FaSolidDatabase as SchemaIcon,
+	FaSolidFile as DirectiveIcon,
+	FaSolidPuzzlePiece as FragmentIcon,
+	FaSolidRobot as AgentIcon
+} from "danx-icon";
+</script>
