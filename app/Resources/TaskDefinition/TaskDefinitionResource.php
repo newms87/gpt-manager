@@ -34,6 +34,7 @@ class TaskDefinitionResource extends ActionResource
             'taskArtifactFiltersAsSource' => fn($fields) => TaskArtifactFilterResource::collection($taskDefinition->taskArtifactFiltersAsSource, $fields),
             'schemaDefinition'            => fn($fields) => SchemaDefinitionResource::make($taskDefinition->schemaDefinition, $fields),
             'schemaAssociations'          => fn($fields) => SchemaAssociationResource::collection($taskDefinition->schemaAssociations, $fields),
+            'taskDefinitionDirectives'    => fn($fields) => TaskDefinitionDirectiveResource::collection($taskDefinition->taskDefinitionDirectives, $fields),
         ];
     }
 

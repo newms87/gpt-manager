@@ -90,7 +90,7 @@
 <script setup lang="ts">
 import { dxAgent } from "@/components/Modules/Agents";
 import { SelectableAgentPromptDirectiveCard } from "@/components/Modules/Agents/Fields";
-import { refreshPromptDirectives } from "@/components/Modules/Agents/Fields/directivesStore";
+import { refreshPromptDirectives } from "@/components/Modules/Prompts/Directives/config/store";
 import { Agent } from "@/types";
 import { ActionButton, ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed, ref } from "vue";

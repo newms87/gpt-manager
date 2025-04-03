@@ -1,6 +1,7 @@
 <template>
 	<BaseTaskRunnerConfig :task-definition="taskDefinition">
-		<AgentConfig
+		<AgentConfigWidget
+			class="mt-8"
 			:new-agent-name="`${taskDefinition.name} Agent`"
 			:model-value="taskDefinition.agent"
 			@update:model-value="setAgent"
@@ -10,7 +11,7 @@
 <script setup lang="ts">
 import { availableAgents } from "@/components/Modules/Agents/store";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
-import AgentConfig from "@/components/Modules/TaskDefinitions/TaskRunners/Configs/AgentConfig";
+import AgentConfigWidget from "@/components/Modules/TaskDefinitions/TaskRunners/Configs/Widgets/AgentConfigWidget";
 import { TaskDefinition } from "@/types";
 import { storeObject } from "quasar-ui-danx";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";

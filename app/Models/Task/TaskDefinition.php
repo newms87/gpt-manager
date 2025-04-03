@@ -70,6 +70,11 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         return $this->morphMany(SchemaAssociation::class, 'object');
     }
 
+    public function taskDefinitionDirectives(): HasMany|TaskDefinitionDirective
+    {
+        return $this->hasMany(TaskDefinitionDirective::class);
+    }
+
     public function taskInputs(): HasMany|TaskInput
     {
         return $this->hasMany(TaskInput::class);

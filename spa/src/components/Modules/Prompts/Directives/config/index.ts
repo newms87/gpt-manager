@@ -6,6 +6,7 @@ import { controls } from "./controls";
 import { filters } from "./filters";
 import { panels } from "./panels";
 import { routes } from "./routes";
+import { store } from "./store";
 
 export const dxPromptDirective = {
 	...controls,
@@ -15,5 +16,6 @@ export const dxPromptDirective = {
 	columns,
 	filters,
 	panels,
-	routes
+	routes,
+	store
 } as DanxController<PromptDirective>;
