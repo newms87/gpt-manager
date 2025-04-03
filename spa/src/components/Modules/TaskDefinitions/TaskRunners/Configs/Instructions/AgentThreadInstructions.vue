@@ -1,16 +1,15 @@
 <template>
 	<div class="mt-8 bg-slate-800 rounded-xl shadow-lg p-6">
-		<div class="flex gap-2 items-center mb-6">
+		<div class="flex-x gap-2 mb-6">
 			<span class="text-green-400 text-2xl">🧠</span>
 			<h1 class="text-2xl font-bold text-white">Configure Agent Thread Task</h1>
+			<p class="text-sm text-slate-300">
+				Configure the agent and provide directives to guide its behavior. Use Schemas and Fragments if you would like
+				JSON structured output.
+			</p>
 		</div>
 
-		<p class="mb-6 text-sm text-slate-300">
-			Guide the agent to produce smart output using structured steps. Everything flows from left to right — just follow
-			the path!
-		</p>
-
-		<div class="flex gap-10 justify-between text-slate-200">
+		<div class="flex gap-16 justify-between text-slate-200">
 
 			<!-- Step 1: Agent -->
 			<div class="flex-1 min-w-[250px]">
