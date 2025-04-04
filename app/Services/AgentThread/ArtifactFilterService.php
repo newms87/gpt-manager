@@ -105,12 +105,16 @@ class ArtifactFilterService
     {
         $textContent = $this->artifact->text_content;
 
-        if ($this->includePageNumbers && $this->artifact->storedFiles) {
+        if ($this->includePageNumbers) {
             $pageNumbers = [];
             foreach($this->artifact->storedFiles as $file) {
                 if ($file->page_number) {
                     $pageNumbers[$file->page_number] = $file->page_number;
                 }
+            }
+
+            if (!$pageNumbers && $this->artifact->position) {
+                $pageNumbers[] = $this->artifact->position;
             }
 
             if ($pageNumbers) {

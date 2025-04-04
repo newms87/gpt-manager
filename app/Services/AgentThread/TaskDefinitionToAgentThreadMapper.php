@@ -95,6 +95,7 @@ class TaskDefinitionToAgentThreadMapper
 
         foreach($this->artifacts as $artifact) {
             $filteredMessage = $this->artifactFilterService->setArtifact($artifact)->filter();
+
             if ($filteredMessage) {
                 app(ThreadRepository::class)->addMessageToThread($agentThread, $filteredMessage);
                 static::log("\tAdded artifact " . $artifact->id);

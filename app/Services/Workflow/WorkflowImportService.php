@@ -13,11 +13,14 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Models\Task\TaskArtifactFilter;
 use App\Models\Task\TaskDefinition;
+use App\Models\Task\TaskDefinitionDirective;
 use App\Models\Workflow\WorkflowConnection;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Exceptions\ValidationError;
+use Throwable;
 
 class WorkflowImportService
 {
@@ -97,17 +100,18 @@ class WorkflowImportService
 
         // This defines the correct order to import so the relationships are resolved correctly
         $importClasses = [
-            PromptDirective::class      => ['is_team' => true],
-            Agent::class                => ['is_team' => true],
-            SchemaDefinition::class     => ['is_team' => true],
-            SchemaFragment::class       => [],
-            TaskDefinition::class       => ['is_team' => true],
-            TaskArtifactFilter::class   => [],
-            SchemaAssociation::class    => [],
-            AgentPromptDirective::class => [],
-            WorkflowDefinition::class   => ['is_team' => true],
-            WorkflowNode::class         => [],
-            WorkflowConnection::class   => [],
+            PromptDirective::class         => ['is_team' => true],
+            Agent::class                   => ['is_team' => true],
+            SchemaDefinition::class        => ['is_team' => true],
+            SchemaFragment::class          => [],
+            TaskDefinition::class          => ['is_team' => true],
+            TaskDefinitionDirective::class => [],
+            TaskArtifactFilter::class      => [],
+            SchemaAssociation::class       => [],
+            AgentPromptDirective::class    => [],
+            WorkflowDefinition::class      => ['is_team' => true],
+            WorkflowNode::class            => [],
+            WorkflowConnection::class      => [],
         ];
 
         foreach($importClasses as $objectType => $config) {
@@ -135,53 +139,62 @@ class WorkflowImportService
     protected function importResource(string $objectType, array $config, array $definitions): void
     {
         foreach($definitions as $sourceId => $definition) {
-            $isTeam = !empty($config['is_team']);
+            try {
+                $this->importResourceDefinition($objectType, $config, $sourceId, $definition);
+            } catch(Throwable $e) {
+                throw new Exception("Failed to import $objectType: $sourceId - " . $e->getMessage(), 0, $e);
+            }
+        }
+    }
 
-            $resourcePackageImport = $this->resolveImport($objectType, $sourceId);
-            $localObject           = $resourcePackageImport->getLocalObject();
+    protected function importResourceDefinition(string $objectType, array $config, $sourceId, array $definition): void
+    {
+        $isTeam = !empty($config['is_team']);
 
-            if (!$localObject) {
-                $localObject = (new $objectType);
+        $resourcePackageImport = $this->resolveImport($objectType, $sourceId);
+        $localObject           = $resourcePackageImport->getLocalObject();
 
-                if ($isTeam) {
-                    $localObject->team_id = team()->id;
-                }
+        if (!$localObject) {
+            $localObject = (new $objectType);
 
-                $localObject->resource_package_import_id = $resourcePackageImport->id;
+            if ($isTeam) {
+                $localObject->team_id = team()->id;
             }
 
-            foreach($definition as $key => $value) {
-                // First check if the value is a reference to another object
-                // (ie: The value is in the form "App\\Models\\Workflow\\WorkflowDefinition::3")
-                if ($value && is_string($value)) {
-                    $parts = explode(':', $value);
-                    if (count($parts) === 2) {
-                        $relationObjectType = $parts[0];
-                        $relationSourceId   = $parts[1];
-                        $mappedId           = $this->importedIdMap[$relationObjectType][$relationSourceId] ?? null;
+            $localObject->resource_package_import_id = $resourcePackageImport->id;
+        }
 
-                        // resolve the mapped ID instead of using the original value
-                        if ($mappedId) {
-                            $value = $mappedId;
-                        }
+        foreach($definition as $key => $value) {
+            // First check if the value is a reference to another object
+            // (ie: The value is in the form "App\\Models\\Workflow\\WorkflowDefinition::3")
+            if ($value && is_string($value)) {
+                $parts = explode(':', $value);
+                if (count($parts) === 2) {
+                    $relationObjectType = $parts[0];
+                    $relationSourceId   = $parts[1];
+                    $mappedId           = $this->importedIdMap[$relationObjectType][$relationSourceId] ?? null;
+
+                    // resolve the mapped ID instead of using the original value
+                    if ($mappedId) {
+                        $value = $mappedId;
                     }
                 }
-
-                if ($key === 'name') {
-                    $value .= ' (' . $this->versionName . ')';
-                }
-
-                $localObject->$key = $value;
             }
 
-            $localObject->save();
-            $this->importedIdMap[$objectType][$sourceId] = $localObject->id;
+            if ($key === 'name') {
+                $value .= ' (' . $this->versionName . ')';
+            }
 
-            // Update the resource package import record with the local object ID so we can track future imports / updates
-            $resourcePackageImport->local_object_id             = $localObject->id;
-            $resourcePackageImport->resource_package_version_id = $this->resourcePackageVersion->id;
-            $resourcePackageImport->save();
+            $localObject->$key = $value;
         }
+
+        $localObject->save();
+        $this->importedIdMap[$objectType][$sourceId] = $localObject->id;
+
+        // Update the resource package import record with the local object ID so we can track future imports / updates
+        $resourcePackageImport->local_object_id             = $localObject->id;
+        $resourcePackageImport->resource_package_version_id = $this->resourcePackageVersion->id;
+        $resourcePackageImport->save();
     }
 
     /**
