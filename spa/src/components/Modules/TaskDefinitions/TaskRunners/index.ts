@@ -11,6 +11,7 @@ import {
 import {
 	AgentThreadTaskRunnerConfig,
 	BaseTaskRunnerConfig,
+	CategorizeArtifactsTaskRunnerConfig,
 	ImageToTextTranscoderTaskRunnerConfig,
 	PagesOrganizerTaskRunnerConfig,
 	RunWorkflowTaskRunnerConfig,
@@ -41,6 +42,11 @@ export const TaskRunners = {
 		lottie: null,
 		node: BaseTaskRunnerNode,
 		config: BaseTaskRunnerConfig
+	},
+	"Categorize Artifacts": {
+		lottie: PageOrganizerLottie,
+		node: PageOrganizerTaskRunnerNode,
+		config: CategorizeArtifactsTaskRunnerConfig
 	},
 	"Image To Text Transcoder": {
 		lottie: ImageToTextLottie,

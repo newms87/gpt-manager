@@ -42,6 +42,8 @@ class TaskDefinitionRepository extends ActionRepository
             ];
         }
 
+        usort($runners, fn($a, $b) => $a['label'] <=> $b['label']);
+
         return [
             'runners' => $runners,
         ];

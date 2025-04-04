@@ -37,7 +37,6 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
     {
         parent::prepareProcess();
 
-
         $this->activity('Preparing to categorize artifacts' . ($this->sequentialMode ? ' in sequential mode' : ''), 5);
     }
 
@@ -68,7 +67,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         $schema           = $this->createCategorySchema();
         $categoryArtifact = $this->runAgentThreadWithSchema($agentThread, $schema);
 
-        $category = $categoryArtifact->json_content['__category'] ?? null;
+        $category = $categoryArtifact->json_content['category'] ?? null;
 
         if (!$category) {
             throw new ValidationError('No category provided by the agent');
@@ -91,7 +90,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
      */
     protected function isSequentialMode(): bool
     {
-        return $this->taskRun->taskDefinition->task_runner_config['sequential_mode'] ?? false;
+        return $this->taskRun->taskDefinition->task_runner_config['sequential_mode'] ?? true;
     }
 
     /**

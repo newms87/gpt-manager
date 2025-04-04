@@ -17,6 +17,8 @@ class JsonSchemaService
     protected bool $usePropertyMeta = false;
     /** @var bool  Make sure each object includes the name property */
     protected bool $requireName = false;
+    /** @var bool  Automatically add null types for property values (except for id / name of objects) */
+    protected bool $includeNullValues = false;
     /** @var bool Include a meta.name field in the output to label the artifact */
     protected bool $useArtifactMeta = false;
 
@@ -43,11 +45,12 @@ class JsonSchemaService
     public function getConfig(): array
     {
         return [
-            'useId'           => $this->useId,
-            'requireName'     => $this->requireName,
-            'useCitations'    => $this->useCitations,
-            'usePropertyMeta' => $this->usePropertyMeta,
-            'useArtifactMeta' => $this->useArtifactMeta,
+            'useId'             => $this->useId,
+            'requireName'       => $this->requireName,
+            'includeNullValues' => $this->includeNullValues,
+            'useCitations'      => $this->useCitations,
+            'usePropertyMeta'   => $this->usePropertyMeta,
+            'useArtifactMeta'   => $this->useArtifactMeta,
         ];
     }
 
@@ -55,11 +58,12 @@ class JsonSchemaService
     {
         $config = $config ?: [];
 
-        $this->useId           = $config['useId'] ?? $this->useId;
-        $this->requireName     = $config['requireName'] ?? $this->requireName;
-        $this->useCitations    = $config['useCitations'] ?? $this->useCitations;
-        $this->usePropertyMeta = $config['usePropertyMeta'] ?? $this->usePropertyMeta;
-        $this->useArtifactMeta = $config['useArtifactMeta'] ?? $this->useArtifactMeta;
+        $this->useId             = $config['useId'] ?? $this->useId;
+        $this->requireName       = $config['requireName'] ?? $this->requireName;
+        $this->includeNullValues = $config['includeNullValues'] ?? $this->includeNullValues;
+        $this->useCitations      = $config['useCitations'] ?? $this->useCitations;
+        $this->usePropertyMeta   = $config['usePropertyMeta'] ?? $this->usePropertyMeta;
+        $this->useArtifactMeta   = $config['useArtifactMeta'] ?? $this->useArtifactMeta;
 
         return $this;
     }
@@ -89,6 +93,13 @@ class JsonSchemaService
     public function requireName(bool $require = true): self
     {
         $this->requireName = $require;
+
+        return $this;
+    }
+
+    public function includeNullValues(bool $include = true): self
+    {
+        $this->includeNullValues = $include;
 
         return $this;
     }
@@ -434,7 +445,7 @@ class JsonSchemaService
         // The type should always be allowed to be null except when it is a required field
         $typeList = $type;
 
-        if ($allowNull && !$hasNull) {
+        if ($allowNull && !$hasNull && $this->includeNullValues) {
             if (!is_array($typeList)) {
                 $typeList = [$typeList];
             }

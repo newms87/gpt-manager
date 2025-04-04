@@ -129,7 +129,7 @@ class ArtifactFilterService
     public function getFilteredData(): ?array
     {
         if ($this->fragmentSelector) {
-            return (new JsonSchemaService)->useId()->filterDataByFragmentSelector($this->artifact->json_content ?? [], $this->fragmentSelector);
+            return app(JsonSchemaService::class)->useId()->filterDataByFragmentSelector($this->artifact->json_content ?? [], $this->fragmentSelector);
         }
 
         return $this->artifact->json_content;

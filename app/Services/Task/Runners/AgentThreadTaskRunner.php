@@ -55,7 +55,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         }
 
         // The default agent thread task runner will use the JsonSchemaService with the database fields (ie: id and name) so we are enabling database I/O
-        $jsonSchemaService = app(JsonSchemaService::class)->useArtifactMeta();
+        $jsonSchemaService = app(JsonSchemaService::class)->useArtifactMeta()->includeNullValues();
 
         $this->activity("Communicating with AI agent in thread", 11);
         $artifact = $this->runAgentThreadWithSchema($agentThread, $schemaDefinition, $schemaAssociation?->schemaFragment, $jsonSchemaService);

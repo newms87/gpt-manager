@@ -8,6 +8,7 @@ use App\Api\OpenAi\OpenAiApi;
 use App\Api\PerplexityAi\PerplexityAiApi;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use App\Services\Task\Runners\BaseTaskRunner;
+use App\Services\Task\Runners\CategorizeArtifactsTaskRunner;
 use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
 use App\Services\Task\Runners\LoadFromDatabaseTaskRunner;
 use App\Services\Task\Runners\MergeArtifactsTaskRunner;
@@ -103,14 +104,15 @@ return [
     'runners'       => [
         AgentThreadTaskRunner::RUNNER_NAME                 => AgentThreadTaskRunner::class,
         BaseTaskRunner::RUNNER_NAME                        => BaseTaskRunner::class,
+        CategorizeArtifactsTaskRunner::RUNNER_NAME         => CategorizeArtifactsTaskRunner::class,
         ImageToTextTranscoderTaskRunner::RUNNER_NAME       => ImageToTextTranscoderTaskRunner::class,
         LoadFromDatabaseTaskRunner::RUNNER_NAME            => LoadFromDatabaseTaskRunner::class,
         MergeArtifactsTaskRunner::RUNNER_NAME              => MergeArtifactsTaskRunner::class,
         PageOrganizerTaskRunner::RUNNER_NAME               => PageOrganizerTaskRunner::class,
         RunWorkflowTaskRunner::RUNNER_NAME                 => RunWorkflowTaskRunner::class,
         SaveToDatabaseTaskRunner::RUNNER_NAME              => SaveToDatabaseTaskRunner::class,
-        SplitByFileTaskRunner::RUNNER_NAME                 => SplitByFileTaskRunner::class,
         SplitArtifactsByJsonContentTaskRunner::RUNNER_NAME => SplitArtifactsByJsonContentTaskRunner::class,
+        SplitByFileTaskRunner::RUNNER_NAME                 => SplitByFileTaskRunner::class,
         WorkflowInputTaskRunner::RUNNER_NAME               => WorkflowInputTaskRunner::class,
     ],
     'tools'         => [

@@ -179,7 +179,20 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
 
     public static function booted()
     {
+        static::saving(function (TaskDefinition $taskDefinition) {
+            if ($taskDefinition->isDirty('task_runner_class')) {
+                $taskDefinition->task_runner_config   = null;
+                $taskDefinition->schema_definition_id = null;
+            }
+        });
+
         static::saved(function (TaskDefinition $taskDefinition) {
+            if ($taskDefinition->wasChanged('task_runner_class')) {
+                foreach($taskDefinition->taskDefinitionDirectives as $taskDefinitionDirective) {
+                    $taskDefinitionDirective->delete();
+                }
+            }
+            
             if ($taskDefinition->wasChanged('schema_definition_id')) {
                 foreach($taskDefinition->schemaAssociations as $schemaAssociation) {
                     if ($schemaAssociation->schema_definition_id != $taskDefinition->schema_definition_id) {
