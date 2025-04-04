@@ -21,6 +21,8 @@ class TaskDefinitionToAgentThreadMapper
     protected array|Collection|EloquentCollection $artifacts             = [];
     protected ?ArtifactFilterService              $artifactFilterService = null;
 
+    protected array $messages = [];
+
     public function setArtifactFilterService(ArtifactFilterService $artifactFilterService): static
     {
         $this->artifactFilterService = $artifactFilterService;
@@ -42,6 +44,13 @@ class TaskDefinitionToAgentThreadMapper
         return $this;
     }
 
+    public function addMessage(string $message): static
+    {
+        $this->messages[] = $message;
+
+        return $this;
+    }
+
 
     public function map(): AgentThread
     {
@@ -58,6 +67,7 @@ class TaskDefinitionToAgentThreadMapper
 
         $this->addDirectives($agentThread, $this->taskDefinition->beforeThreadDirectives()->get());
         $this->addArtifacts($agentThread);
+        $this->appendMessages();
         $this->addDirectives($agentThread, $this->taskDefinition->afterThreadDirectives()->get());
 
         return $agentThread;
@@ -92,6 +102,17 @@ class TaskDefinitionToAgentThreadMapper
             } else {
                 static::log("\tSkipped artifact (was empty) " . $artifact->id);
             }
+        }
+    }
+
+    /**
+     * Adds the messages to the thread
+     */
+    protected function appendMessages(AgentThread $agentThread): void
+    {
+        static::log("\tAdding " . count($this->messages) . " messages to thread");
+        foreach($this->messages as $message) {
+            app(ThreadRepository::class)->addMessageToThread($agentThread, $message);
         }
     }
 }

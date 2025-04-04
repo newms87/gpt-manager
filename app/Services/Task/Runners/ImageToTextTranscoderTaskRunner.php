@@ -6,6 +6,7 @@ use App\Api\ImageToText\ImageToTextOcrApi;
 use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\ArtifactFilterService;
+use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -104,14 +105,15 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         if (!$agent) {
             throw new Exception(static::class . ": Agent not found for TaskProcess: $this->taskProcess");
         }
-
-        $agentThread = app(ThreadRepository::class)->create($agent, "$taskDefinition->name: $agent->name");
-
+        
         $this->activity("Setup agent thread with Stored File $file->id" . ($file->page_number ? " (page: $file->page_number)" : ''), 15);
 
         // Add the OCR transcode text to the thread
-        $ocrPrompt = "OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ";
-        app(ThreadRepository::class)->addMessageToThread($agentThread, $ocrPrompt . $ocrTranscodedFile->getContents());
+        $ocrPrompt   = "OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ";
+        $agentThread = app(TaskDefinitionToAgentThreadMapper::class)
+            ->setTaskDefinition($this->taskRun->taskDefinition)
+            ->addMessage($ocrPrompt . $ocrTranscodedFile->getContents())
+            ->map();
 
         // Add the input artifacts to the thread
         $artifactFilter = (new ArtifactFilterService())
