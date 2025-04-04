@@ -1,6 +1,7 @@
 import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
 import {
 	Agent,
+	AgentResponseFormat,
 	AgentThread,
 	Artifact,
 	PromptDirective,
@@ -19,6 +20,7 @@ export interface TaskDefinition extends ActionTargetItem {
 	task_runner_class: string;
 	task_runner_config?: AnyObject;
 	artifact_split_mode: ArtifactSplitMode;
+	response_format: AgentResponseFormat;
 	timeout_after_seconds: number;
 	task_run_count: number;
 	task_agent_count: number;

@@ -40,7 +40,9 @@ export interface AgentThreadMessage extends ActionTargetItem {
 }
 
 export interface AgentThreadResponseFormat {
-	format: "text" | "json_schema";
+	format: AgentResponseFormat;
 	schema?: SchemaDefinition;
 	fragment?: SchemaFragment;
 }
+
+export type AgentResponseFormat = "text" | "json_schema";

@@ -10,7 +10,7 @@
 			:model-value="taskDefinition.schemaDefinition"
 			:fragment="(maxFragments === 1 && taskDefinition.schemaAssociations?.length > 0) ? taskDefinition.schemaAssociations[0].fragment : null"
 			:loading="taskDefinition.isSaving"
-			:hide-default-header="taskDefinition.response_format === 'text'"
+			:hide-default-header="isTextResponse"
 			@update:model-value="onChangeSchema"
 			@update:fragment="fragment => onUpdateFragment(fragment)"
 		>
@@ -20,6 +20,7 @@
 					dense
 					class="tab-buttons border-sky-900"
 					indicator-color="sky-900"
+					@update:model-value="response_format => updateTaskDefinitionAction.trigger(taskDefinition, { response_format })"
 				>
 					<QTab name="text" label="Text" />
 					<QTab name="json_schema" label="JSON Schema" />
@@ -27,7 +28,7 @@
 			</template>
 		</SchemaEditorToolbox>
 
-		<ListTransition v-if="maxFragments > 1" class="space-y-4 mt-4">
+		<ListTransition v-if="maxFragments > 1 && !isTextResponse" class="space-y-4 mt-4">
 			<div
 				v-for="schemaAssociation in taskDefinition.schemaAssociations"
 				:key="schemaAssociation.id"
@@ -83,6 +84,7 @@ const props = withDefaults(defineProps<{
 	maxFragments: 20
 });
 
+const isTextResponse = computed(() => props.taskDefinition.response_format === "text");
 const fragmentCount = computed(() => props.taskDefinition.schemaAssociations?.length || 0);
 const isFragmentLimitReached = computed(() => fragmentCount.value >= props.maxFragments);
 const updateTaskDefinitionAction = dxTaskDefinition.getAction("update");
