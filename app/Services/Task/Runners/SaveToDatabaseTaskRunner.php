@@ -28,12 +28,19 @@ class SaveToDatabaseTaskRunner extends BaseTaskRunner
                 ->setSchemaDefinition($inputArtifact->schemaDefinition)
                 ->saveTeamObjectUsingSchema($inputArtifact->schemaDefinition->schema ?? [], $jsonContent, $threadRun);
 
-            $outputArtifacts[] = Artifact::create([
+            $outputArtifact = Artifact::create([
                 'name'                 => $inputArtifact->name . ' (saved to DB)',
                 'json_content'         => $jsonContent,
+                'text_content'         => $inputArtifact->text_content,
                 'meta'                 => $inputArtifact->meta,
                 'schema_definition_id' => $inputArtifact->schema_definition_id,
             ]);
+
+            if ($inputArtifact->storedFiles) {
+                $outputArtifact->storedFiles()->sync($inputArtifact->storedFiles->pluck('id'));
+            }
+
+            $outputArtifacts[] = $outputArtifact;
         }
 
         $this->complete($outputArtifacts);
