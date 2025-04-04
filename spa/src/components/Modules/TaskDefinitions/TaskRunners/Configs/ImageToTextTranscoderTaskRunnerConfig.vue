@@ -1,14 +1,13 @@
 <template>
 	<BaseTaskRunnerConfig :task-definition="taskDefinition">
-		<SplitArtifactsByJsonContentInstructions />
-		<SchemaAndFragmentsConfigField :task-definition="taskDefinition" class="p-4" :max-fragments="1" force-schema />
+		<TaskDefinitionAgentConfigField :task-definition="taskDefinition" />
+		<TaskDefinitionDirectivesConfigField :task-definition="taskDefinition" class="mt-6" />
 	</BaseTaskRunnerConfig>
 </template>
 <script setup lang="ts">
 import { TaskDefinition } from "@/types";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
-import { SchemaAndFragmentsConfigField } from "./Fields";
-import { SplitArtifactsByJsonContentInstructions } from "./Instructions";
+import { TaskDefinitionAgentConfigField, TaskDefinitionDirectivesConfigField } from "./Fields";
 
 defineProps<{
 	taskDefinition: TaskDefinition;

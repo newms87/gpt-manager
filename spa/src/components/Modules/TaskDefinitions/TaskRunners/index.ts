@@ -11,6 +11,8 @@ import {
 import {
 	AgentThreadTaskRunnerConfig,
 	BaseTaskRunnerConfig,
+	ImageToTextTranscoderTaskRunnerConfig,
+	PagesOrganizerTaskRunnerConfig,
 	RunWorkflowTaskRunnerConfig,
 	SplitArtifactsByJsonContentTaskRunnerConfig
 } from "./Configs";
@@ -43,7 +45,7 @@ export const TaskRunners = {
 	"Image To Text Transcoder": {
 		lottie: ImageToTextLottie,
 		node: ImageToTextTaskRunnerNode,
-		config: AgentThreadTaskRunnerConfig
+		config: ImageToTextTranscoderTaskRunnerConfig
 	},
 	"Load From Database": {
 		lottie: LoadFromDbLottie,
@@ -53,7 +55,7 @@ export const TaskRunners = {
 	"Pages Organizer": {
 		lottie: PageOrganizerLottie,
 		node: PageOrganizerTaskRunnerNode,
-		config: AgentThreadTaskRunnerConfig
+		config: PagesOrganizerTaskRunnerConfig
 	},
 	"Run Workflow": {
 		lottie: RunWorkflowLottie,

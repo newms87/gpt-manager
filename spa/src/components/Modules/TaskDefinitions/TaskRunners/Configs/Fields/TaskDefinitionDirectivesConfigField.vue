@@ -1,5 +1,6 @@
 <template>
-	<div class="task-definition-directives-config-field space-y-4">
+	<div class="task-definition-directives-config-field space-y-4 bg-sky-950 p-3 rounded">
+		<div class="font-bold text-base">Directives</div>
 		<ActionButton
 			type="create"
 			color="green"

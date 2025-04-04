@@ -10,12 +10,13 @@
 			:model-value="taskDefinition.schemaDefinition"
 			:fragment="(maxFragments === 1 && taskDefinition.schemaAssociations?.length > 0) ? taskDefinition.schemaAssociations[0].fragment : null"
 			:loading="taskDefinition.isSaving"
-			:hide-default-header="isTextResponse"
+			:hide-default-header="!forceSchema && isTextResponse"
 			@update:model-value="onChangeSchema"
 			@update:fragment="fragment => onUpdateFragment(fragment)"
 		>
 			<template #header-start>
 				<QTabs
+					v-if="!forceSchema"
 					:model-value="taskDefinition.response_format"
 					dense
 					class="tab-buttons border-sky-900"
@@ -75,15 +76,21 @@ import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociat
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { SchemaAssociation, SchemaDefinition, SchemaFragment, TaskDefinition } from "@/types";
 import { ActionButton, ListTransition } from "quasar-ui-danx";
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 
 const props = withDefaults(defineProps<{
 	taskDefinition: TaskDefinition;
 	maxFragments?: number;
+	forceSchema?: boolean;
 }>(), {
 	maxFragments: 20
 });
 
+onMounted(() => {
+	if (props.forceSchema && isTextResponse.value) {
+		updateTaskDefinitionAction.trigger(props.taskDefinition, { response_format: "json_schema" });
+	}
+});
 const isTextResponse = computed(() => props.taskDefinition.response_format === "text");
 const fragmentCount = computed(() => props.taskDefinition.schemaAssociations?.length || 0);
 const isFragmentLimitReached = computed(() => fragmentCount.value >= props.maxFragments);
