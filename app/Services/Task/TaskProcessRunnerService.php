@@ -265,15 +265,17 @@ class TaskProcessRunnerService
 
         try {
             // Check if all other processes are completed in this taskRun
-            $allOtherProcessesCompleted = $taskProcess->taskRun->taskProcesses()
-                ->where('status', '!=' . WorkflowStatesContract::STATUS_COMPLETED)
+            $incompleteProcessesCount = $taskProcess->taskRun->taskProcesses()
+                ->where('status', '!=', WorkflowStatesContract::STATUS_COMPLETED)
                 ->where('id', '!=', $taskProcess->id)
-                ->doesntExist();
+                ->count();
 
             // After all processes have completed running, call the afterAllProcessesCompleted method to perform any
             // final operations on the batch of all task processes
-            if ($allOtherProcessesCompleted) {
+            if ($incompleteProcessesCount === 0) {
                 $taskProcess->getRunner()->afterAllProcessesCompleted();
+            } else {
+                static::log("Not all task processes have completed, skipping afterAllProcessesCompleted");
             }
         } finally {
             LockHelper::release($taskProcess->taskRun);

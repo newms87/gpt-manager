@@ -4,7 +4,8 @@ namespace App\Services\Task\Runners;
 
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
-use Newms87\Danx\Exceptions\ValidationError;
+use App\Services\Task\TaskProcessRunnerService;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * The runner processes all artifacts and applies category classification based on the user's prompt.
@@ -14,8 +15,8 @@ use Newms87\Danx\Exceptions\ValidationError;
  * - After all task processes finish:
  *   - Artifacts with the `__exclude` category will be removed from the final output.
  *   - Artifacts will be sorted based on their `position` field.
- *   - Any artifact categorized as `__previous` will inherit the category of the artifact immediately before it in the
- *   sorted list.
+ *   - Any artifact categorized as `__unknown` will attempt to be matched with other artifact categories that were
+ *   identified before and after artifact in the sequence sorted list.
  * - The final list of artifacts (after filtering and sorting) will be set as the output.
  */
 class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
@@ -24,7 +25,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
 
     // Special category constants
     const string
-        CATEGORY_USE_PREVIOUS = '__previous',
+        CATEGORY_UNKNOWN = '__unknown',
         CATEGORY_EXCLUDE = '__exclude';
 
     // Flag to enable sequential mode
@@ -67,20 +68,12 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         $schema           = $this->createCategorySchema();
         $categoryArtifact = $this->runAgentThreadWithSchema($agentThread, $schema);
 
-        $category = $categoryArtifact->json_content['category'] ?? null;
-
-        if (!$category) {
-            throw new ValidationError('No category provided by the agent');
-        }
-
-        foreach($inputArtifacts as $artifact) {
-            $this->applyCategory($artifact, $category);
-        }
+        $this->applyCategories($categoryArtifact->json_content['categories'] ?? [], $inputArtifacts);
 
         $this->activity('Categorization complete', 95);
 
         // Complete the task with the input artifacts
-        // Note: The final processing of artifacts (sorting, applying __previous, etc.)
+        // Note: The final processing of artifacts (sorting, category matching, etc.)
         // will be done when all task processes are complete
         $this->complete($inputArtifacts);
     }
@@ -96,13 +89,32 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
     /**
      * Apply the category to the artifact's JSON content
      */
-    protected function applyCategory(Artifact $artifact, string $category): void
+    protected function applyCategories(array $categoryList, Collection $artifacts): void
     {
-        // Add the category to the artifact's JSON content
-        $jsonContent               = $artifact->json_content ?? [];
-        $jsonContent['__category'] = $category;
-        $artifact->json_content    = $jsonContent;
-        $artifact->save();
+        foreach($categoryList as $categoryItem) {
+            $category = $categoryItem['category'] ?? self::CATEGORY_UNKNOWN;
+
+            // If any part of the category name has the unknown flag, the whole category is unknown
+            if (str_contains($category, self::CATEGORY_UNKNOWN)) {
+                $category = self::CATEGORY_UNKNOWN;
+            }
+
+            $pages = $categoryItem['pages'] ?? [];
+
+            foreach($pages as $page) {
+                // Find the artifact with the given page number
+                /** @var Artifact|null $artifact */
+                $artifact = $artifacts->firstWhere('position', $page);
+
+                if ($artifact) {
+                    // Add the category to the artifact's JSON content
+                    $jsonContent               = $artifact->json_content ?? [];
+                    $jsonContent['__category'] = $category;
+                    $artifact->json_content    = $jsonContent;
+                    $artifact->save();
+                }
+            }
+        }
     }
 
     /**
@@ -112,34 +124,45 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
     {
         // Build the category description based on available categories
         $categoryDescription = "Classify the artifact by choosing the most appropriate category. " .
-            "In addition to user-defined categories, you may also use the following options:\n\n";
+            "In addition to user-defined categories, you may also use the following options:\n\n" .
+            "* " . self::CATEGORY_UNKNOWN . ": Use this if you're not 100% confident about the category.\n" .
+            "* " . self::CATEGORY_EXCLUDE . ": Use this to exclude the artifact entirely from the output if the user has requested artifacts to be excluded under certain conditions.";
 
-        if ($this->isSequentialMode()) {
-            $categoryDescription .= "* " . self::CATEGORY_USE_PREVIOUS . ": Use this if you're not 100% confident about the category, and the artifact seems to continue or relate to the previous one (e.g., part of a series or sequential pages).\n";
-        }
-
-        $categoryDescription .= "* " . self::CATEGORY_EXCLUDE . ": Use this to exclude the artifact entirely from the output.";
+        $pagesDescription = "List the page numbers given in the artifact that belong to the category. If you are 100% confident that the artifact belongs to the category, add the page number of the artifact to this list.";
 
         return SchemaDefinition::make([
             'name'   => 'Category',
             'schema' => [
                 'type'       => 'object',
                 'properties' => [
-                    'category' => [
-                        'type'        => 'string',
-                        'description' => $categoryDescription,
+                    'categories' => [
+                        'type'  => 'array',
+                        'items' => [
+                            'type'       => 'object',
+                            'properties' => [
+                                'category' => [
+                                    'type'        => 'string',
+                                    'description' => $categoryDescription,
+                                ],
+                                'pages'    => [
+                                    'type'        => 'array',
+                                    'description' => $pagesDescription,
+                                    'items'       => ['type' => 'number'],
+                                ],
+                            ],
+                            'required'   => ['category', 'pages'],
+                        ],
                     ],
                 ],
-                'required'   => ['category'],
             ],
         ]);
     }
 
     /**
      * Process the final list of artifacts after all task processes are complete
-     * - Remove artifacts with __exclude category
-     * - Sort artifacts by position
-     * - Apply __previous category
+     * 1. Sort artifacts by position
+     * 2. Remove artifacts with __exclude category
+     * 3. Perform category matching
      */
     public function afterAllProcessesCompleted(): void
     {
@@ -152,14 +175,14 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         static::log("Sorting artifacts by position");
         $finalOutputArtifacts = $finalOutputArtifacts->sort(fn(Artifact $a, Artifact $b) => $a->position <=> $b->position);
 
-        // 2. Apply __previous category if the task is in sequential mode
-        if ($this->isSequentialMode()) {
-            $this->applySequentialCategories($finalOutputArtifacts);
-        }
-
-        // 3. Exclude artifacts with __exclude category
+        // 2. Exclude artifacts with __exclude category
         static::log("Excluding artifacts with __exclude category");
         $finalOutputArtifacts = $finalOutputArtifacts->filter(fn(Artifact $outputArtifact) => $outputArtifact->json_content['__category'] ?? null !== self::CATEGORY_EXCLUDE);
+
+        // 2. Attempt category matching if the task is in sequential mode
+        if ($this->isSequentialMode()) {
+            $this->matchSequentialCategories($finalOutputArtifacts);
+        }
 
         // Update the task run's output artifacts
         $this->taskRun->outputArtifacts()->sync($finalOutputArtifacts->pluck('id'));
@@ -169,34 +192,63 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Replace any artifacts with the __previous category with the category of the preceding artifact in sequential mode
+     * Collect sequential artifacts with the __unknown category and the previous and next resolved category into a group
+     * And attempt to match the unknown categorized artifacts to a category based on its sequence in the group
+     * @param Artifact[] $artifacts
      */
-    protected function applySequentialCategories($artifacts): void
+    protected function matchSequentialCategories($artifacts): void
     {
         static::log("Applying sequential categories to artifacts");
 
-        $lastCategory = null;
+        /** @var Artifact[][] $categoryGroups */
+        $categoryGroups = [];
+
+        $groupKey = '';
 
         foreach($artifacts as $artifact) {
             $category = $artifact->json_content['__category'] ?? null;
 
-            // If category is __previous
-            if ($category === self::CATEGORY_USE_PREVIOUS) {
-                // If there is no last category, something went wrong. The first artifact should always have a category set
-                if (!$lastCategory) {
-                    throw new ValidationError("No previous category found for artifact $artifact");
-                }
-
-                $jsonContent               = $artifact->json_content;
-                $jsonContent['__category'] = $lastCategory;
-                $artifact->json_content    = $jsonContent;
-                $artifact->save();
-
-                static::log("Applying category $lastCategory to $artifact");
+            // If category is unknown, add it to the current group to attempt to resolve with the previous and next known category
+            if ($category === self::CATEGORY_UNKNOWN) {
+                // Add the category
+                $categoryGroups[$groupKey][] = $artifact;
             } else {
-                // Store the last valid category
-                $lastCategory = $category;
+                // Add to the current group to see if previous artifacts belong to the same group
+                $categoryGroups[$groupKey][] = $artifact;
+
+                // Changing the group key to start a new group (or add to an existing group if it already had existed)
+                $groupKey = $category;
+
+                // Add to the next group to see if subsequent artifacts belong to the same group
+                $categoryGroups[$groupKey][] = $artifact;
             }
+        }
+
+        $groupsWithUnknowns = [];
+        foreach($categoryGroups as $categoryGroupArtifacts) {
+            foreach($categoryGroupArtifacts as $categoryGroupArtifact) {
+                if ($categoryGroupArtifact->json_content['__category'] ?? null === self::CATEGORY_UNKNOWN) {
+                    $groupsWithUnknowns[] = $categoryGroupArtifacts;
+                    break;
+                }
+            }
+        }
+
+        $this->dispatchCategoryGroups($groupsWithUnknowns);
+    }
+
+    private function dispatchCategoryGroups(array $categoryGroups): void
+    {
+        static::log("Dispatching " . count($categoryGroups) . " category groups for sequential matching");
+
+        $taskProcesses = [];
+        /** @var Artifact[] $categoryGroupArtifacts */
+        foreach($categoryGroups as $categoryGroupArtifacts) {
+            $taskProcesses[] = TaskProcessRunnerService::prepare($this->taskRun, null, $categoryGroupArtifacts);
+        }
+
+        foreach($taskProcesses as $taskProcess) {
+            TaskProcessRunnerService::dispatch($taskProcess);
         }
     }
 }

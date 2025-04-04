@@ -106,21 +106,7 @@ class ArtifactFilterService
         $textContent = $this->artifact->text_content;
 
         if ($this->includePageNumbers) {
-            $pageNumbers = [];
-            foreach($this->artifact->storedFiles as $file) {
-                if ($file->page_number) {
-                    $pageNumbers[$file->page_number] = $file->page_number;
-                }
-            }
-
-            if (!$pageNumbers && $this->artifact->position) {
-                $pageNumbers[] = $this->artifact->position;
-            }
-
-            if ($pageNumbers) {
-                sort($pageNumbers);
-                $textContent = "### Content for " . (count($pageNumbers) > 1 ? 'pages' : 'page') . ' ' . implode(', ', $pageNumbers) . "\n\n" . $textContent;
-            }
+            $textContent = "### Content for page " . ($this->artifact->position ?: "Unknown") . "\n\n" . $textContent;
         }
 
         return $textContent;
@@ -155,7 +141,7 @@ class ArtifactFilterService
         } else {
             $filteredArtifact->json_content = null;
         }
-
+        
         // Save all items on the artifact (before adding files, so we have an ID to associate to)
         $filteredArtifact->save();
 

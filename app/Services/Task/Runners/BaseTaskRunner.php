@@ -103,7 +103,9 @@ class BaseTaskRunner implements TaskRunnerContract
                 $artifactIds[] = $artifact->id;
 
                 $artifact->task_definition_id = $this->taskProcess->taskRun->task_definition_id;
-                $artifact->position           = $this->resolveArtifactPosition($artifact, $artifacts);
+                if (!$artifact->position) {
+                    $artifact->position = $this->resolveArtifactPosition($artifact, $artifacts);
+                }
                 $artifact->save();
             }
 

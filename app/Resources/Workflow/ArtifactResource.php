@@ -14,7 +14,7 @@ class ArtifactResource extends ActionResource
         return [
             'id'           => $artifact->id,
             'name'         => $artifact->name,
-            'group'        => $artifact->group,
+            'position'     => $artifact->position,
             'model'        => $artifact->model,
             'created_at'   => $artifact->created_at,
             'text_content' => fn() => $artifact->text_content,

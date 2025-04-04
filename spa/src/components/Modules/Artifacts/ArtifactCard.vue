@@ -3,6 +3,7 @@
 		<div class="flex-x mb-2 space-x-2 w-full max-w-full overflow-hidden">
 			<LabelPillWidget :label="`Artifact: ${artifact.id}`" color="sky" size="xs" class="flex-shrink-0" />
 			<LabelPillWidget :label="fDateTime(artifact.created_at)" color="blue" size="xs" class="flex-shrink-0" />
+			<LabelPillWidget :label="artifact.position" color="green" size="xs" class="flex-shrink-0" />
 			<div class="flex-grow min-w-0 overflow-hidden">{{ artifact.name }}</div>
 			<ShowHideButton
 				v-if="artifact.json_content"
@@ -73,15 +74,18 @@ import { computed, ref, watch } from "vue";
 const props = defineProps<{
 	artifact: Artifact,
 	show?: boolean;
+	showText?: boolean;
+	showJson?: boolean;
+	showFiles?: boolean;
 }>();
 
 const hasText = computed(() => !!props.artifact.text_content);
 const hasJson = computed(() => !!props.artifact.json_content);
 const hasFiles = computed(() => !!props.artifact.files?.length);
 const typeCount = computed(() => [hasText.value, hasJson.value, hasFiles.value].filter(Boolean).length);
-const isShowingText = ref(false);
-const isShowingJson = ref(false);
-const isShowingFiles = ref(false);
+const isShowingText = ref(props.showText);
+const isShowingJson = ref(props.showJson);
+const isShowingFiles = ref(props.showFiles);
 const isShowingAll = computed(() => (!hasJson.value || isShowingJson.value) && (!hasFiles.value || isShowingFiles.value) && (!hasText.value || isShowingText.value));
 function onToggleAll(state: boolean = null) {
 	state = state === null ? !isShowingAll.value : state;
@@ -91,4 +95,13 @@ function onToggleAll(state: boolean = null) {
 }
 
 watch(() => props.show, onToggleAll);
+watch(() => props.showText, (state) => {
+	isShowingText.value = state;
+});
+watch(() => props.showJson, (state) => {
+	isShowingJson.value = state;
+});
+watch(() => props.showFiles, (state) => {
+	isShowingFiles.value = state;
+});
 </script>
