@@ -3,6 +3,7 @@
 namespace App\Models\Task;
 
 use App\Models\Agent\Agent;
+use App\Models\Agent\AgentThreadRun;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Schema\SchemaAssociation;
@@ -32,6 +33,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         'description',
         'task_runner_class',
         'task_runner_config',
+        'response_format',
         'artifact_split_mode',
         'timeout_after_seconds',
         'schema_definition_id',
@@ -108,6 +110,16 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     public function workflowNodes(): HasMany|WorkflowNode
     {
         return $this->hasMany(WorkflowNode::class);
+    }
+
+    public function isJsonResponse(): bool
+    {
+        return $this->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA && $this->schema_definition_id;
+    }
+
+    public function isTextResponse(): bool
+    {
+        return !$this->isJsonResponse();
     }
 
     public function validate(): static

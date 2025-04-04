@@ -30,9 +30,9 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
     public function test_prepareTaskRun_createsTaskRunWithOneProcessForEachSchemaAssociation(): void
     {
         // Given
-        $taskDefinition = TaskDefinition::factory()->create();
-        $schemaB        = SchemaAssociation::factory()->withObject($taskDefinition, 'output')->create();
-        $schemaA        = SchemaAssociation::factory()->withObject($taskDefinition, 'output')->create();
+        $taskDefinition = TaskDefinition::factory()->withSchemaDefinition()->create();
+        $schemaB        = SchemaAssociation::factory()->withSchema($taskDefinition->schemaDefinition)->withObject($taskDefinition, 'output')->create();
+        $schemaA        = SchemaAssociation::factory()->withSchema($taskDefinition->schemaDefinition)->withObject($taskDefinition, 'output')->create();
 
         // When
         $taskRun = TaskRunnerService::prepare($taskDefinition);
@@ -73,9 +73,9 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
     public function test_prepareTaskRun_withArtifactsAndMultipleSchemaAssociations_createsAProcessWithAllArtifactsForEachSchemaAssociation(): void
     {
         // Given
-        $taskDefinition = TaskDefinition::factory()->create();
-        $schemaA        = SchemaAssociation::factory()->withObject($taskDefinition)->create();
-        $schemaB        = SchemaAssociation::factory()->withObject($taskDefinition)->create();
+        $taskDefinition = TaskDefinition::factory()->withSchemaDefinition()->create();
+        $schemaA        = SchemaAssociation::factory()->withSchema($taskDefinition->schemaDefinition)->withObject($taskDefinition)->create();
+        $schemaB        = SchemaAssociation::factory()->withSchema($taskDefinition->schemaDefinition)->withObject($taskDefinition)->create();
         $artifacts      = Artifact::factory()->count(2)->create();
 
         // When

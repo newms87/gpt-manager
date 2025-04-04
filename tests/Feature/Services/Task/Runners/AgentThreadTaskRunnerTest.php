@@ -98,7 +98,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $this->assertEquals($afterContent, $messages[2]->content, 'Third message should be the after directive content');
     }
 
-    public function test_setupAgentThread_withDefinitionAgentOutputFragment_completeApiCallHasFilteredStructuredOutput(): void
+    public function test_setupAgentThread_withOutputFragment_completeApiCallHasFilteredStructuredOutput(): void
     {
         // Given
         $outputSchema           = [

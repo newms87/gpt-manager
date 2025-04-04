@@ -61,7 +61,7 @@ class TaskRunnerService
         $schemaAssociations = $taskDefinition->schemaAssociations;
 
         // NOTE: If there are no schema associations assigned to the task definition, create an array w/ null entry as a convenience so the loop will create a single process with no schema
-        if ($schemaAssociations->isEmpty()) {
+        if ($taskDefinition->isTextResponse() || $schemaAssociations->isEmpty()) {
             $schemaAssociations = [null];
         }
 

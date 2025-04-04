@@ -6,13 +6,26 @@
 			previewable
 			editable
 			hide-save-state
-			button-color="bg-sky-900 text-sky-200"
+			button-color="bg-green-900 text-sky-200"
 			:model-value="taskDefinition.schemaDefinition"
 			:fragment="(maxFragments === 1 && taskDefinition.schemaAssociations?.length > 0) ? taskDefinition.schemaAssociations[0].fragment : null"
 			:loading="taskDefinition.isSaving"
+			:hide-default-header="taskDefinition.response_format === 'text'"
 			@update:model-value="onChangeSchema"
 			@update:fragment="fragment => onUpdateFragment(fragment)"
-		/>
+		>
+			<template #header-start>
+				<QTabs
+					:model-value="taskDefinition.response_format"
+					dense
+					class="tab-buttons border-sky-900"
+					indicator-color="sky-900"
+				>
+					<QTab name="text" label="Text" />
+					<QTab name="json_schema" label="JSON Schema" />
+				</QTabs>
+			</template>
+		</SchemaEditorToolbox>
 
 		<ListTransition v-if="maxFragments > 1" class="space-y-4 mt-4">
 			<div
@@ -34,7 +47,7 @@
 					previewable
 					editable
 					hide-save-state
-					button-color="bg-sky-900 text-sky-200"
+					button-color="bg-green-900 text-sky-200"
 					:model-value="taskDefinition.schemaDefinition"
 					:fragment="schemaAssociation.fragment"
 					:loading="schemaAssociation.isSaving"
