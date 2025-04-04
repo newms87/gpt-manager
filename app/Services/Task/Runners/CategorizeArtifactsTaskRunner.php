@@ -2,11 +2,9 @@
 
 namespace App\Services\Task\Runners;
 
-use App\Models\Agent\AgentThread;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
-use App\Repositories\ThreadRepository;
-use Illuminate\Support\Collection;
+use Newms87\Danx\Exceptions\ValidationError;
 
 /**
  * The runner processes all artifacts and applies category classification based on the user's prompt.
@@ -32,18 +30,13 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
     // Flag to enable sequential mode
     protected bool $sequentialMode = false;
 
-    // Store the last valid category for sequential mode
-    protected ?string $lastCategory = null;
-
-    // Store categorized artifacts by category
-    protected array $categorizedArtifacts = [];
-
+    /**
+     * Initial activity message and
+     */
     public function prepareProcess(): void
     {
         parent::prepareProcess();
 
-        // Check if sequential mode is enabled in the task definition config
-        $this->sequentialMode = $this->taskProcess->config['sequential_mode'] ?? false;
 
         $this->activity('Preparing to categorize artifacts' . ($this->sequentialMode ? ' in sequential mode' : ''), 5);
     }
@@ -56,11 +49,6 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         // Make sure to include page numbers in the agent thread so the agent can reference them
         $this->includePageNumbersInThread = true;
 
-        // Setup the agent thread
-        $agentThread = $this->setupAgentThread();
-
-        $this->activity('Using agent to categorize artifacts: ' . $agent->name, 10);
-
         // Get all input artifacts
         $inputArtifacts = $this->taskProcess->inputArtifacts;
         $totalArtifacts = $inputArtifacts->count();
@@ -72,101 +60,50 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
             return;
         }
 
-        $this->activity('Categorizing ' . $totalArtifacts . ' artifacts', 15);
+        // Setup the agent thread
+        $agentThread = $this->setupAgentThread();
 
-        // Process each artifact one by one
-        $percentPerArtifact = 80 / $totalArtifacts;
-        $currentPercent     = 15;
-        $outputArtifacts    = new Collection();
+        $this->activity("Using agent to categorize $totalArtifacts artifacts: " . $agent->name, 10);
 
-        foreach($inputArtifacts as $index => $artifact) {
-            $currentPercent += $percentPerArtifact;
-            $this->activity('Categorizing artifact ' . ($index + 1) . ' of ' . $totalArtifacts, $currentPercent);
+        $schema           = $this->createCategorySchema();
+        $categoryArtifact = $this->runAgentThreadWithSchema($agentThread, $schema);
 
-            // Process the artifact and get its category
-            $category = $this->categorizeArtifact($agentThread, $artifact);
+        $category = $categoryArtifact->json_content['__category'] ?? null;
 
-            // Handle the artifact based on its category
-            $processedArtifact = $this->processArtifactByCategory($artifact, $category);
+        if (!$category) {
+            throw new ValidationError('No category provided by the agent');
+        }
 
-            if ($processedArtifact) {
-                $outputArtifacts->push($processedArtifact);
-            }
+        foreach($inputArtifacts as $artifact) {
+            $this->applyCategory($artifact, $category);
         }
 
         $this->activity('Categorization complete', 95);
 
-        // Complete the task with all the categorized artifacts
-        $this->complete($outputArtifacts);
+        // Complete the task with the input artifacts
+        // Note: The final processing of artifacts (sorting, applying __previous, etc.)
+        // will be done when all task processes are complete
+        $this->complete($inputArtifacts);
     }
 
     /**
-     * Categorize a single artifact using the agent
+     * Check if the task is running in sequential mode
      */
-    protected function categorizeArtifact(AgentThread $agentThread, Artifact $artifact): string
+    protected function isSequentialMode(): bool
     {
-        $this->activity('Requesting category for artifact: ' . $artifact->name);
-
-        // Create a schema definition for the category response
-        $schemaDefinition = $this->createCategorySchema();
-
-        // Clone the agent thread for this specific artifact
-        $artifactThread = $this->cloneAgentThreadForArtifact($agentThread, $artifact);
-
-        // Run the agent with the schema to get the category
-        $outputArtifact = $this->runAgentThreadWithSchema($artifactThread, $schemaDefinition);
-
-        // If we didn't receive an artifact from the agent, use a default category
-        if (!$outputArtifact || empty($outputArtifact->json_content['category'])) {
-            $this->activity('Failed to get category from agent, using default');
-
-            return 'Uncategorized';
-        }
-
-        $category = $outputArtifact->json_content['category'];
-        $this->activity('Artifact categorized as: ' . $category);
-
-        return $category;
+        return $this->taskRun->taskDefinition->task_runner_config['sequential_mode'] ?? false;
     }
 
     /**
-     * Process an artifact based on its assigned category
+     * Apply the category to the artifact's JSON content
      */
-    protected function processArtifactByCategory(Artifact $artifact, string $category): ?Artifact
+    protected function applyCategory(Artifact $artifact, string $category): void
     {
-        // Handle special categories
-        if ($category === self::CATEGORY_EXCLUDE) {
-            $this->activity('Excluding artifact: ' . $artifact->name, null);
-
-            return null;
-        }
-
-        if ($category === self::CATEGORY_USE_PREVIOUS) {
-            if (!$this->sequentialMode) {
-                $this->activity('Use Previous category ignored - sequential mode not enabled', null);
-                $category = 'Uncategorized';
-            } elseif ($this->lastCategory === null) {
-                $this->activity('No previous category available, using Uncategorized', null);
-                $category = 'Uncategorized';
-            } else {
-                $this->activity('Using previous category: ' . $this->lastCategory, null);
-                $category = $this->lastCategory;
-            }
-        } else {
-            // Store this as the last valid category for Use Previous
-            $this->lastCategory = $category;
-        }
-
-        // Clone the artifact and update its category
-        $categorizedArtifact = $this->cloneArtifactWithCategory($artifact, $category);
-
-        // Store the artifact in our category mapping
-        if (!isset($this->categorizedArtifacts[$category])) {
-            $this->categorizedArtifacts[$category] = [];
-        }
-        $this->categorizedArtifacts[$category][] = $categorizedArtifact;
-
-        return $categorizedArtifact;
+        // Add the category to the artifact's JSON content
+        $jsonContent               = $artifact->json_content ?? [];
+        $jsonContent['__category'] = $category;
+        $artifact->json_content    = $jsonContent;
+        $artifact->save();
     }
 
     /**
@@ -178,7 +115,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         $categoryDescription = "Classify the artifact by choosing the most appropriate category. " .
             "In addition to user-defined categories, you may also use the following options:\n\n";
 
-        if ($this->sequentialMode) {
+        if ($this->isSequentialMode()) {
             $categoryDescription .= "* " . self::CATEGORY_USE_PREVIOUS . ": Use this if you're not 100% confident about the category, and the artifact seems to continue or relate to the previous one (e.g., part of a series or sequential pages).\n";
         }
 
@@ -200,57 +137,67 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Clone the agent thread for a specific artifact
+     * Process the final list of artifacts after all task processes are complete
+     * - Remove artifacts with __exclude category
+     * - Sort artifacts by position
+     * - Apply __previous category
      */
-    protected function cloneAgentThreadForArtifact(AgentThread $agentThread, Artifact $artifact): AgentThread
+    public function afterAllProcessesCompleted(): void
     {
-        // Clone the agent thread
-        $artifactThread     = clone $agentThread;
-        $artifactThread->id = null; // Ensure we get a new ID when saved
-        $artifactThread->save();
+        $this->activity('Processing final artifacts', 95);
 
-        // Add the artifact content to the thread
-        $message = "Please categorize the following artifact:\n\n";
-        $message .= "Artifact Name: {$artifact->name}\n";
-        $message .= "Content:\n{$artifact->text_content}\n";
+        // Get all output artifacts from all processes
+        $finalOutputArtifacts = $this->taskRun->outputArtifacts;
 
-        // Add any stored files information if available
-        if ($artifact->storedFiles->isNotEmpty()) {
-            $message .= "\nFiles:\n";
-            foreach($artifact->storedFiles as $file) {
-                $message .= "- {$file->name} (Page: {$file->page_number})\n";
-            }
+        // 1. Sort all the artifacts
+        static::log("Sorting artifacts by position");
+        $finalOutputArtifacts = $finalOutputArtifacts->sort(fn(Artifact $a, Artifact $b) => $a->position <=> $b->position);
+
+        // 2. Apply __previous category if the task is in sequential mode
+        if ($this->isSequentialMode()) {
+            $this->applySequentialCategories($finalOutputArtifacts);
         }
 
-        // Add the message to the thread
-        app(ThreadRepository::class)->addMessageToThread($artifactThread, $message);
+        // 3. Exclude artifacts with __exclude category
+        static::log("Excluding artifacts with __exclude category");
+        $finalOutputArtifacts = $finalOutputArtifacts->filter(fn(Artifact $outputArtifact) => $outputArtifact->json_content['__category'] ?? null !== self::CATEGORY_EXCLUDE);
 
-        return $artifactThread;
+        // Update the task run's output artifacts
+        $this->taskRun->outputArtifacts()->sync($finalOutputArtifacts->pluck('id'));
+        $this->taskRun->updateRelationCounter('outputArtifacts');
+
+        $this->activity('Final artifact processing complete', 100);
     }
 
     /**
-     * Clone an artifact and update its category
+     * Replace any artifacts with the __previous category with the category of the preceding artifact in sequential mode
      */
-    protected function cloneArtifactWithCategory(Artifact $artifact, string $category): Artifact
+    protected function applySequentialCategories($artifacts): void
     {
-        // Create a new artifact based on the original
-        $categorizedArtifact = new Artifact([
-            'name'               => $artifact->name,
-            'text_content'       => $artifact->text_content,
-            'json_content'       => array_merge($artifact->json_content ?? [], ['category' => $category]),
-            'task_definition_id' => $this->taskRun->task_definition_id,
-            'metadata'           => array_merge($artifact->metadata ?? [], ['original_artifact_id' => $artifact->id]),
-        ]);
+        static::log("Applying sequential categories to artifacts");
 
-        // Save the new artifact
-        $categorizedArtifact->save();
+        $lastCategory = null;
 
-        // Copy any stored files from the original artifact
-        if ($artifact->storedFiles->isNotEmpty()) {
-            $fileIds = $artifact->storedFiles->pluck('id')->toArray();
-            $categorizedArtifact->storedFiles()->attach($fileIds);
+        foreach($artifacts as $artifact) {
+            $category = $artifact->json_content['__category'] ?? null;
+
+            // If category is __previous
+            if ($category === self::CATEGORY_USE_PREVIOUS) {
+                // If there is no last category, something went wrong. The first artifact should always have a category set
+                if (!$lastCategory) {
+                    throw new ValidationError("No previous category found for artifact $artifact");
+                }
+
+                $jsonContent               = $artifact->json_content;
+                $jsonContent['__category'] = $lastCategory;
+                $artifact->json_content    = $jsonContent;
+                $artifact->save();
+
+                static::log("Applying category $lastCategory to $artifact");
+            } else {
+                // Store the last valid category
+                $lastCategory = $category;
+            }
         }
-
-        return $categorizedArtifact;
     }
 }

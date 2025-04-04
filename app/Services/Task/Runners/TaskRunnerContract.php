@@ -14,6 +14,12 @@ interface TaskRunnerContract
     public function run(): void;
 
     /**
+     * Called when all task processes have completed. This will be called on the same job that ran the last task
+     * process.
+     */
+    public function afterAllProcessesCompleted(): void;
+
+    /**
      * A flag to indicate if this task runner is a workflow triggering task
      */
     public function isTrigger(): bool;

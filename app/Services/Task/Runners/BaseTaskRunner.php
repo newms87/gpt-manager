@@ -149,4 +149,9 @@ class BaseTaskRunner implements TaskRunnerContract
 
         return $artifactsBefore;
     }
+
+    public function afterAllProcessesCompleted(): void
+    {
+        static::log("All processes completed.");
+    }
 }
