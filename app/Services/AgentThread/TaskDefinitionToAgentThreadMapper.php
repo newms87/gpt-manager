@@ -44,13 +44,12 @@ class TaskDefinitionToAgentThreadMapper
         return $this;
     }
 
-    public function addMessage(string $message): static
+    public function addMessage(string|array|int|bool $message): static
     {
         $this->messages[] = $message;
 
         return $this;
     }
-
 
     public function map(): AgentThread
     {
@@ -67,7 +66,7 @@ class TaskDefinitionToAgentThreadMapper
 
         $this->addDirectives($agentThread, $this->taskDefinition->beforeThreadDirectives()->get());
         $this->addArtifacts($agentThread);
-        $this->appendMessages();
+        $this->appendMessages($agentThread);
         $this->addDirectives($agentThread, $this->taskDefinition->afterThreadDirectives()->get());
 
         return $agentThread;

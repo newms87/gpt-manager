@@ -4,8 +4,6 @@ namespace App\Services\Task\Runners;
 
 use App\Api\ImageToText\ImageToTextOcrApi;
 use App\Models\Task\Artifact;
-use App\Repositories\ThreadRepository;
-use App\Services\AgentThread\ArtifactFilterService;
 use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -97,7 +95,11 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         return $filesToTranscode[0];
     }
 
-    public function setupThreadForFile(StoredFile $file, StoredFile $ocrTranscodedFile)
+    /**
+     * Setup the agent thread for the given file to prepare the LLM agent to transcode the file to text
+     * Provides the OCR transcode as a reference for the agent to use
+     */
+    public function setupThreadForFile(StoredFile $storedFile, StoredFile $ocrTranscodedFile)
     {
         $taskDefinition = $this->taskRun->taskDefinition;
         $agent          = $taskDefinition->agent;
@@ -105,31 +107,16 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         if (!$agent) {
             throw new Exception(static::class . ": Agent not found for TaskProcess: $this->taskProcess");
         }
-        
-        $this->activity("Setup agent thread with Stored File $file->id" . ($file->page_number ? " (page: $file->page_number)" : ''), 15);
+
+        $this->activity("Setup agent thread with Stored File $storedFile->id" . ($storedFile->page_number ? " (page: $storedFile->page_number)" : ''), 15);
 
         // Add the OCR transcode text to the thread
         $ocrPrompt   = "OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ";
         $agentThread = app(TaskDefinitionToAgentThreadMapper::class)
             ->setTaskDefinition($this->taskRun->taskDefinition)
             ->addMessage($ocrPrompt . $ocrTranscodedFile->getContents())
+            ->addMessage(['files' => [$storedFile]])
             ->map();
-
-        // Add the input artifacts to the thread
-        $artifactFilter = (new ArtifactFilterService())
-            ->includeText()
-            ->includeJson();
-
-        foreach($this->taskProcess->inputArtifacts as $index => $inputArtifact) {
-            $artifactData = $artifactFilter->setArtifact($inputArtifact)->filter();
-
-            // Only set file on the first artifact (only process one time)
-            if ($index === 0) {
-                $artifactData['files'] = [$file];
-            }
-
-            app(ThreadRepository::class)->addMessageToThread($agentThread, $artifactData);
-        }
 
         $this->taskProcess->agentThread()->associate($agentThread)->save();
 
