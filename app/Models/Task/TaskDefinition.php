@@ -148,12 +148,17 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     public function exportToJson(WorkflowExportService $service): int
     {
         $service->registerRelatedModels($this->taskArtifactFiltersAsTarget);
+        $service->registerRelatedModels($this->schemaAssociations);
+        $service->registerRelatedModels($this->taskDefinitionDirectives);
 
         return $service->register($this, [
             'name'                  => $this->name,
             'description'           => $this->description,
             'task_runner_class'     => $this->task_runner_class,
             'task_runner_config'    => $this->task_runner_config,
+            'schema_definition_id'  => $service->registerRelatedModel($this->schemaDefinition),
+            'agent_id'              => $service->registerRelatedModel($this->agent),
+            'response_format'       => $this->response_format,
             'artifact_split_mode'   => $this->artifact_split_mode,
             'timeout_after_seconds' => $this->timeout_after_seconds,
         ]);

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\AuditableTrait;
+use Throwable;
 
 class ResourcePackageImport extends Model implements AuditableContract
 {
@@ -46,6 +47,12 @@ class ResourcePackageImport extends Model implements AuditableContract
             return null;
         }
 
-        return $this->object_type::find($this->local_object_id);
+        try {
+            return $this->object_type::find($this->local_object_id);
+        } catch(Throwable $throwable) {
+            // Handle the case where the object type is not found or any other error
+            // This can happen when Models are renamed or removed
+            return null;
+        }
     }
 }
