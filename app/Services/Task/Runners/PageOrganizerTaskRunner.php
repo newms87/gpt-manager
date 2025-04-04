@@ -164,16 +164,31 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
         // In the case an input artifact has more than 1 matching page, track the minimum page number for that artifact to sort the text content
         $pagesText = [];
         foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+            // If there is no organizable content in this artifact, then skip it
+            if (!$inputArtifact->text_content && $inputArtifact->storedFiles->isEmpty()) {
+                continue;
+            }
+
             $artifactMinPageNumber = INF;
             $matchingPages         = [];
-            foreach($inputArtifact->storedFiles as $storedFile) {
-                if (in_array($storedFile->page_number, $pages)) {
-                    $artifactMinPageNumber = min($storedFile->page_number, $artifactMinPageNumber);
-                    static::log("Adding page $storedFile to $artifact");
-                    $artifact->storedFiles()->attach($storedFile);
-                    $matchingPages[] = [
-                        'page_number' => $storedFile->page_number,
-                        'file_id'     => $storedFile->id,
+
+            if ($inputArtifact->storedFiles->isNotEmpty()) {
+                foreach($inputArtifact->storedFiles as $storedFile) {
+                    if (in_array($storedFile->page_number, $pages)) {
+                        $artifactMinPageNumber = min($storedFile->page_number, $artifactMinPageNumber);
+                        static::log("Adding page $storedFile to $artifact");
+                        $artifact->storedFiles()->attach($storedFile);
+                        $matchingPages[] = [
+                            'page_number' => $storedFile->page_number,
+                            'file_id'     => $storedFile->id,
+                        ];
+                    }
+                }
+            } else {
+                if (in_array($inputArtifact->position, $pages)) {
+                    $artifactMinPageNumber = $inputArtifact->position;
+                    $matchingPages[]       = [
+                        'page_number' => $inputArtifact->position,
                     ];
                 }
             }
@@ -191,7 +206,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
         foreach($pagesText as $match) {
             $pageListStr = '';
             foreach($match['pages'] as $pageItem) {
-                $pageListStr .= "### Page $pageItem[page_number] (file_id: $pageItem[file_id])\n";
+                $pageListStr .= "### Page $pageItem[page_number]" . (!empty($pageItem['file_id']) ? " (file_id: $pageItem[file_id])" : "") . "\n";
             }
             $artifact->text_content = ($artifact->text_content ? "$artifact->text_content\n\n" : '') . "---\n$pageListStr\n\n" . $match['content'];
         }
