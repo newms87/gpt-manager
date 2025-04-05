@@ -1,5 +1,6 @@
 import {
 	AgentThreadRunnerLottie,
+	CategorizeArtifactsLottie,
 	ImageToTextLottie,
 	LoadFromDbLottie,
 	MergeArtifactsLottie,
@@ -22,6 +23,7 @@ import {
 import {
 	AgentThreadTaskRunnerNode,
 	BaseTaskRunnerNode,
+	CategorizeArtifactsTaskRunnerNode,
 	ImageToTextTaskRunnerNode,
 	LoadFromDatabaseTaskRunnerNode,
 	MergeArtifactsTaskRunnerNode,
@@ -47,8 +49,8 @@ export const TaskRunners = {
 		config: BaseTaskRunnerConfig
 	},
 	"Categorize Artifacts": {
-		lottie: PageOrganizerLottie,
-		node: PageOrganizerTaskRunnerNode,
+		lottie: CategorizeArtifactsLottie,
+		node: CategorizeArtifactsTaskRunnerNode,
 		config: CategorizeArtifactsTaskRunnerConfig
 	},
 	"Image To Text Transcoder": {

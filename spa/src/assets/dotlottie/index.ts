@@ -1,5 +1,6 @@
 export { default as AgentThreadRunnerLottie } from "./AgentThreadRunnerLottie.vue";
 export { default as BionicManRunningLottie } from "./BionicManRunningLottie.vue";
+export { default as CategorizeArtifactsLottie } from "./CategorizeArtifactsLottie.vue";
 export { default as DeliveryBoyLottie } from "./DeliveryBoyLottie.vue";
 export { default as ImageToTextLottie } from "./ImageToTextLottie.vue";
 export { default as LoadFromDbLottie } from "./LoadFromDbLottie.vue";

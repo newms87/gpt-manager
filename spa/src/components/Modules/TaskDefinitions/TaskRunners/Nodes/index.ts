@@ -1,5 +1,6 @@
 export { default as AgentThreadTaskRunnerNode } from "./AgentThreadTaskRunnerNode.vue";
 export { default as BaseTaskRunnerNode } from "./BaseTaskRunnerNode.vue";
+export { default as CategorizeArtifactsTaskRunnerNode } from "./CategorizeArtifactsTaskRunnerNode.vue";
 export { default as ImageToTextTaskRunnerNode } from "./ImageToTextTaskRunnerNode.vue";
 export { default as LoadFromDatabaseTaskRunnerNode } from "./LoadFromDatabaseTaskRunnerNode.vue";
 export { default as MergeArtifactsTaskRunnerNode } from "./MergeArtifactsTaskRunnerNode.vue";

@@ -1,10 +1,10 @@
 <template>
 	<BaseTaskRunnerNode :workflow-node="workflowNode" :task-run="taskRun">
-		<MergeArtifactsLottie class="w-[12rem]" :autoplay="isTaskRunning" :finished="isTaskCompleted" />
+		<CategorizeArtifactsLottie class="w-[12rem]" :autoplay="isTaskRunning" :finished="isTaskCompleted" />
 	</BaseTaskRunnerNode>
 </template>
 <script setup lang="ts">
-import { MergeArtifactsLottie } from "@/assets/dotlottie";
+import { CategorizeArtifactsLottie } from "@/assets/dotlottie";
 import { useWorkflowNode } from "@/components/Modules/WorkflowCanvas/useWorkflowNode";
 import { TaskRun, WorkflowNode } from "@/types";
 import { toRefs } from "vue";
