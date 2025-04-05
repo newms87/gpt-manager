@@ -6,6 +6,7 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Services\Task\TaskProcessRunnerService;
 use Illuminate\Database\Eloquent\Collection;
+use Newms87\Danx\Exceptions\ValidationError;
 
 /**
  * The runner processes all artifacts and applies category classification based on the user's prompt.
@@ -65,10 +66,22 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
 
         $this->activity("Using agent to categorize $totalArtifacts artifacts: " . $agent->name, 10);
 
-        $schema           = $this->createCategorySchema();
-        $categoryArtifact = $this->runAgentThreadWithSchema($agentThread, $schema);
 
-        $this->applyCategories($categoryArtifact->json_content['categories'] ?? [], $inputArtifacts);
+        // Resolve the allowed categories from the artifacts' json content
+        $allowedCategoryList = $this->getAllowedCategoryList($inputArtifacts);
+
+        // Ask the agent for the categories to assign to the artifacts
+        $schema              = $this->createCategorySchema($allowedCategoryList);
+        $categoryArtifact    = $this->runAgentThreadWithSchema($agentThread, $schema);
+        $categoriesWithPages = $categoryArtifact->json_content['categories'] ?? [];
+
+        // If there is a strict list of categories, validate the agent has responded correctly
+        if ($allowedCategoryList) {
+            $this->validateCategoryResponse($allowedCategoryList, $categoriesWithPages, $inputArtifacts->pluck('position')->toArray());
+        }
+
+        // Apply the agent's assigned categories to the artifacts
+        $this->applyCategories($categoriesWithPages, $inputArtifacts);
 
         $this->activity('Categorization complete', 95);
 
@@ -76,6 +89,71 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         // Note: The final processing of artifacts (sorting, category matching, etc.)
         // will be done when all task processes are complete
         $this->complete($inputArtifacts);
+    }
+
+    /**
+     * The list of categories that are allowed, resolved from the current list of categories on the artifacts (if any
+     * exist)
+     *
+     * NOTE: This is useful for when the agent has already identified categories for some artifacts, and we are trying
+     * to resolve The categories for the rest of the artifacts that are related in sequence
+     *
+     * @param Artifact[] $artifacts
+     */
+    private function getAllowedCategoryList($artifacts): array
+    {
+        $allowedCategoryList = [];
+
+        foreach($artifacts as $inputArtifact) {
+            // If the artifact has a category, add it to the list
+            $category = $inputArtifact->json_content['__category'] ?? null;
+            if ($category && !in_array($category, [self::CATEGORY_EXCLUDE, self::CATEGORY_UNKNOWN])) {
+                $allowedCategoryList[] = $category;
+            }
+        }
+
+        return $allowedCategoryList;
+    }
+
+    /**
+     * Validate the category response from the agent
+     *  - verify that all category responses were in the allowed category list
+     *  - verify that all pages were assigned to a category
+     */
+    private function validateCategoryResponse(array $allowedCategoryList, array $categoriesWithPages, array $pageNumbers): void
+    {
+        $categoryNames = array_map(fn($category) => $category['category'], $categoriesWithPages);
+
+        // Verify the categories are in the allowed category list
+        foreach($categoryNames as $categoryName) {
+            if (!in_array($categoryName, $allowedCategoryList)) {
+                throw new ValidationError("The category '$categoryName' is not in the list of allowed categories.");
+            }
+        }
+
+        // Check that all pages are added only 1 time and that the page actually exists
+        $resolvedPages = [];
+        foreach($categoriesWithPages as $categoryItem) {
+            foreach($categoryItem['pages'] as $page) {
+                if (!empty($resolvedPages[$page])) {
+                    throw new ValidationError("Page number '$page' has been assigned to multiple categories.");
+                }
+
+                if (!in_array($page, $pageNumbers)) {
+                    throw new ValidationError("P number '$page' is not valid. Valid numbers are: " . json_encode($pageNumbers));
+                }
+
+                $resolvedPages[$page] = true;
+            }
+        }
+
+        // Make sure all pages have been assigned
+        if (count($resolvedPages) !== count($pageNumbers)) {
+            $diffPageNumbers = array_diff($pageNumbers, array_keys($resolvedPages));
+            throw new ValidationError("Not all page numbers have been assigned to a category. " .
+                "You must assign all page numbers to a category, even if you are not 100% sure." .
+                "Missing page numbers: " . json_encode($diffPageNumbers));
+        }
     }
 
     /**
@@ -120,15 +198,30 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
     /**
      * Create a schema definition for the category response
      */
-    protected function createCategorySchema(): SchemaDefinition
+    protected function createCategorySchema($categoryList = []): SchemaDefinition
     {
-        // Build the category description based on available categories
-        $categoryDescription = "Classify the artifact by choosing the most appropriate category. " .
-            "In addition to user-defined categories, you may also use the following options:\n\n" .
-            "* " . self::CATEGORY_UNKNOWN . ": Use this if you're not 100% confident about the category.\n" .
-            "* " . self::CATEGORY_EXCLUDE . ": Use this to exclude the artifact entirely from the output if the user has requested artifacts to be excluded under certain conditions.";
+        // If a category list is given, then the category MUST fall in one of the items in the list no matter what (even if it doesn't really make sense, better to have a defined category than not, so using best guess here)
+        if ($categoryList) {
+            $categoryDescription = "Classify the artifact by selecting the best-matching category from the provided list. " .
+                "You must choose one of the categories from the list, even if none of them seem like a perfect fit—use your best judgment to select the closest match.\n\n" .
+                "Categories:\n";
 
-        $pagesDescription = "List the page numbers given in the artifact that belong to the category. If you are 100% confident that the artifact belongs to the category, add the page number of the artifact to this list.";
+            foreach($categoryList as $category) {
+                $categoryDescription .= "* $category\n";
+            }
+
+            $pagesDescription = "List the page numbers from the artifact that you believe belong to the selected category. " .
+                "You may include pages even if you are not completely certain, as long as the chosen category is the best available option from the list. YOU MUST USE ALL PAGE GIVEN NUMBERS IN EXACTLY 1 CATEGORY EACH.";
+
+        } else {
+            // Build the category description based on user defined categories in the prompt, while only defining a category if 100% sure.
+            $categoryDescription = "Classify the artifact by choosing the most appropriate category. " .
+                "In addition to user-defined categories, you may also use the following options:\n\n" .
+                "* " . self::CATEGORY_UNKNOWN . ": Use this if you're not 100% confident about the category.\n" .
+                "* " . self::CATEGORY_EXCLUDE . ": Use this to exclude the artifact entirely from the output if the user has requested artifacts to be excluded under certain conditions.";
+
+            $pagesDescription = "List the page numbers given in the artifact that belong to the category. If you are 100% confident that the artifact belongs to the category, add the page number of the artifact to this list.";
+        }
 
         return SchemaDefinition::make([
             'name'   => 'Category',
@@ -166,8 +259,6 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
      */
     public function afterAllProcessesCompleted(): void
     {
-        $this->activity('Processing final artifacts', 95);
-
         // Get all output artifacts from all processes
         $finalOutputArtifacts = $this->taskRun->outputArtifacts;
 
@@ -185,10 +276,9 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         }
 
         // Update the task run's output artifacts
+        static::log("Updating task run with " . $finalOutputArtifacts->count() . " output artifacts");
         $this->taskRun->outputArtifacts()->sync($finalOutputArtifacts->pluck('id'));
         $this->taskRun->updateRelationCounter('outputArtifacts');
-
-        $this->activity('Final artifact processing complete', 100);
     }
 
     /**
@@ -227,7 +317,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         $groupsWithUnknowns = [];
         foreach($categoryGroups as $categoryGroupArtifacts) {
             foreach($categoryGroupArtifacts as $categoryGroupArtifact) {
-                if ($categoryGroupArtifact->json_content['__category'] ?? null === self::CATEGORY_UNKNOWN) {
+                if (($categoryGroupArtifact->json_content['__category'] ?? '') === self::CATEGORY_UNKNOWN) {
                     $groupsWithUnknowns[] = $categoryGroupArtifacts;
                     break;
                 }
@@ -237,6 +327,10 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         $this->dispatchCategoryGroups($groupsWithUnknowns);
     }
 
+    /**
+     * Dispatch the category groups to the task process runner.
+     * This will activate the task run again with new task processes to complete.
+     */
     private function dispatchCategoryGroups(array $categoryGroups): void
     {
         static::log("Dispatching " . count($categoryGroups) . " category groups for sequential matching");

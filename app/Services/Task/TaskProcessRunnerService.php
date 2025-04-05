@@ -240,8 +240,6 @@ class TaskProcessRunnerService
     {
         static::log("TaskProcess completed w/ " . $taskProcess->outputArtifacts()->count() . " artifacts: $taskProcess");
 
-        static::checkIfAllOtherProcessesHaveCompleted($taskProcess);
-
         LockHelper::acquire($taskProcess);
 
         try {
@@ -250,35 +248,6 @@ class TaskProcessRunnerService
             $taskProcess->save();
         } finally {
             LockHelper::release($taskProcess);
-        }
-    }
-
-    /**
-     * Check if all other processes have completed in the task run. If they have, then call the
-     * afterAllProcessesCompleted method on the task runner for the current task process
-     */
-    private static function checkIfAllOtherProcessesHaveCompleted(TaskProcess $taskProcess): void
-    {
-        // Before completing the process, check if all other processes have completed
-        // (lock the task run so we can be sure we are the process in this task run that is checking)
-        LockHelper::acquire($taskProcess->taskRun);
-
-        try {
-            // Check if all other processes are completed in this taskRun
-            $incompleteProcessesCount = $taskProcess->taskRun->taskProcesses()
-                ->where('status', '!=', WorkflowStatesContract::STATUS_COMPLETED)
-                ->where('id', '!=', $taskProcess->id)
-                ->count();
-
-            // After all processes have completed running, call the afterAllProcessesCompleted method to perform any
-            // final operations on the batch of all task processes
-            if ($incompleteProcessesCount === 0) {
-                $taskProcess->getRunner()->afterAllProcessesCompleted();
-            } else {
-                static::log("Not all task processes have completed, skipping afterAllProcessesCompleted");
-            }
-        } finally {
-            LockHelper::release($taskProcess->taskRun);
         }
     }
 }

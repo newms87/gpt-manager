@@ -22,7 +22,7 @@ class BaseTaskRunner implements TaskRunnerContract
     const bool   IS_TRIGGER = false;
 
     protected ?TaskRun     $taskRun;
-    protected ?TaskProcess $taskProcess;
+    protected ?TaskProcess $taskProcess = null;
 
     public static function make(): static
     {
@@ -72,6 +72,10 @@ class BaseTaskRunner implements TaskRunnerContract
     public function activity(string $activity, float $percentComplete = null): void
     {
         static::log("Activity: $activity");
+
+        if (!$this->taskProcess) {
+            throw new ValidationError("TaskProcess is not set in this context");
+        }
 
         $this->taskProcess->update([
             'activity'         => $activity,

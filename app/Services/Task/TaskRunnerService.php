@@ -258,6 +258,17 @@ class TaskRunnerService
      */
     public static function onComplete(TaskRun $taskRun): void
     {
+        static::log("Running afterAllProcessesCompleted for $taskRun");
+
+        $taskRun->getRunner()->afterAllProcessesCompleted();
+
+        static::log("Finished afterAllProcessesCompleted");
+        
+        // If additional task processes were created by the task runner, skip completing the task run and starting the next nodes in the workflow
+        if (!$taskRun->refresh()->isCompleted()) {
+            return;
+        }
+
         static::log("Completed $taskRun");
 
         $workflowRun = $taskRun->workflowRun;

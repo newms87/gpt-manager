@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
@@ -105,47 +106,52 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
      */
     public function checkProcesses(): static
     {
-        $hasRunningProcesses = false;
-        $hasStoppedProcesses = false;
-        $hasFailedProcesses  = false;
+        LockHelper::acquire($this);
 
-        foreach($this->taskProcesses()->get() as $taskProcess) {
-            if ($taskProcess->isStopped()) {
-                $hasStoppedProcesses = true;
-            } elseif ($taskProcess->isFailed() || $taskProcess->isTimeout()) {
-                // If any process has failed or timed out, the task run has failed (we can stop checking)
-                $hasFailedProcesses = true;
-            } elseif (!$taskProcess->isFinished()) {
-                $hasRunningProcesses = true;
+        try {
+            $hasRunningProcesses = false;
+            $hasStoppedProcesses = false;
+            $hasFailedProcesses  = false;
+
+            foreach($this->taskProcesses()->get() as $taskProcess) {
+                if ($taskProcess->isStopped()) {
+                    $hasStoppedProcesses = true;
+                } elseif ($taskProcess->isFailed() || $taskProcess->isTimeout()) {
+                    // If any process has failed or timed out, the task run has failed (we can stop checking)
+                    $hasFailedProcesses = true;
+                } elseif (!$taskProcess->isFinished()) {
+                    $hasRunningProcesses = true;
+                }
             }
+
+            if ($hasRunningProcesses) {
+                $this->failed_at    = null;
+                $this->stopped_at   = null;
+                $this->completed_at = null;
+            } elseif ($hasFailedProcesses) {
+                $this->completed_at = null;
+                $this->stopped_at   = null;
+                if (!$this->failed_at) {
+                    $this->failed_at = now();
+                }
+            } elseif ($hasStoppedProcesses) {
+                $this->completed_at = null;
+                $this->failed_at    = null;
+                if (!$this->stopped_at) {
+                    $this->stopped_at = now();
+                }
+            } else {
+                $this->failed_at  = null;
+                $this->stopped_at = null;
+                if (!$this->completed_at) {
+                    $this->completed_at = now();
+                }
+            }
+
+            return $this;
+        } finally {
+            LockHelper::release($this);
         }
-
-
-        if ($hasRunningProcesses) {
-            $this->failed_at    = null;
-            $this->stopped_at   = null;
-            $this->completed_at = null;
-        } elseif ($hasFailedProcesses) {
-            $this->completed_at = null;
-            $this->stopped_at   = null;
-            if (!$this->failed_at) {
-                $this->failed_at = now();
-            }
-        } elseif ($hasStoppedProcesses) {
-            $this->completed_at = null;
-            $this->failed_at    = null;
-            if (!$this->stopped_at) {
-                $this->stopped_at = now();
-            }
-        } else {
-            $this->failed_at  = null;
-            $this->stopped_at = null;
-            if (!$this->completed_at) {
-                $this->completed_at = now();
-            }
-        }
-
-        return $this;
     }
 
     /**
@@ -164,12 +170,14 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 
         static::saved(function (TaskRun $taskRun) {
             if ($taskRun->wasChanged('status')) {
-                $taskRun->workflowRun?->checkTaskRuns()->save();
-
                 // If the task run was recently completed, let the service know so we can trigger any events
                 if ($taskRun->isCompleted()) {
-                    TaskRunnerService::onComplete($taskRun);
+                    // Complete the taskRun but use a different instance of the model
+                    // so we avoid an infinite loop in case the onComplete call triggers a save on the taskRun instance
+                    TaskRunnerService::onComplete($taskRun->fresh());
                 }
+
+                $taskRun->workflowRun?->checkTaskRuns()->save();
 
                 if ($taskRun->workflowRun?->taskProcessListeners->isNotEmpty()) {
                     foreach($taskRun->workflowRun->taskProcessListeners as $taskProcessListener) {
