@@ -100,6 +100,18 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         return $this->morphOne(UsageSummary::class, 'object');
     }
 
+    public function clearOutputArtifacts(): void
+    {
+        $this->outputArtifacts()->detach();
+        $this->updateRelationCounter('outputArtifacts');
+    }
+
+    public function clearInputArtifacts(): void
+    {
+        $this->inputArtifacts()->detach();
+        $this->updateRelationCounter('inputArtifacts');
+    }
+    
     /**
      * Whenever a process state has changed, call this method to check if the task run has completed or has changed
      * state as well

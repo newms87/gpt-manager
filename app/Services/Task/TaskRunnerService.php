@@ -168,8 +168,7 @@ class TaskRunnerService
             $taskRun->taskProcesses()->each(fn(TaskProcess $taskProcess) => $taskProcess->delete());
 
             // Clear out old output artifacts
-            $taskRun->outputArtifacts()->detach();
-            $taskRun->updateRelationCounter('outputArtifacts');
+            $taskRun->clearOutputArtifacts();
 
             // If this task run is part of a workflow run, collect the output artifacts from the source nodes and replace the current input artifacts
             if ($taskRun->workflow_run_id) {

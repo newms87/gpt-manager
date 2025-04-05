@@ -161,8 +161,7 @@ class TaskProcessRunnerService
             if ($taskProcess->isRunning()) {
                 throw new ValidationError("TaskProcess is currently running, cannot restart");
             }
-            $taskProcess->outputArtifacts()->delete();
-            $taskProcess->updateRelationCounter('outputArtifacts');
+            $taskProcess->clearOutputArtifacts();
 
             $taskProcess->stopped_at = null;
             $taskProcess->failed_at  = null;
