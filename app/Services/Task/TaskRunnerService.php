@@ -239,15 +239,15 @@ class TaskRunnerService
                 return;
             }
 
-            $taskRun->stopped_at = now();
-            $taskRun->save();
-
             foreach($taskRun->taskProcesses as $taskProcess) {
-                if ($taskProcess->isStarted() || $taskProcess->isDispatched() || $taskProcess->isPending()) {
+                if (!$taskProcess->isCompleted() && !$taskProcess->isStopped() && !$taskProcess->isFailed() && !$taskProcess->isTimeout()) {
                     $taskProcess->stopped_at = now();
                     $taskProcess->save();
                 }
             }
+
+            // Double-check our state in case we're out of sync
+            $taskRun->checkProcesses()->computeStatus()->save();
         } finally {
             LockHelper::release($taskRun);
         }

@@ -133,12 +133,12 @@ class WorkflowRunnerService
                 return;
             }
 
-            $workflowRun->stopped_at = now_ms();
-            $workflowRun->save();
-
             foreach($workflowRun->taskRuns as $taskRun) {
                 TaskRunnerService::stop($taskRun);
             }
+
+            // Double-check our state in case we're out of sync
+            $workflowRun->checkTaskRuns()->computeStatus()->save();
         } finally {
             LockHelper::release($workflowRun);
         }
