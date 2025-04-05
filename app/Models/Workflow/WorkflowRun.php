@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
@@ -166,52 +165,46 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
      */
     public function checkTaskRuns(): static
     {
-        LockHelper::acquire($this);
+        $hasRunningTasks = false;
+        $hasStoppedTasks = false;
+        $hasFailedTasks  = false;
 
-        try {
-            $hasRunningTasks = false;
-            $hasStoppedTasks = false;
-            $hasFailedTasks  = false;
-
-            foreach($this->taskRuns()->get() as $taskRun) {
-                if ($taskRun->isStopped()) {
-                    $hasStoppedTasks = true;
-                } elseif ($taskRun->isFailed()) {
-                    // If any task has failed or timed out, the task run has failed (we can stop checking)
-                    $hasFailedTasks = true;
-                } elseif (!$taskRun->isFinished()) {
-                    $hasRunningTasks = true;
-                }
+        foreach($this->taskRuns()->get() as $taskRun) {
+            if ($taskRun->isStopped()) {
+                $hasStoppedTasks = true;
+            } elseif ($taskRun->isFailed()) {
+                // If any task has failed or timed out, the task run has failed (we can stop checking)
+                $hasFailedTasks = true;
+            } elseif (!$taskRun->isFinished()) {
+                $hasRunningTasks = true;
             }
-
-            if ($hasRunningTasks) {
-                $this->failed_at    = null;
-                $this->stopped_at   = null;
-                $this->completed_at = null;
-            } elseif ($hasFailedTasks) {
-                $this->completed_at = null;
-                $this->stopped_at   = null;
-                if (!$this->failed_at) {
-                    $this->failed_at = now();
-                }
-            } elseif ($hasStoppedTasks) {
-                $this->completed_at = null;
-                $this->failed_at    = null;
-                if (!$this->stopped_at) {
-                    $this->stopped_at = now();
-                }
-            } else {
-                $this->failed_at  = null;
-                $this->stopped_at = null;
-                if (!$this->completed_at && $this->has_run_all_tasks) {
-                    $this->completed_at = now();
-                }
-            }
-
-            return $this;
-        } finally {
-            LockHelper::release($this);
         }
+
+        if ($hasRunningTasks) {
+            $this->failed_at    = null;
+            $this->stopped_at   = null;
+            $this->completed_at = null;
+        } elseif ($hasFailedTasks) {
+            $this->completed_at = null;
+            $this->stopped_at   = null;
+            if (!$this->failed_at) {
+                $this->failed_at = now();
+            }
+        } elseif ($hasStoppedTasks) {
+            $this->completed_at = null;
+            $this->failed_at    = null;
+            if (!$this->stopped_at) {
+                $this->stopped_at = now();
+            }
+        } else {
+            $this->failed_at  = null;
+            $this->stopped_at = null;
+            if (!$this->completed_at && $this->has_run_all_tasks) {
+                $this->completed_at = now();
+            }
+        }
+
+        return $this;
     }
 
     public static function booted(): void
