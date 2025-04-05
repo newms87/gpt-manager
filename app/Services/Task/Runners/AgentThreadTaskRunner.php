@@ -68,7 +68,9 @@ class AgentThreadTaskRunner extends BaseTaskRunner
             }
 
             // If the task definition is set to include text sources, we will add the text sources to the artifact
-            if ($this->config('include_text_sources', true)) {
+            // By default, this is set to true for all task definitions w/ JSON responses, as they are
+            // assumed to be collecting data from text sources in this case
+            if ($this->config('include_text_sources', $this->taskDefinition->isJsonResponse())) {
                 $this->appendTextSources($artifact);
             }
 
@@ -168,11 +170,17 @@ class AgentThreadTaskRunner extends BaseTaskRunner
     private function appendTextSources(Artifact $artifact): void
     {
         static::log("Appending text sources to artifact: $artifact");
-        
-        $artifact->text_content = ($artifact->text_content ?? "") . "\n\n-----\n\n# Sources:";
 
+        $sourceTextContent = '';
         foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
-            $artifact->text_content .= "\n\n-----\n\n" . $inputArtifact->text_content;
+            $text = trim($inputArtifact->text_content);
+            if ($text) {
+                $sourceTextContent .= "\n\n-----\n\n" . $text;
+            }
+        }
+
+        if ($sourceTextContent) {
+            $artifact->text_content = ($artifact->text_content ?? "") . "\n\n-----\n\n# Sources:";
         }
     }
 }
