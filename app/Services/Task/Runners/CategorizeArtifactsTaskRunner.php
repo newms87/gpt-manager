@@ -8,6 +8,7 @@ use App\Repositories\ThreadRepository;
 use App\Services\Task\TaskProcessRunnerService;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
+use Throwable;
 
 /**
  * The runner processes all artifacts and applies category classification based on the user's prompt.
@@ -108,15 +109,39 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         $agentThread = $this->setupAgentThread();
         app(ThreadRepository::class)->addMessageToThread($agentThread, $categoryPrompt);
 
-        $categoryArtifact    = $this->runAgentThreadWithSchema($agentThread, $schema);
-        $categoriesWithPages = $categoryArtifact->json_content['categories'] ?? [];
+        $correctionAttemptsRemaining = $this->config('correction_attempts', 2);
 
-        // If there is a strict list of categories, validate the agent has responded correctly
-        if ($allowedCategoryList) {
-            $this->validateCategoryResponse($allowedCategoryList, $categoriesWithPages, $pageNumbers);
-        }
+        do {
+            static::log("Categorizing artifacts... $correctionAttemptsRemaining attempts remaining");
+            $categoryArtifact    = $this->runAgentThreadWithSchema($agentThread, $schema);
+            $categoriesWithPages = $categoryArtifact->json_content['categories'] ?? [];
 
-        return $categoriesWithPages;
+            // If the list is not strictly defined, we can skip validation
+            if (!$allowedCategoryList) {
+                return $categoriesWithPages;
+            }
+
+            // If there is a strict list of categories, validate the agent has responded correctly
+            try {
+                $this->validateCategoryResponse($allowedCategoryList, $categoriesWithPages, $pageNumbers);
+
+                return $categoriesWithPages;
+            } catch(Throwable $throwable) {
+                // If the agent was unable to provide a valid response, we will ask it to try again
+                static::log("Invalid response: " . $throwable->getMessage());
+
+                if ($correctionAttemptsRemaining === 0) {
+                    // If we have no more attempts remaining, we will throw the error
+                    throw $throwable;
+                }
+
+                // Add the error message to the thread so the agent can see it
+                app(ThreadRepository::class)->addMessageToThread($agentThread, $throwable->getMessage());
+            }
+        } while($correctionAttemptsRemaining-- > 0);
+
+        // If we reach here, the agent was unable to provide a valid response
+        throw new ValidationError("Agent was unable to provide a valid response for the categories.");
     }
 
     /**
