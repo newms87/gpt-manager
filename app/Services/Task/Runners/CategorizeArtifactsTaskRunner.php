@@ -6,6 +6,7 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
 use App\Services\Task\TaskProcessRunnerService;
+use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Throwable;
@@ -31,9 +32,6 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         CATEGORY_UNKNOWN = '__unknown',
         CATEGORY_EXCLUDE = '__exclude';
 
-    // Flag to enable sequential mode
-    protected bool $sequentialMode = false;
-
     /**
      * Initial activity message and
      */
@@ -41,7 +39,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
     {
         parent::prepareProcess();
 
-        $this->activity('Preparing to categorize artifacts' . ($this->sequentialMode ? ' in sequential mode' : ''), 5);
+        $this->activity('Preparing to categorize artifacts' . ($this->isSequentialMode() ? ' in sequential mode' : ''), 5);
     }
 
     public function run(): void
@@ -335,7 +333,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
 
         // 2. Exclude artifacts with __exclude category
         $countBefore          = $finalOutputArtifacts->count();
-        $finalOutputArtifacts = $finalOutputArtifacts->filter(fn(Artifact $a) => $a->json_content['__category'] ?? null !== self::CATEGORY_EXCLUDE);
+        $finalOutputArtifacts = $finalOutputArtifacts->filter(fn(Artifact $a) => ($a->json_content['__category'] ?? null) !== self::CATEGORY_EXCLUDE);
         $totalExcluded        = $countBefore - $finalOutputArtifacts->count();
         static::log("Excluded $totalExcluded artifacts with __exclude category");
 
@@ -367,6 +365,10 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         foreach($artifacts as $artifact) {
             $category = $artifact->json_content['__category'] ?? null;
 
+            if ($category === self::CATEGORY_EXCLUDE) {
+                throw new Exception("Artifact with __exclude category found in sequential mode. This should not happen: $artifact");
+            }
+
             // If category is unknown, add it to the current group to attempt to resolve with the previous and next known category
             if ($category === self::CATEGORY_UNKNOWN) {
                 // Add the category
@@ -385,6 +387,8 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
                 }
             }
         }
+
+        static::log("Resolved categories: " . json_encode(array_keys($categoryGroups)));
 
         $groupsWithUnknowns = [];
         foreach($categoryGroups as $categoryGroupArtifacts) {
