@@ -85,17 +85,18 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
     /**
      * Resolve the categories w/ page numbers assigned for each of the artifacts
      */
-    private function resolveCategoriesWithPages($inputArtifacts, $allowedCategoryList)
+    private function resolveCategoriesWithPages($inputArtifacts, array $allowedCategoryList)
     {
         $pageNumbers = $inputArtifacts->pluck('position')->toArray();
 
         // If there is only 1 allowed category, then we can skip the agent and just assign that category to all artifacts
-        if ($allowedCategoryList && count($allowedCategoryList) === 1) {
-            $this->activity("Only 1 category found, applying automatically: " . $allowedCategoryList[0], 80);
+        if (count($allowedCategoryList) === 1) {
+            $firstCategory = reset($allowedCategoryList);
+            $this->activity("Only 1 category found, applying automatically: $firstCategory", 80);
 
             return [
                 [
-                    'category' => $allowedCategoryList[0],
+                    'category' => $firstCategory,
                     'pages'    => $pageNumbers,
                 ],
             ];
@@ -161,7 +162,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
             // If the artifact has a category, add it to the list
             $category = $inputArtifact->json_content['__category'] ?? null;
             if ($category && !in_array($category, [self::CATEGORY_EXCLUDE, self::CATEGORY_UNKNOWN])) {
-                $allowedCategoryList[] = $category;
+                $allowedCategoryList[$category] = $category;
             }
         }
 
@@ -179,7 +180,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
 
         // Verify the categories are in the allowed category list
         foreach($categoryNames as $categoryName) {
-            if (!in_array($categoryName, $allowedCategoryList)) {
+            if (empty($allowedCategoryList[$categoryName])) {
                 throw new ValidationError("The category '$categoryName' is not in the list of allowed categories.");
             }
         }
@@ -256,7 +257,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         // If a category list is given, then the category MUST fall in one of the items in the list no matter what (even if it doesn't really make sense, better to have a defined category than not, so using best guess here)
         if ($categoryList) {
             $categoryDescription = "Classify each artifact (identified by page number) by selecting the best-matching category from the provided list. " .
-                "You must choose one of the categories from the list, even if none of them seem like a perfect fit—use your best judgment to select the closest match.\n\n" .
+                "You must choose one of the categories from the list, even if none of them seem like a perfect fit—use your best judgment to select the closest match. If you think 1 or more of the listed categories are duplicates as they have a very similar name, merge these categories into 1 - do not use both versions of the category name.\n\n" .
                 "Categories:\n";
 
             foreach($categoryList as $category) {
@@ -371,11 +372,14 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
                 // Add to the current group to see if previous artifacts belong to the same group
                 $categoryGroups[$groupKey][] = $artifact;
 
-                // Changing the group key to start a new group (or add to an existing group if it already had existed)
-                $groupKey = $category;
+                // If the category has changed, we need to start a new group
+                if ($groupKey !== $category) {
+                    // Changing the group key to start a new group (or add to an existing group if it already had existed)
+                    $groupKey = $category;
 
-                // Add to the next group to see if subsequent artifacts belong to the same group
-                $categoryGroups[$groupKey][] = $artifact;
+                    // Add to the next group to see if subsequent artifacts belong to the same group
+                    $categoryGroups[$groupKey][] = $artifact;
+                }
             }
         }
 
