@@ -4,6 +4,7 @@ namespace App\Services\Task\Runners;
 
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
+use App\Repositories\ThreadRepository;
 use App\Services\Task\TaskProcessRunnerService;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -61,24 +62,13 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
             return;
         }
 
-        // Setup the agent thread
-        $agentThread = $this->setupAgentThread();
-
         $this->activity("Using agent to categorize $totalArtifacts artifacts: " . $agent->name, 10);
-
 
         // Resolve the allowed categories from the artifacts' json content
         $allowedCategoryList = $this->getAllowedCategoryList($inputArtifacts);
 
-        // Ask the agent for the categories to assign to the artifacts
-        $schema              = $this->createCategorySchema($allowedCategoryList);
-        $categoryArtifact    = $this->runAgentThreadWithSchema($agentThread, $schema);
-        $categoriesWithPages = $categoryArtifact->json_content['categories'] ?? [];
-
-        // If there is a strict list of categories, validate the agent has responded correctly
-        if ($allowedCategoryList) {
-            $this->validateCategoryResponse($allowedCategoryList, $categoriesWithPages, $inputArtifacts->pluck('position')->toArray());
-        }
+        // Resolve the pages in each category
+        $categoriesWithPages = $this->resolveCategoriesWithPages($inputArtifacts, $allowedCategoryList);
 
         // Apply the agent's assigned categories to the artifacts
         $this->applyCategories($categoriesWithPages, $inputArtifacts);
@@ -89,6 +79,44 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         // Note: The final processing of artifacts (sorting, category matching, etc.)
         // will be done when all task processes are complete
         $this->complete($inputArtifacts);
+    }
+
+    /**
+     * Resolve the categories w/ page numbers assigned for each of the artifacts
+     */
+    private function resolveCategoriesWithPages($inputArtifacts, $allowedCategoryList)
+    {
+        $pageNumbers = $inputArtifacts->pluck('position')->toArray();
+
+        // If there is only 1 allowed category, then we can skip the agent and just assign that category to all artifacts
+        if ($allowedCategoryList && count($allowedCategoryList) === 1) {
+            $this->activity("Only 1 category found, applying automatically: " . $allowedCategoryList[0], 80);
+
+            return [
+                [
+                    'category' => $allowedCategoryList[0],
+                    'pages'    => $pageNumbers,
+                ],
+            ];
+        }
+
+        // Ask the agent for the categories to assign to the artifacts
+        $schema         = $this->createCategorySchema($allowedCategoryList);
+        $categoryPrompt = $this->createCategoryPrompt($allowedCategoryList, $pageNumbers);
+
+        // Prepare the agent thread
+        $agentThread = $this->setupAgentThread();
+        app(ThreadRepository::class)->addMessageToThread($agentThread, $categoryPrompt);
+
+        $categoryArtifact    = $this->runAgentThreadWithSchema($agentThread, $schema);
+        $categoriesWithPages = $categoryArtifact->json_content['categories'] ?? [];
+
+        // If there is a strict list of categories, validate the agent has responded correctly
+        if ($allowedCategoryList) {
+            $this->validateCategoryResponse($allowedCategoryList, $categoriesWithPages, $pageNumbers);
+        }
+
+        return $categoriesWithPages;
     }
 
     /**
@@ -149,7 +177,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
 
         // Make sure all pages have been assigned
         if (count($resolvedPages) !== count($pageNumbers)) {
-            $diffPageNumbers = array_diff($pageNumbers, array_keys($resolvedPages));
+            $diffPageNumbers = array_values(array_diff($pageNumbers, array_keys($resolvedPages)));
             throw new ValidationError("Not all page numbers have been assigned to a category. " .
                 "You must assign all page numbers to a category, even if you are not 100% sure." .
                 "Missing page numbers: " . json_encode($diffPageNumbers));
@@ -196,13 +224,13 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Create a schema definition for the category response
+     * Create the category prompt for the agent
      */
-    protected function createCategorySchema($categoryList = []): SchemaDefinition
+    protected function createCategoryPrompt($categoryList = [], $pageNumbers = []): string
     {
         // If a category list is given, then the category MUST fall in one of the items in the list no matter what (even if it doesn't really make sense, better to have a defined category than not, so using best guess here)
         if ($categoryList) {
-            $categoryDescription = "Classify the artifact by selecting the best-matching category from the provided list. " .
+            $categoryDescription = "Classify each artifact (identified by page number) by selecting the best-matching category from the provided list. " .
                 "You must choose one of the categories from the list, even if none of them seem like a perfect fit—use your best judgment to select the closest match.\n\n" .
                 "Categories:\n";
 
@@ -210,17 +238,29 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
                 $categoryDescription .= "* $category\n";
             }
 
-            $pagesDescription = "List the page numbers from the artifact that you believe belong to the selected category. " .
-                "You may include pages even if you are not completely certain, as long as the chosen category is the best available option from the list. YOU MUST USE ALL PAGE GIVEN NUMBERS IN EXACTLY 1 CATEGORY EACH.";
+            $pagesDescription = "Then provide the list of page numbers for each artifact that belongs to the category. " .
+                "You may include pages even if you are not completely certain, as long as the chosen category is the best available option from the list. Each of these page numbers must appear in exactly 1 category: " . json_encode($pageNumbers);
 
+            return $categoryDescription . "\n\n" . $pagesDescription;
         } else {
             // Build the category description based on user defined categories in the prompt, while only defining a category if 100% sure.
-            $categoryDescription = "Classify the artifact by choosing the most appropriate category. " .
+            return "Classify the artifact by choosing the most appropriate category. " .
                 "In addition to user-defined categories, you may also use the following options:\n\n" .
                 "* " . self::CATEGORY_UNKNOWN . ": Use this if you're not 100% confident about the category.\n" .
                 "* " . self::CATEGORY_EXCLUDE . ": Use this to exclude the artifact entirely from the output if the user has requested artifacts to be excluded under certain conditions.";
+        }
+    }
 
-            $pagesDescription = "List the page numbers given in the artifact that belong to the category. If you are 100% confident that the artifact belongs to the category, add the page number of the artifact to this list.";
+    /**
+     * Create a schema definition for the category response
+     */
+    protected function createCategorySchema($categoryList = []): SchemaDefinition
+    {
+        if ($categoryList) {
+            $categoryDescription = "One of the following categories: " . implode(', ', $categoryList) . ". Use the users description of the categories to identify which pages belong to which category";
+        } else {
+            $categoryDescription = "The best match based on the users description for the categories. If unsure you can use " . self::CATEGORY_UNKNOWN . ".\n" .
+                " If requested to exclude artifacts, you may also use " . self::CATEGORY_EXCLUDE . " to exclude the artifact entirely from the output.";
         }
 
         return SchemaDefinition::make([
@@ -239,7 +279,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
                                 ],
                                 'pages'    => [
                                     'type'        => 'array',
-                                    'description' => $pagesDescription,
+                                    'description' => "The list of page numbers that belong to the category. Each page can only be assigned to one category",
                                     'items'       => ['type' => 'number'],
                                 ],
                             ],
