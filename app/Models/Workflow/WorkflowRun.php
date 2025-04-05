@@ -9,6 +9,7 @@ use App\Models\Usage\UsageSummary;
 use App\Services\AgentThread\ArtifactFilterService;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Workflow\WorkflowRunnerService;
+use App\Traits\HasDebugLogging;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,7 +25,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowRun extends Model implements WorkflowStatesContract, AuditableContract
 {
-    use SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowStatesTrait;
+    use SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowStatesTrait, HasDebugLogging;
 
     protected $fillable = [
         'started_at',
