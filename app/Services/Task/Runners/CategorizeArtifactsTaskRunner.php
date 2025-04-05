@@ -257,7 +257,8 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         // If a category list is given, then the category MUST fall in one of the items in the list no matter what (even if it doesn't really make sense, better to have a defined category than not, so using best guess here)
         if ($categoryList) {
             $categoryDescription = "Classify each artifact (identified by page number) by selecting the best-matching category from the provided list. " .
-                "You must choose one of the categories from the list, even if none of them seem like a perfect fit—use your best judgment to select the closest match. If you think 1 or more of the listed categories are duplicates as they have a very similar name, merge these categories into 1 - do not use both versions of the category name.\n\n" .
+                "You must choose one of the categories from the list, even if none of them seem like a perfect fit—use your best judgment to select the closest match. " .
+                "Based on the artifact content, if you believe a category in the list is a duplicate of another category in the list (ie: the names are similar, different names referring to the same person, place or thing, etc.), decide which category to keep and disregard the similar category name (DO NOT USE)\n\n" .
                 "Categories:\n";
 
             foreach($categoryList as $category) {
@@ -333,8 +334,10 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         $finalOutputArtifacts = $finalOutputArtifacts->sort(fn(Artifact $a, Artifact $b) => $a->position <=> $b->position);
 
         // 2. Exclude artifacts with __exclude category
-        static::log("Excluding artifacts with __exclude category");
-        $finalOutputArtifacts = $finalOutputArtifacts->filter(fn(Artifact $outputArtifact) => $outputArtifact->json_content['__category'] ?? null !== self::CATEGORY_EXCLUDE);
+        $countBefore          = $finalOutputArtifacts->count();
+        $finalOutputArtifacts = $finalOutputArtifacts->filter(fn(Artifact $a) => $a->json_content['__category'] ?? null !== self::CATEGORY_EXCLUDE);
+        $totalExcluded        = $countBefore - $finalOutputArtifacts->count();
+        static::log("Excluded $totalExcluded artifacts with __exclude category");
 
         // 2. Attempt category matching if the task is in sequential mode
         if ($this->isSequentialMode()) {
