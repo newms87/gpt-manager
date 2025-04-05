@@ -8,6 +8,7 @@ use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectAttributeSource;
 use App\Models\TeamObject\TeamObjectRelationship;
+use App\Traits\HasDebugLogging;
 use Exception;
 use Log;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -17,9 +18,12 @@ use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Repositories\FileRepository;
+use Throwable;
 
 class JSONSchemaDataToDatabaseMapper
 {
+    use HasDebugLogging;
+
     protected ?SchemaDefinition $schemaDefinition = null;
     protected ?TeamObject       $rootObject       = null;
 
@@ -375,14 +379,26 @@ class JSONSchemaDataToDatabaseMapper
             if ($type === 'array') {
                 // If the property is an array, then save each item in the array as a related object
                 // NOTE: The object is still be referenced here and passing to the child as a reference so we can update the ID inline!
-                $relatedObjects = $this->saveTeamObjectsUsingSchema($property['items'], $object[$propertyName], $threadRun);
+                try {
+                    $relatedObjects = $this->saveTeamObjectsUsingSchema($property['items'], $object[$propertyName], $threadRun);
+                } catch(Throwable $throwable) {
+                    static::log("Failed to save array of team objects: $propertyName: " . $throwable->getMessage());
+                    continue;
+                }
+
                 foreach($relatedObjects as $relatedObject) {
                     $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
                 }
             } elseif ($type === 'object') {
                 // If the property is an object, then save the object as a related object
                 // NOTE: The object is still be referenced here and passing to the child as a reference so we can update the ID inline!
-                $relatedObject = $this->saveTeamObjectUsingSchema($property, $object[$propertyName], $threadRun);
+                try {
+                    $relatedObject = $this->saveTeamObjectUsingSchema($property, $object[$propertyName], $threadRun);
+                } catch(Throwable $throwable) {
+                    static::log("Failed to save Team Object: $propertyName: " . $throwable->getMessage());
+                    continue;
+                }
+
                 $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
             } else {
                 // NOTE: we are no longer referencing the object! Any changes here will not affect the output object
