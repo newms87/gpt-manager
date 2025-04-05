@@ -181,8 +181,15 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     {
         static::saving(function (TaskDefinition $taskDefinition) {
             if ($taskDefinition->isDirty('task_runner_class')) {
-                $taskDefinition->task_runner_config   = null;
-                $taskDefinition->schema_definition_id = null;
+                // If the task runner class has been changed w/o changing the config, reset the config
+                if (!$taskDefinition->isDirty('task_runner_config')) {
+                    $taskDefinition->task_runner_config = null;
+                }
+
+                // If the task runner class has been changed, reset the schema definition (if it is unchanged)
+                if (!$taskDefinition->isDirty('schema_definition_id')) {
+                    $taskDefinition->schema_definition_id = null;
+                }
             }
         });
 
@@ -192,7 +199,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
                     $taskDefinitionDirective->delete();
                 }
             }
-            
+
             if ($taskDefinition->wasChanged('schema_definition_id')) {
                 foreach($taskDefinition->schemaAssociations as $schemaAssociation) {
                     if ($schemaAssociation->schema_definition_id != $taskDefinition->schema_definition_id) {

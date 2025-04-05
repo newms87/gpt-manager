@@ -28,7 +28,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 'type'                 => 'object',
                 'properties'           => [
                     'key' => [
-                        'type' => ['string', 'null'],
+                        'type' => 'string',
                     ],
                 ],
                 'required'             => ['key'],
@@ -71,16 +71,16 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 'type'                 => 'object',
                 'properties'           => [
                     'key' => [
-                        'type'                 => ['object', 'null'],
+                        'type'                 => 'object',
                         'properties'           => [
                             'nested_a' => [
-                                'type' => ['string', 'null'],
+                                'type' => 'string',
                             ],
                             'nested_b' => [
-                                'type'                 => ['object', 'null'],
+                                'type'                 => 'object',
                                 'properties'           => [
                                     'nested-key' => [
-                                        'type' => ['string', 'null'],
+                                        'type' => 'string',
                                     ],
                                 ],
                                 'required'             => ['nested-key'],
@@ -134,18 +134,18 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 'type'                 => 'object',
                 'properties'           => [
                     'key' => [
-                        'type'  => ['array', 'null'],
+                        'type'  => 'array',
                         'items' => [
-                            'type'                 => ['object', 'null'],
+                            'type'                 => 'object',
                             'properties'           => [
                                 'nested_a' => [
-                                    'type' => ['string', 'null'],
+                                    'type' => 'string',
                                 ],
                                 'nested_b' => [
-                                    'type'                 => ['object', 'null'],
+                                    'type'                 => 'object',
                                     'properties'           => [
                                         'nested-key' => [
-                                            'type' => ['string', 'null'],
+                                            'type' => 'string',
                                         ],
                                     ],
                                     'required'             => ['nested-key'],
@@ -185,7 +185,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 'type'                 => 'object',
                 'properties'           => [
                     'key' => [
-                        'type'        => ['string', 'null'],
+                        'type'        => 'string',
                         'description' => 'A test description',
                     ],
                 ],
@@ -217,7 +217,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 'type'                 => 'object',
                 'properties'           => [
                     'key' => [
-                        'type' => ['string', 'null'],
+                        'type' => 'string',
                         'enum' => ['value1', 'value2'],
                     ],
                 ],
@@ -249,7 +249,7 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
 
         // Then
         $objectSchema = $formattedSchema['schema'];
-        $this->assertEquals(['type' => ['string', 'null']], $objectSchema['properties']['dob'] ?? null, 'The DOB property should have null type added to indicate it is optional');
+        $this->assertEquals(['type' => 'string'], $objectSchema['properties']['dob'] ?? null, 'The DOB property should have null type added to indicate it is optional');
     }
 
     public function test_formatAndCleanSchema_allPropertiesShouldBeInRequiredList(): void
@@ -620,11 +620,11 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 'title'                => 'Person',
                 'properties'           => [
                     'address' => [
-                        'type'                 => ['object', 'null'],
+                        'type'                 => 'object',
                         'title'                => 'Address',
                         'properties'           => [
                             'city' => [
-                                'type' => ['string', 'null'],
+                                'type' => 'string',
                             ],
                         ],
                         'required'             => ['city'],
@@ -759,13 +759,13 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
                 'title'                => 'Person',
                 'properties'           => [
                     'addresses' => [
-                        'type'  => ['array', 'null'],
+                        'type'  => 'array',
                         'items' => [
-                            'type'                 => ['object', 'null'],
+                            'type'                 => 'object',
                             'title'                => 'Address',
                             'properties'           => [
                                 'city' => [
-                                    'type' => ['string', 'null'],
+                                    'type' => 'string',
                                 ],
                             ],
                             'required'             => ['city'],

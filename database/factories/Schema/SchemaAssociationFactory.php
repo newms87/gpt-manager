@@ -21,11 +21,11 @@ class SchemaAssociationFactory extends Factory
         ];
     }
 
-    public function withSchema(SchemaDefinition|array $schema = [], SchemaFragment|array $fragment = []): static
+    public function withSchema(SchemaDefinition|array|null $schema = null, SchemaFragment|array|null $fragment = null): static
     {
         return $this->state([
-            'schema_definition_id' => $schema instanceof SchemaDefinition ? $schema : SchemaDefinition::factory()->create(['schema' => $schema]),
-            'schema_fragment_id'   => $fragment instanceof SchemaFragment ? $fragment : SchemaFragment::factory()->create(['fragment_selector' => $fragment]),
+            'schema_definition_id' => $schema instanceof SchemaDefinition ? $schema : SchemaDefinition::factory()->create(['schema' => $schema ?: []]),
+            'schema_fragment_id'   => $fragment instanceof SchemaFragment ? $fragment : SchemaFragment::factory()->create(['fragment_selector' => $fragment ?: []]),
         ]);
     }
 
