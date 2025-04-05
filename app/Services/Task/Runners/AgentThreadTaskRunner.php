@@ -24,7 +24,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
     {
         // Fragment and agent are used for naming the process
         $fragment = $this->taskProcess->outputSchemaAssociation?->schemaFragment;
-        $agent    = $this->taskRun->taskDefinition->agent;
+        $agent    = $this->taskDefinition->agent;
 
         if (!$agent) {
             throw new Exception("AgentThreadTaskRunner: Agent not found for TaskRun: $this->taskRun");
@@ -47,7 +47,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
     {
         $agentThread       = $this->setupAgentThread();
         $agent             = $agentThread->agent;
-        $schemaDefinition  = $this->taskRun->taskDefinition->schemaDefinition;
+        $schemaDefinition  = $this->taskDefinition->schemaDefinition;
         $schemaAssociation = $this->taskProcess->outputSchemaAssociation;
 
         if ($schemaDefinition?->id !== $schemaAssociation?->schema_definition_id) {
@@ -65,6 +65,11 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
             if ($schemaType) {
                 $this->hydrateArtifactJsonContentIds($artifact, $schemaType);
+            }
+
+            // If the task definition is set to include text sources, we will add the text sources to the artifact
+            if ($this->config('include_text_sources', true)) {
+                $this->appendTextSources($artifact);
             }
 
             $this->activity("Received response from $agent->name", 100);
@@ -154,6 +159,20 @@ class AgentThreadTaskRunner extends BaseTaskRunner
                 $artifact->save();
                 static::log("Hydration completed");
             }
+        }
+    }
+
+    /**
+     * Append the text sources to the artifact's text content.
+     */
+    private function appendTextSources(Artifact $artifact): void
+    {
+        static::log("Appending text sources to artifact: $artifact");
+        
+        $artifact->text_content = ($artifact->text_content ?? "") . "\n\n-----\n\n# Sources:";
+
+        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+            $artifact->text_content .= "\n\n-----\n\n" . $inputArtifact->text_content;
         }
     }
 }

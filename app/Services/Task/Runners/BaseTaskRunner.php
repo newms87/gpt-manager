@@ -3,6 +3,7 @@
 namespace App\Services\Task\Runners;
 
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
@@ -21,8 +22,9 @@ class BaseTaskRunner implements TaskRunnerContract
     // Indicates if the class is a workflow trigger
     const bool   IS_TRIGGER = false;
 
-    protected ?TaskRun     $taskRun;
-    protected ?TaskProcess $taskProcess = null;
+    protected ?TaskDefinition $taskDefinition;
+    protected ?TaskRun        $taskRun;
+    protected ?TaskProcess    $taskProcess = null;
 
     public static function make(): static
     {
@@ -36,7 +38,8 @@ class BaseTaskRunner implements TaskRunnerContract
 
     public function setTaskRun(TaskRun $taskRun): static
     {
-        $this->taskRun = $taskRun;
+        $this->taskRun        = $taskRun;
+        $this->taskDefinition = $taskRun->taskDefinition;
 
         return $this;
     }
@@ -48,9 +51,18 @@ class BaseTaskRunner implements TaskRunnerContract
         return $this;
     }
 
+    public function config($key = null, $default = null): mixed
+    {
+        if ($key) {
+            return $this->taskDefinition->task_runner_config[$key] ?? $default;
+        }
+
+        return $this->taskDefinition->task_runner_config ?? [];
+    }
+
     public function prepareRun(): void
     {
-        $this->taskRun->name = static::RUNNER_NAME . ': ' . $this->taskRun->taskDefinition->name;
+        $this->taskRun->name = static::RUNNER_NAME . ': ' . $this->taskDefinition->name;
         $this->step('Prepare', 1);
     }
 

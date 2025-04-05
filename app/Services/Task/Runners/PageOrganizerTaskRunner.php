@@ -17,8 +17,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 
     public function run(): void
     {
-        $taskDefinition = $this->taskRun->taskDefinition;
-        $agent          = $taskDefinition->agent;
+        $agent = $this->taskDefinition->agent;
 
         // Make sure to include page numbers in the agent thread so the agent can reference them
         $this->includePageNumbersInThread = true;

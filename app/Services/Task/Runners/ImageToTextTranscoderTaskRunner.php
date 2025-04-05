@@ -101,8 +101,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
      */
     public function setupThreadForFile(StoredFile $storedFile, StoredFile $ocrTranscodedFile)
     {
-        $taskDefinition = $this->taskRun->taskDefinition;
-        $agent          = $taskDefinition->agent;
+        $agent = $this->taskDefinition->agent;
 
         if (!$agent) {
             throw new Exception(static::class . ": Agent not found for TaskProcess: $this->taskProcess");
@@ -113,7 +112,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         // Add the OCR transcode text to the thread
         $ocrPrompt   = "OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ";
         $agentThread = app(TaskDefinitionToAgentThreadMapper::class)
-            ->setTaskDefinition($this->taskRun->taskDefinition)
+            ->setTaskDefinition($this->taskDefinition)
             ->addMessage($ocrPrompt . $ocrTranscodedFile->getContents())
             ->addMessage(['files' => [$storedFile]])
             ->map();

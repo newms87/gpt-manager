@@ -13,7 +13,7 @@ class SplitArtifactsByJsonContentTaskRunner extends BaseTaskRunner
         $this->activity('Splitting JSON content', 1);
 
         $groupingKeys = [];
-        foreach($this->taskRun->taskDefinition->schemaAssociations as $schemaAssociation) {
+        foreach($this->taskDefinition->schemaAssociations as $schemaAssociation) {
             $groupingKeys[] = $schemaAssociation->schemaFragment->fragment_selector;
         }
 

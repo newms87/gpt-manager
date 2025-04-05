@@ -13,8 +13,7 @@ class MergeArtifactsTaskRunner extends BaseTaskRunner
 
     public function run(): void
     {
-        $config           = $this->taskRun->taskDefinition->task_runner_config;
-        $fragmentSelector = $config['fragment_selector'];
+        $fragmentSelector = $this->config('fragment_selector');
         $inputArtifacts   = $this->taskProcess->inputArtifacts;
 
         if ($fragmentSelector) {
