@@ -57,11 +57,11 @@
 					@click.stop="$emit('edit')"
 				/>
 				<ActionButton
-					type="trash"
+					type="minus"
 					color="red"
 					:disabled="temporary"
 					size="xs"
-					tooltip="Remove Node From Workflow"
+					tooltip="Remove Task From Workflow"
 					@click.stop="$emit('remove')"
 				/>
 			</template>

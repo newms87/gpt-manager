@@ -2,6 +2,7 @@ import {
 	AgentThreadRunnerLottie,
 	ImageToTextLottie,
 	LoadFromDbLottie,
+	MergeArtifactsLottie,
 	PageOrganizerLottie,
 	RunWorkflowLottie,
 	SaveToDbLottie,
@@ -13,6 +14,7 @@ import {
 	BaseTaskRunnerConfig,
 	CategorizeArtifactsTaskRunnerConfig,
 	ImageToTextTranscoderTaskRunnerConfig,
+	MergeArtifactsTaskRunnerConfig,
 	PagesOrganizerTaskRunnerConfig,
 	RunWorkflowTaskRunnerConfig,
 	SplitArtifactsByJsonContentTaskRunnerConfig
@@ -22,6 +24,7 @@ import {
 	BaseTaskRunnerNode,
 	ImageToTextTaskRunnerNode,
 	LoadFromDatabaseTaskRunnerNode,
+	MergeArtifactsTaskRunnerNode,
 	PageOrganizerTaskRunnerNode,
 	RunWorkflowTaskRunnerNode,
 	SaveToDatabaseTaskRunnerNode,
@@ -57,6 +60,11 @@ export const TaskRunners = {
 		lottie: LoadFromDbLottie,
 		node: LoadFromDatabaseTaskRunnerNode,
 		config: BaseTaskRunnerConfig
+	},
+	"Merge Artifacts": {
+		lottie: MergeArtifactsLottie,
+		node: MergeArtifactsTaskRunnerNode,
+		config: MergeArtifactsTaskRunnerConfig
 	},
 	"Pages Organizer": {
 		lottie: PageOrganizerLottie,

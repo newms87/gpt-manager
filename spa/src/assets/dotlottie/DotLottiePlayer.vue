@@ -5,6 +5,7 @@
 		:loop="loop"
 		:segment="segment"
 		:src="src"
+		:speed="speed"
 		:mode="mode"
 		@mouseover="onHoverIn"
 		@mouseout="onHoverOut"
@@ -19,6 +20,7 @@ const props = withDefaults(defineProps<{
 	autoplay?: boolean;
 	src: string;
 	loop?: boolean;
+	speed?: number;
 	mode?: "forward" | "reverse" | "bounce" | "reverse-bounce",
 	segment?: [number, number];
 	startFrame?: number;
@@ -30,6 +32,7 @@ const props = withDefaults(defineProps<{
 	segment: null,
 	startFrame: 0,
 	finalFrame: 100,
+	speed: 1,
 	mode: "forward"
 });
 

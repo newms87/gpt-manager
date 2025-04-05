@@ -103,6 +103,17 @@ class ArtifactsToGroupsMapper
     }
 
     /**
+     * Set the fragment selector for the mapper. The resolved values from the artifacts' data will define the number of
+     * groups and the group key for each item in the group.
+     */
+    public function setFragmentSelector(array $fragmentSelector): static
+    {
+        $this->fragmentSelector = $fragmentSelector;
+
+        return $this;
+    }
+
+    /**
      * @param Artifact[]|Collection $artifacts
      * @return Artifact[][] An array of groups of artifacts
      */
@@ -135,6 +146,8 @@ class ArtifactsToGroupsMapper
                 $jsonContent['text_content'] = $artifact->text_content;
             }
 
+            $jsonContent['position'] = $artifact->position;
+
             // Use the artifact ID as a key prefix to ensure groups remain distinct across artifacts
             if ($this->fragmentSelector) {
                 $fragmentGroups = $this->resolveGroupsByFragment($jsonContent, $this->fragmentSelector, $keyPrefix);
@@ -166,11 +179,13 @@ class ArtifactsToGroupsMapper
         foreach($groups as $groupKey => $items) {
             foreach($items as $itemKey => $item) {
                 $textContent = $item['text_content'] ?? null;
+                $position    = $item['position'] ?? null;
                 unset($item['text_content']);
                 $groupsOfArtifacts[$groupKey][$itemKey] = Artifact::create([
                     'name'                 => "$groupKey:$itemKey",
                     'json_content'         => $item,
                     'text_content'         => $textContent,
+                    'position'             => $position,
                     'schema_definition_id' => $schemaDefinitionId,
                 ]);
             }

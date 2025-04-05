@@ -2,6 +2,7 @@ export { default as AgentThreadTaskRunnerNode } from "./AgentThreadTaskRunnerNod
 export { default as BaseTaskRunnerNode } from "./BaseTaskRunnerNode.vue";
 export { default as ImageToTextTaskRunnerNode } from "./ImageToTextTaskRunnerNode.vue";
 export { default as LoadFromDatabaseTaskRunnerNode } from "./LoadFromDatabaseTaskRunnerNode.vue";
+export { default as MergeArtifactsTaskRunnerNode } from "./MergeArtifactsTaskRunnerNode.vue";
 export { default as PageOrganizerTaskRunnerNode } from "./PageOrganizerTaskRunnerNode.vue";
 export { default as RunWorkflowTaskRunnerNode } from "./RunWorkflowTaskRunnerNode.vue";
 export { default as SaveToDatabaseTaskRunnerNode } from "./SaveToDatabaseTaskRunnerNode.vue";
