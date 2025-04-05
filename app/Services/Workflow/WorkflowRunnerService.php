@@ -6,7 +6,6 @@ use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
-use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\TaskRunnerService;
 use App\Traits\HasDebugLogging;
 use Exception;
@@ -180,12 +179,7 @@ class WorkflowRunnerService
                 }
             }
 
-            // Make sure to set the flag to indicate that all required tasks have been run so the workflow can know when it is completed
-            if ($workflowRun->taskRuns()->whereIn('status', [WorkflowStatesContract::STATUS_PENDING, WorkflowStatesContract::STATUS_RUNNING])->doesntExist()) {
-                static::log("All tasks have been run, setting flag");
-                $workflowRun->has_run_all_tasks = true;
-                $workflowRun->save();
-            }
+            $workflowRun->checkTaskRuns()->save();
         } finally {
             LockHelper::release($workflowRun);
         }

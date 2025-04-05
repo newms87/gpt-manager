@@ -169,6 +169,12 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         $hasStoppedTasks = false;
         $hasFailedTasks  = false;
 
+        // Make sure to set the flag to indicate that all required tasks have been run so the workflow can know when it is completed
+        if ($this->hasRunAllTasks()) {
+            static::log("All tasks have been run, setting flag");
+            $this->has_run_all_tasks = true;
+        }
+
         foreach($this->taskRuns()->get() as $taskRun) {
             if ($taskRun->isStopped()) {
                 $hasStoppedTasks = true;
@@ -205,6 +211,11 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         }
 
         return $this;
+    }
+
+    public function hasRunAllTasks(): bool
+    {
+        return $this->taskRuns()->whereIn('status', [WorkflowStatesContract::STATUS_PENDING, WorkflowStatesContract::STATUS_RUNNING])->doesntExist();
     }
 
     public static function booted(): void
