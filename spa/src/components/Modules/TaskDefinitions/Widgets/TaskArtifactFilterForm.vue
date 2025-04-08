@@ -2,7 +2,7 @@
 	<div class="task-artifact-filter-form">
 		<div class="flex-x">
 			<Component
-				:is="TaskRunners.resolve(sourceTaskDefinition.task_runner_class).lottie"
+				:is="TaskRunnerClasses.resolve(sourceTaskDefinition.task_runner_class).lottie"
 				class="w-10 h-10 mr-2"
 				play-on-hover
 			/>
@@ -63,7 +63,7 @@ import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorT
 import { loadSchemaDefinitions, schemaDefinitions } from "@/components/Modules/Schemas/SchemaDefinitions/store";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { dxTaskArtifactFilter } from "@/components/Modules/TaskDefinitions/TaskArtifactFilters/config";
-import { TaskRunners } from "@/components/Modules/TaskDefinitions/TaskRunners";
+import { TaskRunnerClasses } from "@/components/Modules/TaskDefinitions/TaskRunners";
 import { SchemaDefinition, TaskArtifactFilter, TaskDefinition } from "@/types";
 import { onMounted, ref, shallowRef } from "vue";
 

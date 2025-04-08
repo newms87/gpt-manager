@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { fields } from "@/components/Modules/TaskDefinitions/config/fields";
-import { TaskRunners } from "@/components/Modules/TaskDefinitions/TaskRunners";
+import { TaskRunnerClasses } from "@/components/Modules/TaskDefinitions/TaskRunners";
 import ArtifactSplitModeWidget from "@/components/Modules/TaskDefinitions/Widgets/ArtifactSplitModeWidget";
 import TaskArtifactFiltersWidget from "@/components/Modules/TaskDefinitions/Widgets/TaskArtifactFiltersWidget";
 import { dxWorkflowNode } from "@/components/Modules/WorkflowDefinitions/WorkflowNodes/config";
@@ -50,7 +50,7 @@ const props = defineProps<{
 const formDefinition = shallowRef({ fields });
 
 const updateAction = dxTaskDefinition.getAction("update");
-const TaskRunnerConfigComponent = computed(() => TaskRunners[props.taskDefinition.task_runner_class]?.config || TaskRunners.Base.config);
+const TaskRunnerConfigComponent = computed(() => TaskRunnerClasses[props.taskDefinition.task_runner_class]?.config || TaskRunnerClasses.Base.config);
 const sourceTaskDefinitions = computed(() => props.workflowNode?.connectionsAsTarget?.map(c => c.sourceNode.taskDefinition));
 
 onMounted(async () => {

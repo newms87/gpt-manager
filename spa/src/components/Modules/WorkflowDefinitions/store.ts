@@ -1,7 +1,7 @@
 import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/config";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { WORKFLOW_STATUS } from "@/components/Modules/WorkflowDefinitions/workflows";
-import { TaskDefinition, WorkflowDefinition, WorkflowInput, WorkflowNode, WorkflowRun } from "@/types";
+import { TaskDefinition, TaskRunnerClass, WorkflowDefinition, WorkflowInput, WorkflowNode, WorkflowRun } from "@/types";
 import { autoRefreshObject, getItem, setItem, stopAutoRefreshObject, storeObjects } from "quasar-ui-danx";
 import { ref, watch } from "vue";
 
@@ -74,11 +74,12 @@ const addNodeAction = dxWorkflowDefinition.getAction("add-node", {
 	onFinish: refreshActiveWorkflowDefinition
 });
 
-async function addWorkflowNode(taskDefinition: TaskDefinition, input: Partial<WorkflowNode> = {}) {
+async function addWorkflowNode(newNode: TaskDefinition | TaskRunnerClass, input: Partial<WorkflowNode> = {}) {
 	return await addNodeAction.trigger(activeWorkflowDefinition.value, {
-		id: "td-" + taskDefinition.id,
-		name: taskDefinition.name,
-		task_definition_id: taskDefinition.id,
+		id: "td-" + newNode.name,
+		name: newNode.name,
+		task_definition_id: newNode.id || null,
+		task_runner_class: newNode.id ? null : newNode.name,
 		...input
 	});
 }

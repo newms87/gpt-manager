@@ -11,6 +11,7 @@ import {
 	WorkflowInput
 } from "@/types";
 import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
+import { VNode } from "vue";
 
 export interface TaskDefinition extends ActionTargetItem {
 	id: string;
@@ -90,6 +91,15 @@ export interface TaskProcess extends TaskRunner {
 	inputArtifacts?: Artifact[];
 	outputArtifacts?: Artifact[];
 	taskRun?: TaskRun;
+}
+
+export interface TaskRunnerClass {
+	id: null;
+	name: string;
+	description: string;
+	lottie: string | null;
+	node: VNode;
+	config: VNode;
 }
 
 export interface TaskRunner extends ActionTargetItem {

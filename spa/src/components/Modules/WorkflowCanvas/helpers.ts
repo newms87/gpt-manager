@@ -9,8 +9,8 @@ const { edges } = useVueFlow();
 // The list of all tasks in the teams account
 const taskDefinitions = shallowRef([]);
 
-async function loadTaskDefinitions() {
-	taskDefinitions.value = (await dxTaskDefinition.routes.list()).data;
+async function loadTaskDefinitions(pager = null) {
+	taskDefinitions.value = (await dxTaskDefinition.routes.list(pager)).data;
 }
 
 /**

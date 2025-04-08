@@ -2,11 +2,13 @@
 
 namespace App\Repositories;
 
+use App\Models\Task\TaskDefinition;
 use App\Models\Workflow\WorkflowConnection;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -65,10 +67,27 @@ class WorkflowDefinitionRepository extends ActionRepository
     public function addNode(WorkflowDefinition $workflowDefinition, ?array $input = []): WorkflowNode
     {
         // First we must guarantee we have an agent (from the users team) selected to add to the definition
-        $taskDefinition = team()->taskDefinitions()->find($input['task_definition_id'] ?? null);
+        $taskDefinition  = team()->taskDefinitions()->find($input['task_definition_id'] ?? null);
+        $taskRunnerClass = $input['task_runner_class'] ?? null;
+
+        if (!$taskRunnerClass && !$taskDefinition) {
+            throw new ValidationError("You must choose a task definition or a task runner to create task node.");
+        }
 
         if (!$taskDefinition) {
-            throw new Exception("You must choose a task definition to create task node.");
+            $taskDefinition = TaskDefinition::make()->forceFill([
+                'team_id'           => team()->id,
+                'name'              => $taskRunnerClass,
+                'task_runner_class' => $taskRunnerClass,
+            ]);
+
+            $taskDefinition->name = ModelHelper::getNextModelName($taskDefinition, 'name', ['team_id' => team()->id]);
+
+            if (!$taskDefinition->getRunner()) {
+                throw new ValidationError("Task runner class $taskRunnerClass is not valid.");
+            }
+
+            $taskDefinition->save();
         }
 
         return $workflowDefinition->workflowNodes()->create([
