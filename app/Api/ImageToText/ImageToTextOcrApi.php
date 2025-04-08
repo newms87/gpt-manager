@@ -14,7 +14,7 @@ class ImageToTextOcrApi extends BearerTokenApi
         $this->baseApiUrl = config('imagetotext.api_url');
         $this->token      = config('imagetotext.api_key');
         $this->rateLimits = [
-            ['limit' => 1, 'interval' => 2, 'waitPerAttempt' => 5],
+            ['limit' => 1, 'interval' => 5, 'waitPerAttempt' => 5],
         ];
     }
 

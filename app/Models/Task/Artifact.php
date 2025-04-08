@@ -13,16 +13,23 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class Artifact extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, ActionModelTrait, KeywordSearchTrait, SoftDeletes;
 
     protected $guarded = [
         'id',
         'created_at',
         'updated_at',
         'deleted_at',
+    ];
+
+    protected array $keywordFields = [
+        'name',
+        'text_content',
+        'json_content',
     ];
 
     public function casts(): array
