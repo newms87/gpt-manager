@@ -15,6 +15,7 @@ import {
 	AgentThreadTaskRunnerConfig,
 	BaseTaskRunnerConfig,
 	CategorizeArtifactsTaskRunnerConfig,
+	ClassifierTaskRunnerConfig,
 	ImageToTextTranscoderTaskRunnerConfig,
 	MergeArtifactsTaskRunnerConfig,
 	PagesOrganizerTaskRunnerConfig,
@@ -41,6 +42,12 @@ export const TaskRunnerClasses = {
 		description: "Categorize artifacts based on their content.",
 		lottie: CategorizeArtifactsLottie,
 		config: CategorizeArtifactsTaskRunnerConfig
+	},
+	"Classifier": {
+		name: "Classifier",
+		description: "Classify artifacts based on their content.",
+		lottie: CategorizeArtifactsLottie,
+		config: ClassifierTaskRunnerConfig
 	},
 	"Image To Text Transcoder": {
 		name: "Image To Text Transcoder",

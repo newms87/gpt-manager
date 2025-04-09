@@ -55,8 +55,8 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         $schemaDefinition  = $this->taskDefinition->schemaDefinition;
         $schemaAssociation = $this->taskProcess->outputSchemaAssociation;
 
-        if ($schemaDefinition?->id !== $schemaAssociation?->schema_definition_id) {
-            throw new Exception(static::class . ": Schema definition mismatch for TaskProcess: $this->taskProcess");
+        if (($schemaDefinition && $schemaAssociation) && $schemaDefinition->id !== $schemaAssociation->schema_definition_id) {
+            throw new Exception(static::class . ": Schema definition mismatch: $schemaDefinition->id !== $schemaAssociation->schema_definition_id: for TaskProcess: $this->taskProcess");
         }
 
         // The default agent thread task runner will use the JsonSchemaService with the database fields (ie: id and name) so we are enabling database I/O
