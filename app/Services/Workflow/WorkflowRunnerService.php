@@ -49,13 +49,21 @@ class WorkflowRunnerService
     {
         static::log("Starting node $workflowNode");
 
-        // First gather all the artifacts from the target node's source nodes
-        $artifacts = collect($artifacts)->merge($workflowRun->collectOutputArtifactsFromSourceNodes($workflowNode));
-
         // Then run the node
-        $taskRun = TaskRunnerService::prepare($workflowNode->taskDefinition, $artifacts);
+        $taskRun = TaskRunnerService::prepareTaskRun($workflowNode->taskDefinition);
         $taskRun->workflowRun()->associate($workflowRun)->save();
         $taskRun->workflowNode()->associate($workflowNode)->save();
+
+        // Sync artifacts from the workflow source nodes
+        TaskRunnerService::syncInputArtifactsFromWorkflowSourceNodes($taskRun);
+
+        // Sync any additional artifacts that did not come directly from the workflow source nodes
+        $taskRun->syncInputArtifacts($artifacts);
+
+        // Prepare the task processes for the task run
+        TaskRunnerService::prepareTaskProcesses($taskRun);
+
+        // Start the task run
         TaskRunnerService::continue($taskRun);
 
         return $taskRun;

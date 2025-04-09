@@ -9,7 +9,7 @@ use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Workflow\WorkflowRunnerService;
 use App\Traits\HasDebugLogging;
-use Illuminate\Support\Collection;
+use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 
@@ -20,9 +20,8 @@ class TaskRunnerService
     /**
      * Prepare a task run for the task definition. Creates a TaskRun object w/ TaskProcess objects
      */
-    public static function prepare(TaskDefinition $taskDefinition, $artifacts = []): TaskRun
+    public static function prepareTaskRun(TaskDefinition $taskDefinition): TaskRun
     {
-        $artifacts = collect($artifacts);
         static::log("Prepare $taskDefinition");
 
         $taskRun = $taskDefinition->taskRuns()->make([
@@ -32,26 +31,21 @@ class TaskRunnerService
         $taskRun->getRunner()->prepareRun();
         $taskRun->save();
 
-        $taskRun->inputArtifacts()->sync($artifacts->pluck('id'));
-        $taskRun->updateRelationCounter('inputArtifacts');
-
-        static::prepareTaskProcesses($taskRun, $artifacts);
-
         return $taskRun;
     }
 
     /**
      * Prepare task processes for the task run. Each process will receive its own Artifacts / AgentThread
      * based on the input groups and the assigned schema associations for the TaskDefinition
-     * @param TaskRun               $taskRun
-     * @param Artifact[]|Collection $artifacts
+     * @param TaskRun $taskRun
      * @return array
      * @throws ValidationError
      */
-    public static function prepareTaskProcesses(TaskRun $taskRun, $artifacts = []): array
+    public static function prepareTaskProcesses(TaskRun $taskRun): array
     {
-        $artifacts = collect($artifacts);
         static::log("Preparing task processes for $taskRun");
+
+        $artifacts = $taskRun->inputArtifacts()->get();
 
         static::validateArtifacts($artifacts);
 
@@ -77,24 +71,6 @@ class TaskRunnerService
         $taskRun->taskProcesses()->saveMany($taskProcesses);
 
         return $taskProcesses;
-    }
-
-    /**
-     * Start a task run for the task definition. This will create a task run and dispatch the task processes
-     */
-    public static function start(TaskDefinition $taskDefinition, $artifacts = []): TaskRun
-    {
-        static::log("Start $taskDefinition");
-
-        $taskRun = static::prepare($taskDefinition, $artifacts);
-
-        $taskRun->started_at = now();
-        $taskRun->save();
-
-        // Dispatch the take processes to begin the task run
-        static::continue($taskRun);
-
-        return $taskRun;
     }
 
     /**
@@ -172,9 +148,7 @@ class TaskRunnerService
 
             // If this task run is part of a workflow run, collect the output artifacts from the source nodes and replace the current input artifacts
             if ($taskRun->workflow_run_id) {
-                $artifacts = $taskRun->workflowRun->collectOutputArtifactsFromSourceNodes($taskRun->workflowNode);
-                $taskRun->inputArtifacts()->sync($artifacts->pluck('id')->toArray());
-                $taskRun->updateRelationCounter('inputArtifacts');
+
             }
 
             $taskRun->stopped_at   = null;
@@ -182,12 +156,33 @@ class TaskRunnerService
             $taskRun->failed_at    = null;
             $taskRun->started_at   = null;
             $taskRun->save();
-            static::prepareTaskProcesses($taskRun, $taskRun->inputArtifacts()->get());
+            static::prepareTaskProcesses($taskRun);
         } finally {
             LockHelper::release($taskRun);
         }
 
         static::continue($taskRun);
+    }
+
+    /**
+     * Sync the input artifacts for a task run that is part of a workflow run.
+     * Uses the output artifacts of all source nodes in the workflow for the task run's target node, and syncs them as
+     * the input artifacts for this task run. This will also indicate the source task definition for these artifacts so
+     * the task run knows the relationship w/ these artifacts and can apply filters, etc.
+     */
+    public static function syncInputArtifactsFromWorkflowSourceNodes(TaskRun $taskRun): void
+    {
+        if (!$taskRun->workflowRun || !$taskRun->workflowNode) {
+            throw new Exception("Sync input artifacts error: task run not part of a workflow run or does not have a workflow node: $taskRun");
+        }
+
+        // Loop through all the source nodes of the target node to gather the output artifacts of each one
+        foreach($taskRun->workflowNode->connectionsAsTarget as $connectionAsTarget) {
+            $outputArtifacts = $taskRun->workflowRun->collectOutputArtifactsForNode($connectionAsTarget->sourceNode);
+
+            // Indicate the source task definition for these artifacts so the task run knows the relationship w/ these artifacts and can apply filters, etc.
+            $taskRun->syncInputArtifacts($outputArtifacts, $connectionAsTarget->sourceNode->task_definition_id);
+        }
     }
 
     /**

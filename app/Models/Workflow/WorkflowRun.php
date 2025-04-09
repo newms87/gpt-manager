@@ -90,27 +90,9 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
      * Get all the artifacts from the source nodes of the given target node
      * @return Collection<Artifact>
      */
-    public function collectOutputArtifactsFromSourceNodes(WorkflowNode $targetNode): Collection
-    {
-        $artifacts = collect();
-        
-        // Loop through all the source nodes of the target node to gather the output artifacts of each one
-        foreach($targetNode->connectionsAsTarget as $connectionAsTarget) {
-            $outputArtifacts = $this->collectOutputArtifactsForNode($connectionAsTarget->sourceNode);
-
-            $artifacts = $artifacts->merge($outputArtifacts);
-        }
-
-        return $artifacts;
-    }
-
-    /**
-     * Get all the artifacts from the source nodes of the given target node
-     * @return Collection<Artifact>
-     */
     public function collectInputArtifactsForNode(WorkflowNode $node): Collection
     {
-        return $this->taskRuns()->where('workflow_node_id', $node->id)->first()->inputArtifacts()->get() ?? collect();
+        return $this->taskRuns()->where('workflow_node_id', $node->id)->first()?->inputArtifacts()->get() ?? collect();
     }
 
     /**
@@ -119,7 +101,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
      */
     public function collectOutputArtifactsForNode(WorkflowNode $node): Collection
     {
-        return $this->taskRuns()->where('workflow_node_id', $node->id)->first()->outputArtifacts()->get() ?? collect();
+        return $this->taskRuns()->where('workflow_node_id', $node->id)->first()?->outputArtifacts()->get() ?? collect();
     }
 
     /**

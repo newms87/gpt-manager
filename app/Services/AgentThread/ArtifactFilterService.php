@@ -9,9 +9,9 @@ use App\Services\JsonSchema\JsonSchemaService;
 class ArtifactFilterService
 {
     private ?Artifact $artifact         = null;
-    private bool      $includeText      = false;
-    private bool      $includeFiles     = false;
-    private bool      $includeJson      = false;
+    private bool      $includeText      = true;
+    private bool      $includeFiles     = true;
+    private bool      $includeJson      = true;
     private array     $fragmentSelector = [];
 
     public function setFilter(TaskArtifactFilter $artifactFilter): static

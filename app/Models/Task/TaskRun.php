@@ -80,6 +80,21 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         return $this->belongsTo(WorkflowNode::class);
     }
 
+    public function artifactables(): HasMany|Artifactable
+    {
+        return $this->hasMany(Artifactable::class);
+    }
+
+    public function inputArtifactables(): HasMany|Artifactable
+    {
+        return $this->artifactables()->where('category', 'output');
+    }
+
+    public function outputArtifactables(): HasMany|Artifactable
+    {
+        return $this->artifactables()->where('category', 'output');
+    }
+
     public function artifacts(): MorphToMany|Artifact
     {
         return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps()->orderBy('position');
@@ -100,10 +115,20 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         return $this->morphOne(UsageSummary::class, 'object');
     }
 
-    public function clearOutputArtifacts(): void
+    public function syncInputArtifacts($artifacts, $sourceTaskDefinitionId = null): static
     {
-        $this->outputArtifacts()->detach();
-        $this->updateRelationCounter('outputArtifacts');
+        $this->inputArtifacts()->syncWithPivotValues(collect($artifacts)->pluck('id'), ['source_task_definition_id' => $sourceTaskDefinitionId], false);
+        $this->updateRelationCounter('inputArtifacts');
+
+        return $this;
+    }
+
+    public function syncOutputArtifacts($artifacts): static
+    {
+        $this->outputArtifacts()->sync(collect($artifacts)->pluck('id'));
+        $this->updateRelationCounter('inputArtifacts');
+
+        return $this;
     }
 
     public function clearInputArtifacts(): void
@@ -111,7 +136,13 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         $this->inputArtifacts()->detach();
         $this->updateRelationCounter('inputArtifacts');
     }
-    
+
+    public function clearOutputArtifacts(): void
+    {
+        $this->outputArtifacts()->detach();
+        $this->updateRelationCounter('outputArtifacts');
+    }
+
     /**
      * Whenever a process state has changed, call this method to check if the task run has completed or has changed
      * state as well

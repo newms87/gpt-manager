@@ -72,7 +72,7 @@ class WorkflowRunnerServiceTest extends AuthenticatedTestCase
         $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$artifact]);
 
         // Then
-        $sourceOutputArtifacts = $workflowRun->collectOutputArtifactsFromSourceNodes($connection->targetNode);
+        $sourceOutputArtifacts = $workflowRun->collectOutputArtifactsForNode($connection->targetNode);
         $targetInputArtifacts  = $workflowRun->collectInputArtifactsForNode($connection->targetNode);
         $this->assertEquals(1, $targetInputArtifacts->count(), 'Exactly 1 Output artifact of source node should be passed to target node');
 
