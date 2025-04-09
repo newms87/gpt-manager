@@ -6,18 +6,12 @@
 			<LabelPillWidget :label="artifact.position" color="green" size="xs" class="flex-shrink-0" />
 			<div class="flex-grow min-w-0 overflow-hidden">{{ artifact.name }}</div>
 			<ShowHideButton
-				v-if="artifact.json_content"
-				v-model="isShowingJson"
-				class="bg-purple-700 flex-shrink-0"
-				size="sm"
-				:show-icon="JsonIcon"
-			/>
-			<ShowHideButton
 				v-if="artifact.text_content"
 				v-model="isShowingText"
 				class="bg-green-900 flex-shrink-0"
 				size="sm"
 				:show-icon="TextIcon"
+				tooltip="Show Text"
 			/>
 			<ShowHideButton
 				v-if="artifact.files?.length > 0"
@@ -25,12 +19,30 @@
 				class="bg-amber-900 flex-shrink-0"
 				size="sm"
 				:show-icon="FilesIcon"
+				tooltip="Show Files"
+			/>
+			<ShowHideButton
+				v-if="artifact.json_content"
+				v-model="isShowingJson"
+				class="bg-purple-700 flex-shrink-0"
+				size="sm"
+				:show-icon="JsonIcon"
+				tooltip="Show Json Content"
+			/>
+			<ShowHideButton
+				v-if="artifact.meta"
+				v-model="isShowingMeta"
+				class="bg-slate-500 text-slate-300 flex-shrink-0"
+				size="sm"
+				:show-icon="MetaIcon"
+				tooltip="Show Artifact Meta"
 			/>
 			<ShowHideButton
 				v-if="typeCount > 1"
 				:model-value="isShowingAll"
 				class="bg-sky-900 flex-shrink-0"
 				size="sm"
+				tooltip="Show All Data"
 				@update:model-value="onToggleAll()"
 			/>
 		</div>
@@ -61,13 +73,25 @@
 					readonly
 				/>
 			</div>
+			<div v-if="artifact.meta && isShowingMeta">
+				<MarkdownEditor
+					:model-value="artifact.meta"
+					format="yaml"
+					readonly
+				/>
+			</div>
 		</ListTransition>
 	</div>
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { Artifact } from "@/types";
-import { FaSolidDatabase as JsonIcon, FaSolidFile as FilesIcon, FaSolidT as TextIcon } from "danx-icon";
+import {
+	FaSolidBarcode as MetaIcon,
+	FaSolidDatabase as JsonIcon,
+	FaSolidFile as FilesIcon,
+	FaSolidT as TextIcon
+} from "danx-icon";
 import { fDateTime, FilePreview, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
@@ -75,33 +99,41 @@ const props = defineProps<{
 	artifact: Artifact,
 	show?: boolean;
 	showText?: boolean;
-	showJson?: boolean;
 	showFiles?: boolean;
+	showJson?: boolean;
+	showMeta?: boolean;
 }>();
 
 const hasText = computed(() => !!props.artifact.text_content);
-const hasJson = computed(() => !!props.artifact.json_content);
 const hasFiles = computed(() => !!props.artifact.files?.length);
+const hasJson = computed(() => !!props.artifact.json_content);
+const hasMeta = computed(() => !!props.artifact.meta);
 const typeCount = computed(() => [hasText.value, hasJson.value, hasFiles.value].filter(Boolean).length);
 const isShowingText = ref(props.showText);
-const isShowingJson = ref(props.showJson);
 const isShowingFiles = ref(props.showFiles);
-const isShowingAll = computed(() => (!hasJson.value || isShowingJson.value) && (!hasFiles.value || isShowingFiles.value) && (!hasText.value || isShowingText.value));
+const isShowingJson = ref(props.showJson);
+const isShowingMeta = ref(props.showMeta);
+
+const isShowingAll = computed(() => (!hasText.value || isShowingText.value) && (!hasFiles.value || isShowingFiles.value) && (!hasJson.value || isShowingJson.value) && (!hasMeta.value || isShowingMeta.value));
 function onToggleAll(state: boolean = null) {
 	state = state === null ? !isShowingAll.value : state;
 	isShowingText.value = state;
-	isShowingJson.value = state;
 	isShowingFiles.value = state;
+	isShowingJson.value = state;
+	isShowingMeta.value = state;
 }
 
 watch(() => props.show, onToggleAll);
 watch(() => props.showText, (state) => {
 	isShowingText.value = state;
 });
+watch(() => props.showFiles, (state) => {
+	isShowingFiles.value = state;
+});
 watch(() => props.showJson, (state) => {
 	isShowingJson.value = state;
 });
-watch(() => props.showFiles, (state) => {
-	isShowingFiles.value = state;
+watch(() => props.showMeta, (state) => {
+	isShowingMeta.value = state;
 });
 </script>

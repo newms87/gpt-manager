@@ -158,6 +158,7 @@ const jobDispatchesField = { logs: true, apiLogs: true, errors: true };
 const artifactsField = {
 	text_content: true,
 	json_content: true,
+	meta: true,
 	files: { transcodes: true, thumb: true }
 };
 

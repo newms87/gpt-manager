@@ -74,6 +74,7 @@ const artifactsToShow = computed<Artifact[] | null>(() => isShowingInputArtifact
 const artifactsField = {
 	text_content: true,
 	json_content: true,
+	meta: true,
 	files: { transcodes: true, thumb: true }
 };
 async function onShowInputArtifacts() {

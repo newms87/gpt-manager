@@ -45,6 +45,7 @@ const props = defineProps<{
 const artifactsField = {
 	text_content: true,
 	json_content: true,
+	meta: true,
 	files: { transcodes: true, thumb: true }
 };
 

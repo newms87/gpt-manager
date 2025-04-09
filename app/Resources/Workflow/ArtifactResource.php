@@ -23,6 +23,7 @@ class ArtifactResource extends ActionResource
                 'schemaDefinition' => $artifact->schemaDefinition->only(['id', 'type', 'name']),
             ],
             'files'        => fn($fields) => StoredFileResource::collection($artifact->storedFiles->load('transcodes'), $fields),
+            'meta'         => fn($fields) => $artifact->meta,
         ];
     }
 

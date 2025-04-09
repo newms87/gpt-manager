@@ -17,19 +17,16 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
             throw new ValidationError(static::class . ": No JSON content returned from agent thread");
         }
 
-        $jsonContent    = $artifact->json_content;
-        $classification = reset($jsonContent);
-
         foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
             $meta = $inputArtifact->meta;
 
-            $meta['classification'] = $classification;
+            $meta['classification'] = $artifact->json_content;
 
             $inputArtifact->meta = $meta;
             $inputArtifact->save();
         }
 
-        // We've added the meta data to the artifacts so re-use the same artifacts and complete the process
+        // We've added the metadata to the artifacts so re-use the same artifacts and complete the process
         $this->complete($this->taskProcess->inputArtifacts);
     }
 }

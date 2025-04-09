@@ -8,5 +8,6 @@ export interface Artifact {
 	text_content?: string;
 	json_content?: AnyObject;
 	files: UploadedFile[];
+	meta?: AnyObject;
 	created_at: string;
 }
