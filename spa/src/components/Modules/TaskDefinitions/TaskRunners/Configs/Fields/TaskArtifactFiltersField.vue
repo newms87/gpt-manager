@@ -12,8 +12,8 @@
 	</div>
 </template>
 <script setup lang="ts">
-import TaskArtifactFilterForm from "@/components/Modules/TaskDefinitions/Widgets/TaskArtifactFilterForm";
 import { TaskDefinition } from "@/types";
+import TaskArtifactFilterForm from "./TaskArtifactFiltersFieldForm";
 
 const props = defineProps<{
 	targetTaskDefinition: TaskDefinition;

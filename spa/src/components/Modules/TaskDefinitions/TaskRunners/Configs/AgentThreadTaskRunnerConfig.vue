@@ -2,7 +2,10 @@
 	<BaseTaskRunnerConfig :task-definition="taskDefinition">
 		<QSeparator class="bg-slate-400 my-4" />
 		<AgentThreadInstructions />
-		<TaskDefinitionAgentConfigField :task-definition="taskDefinition" />
+		<TaskDefinitionAgentConfigField
+			:task-definition="taskDefinition"
+			:source-task-definitions="sourceTaskDefinitions"
+		/>
 		<TaskDefinitionDirectivesConfigField :task-definition="taskDefinition" class="mt-6" />
 		<SchemaAndFragmentsConfigField class="mt-6" :task-definition="taskDefinition" />
 	</BaseTaskRunnerConfig>
@@ -19,5 +22,6 @@ import { AgentThreadInstructions } from "./Instructions";
 
 defineProps<{
 	taskDefinition: TaskDefinition;
+	sourceTaskDefinitions?: TaskDefinition[];
 }>();
 </script>

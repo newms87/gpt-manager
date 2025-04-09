@@ -10,15 +10,13 @@
 					:model-value="taskDefinition.artifact_split_mode"
 					@update:model-value="artifact_split_mode => updateAction.trigger(taskDefinition, {artifact_split_mode})"
 				/>
-				<TaskArtifactFiltersWidget
-					v-if="sourceTaskDefinitions?.length > 0"
-					class="mt-8"
-					:target-task-definition="taskDefinition"
-					:source-task-definitions="sourceTaskDefinitions"
-				/>
 			</div>
 
-			<Component :is="TaskRunnerConfigComponent" :task-definition="taskDefinition" />
+			<Component
+				:is="TaskRunnerConfigComponent"
+				:task-definition="taskDefinition"
+				:source-task-definitions="sourceTaskDefinitions"
+			/>
 		</ActionForm>
 	</QTabPanel>
 </template>
@@ -27,7 +25,6 @@ import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { fields } from "@/components/Modules/TaskDefinitions/config/fields";
 import { TaskRunnerClasses } from "@/components/Modules/TaskDefinitions/TaskRunners";
 import ArtifactSplitModeWidget from "@/components/Modules/TaskDefinitions/Widgets/ArtifactSplitModeWidget";
-import TaskArtifactFiltersWidget from "@/components/Modules/TaskDefinitions/Widgets/TaskArtifactFiltersWidget";
 import { dxWorkflowNode } from "@/components/Modules/WorkflowDefinitions/WorkflowNodes/config";
 import { TaskDefinition, WorkflowNode } from "@/types";
 import { ActionForm } from "quasar-ui-danx";

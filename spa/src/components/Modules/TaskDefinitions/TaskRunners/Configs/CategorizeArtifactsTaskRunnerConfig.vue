@@ -1,6 +1,9 @@
 <template>
 	<BaseTaskRunnerConfig :task-definition="taskDefinition">
-		<TaskDefinitionAgentConfigField :task-definition="taskDefinition" />
+		<TaskDefinitionAgentConfigField
+			:task-definition="taskDefinition"
+			:source-task-definitions="sourceTaskDefinitions"
+		/>
 		<TaskDefinitionDirectivesConfigField :task-definition="taskDefinition" class="mt-6" />
 	</BaseTaskRunnerConfig>
 </template>
@@ -11,5 +14,6 @@ import { TaskDefinitionAgentConfigField, TaskDefinitionDirectivesConfigField } f
 
 defineProps<{
 	taskDefinition: TaskDefinition;
+	sourceTaskDefinitions?: TaskDefinition[];
 }>();
 </script>
