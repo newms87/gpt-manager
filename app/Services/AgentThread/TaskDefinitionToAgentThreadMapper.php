@@ -133,7 +133,7 @@ class TaskDefinitionToAgentThreadMapper
 
         // Resolve the artifactable record which contains the source task definition id
         // Using this we can identify the relationship between the source task and the target task and how the artifact should be filtered
-        $artifactable = $this->taskRun->outputArtifactables->where('artifact_id', $artifact->id)->first();
+        $artifactable = $this->taskRun->inputArtifactables->where('artifact_id', $artifact->id)->first();
 
         if (!$artifactable) {
             return $service;
@@ -141,7 +141,6 @@ class TaskDefinitionToAgentThreadMapper
 
         foreach($this->taskDefinition->taskArtifactFiltersAsTarget as $artifactFilter) {
             if ($artifactFilter->source_task_definition_id === $artifactable->source_task_definition_id) {
-
                 return $service->setFilter($artifactFilter);
             }
         }

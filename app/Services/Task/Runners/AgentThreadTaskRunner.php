@@ -103,6 +103,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         $this->activity("Setting up agent thread for: {$taskDefinition->agent->name}", 5);
 
         $agentThread = app(TaskDefinitionToAgentThreadMapper::class)
+            ->setTaskRun($this->taskRun)
             ->setTaskDefinition($this->taskRun->taskDefinition)
             ->setArtifacts($this->taskProcess->inputArtifacts()->get())
             ->includePageNumbers($this->includePageNumbersInThread)

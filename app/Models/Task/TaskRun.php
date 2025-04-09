@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -80,17 +81,17 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         return $this->belongsTo(WorkflowNode::class);
     }
 
-    public function artifactables(): HasMany|Artifactable
+    public function artifactables(): MorphMany|Artifactable
     {
-        return $this->hasMany(Artifactable::class);
+        return $this->morphMany(Artifactable::class, 'artifactable');
     }
 
-    public function inputArtifactables(): HasMany|Artifactable
+    public function inputArtifactables(): MorphMany|Artifactable
     {
-        return $this->artifactables()->where('category', 'output');
+        return $this->artifactables()->where('category', 'input');
     }
 
-    public function outputArtifactables(): HasMany|Artifactable
+    public function outputArtifactables(): MorphMany|Artifactable
     {
         return $this->artifactables()->where('category', 'output');
     }
