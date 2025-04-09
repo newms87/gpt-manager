@@ -32,6 +32,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
                 'task_process_id' => $this->taskProcess->id,
                 'text_content'    => $transcodedFile->getContents(),
                 'json_content'    => $inputArtifact->json_content,
+                'meta'            => $inputArtifact->meta,
             ]);
             $artifact->storedFiles()->attach($transcodedFile->originalFile);
             $this->complete([$artifact]);

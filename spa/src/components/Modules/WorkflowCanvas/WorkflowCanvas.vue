@@ -17,7 +17,8 @@
 			:connection-mode="ConnectionMode.Strict"
 			@pane-ready="onPaneReady"
 			@connect="onConnectionAdd"
-			@node-drag-stop="onNodeDragStop"
+			@node-drag-stop="onSelectionDragStop"
+			@selection-drag-stop="onSelectionDragStop"
 			@dragover="onDragOver"
 			@drop="e => handleExternalDrop('workflow-canvas-vf', e)"
 		>
@@ -127,8 +128,10 @@ function resolveWorkflowNode(node: Node) {
 	return workflowNode;
 }
 
-function onNodeDragStop({ node }) {
-	emit("node-position", resolveWorkflowNode(node), { ...node.position });
+function onSelectionDragStop(selection) {
+	for (const node of selection.nodes) {
+		emit("node-position", resolveWorkflowNode(node), { ...node.position });
+	}
 }
 
 /*********** Connection Related Methods *********/

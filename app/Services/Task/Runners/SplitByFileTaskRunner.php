@@ -24,8 +24,8 @@ class SplitByFileTaskRunner extends BaseTaskRunner
 
                     foreach($fileList as $fileItem) {
                         $artifact = Artifact::create([
-                            'name'         => $fileItem->filename,
-                            'json_content' => [
+                            'name' => $fileItem->filename,
+                            'meta' => [
                                 '__file' => ArtifactStoredFileResource::make($storedFile),
                                 '__page' => ArtifactStoredFileResource::make($fileItem),
                             ],

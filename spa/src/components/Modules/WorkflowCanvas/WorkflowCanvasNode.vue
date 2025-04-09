@@ -99,3 +99,12 @@ const nodeClass = computed(() => {
 });
 </script>
 
+<style lang="scss">
+.vue-flow__node.selected {
+	.workflow-canvas-node {
+		.node-content {
+			@apply outline outline-4 outline-blue-500;
+		}
+	}
+}
+</style>
