@@ -5,15 +5,6 @@
 			:target="taskDefinition"
 			:form="formDefinition"
 		>
-			<SelectField
-				class="mt-4"
-				:model-value="taskDefinition.task_runner_class"
-				:options="dxTaskDefinition.getFieldOptions('runners')"
-				:disabled="updateAction.isApplying"
-				:loading="!dxTaskDefinition.getFieldOptions('runners')"
-				@update="task_runner_class => updateAction.trigger(taskDefinition, {task_runner_class})"
-			/>
-
 			<div v-if="!taskDefinition.is_trigger" class="mt-4 bg-sky-950 p-4 rounded">
 				<ArtifactSplitModeWidget
 					:model-value="taskDefinition.artifact_split_mode"
@@ -39,7 +30,7 @@ import ArtifactSplitModeWidget from "@/components/Modules/TaskDefinitions/Widget
 import TaskArtifactFiltersWidget from "@/components/Modules/TaskDefinitions/Widgets/TaskArtifactFiltersWidget";
 import { dxWorkflowNode } from "@/components/Modules/WorkflowDefinitions/WorkflowNodes/config";
 import { TaskDefinition, WorkflowNode } from "@/types";
-import { ActionForm, SelectField } from "quasar-ui-danx";
+import { ActionForm } from "quasar-ui-danx";
 import { computed, onMounted, shallowRef } from "vue";
 
 const props = defineProps<{

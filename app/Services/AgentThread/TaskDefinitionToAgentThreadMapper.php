@@ -18,14 +18,14 @@ class TaskDefinitionToAgentThreadMapper
 
     protected TaskDefinition $taskDefinition;
     /** @var array|Collection|EloquentCollection|Artifact[] */
-    protected array|Collection|EloquentCollection $artifacts             = [];
-    protected ?ArtifactFilterService              $artifactFilterService = null;
+    protected array|Collection|EloquentCollection $artifacts = [];
 
-    protected array $messages = [];
+    protected bool  $includePageNumbers = false;
+    protected array $messages           = [];
 
-    public function setArtifactFilterService(ArtifactFilterService $artifactFilterService): static
+    public function includePageNumbers(bool $included = true): static
     {
-        $this->artifactFilterService = $artifactFilterService;
+        $this->includePageNumbers = $included;
 
         return $this;
     }
@@ -94,15 +94,35 @@ class TaskDefinitionToAgentThreadMapper
         static::log("\tAdding " . count($this->artifacts) . " input artifacts");
 
         foreach($this->artifacts as $artifact) {
-            $filteredMessage = $this->artifactFilterService->setArtifact($artifact)->filter();
+            $artifactFilterService = $this->resolveArtifactFilterService($artifact->taskDefinition);
+            $filteredMessage       = $artifactFilterService->setArtifact($artifact)->filter();
 
             if ($filteredMessage) {
+                if ($this->includePageNumbers) {
+                    $filteredMessage = $this->injectPageNumber($artifact->position ?: 0, $filteredMessage);
+                }
+
                 app(ThreadRepository::class)->addMessageToThread($agentThread, $filteredMessage);
                 static::log("\tAdded artifact " . $artifact->id);
             } else {
                 static::log("\tSkipped artifact (was empty) " . $artifact->id);
             }
         }
+    }
+
+    /**
+     * Resolves the artifact filter service for the given source task definition based on the artifact filters defined
+     * for the target task definition
+     */
+    protected function resolveArtifactFilterService(TaskDefinition $sourceTaskDefinition): ArtifactFilterService|null
+    {
+        foreach($this->taskDefinition->taskArtifactFiltersAsTarget as $artifactFilter) {
+            if ($artifactFilter->source_task_definition_id === $sourceTaskDefinition->id) {
+                return $artifactFilter;
+            }
+        }
+
+        return app(ArtifactFilterService::class);
     }
 
     /**
@@ -114,5 +134,23 @@ class TaskDefinitionToAgentThreadMapper
         foreach($this->messages as $message) {
             app(ThreadRepository::class)->addMessageToThread($agentThread, $message);
         }
+    }
+
+    /**
+     * Injects the page number into the message
+     */
+    protected function injectPageNumber(string $pageNumber, $message): string|array
+    {
+        $pageStr = "# Page $pageNumber\n\n";
+
+        if (is_string($message)) {
+            return "$pageStr $message";
+        }
+
+        if (!empty($message['text_content'])) {
+            $message['text_content'] = "$pageStr {$message['text_content']}";
+        }
+
+        return $message;
     }
 }

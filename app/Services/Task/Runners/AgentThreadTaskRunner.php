@@ -8,7 +8,6 @@ use App\Models\Schema\SchemaFragment;
 use App\Models\Task\Artifact;
 use App\Services\AgentThread\AgentThreadMessageToArtifactMapper;
 use App\Services\AgentThread\AgentThreadService;
-use App\Services\AgentThread\ArtifactFilterService;
 use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
 use App\Services\JsonSchema\JsonSchemaService;
 use Exception;
@@ -96,16 +95,10 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         $taskDefinition = $this->taskRun->taskDefinition;
         $this->activity("Setting up agent thread for: {$taskDefinition->agent->name}", 5);
 
-        $artifactFilterService = (new ArtifactFilterService())
-            ->includePageNumbers($this->includePageNumbersInThread)
-            ->includeText()
-            ->includeFiles()
-            ->includeJson();
-
         $agentThread = app(TaskDefinitionToAgentThreadMapper::class)
             ->setTaskDefinition($this->taskRun->taskDefinition)
             ->setArtifacts($this->taskProcess->inputArtifacts()->get())
-            ->setArtifactFilterService($artifactFilterService)
+            ->includePageNumbers($this->includePageNumbersInThread)
             ->map();
 
         $this->taskProcess->agentThread()->associate($agentThread)->save();

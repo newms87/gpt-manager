@@ -6,7 +6,6 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Usage\UsageSummary;
-use App\Services\AgentThread\ArtifactFilterService;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Workflow\WorkflowRunnerService;
 use App\Traits\HasDebugLogging;
@@ -94,29 +93,12 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
     public function collectOutputArtifactsFromSourceNodes(WorkflowNode $targetNode): Collection
     {
         $artifacts = collect();
-
-        $artifactFilters = $targetNode->taskDefinition->taskArtifactFiltersAsTarget;
+        
         // Loop through all the source nodes of the target node to gather the output artifacts of each one
         foreach($targetNode->connectionsAsTarget as $connectionAsTarget) {
-            $taskArtifactFilter = $artifactFilters->firstWhere('source_task_definition_id', $connectionAsTarget->sourceNode->task_definition_id);
-
             $outputArtifacts = $this->collectOutputArtifactsForNode($connectionAsTarget->sourceNode);
 
-            // Apply artifact filters for the source task <=> target task connection definition
-            if ($taskArtifactFilter) {
-                $filteredArtifacts = [];
-                foreach($outputArtifacts as $outputArtifact) {
-                    $filteredArtifact = (new ArtifactFilterService)->setArtifact($outputArtifact)->setFilter($taskArtifactFilter)->toFilteredArtifact();
-
-                    // Only add artifacts that have content to the list
-                    if ($filteredArtifact) {
-                        $filteredArtifacts[] = $filteredArtifact;
-                    }
-                }
-                $artifacts = $artifacts->merge($filteredArtifacts);
-            } else {
-                $artifacts = $artifacts->merge($outputArtifacts);
-            }
+            $artifacts = $artifacts->merge($outputArtifacts);
         }
 
         return $artifacts;

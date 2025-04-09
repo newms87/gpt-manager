@@ -8,12 +8,11 @@ use App\Services\JsonSchema\JsonSchemaService;
 
 class ArtifactFilterService
 {
-    private ?Artifact $artifact           = null;
-    private bool      $includePageNumbers = false;
-    private bool      $includeText        = false;
-    private bool      $includeFiles       = false;
-    private bool      $includeJson        = false;
-    private array     $fragmentSelector   = [];
+    private ?Artifact $artifact         = null;
+    private bool      $includeText      = false;
+    private bool      $includeFiles     = false;
+    private bool      $includeJson      = false;
+    private array     $fragmentSelector = [];
 
     public function setFilter(TaskArtifactFilter $artifactFilter): static
     {
@@ -28,13 +27,6 @@ class ArtifactFilterService
     public function setArtifact(Artifact $artifact): static
     {
         $this->artifact = $artifact;
-
-        return $this;
-    }
-
-    public function includePageNumbers(bool $included = true): static
-    {
-        $this->includePageNumbers = $included;
 
         return $this;
     }
@@ -103,13 +95,7 @@ class ArtifactFilterService
 
     public function getTextContent(): ?string
     {
-        $textContent = $this->artifact->text_content;
-
-        if ($this->includePageNumbers) {
-            $textContent = "### Content for page " . ($this->artifact->position ?: "Unknown") . "\n\n" . $textContent;
-        }
-
-        return $textContent;
+        return $this->artifact->text_content;
     }
 
     public function getFilteredData(): ?array
@@ -141,7 +127,7 @@ class ArtifactFilterService
         } else {
             $filteredArtifact->json_content = null;
         }
-        
+
         // Save all items on the artifact (before adding files, so we have an ID to associate to)
         $filteredArtifact->save();
 
