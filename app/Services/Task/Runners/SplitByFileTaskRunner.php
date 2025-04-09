@@ -3,6 +3,7 @@
 namespace App\Services\Task\Runners;
 
 use App\Models\Task\Artifact;
+use App\Resources\Workflow\ArtifactStoredFileResource;
 
 class SplitByFileTaskRunner extends BaseTaskRunner
 {
@@ -22,7 +23,13 @@ class SplitByFileTaskRunner extends BaseTaskRunner
                     }
 
                     foreach($fileList as $fileItem) {
-                        $artifact = Artifact::create(['name' => $fileItem->filename]);
+                        $artifact = Artifact::create([
+                            'name'         => $fileItem->filename,
+                            'json_content' => [
+                                '__file' => ArtifactStoredFileResource::make($storedFile),
+                                '__page' => ArtifactStoredFileResource::make($fileItem),
+                            ],
+                        ]);
                         $artifact->storedFiles()->attach($fileItem->id);
                         $outputArtifacts[] = $artifact;
                     }
