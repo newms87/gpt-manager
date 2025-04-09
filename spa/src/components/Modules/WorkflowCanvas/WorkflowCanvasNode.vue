@@ -20,8 +20,10 @@
 
 			<div class="flex justify-center items-center h-full">
 				<Component
-					:is="taskRunner.node"
+					:is="taskRunner.node?.is || BaseTaskRunnerNode"
 					v-if="workflowNode"
+					v-bind="taskRunner.node || {}"
+					:lottie="taskRunner.lottie"
 					:workflow-node="workflowNode"
 					:task-run="taskRun"
 					:loading="loading"
@@ -50,6 +52,7 @@
 
 <script setup lang="ts">
 import LoadingSandLottie from "@/assets/dotlottie/LoadingSandLottie";
+import { BaseTaskRunnerNode } from "@/components/Modules/TaskDefinitions/TaskRunners/Nodes";
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
 import { useWorkflowNode } from "@/components/Modules/WorkflowCanvas/useWorkflowNode";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
@@ -79,8 +82,6 @@ const taskRun = computed<TaskRun>(() => props.workflowRun?.taskRuns?.find((tr) =
 
 const {
 	taskRunner,
-	sourceEdges,
-	targetEdges,
 	isTaskRunning,
 	isTaskCompleted,
 	isTaskFailed,

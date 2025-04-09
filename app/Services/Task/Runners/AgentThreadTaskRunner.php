@@ -26,7 +26,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         $agent    = $this->taskDefinition->agent;
 
         if (!$agent) {
-            throw new Exception("AgentThreadTaskRunner: Agent not found for TaskRun: $this->taskRun");
+            throw new Exception(static::class . ": Agent not found for TaskRun: $this->taskRun");
         }
 
         // Process named based on agent
@@ -44,13 +44,19 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
     public function run(): void
     {
-        $agentThread       = $this->setupAgentThread();
+        $agentThread = $this->setupAgentThread();
+        $artifact    = $this->runAgentThread($agentThread);
+        $this->complete([$artifact]);
+    }
+
+    public function runAgentThread(AgentThread $agentThread)
+    {
         $agent             = $agentThread->agent;
         $schemaDefinition  = $this->taskDefinition->schemaDefinition;
         $schemaAssociation = $this->taskProcess->outputSchemaAssociation;
 
         if ($schemaDefinition?->id !== $schemaAssociation?->schema_definition_id) {
-            throw new Exception("AgentThreadTaskRunner: Schema definition mismatch for TaskProcess: $this->taskProcess");
+            throw new Exception(static::class . ": Schema definition mismatch for TaskProcess: $this->taskProcess");
         }
 
         // The default agent thread task runner will use the JsonSchemaService with the database fields (ie: id and name) so we are enabling database I/O
@@ -74,12 +80,13 @@ class AgentThreadTaskRunner extends BaseTaskRunner
             }
 
             $this->activity("Received response from $agent->name", 100);
-            $this->complete([$artifact]);
         } else {
             $this->taskProcess->failed_at = now();
             $this->taskProcess->save();
             $this->activity("No response from $agent->name", 100);
         }
+
+        return $artifact;
     }
 
     /**
@@ -160,7 +167,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
     /**
      * Append the text sources to the artifact's text content.
      */
-    private function appendTextSources(Artifact $artifact): void
+    protected function appendTextSources(Artifact $artifact): void
     {
         static::log("Appending text sources to artifact: $artifact");
 

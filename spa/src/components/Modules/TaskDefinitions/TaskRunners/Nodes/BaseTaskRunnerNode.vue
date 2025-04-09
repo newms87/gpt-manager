@@ -1,9 +1,11 @@
 <template>
 	<div class="base-task-runner-node relative h-full w-full">
 		<div class="flex items-center justify-center flex-nowrap h-full w-full">
-			<slot>
-				<BaseNodeIcon class="w-[4.4rem]" />
+			<slot name="icon">
+				<Component :is="lottie" v-if="lottie" :autoplay="isTaskRunning" :finished="isTaskCompleted" />
+				<BaseNodeIcon v-else class="w-[4.4rem]" />
 			</slot>
+			<slot />
 		</div>
 
 		<slot name="ports">
@@ -22,11 +24,17 @@ import { TaskRun, WorkflowNode } from "@/types";
 import { FaSolidSquareShareNodes as BaseNodeIcon } from "danx-icon";
 import { toRefs } from "vue";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
 	workflowNode: WorkflowNode;
 	taskRun?: TaskRun;
-}>();
+	lottie?: object;
+	lottieClass?: string;
+}>(), {
+	taskRun: null,
+	lottie: null,
+	lottieClass: "w-[12rem]"
+});
 
 const { workflowNode, taskRun } = toRefs(props);
-const { sourceEdges, targetEdges } = useWorkflowNode(workflowNode, taskRun);
+const { sourceEdges, targetEdges, isTaskCompleted, isTaskRunning } = useWorkflowNode(workflowNode, taskRun);
 </script>

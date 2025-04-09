@@ -1,7 +1,5 @@
 <template>
-	<BaseTaskRunnerNode :workflow-node="workflowNode" :task-run="taskRun">
-		<WorkflowInputLottie class="w-[12rem]" :autoplay="isTaskRunning" :finished="isTaskCompleted" />
-
+	<BaseTaskRunnerNode :workflow-node="workflowNode" :task-run="taskRun" :lottie="WorkflowInputLottie">
 		<template #ports>
 			<NodePortsWidget
 				:task-run="taskRun"
@@ -26,6 +24,6 @@ const props = defineProps<{
 }>();
 
 const { workflowNode, taskRun } = toRefs(props);
-const { isTaskCompleted, isTaskRunning, sourceEdges, targetEdges } = useWorkflowNode(workflowNode, taskRun);
+const { sourceEdges, targetEdges } = useWorkflowNode(workflowNode, taskRun);
 </script>
 

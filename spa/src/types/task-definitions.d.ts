@@ -98,7 +98,10 @@ export interface TaskRunnerClass {
 	name: string;
 	description: string;
 	lottie: string | null;
-	node: VNode;
+	node?: {
+		is?: VNode;
+		lottieClass?: string;
+	};
 	config: VNode;
 }
 

@@ -9,6 +9,7 @@ use App\Api\PerplexityAi\PerplexityAiApi;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\CategorizeArtifactsTaskRunner;
+use App\Services\Task\Runners\ClassifierTaskRunner;
 use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
 use App\Services\Task\Runners\LoadFromDatabaseTaskRunner;
 use App\Services\Task\Runners\MergeArtifactsTaskRunner;
@@ -114,6 +115,7 @@ return [
         SplitArtifactsByJsonContentTaskRunner::RUNNER_NAME => SplitArtifactsByJsonContentTaskRunner::class,
         SplitByFileTaskRunner::RUNNER_NAME                 => SplitByFileTaskRunner::class,
         WorkflowInputTaskRunner::RUNNER_NAME               => WorkflowInputTaskRunner::class,
+        ClassifierTaskRunner::RUNNER_NAME                  => ClassifierTaskRunner::class,
     ],
     'tools'         => [
         [

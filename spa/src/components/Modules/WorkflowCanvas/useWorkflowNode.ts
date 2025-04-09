@@ -6,7 +6,7 @@ import { computed, Ref } from "vue";
 
 export function useWorkflowNode(workflowNode: Ref<WorkflowNode>, taskRun: Ref<TaskRun>) {
 	const taskDefinition = computed(() => workflowNode.value.taskDefinition);
-	const taskRunner = computed(() => TaskRunnerClasses[taskDefinition.value?.task_runner_class] || TaskRunnerClasses.Base);
+	const taskRunner = computed(() => TaskRunnerClasses[taskDefinition.value?.task_runner_class] || TaskRunnerClasses["AI Agent"]);
 	const sourceEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.source === workflowNode.value.id.toString()));
 	const targetEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.target === workflowNode.value.id.toString()));
 	const isTaskRunning = computed(() => taskRun.value?.status === "Running");
