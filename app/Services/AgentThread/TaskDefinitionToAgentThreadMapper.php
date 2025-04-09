@@ -116,13 +116,14 @@ class TaskDefinitionToAgentThreadMapper
      */
     protected function resolveArtifactFilterService(TaskDefinition $sourceTaskDefinition): ArtifactFilterService|null
     {
+        $service = app(ArtifactFilterService::class);
         foreach($this->taskDefinition->taskArtifactFiltersAsTarget as $artifactFilter) {
             if ($artifactFilter->source_task_definition_id === $sourceTaskDefinition->id) {
-                return $artifactFilter;
+                return $service->setFilter($artifactFilter);
             }
         }
 
-        return app(ArtifactFilterService::class);
+        return $service;
     }
 
     /**
