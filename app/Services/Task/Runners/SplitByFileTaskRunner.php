@@ -26,8 +26,8 @@ class SplitByFileTaskRunner extends BaseTaskRunner
                         $artifact = Artifact::create([
                             'name' => $fileItem->filename,
                             'meta' => [
-                                '__file' => ArtifactStoredFileResource::make($storedFile),
-                                '__page' => ArtifactStoredFileResource::make($fileItem),
+                                'file' => ArtifactStoredFileResource::make($storedFile),
+                                'page' => ArtifactStoredFileResource::make($fileItem),
                             ],
                         ]);
                         $artifact->storedFiles()->attach($fileItem->id);

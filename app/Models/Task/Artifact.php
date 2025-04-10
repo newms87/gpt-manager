@@ -3,6 +3,7 @@
 namespace App\Models\Task;
 
 use App\Models\Schema\SchemaDefinition;
+use App\Services\JsonSchema\JsonSchemaService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -67,6 +68,36 @@ class Artifact extends Model implements AuditableContract
     public function storedFiles(): MorphToMany|StoredFile
     {
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
+    }
+
+    public function getJsonFragment(string $fragmentSelector = null): array
+    {
+        return app(JsonSchemaService::class)->filterDataByFragmentSelector($this->json_content, $fragmentSelector);
+    }
+
+    public function getMetaFragment(string $fragmentSelector = null): array
+    {
+        return app(JsonSchemaService::class)->filterDataByFragmentSelector($this->meta, $fragmentSelector);
+    }
+
+    public function getFlattenedJsonFragmentValues(array $fragmentSelector = []): array
+    {
+        return app(JsonSchemaService::class)->flattenByFragmentSelector($this->json_content, $fragmentSelector);
+    }
+
+    public function getFlattenedMetaFragmentValues(array $fragmentSelector = []): array
+    {
+        return app(JsonSchemaService::class)->flattenByFragmentSelector($this->meta, $fragmentSelector);
+    }
+
+    public function getFlattenedJsonFragmentValuesString(array $fragmentSelector = []): string
+    {
+        return implode('|', $this->flattenByFragmentSelector($this->json_content, $fragmentSelector));
+    }
+
+    public function getFlattenedMetaFragmentValuesString(array $fragmentSelector = []): string
+    {
+        return implode('|', $this->flattenByFragmentSelector($this->meta, $fragmentSelector));
     }
 
     public function __toString()

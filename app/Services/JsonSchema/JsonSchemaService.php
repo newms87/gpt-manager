@@ -241,6 +241,16 @@ class JsonSchemaService
     }
 
     /**
+     * Flatten the data using a fragment selector to select a subset of properties
+     */
+    public function flattenByFragmentSelector(array $data, array $fragmentSelector): array
+    {
+        $filteredData = $this->filterDataByFragmentSelector($data, $fragmentSelector);
+
+        return collect($filteredData)->flatten()->toArray();
+    }
+
+    /**
      * Recursively filters data using a fragment selector to select a subset of properties
      */
     public function filterDataByFragmentSelector(array $data, array $fragmentSelector = null): array
