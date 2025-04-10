@@ -82,12 +82,12 @@ class Artifact extends Model implements AuditableContract
 
     public function getFlattenedJsonFragmentValues(array $fragmentSelector = []): array
     {
-        return app(JsonSchemaService::class)->flattenByFragmentSelector($this->json_content, $fragmentSelector);
+        return app(JsonSchemaService::class)->flattenByFragmentSelector($this->json_content ?: [], $fragmentSelector);
     }
 
     public function getFlattenedMetaFragmentValues(array $fragmentSelector = []): array
     {
-        return app(JsonSchemaService::class)->flattenByFragmentSelector($this->meta, $fragmentSelector);
+        return app(JsonSchemaService::class)->flattenByFragmentSelector($this->meta ?: [], $fragmentSelector);
     }
 
     public function getFlattenedJsonFragmentValuesString(array $fragmentSelector = []): string

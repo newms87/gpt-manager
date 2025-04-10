@@ -3,7 +3,6 @@
 namespace App\Services\Task\Runners;
 
 use App\Models\Task\Artifact;
-use App\Services\Task\ArtifactsToGroupsMapper;
 use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Helpers\StringHelper;
 
@@ -13,14 +12,7 @@ class MergeArtifactsTaskRunner extends BaseTaskRunner
 
     public function run(): void
     {
-        $fragmentSelector = $this->config('fragment_selector');
-        $inputArtifacts   = $this->taskProcess->inputArtifacts;
-
-        if ($fragmentSelector) {
-            $groupedArtifacts = app(ArtifactsToGroupsMapper::class)->setFragmentSelector($fragmentSelector)->map($inputArtifacts);
-        } else {
-            $groupedArtifacts = ['default' => $inputArtifacts];
-        }
+        $groupedArtifacts = $this->groupArtifacts();
 
         $outputArtifacts = [];
 
@@ -48,11 +40,40 @@ class MergeArtifactsTaskRunner extends BaseTaskRunner
                 if ($inputArtifact->json_content) {
                     $mergedArtifact->json_content = ArrayHelper::mergeArraysRecursivelyUnique($mergedArtifact->json_content ?? [], $inputArtifact->json_content);
                 }
+
+                if ($inputArtifact->meta) {
+                    $mergedArtifact->meta = ArrayHelper::mergeArraysRecursivelyUnique($mergedArtifact->meta ?? [], $inputArtifact->meta);
+                }
             }
 
             $outputArtifacts[] = $mergedArtifact;
         }
 
         $this->complete($outputArtifacts);
+    }
+
+    /**
+     * Group artifacts by their JSON content and meta fragment values.
+     */
+    public function groupArtifacts(): array
+    {
+        $jsonContentFragmentSelector = $this->config('json_content_fragment_selector') ?: [];
+        $metaFragmentSelector        = $this->config('meta_fragment_selector') ?: [];
+        
+        if (!$metaFragmentSelector && !$jsonContentFragmentSelector) {
+            return ['default' => $this->taskProcess->inputArtifacts];
+        }
+
+        $artifactsByGroup = [];
+
+        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+            $jsonContentKey = $inputArtifact->getFlattenedJsonFragmentValuesString($jsonContentFragmentSelector);
+            $metaKey        = $inputArtifact->getFlattenedMetaFragmentValuesString($metaFragmentSelector);
+            $groupKey       = "$jsonContentKey;$metaKey";
+
+            $artifactsByGroup[$groupKey][] = $inputArtifact;
+        }
+
+        return $artifactsByGroup;
     }
 }
