@@ -87,8 +87,8 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $this->performSequentialMatching($artifacts, $fragmentSelector);
         $this->activity('Sequential category matching complete', 95);
 
-        // Complete the task with all the artifacts w/ categories updated in the meta
-        $this->complete($artifacts);
+        // Complete the task with all the input artifacts w/ categories updated in the meta
+        $this->complete($this->taskProcess->inputArtifacts);
     }
 
     /**
