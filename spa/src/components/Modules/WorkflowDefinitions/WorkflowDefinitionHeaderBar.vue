@@ -98,7 +98,7 @@ const stopWorkflowRunAction = dxWorkflowRun.getAction("stop");
 const resumeWorkflowRunAction = dxWorkflowRun.getAction("resume");
 const isRunning = computed(() => ["Running", "Pending"].includes(activeWorkflowRun.value?.status));
 const isStopped = computed(() => ["Stopped"].includes(activeWorkflowRun.value?.status));
-const hasWorkflowInputNode = computed(() => !!activeWorkflowDefinition.value?.nodes.find((node) => node.taskDefinition.task_runner_class === "Workflow Input"));
+const hasWorkflowInputNode = computed(() => !!activeWorkflowDefinition.value?.nodes.find((node) => node.taskDefinition.task_runner_name === "Workflow Input"));
 
 function onRunWorkflow() {
 	if (!activeWorkflowDefinition.value) return;

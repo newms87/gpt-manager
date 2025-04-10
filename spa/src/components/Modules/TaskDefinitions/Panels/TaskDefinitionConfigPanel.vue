@@ -38,7 +38,7 @@ const props = defineProps<{
 const formDefinition = shallowRef({ fields });
 
 const updateAction = dxTaskDefinition.getAction("update");
-const TaskRunnerConfigComponent = computed(() => TaskRunnerClasses[props.taskDefinition.task_runner_class]?.config || TaskRunnerClasses.Base.config);
+const TaskRunnerConfigComponent = computed(() => TaskRunnerClasses[props.taskDefinition.task_runner_name]?.config || TaskRunnerClasses["AI Agent"].config);
 const sourceTaskDefinitions = computed(() => props.workflowNode?.connectionsAsTarget?.map(c => c.sourceNode.taskDefinition));
 
 onMounted(async () => {

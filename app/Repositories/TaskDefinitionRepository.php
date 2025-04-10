@@ -32,23 +32,6 @@ class TaskDefinitionRepository extends ActionRepository
         ]);
     }
 
-    public function fieldOptions(?array $filter = []): array
-    {
-        $runners = [];
-        foreach(config('ai.runners') as $runnerName => $runnerClass) {
-            $runners[] = [
-                'label' => $runnerName,
-                'value' => $runnerName,
-            ];
-        }
-
-        usort($runners, fn($a, $b) => $a['label'] <=> $b['label']);
-
-        return [
-            'runners' => $runners,
-        ];
-    }
-
     /**
      * @inheritDoc
      */
@@ -79,7 +62,7 @@ class TaskDefinitionRepository extends ActionRepository
 
         $data += [
             'description'           => '',
-            'task_runner_class'     => AgentThreadTaskRunner::RUNNER_NAME,
+            'task_runner_name'      => AgentThreadTaskRunner::RUNNER_NAME,
             'timeout_after_seconds' => 300,
         ];
 

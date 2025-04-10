@@ -67,24 +67,24 @@ class WorkflowDefinitionRepository extends ActionRepository
     public function addNode(WorkflowDefinition $workflowDefinition, ?array $input = []): WorkflowNode
     {
         // First we must guarantee we have an agent (from the users team) selected to add to the definition
-        $taskDefinition  = team()->taskDefinitions()->find($input['task_definition_id'] ?? null);
-        $taskRunnerClass = $input['task_runner_class'] ?? null;
+        $taskDefinition = team()->taskDefinitions()->find($input['task_definition_id'] ?? null);
+        $taskRunnerName = $input['task_runner_name'] ?? null;
 
-        if (!$taskRunnerClass && !$taskDefinition) {
+        if (!$taskRunnerName && !$taskDefinition) {
             throw new ValidationError("You must choose a task definition or a task runner to create task node.");
         }
 
         if (!$taskDefinition) {
             $taskDefinition = TaskDefinition::make()->forceFill([
-                'team_id'           => team()->id,
-                'name'              => $taskRunnerClass,
-                'task_runner_class' => $taskRunnerClass,
+                'team_id'          => team()->id,
+                'name'             => $taskRunnerName,
+                'task_runner_name' => $taskRunnerName,
             ]);
 
             $taskDefinition->name = ModelHelper::getNextModelName($taskDefinition, 'name', ['team_id' => team()->id]);
 
             if (!$taskDefinition->getRunner()) {
-                throw new ValidationError("Task runner class $taskRunnerClass is not valid.");
+                throw new ValidationError("Task runner class $taskRunnerName is not valid.");
             }
 
             $taskDefinition->save();

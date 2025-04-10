@@ -24,7 +24,7 @@ export const columns: TableColumn[] = [
 		align: "left"
 	},
 	{
-		name: "task_runner_class",
+		name: "task_runner_name",
 		label: "Task Runner",
 		sortable: true,
 		align: "left"

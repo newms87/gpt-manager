@@ -2,7 +2,7 @@
 	<div class="task-artifact-filter-form">
 		<div class="flex-x">
 			<Component
-				:is="TaskRunnerClasses.resolve(sourceTaskDefinition.task_runner_class).lottie"
+				:is="TaskRunnerClasses.resolve(sourceTaskDefinition.task_runner_name).lottie"
 				class="w-10 h-10 mr-2"
 				play-on-hover
 			/>

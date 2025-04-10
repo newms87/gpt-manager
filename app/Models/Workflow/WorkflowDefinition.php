@@ -48,7 +48,7 @@ class WorkflowDefinition extends Model implements AuditableContract, ResourcePac
         // This is a starting node if it doesn't have any connections where it is the target
         return $this->workflowNodes()
             ->whereDoesntHave('connectionsAsTarget')
-            ->whereHas('taskDefinition', fn(Builder $builder) => $builder->where('task_runner_class', WorkflowInputTaskRunner::RUNNER_NAME));
+            ->whereHas('taskDefinition', fn(Builder $builder) => $builder->where('task_runner_name', WorkflowInputTaskRunner::RUNNER_NAME));
     }
 
     public function workflowConnections(): HasMany|WorkflowConnection

@@ -16,7 +16,7 @@ class TaskDefinitionFactory extends Factory
             'team_id'              => Team::factory(),
             'name'                 => fake()->unique()->name,
             'description'          => fake()->sentence,
-            'task_runner_class'    => BaseTaskRunner::RUNNER_NAME,
+            'task_runner_name'     => BaseTaskRunner::RUNNER_NAME,
             'task_runner_config'   => null,
             'artifact_split_mode'  => '',
             'schema_definition_id' => null,

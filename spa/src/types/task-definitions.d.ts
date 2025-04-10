@@ -18,7 +18,7 @@ export interface TaskDefinition extends ActionTargetItem {
 	name: string;
 	description: string;
 	is_trigger: boolean;
-	task_runner_class: string;
+	task_runner_name: string;
 	task_runner_config?: AnyObject;
 	artifact_split_mode: ArtifactSplitMode;
 	response_format: AgentResponseFormat;

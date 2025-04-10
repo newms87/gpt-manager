@@ -25,7 +25,7 @@ class WorkflowNodeFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'task_definition_id' => TaskDefinition::factory()->create([
-                    'task_runner_class' => WorkflowInputTaskRunner::RUNNER_NAME,
+                    'task_runner_name' => WorkflowInputTaskRunner::RUNNER_NAME,
                 ]),
             ];
         });

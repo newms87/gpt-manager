@@ -148,7 +148,7 @@ class TaskRunnerService
 
             // If this task run is part of a workflow run, collect the output artifacts from the source nodes and replace the current input artifacts
             if ($taskRun->workflow_run_id) {
-
+                static::syncInputArtifactsFromWorkflowSourceNodes($taskRun);
             }
 
             $taskRun->stopped_at   = null;
@@ -284,5 +284,21 @@ class TaskRunnerService
                 throw new ValidationError("Invalid artifact provided: All artifacts should be an instance of Artifact: " . (is_object($artifact) ? get_class($artifact) : json_encode($artifact)));
             }
         }
+    }
+
+    public static function getTaskRunners(): array
+    {
+        // Dynamically find all task runners in the app/Services/Task/Runners/* directory
+        $taskRunners     = [];
+        $taskRunnerFiles = glob(app_path('Services/Task/Runners/*TaskRunner.php'));
+
+        foreach($taskRunnerFiles as $taskRunnerFile) {
+            $className = 'App\\Services\\Task\\Runners\\' . basename($taskRunnerFile, '.php');
+            if (class_exists($className)) {
+                $taskRunners[$className::RUNNER_NAME] = $className;
+            }
+        }
+
+        return $taskRunners;
     }
 }

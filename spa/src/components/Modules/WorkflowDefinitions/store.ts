@@ -79,7 +79,7 @@ async function addWorkflowNode(newNode: TaskDefinition | TaskRunnerClass, input:
 		id: "td-" + newNode.name,
 		name: newNode.name,
 		task_definition_id: newNode.id || null,
-		task_runner_class: newNode.id ? null : newNode.name,
+		task_runner_name: newNode.id ? null : newNode.name,
 		...input
 	});
 }

@@ -10,6 +10,7 @@ use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Workflow\WorkflowNode;
 use App\Services\Task\Runners\BaseTaskRunner;
+use App\Services\Task\TaskRunnerService;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,7 +32,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     protected $fillable = [
         'name',
         'description',
-        'task_runner_class',
+        'task_runner_name',
         'task_runner_config',
         'response_format',
         'artifact_split_mode',
@@ -43,7 +44,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     protected array $keywordFields = [
         'name',
         'description',
-        'task_runner_class',
+        'task_runner_name',
     ];
 
     public array $relationCounters = [
@@ -154,7 +155,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         return $service->register($this, [
             'name'                  => $this->name,
             'description'           => $this->description,
-            'task_runner_class'     => $this->task_runner_class,
+            'task_runner_name'      => $this->task_runner_name,
             'task_runner_config'    => $this->task_runner_config,
             'schema_definition_id'  => $service->registerRelatedModel($this->schemaDefinition),
             'agent_id'              => $service->registerRelatedModel($this->agent),
@@ -166,8 +167,8 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
 
     public function getRunner(): BaseTaskRunner
     {
-        $runners     = config('ai.runners');
-        $runnerClass = $runners[$this->task_runner_class] ?? BaseTaskRunner::class;
+        $runners     = TaskRunnerService::getTaskRunners();
+        $runnerClass = $runners[$this->task_runner_name] ?? BaseTaskRunner::class;
 
         return app($runnerClass);
     }
@@ -180,7 +181,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     public static function booted()
     {
         static::saving(function (TaskDefinition $taskDefinition) {
-            if ($taskDefinition->isDirty('task_runner_class')) {
+            if ($taskDefinition->isDirty('task_runner_name')) {
                 // If the task runner class has been changed w/o changing the config, reset the config
                 if (!$taskDefinition->isDirty('task_runner_config')) {
                     $taskDefinition->task_runner_config = null;
@@ -194,7 +195,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         });
 
         static::saved(function (TaskDefinition $taskDefinition) {
-            if ($taskDefinition->wasChanged('task_runner_class')) {
+            if ($taskDefinition->wasChanged('task_runner_name')) {
                 foreach($taskDefinition->taskDefinitionDirectives as $taskDefinitionDirective) {
                     $taskDefinitionDirective->delete();
                 }
@@ -212,6 +213,6 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
 
     public function __toString()
     {
-        return "<TaskDefinition id='$this->id' name='$this->name' runner='$this->task_runner_class'>";
+        return "<TaskDefinition id='$this->id' name='$this->name' runner='$this->task_runner_name'>";
     }
 }
