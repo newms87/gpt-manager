@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Workflow\WorkflowRunnerService;
@@ -19,6 +20,7 @@ class WorkflowRunRepository extends ActionRepository
             'create' => $this->createRun($data),
             'resume' => $this->resumeRun($model),
             'stop' => $this->stopRun($model),
+            'start-node' => $this->startNode($model, $data),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -52,6 +54,17 @@ class WorkflowRunRepository extends ActionRepository
     public function stopRun(WorkflowRun $workflowRun): WorkflowRun
     {
         WorkflowRunnerService::stop($workflowRun);
+
+        return $workflowRun;
+    }
+
+    public function startNode(WorkflowRun $workflowRun, $input): WorkflowRun
+    {
+        $workflowNodeId = $input['workflow_node_id'] ?? null;
+
+        $workflowNode = WorkflowNode::findOrFail($workflowNodeId);
+
+        WorkflowRunnerService::startNode($workflowRun, $workflowNode);
 
         return $workflowRun;
     }

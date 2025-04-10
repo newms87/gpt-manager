@@ -37,6 +37,16 @@
 					tooltip="Restart task"
 					size="xs"
 				/>
+				<ActionButton
+					v-else-if="!taskRun && activeWorkflowRun && workflowNode"
+					type="play"
+					:action="startNodeAction"
+					:target="activeWorkflowRun"
+					:input="{workflow_node_id: workflowNode.id}"
+					color="green"
+					tooltip="Start task"
+					size="xs"
+				/>
 			</div>
 			<template v-if="!isWorkflowRunning">
 				<ActionButton
@@ -73,7 +83,8 @@
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
 import { activeWorkflowRun, refreshActiveWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
-import { TaskRun } from "@/types";
+import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
+import { TaskRun, WorkflowNode } from "@/types";
 import { ActionButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
@@ -84,6 +95,7 @@ const emit = defineEmits<{
 	restart: void;
 }>();
 const props = defineProps<{
+	workflowNode?: WorkflowNode;
 	taskRun?: TaskRun;
 	temporary?: boolean;
 	loading?: boolean;
@@ -91,12 +103,13 @@ const props = defineProps<{
 
 const isWorkflowRunning = computed(() => ["Running"].includes(activeWorkflowRun.value?.status));
 
+const startNodeAction = dxWorkflowRun.getAction("start-node", { onFinish: refreshActiveWorkflowRun });
 const restartAction = dxTaskRun.getAction("restart", { onFinish: refreshActiveWorkflowRun });
 const resumeAction = dxTaskRun.getAction("resume", { onFinish: refreshActiveWorkflowRun });
 const stopAction = dxTaskRun.getAction("stop");
 const isStopped = computed(() => ["Stopped"].includes(props.taskRun?.status));
-const canBeRestarted = computed(() => ["Pending", "Stopped", "Failed", "Completed"].includes(props.taskRun?.status));
 const isRunning = computed(() => ["Running"].includes(props.taskRun?.status));
+const canBeRestarted = computed(() => props.taskRun && !isRunning.value);
 
 const isCopying = ref(false);
 async function onCopy() {

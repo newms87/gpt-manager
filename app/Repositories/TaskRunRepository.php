@@ -24,18 +24,20 @@ class TaskRunRepository extends ActionRepository
 
     public function createTaskRun(array $data): TaskRun
     {
-        $taskDefinition = team()->taskDefinitions()->find($data['task_definition_id'] ?? null);
+        $taskDefinitionId = $data['task_definition_id'] ?? null;
+        $taskInputId      = $data['task_input_id'] ?? null;
+
+        $taskDefinition = team()->taskDefinitions()->find($taskDefinitionId);
 
         if (!$taskDefinition) {
             throw new ValidationError('Failed to run task: Task definition was not found');
         }
 
-        $taskInput = $taskDefinition->taskInputs()->find($data['task_input_id'] ?? null);
-
         $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition);
 
         // Associate the task input to the task run
-        if ($taskInput) {
+        if ($taskInputId) {
+            $taskInput = $taskDefinition->taskInputs()->findOrFail($$taskInputId);
             $taskRun->taskInput()->associate($taskInput)->save();
             $taskRun->syncInputArtifacts([$taskInput->toArtifact()]);
         }
