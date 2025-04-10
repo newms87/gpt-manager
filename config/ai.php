@@ -6,19 +6,6 @@ use App\AiTools\UrlToImage\UrlToImageAiTool;
 use App\AiTools\UrlToMarkdown\UrlToMarkdownAiTool;
 use App\Api\OpenAi\OpenAiApi;
 use App\Api\PerplexityAi\PerplexityAiApi;
-use App\Services\Task\Runners\AgentThreadTaskRunner;
-use App\Services\Task\Runners\BaseTaskRunner;
-use App\Services\Task\Runners\CategorizeArtifactsTaskRunner;
-use App\Services\Task\Runners\ClassifierTaskRunner;
-use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
-use App\Services\Task\Runners\LoadFromDatabaseTaskRunner;
-use App\Services\Task\Runners\MergeArtifactsTaskRunner;
-use App\Services\Task\Runners\PageOrganizerTaskRunner;
-use App\Services\Task\Runners\RunWorkflowTaskRunner;
-use App\Services\Task\Runners\SaveToDatabaseTaskRunner;
-use App\Services\Task\Runners\SplitArtifactsByJsonContentTaskRunner;
-use App\Services\Task\Runners\SplitByFileTaskRunner;
-use App\Services\Task\Runners\WorkflowInputTaskRunner;
 
 $million  = 1000000;
 $thousand = 1000;
@@ -101,21 +88,6 @@ return [
     'apis'          => [
         OpenAiApi::$serviceName       => OpenAiApi::class,
         PerplexityAiApi::$serviceName => PerplexityAiApi::class,
-    ],
-    'runners'       => [
-        AgentThreadTaskRunner::RUNNER_NAME                 => AgentThreadTaskRunner::class,
-        BaseTaskRunner::RUNNER_NAME                        => BaseTaskRunner::class,
-        CategorizeArtifactsTaskRunner::RUNNER_NAME         => CategorizeArtifactsTaskRunner::class,
-        ImageToTextTranscoderTaskRunner::RUNNER_NAME       => ImageToTextTranscoderTaskRunner::class,
-        LoadFromDatabaseTaskRunner::RUNNER_NAME            => LoadFromDatabaseTaskRunner::class,
-        MergeArtifactsTaskRunner::RUNNER_NAME              => MergeArtifactsTaskRunner::class,
-        PageOrganizerTaskRunner::RUNNER_NAME               => PageOrganizerTaskRunner::class,
-        RunWorkflowTaskRunner::RUNNER_NAME                 => RunWorkflowTaskRunner::class,
-        SaveToDatabaseTaskRunner::RUNNER_NAME              => SaveToDatabaseTaskRunner::class,
-        SplitArtifactsByJsonContentTaskRunner::RUNNER_NAME => SplitArtifactsByJsonContentTaskRunner::class,
-        SplitByFileTaskRunner::RUNNER_NAME                 => SplitByFileTaskRunner::class,
-        WorkflowInputTaskRunner::RUNNER_NAME               => WorkflowInputTaskRunner::class,
-        ClassifierTaskRunner::RUNNER_NAME                  => ClassifierTaskRunner::class,
     ],
     'tools'         => [
         [

@@ -6,6 +6,7 @@ export { default as ImageToTextTranscoderTaskRunnerConfig } from "./ImageToTextT
 export { default as MergeArtifactsTaskRunnerConfig } from "./MergeArtifactsTaskRunnerConfig.vue";
 export { default as PagesOrganizerTaskRunnerConfig } from "./PagesOrganizerTaskRunnerConfig.vue";
 export { default as RunWorkflowTaskRunnerConfig } from "./RunWorkflowTaskRunnerConfig.vue";
+export { default as SequentialCategoryMatcherTaskRunnerConfig } from "./SequentialCategoryMatcherTaskRunnerConfig.vue";
 export {
 	default as SplitArtifactsByJsonContentTaskRunnerConfig
 } from "./SplitArtifactsByJsonContentTaskRunnerConfig.vue";

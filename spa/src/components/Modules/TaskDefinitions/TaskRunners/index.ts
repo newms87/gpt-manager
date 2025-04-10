@@ -20,6 +20,7 @@ import {
 	MergeArtifactsTaskRunnerConfig,
 	PagesOrganizerTaskRunnerConfig,
 	RunWorkflowTaskRunnerConfig,
+	SequentialCategoryMatcherTaskRunnerConfig,
 	SplitArtifactsByJsonContentTaskRunnerConfig
 } from "./Configs";
 import { WorkflowInputTaskRunnerNode } from "./Nodes";
@@ -42,6 +43,12 @@ export const TaskRunnerClasses = {
 		description: "Categorize artifacts based on their content.",
 		lottie: CategorizeArtifactsLottie,
 		config: CategorizeArtifactsTaskRunnerConfig
+	},
+	"Sequential Category Matcher": {
+		name: "Sequential Category Matcher",
+		description: "Matches categories for artifacts with missing categories based on previous or subsequent artifacts sequentially",
+		lottie: CategorizeArtifactsLottie,
+		config: SequentialCategoryMatcherTaskRunnerConfig
 	},
 	"Classifier": {
 		name: "Classifier",

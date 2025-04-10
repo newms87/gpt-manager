@@ -7,7 +7,6 @@ use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
 use App\Services\Task\TaskProcessRunnerService;
 use Exception;
-use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Throwable;
 
@@ -66,22 +65,62 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 
         // Resolve the fragment selector
         $fragmentSelector        = $this->resolveFragmentSelector();
-        $this->classificationKey = $this->resolveClassificationKey($fragmentSelector);
-        $categoryGroups          = $this->resolveCategoryGroups($inputArtifacts, $fragmentSelector);
+        $this->classificationKey = $this->resolveClassificationKey($fragmentSelector['children']['classification']);
+
+        $categoryGroups = $this->resolveCategoryGroups($inputArtifacts, $fragmentSelector);
+
+        $this->activity('Auto-classifying first and last groups of artifacts (if they have only 1 category)...', 15);
+        $unresolvedCategoryGroups = $this->autoClassifyFirstAndLastGroups($categoryGroups, $fragmentSelector);
 
         // If we have multiple groups to organize, we will dispatch them in separate tasks to run the operation in parallel
-        if (count($categoryGroups) > 1) {
-            $this->dispatchCategoryGroups($categoryGroups);
+        if (count($unresolvedCategoryGroups) > 1) {
+            $this->activity("Dispatching " . count($unresolvedCategoryGroups) . " category groups for sequential matching", 20);
+            $this->dispatchCategoryGroups($unresolvedCategoryGroups);
             $this->complete();
 
             return;
         }
 
-        $artifacts = $categoryGroups[0];
+        $artifacts = $unresolvedCategoryGroups[0];
+
+        $this->activity('Performing sequential category matching on ' . count($artifacts) . ' artifacts...', 20);
         $this->performSequentialMatching($artifacts, $fragmentSelector);
+        $this->activity('Sequential category matching complete', 95);
 
         // Complete the task with all the artifacts w/ categories updated in the meta
         $this->complete($artifacts);
+    }
+
+    /**
+     * Auto classify any category groups that have exactly 1 available category in the group. These are special cases
+     * that can be resolved quickly and do not require an LLM to run to classify the artifacts
+     */
+    private function autoClassifyFirstAndLastGroups(array $categoryGroups, $fragmentSelector): array
+    {
+        $unresolvedGroups = [];
+
+        $lastIndex = count($categoryGroups) - 1;
+
+        // Best way to find artifacts w/
+        foreach($categoryGroups as $index => $categoryGroup) {
+            // If we're looking at the first or last group, try to auto-classify
+            if ($index === 0 || $index === $lastIndex) {
+                $categoryList = $this->getAllowedCategoryList($categoryGroup, $fragmentSelector);
+
+                // if there is only 1 category in the list, we can apply the category to all artifacts in the group
+                if (count($categoryList) === 1) {
+                    $this->performSequentialMatching($categoryGroup, $fragmentSelector);
+
+                    // This group is resolved so do not add to the unresolved list
+                    continue;
+                }
+            }
+
+            // If we made it here, the group is still unresolved
+            $unresolvedGroups[] = $categoryGroup;
+        }
+
+        return $unresolvedGroups;
     }
 
     /**
@@ -90,8 +129,6 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      */
     private function performSequentialMatching($artifacts, array $fragmentSelector): void
     {
-        $this->activity('Performing sequential category matching...', 20);
-
         // Resolve the allowed categories from the artifacts' meta
         $allowedCategoryList = $this->getAllowedCategoryList($artifacts, $fragmentSelector);
 
@@ -100,8 +137,6 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 
         // Apply the agent's assigned categories to the artifacts
         $this->applyCategories($categoriesWithPages, $artifacts);
-
-        $this->activity('Sequential category matching complete', 95);
     }
 
     /**
@@ -109,9 +144,12 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      */
     private function resolveFragmentSelector(): array
     {
-        return $this->taskDefinition->schemaAssociations->first()?->schemaFragment->fragment_selector ?? [];
+        $fragmentSelector = $this->taskDefinition->schemaAssociations->first()?->schemaFragment->fragment_selector ?? [];
+
+        // Always nest the fragment under the classification key
+        return ['type' => 'object', 'children' => ['classification' => $fragmentSelector]];
     }
-    
+
     /**
      * Resolve the classification key from the fragment selector using the property names of all the scalars in the
      * selector
@@ -129,7 +167,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $children = $fragmentSelector['children'] ?? [];
         $key      = '';
 
-        foreach($children as $child) {
+        foreach($children as $childKey => $child) {
             if (in_array($child['type'], ['array', 'object'])) {
                 $childKey = $this->resolveClassificationKey($child);
 
@@ -137,7 +175,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
                     $key .= '>' . $childKey;
                 }
             } else {
-                $key = $key ? '|' . $key : $key;
+                $key = $key ? '|' . $childKey : $childKey;
             }
         }
 
@@ -147,9 +185,9 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
     /**
      * Resolve the categories w/ page numbers assigned for each of the artifacts
      */
-    private function classifyArtifacts($inputArtifacts, array $allowedCategoryList)
+    private function classifyArtifacts($inputArtifacts, array $allowedCategoryList): array
     {
-        $pageNumbers = $inputArtifacts->pluck('position')->toArray();
+        $pageNumbers = collect($inputArtifacts)->pluck('position')->toArray();
 
         // If there is only 1 allowed category, then we can skip the agent and just assign that category to all artifacts
         if (count($allowedCategoryList) === 1) {
@@ -276,8 +314,10 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
     /**
      * Apply the category to the artifact's JSON content
      */
-    protected function applyCategories(array $categoryList, Collection $artifacts): void
+    protected function applyCategories(array $categoryList, $artifacts): void
     {
+        $artifacts = collect($artifacts);
+
         foreach($categoryList as $categoryItem) {
             $category = $categoryItem['category'] ?? null;
 
@@ -377,6 +417,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      *   - An ending resolved category (if available).
      *
      * These groups are used to infer missing categories based on surrounding context.
+     * @param Artifact[] $artifacts
      */
     protected function resolveCategoryGroups($artifacts, array $fragmentSelector): array
     {
@@ -386,18 +427,11 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $categoryGroups = [];
 
         $groupIndex            = 0;
-        $currentCategory       = null;
+        $currentCategory       = '__first__';
         $hasUnresolvedCategory = false;
 
         foreach($artifacts as $artifact) {
             $category = $artifact->getFlattenedMetaFragmentValuesString($fragmentSelector);
-
-            if (!$currentCategory) {
-                if (!$category) {
-                    throw new ValidationError("The first artifact must have a category assigned to it. (should be auto-assigned to the first resolved category sequentially)");
-                }
-                $currentCategory = $category;
-            }
 
             if (str_contains($category, self::CATEGORY_EXCLUDE)) {
                 // If the artifact is excluded, skip it
@@ -441,8 +475,6 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      */
     private function dispatchCategoryGroups(array $categoryGroups): void
     {
-        static::log("Dispatching " . count($categoryGroups) . " category groups for sequential matching");
-
         $taskProcesses = [];
         /** @var Artifact[] $categoryGroupArtifacts */
         foreach($categoryGroups as $categoryGroupArtifacts) {

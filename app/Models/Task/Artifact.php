@@ -92,12 +92,12 @@ class Artifact extends Model implements AuditableContract
 
     public function getFlattenedJsonFragmentValuesString(array $fragmentSelector = []): string
     {
-        return implode('|', $this->flattenByFragmentSelector($this->json_content, $fragmentSelector));
+        return implode('|', $this->getFlattenedJsonFragmentValues($fragmentSelector));
     }
 
     public function getFlattenedMetaFragmentValuesString(array $fragmentSelector = []): string
     {
-        return implode('|', $this->flattenByFragmentSelector($this->meta, $fragmentSelector));
+        return implode('|', $this->getFlattenedMetaFragmentValues($fragmentSelector));
     }
 
     public function __toString()
