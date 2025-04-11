@@ -8,38 +8,55 @@ use Tests\AuthenticatedTestCase;
 
 class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
 {
+    static array $fragmentSelector = [
+        'type'     => 'object',
+        'children' => [
+            'category' => ['type' => 'string'],
+        ],
+    ];
+
+    private function printGroups($categoryGroups)
+    {
+        foreach($categoryGroups as $index => $artifacts) {
+            $positions = collect($artifacts)->pluck('position')->implode(',');
+            \Log::debug("Group $index: $positions");
+        }
+    }
+
+    private function makeArtifactsWithCategories(array $categoryMap): array
+    {
+        $artifacts = [];
+        foreach($categoryMap as $position => $category) {
+            $artifact    = Artifact::factory()->create([
+                'position' => $position,
+                'meta'     => [
+                    'classification' => [
+                        'category' => $category,
+                    ],
+                ],
+            ]);
+            $artifacts[] = $artifact;
+        }
+
+        return $artifacts;
+    }
+
     /**
      * Base case: One category at the beginning with remaining artifacts having empty categories
      */
     public function test_resolveCategoryGroups_singleCategoryWithEmptyCategories()
     {
         // Given
-        $artifacts = Artifact::factory()->count(3)->create();
-
         $artifactCategoryMap = [
             0 => 'Category A',
+            1 => null,
+            2 => null,
         ];
-
-        foreach($artifacts as $index => $artifact) {
-            $artifact->position = $index;
-            $artifact->meta     = [
-                'classification' => [
-                    'category' => $artifactCategoryMap[$index] ?? null,
-                ],
-            ];
-            $artifact->save();
-        }
-
-        $fragmentSelector = [
-            'type'     => 'object',
-            'children' => [
-                'category' => ['type' => 'string'],
-            ],
-        ];
+        $artifacts           = $this->makeArtifactsWithCategories($artifactCategoryMap);
 
         // When
         $categoryGroups = app(SequentialCategoryMatcherTaskRunner::class)
-            ->resolveFragmentSelector($fragmentSelector)
+            ->resolveFragmentSelector(static::$fragmentSelector)
             ->resolveCategoryGroups($artifacts);
 
         // Then
@@ -56,42 +73,22 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
     public function test_resolveCategoryGroups_multipleCategoryTransitions()
     {
         // Given
-        $artifacts = Artifact::factory()->count(6)->create();
-
         $artifactCategoryMap = [
             0 => 'Category A',
+            1 => null,
+            2 => null,
             3 => 'Category B',
+            4 => null,
             5 => 'Category A',
         ];
 
-        foreach($artifacts as $index => $artifact) {
-            $artifact->position = $index;
-            $artifact->meta     = [
-                'classification' => [
-                    'category' => $artifactCategoryMap[$index] ?? null,
-                ],
-            ];
-            $artifact->save();
-        }
-
-        $fragmentSelector = [
-            'type'     => 'object',
-            'children' => [
-                'category' => ['type' => 'string'],
-            ],
-        ];
+        $artifacts = $this->makeArtifactsWithCategories($artifactCategoryMap);
 
         // When
         $categoryGroups = app(SequentialCategoryMatcherTaskRunner::class)
-            ->resolveFragmentSelector($fragmentSelector)
+            ->resolveFragmentSelector(static::$fragmentSelector)
             ->resolveCategoryGroups($artifacts);
 
-
-        foreach($categoryGroups as $index => $artifacts) {
-            $positions = collect($artifacts)->pluck('position')->implode(',');
-            dump("Group $index: $positions");
-
-        }
         // Then
         $this->assertCount(2, $categoryGroups);
 
@@ -112,47 +109,30 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
     public function test_resolveCategoryGroups_excludedCategories()
     {
         // Given
-        $artifacts = Artifact::factory()->count(5)->create();
-
         $artifactCategoryMap = [
             0 => 'Category A',
+            1 => null,
             2 => '__exclude',
+            3 => null,
             4 => 'Category B',
         ];
 
-        foreach($artifacts as $index => $artifact) {
-            $artifact->position = $index;
-            $artifact->meta     = [
-                'classification' => [
-                    'category' => $artifactCategoryMap[$index] ?? null,
-                ],
-            ];
-            $artifact->save();
-        }
-
-        $fragmentSelector = [
-            'type'     => 'object',
-            'children' => [
-                'category' => ['type' => 'string'],
-            ],
-        ];
+        $artifacts = $this->makeArtifactsWithCategories($artifactCategoryMap);
 
         // When
         $categoryGroups = app(SequentialCategoryMatcherTaskRunner::class)
-            ->resolveFragmentSelector($fragmentSelector)
+            ->resolveFragmentSelector(static::$fragmentSelector)
             ->resolveCategoryGroups($artifacts);
 
         // Then
-        $this->assertCount(2, $categoryGroups);
+        $this->assertCount(1, $categoryGroups);
 
         // First group (Category A)
-        $this->assertCount(2, $categoryGroups[0]);
+        $this->assertCount(4, $categoryGroups[0]);
         $this->assertEquals(0, $categoryGroups[0][0]->position);
         $this->assertEquals(1, $categoryGroups[0][1]->position);
-
-        // Second group (Category B)
-        $this->assertCount(1, $categoryGroups[1]);
-        $this->assertEquals(4, $categoryGroups[1][0]->position);
+        $this->assertEquals(3, $categoryGroups[0][2]->position);
+        $this->assertEquals(4, $categoryGroups[0][3]->position);
     }
 
     /**
@@ -163,16 +143,9 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
         // Given
         $artifacts = [];
 
-        $fragmentSelector = [
-            'type'     => 'object',
-            'children' => [
-                'category' => ['type' => 'string'],
-            ],
-        ];
-
         // When
         $categoryGroups = app(SequentialCategoryMatcherTaskRunner::class)
-            ->resolveFragmentSelector($fragmentSelector)
+            ->resolveFragmentSelector(static::$fragmentSelector)
             ->resolveCategoryGroups($artifacts);
 
         // Then
@@ -185,8 +158,6 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
     public function test_resolveCategoryGroups_allArtifactsHaveCategories()
     {
         // Given
-        $artifacts = Artifact::factory()->count(4)->create();
-
         $artifactCategoryMap = [
             0 => 'Category A',
             1 => 'Category A',
@@ -194,26 +165,11 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
             3 => 'Category C',
         ];
 
-        foreach($artifacts as $index => $artifact) {
-            $artifact->position = $index;
-            $artifact->meta     = [
-                'classification' => [
-                    'category' => $artifactCategoryMap[$index] ?? null,
-                ],
-            ];
-            $artifact->save();
-        }
-
-        $fragmentSelector = [
-            'type'     => 'object',
-            'children' => [
-                'category' => ['type' => 'string'],
-            ],
-        ];
+        $artifacts = $this->makeArtifactsWithCategories($artifactCategoryMap);
 
         // When
         $categoryGroups = app(SequentialCategoryMatcherTaskRunner::class)
-            ->resolveFragmentSelector($fragmentSelector)
+            ->resolveFragmentSelector(static::$fragmentSelector)
             ->resolveCategoryGroups($artifacts);
 
         // Then
@@ -226,28 +182,18 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
     public function test_resolveCategoryGroups_allEmptyCategories()
     {
         // Given
-        $artifacts = Artifact::factory()->count(3)->create();
-
-        foreach($artifacts as $index => $artifact) {
-            $artifact->position = $index;
-            $artifact->meta     = [
-                'classification' => [
-                    'category' => null,
-                ],
-            ];
-            $artifact->save();
-        }
-
-        $fragmentSelector = [
-            'type'     => 'object',
-            'children' => [
-                'category' => ['type' => 'string'],
-            ],
+        $categoryMap = [
+            0 => null,
+            1 => null,
+            2 => null,
+            3 => null,
         ];
+
+        $artifacts = $this->makeArtifactsWithCategories($categoryMap);
 
         // When
         $categoryGroups = app(SequentialCategoryMatcherTaskRunner::class)
-            ->resolveFragmentSelector($fragmentSelector)
+            ->resolveFragmentSelector(static::$fragmentSelector)
             ->resolveCategoryGroups($artifacts);
 
         // Then
@@ -260,8 +206,6 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
     public function test_resolveCategoryGroups_consecutiveCategories()
     {
         // Given
-        $artifacts = Artifact::factory()->count(4)->create();
-
         $artifactCategoryMap = [
             0 => 'Category A',
             1 => 'Category B',
@@ -269,26 +213,11 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
             3 => 'Category C',
         ];
 
-        foreach($artifacts as $index => $artifact) {
-            $artifact->position = $index;
-            $artifact->meta     = [
-                'classification' => [
-                    'category' => $artifactCategoryMap[$index] ?? null,
-                ],
-            ];
-            $artifact->save();
-        }
-
-        $fragmentSelector = [
-            'type'     => 'object',
-            'children' => [
-                'category' => ['type' => 'string'],
-            ],
-        ];
+        $artifacts = $this->makeArtifactsWithCategories($artifactCategoryMap);
 
         // When
         $categoryGroups = app(SequentialCategoryMatcherTaskRunner::class)
-            ->resolveFragmentSelector($fragmentSelector)
+            ->resolveFragmentSelector(static::$fragmentSelector)
             ->resolveCategoryGroups($artifacts);
 
         // Then

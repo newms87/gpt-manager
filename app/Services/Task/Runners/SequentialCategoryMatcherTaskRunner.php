@@ -479,8 +479,9 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $groupIndex            = 0;
         $currentCategory       = '__first__';
         $hasUnresolvedCategory = false;
+        $lastIndex             = count($artifacts) - 1;
 
-        foreach($artifacts as $artifact) {
+        foreach($artifacts as $index => $artifact) {
             $category = $this->getArtifactCategory($artifact);
 
             if (str_contains($category, self::CATEGORY_EXCLUDE)) {
@@ -505,6 +506,11 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
                     unset($categoryGroups[$groupIndex]);
                 }
 
+                // If this is the last artifact, we can skip the next group
+                if ($index >= $lastIndex) {
+                    break;
+                }
+
                 // Move on to the next group and reset the flag to check for unresolved categories for the group
                 $groupIndex++;
                 $hasUnresolvedCategory = false;
@@ -512,6 +518,11 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
                 // Add this artifact to the next group to see if subsequent artifacts belong to the same group
                 $categoryGroups[$groupIndex][] = $artifact;
             }
+        }
+
+        // If no categories were found, just return empty
+        if ($currentCategory === '__first__') {
+            $categoryGroups = [];
         }
 
         static::log("Resolved " . count($categoryGroups) . " category groups");
