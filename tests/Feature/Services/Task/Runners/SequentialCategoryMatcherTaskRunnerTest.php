@@ -15,14 +15,6 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
         ],
     ];
 
-    private function printGroups($categoryGroups)
-    {
-        foreach($categoryGroups as $index => $artifacts) {
-            $positions = collect($artifacts)->pluck('position')->implode(',');
-            \Log::debug("Group $index: $positions");
-        }
-    }
-
     private function makeArtifactsWithCategories(array $categoryMap): array
     {
         $artifacts = [];
@@ -163,6 +155,28 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
             1 => 'Category A',
             2 => 'Category B',
             3 => 'Category C',
+        ];
+
+        $artifacts = $this->makeArtifactsWithCategories($artifactCategoryMap);
+
+        // When
+        $categoryGroups = app(SequentialCategoryMatcherTaskRunner::class)
+            ->resolveFragmentSelector(static::$fragmentSelector)
+            ->resolveCategoryGroups($artifacts);
+
+        // Then
+        $this->assertCount(0, $categoryGroups, "There should be no category groups when all artifacts have categories");
+    }
+
+    public function test_resolveCategoryGroups_allArtifactsHaveCategoriesWith1DifferentInMiddle()
+    {
+        // Given
+        $artifactCategoryMap = [
+            0 => 'Category A',
+            1 => 'Category A',
+            3 => 'Category B',
+            4 => 'Category A',
+            5 => 'Category A',
         ];
 
         $artifacts = $this->makeArtifactsWithCategories($artifactCategoryMap);

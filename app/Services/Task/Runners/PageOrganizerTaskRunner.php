@@ -23,7 +23,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
         $this->includePageNumbersInThread = true;
 
         // Setup the thread
-        $agentThread       = $this->setupAgentThread();
+        $agentThread       = $this->setupAgentThread($this->taskProcess->inputArtifacts()->get());
         $schemaAssociation = $this->taskProcess->outputSchemaAssociation;
 
         $this->activity("Using agent to organize: $agent->name", 10);

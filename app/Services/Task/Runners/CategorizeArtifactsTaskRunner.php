@@ -105,7 +105,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         $categoryPrompt = $this->createCategoryPrompt($allowedCategoryList, $pageNumbers);
 
         // Prepare the agent thread
-        $agentThread = $this->setupAgentThread();
+        $agentThread = $this->setupAgentThread($this->taskProcess->inputArtifacts()->get());
         app(ThreadRepository::class)->addMessageToThread($agentThread, $categoryPrompt);
 
         $correctionAttemptsRemaining = $this->config('correction_attempts', 2);

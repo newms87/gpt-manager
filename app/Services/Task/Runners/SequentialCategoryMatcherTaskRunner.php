@@ -71,28 +71,29 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $this->resolveFragmentSelector();
         $this->classificationKey = $this->resolveClassificationKey($this->fragmentSelector['children']['classification']);
 
+        $this->activity('Resolving artifact categories...');
         $categoryGroups = $this->resolveCategoryGroups($inputArtifacts);
 
+        static::debugLogCategoryGroups($categoryGroups);
+
         $this->activity('Auto-classifying category groups...', 15);
-        $this->autoClassifyCategoryGroups($categoryGroups);
 
-        $this->activity('Resolving category groups for LLM sequential matching...', 20);
-        $unresolvedCategoryGroups = $this->filterUnresolvedCategoryGroups($categoryGroups);
+        if ($this->autoClassifyCategoryGroups($categoryGroups)) {
+            // If we have auto-classified any categories, we need to re-resolve the category groups
+            $categoryGroups = $this->resolveCategoryGroups($inputArtifacts);
 
-        // If we have multiple groups to organize, we will dispatch them in separate tasks to run the operation in parallel
-        if (count($unresolvedCategoryGroups) > 1) {
-            $this->activity("Dispatching " . count($unresolvedCategoryGroups) . " category groups for LLM sequential matching");
-            $this->dispatchCategoryGroups($unresolvedCategoryGroups);
-            $this->complete();
-
-            return;
+            $this->activity('Resolving category groups after auto-classification...');
+            static::debugLogCategoryGroups($categoryGroups);
         }
 
-        $artifacts = $unresolvedCategoryGroups[0];
-
-        $this->activity('Performing sequential category matching on ' . count($artifacts) . ' artifacts...', 20);
-        $this->performSequentialMatching($artifacts);
-        $this->activity('Sequential category matching complete', 95);
+        // If we have multiple groups to organize, we will dispatch them in separate tasks to run the operation in parallel
+        if (count($categoryGroups) > 1) {
+            $this->dispatchCategoryGroups($categoryGroups);
+        } elseif (!empty($categoryGroups)) {
+            $this->performSequentialMatching($categoryGroups[0]);
+        } else {
+            $this->activity('No category groups found to classify', 100);
+        }
 
         // Complete the task with all the input artifacts w/ categories updated in the meta
         $this->complete($this->taskProcess->inputArtifacts);
@@ -111,24 +112,6 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Filter the category groups to only include those that have at least 1 artifact with an empty category
-     */
-    private function filterUnresolvedCategoryGroups(array $categoryGroups): array
-    {
-        $unresolvedGroups = [];
-        foreach($categoryGroups as $artifacts) {
-            foreach($artifacts as $artifact) {
-                if (!$this->getArtifactCategory($artifact)) {
-                    $unresolvedGroups[] = $artifacts;
-                    break;
-                }
-            }
-        }
-
-        return $unresolvedGroups;
-    }
-
-    /**
      * Auto classify any artifacts that can only belong to a single category. These are defined by having the closest
      * classified artifacts before and after belonging to the same group (or null). For example:
      *  - Artifact A: Category A
@@ -140,8 +123,10 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      *  are already classified as Category A. Same thing applies if all previous categories are null or all subsequent
      *  categories are null, then just apply the first category in the list to all artifacts.
      */
-    private function autoClassifyCategoryGroups(array $categoryGroups): void
+    private function autoClassifyCategoryGroups(array $categoryGroups): bool
     {
+        $hasChanges = false;
+
         foreach($categoryGroups as $artifacts) {
             // If we're looking at the first or last group, try to auto-classify
             $allowedCategoryList = $this->getAllowedCategoryList($artifacts);
@@ -168,6 +153,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
                     foreach($unclassifiedArtifacts as $nullArtifact) {
                         $this->activity("Auto classified $nullArtifact->id: $currentCategory");
                         $this->applyCategory($nullArtifact, $currentCategory);
+                        $hasChanges = true;
                     }
                 }
 
@@ -177,6 +163,8 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
                 $unclassifiedArtifacts = [];
             }
         }
+
+        return $hasChanges;
     }
 
     /**
@@ -185,6 +173,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      */
     private function performSequentialMatching($artifacts): void
     {
+        $this->activity('Performing sequential category matching on ' . count($artifacts) . ' artifacts...', 20);
         // Resolve the allowed categories from the artifacts' meta
         $allowedCategoryList = $this->getAllowedCategoryList($artifacts);
 
@@ -193,6 +182,8 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 
         // Apply the agent's assigned categories to the artifacts
         $this->applyCategories($categoriesWithPages, $artifacts);
+
+        $this->activity('Sequential category matching complete', 95);
     }
 
     /**
@@ -254,7 +245,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $categoryPrompt = $this->createCategoryPrompt($allowedCategoryList, $pageNumbers);
 
         // Prepare the agent thread
-        $agentThread = $this->setupAgentThread();
+        $agentThread = $this->setupAgentThread($inputArtifacts);
         app(ThreadRepository::class)->addMessageToThread($agentThread, $categoryPrompt);
 
         $correctionAttemptsRemaining = $this->config('correction_attempts', 2);
@@ -471,8 +462,6 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      */
     public function resolveCategoryGroups($artifacts): array
     {
-        static::log("Applying sequential categories to artifacts");
-
         /** @var Artifact[][] $categoryGroups */
         $categoryGroups = [];
 
@@ -520,6 +509,11 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
             }
         }
 
+        // If no categories were found for the last group, we can remove it
+        if (!$hasUnresolvedCategory) {
+            unset($categoryGroups[$groupIndex]);
+        }
+
         // If no categories were found, just return empty
         if ($currentCategory === '__first__') {
             $categoryGroups = [];
@@ -536,6 +530,8 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      */
     private function dispatchCategoryGroups(array $categoryGroups): void
     {
+        $this->activity("Dispatching " . count($categoryGroups) . " category groups for LLM sequential matching");
+
         $taskProcesses = [];
         /** @var Artifact[] $categoryGroupArtifacts */
         foreach($categoryGroups as $categoryGroupArtifacts) {
@@ -544,6 +540,14 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 
         foreach($taskProcesses as $taskProcess) {
             TaskProcessRunnerService::dispatch($taskProcess);
+        }
+    }
+
+    public static function debugLogCategoryGroups($categoryGroups): void
+    {
+        foreach($categoryGroups as $index => $artifacts) {
+            $positions = collect($artifacts)->pluck('position')->implode(',');
+            static::log("Group $index: $positions");
         }
     }
 }

@@ -10,7 +10,7 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
 
     public function run(): void
     {
-        $agentThread = $this->setupAgentThread();
+        $agentThread = $this->setupAgentThread($this->taskProcess->inputArtifacts()->get());
         $artifact    = $this->runAgentThread($agentThread);
 
         if (!$artifact->json_content) {
