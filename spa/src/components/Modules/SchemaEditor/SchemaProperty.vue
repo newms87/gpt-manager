@@ -30,7 +30,7 @@
 					@close="isViewingDescription = false"
 				>
 					<MarkdownEditor
-						class="w-96 h-96"
+						class="w-[60rem]"
 						:readonly="readonlyDescription"
 						:model-value="descriptionText"
 						format="text"
