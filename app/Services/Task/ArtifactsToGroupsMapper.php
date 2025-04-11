@@ -180,11 +180,12 @@ class ArtifactsToGroupsMapper
             foreach($items as $itemKey => $item) {
                 $textContent = $item['text_content'] ?? null;
                 $position    = $item['position'] ?? 0;
-                if ($position && is_array($position)) {
+                if (is_array($position)) {
                     $position = $position[0] ?? 0;
                 }
                 unset($item['text_content']);
                 unset($item['position']);
+
                 $groupsOfArtifacts[$groupKey][$itemKey] = Artifact::create([
                     'name'                 => "$groupKey:$itemKey",
                     'json_content'         => $item,

@@ -246,8 +246,8 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         $this->assertCount(2, $groups, 'Should produce a group for each state');
         $this->assertCount(1, $groups[0], 'Should produce 1 artifact for group 1');
         $this->assertCount(1, $groups[1], 'Should produce 1 artifact for group 2');
-        $this->assertEquals(['name' => ['Alice', 'Dan'], 'addresses' => ['city' => ['Denver', 'Evergreen'], 'state' => ['CO']]], $groups[0]['merged']->json_content, 'The groups 1st artifact should contain the Alice + Denver address');
-        $this->assertEquals(['name' => ['Alice', 'Dan'], 'addresses' => ['city' => ['Springfield', 'Chicago'], 'state' => ['IL']]], $groups[1]['merged']->json_content, 'The groups 1st artifact should contain the Alice + Springfield address');
+        $this->assertEquals(['name' => ['Alice', 'Dan'], 'addresses' => ['city' => ['Denver', 'Evergreen'], 'state' => 'CO']], $groups[0]['merged']->json_content, 'The groups 1st artifact should contain the Alice + Denver address');
+        $this->assertEquals(['name' => ['Alice', 'Dan'], 'addresses' => ['city' => ['Springfield', 'Chicago'], 'state' => 'IL']], $groups[1]['merged']->json_content, 'The groups 1st artifact should contain the Alice + Springfield address');
     }
 
     public function test_map_withGroupingKeysAndSingleScalarProperty_singleGroupProduced(): void
