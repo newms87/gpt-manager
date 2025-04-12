@@ -16,6 +16,7 @@ import {
 	BaseTaskRunnerConfig,
 	CategorizeArtifactsTaskRunnerConfig,
 	ClassifierTaskRunnerConfig,
+	FilterArtifactsTaskRunnerConfig,
 	ImageToTextTranscoderTaskRunnerConfig,
 	MergeArtifactsTaskRunnerConfig,
 	PagesOrganizerTaskRunnerConfig,
@@ -64,6 +65,12 @@ export const TaskRunnerClasses = {
 			lottieClass: "w-[10rem]"
 		},
 		config: ImageToTextTranscoderTaskRunnerConfig
+	},
+	"Filter Artifacts": {
+		name: "Filter Artifacts",
+		description: "Filter artifacts based on their content with complex AND/OR conditions",
+		lottie: MergeArtifactsLottie, // Using MergeArtifactsLottie as a placeholder animation
+		config: FilterArtifactsTaskRunnerConfig
 	},
 	"Load From Database": {
 		name: "Load From Database",

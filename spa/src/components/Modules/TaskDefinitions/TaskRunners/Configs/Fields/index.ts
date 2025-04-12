@@ -1,4 +1,5 @@
 export { default as AgentConfigField } from "./AgentConfigField.vue";
+export { default as FilterConditionsField } from "./FilterConditionsField.vue";
 export { default as FragmentSelectorConfigField } from "./FragmentSelectorConfigField.vue";
 export { default as PromptDirectiveConfigField } from "./PromptDirectiveConfigField.vue";
 export { default as SchemaAndFragmentsConfigField } from "./SchemaAndFragmentsConfigField.vue";

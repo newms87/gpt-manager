@@ -2,6 +2,7 @@ export { default as AgentThreadTaskRunnerConfig } from "./AgentThreadTaskRunnerC
 export { default as BaseTaskRunnerConfig } from "./BaseTaskRunnerConfig.vue";
 export { default as CategorizeArtifactsTaskRunnerConfig } from "./CategorizeArtifactsTaskRunnerConfig.vue";
 export { default as ClassifierTaskRunnerConfig } from "./ClassifierTaskRunnerConfig.vue";
+export { default as FilterArtifactsTaskRunnerConfig } from "./FilterArtifactsTaskRunnerConfig.vue";
 export { default as ImageToTextTranscoderTaskRunnerConfig } from "./ImageToTextTranscoderTaskRunnerConfig.vue";
 export { default as MergeArtifactsTaskRunnerConfig } from "./MergeArtifactsTaskRunnerConfig.vue";
 export { default as PagesOrganizerTaskRunnerConfig } from "./PagesOrganizerTaskRunnerConfig.vue";
