@@ -1,60 +1,71 @@
 <template>
-	<div class="simple-condition p-3 border rounded-lg bg-white">
+	<div class="simple-condition p-3 border rounded-lg bg-slate-700">
 		<!-- Delete button -->
-		<div class="flex justify-end mb-2">
-			<QBtn
-				icon="delete"
-				color="negative"
-				flat
-				round
-				dense
+		<div class="flex-x mb-4">
+			<div class="flex-grow">
+				<QTabs
+					v-model="localCondition.field"
+					class="tab-buttons border-sky-900 !w-[20rem] bg-sky-950"
+					indicator-color="sky-900"
+					@update:model-value="emitUpdate"
+				>
+					<QTab name="text_content">
+						<TextIcon class="w-4" />
+						<QTooltip>Filter on text</QTooltip>
+					</QTab>
+					<QTab name="json_content">
+						<JsonIcon class="w-4" />
+						<QTooltip>Filter on JSON Content</QTooltip>
+					</QTab>
+					<QTab name="meta">
+						<MetaIcon class="w-4" />
+						<QTooltip>Filter on metadata</QTooltip>
+					</QTab>
+					<QTab name="storedFiles">
+						<FilesIcon class="w-4" />
+						<QTooltip>Filter on files</QTooltip>
+					</QTab>
+				</QTabs>
+			</div>
+
+			<ActionButton
+				type="trash"
+				color="red"
 				@click="$emit('remove')"
 			/>
 		</div>
 
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-			<!-- Field Selection -->
-			<SelectionMenuField
-				v-model="localCondition.field"
-				selectable
-				select-text="Field"
-				:options="fieldOptions"
-				class="mb-2"
-				@update:selected="emitUpdate"
-			/>
+		<div class="grid grid-cols-1 gap-4">
 
 			<!-- Fragment Selector -->
-			<div v-if="['json_content', 'meta'].includes(localCondition.field)" class="mb-2">
-				<div class="text-sm text-slate-600 mb-1">Fragment Selector</div>
+			<div v-if="['json_content', 'meta'].includes(localCondition.field)">
 				<FragmentSelectorConfigField v-model="localCondition.fragment_selector" @update:model-value="emitUpdate" />
 			</div>
 
 			<!-- Operator Selection -->
-			<SelectionMenuField
-				v-model="localCondition.operator"
-				selectable
-				select-text="Operator"
-				:options="operatorOptions"
-				class="mb-2"
-				@update:selected="emitUpdate"
-			/>
+			<div class="flex-x gap-x-4">
+				<SelectionMenuField
+					v-model="localCondition.operator"
+					selectable
+					:select-text="localCondition.operator"
+					label-class="hidden"
+					:options="operatorOptions"
+					@update:selected="emitUpdate"
+				/>
+				<!-- Case Sensitivity Option -->
+				<QToggle
+					v-if="['contains', 'equals', 'regex'].includes(localCondition.operator)"
+					v-model="localCondition.case_sensitive"
+					label="Case Sensitive"
+					@update:model-value="emitUpdate"
+				/>
+			</div>
 
 			<!-- Value Input (not shown for exists operator) -->
-			<QInput
+			<TextField
 				v-if="localCondition.operator !== 'exists'"
 				v-model="localCondition.value"
-				label="Value"
-				class="mb-2"
-				filled
-				@update:model-value="emitUpdate"
-			/>
-
-			<!-- Case Sensitivity Option -->
-			<QCheckbox
-				v-if="['contains', 'equals', 'regex'].includes(localCondition.operator)"
-				v-model="localCondition.case_sensitive"
-				label="Case Sensitive"
-				class="mb-2"
+				placeholder="Enter value..."
 				@update:model-value="emitUpdate"
 			/>
 		</div>
@@ -62,40 +73,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { FilterCondition } from "@/types";
+import {
+	FaSolidBarcode as MetaIcon,
+	FaSolidDatabase as JsonIcon,
+	FaSolidFile as FilesIcon,
+	FaSolidT as TextIcon
+} from "danx-icon";
+import { ActionButton, SelectionMenuField, TextField } from "quasar-ui-danx";
+import { ref } from "vue";
 import { FragmentSelectorConfigField } from "./index";
-import { SelectionMenuField } from "quasar-ui-danx";
-
-interface Condition {
-	field: string;
-	operator: string;
-	value?: string;
-	case_sensitive?: boolean;
-	fragment_selector?: any;
-}
 
 const props = defineProps<{
-	condition: Condition;
+	condition: FilterCondition;
 }>();
 
 const emit = defineEmits<{
 	remove: [];
-	update: [Condition];
+	update: FilterCondition;
 }>();
 
 // Use computed property to handle two-way binding
-const localCondition = computed({
-	get: () => props.condition,
-	set: (val) => emit('update', val)
-});
-
-// Field options for the filter conditions
-const fieldOptions = [
-	{ label: "Text Content", value: "text_content" },
-	{ label: "JSON Content", value: "json_content" },
-	{ label: "Metadata", value: "meta" },
-	{ label: "Stored Files", value: "storedFiles" }
-];
+const localCondition = ref<FilterCondition>(props.condition);
 
 // Operator options for the filter conditions
 const operatorOptions = [
@@ -109,6 +108,6 @@ const operatorOptions = [
 
 // Emit update event when any value changes
 function emitUpdate() {
-	emit('update', localCondition.value);
+	emit("update", localCondition.value);
 }
 </script>

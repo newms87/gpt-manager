@@ -1,3 +1,5 @@
+import { FragmentSelector } from "@/types/prompts";
+
 export type JsonSchemaType = "object" | "array" | "string" | "number" | "boolean" | "null";
 
 export interface JsonSchema {
@@ -11,4 +13,22 @@ export interface JsonSchema {
 	properties?: {
 		[key: string]: JsonSchema;
 	};
+}
+
+export interface FilterCondition {
+	field: string;
+	operator: string;
+	value?: string;
+	case_sensitive?: boolean;
+	fragment_selector?: FragmentSelector;
+}
+
+export interface FilterConditionGroup {
+	operator: "AND" | "OR";
+	conditions: FilterCondition[];
+}
+
+export interface FilterConfig {
+	operator: "AND" | "OR";
+	conditions: (FilterCondition | FilterConditionGroup)[];
 }
