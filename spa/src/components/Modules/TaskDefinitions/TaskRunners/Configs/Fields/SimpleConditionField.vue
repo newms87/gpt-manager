@@ -4,7 +4,7 @@
 		<div class="flex-x mb-4">
 			<div class="flex-grow">
 				<QTabs
-					v-model="localCondition.field"
+					v-model="filterCondition.field"
 					class="tab-buttons border-sky-900 !w-[20rem] bg-sky-950"
 					indicator-color="sky-900"
 					@update:model-value="emitUpdate"
@@ -30,7 +30,8 @@
 
 			<ActionButton
 				type="trash"
-				color="red"
+				color="gray"
+				size="sm"
 				@click="$emit('remove')"
 			/>
 		</div>
@@ -38,24 +39,25 @@
 		<div class="grid grid-cols-1 gap-4">
 
 			<!-- Fragment Selector -->
-			<div v-if="['json_content', 'meta'].includes(localCondition.field)">
-				<FragmentSelectorConfigField v-model="localCondition.fragment_selector" @update:model-value="emitUpdate" />
+			<div v-if="['json_content', 'meta'].includes(filterCondition.field)">
+				<FragmentSelectorConfigField v-model="filterCondition.fragment_selector" @update:model-value="emitUpdate" />
 			</div>
 
 			<!-- Operator Selection -->
 			<div class="flex-x gap-x-4">
 				<SelectionMenuField
-					v-model="localCondition.operator"
+					v-model:selected="filterCondition.operator"
 					selectable
-					:select-text="localCondition.operator"
+					selection-type="string"
+					:select-text="operatorOptions.find(o => o.value === filterCondition.operator)?.label"
 					label-class="hidden"
 					:options="operatorOptions"
-					@update:selected="emitUpdate"
+					@update:model-value="emitUpdate"
 				/>
 				<!-- Case Sensitivity Option -->
 				<QToggle
-					v-if="['contains', 'equals', 'regex'].includes(localCondition.operator)"
-					v-model="localCondition.case_sensitive"
+					v-if="['contains', 'equals', 'regex'].includes(filterCondition.operator)"
+					v-model="filterCondition.case_sensitive"
 					label="Case Sensitive"
 					@update:model-value="emitUpdate"
 				/>
@@ -63,8 +65,8 @@
 
 			<!-- Value Input (not shown for exists operator) -->
 			<TextField
-				v-if="localCondition.operator !== 'exists'"
-				v-model="localCondition.value"
+				v-if="filterCondition.operator !== 'exists'"
+				v-model="filterCondition.value"
 				placeholder="Enter value..."
 				@update:model-value="emitUpdate"
 			/>
@@ -81,20 +83,11 @@ import {
 	FaSolidT as TextIcon
 } from "danx-icon";
 import { ActionButton, SelectionMenuField, TextField } from "quasar-ui-danx";
-import { ref } from "vue";
 import { FragmentSelectorConfigField } from "./index";
 
-const props = defineProps<{
-	condition: FilterCondition;
-}>();
+const emit = defineEmits<{ "update:model-value": FilterCondition; remove: void; }>();
 
-const emit = defineEmits<{
-	remove: [];
-	update: FilterCondition;
-}>();
-
-// Use computed property to handle two-way binding
-const localCondition = ref<FilterCondition>(props.condition);
+const filterCondition = defineModel<FilterCondition>();
 
 // Operator options for the filter conditions
 const operatorOptions = [
@@ -106,8 +99,8 @@ const operatorOptions = [
 	{ label: "Exists", value: "exists" }
 ];
 
-// Emit update event when any value changes
+// Emit the updated filter condition
 function emitUpdate() {
-	emit("update", localCondition.value);
+	emit("update:model-value", filterCondition.value);
 }
 </script>

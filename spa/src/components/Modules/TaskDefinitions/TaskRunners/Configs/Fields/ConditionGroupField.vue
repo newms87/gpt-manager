@@ -22,9 +22,9 @@
 			<ListTransition class="nested-conditions space-y-4">
 				<div v-for="(condition, index) in localGroup.conditions" :key="index">
 					<SimpleConditionField
-						:condition="condition"
+						:model-value="condition"
+						@update:model-value="updateCondition(index, $event)"
 						@remove="removeCondition(index)"
-						@update="updateCondition(index, $event)"
 					/>
 				</div>
 

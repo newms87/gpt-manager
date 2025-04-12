@@ -9,7 +9,7 @@
 		/>
 
 		<!-- Conditions List -->
-		<ListTransition class="conditions-list space-y-4">
+		<ListTransition v-if="config.conditions.length > 0" class="conditions-list space-y-4 mb-4">
 			<template v-for="(condition, index) in config.conditions" :key="index">
 				<!-- For Condition Groups -->
 				<ConditionGroupField
@@ -22,15 +22,15 @@
 				<!-- For Simple Conditions -->
 				<SimpleConditionField
 					v-else
-					:condition="condition as FilterCondition"
+					:model-value="condition as FilterCondition"
 					@remove="removeCondition(index)"
-					@update="updateCondition(index, $event)"
+					@update:model-value="updateCondition(index, $event)"
 				/>
 			</template>
 		</ListTransition>
 
 		<!-- Action Buttons -->
-		<div class="flex space-x-2 mt-4">
+		<div class="flex space-x-2">
 			<ActionButton
 				type="create"
 				color="blue"
@@ -55,7 +55,6 @@ import { ActionButton, ListTransition } from "quasar-ui-danx";
 import { ref } from "vue";
 import ConditionGroupField from "./ConditionGroupField.vue";
 import SimpleConditionField from "./SimpleConditionField.vue";
-
 
 const props = defineProps<{
 	taskDefinition: TaskDefinition;
@@ -97,6 +96,7 @@ function addConditionGroup() {
 
 // Update a condition at a specific index
 function updateCondition(index: number, updatedCondition: FilterCondition | FilterConditionGroup) {
+	console.log("receivedupateCondition", updatedCondition);
 	config.value.conditions[index] = updatedCondition;
 	updateTaskDefinition();
 }
@@ -111,7 +111,7 @@ function removeCondition(index: number) {
 function updateTaskDefinition() {
 	// Save the updated configuration to the server
 	dxTaskDefinition.getAction("update").trigger(props.taskDefinition, {
-		task_runner_config: props.taskDefinition.task_runner_config
+		task_runner_config: { filter_config: config.value }
 	});
 }
 </script>
