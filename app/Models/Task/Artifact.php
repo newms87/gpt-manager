@@ -70,12 +70,12 @@ class Artifact extends Model implements AuditableContract
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
     }
 
-    public function getJsonFragment(string $fragmentSelector = null): array
+    public function getJsonFragment(array $fragmentSelector = null): array
     {
         return app(JsonSchemaService::class)->filterDataByFragmentSelector($this->json_content, $fragmentSelector);
     }
 
-    public function getMetaFragment(string $fragmentSelector = null): array
+    public function getMetaFragment(array $fragmentSelector = null): array
     {
         return app(JsonSchemaService::class)->filterDataByFragmentSelector($this->meta, $fragmentSelector);
     }

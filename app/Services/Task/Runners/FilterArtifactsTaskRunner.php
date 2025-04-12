@@ -16,7 +16,7 @@ use Newms87\Danx\Exceptions\ValidationError;
  *   'conditions' => [
  *     [
  *       'field' => 'text_content|json_content|meta|storedFiles', // Required
- *       'path' => 'dot.notation.path', // For json_content and meta only, optional
+ *       'fragment_selector' => 'json fragment selector', // For json_content and meta only, optional
  *       'operator' => 'contains|equals|greater_than|less_than|regex|exists', // Default: 'contains'
  *       'value' => 'value to compare against', // Required unless operator is 'exists'
  *       'case_sensitive' => true|false, // Default: false, only applicable to string comparisons
@@ -102,23 +102,42 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             }
 
             // Validate leaf condition
-            if (!isset($condition['field'])) {
-                throw new ValidationError("Each filter condition must have a 'field' property");
-            }
+            $this->validateCondition($condition);
+        }
+    }
 
-            if (!in_array($condition['field'], ['text_content', 'json_content', 'meta', 'storedFiles'])) {
-                throw new ValidationError("Filter condition 'field' must be one of: text_content, json_content, meta, storedFiles");
-            }
+    /**
+     * Validate a single filter condition
+     *
+     * @param array $condition The condition to validate
+     * @throws ValidationError if the condition is invalid
+     */
+    protected function validateCondition(array $condition): void
+    {
+        if (!isset($condition['field'])) {
+            throw new ValidationError("Filter condition must have a 'field' property");
+        }
 
-            $operator = $condition['operator'] ?? 'contains';
-            if (!in_array($operator, ['contains', 'equals', 'greater_than', 'less_than', 'regex', 'exists'])) {
-                throw new ValidationError("Filter condition 'operator' must be one of: contains, equals, greater_than, less_than, regex, exists");
-            }
+        if (!in_array($condition['field'], ['text_content', 'json_content', 'meta', 'storedFiles'])) {
+            throw new ValidationError("Filter condition field must be one of: text_content, json_content, meta, storedFiles");
+        }
 
-            // Check if value is required
-            if ($operator !== 'exists' && !isset($condition['value'])) {
-                throw new ValidationError("Filter condition with operator '$operator' must have a 'value' property");
-            }
+        // Fragment selector is required for json_content and meta fields
+        if (in_array($condition['field'], ['json_content', 'meta']) && !isset($condition['fragment_selector'])) {
+            throw new ValidationError("Filter condition for {$condition['field']} field must have a 'fragment_selector' property");
+        }
+
+        if (!isset($condition['operator'])) {
+            throw new ValidationError("Filter condition must have an 'operator' property");
+        }
+
+        if (!in_array($condition['operator'], ['contains', 'equals', 'greater_than', 'less_than', 'regex', 'exists'])) {
+            throw new ValidationError("Filter condition operator must be one of: contains, equals, greater_than, less_than, regex, exists");
+        }
+
+        // Value is not required for 'exists' operator
+        if ($condition['operator'] !== 'exists' && !array_key_exists('value', $condition)) {
+            throw new ValidationError("Filter condition must have a 'value' property for operator: {$condition['operator']}");
         }
     }
 
@@ -237,93 +256,176 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     /**
      * Evaluate a single condition against an artifact
      *
-     * @param Artifact $artifact  The artifact to evaluate
+     * @param Artifact $artifact  The artifact to evaluate the condition against
      * @param array    $condition The condition to evaluate
      * @return bool Whether the artifact matches the condition
      */
     protected function evaluateCondition(Artifact $artifact, array $condition): bool
     {
-        $field    = $condition['field'];
-        $operator = $condition['operator'] ?? 'contains';
-        $path     = $condition['path'] ?? null;
+        $field = $condition['field'];
+        $operator = $condition['operator'];
+        $fragmentSelector = $condition['fragment_selector'] ?? null;
+        $value = $condition['value'] ?? null;
+        $caseSensitive = $condition['case_sensitive'] ?? false;
 
-        static::log("Evaluating condition on field: $field" . ($path ? " path: $path" : '') . " operator: $operator");
+        static::log("Evaluating condition on field: $field operator: $operator");
 
-        // Handle stored files separately since they're a relation
-        if ($field === 'storedFiles') {
-            return $this->evaluateStoredFilesCondition($artifact, $condition);
+        // For 'exists' operator with fragment selectors, we need to check if the fragment exists
+        if ($operator === 'exists' && $fragmentSelector && in_array($field, ['json_content', 'meta'])) {
+            try {
+                $fieldValue = $this->getFieldValue($artifact, $field, $fragmentSelector);
+                // If the field value is an empty array or null, the fragment doesn't exist
+                $result = !empty($fieldValue);
+                static::log("Fragment exists check result: " . ($result ? 'true' : 'false') . 
+                    " Value: " . json_encode($fieldValue));
+                return $result;
+            } catch (\Exception $e) {
+                static::log("Error checking if fragment exists: " . $e->getMessage());
+                return false;
+            }
         }
 
-        // Get the field value based on the path if specified
-        $value = $this->getFieldValue($artifact, $field, $path);
+        $fieldValue = $this->getFieldValue($artifact, $field, $fragmentSelector);
 
-        // Check if the field exists
+        // If the operator is 'exists', just check if the field value is not null
         if ($operator === 'exists') {
-            $result = $value !== null;
-            static::log("Exists check result: " . ($result ? 'true' : 'false'));
-
+            $result = $fieldValue !== null;
+            static::log("Exists check result: " . ($result ? 'true' : 'false') . " Value: " . json_encode($fieldValue));
             return $result;
         }
 
-        // If value is null and we're not checking for existence, condition fails
-        if ($value === null) {
-            static::log("Value is null, condition fails");
-
+        // If the field value is null, it can't match any value-based condition
+        if ($fieldValue === null) {
+            static::log("Field value is null, condition cannot match");
             return false;
         }
 
-        $conditionValue = $condition['value'];
-        $caseSensitive  = $condition['case_sensitive'] ?? false;
+        // For collection (like storedFiles), we need special handling
+        if ($fieldValue instanceof Collection) {
+            if ($operator === 'equals') {
+                $result = $fieldValue->count() === (int)$value;
+                static::log("Collection count equals check result: " . ($result ? 'true' : 'false') . " Value: " . $fieldValue->count() . " Condition value: $value");
+                return $result;
+            }
 
-        $result = $this->compareValues($value, $conditionValue, $operator, $caseSensitive);
-        static::log("Comparison result: " . ($result ? 'true' : 'false') .
-            " Value: " . (is_array($value) ? json_encode($value) : (string)$value) .
-            " Condition value: " . (is_array($conditionValue) ? json_encode($conditionValue) : (string)$conditionValue));
+            if ($operator === 'greater_than') {
+                $result = $fieldValue->count() > (int)$value;
+                static::log("Collection count greater_than check result: " . ($result ? 'true' : 'false') . " Value: " . $fieldValue->count() . " Condition value: $value");
+                return $result;
+            }
 
+            if ($operator === 'less_than') {
+                $result = $fieldValue->count() < (int)$value;
+                static::log("Collection count less_than check result: " . ($result ? 'true' : 'false') . " Value: " . $fieldValue->count() . " Condition value: $value");
+                return $result;
+            }
+        }
+
+        // Handle array values (e.g., from fragment selectors or json fields)
+        if (is_array($fieldValue)) {
+            if (empty($fieldValue)) {
+                static::log("Field value is an empty array, condition cannot match");
+                return false;
+            }
+
+            // When using fragment selectors, we may get a nested structure with a single field
+            // Extract the leaf value when possible for comparison
+            if (in_array($field, ['json_content', 'meta']) && $fragmentSelector) {
+                // Try to find and extract the leaf value if there's only one item in the structure
+                $leafValue = $this->extractLeafValue($fieldValue);
+                if ($leafValue !== null) {
+                    static::log("Extracted leaf value from fragment selector result: " . json_encode($leafValue));
+                    
+                    // Special handling for array leaf values with contains operator
+                    if (is_array($leafValue) && $operator === 'contains') {
+                        $matchFound = false;
+                        foreach ($leafValue as $item) {
+                            if ($this->compareScalarValues($item, $value, 'equals', $caseSensitive)) {
+                                $matchFound = true;
+                                break;
+                            }
+                        }
+                        static::log("Array contains check result: " . ($matchFound ? 'true' : 'false') . 
+                            " Value: " . json_encode($leafValue) . " Condition value: " . json_encode($value));
+                        return $matchFound;
+                    }
+                    
+                    $result = $this->compareScalarValues($leafValue, $value, $operator, $caseSensitive);
+                    static::log("Leaf value comparison result: " . ($result ? 'true' : 'false') . 
+                        " Value: " . json_encode($leafValue) . " Condition value: " . json_encode($value));
+                    return $result;
+                }
+            }
+
+            // For flat array structures, try to match any element
+            if ($this->isScalarArray($fieldValue)) {
+                $matchFound = false;
+                foreach ($fieldValue as $item) {
+                    if ($this->compareScalarValues($item, $value, $operator, $caseSensitive)) {
+                        $matchFound = true;
+                        break;
+                    }
+                }
+                static::log("Array value matching result: " . ($matchFound ? 'true' : 'false') . " Value: " . json_encode($fieldValue) . " Condition value: " . json_encode($value));
+                return $matchFound;
+            }
+            
+            // For complex arrays, convert to string for basic operations
+            if ($operator === 'contains' || $operator === 'equals' || $operator === 'regex') {
+                $stringValue = json_encode($fieldValue);
+                $result = $this->compareScalarValues($stringValue, $value, $operator, $caseSensitive);
+                static::log("Complex array comparison result: " . ($result ? 'true' : 'false') . " Value: " . substr($stringValue, 0, 50) . "...");
+                return $result;
+            }
+
+            static::log("Cannot compare complex array with operator: $operator");
+            return false;
+        }
+
+        // Standard scalar comparison
+        $result = $this->compareScalarValues($fieldValue, $value, $operator, $caseSensitive);
+        static::log("Comparison result: " . ($result ? 'true' : 'false') . " Value: " . json_encode($fieldValue) . " Condition value: " . json_encode($value));
+        
         return $result;
     }
 
     /**
-     * Evaluate a condition against stored files
+     * Recursively extract the leaf value from a nested array structure
+     * This is useful when fragment selectors return nested structures with a single path
      *
-     * @param Artifact $artifact  The artifact to evaluate
-     * @param array    $condition The condition to evaluate
-     * @return bool Whether the artifact's stored files match the condition
+     * @param array $data The data structure to extract from
+     * @return mixed|null The leaf value or null if not found
      */
-    protected function evaluateStoredFilesCondition(Artifact $artifact, array $condition): bool
+    protected function extractLeafValue(array $data): mixed
     {
-        $operator = $condition['operator'] ?? 'exists';
-
-        // Check if artifact has any stored files
-        if ($operator === 'exists') {
-            return $artifact->storedFiles->isNotEmpty();
+        // If the array is empty, return null
+        if (empty($data)) {
+            return null;
         }
 
-        // For other operators, we check if any file matches the condition
-        $conditionValue = $condition['value'];
-        $caseSensitive  = $condition['case_sensitive'] ?? false;
-        $path           = $condition['path'] ?? 'filename'; // Default to filename
-
-        foreach($artifact->storedFiles as $file) {
-            $fileValue = Arr::get($file->toArray(), $path);
-
-            if ($fileValue !== null && $this->compareValues($fileValue, $conditionValue, $operator, $caseSensitive)) {
-                return true;
-            }
+        // If there's only one element and it's a scalar, return it
+        if (count($data) === 1 && is_scalar(reset($data))) {
+            return reset($data);
         }
 
-        return false;
+        // If there's only one element and it's an array, recurse into it
+        if (count($data) === 1 && is_array(reset($data))) {
+            return $this->extractLeafValue(reset($data));
+        }
+
+        // Otherwise, return the original data
+        return $data;
     }
 
     /**
      * Get a value from an artifact's field
      *
-     * @param Artifact    $artifact The artifact to get the value from
-     * @param string      $field    The field to get the value from
-     * @param string|null $path     Optional dot notation path for json_content and meta fields
+     * @param Artifact    $artifact         The artifact to get the value from
+     * @param string      $field            The field to get the value from
+     * @param array|null  $fragmentSelector Fragment selector for json_content and meta fields
      * @return mixed The value from the artifact's field
      */
-    protected function getFieldValue(Artifact $artifact, string $field, ?string $path = null): mixed
+    protected function getFieldValue(Artifact $artifact, string $field, ?array $fragmentSelector = null): mixed
     {
         $value = null;
 
@@ -334,24 +436,56 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             return $value;
         }
 
-        if ($field === 'json_content' || $field === 'meta') {
-            $data = $field === 'json_content' ? ($artifact->json_content ?? []) : ($artifact->meta ?? []);
+        if ($field === 'storedFiles') {
+            $value = $artifact->storedFiles;
+            static::log("Retrieved storedFiles count: " . $value->count());
 
-            if (empty($data)) {
-                static::log("Empty data for field $field");
+            return $value;
+        }
 
+        if ($field === 'json_content') {
+            // Ensure json_content is not null before attempting to get a fragment
+            if ($artifact->json_content === null) {
+                static::log("json_content is null");
                 return null;
             }
-
-            if (!$path) {
-                static::log("No path specified, returning entire $field data");
-
-                return $data;
+            
+            if ($fragmentSelector) {
+                try {
+                    $value = $artifact->getJsonFragment($fragmentSelector);
+                    static::log("Retrieved json_content with fragment selector: " . json_encode($fragmentSelector));
+                } catch (\Exception $e) {
+                    static::log("Error retrieving json fragment: " . $e->getMessage());
+                    return null;
+                }
+                return $value;
             }
-
-            $value = Arr::get($data, $path);
-            static::log("Retrieved $field.$path: " . (is_array($value) ? json_encode($value) : (is_null($value) ? 'null' : (string)$value)));
-
+            
+            $value = $artifact->json_content;
+            static::log("Retrieved full json_content");
+            return $value;
+        }
+        
+        if ($field === 'meta') {
+            // Ensure meta is not null before attempting to get a fragment
+            if ($artifact->meta === null) {
+                static::log("meta is null");
+                return null;
+            }
+            
+            if ($fragmentSelector) {
+                try {
+                    $value = $artifact->getMetaFragment($fragmentSelector);
+                    static::log("Retrieved meta with fragment selector: " . json_encode($fragmentSelector));
+                } catch (\Exception $e) {
+                    static::log("Error retrieving meta fragment: " . $e->getMessage());
+                    return null;
+                }
+                return $value;
+            }
+            
+            $value = $artifact->meta;
+            static::log("Retrieved full meta");
             return $value;
         }
 
@@ -494,5 +628,21 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         }
 
         return $result;
+    }
+
+    /**
+     * Check if an array contains only scalar values
+     *
+     * @param array $array The array to check
+     * @return bool Whether the array contains only scalar values
+     */
+    protected function isScalarArray(array $array): bool
+    {
+        foreach ($array as $value) {
+            if (!is_scalar($value)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -72,14 +72,24 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                     'operator'   => 'AND',
                     'conditions' => [
                         [
-                            'field'    => 'json_content',
-                            'path'     => 'category',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'category' => ['type' => 'string']
+                                ]
+                            ],
                             'operator' => 'equals',
                             'value'    => 'report',
                         ],
                         [
-                            'field'    => 'meta',
-                            'path'     => 'status',
+                            'field' => 'meta',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'status' => ['type' => 'string']
+                                ]
+                            ],
                             'operator' => 'equals',
                             'value'    => 'active',
                         ],
@@ -131,13 +141,21 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                     'operator'   => 'OR',
                     'conditions' => [
                         [
-                            'field'    => 'json_content',
-                            'path'     => 'category',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'category' => ['type' => 'string']
+                                ]
+                            ],
                             'operator' => 'equals',
                             'value'    => 'report',
                         ],
                         [
-                            'field'    => 'text_content',
+                            'field' => 'text_content',
+                            'fragment_selector' => [
+                                'type' => 'string'
+                            ],
                             'operator' => 'contains',
                             'value'    => 'another',
                         ],
@@ -194,14 +212,24 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                             'operator'   => 'AND',
                             'conditions' => [
                                 [
-                                    'field'    => 'json_content',
-                                    'path'     => 'category',
+                                    'field' => 'json_content',
+                                    'fragment_selector' => [
+                                        'type' => 'object',
+                                        'children' => [
+                                            'category' => ['type' => 'string']
+                                        ]
+                                    ],
                                     'operator' => 'equals',
                                     'value'    => 'report',
                                 ],
                                 [
-                                    'field'    => 'json_content',
-                                    'path'     => 'priority',
+                                    'field' => 'json_content',
+                                    'fragment_selector' => [
+                                        'type' => 'object',
+                                        'children' => [
+                                            'priority' => ['type' => 'string']
+                                        ]
+                                    ],
                                     'operator' => 'equals',
                                     'value'    => 'high',
                                 ],
@@ -211,14 +239,24 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                             'operator'   => 'AND',
                             'conditions' => [
                                 [
-                                    'field'    => 'json_content',
-                                    'path'     => 'category',
+                                    'field' => 'json_content',
+                                    'fragment_selector' => [
+                                        'type' => 'object',
+                                        'children' => [
+                                            'category' => ['type' => 'string']
+                                        ]
+                                    ],
                                     'operator' => 'equals',
                                     'value'    => 'note',
                                 ],
                                 [
-                                    'field'    => 'json_content',
-                                    'path'     => 'priority',
+                                    'field' => 'json_content',
+                                    'fragment_selector' => [
+                                        'type' => 'object',
+                                        'children' => [
+                                            'priority' => ['type' => 'string']
+                                        ]
+                                    ],
                                     'operator' => 'equals',
                                     'value'    => 'medium',
                                 ],
@@ -266,7 +304,10 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
-                            'field'    => 'text_content',
+                            'field' => 'text_content',
+                            'fragment_selector' => [
+                                'type' => 'string'
+                            ],
                             'operator' => 'regex',
                             'value'    => '/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/',
                         ],
@@ -342,8 +383,13 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
-                            'field'    => 'json_content',
-                            'path'     => 'value',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'value' => ['type' => 'number']
+                                ]
+                            ],
                             'operator' => 'greater_than',
                             'value'    => 30,
                         ],
@@ -370,8 +416,13 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
-                            'field'    => 'json_content',
-                            'path'     => 'value',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'value' => ['type' => 'number']
+                                ]
+                            ],
                             'operator' => 'less_than',
                             'value'    => 75,
                         ],
@@ -417,9 +468,12 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
-                            'field'          => 'text_content',
-                            'operator'       => 'contains',
-                            'value'          => 'IMPORTANT',
+                            'field' => 'text_content',
+                            'fragment_selector' => [
+                                'type' => 'string'
+                            ],
+                            'operator' => 'contains',
+                            'value'    => 'IMPORTANT',
                             'case_sensitive' => true,
                         ],
                     ],
@@ -444,7 +498,10 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
-                            'field'    => 'text_content',
+                            'field' => 'text_content',
+                            'fragment_selector' => [
+                                'type' => 'string'
+                            ],
                             'operator' => 'contains',
                             'value'    => 'important',
                         ],
@@ -490,8 +547,13 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
-                            'field'    => 'json_content',
-                            'path'     => 'optional_field',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'optional_field' => ['type' => 'string']
+                                ]
+                            ],
                             'operator' => 'exists',
                         ],
                     ],
@@ -535,8 +597,13 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
-                            'field'    => 'meta',
-                            'path'     => 'tags',
+                            'field' => 'meta',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'tags' => ['type' => 'array']
+                                ]
+                            ],
                             'operator' => 'contains',
                             'value'    => 'document',
                         ],
@@ -602,7 +669,10 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
-                            'field'    => 'text_content',
+                            'field' => 'text_content',
+                            'fragment_selector' => [
+                                'type' => 'string'
+                            ],
                             'operator' => 'not_a_valid_operator', // Invalid operator
                             'value'    => 'test',
                         ],
@@ -613,5 +683,230 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
 
         // When we run the filter task, it should throw a ValidationError
         $this->taskProcess->getRunner()->run();
+    }
+
+    /**
+     * Test filtering with fragment selectors for JSON content
+     */
+    public function test_filter_artifacts_with_json_fragment_selector()
+    {
+        // Given we have 3 artifacts with different JSON content
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => [
+                'user' => [
+                    'name' => 'John',
+                    'role' => 'admin'
+                ],
+                'settings' => [
+                    'notifications' => true
+                ]
+            ],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => [
+                'user' => [
+                    'name' => 'Alice',
+                    'role' => 'editor'
+                ],
+                'settings' => [
+                    'notifications' => false
+                ]
+            ],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => [
+                'user' => [
+                    'name' => 'Bob',
+                    'role' => 'viewer'
+                ],
+                'settings' => [
+                    'notifications' => true
+                ]
+            ],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config with fragment selector
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'operator' => 'AND',
+                    'conditions' => [
+                        [
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'user' => [
+                                        'type' => 'object',
+                                        'children' => [
+                                            'role' => ['type' => 'string']
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            'operator' => 'equals',
+                            'value'    => 'admin',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifact1 should be in the output (admin role)
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
+    }
+
+    /**
+     * Test filtering with fragment selectors for meta data
+     */
+    public function test_filter_artifacts_with_meta_fragment_selector()
+    {
+        // Given we have 3 artifacts with different meta data
+        $artifact1 = Artifact::factory()->create([
+            'meta' => [
+                'tags' => ['important', 'finance'],
+                'status' => 'active'
+            ],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'meta' => [
+                'tags' => ['normal', 'marketing'],
+                'status' => 'active'
+            ],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'meta' => [
+                'tags' => ['important', 'hr'],
+                'status' => 'inactive'
+            ],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config with meta fragment selector for tags
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'operator' => 'AND',
+                    'conditions' => [
+                        [
+                            'field' => 'meta',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'tags' => ['type' => 'array']
+                                ]
+                            ],
+                            'operator' => 'contains',
+                            'value'    => 'important',
+                        ],
+                        [
+                            'field' => 'meta',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'status' => ['type' => 'string']
+                                ]
+                            ],
+                            'operator' => 'equals',
+                            'value'    => 'active',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifact1 should be in the output (has 'important' tag and is 'active')
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
+    }
+
+    /**
+     * Test filtering with fragment selectors for top-level fields
+     */
+    public function test_filter_artifacts_with_top_level_fragment_selector()
+    {
+        // Given we have 3 artifacts with different JSON content
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => [
+                'category' => 'report',
+                'priority' => 'high'
+            ],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => [
+                'category' => 'note',
+                'priority' => 'medium'
+            ],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => [
+                'category' => 'report',
+                'priority' => 'low'
+            ],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config with fragment selector for top-level field
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'operator' => 'AND',
+                    'conditions' => [
+                        [
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'category' => ['type' => 'string']
+                                ]
+                            ],
+                            'operator' => 'equals',
+                            'value'    => 'report',
+                        ],
+                        [
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'priority' => ['type' => 'string']
+                                ]
+                            ],
+                            'operator' => 'equals',
+                            'value'    => 'high',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifact1 should be in the output (report with high priority)
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
     }
 }
