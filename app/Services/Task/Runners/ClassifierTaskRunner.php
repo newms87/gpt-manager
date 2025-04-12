@@ -2,6 +2,7 @@
 
 namespace App\Services\Task\Runners;
 
+use App\Repositories\ThreadRepository;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class ClassifierTaskRunner extends AgentThreadTaskRunner
@@ -15,7 +16,10 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
         $inputArtifacts = $this->taskProcess->inputArtifacts;
 
         $agentThread = $this->setupAgentThread($inputArtifacts);
-        $artifact    = $this->runAgentThread($agentThread);
+
+        app(ThreadRepository::class)->addMessageToThread($agentThread, "If the only content in the artifact is 'Excluded...' or is very obviously all redacted content and there is no other content of interest, then set the category values to __exclude so the artifacts will be ignored entirely");
+        
+        $artifact = $this->runAgentThread($agentThread);
 
         if (!$artifact->json_content) {
             throw new ValidationError(static::class . ": No JSON content returned from agent thread");
