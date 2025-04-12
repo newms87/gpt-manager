@@ -7,6 +7,7 @@ use App\Models\Task\Artifact;
 use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Services\TranscodeFileService;
 
@@ -68,6 +69,9 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
             $transcodedFilename,
             $artifact->text_content
         );
+
+        // Preserve metadata from the input artifact and add to the current artifact meta
+        $artifact->meta = ArrayHelper::mergeArraysRecursivelyUnique($artifact->meta ?? [], $inputArtifact->meta ?? []);
 
         // The artifact name should be the name of the transcoded file
         $artifact->name = $transcodedFile->filename;

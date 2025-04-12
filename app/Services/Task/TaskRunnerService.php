@@ -2,6 +2,7 @@
 
 namespace App\Services\Task;
 
+use App\Jobs\PrepareTaskProcessJob;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
@@ -143,8 +144,9 @@ class TaskRunnerService
             // Remove the old task processes to make way for the new ones
             $taskRun->taskProcesses()->each(fn(TaskProcess $taskProcess) => $taskProcess->delete());
 
-            // Clear out old output artifacts
+            // Clear out old input / output artifacts
             $taskRun->clearOutputArtifacts();
+            $taskRun->clearInputArtifacts();
 
             // If this task run is part of a workflow run, collect the output artifacts from the source nodes and replace the current input artifacts
             if ($taskRun->workflow_run_id) {
@@ -156,12 +158,10 @@ class TaskRunnerService
             $taskRun->failed_at    = null;
             $taskRun->started_at   = null;
             $taskRun->save();
-            static::prepareTaskProcesses($taskRun);
+            (new PrepareTaskProcessJob($taskRun))->dispatch();
         } finally {
             LockHelper::release($taskRun);
         }
-
-        static::continue($taskRun);
     }
 
     /**
