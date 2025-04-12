@@ -23,7 +23,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         // Create test task definition
         $this->taskDefinition = TaskDefinition::factory()->create([
             'name'             => 'Test Filter Artifacts Task',
-            'task_runner_name' => FilterArtifactsTaskRunner::class,
+            'task_runner_name' => FilterArtifactsTaskRunner::RUNNER_NAME,
         ]);
 
         // Create task run
@@ -36,11 +36,6 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         $this->taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
         ]);
-
-        // Set up the task runner
-        $this->taskRunner = app(FilterArtifactsTaskRunner::class)
-            ->setTaskRun($this->taskRun)
-            ->setTaskProcess($this->taskProcess);
     }
 
     /**
@@ -67,7 +62,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
             'meta'         => ['status' => 'inactive', 'tags' => ['report']],
         ]);
 
-        // Attach artifacts to the task process
+        // Attach artifacts to the task process input
         $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
 
         // Set up filter config with AND condition
@@ -94,10 +89,10 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         ]);
 
         // When we run the filter task
-        $this->taskRunner->run();
+        $this->taskProcess->getRunner()->run();
 
         // Then only artifact1 should be in the output
-        $outputArtifacts = $this->taskProcess->outputArtifacts;
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
         $this->assertCount(1, $outputArtifacts);
         $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
     }
@@ -126,7 +121,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
             'meta'         => ['status' => 'inactive'],
         ]);
 
-        // Attach artifacts to the task process
+        // Attach artifacts to the task process input
         $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
 
         // Set up filter config with OR condition
@@ -155,7 +150,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         $this->taskRunner->run();
 
         // Then artifacts 1, 2, and 3 should be in the output (1 and 3 match report category, 2 matches text contains)
-        $outputArtifacts = $this->taskProcess->outputArtifacts;
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
         $this->assertCount(3, $outputArtifacts);
     }
 
@@ -185,7 +180,10 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
             'json_content' => ['category' => 'note', 'priority' => 'high'],
         ]);
 
-        // Attach artifacts to the task process
+        // Make sure output artifacts are empty
+        $this->taskProcess->outputArtifacts()->detach();
+
+        // Attach artifacts to the task process input
         $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id, $artifact4->id]);
 
         // Set up filter config with nested conditions
@@ -234,11 +232,16 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
             ],
         ]);
 
+        // Debugging code to check task_runner_config
+        $taskRunnerConfig = $this->taskDefinition->fresh()->task_runner_config;
+        $this->assertArrayHasKey('filter_config', $taskRunnerConfig);
+        $this->assertEquals('OR', $taskRunnerConfig['filter_config']['operator']);
+
         // When we run the filter task
         $this->taskRunner->run();
 
         // Then only artifact1 and artifact2 should be in the output
-        $outputArtifactIds = $this->taskProcess->outputArtifacts->pluck('id')->toArray();
+        $outputArtifactIds = $this->taskProcess->fresh()->outputArtifacts->pluck('id')->toArray();
         $this->assertCount(2, $outputArtifactIds);
         $this->assertContains($artifact1->id, $outputArtifactIds);
         $this->assertContains($artifact2->id, $outputArtifactIds);
@@ -262,7 +265,10 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
             'text_content' => 'Website: www.example.com',
         ]);
 
-        // Attach artifacts to the task process
+        // Make sure output artifacts are empty
+        $this->taskProcess->outputArtifacts()->detach();
+
+        // Attach artifacts to the task process input
         $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
 
         // Set up filter config with regex condition to match emails
@@ -280,11 +286,16 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
             ],
         ]);
 
+        // Debugging code to check task_runner_config
+        $taskRunnerConfig = $this->taskDefinition->fresh()->task_runner_config;
+        $this->assertArrayHasKey('filter_config', $taskRunnerConfig);
+        $this->assertCount(1, $taskRunnerConfig['filter_config']['conditions']);
+
         // When we run the filter task
         $this->taskRunner->run();
 
         // Then only artifacts with emails should be in the output
-        $outputArtifactIds = $this->taskProcess->outputArtifacts->pluck('id')->toArray();
+        $outputArtifactIds = $this->taskProcess->fresh()->outputArtifacts->pluck('id')->toArray();
         $this->assertCount(2, $outputArtifactIds);
         $this->assertContains($artifact1->id, $outputArtifactIds);
         $this->assertContains($artifact2->id, $outputArtifactIds);
