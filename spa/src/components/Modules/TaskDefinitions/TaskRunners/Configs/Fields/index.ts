@@ -3,6 +3,8 @@ export { default as FilterConditionsField } from "./FilterConditionsField.vue";
 export { default as FragmentSelectorConfigField } from "./FragmentSelectorConfigField.vue";
 export { default as PromptDirectiveConfigField } from "./PromptDirectiveConfigField.vue";
 export { default as SchemaAndFragmentsConfigField } from "./SchemaAndFragmentsConfigField.vue";
+export { default as SimpleConditionField } from "./SimpleConditionField.vue";
+export { default as ConditionGroupField } from "./ConditionGroupField.vue";
 export { default as TaskArtifactFiltersField } from "./TaskArtifactFiltersField.vue";
 export { default as TaskArtifactFiltersFieldForm } from "./TaskArtifactFiltersFieldForm.vue";
 export { default as TaskDefinitionAgentConfigField } from "./TaskDefinitionAgentConfigField.vue";
