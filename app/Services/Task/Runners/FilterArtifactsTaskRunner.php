@@ -44,7 +44,6 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         $filterConfig = $this->config('filter_config', []);
 
         if (empty($filterConfig)) {
-            dump($this->taskDefinition->id, $this->taskDefinition->task_runner_config);
             $this->activity('No filter config provided, passing all artifacts through', 100);
             $this->complete($this->taskProcess->inputArtifacts);
 
@@ -72,7 +71,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
      */
     protected function validateFilterConfig(array $filterConfig): void
     {
-        if (!isset($filterConfig['conditions']) || !is_array($filterConfig['conditions']) || empty($filterConfig['conditions'])) {
+        if (!isset($filterConfig['conditions']) || !is_array($filterConfig['conditions'])) {
             throw new ValidationError("Filter config must contain a 'conditions' array");
         }
 

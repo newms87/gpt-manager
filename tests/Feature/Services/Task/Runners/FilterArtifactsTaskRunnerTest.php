@@ -284,4 +284,334 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         $this->assertContains($artifact1->id, $outputArtifactIds);
         $this->assertContains($artifact2->id, $outputArtifactIds);
     }
+
+    /**
+     * Test filtering with empty condition (should pass all artifacts)
+     */
+    public function test_filter_artifacts_with_empty_conditions()
+    {
+        // Given we have 3 artifacts
+        $artifact1 = Artifact::factory()->create();
+        $artifact2 = Artifact::factory()->create();
+        $artifact3 = Artifact::factory()->create();
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config with empty conditions array
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then all artifacts should be in the output since conditions are empty
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(3, $outputArtifacts);
+    }
+
+    /**
+     * Test filtering with numeric comparison operators (greater_than, less_than)
+     */
+    public function test_filter_artifacts_with_numeric_comparisons()
+    {
+        // Given we have 3 artifacts with numeric values
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => ['value' => 10],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => ['value' => 50],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => ['value' => 100],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Test greater_than operator
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'field'    => 'json_content',
+                            'path'     => 'value',
+                            'operator' => 'greater_than',
+                            'value'    => 30,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifacts with value > 30 should be in the output
+        $outputArtifactIds = $this->taskProcess->fresh()->outputArtifacts->pluck('id')->toArray();
+        $this->assertCount(2, $outputArtifactIds);
+        $this->assertContains($artifact2->id, $outputArtifactIds);
+        $this->assertContains($artifact3->id, $outputArtifactIds);
+
+        // Reset output artifacts
+        $this->taskProcess->outputArtifacts()->detach();
+
+        // Test less_than operator
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'field'    => 'json_content',
+                            'path'     => 'value',
+                            'operator' => 'less_than',
+                            'value'    => 75,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task again
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifacts with value < 75 should be in the output
+        $outputArtifactIds = $this->taskProcess->fresh()->outputArtifacts->pluck('id')->toArray();
+        $this->assertCount(2, $outputArtifactIds);
+        $this->assertContains($artifact1->id, $outputArtifactIds);
+        $this->assertContains($artifact2->id, $outputArtifactIds);
+    }
+
+    /**
+     * Test filtering with case sensitivity
+     */
+    public function test_filter_artifacts_with_case_sensitivity()
+    {
+        // Given we have 3 artifacts with text values
+        $artifact1 = Artifact::factory()->create([
+            'text_content' => 'This document contains IMPORTANT information',
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'text_content' => 'This document contains important details',
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'text_content' => 'This document has no matching content',
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Test case-sensitive search
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'field'          => 'text_content',
+                            'operator'       => 'contains',
+                            'value'          => 'IMPORTANT',
+                            'case_sensitive' => true,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifact with exact case match should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
+
+        // Reset output artifacts
+        $this->taskProcess->outputArtifacts()->detach();
+
+        // Test case-insensitive search (default)
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'field'    => 'text_content',
+                            'operator' => 'contains',
+                            'value'    => 'important',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task again
+        $this->taskProcess->getRunner()->run();
+
+        // Then both artifacts with case-insensitive matches should be in the output
+        $outputArtifactIds = $this->taskProcess->fresh()->outputArtifacts->pluck('id')->toArray();
+        $this->assertCount(2, $outputArtifactIds);
+        $this->assertContains($artifact1->id, $outputArtifactIds);
+        $this->assertContains($artifact2->id, $outputArtifactIds);
+    }
+
+    /**
+     * Test filtering with 'exists' operator
+     */
+    public function test_filter_artifacts_with_exists_operator()
+    {
+        // Given we have 3 artifacts with different fields present/absent
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => ['optional_field' => 'value1'],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => ['different_field' => 'value2'],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => null,
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config with exists operator
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'field'    => 'json_content',
+                            'path'     => 'optional_field',
+                            'operator' => 'exists',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifact with the optional_field should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
+    }
+
+    /**
+     * Test filtering with array values in meta fields
+     */
+    public function test_filter_artifacts_with_array_values()
+    {
+        // Given we have artifacts with array values in meta fields
+        $artifact1 = Artifact::factory()->create([
+            'meta' => ['tags' => ['important', 'document', 'critical']],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'meta' => ['tags' => ['normal', 'document']],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'meta' => ['tags' => ['low-priority']],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config searching for a specific tag value
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'field'    => 'meta',
+                            'path'     => 'tags',
+                            'operator' => 'contains',
+                            'value'    => 'document',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifacts with 'document' in tags should be in the output
+        $outputArtifactIds = $this->taskProcess->fresh()->outputArtifacts->pluck('id')->toArray();
+        $this->assertCount(2, $outputArtifactIds);
+        $this->assertContains($artifact1->id, $outputArtifactIds);
+        $this->assertContains($artifact2->id, $outputArtifactIds);
+    }
+
+    /**
+     * Test validation error for invalid filter configuration
+     */
+    public function test_validation_error_for_invalid_filter_config()
+    {
+        $this->expectException(\Newms87\Danx\Exceptions\ValidationError::class);
+        
+        // Given we have one artifact
+        $artifact = Artifact::factory()->create();
+        $this->taskProcess->inputArtifacts()->attach([$artifact->id]);
+
+        // Set up an invalid filter config (missing field in condition)
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            // Missing 'field'
+                            'operator' => 'contains',
+                            'value'    => 'test',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task, it should throw a ValidationError
+        $this->taskProcess->getRunner()->run();
+    }
+
+    /**
+     * Test validation error for invalid operator in filter configuration
+     */
+    public function test_validation_error_for_invalid_operator()
+    {
+        $this->expectException(\Newms87\Danx\Exceptions\ValidationError::class);
+        
+        // Given we have one artifact
+        $artifact = Artifact::factory()->create();
+        $this->taskProcess->inputArtifacts()->attach([$artifact->id]);
+
+        // Set up an invalid filter config (invalid operator)
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'field'    => 'text_content',
+                            'operator' => 'not_a_valid_operator', // Invalid operator
+                            'value'    => 'test',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task, it should throw a ValidationError
+        $this->taskProcess->getRunner()->run();
+    }
 }
