@@ -76,27 +76,140 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     }
 
     /**
-     * Filter artifacts based on the provided filter configuration
+     * Filter artifacts based on filter configuration
      *
-     * @param \Illuminate\Database\Eloquent\Collection $artifacts    The artifacts to filter
-     * @param array                                    $filterConfig The filter configuration
+     * @param Collection $artifacts Artifacts to filter
+     * @param array      $config    Filter configuration
      * @return array Filtered artifacts
      */
-    protected function filterArtifacts($artifacts, array $filterConfig): array
+    protected function filterArtifacts(Collection $artifacts, array $config): array
     {
         $filteredArtifacts = [];
-        $operator          = strtoupper($filterConfig['operator'] ?? 'AND');
+        $operator = strtoupper($config['operator'] ?? 'AND');
+        $action = strtolower($config['action'] ?? 'keep');
+        $this->keep = ($action === 'keep');
 
-        foreach($artifacts as $artifact) {
-            $matches = $this->evaluateConditions($artifact, $filterConfig['conditions'], $operator);
+        foreach ($artifacts as $artifact) {
+            // Evaluate all conditions against the artifact
+            $matches = $this->evaluateConditions($artifact, $config['conditions'], $operator);
 
-            // If we're keeping matches, include if matched; if we're discarding matches, include if not matched
+            // Apply the action (keep or discard)
             if (($this->keep && $matches) || (!$this->keep && !$matches)) {
                 $filteredArtifacts[] = $artifact;
             }
         }
 
         return $filteredArtifacts;
+    }
+
+    /**
+     * Evaluate conditions against an artifact
+     *
+     * @param Artifact $artifact   The artifact to evaluate the conditions against
+     * @param array    $conditions The conditions to evaluate
+     * @param string   $operator   The operator to use (AND or OR)
+     * @return bool Whether the artifact matches the conditions
+     */
+    protected function evaluateConditions(Artifact $artifact, array $conditions, string $operator = 'AND'): bool
+    {
+        if (empty($conditions)) {
+            return false;
+        }
+
+        $results = [];
+
+        foreach($conditions as $condition) {
+            if ($condition['type'] === 'condition') {
+                // Get the field value to evaluate
+                $fieldValue = $this->getFieldValue(
+                    $artifact,
+                    $condition['field'],
+                    $condition['fragment_selector'] ?? null
+                );
+                
+                // Log useful information for debugging
+                static::log("Evaluating condition on field: {$condition['field']} operator: {$condition['operator']} fragment: " . 
+                    (isset($condition['fragment_selector']) ? json_encode($condition['fragment_selector']) : 'none'));  
+                static::log("Field value: " . json_encode($fieldValue));
+                
+                // Evaluate the condition against the field value
+                $result = $this->filterService->evaluateCondition($fieldValue, $condition);
+                $results[] = $result;
+                
+                static::log("Condition evaluated as: " . ($result ? "true" : "false") .
+                    " with field={$condition['field']} operator={$condition['operator']}");
+            } elseif ($condition['type'] === 'condition_group') {
+                $groupOperator = $condition['operator'] ?? 'AND';
+                $result = $this->evaluateConditions($artifact, $condition['conditions'], $groupOperator);
+                $results[] = $result;
+                static::log("Condition group evaluated as: " . ($result ? "true" : "false"));
+            }
+        }
+
+        if (empty($results)) {
+            return false;
+        }
+
+        if ($operator === 'AND') {
+            return !in_array(false, $results, true);
+        } else { // OR
+            return in_array(true, $results, true);
+        }
+    }
+
+    /**
+     * Get value to evaluate from an artifact
+     * 
+     * @param Artifact $artifact        The artifact to get the value from
+     * @param string   $field           The field to get
+     * @param array|null $fragmentSelector Optional fragment selector to extract specific data
+     * @return mixed The value from the artifact
+     */
+    protected function getFieldValue(Artifact $artifact, string $field, ?array $fragmentSelector = null): mixed
+    {
+        // Support for specific artifact fields
+        if ($field === 'text_content') {
+            return $artifact->text_content;
+        } elseif ($field === 'json_content') {
+            $json = $artifact->json_content;
+            if ($fragmentSelector) {
+                return $this->extractJsonFragment($json, $fragmentSelector);
+            }
+            return $json;
+        } elseif ($field === 'meta') {
+            $meta = $artifact->meta;
+            if ($fragmentSelector) {
+                return $this->extractJsonFragment($meta, $fragmentSelector);
+            }
+            return $meta;
+        } elseif ($field === 'storedFiles') {
+            return $artifact->storedFiles();
+        }
+
+        // Check for attribute accessor
+        if (method_exists($artifact, $field)) {
+            return $artifact->{$field}();
+        }
+
+        // Generic attribute
+        return $artifact->{$field} ?? null;
+    }
+
+    /**
+     * Extract a fragment of JSON data based on a fragment selector
+     *
+     * @param array|null $data The JSON data to extract from
+     * @param array $fragmentSelector The fragment selector to apply
+     * @return mixed The extracted fragment
+     */
+    protected function extractJsonFragment(?array $data, array $fragmentSelector): mixed
+    {
+        if (empty($data)) {
+            return null;
+        }
+
+        $jsonSchemaService = app(\App\Services\JsonSchema\JsonSchemaService::class);
+        return $jsonSchemaService->filterDataByFragmentSelector($data, $fragmentSelector);
     }
 
     /**
@@ -204,113 +317,6 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         $this->keep = ($config['action'] ?? 'keep') === 'keep';
 
         static::log("Filter task runner configured to " . ($this->keep ? "keep" : "discard") . " matching artifacts");
-    }
-
-    /**
-     * Get the field value from the artifact
-     *
-     * @param Artifact   $artifact         The artifact to get the field value from
-     * @param string     $field            The field to get the value from
-     * @param array|null $fragmentSelector The fragment selector to apply
-     * @return mixed The field value
-     */
-    protected function getFieldValue(Artifact $artifact, string $field, ?array $fragmentSelector = null): mixed
-    {
-        switch($field) {
-            case 'text_content':
-                return $artifact->text_content;
-
-            case 'json_content':
-                if (empty($artifact->json_content)) {
-                    return null;
-                }
-
-                $data = $artifact->json_content;
-
-                if ($fragmentSelector) {
-                    $jsonSchemaService = app(\App\Services\JsonSchema\JsonSchemaService::class);
-
-                    return $jsonSchemaService->filterDataByFragmentSelector($data, $fragmentSelector);
-                }
-
-                return $data;
-
-            case 'meta':
-                if (empty($artifact->meta)) {
-                    return null;
-                }
-
-                $data = $artifact->meta;
-
-                if ($fragmentSelector) {
-                    $jsonSchemaService = app(\App\Services\JsonSchema\JsonSchemaService::class);
-
-                    return $jsonSchemaService->filterDataByFragmentSelector($data, $fragmentSelector);
-                }
-
-                return $data;
-
-            case 'storedFiles':
-                return $artifact->storedFiles;
-
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * Evaluate conditions against an artifact
-     *
-     * @param Artifact $artifact   The artifact to evaluate the conditions against
-     * @param array    $conditions The conditions to evaluate
-     * @param string   $operator   The operator to use (AND or OR)
-     * @return bool Whether the artifact matches the conditions
-     */
-    protected function evaluateConditions(Artifact $artifact, array $conditions, string $operator = 'AND'): bool
-    {
-        if (empty($conditions)) {
-            return false;
-        }
-
-        $results = [];
-
-        foreach($conditions as $condition) {
-            if ($condition['type'] === 'condition') {
-                // Get the field value to evaluate
-                $fieldValue = $this->getFieldValue(
-                    $artifact,
-                    $condition['field'],
-                    $condition['fragment_selector'] ?? null
-                );
-                
-                // Log useful information for debugging
-                static::log("Evaluating condition on field: {$condition['field']} operator: {$condition['operator']} fragment: " . 
-                    (isset($condition['fragment_selector']) ? json_encode($condition['fragment_selector']) : 'none'));  
-                static::log("Field value: " . json_encode($fieldValue));
-                
-                // Evaluate the condition against the field value
-                $result = $this->filterService->evaluateCondition($fieldValue, $condition);
-                $results[] = $result;
-                
-                static::log("Condition evaluated as: " . ($result ? "true" : "false") .
-                    " with field={$condition['field']} operator={$condition['operator']}");
-            } elseif ($condition['type'] === 'condition_group') {
-                $groupOperator = $condition['operator'] ?? 'AND';
-                $result = $this->evaluateConditions($artifact, $condition['conditions'], $groupOperator);
-                $results[] = $result;
-                static::log("Condition group evaluated as: " . ($result ? "true" : "false"));
-            }
-        }
-
-        if (empty($results)) {
-            return false;
-        }
-
-        if ($operator === 'AND') {
-            return !in_array(false, $results, true);
-        } else { // OR
-            return in_array(true, $results, true);
-        }
     }
 
     /**

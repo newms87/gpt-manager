@@ -933,4 +933,372 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         $this->assertCount(1, $outputArtifacts);
         $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
     }
+
+    /**
+     * Test filtering with boolean values
+     */
+    public function test_filter_artifacts_with_boolean_values()
+    {
+        // Given we have 3 artifacts with different boolean values
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => ['active' => true],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => ['active' => false],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => ['active' => null],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config to keep only 'active' = true
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type' => 'condition',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'active' => ['type' => 'boolean']
+                                ]
+                            ],
+                            'operator' => 'equals',
+                            'value'    => true,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only the artifact with active=true should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
+    }
+
+    /**
+     * Test filtering with date values
+     */
+    public function test_filter_artifacts_with_date_values()
+    {
+        // Given we have 3 artifacts with different date values
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => ['created_at' => '2025-01-01T00:00:00Z'],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => ['created_at' => '2025-02-15T00:00:00Z'],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => ['created_at' => '2025-03-30T00:00:00Z'],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config to keep dates after 2025-02-01
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type' => 'condition',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'created_at' => ['type' => 'string']
+                                ]
+                            ],
+                            'operator' => 'greater_than',
+                            'value'    => '2025-02-01T00:00:00Z',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifacts after 2025-02-01 should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(2, $outputArtifacts);
+        $outputArtifactIds = $outputArtifacts->pluck('id')->toArray();
+        $this->assertContains($artifact2->id, $outputArtifactIds);
+        $this->assertContains($artifact3->id, $outputArtifactIds);
+    }
+
+    /**
+     * Test filtering with nested arrays
+     */
+    public function test_filter_artifacts_with_nested_arrays()
+    {
+        // Given we have artifacts with nested array structures
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => [
+                'tags' => ['important', 'urgent', 'review']
+            ],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => [
+                'tags' => ['medium', 'review']
+            ],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => [
+                'tags' => ['low', 'optional']
+            ],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config to find arrays containing 'review'
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type' => 'condition',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'tags' => ['type' => 'array']
+                                ]
+                            ],
+                            'operator' => 'contains',
+                            'value'    => 'review',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifacts with 'review' tag should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(2, $outputArtifacts);
+        $outputArtifactIds = $outputArtifacts->pluck('id')->toArray();
+        $this->assertContains($artifact1->id, $outputArtifactIds);
+        $this->assertContains($artifact2->id, $outputArtifactIds);
+    }
+
+    /**
+     * Test filtering with complex nested JSON structures
+     */
+    public function test_filter_artifacts_with_complex_json()
+    {
+        // Given we have artifacts with deeply nested JSON
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => [
+                'user' => [
+                    'profile' => [
+                        'settings' => [
+                            'notifications' => true
+                        ]
+                    ]
+                ]
+            ],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => [
+                'user' => [
+                    'profile' => [
+                        'settings' => [
+                            'notifications' => false
+                        ]
+                    ]
+                ]
+            ],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => [
+                'user' => [
+                    'profile' => []
+                ]
+            ],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config to find deeply nested property using fragment selector
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type' => 'condition',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'user' => [
+                                        'type' => 'object',
+                                        'children' => [
+                                            'profile' => [
+                                                'type' => 'object',
+                                                'children' => [
+                                                    'settings' => [
+                                                        'type' => 'object',
+                                                        'children' => [
+                                                            'notifications' => ['type' => 'boolean']
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            'operator' => 'equals',
+                            'value'    => true,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only the artifact with notifications=true should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
+    }
+
+    /**
+     * Test filtering with mixed data types
+     */
+    public function test_filter_artifacts_with_mixed_data_types()
+    {
+        // Given we have artifacts with mixed data types
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => [
+                'id' => 1,
+                'name' => 'Test Item',
+                'active' => true,
+                'tags' => ['important', 'active']
+            ],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => [
+                'id' => '2', // String instead of numeric
+                'name' => 'Another Item',
+                'active' => 1, // Numeric 1 instead of boolean
+                'tags' => 'important, active' // String instead of array
+            ],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => [
+                'id' => 3,
+                'name' => 'Inactive Item',
+                'active' => false,
+                'tags' => []
+            ],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Set up filter config with numeric comparison
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type' => 'condition',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'active' => ['type' => 'boolean']
+                                ]
+                            ],
+                            'operator' => 'equals',
+                            'value'    => true,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Check the output - should match both active=true and active=1
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(2, $outputArtifacts);
+        $outputArtifactIds = $outputArtifacts->pluck('id')->toArray();
+        $this->assertContains($artifact1->id, $outputArtifactIds);
+        $this->assertContains($artifact2->id, $outputArtifactIds);
+    }
+
+    /**
+     * Test filtering with null values
+     */
+    public function test_filter_artifacts_with_null_values()
+    {
+        // Given we have 3 artifacts with null values
+        $artifact1 = Artifact::factory()->create([
+            'text_content' => 'This is a document with content',
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'text_content' => null,
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'text_content' => '',
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Test filtering for artifacts with null field value
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type' => 'condition',
+                            'field' => 'text_content',
+                            'operator' => 'exists',
+                        ],
+                    ],
+                    'action' => 'discard', // Keep artifacts where text_content doesn't exist
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifact with null value should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact2->id, $outputArtifacts->first()->id);
+    }
 }

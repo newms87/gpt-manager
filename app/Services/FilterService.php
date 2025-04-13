@@ -104,9 +104,9 @@ class FilterService
     }
 
     /**
-     * Validate a single filter condition
+     * Validate a condition structure
      *
-     * @param array $condition The condition to validate
+     * @param array $condition Condition to validate
      * @throws ValidationError if the condition is invalid
      */
     public function validateCondition(array $condition): void
@@ -115,37 +115,15 @@ class FilterService
             throw new ValidationError("Filter condition must have a 'field' attribute");
         }
 
-        $field = $condition['field'];
-        $operator = $condition['operator'] ?? 'contains';
-        $fragmentSelector = $condition['fragment_selector'] ?? null;
-
-        // Get data type from fragment selector
-        $dataType = 'unknown';
-        if ($fragmentSelector) {
-            $dataType = $this->getDataTypeFromFragmentSelector($fragmentSelector);
-        } else {
-            // For text fields without fragment selectors, assume string type
-            if ($field === 'text_content') {
-                $dataType = 'string';
-            } elseif ($field === 'storedFiles') {
-                $dataType = 'array';
-            }
-        }
-        
-        // If we can't determine a type, validate assuming multiple types are possible
-        if ($dataType === 'unknown') {
-            $dataType = 'string'; // Default to string type for validation
-        }
-
-        $validOperators = $this->getOperatorsForDataType($dataType);
-
         // Validate operator
+        $operator = $condition['operator'] ?? 'contains';
+        $validOperators = ['contains', 'equals', 'greater_than', 'less_than', 'regex', 'exists'];
         if (!in_array($operator, $validOperators)) {
-            throw new ValidationError("For data type '$dataType', operator must be one of: " . implode(', ', $validOperators));
+            throw new ValidationError("Filter operator '$operator' is not valid. Must be one of: " . implode(', ', $validOperators));
         }
 
         // Validate value (except for 'exists' operator)
-        if ($operator !== 'exists' && !isset($condition['value'])) {
+        if ($operator !== 'exists' && !array_key_exists('value', $condition)) {
             throw new ValidationError("Filter condition with operator '$operator' must have a 'value' attribute");
         }
     }
