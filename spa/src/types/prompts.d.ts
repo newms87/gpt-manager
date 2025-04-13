@@ -30,6 +30,7 @@ export interface SchemaAssociation extends ActionTargetItem {
 export interface FragmentSelector {
 	schema_definition_id?: string;
 	type: JsonSchemaType;
+	format?: string;
 	create?: boolean;
 	update?: boolean;
 	children?: {
