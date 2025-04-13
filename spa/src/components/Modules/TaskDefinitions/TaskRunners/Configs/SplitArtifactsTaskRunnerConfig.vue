@@ -1,6 +1,6 @@
 <template>
 	<BaseTaskRunnerConfig :task-definition="taskDefinition">
-		<SplitArtifactsByJsonContentInstructions />
+		<SplitArtifactsInstructions />
 		<SchemaAndFragmentsConfigField :task-definition="taskDefinition" class="p-4" :max-fragments="1" force-schema />
 	</BaseTaskRunnerConfig>
 </template>
@@ -8,7 +8,7 @@
 import { TaskDefinition } from "@/types";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
 import { SchemaAndFragmentsConfigField } from "./Fields";
-import { SplitArtifactsByJsonContentInstructions } from "./Instructions";
+import { SplitArtifactsInstructions } from "./Instructions";
 
 defineProps<{
 	taskDefinition: TaskDefinition;

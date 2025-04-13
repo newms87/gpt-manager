@@ -8,6 +8,4 @@ export { default as MergeArtifactsTaskRunnerConfig } from "./MergeArtifactsTaskR
 export { default as PagesOrganizerTaskRunnerConfig } from "./PagesOrganizerTaskRunnerConfig.vue";
 export { default as RunWorkflowTaskRunnerConfig } from "./RunWorkflowTaskRunnerConfig.vue";
 export { default as SequentialCategoryMatcherTaskRunnerConfig } from "./SequentialCategoryMatcherTaskRunnerConfig.vue";
-export {
-	default as SplitArtifactsByJsonContentTaskRunnerConfig
-} from "./SplitArtifactsByJsonContentTaskRunnerConfig.vue";
+export { default as SplitArtifactsTaskRunnerConfig } from "./SplitArtifactsTaskRunnerConfig.vue";

@@ -1,12 +1,15 @@
 import {
 	AgentThreadRunnerLottie,
 	CategorizeArtifactsLottie,
+	FilterArtifactsLottie,
 	ImageToTextLottie,
 	LoadFromDbLottie,
 	MergeArtifactsLottie,
 	PageOrganizerLottie,
 	RunWorkflowLottie,
 	SaveToDbLottie,
+	SequentialCategoryMatcherLottie,
+	SplitArtifactsLottie,
 	SplitByFileLottie,
 	WorkflowInputLottie
 } from "@/assets/dotlottie";
@@ -22,7 +25,7 @@ import {
 	PagesOrganizerTaskRunnerConfig,
 	RunWorkflowTaskRunnerConfig,
 	SequentialCategoryMatcherTaskRunnerConfig,
-	SplitArtifactsByJsonContentTaskRunnerConfig
+	SplitArtifactsTaskRunnerConfig
 } from "./Configs";
 import { WorkflowInputTaskRunnerNode } from "./Nodes";
 
@@ -45,17 +48,17 @@ export const TaskRunnerClasses = {
 		lottie: CategorizeArtifactsLottie,
 		config: CategorizeArtifactsTaskRunnerConfig
 	},
-	"Sequential Category Matcher": {
-		name: "Sequential Category Matcher",
-		description: "Matches categories for artifacts with missing categories based on previous or subsequent artifacts sequentially",
-		lottie: CategorizeArtifactsLottie,
-		config: SequentialCategoryMatcherTaskRunnerConfig
-	},
 	"Classifier": {
 		name: "Classifier",
 		description: "Classify artifacts based on their content.",
 		lottie: CategorizeArtifactsLottie,
 		config: ClassifierTaskRunnerConfig
+	},
+	"Filter Artifacts": {
+		name: "Filter Artifacts",
+		description: "Filter artifacts based on their content with complex AND/OR conditions",
+		lottie: FilterArtifactsLottie,
+		config: FilterArtifactsTaskRunnerConfig
 	},
 	"Image To Text Transcoder": {
 		name: "Image To Text Transcoder",
@@ -65,12 +68,6 @@ export const TaskRunnerClasses = {
 			lottieClass: "w-[10rem]"
 		},
 		config: ImageToTextTranscoderTaskRunnerConfig
-	},
-	"Filter Artifacts": {
-		name: "Filter Artifacts",
-		description: "Filter artifacts based on their content with complex AND/OR conditions",
-		lottie: MergeArtifactsLottie, // Using MergeArtifactsLottie as a placeholder animation
-		config: FilterArtifactsTaskRunnerConfig
 	},
 	"Load From Database": {
 		name: "Load From Database",
@@ -114,17 +111,23 @@ export const TaskRunnerClasses = {
 		},
 		config: BaseTaskRunnerConfig
 	},
+	"Sequential Category Matcher": {
+		name: "Sequential Category Matcher",
+		description: "Matches categories for artifacts with missing categories based on previous or subsequent artifacts sequentially",
+		lottie: SequentialCategoryMatcherLottie,
+		config: SequentialCategoryMatcherTaskRunnerConfig
+	},
 	"Split By File": {
 		name: "Split By File",
 		description: "Split artifact files by individual transcodes of the file.",
 		lottie: SplitByFileLottie,
 		config: BaseTaskRunnerConfig
 	},
-	"Split Artifacts By Json Content": {
-		name: "Split Artifacts By Json Content",
+	"Split Artifacts": {
+		name: "Split Artifacts",
 		description: "Split artifacts by keys in their JSON content.",
-		lottie: SplitByFileLottie,
-		config: SplitArtifactsByJsonContentTaskRunnerConfig
+		lottie: SplitArtifactsLottie,
+		config: SplitArtifactsTaskRunnerConfig
 	},
 	"Workflow Input": {
 		name: "Workflow Input",

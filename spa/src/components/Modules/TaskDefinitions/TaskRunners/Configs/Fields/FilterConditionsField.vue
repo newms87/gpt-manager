@@ -49,10 +49,10 @@
 
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
-import AndOrConditionTabs from "@/components/Modules/TaskDefinitions/TaskRunners/Configs/Fields/AndOrConditionTabs";
 import { FilterCondition, FilterConditionGroup, FilterConfig, TaskDefinition } from "@/types";
 import { ActionButton, ListTransition } from "quasar-ui-danx";
 import { ref } from "vue";
+import AndOrConditionTabs from "./AndOrConditionTabs";
 import ConditionGroupField from "./ConditionGroupField.vue";
 import SimpleConditionField from "./SimpleConditionField.vue";
 
@@ -96,7 +96,6 @@ function addConditionGroup() {
 
 // Update a condition at a specific index
 function updateCondition(index: number, updatedCondition: FilterCondition | FilterConditionGroup) {
-	console.log("receivedupateCondition", updatedCondition);
 	config.value.conditions[index] = updatedCondition;
 	updateTaskDefinition();
 }

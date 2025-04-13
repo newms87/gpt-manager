@@ -4,13 +4,13 @@ namespace App\Services\Task\Runners;
 
 use App\Services\Task\ArtifactsToGroupsMapper;
 
-class SplitArtifactsByJsonContentTaskRunner extends BaseTaskRunner
+class SplitArtifactsTaskRunner extends BaseTaskRunner
 {
-    const string RUNNER_NAME = 'Split Artifacts By Json Content';
+    const string RUNNER_NAME = 'Split Artifacts';
 
     public function run(): void
     {
-        $this->activity('Splitting JSON content', 1);
+        $this->activity('Splitting artifacts', 1);
 
         $groupingKeys = [];
         foreach($this->taskDefinition->schemaAssociations as $schemaAssociation) {
@@ -19,7 +19,7 @@ class SplitArtifactsByJsonContentTaskRunner extends BaseTaskRunner
 
         $outputArtifacts = (new ArtifactsToGroupsMapper())->useSplitMode()->setGroupingKeys($groupingKeys)->map($this->taskProcess->inputArtifacts);
 
-        $this->activity('JSON content split successfully', 100);
+        $this->activity('Artifacts split successfully', 100);
 
         $this->complete(collect($outputArtifacts)->flatten());
     }
