@@ -80,7 +80,8 @@ function addCondition() {
 		field: "text_content",
 		operator: "contains",
 		value: "",
-		case_sensitive: false
+		case_sensitive: false,
+		type: "condition" // Add the type property required by the backend
 	});
 	updateTaskDefinition();
 }
@@ -89,7 +90,8 @@ function addCondition() {
 function addConditionGroup() {
 	config.value.conditions.push({
 		operator: "AND",
-		conditions: []
+		conditions: [],
+		type: "condition_group" // Add the type property required by the backend
 	});
 	updateTaskDefinition();
 }
@@ -114,4 +116,3 @@ function updateTaskDefinition() {
 	});
 }
 </script>
-

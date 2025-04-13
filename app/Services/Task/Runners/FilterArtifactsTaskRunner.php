@@ -15,7 +15,7 @@ use Newms87\Danx\Exceptions\ValidationError;
 class FilterArtifactsTaskRunner extends BaseTaskRunner
 {
     const string RUNNER_NAME = 'Filter Artifacts';
-    
+
     /**
      * Whether to keep artifacts that match the filter conditions (true) or discard them (false)
      */
@@ -60,7 +60,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
 
         // Validate the filter config structure
         $this->validateConfig($filterConfig);
-        
+
         // Apply the configuration to set up filter parameters
         $this->configure($filterConfig);
 
@@ -85,11 +85,11 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     protected function filterArtifacts(Collection $artifacts, array $config): array
     {
         $filteredArtifacts = [];
-        $operator = strtoupper($config['operator'] ?? 'AND');
-        $action = strtolower($config['action'] ?? 'keep');
-        $this->keep = ($action === 'keep');
+        $operator          = strtoupper($config['operator'] ?? 'AND');
+        $action            = strtolower($config['action'] ?? 'keep');
+        $this->keep        = ($action === 'keep');
 
-        foreach ($artifacts as $artifact) {
+        foreach($artifacts as $artifact) {
             // Evaluate all conditions against the artifact
             $matches = $this->evaluateConditions($artifact, $config['conditions'], $operator);
 
@@ -126,22 +126,22 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
                     $condition['field'],
                     $condition['fragment_selector'] ?? null
                 );
-                
+
                 // Log useful information for debugging
-                static::log("Evaluating condition on field: {$condition['field']} operator: {$condition['operator']} fragment: " . 
-                    (isset($condition['fragment_selector']) ? json_encode($condition['fragment_selector']) : 'none'));  
+                static::log("Evaluating condition on field: {$condition['field']} operator: {$condition['operator']} fragment: " .
+                    (isset($condition['fragment_selector']) ? json_encode($condition['fragment_selector']) : 'none'));
                 static::log("Field value: " . json_encode($fieldValue));
-                
+
                 // Evaluate the condition against the field value
-                $result = $this->filterService->evaluateCondition($fieldValue, $condition);
+                $result    = $this->filterService->evaluateCondition($fieldValue, $condition);
                 $results[] = $result;
-                
+
                 static::log("Condition evaluated as: " . ($result ? "true" : "false") .
                     " with field={$condition['field']} operator={$condition['operator']}");
             } elseif ($condition['type'] === 'condition_group') {
                 $groupOperator = $condition['operator'] ?? 'AND';
-                $result = $this->evaluateConditions($artifact, $condition['conditions'], $groupOperator);
-                $results[] = $result;
+                $result        = $this->evaluateConditions($artifact, $condition['conditions'], $groupOperator);
+                $results[]     = $result;
                 static::log("Condition group evaluated as: " . ($result ? "true" : "false"));
             }
         }
@@ -159,9 +159,9 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
 
     /**
      * Get value to evaluate from an artifact
-     * 
-     * @param Artifact $artifact        The artifact to get the value from
-     * @param string   $field           The field to get
+     *
+     * @param Artifact   $artifact         The artifact to get the value from
+     * @param string     $field            The field to get
      * @param array|null $fragmentSelector Optional fragment selector to extract specific data
      * @return mixed The value from the artifact
      */
@@ -171,17 +171,9 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         if ($field === 'text_content') {
             return $artifact->text_content;
         } elseif ($field === 'json_content') {
-            $json = $artifact->json_content;
-            if ($fragmentSelector) {
-                return $this->extractJsonFragment($json, $fragmentSelector);
-            }
-            return $json;
+            return $artifact->getJsonFragmentValue($fragmentSelector);
         } elseif ($field === 'meta') {
-            $meta = $artifact->meta;
-            if ($fragmentSelector) {
-                return $this->extractJsonFragment($meta, $fragmentSelector);
-            }
-            return $meta;
+            return $artifact->getMetaFragmentValue($fragmentSelector);
         } elseif ($field === 'storedFiles') {
             return $artifact->storedFiles();
         }
@@ -193,40 +185,6 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
 
         // Generic attribute
         return $artifact->{$field} ?? null;
-    }
-
-    /**
-     * Extract a fragment of JSON data based on a fragment selector
-     *
-     * @param array|null $data The JSON data to extract from
-     * @param array $fragmentSelector The fragment selector to apply
-     * @return mixed The extracted fragment
-     */
-    protected function extractJsonFragment(?array $data, array $fragmentSelector): mixed
-    {
-        if (empty($data)) {
-            return null;
-        }
-
-        // Special handling for simple boolean fragment selectors to ensure false values are preserved
-        if (isset($fragmentSelector['type']) && $fragmentSelector['type'] === 'object' && 
-            isset($fragmentSelector['children']) && count($fragmentSelector['children']) === 1) {
-            
-            $targetField = array_key_first($fragmentSelector['children']);
-            $fieldSchema = $fragmentSelector['children'][$targetField];
-            
-            // If we're looking for a boolean field and it exists in the data
-            if (isset($fieldSchema['type']) && $fieldSchema['type'] === 'boolean' && 
-                array_key_exists($targetField, $data) && is_bool($data[$targetField])) {
-                
-                // Return the field value directly to preserve false values
-                return ["$targetField" => $data[$targetField]];
-            }
-        }
-        
-        // Standard fragment selection
-        $jsonSchemaService = app(\App\Services\JsonSchema\JsonSchemaService::class);
-        return $jsonSchemaService->filterDataByFragmentSelector($data, $fragmentSelector);
     }
 
     /**
@@ -250,6 +208,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         // Skip validation for empty conditions (they will be handled in the run method)
         if (empty($config['conditions'])) {
             static::log("Empty conditions array detected, validation skipped");
+
             return;
         }
 

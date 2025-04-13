@@ -21,11 +21,13 @@ export interface FilterCondition {
 	value?: string;
 	case_sensitive?: boolean;
 	fragment_selector?: FragmentSelector;
+	type: "condition";
 }
 
 export interface FilterConditionGroup {
 	operator: "AND" | "OR";
 	conditions: FilterCondition[];
+	type: "condition_group";
 }
 
 export interface FilterConfig {

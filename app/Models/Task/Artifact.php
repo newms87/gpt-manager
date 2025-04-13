@@ -70,31 +70,65 @@ class Artifact extends Model implements AuditableContract
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
     }
 
+    /**
+     * Get the fragment defined by the fragment selector for the JSON content field
+     */
     public function getJsonFragment(array $fragmentSelector = null): array
     {
         return app(JsonSchemaService::class)->filterDataByFragmentSelector($this->json_content, $fragmentSelector);
     }
 
+    /**
+     * Get the fragment defined by the fragment selector for the meta field
+     */
     public function getMetaFragment(array $fragmentSelector = null): array
     {
         return app(JsonSchemaService::class)->filterDataByFragmentSelector($this->meta, $fragmentSelector);
     }
 
+    /**
+     * Get the first value of the JSON fragment.
+     */
+    public function getJsonFragmentValue(array $fragmentSelector = null): mixed
+    {
+        return $this->getFlattenedMetaFragmentValues($fragmentSelector)[0] ?? null;
+    }
+
+    /**
+     * Get the first value of the meta fragment.
+     */
+    public function getMetaFragmentValue(array $fragmentSelector = null): mixed
+    {
+        return $this->getFlattenedMetaFragmentValues($fragmentSelector)[0] ?? null;
+    }
+
+    /**
+     * Get an array of all the values of the leaf nodes in a fragment selector for the JSON content field
+     */
     public function getFlattenedJsonFragmentValues(array $fragmentSelector = []): array
     {
         return app(JsonSchemaService::class)->flattenByFragmentSelector($this->json_content ?: [], $fragmentSelector);
     }
 
+    /**
+     * Get an array of all the values of the leaf nodes in a fragment selector for the meta field
+     */
     public function getFlattenedMetaFragmentValues(array $fragmentSelector = []): array
     {
         return app(JsonSchemaService::class)->flattenByFragmentSelector($this->meta ?: [], $fragmentSelector);
     }
 
+    /**
+     * Get a string of all the values of the leaf nodes in a fragment selector for the JSON content field
+     */
     public function getFlattenedJsonFragmentValuesString(array $fragmentSelector = []): string
     {
         return implode('|', $this->getFlattenedJsonFragmentValues($fragmentSelector));
     }
 
+    /**
+     * Get a string of all the values of the leaf nodes in a fragment selector for the meta field
+     */
     public function getFlattenedMetaFragmentValuesString(array $fragmentSelector = []): string
     {
         return implode('|', $this->getFlattenedMetaFragmentValues($fragmentSelector));

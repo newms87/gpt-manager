@@ -50,7 +50,7 @@
 					:select-text="getOperatorLabel(filterCondition.operator)"
 					label-class="hidden"
 					:options="availableOperators"
-					@update:model-value="emitUpdate"
+					@update:selected="emitUpdate"
 				/>
 				<!-- Case Sensitivity Option -->
 				<QToggle
@@ -241,6 +241,9 @@ function findFirstLeafNode(fragmentSelector: FragmentSelector): FragmentSelector
 
 // Emit the updated filter condition
 function emitUpdate() {
+	// Ensure the condition has a type property set to 'condition'
+	filterCondition.value.type = "condition";
+
 	emit("update:model-value", filterCondition.value);
 }
 </script>
