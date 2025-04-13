@@ -5,7 +5,6 @@ namespace App\Services\Workflow;
 use App\Models\Task\Artifact;
 use App\Models\Workflow\WorkflowInput;
 use Illuminate\Support\Facades\Log;
-use Newms87\Danx\Helpers\DateHelper;
 
 class WorkflowInputToArtifactMapper
 {
@@ -31,7 +30,7 @@ class WorkflowInputToArtifactMapper
 
         // Produce the artifact
         $artifact = Artifact::create([
-            'name'         => $this->workflowInput->name . ' ' . DateHelper::formatDateTime(),
+            'name'         => $this->workflowInput->name,
             'model'        => '',
             'text_content' => $this->workflowInput->content,
             'json_content' => $jsonContent,

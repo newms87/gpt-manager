@@ -7,7 +7,11 @@
 					color="sky"
 					size="xs"
 				/>
-				<EditableDiv v-model="activeWorkflowRun.name" />
+				<EditableDiv
+					v-model="activeWorkflowRun.name"
+					color="sky-900"
+					@change="name => updateWorkflowRunAction.trigger(activeWorkflowRun, {name})"
+				/>
 				<ActionButton
 					v-if="isRunning"
 					type="stop"
@@ -95,6 +99,7 @@ defineEmits(["confirm", "close"]);
 
 const isShowing = ref(false);
 const isSelectingWorkflowInput = ref(false);
+const updateWorkflowRunAction = dxWorkflowRun.getAction("update");
 const stopWorkflowRunAction = dxWorkflowRun.getAction("stop");
 const resumeWorkflowRunAction = dxWorkflowRun.getAction("resume");
 const isRunning = computed(() => ["Running", "Pending"].includes(activeWorkflowRun.value?.status));

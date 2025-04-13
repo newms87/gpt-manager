@@ -27,6 +27,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
     use SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowStatesTrait, HasDebugLogging;
 
     protected $fillable = [
+        'name',
         'started_at',
         'stopped_at',
         'completed_at',

@@ -1,11 +1,9 @@
 <template>
 	<div class="py-2 px-4 border rounded-lg bg-slate-800">
-		<div class="flex-x space-x-2">
+		<div class="flex-x gap-2">
 			<LabelPillWidget :label="`WorkflowRun: ${workflowRun.id}`" color="sky" size="xs" />
-			<div class="flex-grow">
-				<div>{{ workflowRun.name }}</div>
-				<div>Created {{ fDateTime(workflowRun.created_at) }}</div>
-			</div>
+			<LabelPillWidget :label=" fDateTime(workflowRun.created_at)" color="gray" size="xs" />
+			<div class="flex-grow font-bold">{{ workflowRun.name }}</div>
 			<WorkflowStatusTimerPill :runner="workflowRun" />
 			<ShowHideButton v-model="isShowing" class="bg-sky-900" />
 			<ActionButton

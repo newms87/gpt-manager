@@ -12,6 +12,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
+use Newms87\Danx\Helpers\ModelHelper;
 
 class WorkflowRunnerService
 {
@@ -29,10 +30,15 @@ class WorkflowRunnerService
         }
 
         // Create the workflow run
-        $workflowRun = $workflowDefinition->workflowRuns()->create([
-            'name'       => $workflowDefinition->name,
+        $firstArtifact = $artifacts[0] ?? null;
+        $name          = $workflowDefinition->name . ($firstArtifact?->name ? ': ' . $firstArtifact->name : '');
+        $workflowRun   = $workflowDefinition->workflowRuns()->make([
+            'name'       => $name,
             'started_at' => now_ms(),
         ]);
+
+        $workflowRun->name = ModelHelper::getNextModelName($workflowRun);
+        $workflowRun->save();
 
         // Start all the starting nodes
         foreach($workflowDefinition->startingWorkflowNodes as $workflowNode) {
