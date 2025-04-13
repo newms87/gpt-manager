@@ -7,7 +7,7 @@
 					v-model="filterCondition.field"
 					class="tab-buttons border-sky-900 !w-[20rem] bg-sky-950"
 					indicator-color="sky-900"
-					@update:model-value="emitUpdate"
+					@update:model-value="handleFieldChange"
 				>
 					<QTab name="text_content">
 						<TextIcon class="w-4" />
@@ -28,19 +28,16 @@
 				</QTabs>
 			</div>
 
-			<ActionButton
-				type="trash"
-				color="gray"
-				size="sm"
-				@click="$emit('remove')"
-			/>
+			<ActionButton type="trash" color="gray" size="sm" @click="$emit('remove')" />
 		</div>
 
 		<div class="grid grid-cols-1 gap-4">
-
 			<!-- Fragment Selector -->
 			<div v-if="['json_content', 'meta'].includes(filterCondition.field)">
-				<FragmentSelectorConfigField v-model="filterCondition.fragment_selector" @update:model-value="emitUpdate" />
+				<FragmentSelectorConfigField 
+					v-model="filterCondition.fragment_selector" 
+					@update:model-value="handleFragmentSelectorChange" 
+				/>
 			</div>
 
 			<!-- Operator Selection -->
@@ -49,14 +46,14 @@
 					v-model:selected="filterCondition.operator"
 					selectable
 					selection-type="string"
-					:select-text="operatorOptions.find(o => o.value === filterCondition.operator)?.label"
+					:select-text="getOperatorLabel(filterCondition.operator)"
 					label-class="hidden"
-					:options="operatorOptions"
+					:options="availableOperators"
 					@update:model-value="emitUpdate"
 				/>
 				<!-- Case Sensitivity Option -->
 				<QToggle
-					v-if="['contains', 'equals', 'regex'].includes(filterCondition.operator)"
+					v-if="['contains', 'equals', 'regex'].includes(filterCondition.operator) && dataType === 'string'"
 					v-model="filterCondition.case_sensitive"
 					label="Case Sensitive"
 					@update:model-value="emitUpdate"
@@ -64,12 +61,44 @@
 			</div>
 
 			<!-- Value Input (not shown for exists operator) -->
-			<TextField
-				v-if="filterCondition.operator !== 'exists'"
-				v-model="filterCondition.value"
-				placeholder="Enter value..."
-				@update:model-value="emitUpdate"
-			/>
+			<template v-if="filterCondition.operator !== 'exists'">
+				<!-- Boolean Value -->
+				<div v-if="dataType === 'boolean'">
+					<QToggle
+						v-model="booleanValue"
+						label="Is True"
+						@update:model-value="updateBooleanValue"
+					/>
+				</div>
+				
+				<!-- Date Value -->
+				<QInput
+					v-else-if="dataType === 'date'"
+					v-model="filterCondition.value"
+					type="date"
+					placeholder="Select date..."
+					filled
+					@update:model-value="emitUpdate"
+				/>
+				
+				<!-- Number Value -->
+				<QInput
+					v-else-if="dataType === 'number'"
+					v-model="filterCondition.value"
+					type="number"
+					placeholder="Enter number..."
+					filled
+					@update:model-value="emitUpdate"
+				/>
+				
+				<!-- Default String Value -->
+				<TextField
+					v-else
+					v-model="filterCondition.value"
+					placeholder="Enter value..."
+					@update:model-value="emitUpdate"
+				/>
+			</template>
 		</div>
 	</div>
 </template>
@@ -83,24 +112,175 @@ import {
 	FaSolidT as TextIcon
 } from "danx-icon";
 import { ActionButton, SelectionMenuField, TextField } from "quasar-ui-danx";
+import { computed, ref, watch } from "vue";
 import { FragmentSelectorConfigField } from "./index";
 
 const emit = defineEmits<{ "update:model-value": FilterCondition; remove: void; }>();
 
 const filterCondition = defineModel<FilterCondition>();
 
-// Operator options for the filter conditions
-const operatorOptions = [
-	{ label: "Contains", value: "contains" },
-	{ label: "Equals", value: "equals" },
-	{ label: "Greater Than", value: "greater_than" },
-	{ label: "Less Than", value: "less_than" },
-	{ label: "Regex Match", value: "regex" },
-	{ label: "Exists", value: "exists" }
-];
+// Track the data type from the fragment selector
+const dataType = ref<string>('string');
+
+// Boolean value for toggle
+const booleanValue = computed({
+  get: () => filterCondition.value?.value === 'true',
+  set: (val) => { updateBooleanValue(val); }
+});
+
+// Update boolean value when toggle changes
+function updateBooleanValue(val: boolean) {
+  filterCondition.value.value = val ? 'true' : 'false';
+  emitUpdate();
+}
+
+// All available operators
+const operatorOptions = {
+  string: [
+    { label: "Contains", value: "contains" },
+    { label: "Equals", value: "equals" },
+    { label: "Greater Than", value: "greater_than" },
+    { label: "Less Than", value: "less_than" },
+    { label: "Regex Match", value: "regex" },
+    { label: "Exists", value: "exists" }
+  ],
+  boolean: [
+    { label: "Is Equal To", value: "equals" },
+    { label: "Exists", value: "exists" }
+  ],
+  number: [
+    { label: "Equals", value: "equals" },
+    { label: "Greater Than", value: "greater_than" },
+    { label: "Less Than", value: "less_than" },
+    { label: "Exists", value: "exists" }
+  ],
+  date: [
+    { label: "Equals", value: "equals" },
+    { label: "After", value: "greater_than" },
+    { label: "Before", value: "less_than" },
+    { label: "Exists", value: "exists" }
+  ],
+  array: [
+    { label: "Contains", value: "contains" },
+    { label: "Exists", value: "exists" }
+  ],
+  unknown: [
+    { label: "Contains", value: "contains" },
+    { label: "Equals", value: "equals" },
+    { label: "Greater Than", value: "greater_than" },
+    { label: "Less Than", value: "less_than" },
+    { label: "Regex Match", value: "regex" },
+    { label: "Exists", value: "exists" }
+  ]
+};
+
+// Compute available operators based on data type
+const availableOperators = computed(() => {
+  return operatorOptions[dataType.value] || operatorOptions.unknown;
+});
+
+// Get operator label
+function getOperatorLabel(operatorValue: string): string {
+  const option = availableOperators.value.find(op => op.value === operatorValue);
+  return option?.label || "Select Operator";
+}
+
+// Handle field change
+function handleFieldChange() {
+  // Reset fragment selector when changing field
+  if (filterCondition.value.field !== 'json_content' && filterCondition.value.field !== 'meta') {
+    filterCondition.value.fragment_selector = undefined;
+  }
+  
+  // Set default data type based on field
+  if (filterCondition.value.field === 'text_content') {
+    dataType.value = 'string';
+  } else if (filterCondition.value.field === 'storedFiles') {
+    dataType.value = 'array';
+  } else {
+    dataType.value = 'unknown'; // Will be updated when fragment selector changes
+  }
+  
+  // Check if current operator is valid for the new field type
+  if (!availableOperators.value.some(op => op.value === filterCondition.value.operator)) {
+    // Reset to a valid operator
+    filterCondition.value.operator = availableOperators.value[0].value;
+  }
+  
+  emitUpdate();
+}
+
+// Handle fragment selector change
+function handleFragmentSelectorChange() {
+  // Determine data type from fragment selector
+  if (filterCondition.value.fragment_selector) {
+    dataType.value = determineDataTypeFromFragmentSelector(filterCondition.value.fragment_selector);
+    
+    // If operator is not valid for this data type, reset it
+    if (!availableOperators.value.some(op => op.value === filterCondition.value.operator)) {
+      filterCondition.value.operator = availableOperators.value[0].value;
+    }
+  }
+  
+  emitUpdate();
+}
+
+// Extract data type from fragment selector
+function determineDataTypeFromFragmentSelector(fragmentSelector: any): string {
+  try {
+    // Find first leaf node in the fragment selector
+    const leafNode = findFirstLeafNode(fragmentSelector);
+    if (!leafNode) return 'unknown';
+    
+    const type = leafNode.type;
+    const format = leafNode.format;
+    
+    // Special case for dates
+    if (type === 'string' && format === 'date') {
+      return 'date';
+    }
+    
+    return type || 'unknown';
+  } catch (error) {
+    console.error('Error determining data type from fragment selector:', error);
+    return 'unknown';
+  }
+}
+
+// Find the first leaf node in a fragment selector
+function findFirstLeafNode(fragmentSelector: any): any {
+  if (!fragmentSelector || !fragmentSelector.children || Object.keys(fragmentSelector.children).length === 0) {
+    return null;
+  }
+  
+  // Get the first child
+  const childKey = Object.keys(fragmentSelector.children)[0];
+  const firstChild = fragmentSelector.children[childKey];
+  
+  // If this child has no children of its own and has a type, it's a leaf node
+  if (firstChild.type && (!firstChild.children || Object.keys(firstChild.children).length === 0)) {
+    return firstChild;
+  }
+  
+  // Otherwise, recursively search for a leaf node
+  return findFirstLeafNode(firstChild);
+}
 
 // Emit the updated filter condition
 function emitUpdate() {
-	emit("update:model-value", filterCondition.value);
+  emit("update:model-value", filterCondition.value);
 }
+
+// Initialize with appropriate data type
+watch(() => filterCondition.value, (newVal) => {
+  if (newVal?.fragment_selector && ['json_content', 'meta'].includes(newVal.field)) {
+    dataType.value = determineDataTypeFromFragmentSelector(newVal.fragment_selector);
+  } else if (newVal?.field === 'text_content') {
+    dataType.value = 'string';
+  } else if (newVal?.field === 'storedFiles') {
+    dataType.value = 'array';
+  } else {
+    dataType.value = 'unknown';
+  }
+}, { immediate: true, deep: true });
 </script>
