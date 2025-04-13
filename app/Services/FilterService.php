@@ -20,6 +20,38 @@ class FilterService
         $value = $condition['value'] ?? null;
         $caseSensitive = $condition['case_sensitive'] ?? false;
 
+        // Special handling for boolean operators
+        if ($operator === 'is_true' || $operator === 'is_false') {
+            // Extract boolean value from array if possible
+            $booleanValue = null;
+            
+            // If we have a JSON fragment that contains a boolean field, extract just that field
+            if (is_array($fieldValue) && count($fieldValue) === 1) {
+                $keys = array_keys($fieldValue);
+                $firstKey = reset($keys);
+                if (isset($fieldValue[$firstKey]) && is_bool($fieldValue[$firstKey])) {
+                    $booleanValue = $fieldValue[$firstKey];
+                }
+            } elseif (is_bool($fieldValue)) {
+                $booleanValue = $fieldValue;
+            } elseif (is_scalar($fieldValue) && ($fieldValue === '1' || $fieldValue === '0' || $fieldValue === 1 || $fieldValue === 0)) {
+                // Handle numeric/string representations of booleans
+                $booleanValue = (bool)$fieldValue;
+            }
+            
+            // Only evaluate if we have an actual boolean value
+            if ($booleanValue !== null) {
+                if ($operator === 'is_true') {
+                    return $booleanValue === true;
+                } else { // is_false
+                    return $booleanValue === false;
+                }
+            }
+            
+            // If we couldn't extract a boolean value, the condition fails
+            return false;
+        }
+
         // For 'exists' operator, we need special handling
         if ($operator === 'exists') {
             // If it's null, it doesn't exist
@@ -117,13 +149,17 @@ class FilterService
 
         // Validate operator
         $operator = $condition['operator'] ?? 'contains';
-        $validOperators = ['contains', 'equals', 'greater_than', 'less_than', 'regex', 'exists'];
+        $validOperators = [
+            'contains', 'equals', 'greater_than', 'less_than', 'regex', 'exists',
+            'is_true', 'is_false' // New boolean-specific operators
+        ];
         if (!in_array($operator, $validOperators)) {
             throw new ValidationError("Filter operator '$operator' is not valid. Must be one of: " . implode(', ', $validOperators));
         }
 
-        // Validate value (except for 'exists' operator)
-        if ($operator !== 'exists' && !array_key_exists('value', $condition)) {
+        // Boolean operators and 'exists' don't need a value
+        $noValueOperators = ['exists', 'is_true', 'is_false'];
+        if (!in_array($operator, $noValueOperators) && !array_key_exists('value', $condition)) {
             throw new ValidationError("Filter condition with operator '$operator' must have a 'value' attribute");
         }
     }
@@ -236,6 +272,14 @@ class FilterService
         // Only equals operator is valid for booleans
         if ($operator === 'equals') {
             return (bool)$fieldValue === (bool)$conditionValue;
+        }
+        
+        // New boolean-specific operators
+        if ($operator === 'is_true') {
+            return (bool)$fieldValue === true;
+        }
+        if ($operator === 'is_false') {
+            return (bool)$fieldValue === false;
         }
         
         return false;
@@ -484,7 +528,7 @@ class FilterService
     {
         switch ($dataType) {
             case 'boolean':
-                return ['equals', 'exists'];
+                return ['equals', 'exists', 'is_true', 'is_false'];
 
             case 'number':
                 return ['equals', 'greater_than', 'less_than', 'exists'];

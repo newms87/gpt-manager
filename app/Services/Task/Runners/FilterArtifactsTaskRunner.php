@@ -208,6 +208,23 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             return null;
         }
 
+        // Special handling for simple boolean fragment selectors to ensure false values are preserved
+        if (isset($fragmentSelector['type']) && $fragmentSelector['type'] === 'object' && 
+            isset($fragmentSelector['children']) && count($fragmentSelector['children']) === 1) {
+            
+            $targetField = array_key_first($fragmentSelector['children']);
+            $fieldSchema = $fragmentSelector['children'][$targetField];
+            
+            // If we're looking for a boolean field and it exists in the data
+            if (isset($fieldSchema['type']) && $fieldSchema['type'] === 'boolean' && 
+                array_key_exists($targetField, $data) && is_bool($data[$targetField])) {
+                
+                // Return the field value directly to preserve false values
+                return ["$targetField" => $data[$targetField]];
+            }
+        }
+        
+        // Standard fragment selection
         $jsonSchemaService = app(\App\Services\JsonSchema\JsonSchemaService::class);
         return $jsonSchemaService->filterDataByFragmentSelector($data, $fragmentSelector);
     }

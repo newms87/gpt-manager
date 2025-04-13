@@ -1301,4 +1301,96 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         $this->assertCount(1, $outputArtifacts);
         $this->assertEquals($artifact2->id, $outputArtifacts->first()->id);
     }
+
+    /**
+     * Test filtering with boolean-specific operators
+     */
+    public function test_filter_artifacts_with_boolean_specific_operators()
+    {
+        // Given we have 3 artifacts with different boolean values
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => ['active' => true],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => ['active' => false],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => ['active' => null],
+        ]);
+
+        // Debug output - print the created artifacts and their values
+        dump("Artifact 1 (ID: {$artifact1->id}): " . json_encode($artifact1->json_content));
+        dump("Artifact 2 (ID: {$artifact2->id}): " . json_encode($artifact2->json_content));
+        dump("Artifact 3 (ID: {$artifact3->id}): " . json_encode($artifact3->json_content));
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Test filtering with is_true operator
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type' => 'condition',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'active' => ['type' => 'boolean']
+                                ]
+                            ],
+                            'operator' => 'is_true',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifact with active=true should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
+
+        // Test filtering with is_false operator
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type' => 'condition',
+                            'field' => 'json_content',
+                            'fragment_selector' => [
+                                'type' => 'object',
+                                'children' => [
+                                    'active' => ['type' => 'boolean']
+                                ]
+                            ],
+                            'operator' => 'is_false',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // Reset the task process with the original artifacts again, since previous run might have modified it
+        $this->taskProcess->outputArtifacts()->detach();
+        $this->taskProcess->inputArtifacts()->detach();
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // When we run the filter task again
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifact with active=false should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $outputArtifactIds = $outputArtifacts->pluck('id')->toArray();
+        dump("Output artifact IDs for is_false test: " . implode(", ", $outputArtifactIds));
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact2->id, $outputArtifacts->first()->id);
+    }
 }
