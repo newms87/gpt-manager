@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Exceptions\ValidationError;
+use Newms87\Danx\Exceptions\ValidationError;
 use Illuminate\Support\Collection;
 
 class FilterService
@@ -10,24 +10,43 @@ class FilterService
     /**
      * Evaluate a condition against a data record
      *
-     * @param array|object $data      The data to evaluate the condition against
-     * @param array        $condition The condition to evaluate
+     * @param mixed $fieldValue   The field value to evaluate the condition against
+     * @param array $condition   The condition to evaluate
      * @return bool Whether the data matches the condition
      */
-    public function evaluateCondition(mixed $data, array $condition): bool
+    public function evaluateCondition(mixed $fieldValue, array $condition): bool
     {
-        $field = $condition['field'] ?? null;
         $operator = $condition['operator'] ?? 'contains';
-        $fragmentSelector = $condition['fragment_selector'] ?? null;
         $value = $condition['value'] ?? null;
         $caseSensitive = $condition['case_sensitive'] ?? false;
 
-        // Get the field value to compare
-        $fieldValue = $this->getFieldValue($data, $field, $fragmentSelector);
-
-        // For 'exists' operator, just check if the field value is not null
+        // For 'exists' operator, we need special handling
         if ($operator === 'exists') {
-            return $fieldValue !== null;
+            // If it's null, it doesn't exist
+            if ($fieldValue === null) {
+                return false;
+            }
+            
+            // If we're checking existence with a fragment selector, 
+            // we need to verify the specified field exists in the returned data
+            if (isset($condition['fragment_selector']) && is_array($fieldValue)) {
+                // For fragment selections, make sure the key specified exists and has a non-null value
+                // Extract the field we're checking for existence from the fragment selector
+                $keys = array_keys($condition['fragment_selector']['children'] ?? []);
+                if (!empty($keys)) {
+                    $targetKey = $keys[0];
+                    
+                    // If we have a field value that's the result of a fragment selection,
+                    // we need to check if the specific key is non-empty in the result
+                    if (isset($fieldValue[$targetKey]) && $fieldValue[$targetKey] !== null) {
+                        return true;
+                    }
+                    return false;
+                }
+            }
+            
+            // For simple field existence check
+            return true;
         }
 
         // If the field value is null, it can't match any value-based condition
@@ -46,19 +65,21 @@ class FilterService
                 return false;
             }
 
-            // For fragment selectors, extract the leaf value when possible
-            if ($fragmentSelector) {
-                $leafValue = $this->extractLeafValue($fieldValue);
-                if ($leafValue !== null) {
-                    // Determine data type from fragment selector
-                    $dataType = $this->getDataTypeFromFragmentSelector($fragmentSelector);
-                    return $this->evaluateTypedCondition($leafValue, $value, $operator, $dataType, $caseSensitive);
-                }
+            // Extract data type from condition for type-specific handling
+            $dataType = 'unknown';
+            if (isset($condition['fragment_selector'])) {
+                $dataType = $this->getDataTypeFromFragmentSelector($condition['fragment_selector']);
             }
 
             // For flat arrays, try to match any element
             if ($this->isScalarArray($fieldValue)) {
                 return $this->evaluateScalarArrayCondition($fieldValue, $value, $operator, $caseSensitive);
+            }
+            
+            // Try to extract leaf value for comparison if possible
+            $leafValue = $this->extractLeafValue($fieldValue);
+            if ($leafValue !== null) {
+                return $this->evaluateTypedCondition($leafValue, $value, $operator, $dataType, $caseSensitive);
             }
             
             // For complex arrays, convert to string for basic operations
@@ -70,8 +91,16 @@ class FilterService
             return false;
         }
 
+        // Determine data type from condition for scalar values
+        $dataType = 'string';
+        if (is_bool($fieldValue)) {
+            $dataType = 'boolean';
+        } elseif (is_numeric($fieldValue)) {
+            $dataType = 'number';
+        }
+
         // Standard scalar comparison
-        return $this->compareScalarValues($fieldValue, $value, $operator, $caseSensitive);
+        return $this->evaluateTypedCondition($fieldValue, $value, $operator, $dataType, $caseSensitive);
     }
 
     /**
@@ -94,14 +123,18 @@ class FilterService
         $dataType = 'unknown';
         if ($fragmentSelector) {
             $dataType = $this->getDataTypeFromFragmentSelector($fragmentSelector);
-            
-            // If we can't determine a known type, throw an error
-            if ($dataType === 'unknown') {
-                throw new ValidationError("Could not determine a valid data type from fragment selector");
-            }
         } else {
             // For text fields without fragment selectors, assume string type
-            $dataType = 'string';
+            if ($field === 'text_content') {
+                $dataType = 'string';
+            } elseif ($field === 'storedFiles') {
+                $dataType = 'array';
+            }
+        }
+        
+        // If we can't determine a type, validate assuming multiple types are possible
+        if ($dataType === 'unknown') {
+            $dataType = 'string'; // Default to string type for validation
         }
 
         $validOperators = $this->getOperatorsForDataType($dataType);
@@ -308,7 +341,8 @@ class FilterService
         $fieldStr = (string)$fieldValue;
         $conditionStr = (string)$conditionValue;
         
-        if (!$caseSensitive) {
+        // Only apply case conversion for non-regex operations or when specified for regex
+        if (!$caseSensitive && $operator !== 'regex') {
             $fieldStr = strtolower($fieldStr);
             $conditionStr = strtolower($conditionStr);
         }
@@ -319,7 +353,24 @@ class FilterService
             case 'equals':
                 return $fieldStr === $conditionStr;
             case 'regex':
-                return @preg_match('/' . str_replace('/', '\/', $conditionStr) . '/m', $fieldStr) === 1;
+                // For regex, don't add extra / if the pattern already includes them
+                if (substr($conditionStr, 0, 1) === '/' && substr($conditionStr, -1) === '/') {
+                    // Pattern already has delimiters
+                    $pattern = $conditionStr;
+                    
+                    // Add modifiers for case insensitivity if needed
+                    if (!$caseSensitive && strpos($pattern, 'i') === false) {
+                        // Add 'i' modifier for case insensitive matching
+                        $pattern = $pattern . 'i';
+                    }
+                } else {
+                    // Add delimiters and modifiers
+                    $pattern = '/' . str_replace('/', '\/', $conditionStr) . '/' . (!$caseSensitive ? 'i' : '');
+                }
+                
+                // Use error suppression to prevent warnings from malformed regex
+                $result = @preg_match($pattern, $fieldStr);
+                return $result === 1;
             case 'greater_than':
                 return $fieldStr > $conditionStr; // Lexicographical comparison
             case 'less_than':

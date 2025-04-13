@@ -5,6 +5,7 @@ namespace App\Services\Task\Runners;
 use App\Models\Task\Artifact;
 use App\Services\FilterService;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log as LaravelLog;
 use Newms87\Danx\Exceptions\ValidationError;
 
@@ -13,6 +14,8 @@ use Newms87\Danx\Exceptions\ValidationError;
  */
 class FilterArtifactsTaskRunner extends BaseTaskRunner
 {
+    const string RUNNER_NAME = 'Filter Artifacts';
+    
     /**
      * Whether to keep artifacts that match the filter conditions (true) or discard them (false)
      */
@@ -29,6 +32,71 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     public function __construct()
     {
         $this->filterService = new FilterService();
+    }
+
+    /**
+     * Run the filter task on the input artifacts
+     */
+    public function run(): void
+    {
+        $this->activity('Filtering artifacts based on content...', 10);
+
+        $filterConfig = $this->config('filter_config', []);
+
+        if (empty($filterConfig)) {
+            $this->activity('No filter config provided, passing all artifacts through', 100);
+            $this->complete($this->taskProcess->inputArtifacts);
+
+            return;
+        }
+
+        // If conditions array is empty, pass all artifacts through
+        if (empty($filterConfig['conditions'])) {
+            $this->activity('No filter conditions provided, passing all artifacts through', 100);
+            $this->complete($this->taskProcess->inputArtifacts);
+
+            return;
+        }
+
+        // Validate the filter config structure
+        $this->validateConfig($filterConfig);
+        
+        // Apply the configuration to set up filter parameters
+        $this->configure($filterConfig);
+
+        // Filter the artifacts
+        $filteredArtifacts = $this->filterArtifacts($this->taskProcess->inputArtifacts, $filterConfig);
+
+        $totalArtifacts = $this->taskProcess->inputArtifacts->count();
+        $filteredCount  = count($filteredArtifacts);
+
+        $this->activity("Filtered $filteredCount out of $totalArtifacts artifacts", 100);
+
+        $this->complete($filteredArtifacts);
+    }
+
+    /**
+     * Filter artifacts based on the provided filter configuration
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $artifacts    The artifacts to filter
+     * @param array                                    $filterConfig The filter configuration
+     * @return array Filtered artifacts
+     */
+    protected function filterArtifacts($artifacts, array $filterConfig): array
+    {
+        $filteredArtifacts = [];
+        $operator          = strtoupper($filterConfig['operator'] ?? 'AND');
+
+        foreach($artifacts as $artifact) {
+            $matches = $this->evaluateConditions($artifact, $filterConfig['conditions'], $operator);
+
+            // If we're keeping matches, include if matched; if we're discarding matches, include if not matched
+            if (($this->keep && $matches) || (!$this->keep && !$matches)) {
+                $filteredArtifacts[] = $artifact;
+            }
+        }
+
+        return $filteredArtifacts;
     }
 
     /**
@@ -49,8 +117,10 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             throw new ValidationError("Filter config 'conditions' must be an array");
         }
 
+        // Skip validation for empty conditions (they will be handled in the run method)
         if (empty($config['conditions'])) {
-            throw new ValidationError("Filter config 'conditions' cannot be empty");
+            static::log("Empty conditions array detected, validation skipped");
+            return;
         }
 
         // Validate each condition or condition group
@@ -131,31 +201,9 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     {
         static::log("Configuring filter task runner");
 
-        $this->keep = $config['action'] ?? 'keep' === 'keep';
+        $this->keep = ($config['action'] ?? 'keep') === 'keep';
 
         static::log("Filter task runner configured to " . ($this->keep ? "keep" : "discard") . " matching artifacts");
-    }
-
-    /**
-     * Process a single artifact
-     *
-     * @param Artifact $artifact The artifact to process
-     * @return bool Whether the artifact should be kept (true) or discarded (false)
-     */
-    public function processArtifact(Artifact $artifact): bool
-    {
-        $config     = $this->taskDefinition->config;
-        $operator   = $config['operator'] ?? 'AND';
-        $conditions = $config['conditions'] ?? [];
-
-        $matches = $this->evaluateConditions($artifact, $conditions, $operator);
-
-        // If we're keeping matches, return matches; if we're discarding matches, return !matches
-        $keep = $this->keep ? $matches : !$matches;
-
-        static::log("Artifact {$artifact->id} " . ($keep ? "kept" : "discarded"));
-
-        return $keep;
     }
 
     /**
@@ -228,16 +276,28 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
 
         foreach($conditions as $condition) {
             if ($condition['type'] === 'condition') {
-                // Adapt the condition for FilterService by adding field values
-                $adaptedCondition = $this->adaptConditionForFilterService($artifact, $condition);
-                $result           = $this->filterService->evaluateCondition($artifact, $adaptedCondition);
-                $results[]        = $result;
+                // Get the field value to evaluate
+                $fieldValue = $this->getFieldValue(
+                    $artifact,
+                    $condition['field'],
+                    $condition['fragment_selector'] ?? null
+                );
+                
+                // Log useful information for debugging
+                static::log("Evaluating condition on field: {$condition['field']} operator: {$condition['operator']} fragment: " . 
+                    (isset($condition['fragment_selector']) ? json_encode($condition['fragment_selector']) : 'none'));  
+                static::log("Field value: " . json_encode($fieldValue));
+                
+                // Evaluate the condition against the field value
+                $result = $this->filterService->evaluateCondition($fieldValue, $condition);
+                $results[] = $result;
+                
                 static::log("Condition evaluated as: " . ($result ? "true" : "false") .
                     " with field={$condition['field']} operator={$condition['operator']}");
             } elseif ($condition['type'] === 'condition_group') {
                 $groupOperator = $condition['operator'] ?? 'AND';
-                $result        = $this->evaluateConditions($artifact, $condition['conditions'], $groupOperator);
-                $results[]     = $result;
+                $result = $this->evaluateConditions($artifact, $condition['conditions'], $groupOperator);
+                $results[] = $result;
                 static::log("Condition group evaluated as: " . ($result ? "true" : "false"));
             }
         }
@@ -251,30 +311,6 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         } else { // OR
             return in_array(true, $results, true);
         }
-    }
-
-    /**
-     * Adapt a condition for the FilterService by prepopulating field values
-     *
-     * @param Artifact $artifact  The artifact to get field values from
-     * @param array    $condition The condition to adapt
-     * @return array The adapted condition
-     */
-    protected function adaptConditionForFilterService(Artifact $artifact, array $condition): array
-    {
-        // Clone the condition to avoid modifying the original
-        $adaptedCondition = $condition;
-
-        // Add the field value to the condition
-        $fieldValue = $this->getFieldValue(
-            $artifact,
-            $condition['field'],
-            $condition['fragment_selector'] ?? null
-        );
-
-        $adaptedCondition['field_value'] = $fieldValue;
-
-        return $adaptedCondition;
     }
 
     /**

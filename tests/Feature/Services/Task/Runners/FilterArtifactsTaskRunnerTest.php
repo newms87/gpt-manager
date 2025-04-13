@@ -72,6 +72,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                     'operator'   => 'AND',
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'json_content',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -83,6 +84,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                             'value'    => 'report',
                         ],
                         [
+                            'type' => 'condition',
                             'field' => 'meta',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -141,6 +143,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                     'operator'   => 'OR',
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'json_content',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -152,6 +155,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                             'value'    => 'report',
                         ],
                         [
+                            'type' => 'condition',
                             'field' => 'text_content',
                             'fragment_selector' => [
                                 'type' => 'string'
@@ -209,9 +213,11 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                     'operator'   => 'OR',
                     'conditions' => [
                         [
+                            'type' => 'condition_group',
                             'operator'   => 'AND',
                             'conditions' => [
                                 [
+                                    'type' => 'condition',
                                     'field' => 'json_content',
                                     'fragment_selector' => [
                                         'type' => 'object',
@@ -223,6 +229,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                                     'value'    => 'report',
                                 ],
                                 [
+                                    'type' => 'condition',
                                     'field' => 'json_content',
                                     'fragment_selector' => [
                                         'type' => 'object',
@@ -236,9 +243,11 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                             ],
                         ],
                         [
+                            'type' => 'condition_group',
                             'operator'   => 'AND',
                             'conditions' => [
                                 [
+                                    'type' => 'condition',
                                     'field' => 'json_content',
                                     'fragment_selector' => [
                                         'type' => 'object',
@@ -250,6 +259,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                                     'value'    => 'note',
                                 ],
                                 [
+                                    'type' => 'condition',
                                     'field' => 'json_content',
                                     'fragment_selector' => [
                                         'type' => 'object',
@@ -304,6 +314,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'text_content',
                             'fragment_selector' => [
                                 'type' => 'string'
@@ -383,6 +394,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'json_content',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -416,6 +428,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'json_content',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -468,6 +481,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'text_content',
                             'fragment_selector' => [
                                 'type' => 'string'
@@ -498,6 +512,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'text_content',
                             'fragment_selector' => [
                                 'type' => 'string'
@@ -547,6 +562,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'json_content',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -597,6 +613,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'meta',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -639,6 +656,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             // Missing 'field'
                             'operator' => 'contains',
                             'value'    => 'test',
@@ -669,6 +687,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'filter_config' => [
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'text_content',
                             'fragment_selector' => [
                                 'type' => 'string'
@@ -737,6 +756,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                     'operator' => 'AND',
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'json_content',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -803,6 +823,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                     'operator' => 'AND',
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'meta',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -814,6 +835,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                             'value'    => 'important',
                         ],
                         [
+                            'type' => 'condition',
                             'field' => 'meta',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -875,6 +897,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                     'operator' => 'AND',
                     'conditions' => [
                         [
+                            'type' => 'condition',
                             'field' => 'json_content',
                             'fragment_selector' => [
                                 'type' => 'object',
@@ -886,6 +909,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                             'value'    => 'report',
                         ],
                         [
+                            'type' => 'condition',
                             'field' => 'json_content',
                             'fragment_selector' => [
                                 'type' => 'object',
