@@ -4,6 +4,7 @@ namespace App\Services\Task\Runners;
 
 use App\Models\Task\Artifact;
 use App\Services\FilterService;
+use App\Services\JsonSchema\JsonSchemaService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log as LaravelLog;
@@ -112,6 +113,8 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
      */
     protected function evaluateConditions(Artifact $artifact, array $conditions, string $operator = 'AND'): bool
     {
+        static::log("Artifact $artifact->id: Evaluating conditions with operator: $operator");
+
         if (empty($conditions)) {
             return false;
         }
@@ -128,16 +131,14 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
                 );
 
                 // Log useful information for debugging
-                static::log("Evaluating condition on field: {$condition['field']} operator: {$condition['operator']} fragment: " .
-                    (isset($condition['fragment_selector']) ? json_encode($condition['fragment_selector']) : 'none'));
-                static::log("Field value: " . json_encode($fieldValue));
+                $fragmentDot = !empty($condition['fragment_selector']) ? '.' . app(JsonSchemaService::class)->fragmentSelectorToDot($condition['fragment_selector']) : '';
+                static::log("Evaluating condition: {$condition['field']}$fragmentDot [{$condition['operator']}] " . json_encode($fieldValue));
 
                 // Evaluate the condition against the field value
                 $result    = $this->filterService->evaluateCondition($fieldValue, $condition);
                 $results[] = $result;
 
-                static::log("Condition evaluated as: " . ($result ? "true" : "false") .
-                    " with field={$condition['field']} operator={$condition['operator']}");
+                static::log("Condition evaluated as: " . ($result ? "true" : "false"));
             } elseif ($condition['type'] === 'condition_group') {
                 $groupOperator = $condition['operator'] ?? 'AND';
                 $result        = $this->evaluateConditions($artifact, $condition['conditions'], $groupOperator);

@@ -158,6 +158,37 @@ class JsonSchemaService
     }
 
     /**
+     * Convert a fragment selector to a dot notation string
+     */
+    public function fragmentSelectorToDot(array $fragmentSelector): string
+    {
+        $dot = '';
+
+        if (!empty($fragmentSelector['children'])) {
+            $childDots = [];
+            foreach($fragmentSelector['children'] as $key => $child) {
+                $childDot = $key;
+                if (!empty($child['children'])) {
+                    $nestedDot = $this->fragmentSelectorToDot($child);
+
+                    if ($nestedDot) {
+                        $childDot .= '.' . $nestedDot;
+                    }
+                }
+                $childDots[] = $childDot;
+            }
+
+            if (count($childDots) > 1) {
+                $dot .= '(' . implode('|', $childDots) . ')';
+            } else {
+                $dot .= $childDots[0];
+            }
+        }
+
+        return $dot;
+    }
+
+    /**
      * Recursively filters a JSON schema using a fragment selector to select a subset of properties
      */
     public function applyFragmentSelector(array $schema, array $fragmentSelector = null): array
@@ -291,7 +322,7 @@ class JsonSchemaService
 
             // Skip if the property is not in the data
             // NOTE: We do not throw an error here because fragments are not directly tied to schemas. They are loosely correlated, but schemas may change while selections remain the same.
-            if (!$dataProperty) {
+            if ($dataProperty === null) {
                 continue;
             }
 
@@ -301,7 +332,7 @@ class JsonSchemaService
                 if ($isObjectOrArray) {
                     throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (an array of object type), but found " . gettype($dataProperty) . " (a scalar type) instead");
                 }
-                $result = $dataProperty;
+                $filtered[$selectedKey] = $dataProperty;
             } else {
                 if (!$isObjectOrArray) {
                     throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (a scalar type), but found " . gettype($dataProperty) . " (an array of object type) instead");
@@ -311,10 +342,10 @@ class JsonSchemaService
                 } else {
                     $result = array_map(fn($item) => is_array($item) ? $this->filterDataByFragmentSelector($item, $selectedProperty) : $item, $dataProperty);
                 }
-            }
 
-            if ($result) {
-                $filtered[$selectedKey] = $result;
+                if ($result) {
+                    $filtered[$selectedKey] = $result;
+                }
             }
         }
 
