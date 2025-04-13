@@ -7,6 +7,7 @@
 					color="sky"
 					size="xs"
 				/>
+				<EditableDiv v-model="activeWorkflowRun.name" />
 				<ActionButton
 					v-if="isRunning"
 					type="stop"
@@ -87,7 +88,7 @@ import WorkflowRunCard from "@/components/Modules/WorkflowDefinitions/WorkflowRu
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { WorkflowInput } from "@/types";
 import { FaSolidPersonRunning as RunsIcon } from "danx-icon";
-import { ActionButton, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
+import { ActionButton, EditableDiv, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 defineEmits(["confirm", "close"]);
