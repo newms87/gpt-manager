@@ -33,4 +33,5 @@ export interface FilterConditionGroup {
 export interface FilterConfig {
 	operator: "AND" | "OR";
 	conditions: (FilterCondition | FilterConditionGroup)[];
+	action?: "keep" | "discard"; // Whether to keep or discard artifacts that match the filter
 }
