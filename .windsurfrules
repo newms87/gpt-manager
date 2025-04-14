@@ -1,0 +1,4 @@
+# Testing
+* When testing, always use sail artisan test ...
+* When setting up Test case files, never use RefershDatabase Trait. 
+* Always look at the other test cases to follow those formats / examples of style / expectations (see tests/Unit/Services/Task/ArtifactsSplitterServiceTest.php)

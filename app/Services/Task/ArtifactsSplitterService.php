@@ -42,6 +42,18 @@ class ArtifactsSplitterService
     public static function split(string $splitMode, array|Collection|EloquentCollection $artifacts, array $levels = null): Collection
     {
         $artifacts = collect($artifacts);
+        
+        // Filter artifacts by levels if specified
+        if ($levels !== null) {
+            $filteredArtifacts = collect();
+            
+            // Process artifacts based on their level
+            foreach ($artifacts as $artifact) {
+                self::processArtifactByLevel($artifact, $levels, $filteredArtifacts);
+            }
+            
+            $artifacts = $filteredArtifacts;
+        }
 
         if ($splitMode === self::ARTIFACT_SPLIT_BY_NODE) {
             return self::byNode($artifacts);
@@ -52,6 +64,29 @@ class ArtifactsSplitterService
         }
 
         return self::allTogether($artifacts);
+    }
+    
+    /**
+     * Process an artifact and its children based on the specified levels
+     * 
+     * @param Artifact $artifact The artifact to process
+     * @param array $levels The levels to include
+     * @param Collection $result The collection to add matching artifacts to
+     * @param int $currentLevel The current nesting level (0 = top level)
+     */
+    private static function processArtifactByLevel(Artifact $artifact, array $levels, Collection &$result, int $currentLevel = 0): void
+    {
+        // If the current level is in the specified levels, add this artifact to the result
+        if (in_array($currentLevel, $levels)) {
+            $result->push($artifact);
+        }
+        
+        // Process children recursively at the next level
+        if ($artifact->children()->exists()) {
+            foreach ($artifact->children as $child) {
+                self::processArtifactByLevel($child, $levels, $result, $currentLevel + 1);
+            }
+        }
     }
 
     /**
