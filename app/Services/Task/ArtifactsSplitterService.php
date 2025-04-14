@@ -12,6 +12,7 @@ class ArtifactsSplitterService
     const string
         ARTIFACT_SPLIT_BY_NODE = 'Node',
         ARTIFACT_SPLIT_BY_ARTIFACT = 'Artifact',
+        ARTIFACT_SPLIT_BY_TOP_LEVEL = 'Top-Level',
         ARTIFACT_SPLIT_BY_COMBINATIONS = 'Combinations';
 
     /**
@@ -42,16 +43,16 @@ class ArtifactsSplitterService
     public static function split(string $splitMode, array|Collection|EloquentCollection $artifacts, array $levels = null): Collection
     {
         $artifacts = collect($artifacts);
-        
+
         // Filter artifacts by levels if specified
         if ($levels !== null) {
             $filteredArtifacts = collect();
-            
+
             // Process artifacts based on their level
-            foreach ($artifacts as $artifact) {
+            foreach($artifacts as $artifact) {
                 self::processArtifactByLevel($artifact, $levels, $filteredArtifacts);
             }
-            
+
             $artifacts = $filteredArtifacts;
         }
 
@@ -61,18 +62,20 @@ class ArtifactsSplitterService
             return self::byArtifact($artifacts);
         } elseif ($splitMode === self::ARTIFACT_SPLIT_BY_COMBINATIONS) {
             return self::byCombinations($artifacts);
+        } elseif ($splitMode === self::ARTIFACT_SPLIT_BY_TOP_LEVEL) {
+            return self::byTopLevel($artifacts);
         }
 
         return self::allTogether($artifacts);
     }
-    
+
     /**
      * Process an artifact and its children based on the specified levels
-     * 
-     * @param Artifact $artifact The artifact to process
-     * @param array $levels The levels to include
-     * @param Collection $result The collection to add matching artifacts to
-     * @param int $currentLevel The current nesting level (0 = top level)
+     *
+     * @param Artifact   $artifact     The artifact to process
+     * @param array      $levels       The levels to include
+     * @param Collection $result       The collection to add matching artifacts to
+     * @param int        $currentLevel The current nesting level (0 = top level)
      */
     private static function processArtifactByLevel(Artifact $artifact, array $levels, Collection &$result, int $currentLevel = 0): void
     {
@@ -80,10 +83,10 @@ class ArtifactsSplitterService
         if (in_array($currentLevel, $levels)) {
             $result->push($artifact);
         }
-        
+
         // Process children recursively at the next level
         if ($artifact->children()->exists()) {
-            foreach ($artifact->children as $child) {
+            foreach($artifact->children as $child) {
                 self::processArtifactByLevel($child, $levels, $result, $currentLevel + 1);
             }
         }
@@ -120,6 +123,62 @@ class ArtifactsSplitterService
     public static function byArtifact(Collection|EloquentCollection $artifacts): Collection
     {
         return $artifacts->groupBy('id')->values();
+    }
+
+    /**
+     * Split the artifacts by creating one group per top-level artifact
+     * Each group will contain a top-level artifact and any of its descendants that match the levels filter
+     * 
+     * @param Artifact[]|Collection $artifacts
+     */
+    public static function byTopLevel(Collection|EloquentCollection $artifacts): Collection
+    {
+        // First, identify all the top-level artifacts (those without a parent)
+        // and organize all artifacts by their root ancestor
+        $topLevelArtifacts = collect();
+        $artifactGroups = collect();
+        
+        foreach($artifacts as $artifact) {
+            // Find the top-level ancestor for this artifact
+            $topLevelAncestor = self::findTopLevelAncestor($artifact);
+            
+            // Save the top-level artifact if we haven't seen it before
+            if (!$topLevelArtifacts->contains('id', $topLevelAncestor->id)) {
+                $topLevelArtifacts->push($topLevelAncestor);
+            }
+            
+            // Add this artifact to the group of its top-level ancestor
+            if (!isset($artifactGroups[$topLevelAncestor->id])) {
+                $artifactGroups[$topLevelAncestor->id] = collect();
+            }
+            
+            $artifactGroups[$topLevelAncestor->id]->push($artifact);
+        }
+        
+        // Return the groups organized by top-level ancestors
+        return $artifactGroups->values();
+    }
+    
+    /**
+     * Find the top-level ancestor of an artifact
+     * 
+     * @param Artifact $artifact The artifact to find the top-level ancestor for
+     * @return Artifact The top-level ancestor (or the artifact itself if it's already top-level)
+     */
+    private static function findTopLevelAncestor(Artifact $artifact): Artifact
+    {
+        if ($artifact->parent_artifact_id === null) {
+            return $artifact;
+        }
+        
+        // Recursively find the topmost parent
+        $parent = $artifact->parent;
+        if (!$parent) {
+            // If parent relationship is broken, treat this as a top-level artifact
+            return $artifact;
+        }
+        
+        return self::findTopLevelAncestor($parent);
     }
 
     /**

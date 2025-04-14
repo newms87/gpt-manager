@@ -12,6 +12,6 @@ class ArtifactRepository extends ActionRepository
 
     public function query(): Builder
     {
-        return parent::query()->where('team_id', team()->id);
+        return parent::query()->where('team_id', team()->id)->orderBy('position');
     }
 }

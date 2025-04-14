@@ -9,6 +9,7 @@
 			>
 				<QTab name="" label="All Together" />
 				<QTab name="Node" label="Per Task" />
+				<QTab name="Top-Level" label="Per Top Level" />
 				<QTab name="Artifact" label="Individual" />
 				<QTab name="Combinations" label="All Combinations" />
 			</QTabs>
@@ -18,6 +19,10 @@
 				</template>
 				<template v-else-if="splitMode === 'Artifact'">
 					Run one process per artifact in parallel. Each process receives one artifact for the task.
+				</template>
+				<template v-else-if="splitMode === 'Top-Level'">
+					Run one process per top-level artifact in parallel. Each process receives all the artifacts in the selected
+					levels under the top-level artifact.
 				</template>
 				<template v-else-if="splitMode === 'Combinations'">
 					Run one process for each combination of artifacts across tasks (cross-product).<br />
