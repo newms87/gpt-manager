@@ -12,6 +12,7 @@ use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as EloquentCollection;
 use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Helpers\LockHelper;
 
 class BaseTaskRunner implements TaskRunnerContract
 {
@@ -125,13 +126,7 @@ class BaseTaskRunner implements TaskRunnerContract
                 $artifact->save();
             }
 
-            // Add the artifact to the list of output artifacts for this process
-            $this->taskProcess->outputArtifacts()->syncWithoutDetaching($artifactIds);
-            // Also add to the list of output artifacts for this task run
-            $this->taskRun->outputArtifacts()->syncWithoutDetaching($artifactIds);
-
-            $this->taskProcess->updateRelationCounter('outputArtifacts');
-            $this->taskRun->updateRelationCounter('outputArtifacts');
+            $this->attachArtifactsToTaskAndProcess($artifacts);
         }
 
         if ($this->taskProcess->percent_complete < 100) {
@@ -140,6 +135,55 @@ class BaseTaskRunner implements TaskRunnerContract
 
         // Finished running the process
         TaskProcessRunnerService::complete($this->taskProcess);
+    }
+
+    public function attachArtifactsToTaskAndProcess($artifacts): void
+    {
+        $outputMode  = $this->taskDefinition->output_artifact_mode;
+        $artifactIds = collect($artifacts)->pluck('id')->toArray();
+
+        switch($outputMode) {
+            case TaskDefinition::OUTPUT_ARTIFACT_MODE_GROUP_ALL:
+                $topLevelArtifact = $this->resolveSingletonTaskRunArtifact();
+                $topLevelArtifact->children()->saveMany($artifacts);
+
+                // The processes will still output all the artifacts it produces, the roll up happens at the task level
+                // so keep the task run artifact IDs set to null
+                $taskRunArtifactIds = null;
+                $processArtifactIds = $artifactIds;
+                break;
+
+            case TaskDefinition::OUTPUT_ARTIFACT_MODE_PER_PROCESS:
+                $processArtifact = Artifact::create([
+                    'name'               => $this->taskProcess->name,
+                    'task_definition_id' => $this->taskDefinition->id,
+                ]);
+                $processArtifact->children()->saveMany($artifacts);
+
+                // The process will have a single artifact containing a group of all the produced artifacts
+                $processArtifactIds = [$processArtifact->id];
+
+                // The task will have the process artifact group appended
+                $taskRunArtifactIds = $processArtifactIds;
+                break;
+
+            default:
+                // By default, all artifacts go to the process and the task
+                $taskRunArtifactIds = $artifactIds;
+                $processArtifactIds = $artifactIds;
+                break;
+
+        }
+
+        // Add the artifact to the list of output artifacts for this process
+        $this->taskProcess->outputArtifacts()->sync($processArtifactIds);
+        $this->taskProcess->updateRelationCounter('outputArtifacts');
+
+        if ($taskRunArtifactIds) {
+            // Also add to the list of output artifacts for this task run
+            $this->taskRun->outputArtifacts()->syncWithoutDetaching($taskRunArtifactIds);
+            $this->taskRun->updateRelationCounter('outputArtifacts');
+        }
     }
 
     /**
@@ -171,5 +215,31 @@ class BaseTaskRunner implements TaskRunnerContract
     public function afterAllProcessesCompleted(): void
     {
         static::log("All processes completed.");
+    }
+
+    /**
+     * For group all mode we need to make sure we have 1 single artifact across all processes attached to the task run
+     * So lock the task run and resolve the top level artifact
+     */
+    public function resolveSingletonTaskRunArtifact(): Artifact
+    {
+        LockHelper::acquire($this->taskRun);
+
+        try {
+            $taskRunArtifact = $this->taskRun->outputArtifacts()->first();
+
+            if (!$taskRunArtifact) {
+                $taskRunArtifact = Artifact::create([
+                    'name'               => $this->taskRun->name,
+                    'task_definition_id' => $this->taskDefinition->id,
+                ]);
+                $this->taskRun->outputArtifacts()->sync($taskRunArtifact);
+                $this->taskRun->updateRelationCounter('outputArtifacts');
+            }
+
+            return $taskRunArtifact;
+        } finally {
+            LockHelper::release($this->taskRun);
+        }
     }
 }

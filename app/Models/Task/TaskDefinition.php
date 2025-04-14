@@ -29,6 +29,11 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
 {
     use ActionModelTrait, HasFactory, AuditableTrait, ResourcePackageableTrait, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
 
+    const string
+        OUTPUT_ARTIFACT_MODE_STANDARD = '',
+        OUTPUT_ARTIFACT_MODE_PER_PROCESS = 'Per Process',
+        OUTPUT_ARTIFACT_MODE_GROUP_ALL = 'Group All';
+
     protected $fillable = [
         'name',
         'description',
