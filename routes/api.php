@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Ai\AgentsController;
+use App\Http\Controllers\Ai\ArtifactsController;
 use App\Http\Controllers\Ai\ContentSourcesController;
 use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\PromptDirectivesController;
@@ -55,6 +56,9 @@ ActionRoute::routes('schemas/definitions', new SchemaDefinitionsController, func
 });
 ActionRoute::routes('schemas/fragments', new SchemaFragmentsController);
 ActionRoute::routes('schemas/associations', new SchemaAssociationsController);
+
+// Artifacts
+ActionRoute::routes('artifacts', new ArtifactsController);
 
 // Tasks
 ActionRoute::routes('task-definitions', new TaskDefinitionsController);

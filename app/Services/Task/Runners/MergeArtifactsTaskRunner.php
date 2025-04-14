@@ -45,6 +45,9 @@ class MergeArtifactsTaskRunner extends BaseTaskRunner
                     $mergedArtifact->meta = ArrayHelper::mergeArraysRecursivelyUnique($mergedArtifact->meta ?? [], $inputArtifact->meta);
                 }
             }
+            
+            $mergedArtifact->children()->saveMany($artifactsInGroup);
+            $mergedArtifact->updateRelationCounter('children');
 
             $outputArtifacts[] = $mergedArtifact;
         }
@@ -59,7 +62,7 @@ class MergeArtifactsTaskRunner extends BaseTaskRunner
     {
         $jsonContentFragmentSelector = $this->config('json_content_fragment_selector') ?: [];
         $metaFragmentSelector        = $this->config('meta_fragment_selector') ?: [];
-        
+
         if (!$metaFragmentSelector && !$jsonContentFragmentSelector) {
             return ['default' => $this->taskProcess->inputArtifacts];
         }

@@ -14,11 +14,12 @@ use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
 use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class Artifact extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, KeywordSearchTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -31,6 +32,10 @@ class Artifact extends Model implements AuditableContract
         'name',
         'text_content',
         'json_content',
+    ];
+
+    public array $relationCounters = [
+        Artifact::class => ['children' => 'child_artifacts_count'],
     ];
 
     public function casts(): array
@@ -48,6 +53,16 @@ class Artifact extends Model implements AuditableContract
         }
 
         return $this->schemaDefinition()->withTrashed()->first()->canView();
+    }
+
+    public function parent(): BelongsTo|Artifact
+    {
+        return $this->belongsTo(Artifact::class, 'parent_artifact_id');
+    }
+
+    public function children(): HasMany|Artifact
+    {
+        return $this->hasMany(Artifact::class, 'parent_artifact_id');
     }
 
     public function schemaDefinition(): BelongsTo|SchemaDefinition
@@ -132,6 +147,15 @@ class Artifact extends Model implements AuditableContract
     public function getFlattenedMetaFragmentValuesString(array $fragmentSelector = []): string
     {
         return implode('|', $this->getFlattenedMetaFragmentValues($fragmentSelector));
+    }
+
+    public static function booted()
+    {
+        static::saving(function (Artifact $artifact) {
+            if (!$artifact->team_id) {
+                $artifact->team_id = team()?->id;
+            }
+        });
     }
 
     public function __toString()

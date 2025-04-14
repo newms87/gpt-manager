@@ -10,4 +10,5 @@ export interface Artifact {
 	files: UploadedFile[];
 	meta?: AnyObject;
 	created_at: string;
+	child_artifacts_count?: number;
 }

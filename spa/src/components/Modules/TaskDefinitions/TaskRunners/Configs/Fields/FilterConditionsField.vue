@@ -74,7 +74,7 @@ import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { FilterCondition, FilterConditionGroup, FilterConfig, TaskDefinition } from "@/types";
 import { ActionButton, ListTransition } from "quasar-ui-danx";
 import { ref } from "vue";
-import AndOrConditionTabs from "./AndOrConditionTabs";
+import AndOrConditionTabs from "./AndOrConditionTabs.vue";
 import ConditionGroupField from "./ConditionGroupField.vue";
 import SimpleConditionField from "./SimpleConditionField.vue";
 

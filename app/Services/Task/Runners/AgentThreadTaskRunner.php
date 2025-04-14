@@ -181,7 +181,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         }
 
         if ($sourceTextContent) {
-            $artifact->text_content = ($artifact->text_content ?? "") . "\n\n-----\n\n# Sources:";
+            $artifact->text_content = ($artifact->text_content ?? "") . "\n\n-----\n\n# Sources: $sourceTextContent";
         }
     }
 }

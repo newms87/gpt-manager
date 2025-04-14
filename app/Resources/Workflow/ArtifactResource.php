@@ -12,18 +12,19 @@ class ArtifactResource extends ActionResource
     public static function data(Artifact $artifact): array
     {
         return [
-            'id'           => $artifact->id,
-            'name'         => $artifact->name,
-            'position'     => $artifact->position,
-            'model'        => $artifact->model,
-            'created_at'   => $artifact->created_at,
-            'text_content' => fn() => $artifact->text_content,
-            'json_content' => fn() => $artifact->canView() ? $artifact->json_content : [
+            'id'                    => $artifact->id,
+            'name'                  => $artifact->name,
+            'position'              => $artifact->position,
+            'model'                 => $artifact->model,
+            'created_at'            => $artifact->created_at,
+            'child_artifacts_count' => $artifact->child_artifacts_count,
+            'text_content'          => fn() => $artifact->text_content,
+            'json_content'          => fn() => $artifact->canView() ? $artifact->json_content : [
                 'message'          => 'You are not allowed to view this schema',
                 'schemaDefinition' => $artifact->schemaDefinition->only(['id', 'type', 'name']),
             ],
-            'files'        => fn($fields) => StoredFileResource::collection($artifact->storedFiles->load('transcodes'), $fields),
-            'meta'         => fn($fields) => $artifact->meta,
+            'files'                 => fn($fields) => StoredFileResource::collection($artifact->storedFiles->load('transcodes'), $fields),
+            'meta'                  => fn($fields) => $artifact->meta,
         ];
     }
 

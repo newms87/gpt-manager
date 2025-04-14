@@ -38,6 +38,14 @@
 					tooltip="Show All Artifact Meta"
 				/>
 				<ShowHideButton
+					v-if="hasGroup"
+					v-model="isShowingGroup"
+					class="bg-indigo-700 flex-shrink-0"
+					size="sm"
+					:show-icon="GroupIcon"
+					tooltip="Show All Child Artifacts"
+				/>
+				<ShowHideButton
 					v-model="isShowingAll"
 					class="bg-sky-900"
 					icon-class="w-5"
@@ -54,6 +62,7 @@
 				:show-files="isShowingFiles"
 				:show-json="isShowingJson"
 				:show-meta="isShowingMeta"
+				:show-group="isShowingGroup"
 				:artifact="artifact"
 			/>
 		</template>
@@ -66,7 +75,8 @@ import {
 	FaSolidBarcode as MetaIcon,
 	FaSolidDatabase as JsonIcon,
 	FaSolidFile as FilesIcon,
-	FaSolidT as TextIcon
+	FaSolidT as TextIcon,
+	FaSolidLayerGroup as GroupIcon
 } from "danx-icon";
 import { ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
@@ -88,8 +98,10 @@ const hasText = computed(() => props.artifacts?.some((artifact) => artifact.text
 const hasFiles = computed(() => props.artifacts?.some((artifact) => artifact.files?.length > 0));
 const hasJson = computed(() => props.artifacts?.some((artifact) => artifact.json_content));
 const hasMeta = computed(() => props.artifacts?.some((artifact) => artifact.meta));
+const hasGroup = computed(() => props.artifacts?.some((artifact) => (artifact.child_artifacts_count || 0) > 0));
 const isShowingText = ref(false);
 const isShowingFiles = ref(false);
 const isShowingJson = ref(false);
 const isShowingMeta = ref(false);
+const isShowingGroup = ref(false);
 </script>

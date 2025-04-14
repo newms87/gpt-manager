@@ -38,6 +38,15 @@
 				tooltip="Show Artifact Meta"
 			/>
 			<ShowHideButton
+				v-if="artifact.child_artifacts_count > 0"
+				v-model="isShowingGroup"
+				class="bg-indigo-700 flex-shrink-0"
+				size="sm"
+				:show-icon="GroupIcon"
+				tooltip="Show Child Artifacts"
+				:badge="artifact.child_artifacts_count"
+			/>
+			<ShowHideButton
 				v-if="typeCount > 1"
 				:model-value="isShowingAll"
 				class="bg-sky-900 flex-shrink-0"
@@ -80,20 +89,30 @@
 					readonly
 				/>
 			</div>
+			<ArtifactList
+				v-if="isShowingGroup"
+				:artifacts="childArtifacts"
+				dense
+				title="Child Artifacts"
+				class="bg-slate-800 p-4"
+			/>
 		</ListTransition>
 	</div>
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
+import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
+import { dxArtifact } from "@/components/Modules/Artifacts/config";
 import { Artifact } from "@/types";
 import {
 	FaSolidBarcode as MetaIcon,
 	FaSolidDatabase as JsonIcon,
 	FaSolidFile as FilesIcon,
+	FaSolidLayerGroup as GroupIcon,
 	FaSolidT as TextIcon
 } from "danx-icon";
 import { fDateTime, FilePreview, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref, watch } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 
 const props = defineProps<{
 	artifact: Artifact,
@@ -102,25 +121,37 @@ const props = defineProps<{
 	showFiles?: boolean;
 	showJson?: boolean;
 	showMeta?: boolean;
+	showGroup?: boolean;
 }>();
 
 const hasText = computed(() => !!props.artifact.text_content);
 const hasFiles = computed(() => !!props.artifact.files?.length);
 const hasJson = computed(() => !!props.artifact.json_content);
 const hasMeta = computed(() => !!props.artifact.meta);
-const typeCount = computed(() => [hasText.value, hasJson.value, hasFiles.value].filter(Boolean).length);
+const hasGroup = computed(() => (props.artifact.child_artifacts_count || 0) > 0);
+const typeCount = computed(() => [hasText.value, hasJson.value, hasFiles.value, hasGroup.value].filter(Boolean).length);
 const isShowingText = ref(props.showText);
 const isShowingFiles = ref(props.showFiles);
 const isShowingJson = ref(props.showJson);
 const isShowingMeta = ref(props.showMeta);
+const isShowingGroup = ref(props.showGroup);
 
-const isShowingAll = computed(() => (!hasText.value || isShowingText.value) && (!hasFiles.value || isShowingFiles.value) && (!hasJson.value || isShowingJson.value) && (!hasMeta.value || isShowingMeta.value));
+const childArtifacts = shallowRef([]);
+
+const isShowingAll = computed(() =>
+	(!hasText.value || isShowingText.value) &&
+	(!hasFiles.value || isShowingFiles.value) &&
+	(!hasJson.value || isShowingJson.value) &&
+	(!hasMeta.value || isShowingMeta.value) &&
+	(!hasGroup.value || isShowingGroup.value)
+);
 function onToggleAll(state: boolean = null) {
 	state = state === null ? !isShowingAll.value : state;
 	isShowingText.value = state;
 	isShowingFiles.value = state;
 	isShowingJson.value = state;
 	isShowingMeta.value = state;
+	isShowingGroup.value = state;
 }
 
 watch(() => props.show, onToggleAll);
@@ -136,4 +167,21 @@ watch(() => props.showJson, (state) => {
 watch(() => props.showMeta, (state) => {
 	isShowingMeta.value = state;
 });
+watch(() => props.showGroup, (state) => {
+	isShowingGroup.value = state;
+});
+watch(() => isShowingGroup.value, () => {
+	if (isShowingGroup.value) {
+		loadChildArtifacts();
+	}
+});
+
+async function loadChildArtifacts() {
+	const { data } = await dxArtifact.routes.list({
+		filter: {
+			parent_artifact_id: props.artifact.id
+		}
+	});
+	childArtifacts.value = data;
+}
 </script>
