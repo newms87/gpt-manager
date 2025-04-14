@@ -4,7 +4,7 @@
 			<div class="font-bold">Parallelization:</div>
 			<QTabs
 				v-model="splitMode"
-				class="tab-buttons border-sky-900"
+				class="tab-buttons border-sky-900 text-sky-200"
 				indicator-color="sky-900"
 			>
 				<QTab name="" label="All Together" />
@@ -30,10 +30,25 @@
 			</div>
 		</div>
 		<div class="mt-8">
-			<div class="font-bold mb-2">Input Group Level</div>
+			<div class="font-bold mb-2 flex-x gap-2">
+				<div>Artifact Level</div>
+				<div class="relative">
+					<HelpIcon class="w-4" />
+					<QTooltip>
+						<div class="text-sm text-gray-100 space-y-1">
+							<p><span class="font-semibold">Artifact Grouping Level:</span> Choose which level(s) of the artifact
+								hierarchy to send to this task.</p>
+							<p><span class="text-blue-200">Default:</span> Only top-level artifacts are used.</p>
+							<p>Selecting lower levels will include child artifacts (e.g., pages within sections) instead of their
+								parent groups.</p>
+							<p>You may select multiple levels; all selected artifacts will be flattened before being processed.</p>
+						</div>
+					</QTooltip>
+				</div>
+			</div>
 			<div>
 				<SelectField
-					v-model="groupLevels"
+					v-model="levels"
 					:options="groupLevelOptions"
 					multiple
 					@update="validateSelection"
@@ -44,11 +59,12 @@
 </template>
 <script setup lang="ts">
 import { ArtifactSplitMode } from "@/types";
+import { FaSolidCircleQuestion as HelpIcon } from "danx-icon";
 import { SelectField } from "quasar-ui-danx";
-import { onMounted } from "vue";
+import { nextTick, onMounted } from "vue";
 
 const splitMode = defineModel<ArtifactSplitMode>();
-const groupLevels = defineModel<number[]>("levels", {
+const levels = defineModel<number[]>("levels", {
 	default: [0],
 	validator: (value) => Array.isArray(value) && value.every((v) => typeof v === "number")
 });
@@ -59,9 +75,9 @@ const groupLevelOptions = [
 ];
 
 function validateSelection() {
-	if (!groupLevels.value?.length) {
-		groupLevels.value = [0];
-	}
+	nextTick(() => {
+		if (!levels.value?.length) {levels.value = [0];}
+	});
 }
 onMounted(validateSelection);
 </script>

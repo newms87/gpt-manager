@@ -22,7 +22,7 @@ export interface TaskDefinition extends ActionTargetItem {
 	task_runner_config?: AnyObject;
 	artifact_split_mode: ArtifactSplitMode;
 	input_artifact_levels?: number[];
-	output_artifact_mode: "" | "Per Process" | "Group All";
+	output_artifact_mode: ArtifactOutputMode;
 	response_format: AgentResponseFormat;
 	timeout_after_seconds: number;
 	task_run_count: number;
@@ -54,6 +54,7 @@ export interface TaskArtifactFilter extends ActionTargetItem {
 }
 
 export type ArtifactSplitMode = "" | "Node" | "Artifact";
+export type ArtifactOutputMode = "" | "Per Process" | "Group All";
 
 export interface TaskInput extends ActionTargetItem {
 	id: string;

@@ -8,12 +8,21 @@
 				@update:model-value="description => updateAction.trigger(taskDefinition, {description})"
 			/>
 		</div>
-		<div v-if="!taskDefinition.is_trigger" class="mt-4 bg-sky-950 p-4 rounded">
+		<div v-if="!taskDefinition.is_trigger" class="mt-4 bg-sky-950 p-4 rounded border-2 border-sky-600 text-sky-200">
+			<div class="text-sky-400 font-bold text-lg mb-4">Artifact Input Setup</div>
 			<ArtifactSplitModeWidget
 				:model-value="taskDefinition.artifact_split_mode"
 				:levels="taskDefinition.input_artifact_levels"
 				@update:model-value="artifact_split_mode => updateAction.trigger(taskDefinition, {artifact_split_mode})"
 				@update:levels="input_artifact_levels => updateAction.trigger(taskDefinition, {input_artifact_levels})"
+			/>
+		</div>
+
+		<div class="mt-4 bg-green-950 p-4 rounded border-2 border-green-600 text-green-200">
+			<div class="text-green-400 font-bold text-lg mb-4">Artifact Output Setup</div>
+			<ArtifactOutputModeWidget
+				:model-value="taskDefinition.output_artifact_mode"
+				@update:model-value="output_artifact_mode => updateAction.trigger(taskDefinition, {output_artifact_mode})"
 			/>
 		</div>
 
@@ -27,6 +36,7 @@
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { TaskRunnerClasses } from "@/components/Modules/TaskDefinitions/TaskRunners";
+import ArtifactOutputModeWidget from "@/components/Modules/TaskDefinitions/Widgets/ArtifactOutputModeWidget";
 import ArtifactSplitModeWidget from "@/components/Modules/TaskDefinitions/Widgets/ArtifactSplitModeWidget";
 import { dxWorkflowNode } from "@/components/Modules/WorkflowDefinitions/WorkflowNodes/config";
 import { TaskDefinition, WorkflowNode } from "@/types";
