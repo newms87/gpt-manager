@@ -48,8 +48,6 @@ class TaskRunnerService
 
         $artifacts = $taskRun->inputArtifacts()->get();
 
-        static::validateArtifacts($artifacts);
-
         $taskProcesses = [];
 
         $taskDefinition     = $taskRun->taskDefinition;
@@ -61,7 +59,7 @@ class TaskRunnerService
         }
 
         // Split up the artifacts into the groups defined by the task definition
-        $artifactGroups = ArtifactsSplitterService::split($taskDefinition->artifact_split_mode ?: '', $artifacts);
+        $artifactGroups = ArtifactsSplitterService::split($taskDefinition->artifact_split_mode ?: '', $artifacts, $taskDefinition->input_artifact_levels);
 
         foreach($schemaAssociations as $schemaAssociation) {
             foreach($artifactGroups as $artifactsInGroup) {

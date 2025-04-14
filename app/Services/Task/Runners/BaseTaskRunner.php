@@ -8,6 +8,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Services\Task\TaskProcessRunnerService;
+use App\Services\Task\TaskRunnerService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as EloquentCollection;
@@ -106,19 +107,20 @@ class BaseTaskRunner implements TaskRunnerContract
         static::log("Event Triggered $taskProcessListener");
     }
 
+    /**
+     * Complete the task process and attach any artifacts to the task run and process
+     *
+     * @param Artifact[]|Collection $artifacts
+     */
     public function complete(array|Collection|EloquentCollection $artifacts = []): void
     {
         static::log("Task process completed: $this->taskProcess");
 
         if ($artifacts) {
-            $artifactIds = [];
-            foreach($artifacts as $artifact) {
-                if (!($artifact instanceof Artifact)) {
-                    throw new ValidationError("Invalid artifact provided: artifacts should be instance of Artifact, instead received: " . (is_object($artifact) ? get_class($artifact) : json_encode($artifact)));
-                }
-                static::log("Attaching $artifact");
-                $artifactIds[] = $artifact->id;
+            TaskRunnerService::validateArtifacts($artifacts);
 
+            foreach($artifacts as $artifact) {
+                static::log("Attaching $artifact");
                 $artifact->task_definition_id = $this->taskProcess->taskRun->task_definition_id;
                 if (!$artifact->position) {
                     $artifact->position = $this->resolveArtifactPosition($artifact, $artifacts);
@@ -144,6 +146,8 @@ class BaseTaskRunner implements TaskRunnerContract
 
         switch($outputMode) {
             case TaskDefinition::OUTPUT_ARTIFACT_MODE_GROUP_ALL:
+                static::log("Grouping all artifacts into a single artifact");
+
                 $topLevelArtifact = $this->resolveSingletonTaskRunArtifact();
                 $topLevelArtifact->children()->saveMany($artifacts);
 
@@ -154,6 +158,8 @@ class BaseTaskRunner implements TaskRunnerContract
                 break;
 
             case TaskDefinition::OUTPUT_ARTIFACT_MODE_PER_PROCESS:
+                static::log("Grouping all artifacts into a single artifact per process");
+
                 $processArtifact = Artifact::create([
                     'name'               => $this->taskProcess->name,
                     'task_definition_id' => $this->taskDefinition->id,
@@ -168,6 +174,8 @@ class BaseTaskRunner implements TaskRunnerContract
                 break;
 
             default:
+                static::log("Attaching all artifacts to process and task run");
+                
                 // By default, all artifacts go to the process and the task
                 $taskRunArtifactIds = $artifactIds;
                 $processArtifactIds = $artifactIds;

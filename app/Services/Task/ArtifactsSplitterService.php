@@ -15,10 +15,31 @@ class ArtifactsSplitterService
         ARTIFACT_SPLIT_BY_COMBINATIONS = 'Combinations';
 
     /**
-     * Split the artifacts into groups based on the split mode
+     * Split the artifacts into groups based on the split mode.
+     *
+     * If levels is set, it will only include artifacts that are in the given nested levels. The resulting collection
+     * is a flattened list of artifacts.
+     *
+     * For example,
+     * - Artifact A has 2 levels of nested artifacts
+     * - Artifact B has only the top level (0)
+     * - Artifact C has 1 level of nested artifacts
+     *
+     * Scenario A:
+     *  If only level 0 is selected (same as empty), top level artifacts of A,B and C are returned (their children are
+     *  still associated however in the hierarchy)
+     *
+     * Scenario B:
+     *  If only level 1 is selected, only artifacts of A and C that are in the first level of nesting are returned (top
+     *  level artifacts are NOT returned)
+     *
+     * Scenario C:
+     *  If level 0 and 2 are selected, only top level artifacts from A,B and C and the artifacts at the 2nd level of A
+     *  will be returned in a flattened list
+     *
      * @param Artifact[]|Collection $artifacts
      */
-    public static function split(string $splitMode, array|Collection|EloquentCollection $artifacts): Collection
+    public static function split(string $splitMode, array|Collection|EloquentCollection $artifacts, array $levels = null): Collection
     {
         $artifacts = collect($artifacts);
 
