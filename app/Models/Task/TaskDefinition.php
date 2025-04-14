@@ -36,6 +36,8 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         'task_runner_config',
         'response_format',
         'artifact_split_mode',
+        'input_artifact_levels',
+        'output_artifact_mode',
         'timeout_after_seconds',
         'schema_definition_id',
         'agent_id',
@@ -54,7 +56,8 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     public function casts()
     {
         return [
-            'task_runner_config' => 'json',
+            'task_runner_config'    => 'json',
+            'input_artifact_levels' => 'json',
         ];
     }
 

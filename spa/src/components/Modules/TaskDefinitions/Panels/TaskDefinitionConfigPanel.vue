@@ -8,7 +8,9 @@
 			<div v-if="!taskDefinition.is_trigger" class="mt-4 bg-sky-950 p-4 rounded">
 				<ArtifactSplitModeWidget
 					:model-value="taskDefinition.artifact_split_mode"
+					:levels="taskDefinition.input_artifact_levels"
 					@update:model-value="artifact_split_mode => updateAction.trigger(taskDefinition, {artifact_split_mode})"
+					@update:levels="input_artifact_levels => updateAction.trigger(taskDefinition, {input_artifact_levels})"
 				/>
 			</div>
 

@@ -49,6 +49,7 @@
 					selection-type="string"
 					:select-text="getOperatorLabel(filterCondition.operator)"
 					label-class="hidden"
+					:select-icon="currentSelectIcon"
 					:options="availableOperators"
 					@update:selected="emitUpdate"
 				/>
@@ -99,9 +100,14 @@
 import { FilterCondition, FragmentSelector } from "@/types";
 import {
 	FaSolidBarcode as MetaIcon,
+	FaSolidCalendarDay as DateIcon,
 	FaSolidDatabase as JsonIcon,
 	FaSolidFile as FilesIcon,
-	FaSolidT as TextIcon
+	FaSolidFont as StringIcon,
+	FaSolidHashtag as NumberIcon,
+	FaSolidList as ArrayIcon,
+	FaSolidT as TextIcon,
+	FaSolidToggleOn as BooleanIcon
 } from "danx-icon";
 import { ActionButton, SelectionMenuField, TextField } from "quasar-ui-danx";
 import { computed } from "vue";
@@ -110,6 +116,22 @@ import { FragmentSelectorConfigField } from "./index";
 const emit = defineEmits(["update:model-value", "remove"]);
 
 const filterCondition = defineModel<FilterCondition>();
+const currentSelectIcon = computed(() => {
+	switch (dataType.value) {
+		case "string":
+			return StringIcon;
+		case "boolean":
+			return BooleanIcon;
+		case "number":
+			return NumberIcon;
+		case "date":
+			return DateIcon;
+		case "array":
+			return ArrayIcon;
+		default:
+			return StringIcon;
+	}
+});
 
 // Make dataType a computed property instead of a ref
 const dataType = computed<string>(() => {

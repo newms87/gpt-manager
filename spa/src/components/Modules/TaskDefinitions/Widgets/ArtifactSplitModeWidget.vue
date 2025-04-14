@@ -28,12 +28,40 @@
 					Run a single process with all artifacts from all tasks grouped together.
 				</template>
 			</div>
-
+		</div>
+		<div class="mt-8">
+			<div class="font-bold mb-2">Input Group Level</div>
+			<div>
+				<SelectField
+					v-model="groupLevels"
+					:options="groupLevelOptions"
+					multiple
+					@update="validateSelection"
+				/>
+			</div>
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import { ArtifactSplitMode } from "@/types";
+import { SelectField } from "quasar-ui-danx";
+import { onMounted } from "vue";
 
 const splitMode = defineModel<ArtifactSplitMode>();
+const groupLevels = defineModel<number[]>("levels", {
+	default: [0],
+	validator: (value) => Array.isArray(value) && value.every((v) => typeof v === "number")
+});
+
+const groupLevelOptions = [
+	{ label: "Top Level", value: 0 },
+	...(new Array(10).fill(0).map((_, i) => ({ label: `Level ${i + 1}`, value: i + 1 })))
+];
+
+function validateSelection() {
+	if (!groupLevels.value?.length) {
+		groupLevels.value = [0];
+	}
+}
+onMounted(validateSelection);
 </script>

@@ -21,6 +21,8 @@ export interface TaskDefinition extends ActionTargetItem {
 	task_runner_name: string;
 	task_runner_config?: AnyObject;
 	artifact_split_mode: ArtifactSplitMode;
+	input_artifact_levels?: number[];
+	output_artifact_mode: "" | "Per Process" | "Group All";
 	response_format: AgentResponseFormat;
 	timeout_after_seconds: number;
 	task_run_count: number;

@@ -22,6 +22,8 @@ class TaskDefinitionResource extends ActionResource
             'task_runner_config'    => $taskDefinition->task_runner_config,
             'response_format'       => $taskDefinition->response_format,
             'artifact_split_mode'   => $taskDefinition->artifact_split_mode,
+            'input_artifact_levels' => $taskDefinition->input_artifact_levels,
+            'output_artifact_mode'  => $taskDefinition->output_artifact_mode,
             'timeout_after_seconds' => $taskDefinition->timeout_after_seconds,
             'task_run_count'        => $taskDefinition->task_run_count,
             'created_at'            => $taskDefinition->created_at,
