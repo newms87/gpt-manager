@@ -14,7 +14,7 @@
 			@connection-remove="workflowConnection => removeConnectionAction.trigger(workflowConnection)"
 		/>
 		<WorkflowCanvasSidebar :workflow-definition="activeWorkflowDefinition" @refresh="refreshActiveWorkflowDefinition" />
-		<TaskDefinitionPanelsDialog
+		<TaskDefinitionConfigDialog
 			v-if="nodeToEdit?.taskDefinition"
 			:task-definition="nodeToEdit.taskDefinition"
 			:workflow-node="nodeToEdit"
@@ -23,7 +23,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { TaskDefinitionPanelsDialog } from "@/components/Modules/TaskDefinitions";
+import { TaskDefinitionConfigDialog } from "@/components/Modules/TaskDefinitions";
 import { loadTaskDefinitions } from "@/components/Modules/WorkflowCanvas/helpers";
 import WorkflowCanvas from "@/components/Modules/WorkflowCanvas/WorkflowCanvas";
 import WorkflowCanvasSidebar from "@/components/Modules/WorkflowCanvas/WorkflowCanvasSidebar";

@@ -3,7 +3,6 @@ import {
 	FaSolidCloudBolt as DashboardIcon,
 	FaSolidDatabase as SchemaDefinitionsIcon,
 	FaSolidDownload as WorkflowInputsIcon,
-	FaSolidGear as TaskDefinitionsIcon,
 	FaSolidPallet as WorkflowDefinitionsIcon,
 	FaSolidRobot as AgentsIcon,
 	FaSolidToiletPaperSlash as AuditsIcon
@@ -24,11 +23,6 @@ export default [
 		label: "Workflow Definitions",
 		icon: WorkflowDefinitionsIcon,
 		route: { name: "workflow-definitions" }
-	},
-	{
-		label: "Task Definitions",
-		icon: TaskDefinitionsIcon,
-		route: { name: "task-definitions" }
 	},
 	{
 		label: "Schema Definitions",
