@@ -7,6 +7,16 @@ use Newms87\Danx\Exceptions\ValidationError;
 
 class FilterService
 {
+    // Common operator constants
+    private const OPERATOR_EQUALS = 'equals';
+    private const OPERATOR_CONTAINS = 'contains';
+    private const OPERATOR_GREATER_THAN = 'greater_than';
+    private const OPERATOR_LESS_THAN = 'less_than';
+    private const OPERATOR_REGEX = 'regex';
+    private const OPERATOR_EXISTS = 'exists';
+    private const OPERATOR_IS_TRUE = 'is_true';
+    private const OPERATOR_IS_FALSE = 'is_false';
+    
     /**
      * Evaluate a condition against a data record
      *
@@ -16,70 +26,18 @@ class FilterService
      */
     public function evaluateCondition(mixed $fieldValue, array $condition): bool
     {
-        $operator      = $condition['operator'] ?? 'contains';
+        $operator      = $condition['operator'] ?? self::OPERATOR_CONTAINS;
         $value         = $condition['value'] ?? null;
         $caseSensitive = $condition['case_sensitive'] ?? false;
 
-        // Special handling for boolean operators
-        if ($operator === 'is_true' || $operator === 'is_false') {
-            // Extract boolean value from array if possible
-            $booleanValue = null;
-
-            // If we have a JSON fragment that contains a boolean field, extract just that field
-            if (is_array($fieldValue) && count($fieldValue) === 1) {
-                $keys     = array_keys($fieldValue);
-                $firstKey = reset($keys);
-                if (isset($fieldValue[$firstKey]) && is_bool($fieldValue[$firstKey])) {
-                    $booleanValue = $fieldValue[$firstKey];
-                }
-            } elseif (is_bool($fieldValue)) {
-                $booleanValue = $fieldValue;
-            } elseif (is_scalar($fieldValue) && ($fieldValue === '1' || $fieldValue === '0' || $fieldValue === 1 || $fieldValue === 0)) {
-                // Handle numeric/string representations of booleans
-                $booleanValue = (bool)$fieldValue;
-            }
-
-            // Only evaluate if we have an actual boolean value
-            if ($booleanValue !== null) {
-                if ($operator === 'is_true') {
-                    return $booleanValue === true;
-                } else { // is_false
-                    return $booleanValue === false;
-                }
-            }
-
-            // If we couldn't extract a boolean value, the condition fails
-            return false;
+        // Handle special boolean operators
+        if ($this->isBooleanOperator($operator)) {
+            return $this->evaluateBooleanOperator($fieldValue, $operator);
         }
 
-        // For 'exists' operator, we need special handling
-        if ($operator === 'exists') {
-            // If it's null, it doesn't exist
-            if ($fieldValue === null) {
-                return false;
-            }
-
-            // If we're checking existence with a fragment selector,
-            // we need to verify the specified field exists in the returned data
-            if (isset($condition['fragment_selector']) && is_array($fieldValue)) {
-                // For fragment selections, make sure the key specified exists and has a non-null value
-                // Extract the field we're checking for existence from the fragment selector
-                $keys = array_keys($condition['fragment_selector']['children'] ?? []);
-                if (!empty($keys)) {
-                    $targetKey = $keys[0];
-
-                    // If we have a field value that's the result of a fragment selection,
-                    // we need to check if the specific key is non-empty in the result
-                    if (isset($fieldValue[$targetKey]) && $fieldValue[$targetKey] !== null) {
-                        return true;
-                    }
-
-                    return false;
-                }
-            }
-
-            // For simple field existence check
-            return true;
+        // Handle exists operator
+        if ($operator === self::OPERATOR_EXISTS) {
+            return $this->evaluateExistsOperator($fieldValue, $condition);
         }
 
         // If the field value is null, it can't match any value-based condition
@@ -94,57 +52,201 @@ class FilterService
 
         // Handle array values
         if (is_array($fieldValue)) {
-            if (empty($fieldValue)) {
-                return false;
-            }
-
-            // Extract data type from condition for type-specific handling
-            $dataType = 'unknown';
-            if (isset($condition['fragment_selector'])) {
-                $dataType = $this->getDataTypeFromFragmentSelector($condition['fragment_selector']);
-            }
-
-            // For flat arrays, try to match any element
-            if ($this->isScalarArray($fieldValue)) {
-                return $this->evaluateScalarArrayCondition($fieldValue, $value, $operator, $caseSensitive);
-            }
-
-            // Try to extract leaf value for comparison if possible
-            $leafValue = $this->extractLeafValue($fieldValue);
-            if ($leafValue !== null) {
-                return $this->evaluateTypedCondition($leafValue, $value, $operator, $dataType, $caseSensitive);
-            }
-
-            // For complex arrays, convert to string for basic operations
-            if (in_array($operator, ['contains', 'equals', 'regex'])) {
-                $stringValue = json_encode($fieldValue);
-
-                return $this->compareScalarValues($stringValue, $value, $operator, $caseSensitive);
-            }
-
-            return false;
+            return $this->evaluateArrayCondition($fieldValue, $condition, $operator, $value, $caseSensitive); 
         }
 
-        // Determine data type from condition for scalar values
-        $dataType = 'string';
-        if (is_bool($fieldValue)) {
-            $dataType = 'boolean';
-        } elseif (is_numeric($fieldValue) && ($fieldValue === 1 || $fieldValue === 0) && isset($condition['fragment_selector'])) {
-            // Special case: If we have a numeric 1/0 value and the fragment selector indicates boolean type,
-            // treat it as a boolean instead of a number
-            $selectorDataType = $this->getDataTypeFromFragmentSelector($condition['fragment_selector']);
-            if ($selectorDataType === 'boolean') {
-                $dataType = 'boolean';
-                $fieldValue = (bool)$fieldValue; // Convert to actual boolean
-            } else {
-                $dataType = 'number';
-            }
-        } elseif (is_numeric($fieldValue)) {
-            $dataType = 'number';
-        }
+        // Determine data type for scalar values
+        $dataType = $this->determineScalarDataType($fieldValue, $condition);
 
         // Standard scalar comparison
         return $this->evaluateTypedCondition($fieldValue, $value, $operator, $dataType, $caseSensitive);
+    }
+
+    /**
+     * Determine the data type for a scalar value
+     * 
+     * @param mixed $fieldValue The field value
+     * @param array $condition The condition being evaluated
+     * @return string The data type
+     */
+    protected function determineScalarDataType(mixed $fieldValue, array $condition): string
+    {
+        // Check for numeric values that should be treated as booleans
+        if (is_numeric($fieldValue) && ($fieldValue === 1 || $fieldValue === 0) && isset($condition['fragment_selector'])) {
+            $selectorDataType = $this->getDataTypeFromFragmentSelector($condition['fragment_selector']);
+            if ($selectorDataType === 'boolean') {
+                return 'boolean';
+            }
+        }
+        
+        if (is_bool($fieldValue)) {
+            return 'boolean';
+        } elseif (is_numeric($fieldValue)) {
+            return 'number';
+        }
+        
+        return 'string';
+    }
+
+    /**
+     * Evaluate a boolean operator (is_true, is_false)
+     * 
+     * @param mixed $fieldValue The field value
+     * @param string $operator The operator (is_true or is_false)
+     * @return bool The evaluation result
+     */
+    protected function evaluateBooleanOperator(mixed $fieldValue, string $operator): bool
+    {
+        $booleanValue = $this->extractBooleanValue($fieldValue);
+        
+        // Only evaluate if we have an actual boolean value
+        if ($booleanValue !== null) {
+            if ($operator === self::OPERATOR_IS_TRUE) {
+                return $booleanValue === true;
+            } else { // is_false
+                return $booleanValue === false;
+            }
+        }
+
+        // If we couldn't extract a boolean value, the condition fails
+        return false;
+    }
+
+    /**
+     * Extract a boolean value from various formats
+     * 
+     * @param mixed $value The value to extract from
+     * @return bool|null The extracted boolean or null if extraction failed
+     */
+    protected function extractBooleanValue(mixed $value): ?bool
+    {
+        // If we have a JSON fragment that contains a boolean field, extract just that field
+        if (is_array($value) && count($value) === 1) {
+            $keys     = array_keys($value);
+            $firstKey = reset($keys);
+            if (isset($value[$firstKey]) && is_bool($value[$firstKey])) {
+                return $value[$firstKey];
+            }
+        } elseif (is_bool($value)) {
+            return $value;
+        } elseif (is_scalar($value)) {
+            // Handle string and numeric representations of booleans
+            if (is_string($value)) {
+                if (strtolower($value) === 'true') {
+                    return true;
+                } elseif (strtolower($value) === 'false') {
+                    return false;
+                }
+            }
+            
+            // Handle numeric/string 1/0 values
+            if ($value === '1' || $value === '0' || $value === 1 || $value === 0) {
+                return (bool)$value;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Check if an operator is a boolean operator
+     * 
+     * @param string $operator The operator to check
+     * @return bool Whether it's a boolean operator
+     */
+    protected function isBooleanOperator(string $operator): bool
+    {
+        return $operator === self::OPERATOR_IS_TRUE || $operator === self::OPERATOR_IS_FALSE;
+    }
+
+    /**
+     * Evaluate the 'exists' operator against a field value
+     * 
+     * @param mixed $fieldValue The field value to check
+     * @param array $condition The full condition with possible fragment selector
+     * @return bool Whether the field exists
+     */
+    protected function evaluateExistsOperator(mixed $fieldValue, array $condition): bool
+    {
+        // If it's null, it doesn't exist
+        if ($fieldValue === null) {
+            return false;
+        }
+
+        // If we're checking existence with a fragment selector,
+        // we need to verify the specified field exists in the returned data
+        if (isset($condition['fragment_selector']) && is_array($fieldValue)) {
+            return $this->checkFragmentExists($fieldValue, $condition['fragment_selector']);
+        }
+
+        // For simple field existence check
+        return true;
+    }
+
+    /**
+     * Check if a fragment exists in a field value
+     * 
+     * @param array $fieldValue The array field value
+     * @param array $fragmentSelector The fragment selector
+     * @return bool Whether the fragment exists
+     */
+    protected function checkFragmentExists(array $fieldValue, array $fragmentSelector): bool
+    {
+        // For fragment selections, make sure the key specified exists and has a non-null value
+        // Extract the field we're checking for existence from the fragment selector
+        $keys = array_keys($fragmentSelector['children'] ?? []);
+        if (!empty($keys)) {
+            $targetKey = $keys[0];
+
+            // If we have a field value that's the result of a fragment selection,
+            // we need to check if the specific key is non-empty in the result
+            return isset($fieldValue[$targetKey]) && $fieldValue[$targetKey] !== null;
+        }
+
+        return false;
+    }
+
+    /**
+     * Evaluate a condition on array values
+     * 
+     * @param array $fieldValue The array to evaluate
+     * @param array $condition The full condition
+     * @param string $operator The operator to use
+     * @param mixed $value The value to compare against
+     * @param bool $caseSensitive Whether to use case-sensitive comparison
+     * @return bool Whether the condition is met
+     */
+    protected function evaluateArrayCondition(array $fieldValue, array $condition, string $operator, mixed $value, bool $caseSensitive): bool
+    {
+        if (empty($fieldValue)) {
+            return false;
+        }
+
+        // Extract data type from condition for type-specific handling
+        $dataType = 'unknown';
+        if (isset($condition['fragment_selector'])) {
+            $dataType = $this->getDataTypeFromFragmentSelector($condition['fragment_selector']);
+        }
+
+        // For flat arrays, try to match any element
+        if ($this->isScalarArray($fieldValue)) {
+            return $this->evaluateScalarArrayCondition($fieldValue, $value, $operator, $caseSensitive);
+        }
+
+        // Try to extract leaf value for comparison if possible
+        $leafValue = $this->extractLeafValue($fieldValue);
+        if ($leafValue !== null) {
+            return $this->evaluateTypedCondition($leafValue, $value, $operator, $dataType, $caseSensitive);
+        }
+
+        // For complex arrays, convert to string for basic operations
+        if (in_array($operator, [self::OPERATOR_CONTAINS, self::OPERATOR_EQUALS, self::OPERATOR_REGEX])) {
+            $stringValue = json_encode($fieldValue);
+
+            return $this->compareScalarValues($stringValue, $value, $operator, $caseSensitive);
+        }
+
+        return false;
     }
 
     /**
@@ -156,23 +258,30 @@ class FilterService
     public function validateCondition(array $condition): void
     {
         if (!isset($condition['field'])) {
-            throw new ValidationError("Filter condition must have a 'field' attribute");
+            throw new ValidationError("Condition must have a 'field' property");
         }
 
-        // Validate operator
-        $operator       = $condition['operator'] ?? 'contains';
-        $validOperators = [
-            'contains', 'equals', 'greater_than', 'less_than', 'regex', 'exists',
-            'is_true', 'is_false', // New boolean-specific operators
-        ];
-        if (!in_array($operator, $validOperators)) {
-            throw new ValidationError("Filter operator '$operator' is not valid. Must be one of: " . implode(', ', $validOperators));
+        if (!isset($condition['operator'])) {
+            throw new ValidationError("Condition must have an 'operator' property");
         }
 
-        // Boolean operators and 'exists' don't need a value
-        $noValueOperators = ['exists', 'is_true', 'is_false'];
-        if (!in_array($operator, $noValueOperators) && !array_key_exists('value', $condition)) {
-            throw new ValidationError("Filter condition with operator '$operator' must have a 'value' attribute");
+        // 'exists' operator doesn't require a value
+        if ($condition['operator'] !== self::OPERATOR_EXISTS && 
+            $condition['operator'] !== self::OPERATOR_IS_TRUE && 
+            $condition['operator'] !== self::OPERATOR_IS_FALSE && 
+            !isset($condition['value'])) {
+            throw new ValidationError("Condition must have a 'value' property unless operator is 'exists', 'is_true', or 'is_false'");
+        }
+
+        // Check if operator is valid
+        $dataType = 'unknown';
+        if (isset($condition['fragment_selector'])) {
+            $dataType = $this->getDataTypeFromFragmentSelector($condition['fragment_selector']);
+        }
+
+        $validOperators = $this->getOperatorsForDataType($dataType);
+        if (!in_array($condition['operator'], $validOperators)) {
+            throw new ValidationError("Operator '{$condition['operator']}' is not valid for data type '{$dataType}'");
         }
     }
 
@@ -184,18 +293,25 @@ class FilterService
      * @param array|null   $fragmentSelector The fragment selector to apply
      * @return mixed The field value
      */
-    protected function getFieldValue(mixed $data, string $field, ?array $fragmentSelector): mixed
+    public function getFieldValue(mixed $data, string $field, ?array $fragmentSelector): mixed
     {
         if (is_array($data)) {
-            return $data[$field] ?? null;
+            $value = $data[$field] ?? null;
+        } elseif (is_object($data)) {
+            $value = $data->{$field} ?? null;
+        } else {
+            $value = null;
         }
 
-        if (is_object($data)) {
-            // Implement as needed for your specific objects
-            return $data->{$field} ?? null;
+        // Apply fragment selector if provided and the value is an array
+        if ($fragmentSelector && is_array($value)) {
+            // Fragment selector allows extracting a specific property from a nested structure
+            // For example, json_content.category
+            // The property is selected via the schema-based fragment selector
+            return [$fragmentSelector['children'] ? array_key_first($fragmentSelector['children']) : 'value' => $value];
         }
 
-        return null;
+        return $value;
     }
 
     /**
@@ -206,26 +322,14 @@ class FilterService
      * @param mixed      $value      The value to compare against
      * @return bool Whether the collection matches the condition
      */
-    protected function evaluateCollectionCondition(Collection $collection, string $operator, mixed $value): bool
+    public function evaluateCollectionCondition(Collection $collection, string $operator, mixed $value): bool
     {
-        switch($operator) {
-            case 'equals':
-                return $collection->count() === (int)$value;
-            case 'greater_than':
-                return $collection->count() > (int)$value;
-            case 'less_than':
-                return $collection->count() < (int)$value;
-            case 'contains':
-                return $collection->contains(function ($item) use ($value) {
-                    if (is_scalar($item)) {
-                        return (string)$item === (string)$value;
-                    }
-
-                    return false;
-                });
-            default:
-                return false;
+        if ($collection->isEmpty()) {
+            return false;
         }
+
+        // Convert to array for consistent handling
+        return $this->evaluateArrayCondition($collection->toArray(), [], $operator, $value, false);
     }
 
     /**
@@ -270,43 +374,50 @@ class FilterService
      */
     protected function evaluateBooleanCondition(mixed $fieldValue, mixed $conditionValue, string $operator): bool
     {
-        // Convert string value to boolean if needed
-        if (is_string($conditionValue) && strtolower($conditionValue) === 'true') {
-            $conditionValue = true;
-        } elseif (is_string($conditionValue) && strtolower($conditionValue) === 'false') {
-            $conditionValue = false;
-        }
-
-        if (is_string($fieldValue) && strtolower($fieldValue) === 'true') {
-            $fieldValue = true;
-        } elseif (is_string($fieldValue) && strtolower($fieldValue) === 'false') {
-            $fieldValue = false;
-        }
-
-        // Convert numeric values to booleans for comparison
-        if (is_numeric($fieldValue)) {
-            $fieldValue = (bool)$fieldValue;
-        }
-        
-        if (is_numeric($conditionValue)) {
-            $conditionValue = (bool)$conditionValue;
-        }
+        // Convert string and numeric values to booleans for comparison
+        $fieldValue = $this->normalizeBooleanValue($fieldValue);
+        $conditionValue = $this->normalizeBooleanValue($conditionValue);
 
         // Only equals operator is valid for booleans
-        if ($operator === 'equals') {
+        if ($operator === self::OPERATOR_EQUALS) {
             // Use loose comparison for boolean values to handle mixed data types (like 1 == true)
             return $fieldValue == $conditionValue;
         }
 
-        // New boolean-specific operators
-        if ($operator === 'is_true') {
+        // Boolean-specific operators
+        if ($operator === self::OPERATOR_IS_TRUE) {
             return (bool)$fieldValue === true;
         }
-        if ($operator === 'is_false') {
+        if ($operator === self::OPERATOR_IS_FALSE) {
             return (bool)$fieldValue === false;
         }
 
         return false;
+    }
+
+    /**
+     * Normalize a value to a boolean when possible
+     * 
+     * @param mixed $value The value to normalize
+     * @return mixed The normalized value (bool if possible, original value otherwise)
+     */
+    protected function normalizeBooleanValue(mixed $value): mixed
+    {
+        // Convert string value to boolean if needed
+        if (is_string($value)) {
+            if (strtolower($value) === 'true') {
+                return true;
+            } elseif (strtolower($value) === 'false') {
+                return false;
+            }
+        }
+
+        // Convert numeric values to booleans
+        if (is_numeric($value)) {
+            return (bool)$value;
+        }
+
+        return $value;
     }
 
     /**
@@ -320,20 +431,20 @@ class FilterService
     protected function evaluateDateCondition(mixed $fieldValue, mixed $conditionValue, string $operator): bool
     {
         // Convert string dates to timestamps for comparison
-        $dateValue          = is_string($fieldValue) ? strtotime($fieldValue) : null;
-        $dateConditionValue = is_string($conditionValue) ? strtotime($conditionValue) : null;
+        $fieldTimestamp = is_string($fieldValue) ? strtotime($fieldValue) : null;
+        $valueTimestamp = is_string($conditionValue) ? strtotime($conditionValue) : null;
 
-        if ($dateValue === false || $dateConditionValue === false) {
-            return false;
+        if ($fieldTimestamp === false || $valueTimestamp === false) {
+            return false; // Invalid date format
         }
 
         switch($operator) {
-            case 'equals':
-                return $dateValue === $dateConditionValue;
-            case 'greater_than':
-                return $dateValue > $dateConditionValue;
-            case 'less_than':
-                return $dateValue < $dateConditionValue;
+            case self::OPERATOR_EQUALS:
+                return $fieldTimestamp === $valueTimestamp;
+            case self::OPERATOR_GREATER_THAN:
+                return $fieldTimestamp > $valueTimestamp;
+            case self::OPERATOR_LESS_THAN:
+                return $fieldTimestamp < $valueTimestamp;
             default:
                 return false;
         }
@@ -349,21 +460,22 @@ class FilterService
      */
     protected function evaluateNumberCondition(mixed $fieldValue, mixed $conditionValue, string $operator): bool
     {
-        // Convert to numeric for comparison
-        $numValue          = is_numeric($fieldValue) ? (float)$fieldValue : null;
-        $numConditionValue = is_numeric($conditionValue) ? (float)$conditionValue : null;
+        // Convert to numeric values if strings
+        if (is_string($fieldValue) && is_numeric($fieldValue)) {
+            $fieldValue = (float)$fieldValue;
+        }
 
-        if ($numValue === null || $numConditionValue === null) {
-            return false;
+        if (is_string($conditionValue) && is_numeric($conditionValue)) {
+            $conditionValue = (float)$conditionValue;
         }
 
         switch($operator) {
-            case 'equals':
-                return $numValue === $numConditionValue;
-            case 'greater_than':
-                return $numValue > $numConditionValue;
-            case 'less_than':
-                return $numValue < $numConditionValue;
+            case self::OPERATOR_EQUALS:
+                return $fieldValue == $conditionValue; // Use loose comparison
+            case self::OPERATOR_GREATER_THAN:
+                return $fieldValue > $conditionValue;
+            case self::OPERATOR_LESS_THAN:
+                return $fieldValue < $conditionValue;
             default:
                 return false;
         }
@@ -380,48 +492,70 @@ class FilterService
      */
     protected function evaluateStringCondition(mixed $fieldValue, mixed $conditionValue, string $operator, bool $caseSensitive): bool
     {
-        if (!is_scalar($fieldValue) || !is_scalar($conditionValue)) {
-            return false;
-        }
+        // Ensure we have strings for comparison
+        $fieldString = is_scalar($fieldValue) ? (string)$fieldValue : '';
+        $valueString = is_scalar($conditionValue) ? (string)$conditionValue : '';
 
-        $fieldStr     = (string)$fieldValue;
-        $conditionStr = (string)$conditionValue;
-
-        // Only apply case conversion for non-regex operations or when specified for regex
-        if (!$caseSensitive && $operator !== 'regex') {
-            $fieldStr     = strtolower($fieldStr);
-            $conditionStr = strtolower($conditionStr);
+        // For regex, case sensitivity is handled through regex modifiers
+        if (!$caseSensitive && $operator !== self::OPERATOR_REGEX) {
+            $fieldString  = strtolower($fieldString);
+            $valueString = strtolower($valueString);
         }
 
         switch($operator) {
-            case 'contains':
-                return strpos($fieldStr, $conditionStr) !== false;
-            case 'equals':
-                return $fieldStr === $conditionStr;
-            case 'regex':
-                // For regex, don't add extra / if the pattern already includes them
-                if (substr($conditionStr, 0, 1) === '/' && substr($conditionStr, -1) === '/') {
-                    // Pattern already has delimiters
-                    $pattern = $conditionStr;
+            case self::OPERATOR_CONTAINS:
+                return str_contains($fieldString, $valueString);
 
-                    // Add modifiers for case insensitivity if needed
-                    if (!$caseSensitive && strpos($pattern, 'i') === false) {
-                        // Add 'i' modifier for case insensitive matching
-                        $pattern = $pattern . 'i';
+            case self::OPERATOR_EQUALS:
+                return $fieldString === $valueString;
+
+            case self::OPERATOR_GREATER_THAN:
+                return $fieldString > $valueString; // Lexicographical comparison
+
+            case self::OPERATOR_LESS_THAN:
+                return $fieldString < $valueString; // Lexicographical comparison
+
+            case self::OPERATOR_REGEX:
+                if (empty($valueString)) {
+                    return false;
+                }
+                
+                // Determine if the pattern already includes delimiters
+                $hasDelimiters = strlen($valueString) > 1 && 
+                                 $valueString[0] === '/' && 
+                                 substr($valueString, -1) === '/';
+                
+                // For patterns with existing delimiters, preserve them
+                if ($hasDelimiters) {
+                    $pattern = $valueString;
+                    
+                    // If case-insensitive and the pattern doesn't already have 'i' flag, add it
+                    if (!$caseSensitive) {
+                        $lastSlashPos = strrpos($pattern, '/');
+                        if ($lastSlashPos !== false) {
+                            $flags = substr($pattern, $lastSlashPos + 1);
+                            if (strpos($flags, 'i') === false) {
+                                $pattern = substr($pattern, 0, $lastSlashPos + 1) . 'i' . $flags;
+                            }
+                        }
                     }
                 } else {
-                    // Add delimiters and modifiers
-                    $pattern = '/' . str_replace('/', '\/', $conditionStr) . '/' . (!$caseSensitive ? 'i' : '');
+                    // New pattern without delimiters needs them added
+                    $pattern = '/' . str_replace('/', '\/', $valueString) . '/';
+                    if (!$caseSensitive) {
+                        $pattern .= 'i';
+                    }
                 }
-
-                // Use error suppression to prevent warnings from malformed regex
-                $result = @preg_match($pattern, $fieldStr);
-
+                
+                // Use error suppression in case of invalid regex pattern
+                $result = @preg_match($pattern, $fieldString);
+                if ($result === false) {
+                    // Invalid regex pattern
+                    return false;
+                }
+                
                 return $result === 1;
-            case 'greater_than':
-                return $fieldStr > $conditionStr; // Lexicographical comparison
-            case 'less_than':
-                return $fieldStr < $conditionStr; // Lexicographical comparison
+
             default:
                 return false;
         }
@@ -438,8 +572,23 @@ class FilterService
      */
     protected function evaluateScalarArrayCondition(array $arrayValue, mixed $conditionValue, string $operator, bool $caseSensitive): bool
     {
-        foreach($arrayValue as $item) {
-            if ($this->compareScalarValues($item, $conditionValue, $operator, $caseSensitive)) {
+        if (empty($arrayValue)) {
+            return false;
+        }
+
+        // For contains operator, check if any element matches
+        if ($operator === self::OPERATOR_CONTAINS) {
+            foreach($arrayValue as $value) {
+                if ($this->compareScalarValues($value, $conditionValue, self::OPERATOR_EQUALS, $caseSensitive)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // For equals, greater_than, less_than, regex, check if any element satisfies
+        foreach($arrayValue as $value) {
+            if ($this->compareScalarValues($value, $conditionValue, $operator, $caseSensitive)) {
                 return true;
             }
         }
@@ -458,40 +607,17 @@ class FilterService
      */
     protected function compareScalarValues(mixed $fieldValue, mixed $conditionValue, string $operator, bool $caseSensitive): bool
     {
-        if (!is_scalar($fieldValue) || !is_scalar($conditionValue)) {
-            return false;
+        // Determine data type for comparison
+        if (is_bool($fieldValue) || is_bool($conditionValue)) {
+            return $this->evaluateBooleanCondition($fieldValue, $conditionValue, $operator);
         }
 
-        $fieldStr     = (string)$fieldValue;
-        $conditionStr = (string)$conditionValue;
-
-        if (!$caseSensitive) {
-            $fieldStr     = strtolower($fieldStr);
-            $conditionStr = strtolower($conditionStr);
+        if (is_numeric($fieldValue) && is_numeric($conditionValue)) {
+            return $this->evaluateNumberCondition($fieldValue, $conditionValue, $operator);
         }
 
-        switch($operator) {
-            case 'contains':
-                return strpos($fieldStr, $conditionStr) !== false;
-            case 'equals':
-                return $fieldStr === $conditionStr;
-            case 'greater_than':
-                if (is_numeric($fieldValue) && is_numeric($conditionValue)) {
-                    return (float)$fieldValue > (float)$conditionValue;
-                }
-
-                return $fieldStr > $conditionStr; // Lexicographical comparison
-            case 'less_than':
-                if (is_numeric($fieldValue) && is_numeric($conditionValue)) {
-                    return (float)$fieldValue < (float)$conditionValue;
-                }
-
-                return $fieldStr < $conditionStr; // Lexicographical comparison
-            case 'regex':
-                return @preg_match('/' . str_replace('/', '\/', $conditionStr) . '/m', $fieldStr) === 1;
-            default:
-                return false;
-        }
+        // Default to string comparison
+        return $this->evaluateStringCondition($fieldValue, $conditionValue, $operator, $caseSensitive);
     }
 
     /**
@@ -506,7 +632,6 @@ class FilterService
             return null;
         }
 
-        // If there's only one key at this level, go deeper
         if (count($data) === 1) {
             $key   = array_key_first($data);
             $value = $data[$key];
@@ -558,26 +683,25 @@ class FilterService
     {
         switch($dataType) {
             case 'boolean':
-                return ['equals', 'exists', 'is_true', 'is_false'];
+                return [self::OPERATOR_EQUALS, self::OPERATOR_EXISTS, self::OPERATOR_IS_TRUE, self::OPERATOR_IS_FALSE];
 
             case 'number':
-                return ['equals', 'greater_than', 'less_than', 'exists'];
+                return [self::OPERATOR_EQUALS, self::OPERATOR_GREATER_THAN, self::OPERATOR_LESS_THAN, self::OPERATOR_EXISTS];
 
             case 'date':
-                return ['equals', 'greater_than', 'less_than', 'exists'];
+                return [self::OPERATOR_EQUALS, self::OPERATOR_GREATER_THAN, self::OPERATOR_LESS_THAN, self::OPERATOR_EXISTS];
 
             case 'string':
                 // Added greater_than and less_than for string lexicographical comparison
-                return ['contains', 'equals', 'greater_than', 'less_than', 'regex', 'exists'];
+                return [self::OPERATOR_CONTAINS, self::OPERATOR_EQUALS, self::OPERATOR_GREATER_THAN, self::OPERATOR_LESS_THAN, self::OPERATOR_REGEX, self::OPERATOR_EXISTS];
 
             case 'array':
-                return ['contains', 'exists'];
+                return [self::OPERATOR_CONTAINS, self::OPERATOR_EXISTS];
 
             case 'unknown':
-                throw new ValidationError("Unknown data type cannot be filtered");
-
             default:
-                return ['contains', 'equals', 'greater_than', 'less_than', 'regex', 'exists'];
+                // Return all supported operators for unknown or default cases
+                return [self::OPERATOR_CONTAINS, self::OPERATOR_EQUALS, self::OPERATOR_GREATER_THAN, self::OPERATOR_LESS_THAN, self::OPERATOR_REGEX, self::OPERATOR_EXISTS];
         }
     }
 
