@@ -2,6 +2,7 @@ import { AnyObject, UploadedFile } from "quasar-ui-danx";
 
 export interface Artifact {
 	id: number;
+	original_artifact_id?: number;
 	name: string;
 	position: number;
 	model: string;

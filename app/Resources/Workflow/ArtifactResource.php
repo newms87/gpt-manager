@@ -13,6 +13,7 @@ class ArtifactResource extends ActionResource
     {
         return [
             'id'                    => $artifact->id,
+            'original_artifact_id'  => $artifact->original_artifact_id,
             'name'                  => $artifact->name,
             'position'              => $artifact->position,
             'model'                 => $artifact->model,

@@ -118,7 +118,7 @@ class BaseTaskRunner implements TaskRunnerContract
 
         if ($artifacts) {
             TaskRunnerService::validateArtifacts($artifacts);
-            $artifacts = self::copyArtifactsIfPassedFromSourceTask($artifacts);
+            static::prepareArtifactsForOutput($artifacts);
 
             static::log("Attaching artifacts to task run and process: " . collect($artifacts)->pluck('id')->toJson());
 
@@ -193,38 +193,21 @@ class BaseTaskRunner implements TaskRunnerContract
     }
 
     /**
-     * Get a list of fresh artifacts to attach and manipulate for the current process / task. Any artifacts that
-     * were created by a different task should be copied to this task so we do not modify the original artifacts
+     * Prepare the artifacts for output by associating them to the task definition of this task run
+     * and setting their position in the list
      *
      * @param Artifact[]|Collection $artifacts
      */
-    public function copyArtifactsIfPassedFromSourceTask(array|Collection|EloquentCollection $artifacts): array
+    public function prepareArtifactsForOutput(array|Collection|EloquentCollection $artifacts): void
     {
-        $copiedArtifacts = [];
-
         foreach($artifacts as $artifact) {
-            // If this artifact belongs to a different task, it should be copied so we do not modify the output artifacts of the original task
-            // Otherwise, this artifact was created for this task and doesn't need to be copied
-            if ($artifact->task_definition_id && $artifact->task_definition_id !== $this->taskDefinition->id) {
-                $copiedArtifact = $artifact->replicate(['parent_artifact_id']);
-            } else {
-                $copiedArtifact = $artifact;
-            }
-
             // Always make sure the artifact is for this task definition
-            $copiedArtifact->task_definition_id = $this->taskDefinition->id;
-            if (!$copiedArtifact->position) {
-                $copiedArtifact->position = $this->resolveArtifactPosition($artifact, $artifacts);
+            $artifact->task_definition_id = $this->taskDefinition->id;
+            if (!$artifact->position) {
+                $artifact->position = $this->resolveArtifactPosition($artifact, $artifacts);
             }
-            $copiedArtifact->save();
-
-            // Copy the stored files
-            $copiedArtifact->storedFiles()->sync($artifact->storedFiles->pluck('id')->toArray());
-
-            $copiedArtifacts[] = $copiedArtifact;
+            $artifact->save();
         }
-
-        return $copiedArtifacts;
     }
 
     /**

@@ -1,7 +1,7 @@
 <template>
 	<div class="bg-slate-900 p-2 rounded-lg">
 		<div class="flex-x mb-2 space-x-2 w-full max-w-full overflow-hidden">
-			<LabelPillWidget :label="`Artifact: ${artifact.id}`" color="sky" size="xs" class="flex-shrink-0" />
+			<LabelPillWidget :label="idLabel" color="sky" size="xs" class="flex-shrink-0" />
 			<LabelPillWidget :label="fDateTime(artifact.created_at)" color="blue" size="xs" class="flex-shrink-0" />
 			<LabelPillWidget :label="artifact.position" color="green" size="xs" class="flex-shrink-0" />
 			<div class="flex-grow min-w-0 overflow-hidden">{{ artifact.name }}</div>
@@ -138,6 +138,8 @@ const isShowingGroup = ref(props.showGroup);
 
 const childArtifacts = shallowRef([]);
 
+const idLabel = computed(() => "Artifact: " + (props.artifact.original_artifact_id ? props.artifact.original_artifact_id + " -> " : "") + props.artifact.id);
+
 const isShowingAll = computed(() =>
 	(!hasText.value || isShowingText.value) &&
 	(!hasFiles.value || isShowingFiles.value) &&
@@ -181,7 +183,7 @@ async function loadChildArtifacts() {
 		filter: {
 			parent_artifact_id: props.artifact.id
 		}
-	});
+	}, { abortOn: "child-artifacts:" + props.artifact.id });
 	childArtifacts.value = data;
 }
 </script>

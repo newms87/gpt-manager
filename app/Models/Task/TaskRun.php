@@ -116,9 +116,9 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         return $this->morphOne(UsageSummary::class, 'object');
     }
 
-    public function syncInputArtifacts($artifacts, $sourceTaskDefinitionId = null): static
+    public function syncInputArtifacts($artifacts): static
     {
-        $this->inputArtifacts()->syncWithPivotValues(collect($artifacts)->pluck('id'), ['source_task_definition_id' => $sourceTaskDefinitionId], false);
+        $this->inputArtifacts()->sync(collect($artifacts)->pluck('id')->toArray());
         $this->updateRelationCounter('inputArtifacts');
 
         return $this;

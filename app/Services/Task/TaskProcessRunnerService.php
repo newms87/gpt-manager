@@ -5,11 +5,14 @@ namespace App\Services\Task;
 use App\Jobs\ExecuteTaskProcessJob;
 use App\Jobs\WorkflowApiInvocationWebhookJob;
 use App\Models\Schema\SchemaAssociation;
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Traits\HasDebugLogging;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as EloquentCollection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Models\Job\JobDispatch;
@@ -46,7 +49,8 @@ class TaskProcessRunnerService
         }
 
         if ($artifacts->isNotEmpty()) {
-            $taskProcess->inputArtifacts()->saveMany($artifacts);
+            $copiedArtifacts = static::copyInputArtifactsForProcesses($taskRun, $artifacts);
+            $taskProcess->inputArtifacts()->saveMany($copiedArtifacts);
             $taskProcess->updateRelationCounter('inputArtifacts');
         }
 
@@ -55,6 +59,34 @@ class TaskProcessRunnerService
         static::log("Prepared $taskProcess");
 
         return $taskProcess;
+    }
+
+    /**
+     * Copy the input artifacts for the task run. This will copy the artifacts to the new task run and assign the
+     * task_definition_id
+     *
+     * @param Artifact[]|Collection $artifacts
+     */
+    public static function copyInputArtifactsForProcesses(TaskRun $taskRun, array|Collection|EloquentCollection $artifacts): array
+    {
+        $copiedArtifacts = [];
+
+        foreach($artifacts as $artifact) {
+            // If the current task does not own the artifact, we need to copy it
+            if ($taskRun->task_definition_id !== $artifact->task_definition_id) {
+                $copiedArtifact                       = $artifact->replicate(['parent_artifact_id']);
+                $copiedArtifact->original_artifact_id = $artifact->id;
+                $copiedArtifact->save();
+
+                // Copy the stored files
+                $copiedArtifact->storedFiles()->sync($artifact->storedFiles->pluck('id')->toArray());
+                $copiedArtifacts[] = $copiedArtifact;
+            } else {
+                $copiedArtifacts[] = $artifact;
+            }
+        }
+
+        return $copiedArtifacts;
     }
 
     /**

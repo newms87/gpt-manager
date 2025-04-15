@@ -55,6 +55,11 @@ class Artifact extends Model implements AuditableContract
         return $this->schemaDefinition()->withTrashed()->first()->canView();
     }
 
+    public function original(): BelongsTo|Artifact
+    {
+        return $this->belongsTo(Artifact::class, 'original_artifact_id');
+    }
+    
     public function parent(): BelongsTo|Artifact
     {
         return $this->belongsTo(Artifact::class, 'parent_artifact_id');
