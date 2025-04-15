@@ -129,6 +129,16 @@ class FilterService
         $dataType = 'string';
         if (is_bool($fieldValue)) {
             $dataType = 'boolean';
+        } elseif (is_numeric($fieldValue) && ($fieldValue === 1 || $fieldValue === 0) && isset($condition['fragment_selector'])) {
+            // Special case: If we have a numeric 1/0 value and the fragment selector indicates boolean type,
+            // treat it as a boolean instead of a number
+            $selectorDataType = $this->getDataTypeFromFragmentSelector($condition['fragment_selector']);
+            if ($selectorDataType === 'boolean') {
+                $dataType = 'boolean';
+                $fieldValue = (bool)$fieldValue; // Convert to actual boolean
+            } else {
+                $dataType = 'number';
+            }
         } elseif (is_numeric($fieldValue)) {
             $dataType = 'number';
         }
@@ -273,9 +283,19 @@ class FilterService
             $fieldValue = false;
         }
 
+        // Convert numeric values to booleans for comparison
+        if (is_numeric($fieldValue)) {
+            $fieldValue = (bool)$fieldValue;
+        }
+        
+        if (is_numeric($conditionValue)) {
+            $conditionValue = (bool)$conditionValue;
+        }
+
         // Only equals operator is valid for booleans
         if ($operator === 'equals') {
-            return (bool)$fieldValue === (bool)$conditionValue;
+            // Use loose comparison for boolean values to handle mixed data types (like 1 == true)
+            return $fieldValue == $conditionValue;
         }
 
         // New boolean-specific operators
