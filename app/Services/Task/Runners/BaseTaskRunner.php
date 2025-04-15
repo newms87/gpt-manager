@@ -7,6 +7,7 @@ use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
+use App\Services\Task\ArtifactsMergeService;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Task\TaskRunnerService;
 use App\Traits\HasDebugLogging;
@@ -146,8 +147,9 @@ class BaseTaskRunner implements TaskRunnerContract
             case TaskDefinition::OUTPUT_ARTIFACT_MODE_GROUP_ALL:
                 static::log("Grouping all artifacts into a single artifact");
 
-                $topLevelArtifact = $this->resolveSingletonTaskRunArtifact();
+                $topLevelArtifact = $this->resolveSingletonTaskRunArtifact($artifacts);
                 $topLevelArtifact->children()->saveMany($artifacts);
+                $topLevelArtifact->updateRelationCounter('children');
 
                 // The processes will still output all the artifacts it produces, the roll up happens at the task level
                 // so keep the task run artifact IDs set to null
@@ -158,11 +160,10 @@ class BaseTaskRunner implements TaskRunnerContract
             case TaskDefinition::OUTPUT_ARTIFACT_MODE_PER_PROCESS:
                 static::log("Grouping all artifacts into a single artifact per process");
 
-                $processArtifact = Artifact::create([
-                    'name'               => $this->taskProcess->name,
-                    'task_definition_id' => $this->taskDefinition->id,
-                ]);
+                $processArtifact = $this->createMergedArtifactFromTopLevel($artifacts);
+
                 $processArtifact->children()->saveMany($artifacts);
+                $processArtifact->updateRelationCounter('children');
 
                 // The process will have a single artifact containing a group of all the produced artifacts
                 $processArtifactIds = [$processArtifact->id];
@@ -245,7 +246,7 @@ class BaseTaskRunner implements TaskRunnerContract
      * For group all mode we need to make sure we have 1 single artifact across all processes attached to the task run
      * So lock the task run and resolve the top level artifact
      */
-    public function resolveSingletonTaskRunArtifact(): Artifact
+    public function resolveSingletonTaskRunArtifact($artifacts): Artifact
     {
         LockHelper::acquire($this->taskRun);
 
@@ -253,10 +254,7 @@ class BaseTaskRunner implements TaskRunnerContract
             $taskRunArtifact = $this->taskRun->outputArtifacts()->first();
 
             if (!$taskRunArtifact) {
-                $taskRunArtifact = Artifact::create([
-                    'name'               => $this->taskRun->name,
-                    'task_definition_id' => $this->taskDefinition->id,
-                ]);
+                $taskRunArtifact = $this->createMergedArtifactFromTopLevel($artifacts);
                 $this->taskRun->outputArtifacts()->sync($taskRunArtifact);
                 $this->taskRun->updateRelationCounter('outputArtifacts');
             }
@@ -265,5 +263,30 @@ class BaseTaskRunner implements TaskRunnerContract
         } finally {
             LockHelper::release($this->taskRun);
         }
+    }
+
+    /**
+     * @param Artifact[]|Collection $artifacts
+     * @return Artifact
+     */
+    public function createMergedArtifactFromTopLevel($artifacts): Artifact
+    {
+        $topLevels = [];
+        foreach($artifacts as $artifact) {
+            $currentLevel = $artifact;
+
+            while($currentLevel->parent_id) {
+                $currentLevel = $currentLevel->parent;
+            }
+
+            $topLevels[$currentLevel->id] = $currentLevel;
+        }
+
+        $mergedArtifact = app(ArtifactsMergeService::class)->merge($topLevels);
+
+        $mergedArtifact->task_definition_id = $this->taskDefinition->id;
+        $mergedArtifact->save();
+
+        return $mergedArtifact;
     }
 }

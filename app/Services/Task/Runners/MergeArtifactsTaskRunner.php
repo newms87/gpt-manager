@@ -2,9 +2,7 @@
 
 namespace App\Services\Task\Runners;
 
-use App\Models\Task\Artifact;
-use Newms87\Danx\Helpers\ArrayHelper;
-use Newms87\Danx\Helpers\StringHelper;
+use App\Services\Task\ArtifactsMergeService;
 
 class MergeArtifactsTaskRunner extends BaseTaskRunner
 {
@@ -17,39 +15,7 @@ class MergeArtifactsTaskRunner extends BaseTaskRunner
         $outputArtifacts = [];
 
         foreach($groupedArtifacts as $artifactsInGroup) {
-            $pages = [];
-            foreach($artifactsInGroup as $inputArtifact) {
-                $pages[] = $inputArtifact->position;
-            }
-            sort($pages);
-            $mergedArtifact = Artifact::create([
-                'name'     => "Merged Artifact (Pages " . StringHelper::formatPageRanges($pages) . ")",
-                'position' => $pages[0] ?? 0,
-            ]);
-
-            foreach($artifactsInGroup as $inputArtifact) {
-                if ($inputArtifact->storedFiles->isNotEmpty()) {
-                    $mergedArtifact->storedFiles()->syncWithoutDetaching($inputArtifact->storedFiles->pluck('id'));
-                }
-
-                if ($inputArtifact->text_content) {
-                    $mergedArtifact->text_content = ($mergedArtifact->text_content ? "$mergedArtifact->text_content\n\n-----\n\n" : "") .
-                        "# Page $inputArtifact->position\n\n" . $inputArtifact->text_content;
-                }
-
-                if ($inputArtifact->json_content) {
-                    $mergedArtifact->json_content = ArrayHelper::mergeArraysRecursivelyUnique($mergedArtifact->json_content ?? [], $inputArtifact->json_content);
-                }
-
-                if ($inputArtifact->meta) {
-                    $mergedArtifact->meta = ArrayHelper::mergeArraysRecursivelyUnique($mergedArtifact->meta ?? [], $inputArtifact->meta);
-                }
-            }
-            
-            $mergedArtifact->children()->saveMany($artifactsInGroup);
-            $mergedArtifact->updateRelationCounter('children');
-
-            $outputArtifacts[] = $mergedArtifact;
+            $outputArtifacts[] = app(ArtifactsMergeService::class)->merge($artifactsInGroup);
         }
 
         $this->complete($outputArtifacts);
