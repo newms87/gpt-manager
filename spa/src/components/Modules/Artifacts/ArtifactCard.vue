@@ -2,6 +2,15 @@
 	<div class="bg-slate-900 p-2 rounded-lg">
 		<div class="flex-x mb-2 space-x-2 w-full max-w-full overflow-hidden">
 			<LabelPillWidget :label="idLabel" color="sky" size="xs" class="flex-shrink-0" />
+			<LabelPillWidget
+				v-if="artifact.task_process_id"
+				:label="`pid: ${artifact.task_process_id}`"
+				color="sky"
+				size="xs"
+				class="cursor-pointer hover:outline outline-2 outline-sky-700 underline hover:text-sky-300"
+				:class="{'outline !outline-4 outline-sky-400 !text-sky-300': isShowingTaskProcess}"
+				@click="toggleShowTaskProcess"
+			/>
 			<LabelPillWidget :label="fDateTime(artifact.created_at)" color="blue" size="xs" class="flex-shrink-0" />
 			<LabelPillWidget :label="artifact.position" color="green" size="xs" class="flex-shrink-0" />
 			<div class="flex-grow min-w-0 overflow-hidden">{{ artifact.name }}</div>
@@ -56,6 +65,10 @@
 			/>
 		</div>
 		<ListTransition>
+			<div v-if="isShowingTaskProcess">
+				<NodeTaskProcessCard v-if="taskProcess" :task-process="taskProcess" class="bg-slate-700 p-4" />
+				<QSkeleton v-else class="h-20 w-full" />
+			</div>
 			<div v-if="artifact.files?.length && isShowingFiles">
 				<div class="flex items-stretch justify-start">
 					<FilePreview
@@ -103,7 +116,9 @@
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import { dxArtifact } from "@/components/Modules/Artifacts/config";
-import { Artifact } from "@/types";
+import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
+import NodeTaskProcessCard from "@/components/Modules/WorkflowCanvas/NodeTaskProcessCard";
+import { Artifact, TaskProcess } from "@/types";
 import {
 	FaSolidBarcode as MetaIcon,
 	FaSolidDatabase as JsonIcon,
@@ -136,6 +151,7 @@ const isShowingFiles = ref(props.showFiles);
 const isShowingJson = ref(props.showJson);
 const isShowingMeta = ref(props.showMeta);
 const isShowingGroup = ref(props.showGroup);
+const isShowingTaskProcess = ref(false);
 
 const childArtifacts = shallowRef([]);
 
@@ -179,13 +195,14 @@ watch(() => isShowingGroup.value, () => {
 	}
 });
 
+const artifactsField = {
+	text_content: true,
+	json_content: true,
+	meta: true,
+	files: { transcodes: true, thumb: true }
+};
+
 async function loadChildArtifacts() {
-	const artifactsField = {
-		text_content: true,
-		json_content: true,
-		meta: true,
-		files: { transcodes: true, thumb: true }
-	};
 
 	const { data } = await dxArtifact.routes.list({
 		filter: {
@@ -194,5 +211,19 @@ async function loadChildArtifacts() {
 		fields: artifactsField
 	}, { abortOn: "child-artifacts:" + props.artifact.id });
 	childArtifacts.value = data;
+}
+
+const taskProcess = shallowRef<TaskProcess>(null);
+async function toggleShowTaskProcess() {
+	if (!props.artifact.task_process_id) return;
+
+	isShowingTaskProcess.value = !isShowingTaskProcess.value;
+
+	if (isShowingTaskProcess.value) {
+		taskProcess.value = await dxTaskProcess.routes.details({ id: props.artifact.task_process_id } as TaskProcess, {
+			inputArtifacts: true,
+			outputArtifacts: true
+		}) as TaskProcess;
+	}
 }
 </script>

@@ -59,7 +59,7 @@ class Artifact extends Model implements AuditableContract
     {
         return $this->belongsTo(Artifact::class, 'original_artifact_id');
     }
-    
+
     public function parent(): BelongsTo|Artifact
     {
         return $this->belongsTo(Artifact::class, 'parent_artifact_id');
@@ -83,6 +83,11 @@ class Artifact extends Model implements AuditableContract
     public function artifactables(): HasMany|Artifactable
     {
         return $this->hasMany(Artifactable::class);
+    }
+
+    public function taskProcess(): BelongsTo|TaskProcess
+    {
+        return $this->belongsTo(TaskProcess::class);
     }
 
     public function storedFiles(): MorphToMany|StoredFile

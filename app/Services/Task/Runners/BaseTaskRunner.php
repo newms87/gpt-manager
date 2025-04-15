@@ -203,6 +203,7 @@ class BaseTaskRunner implements TaskRunnerContract
     {
         foreach($artifacts as $artifact) {
             // Always make sure the artifact is for this task definition
+            $artifact->task_process_id    = $this->taskProcess->id;
             $artifact->task_definition_id = $this->taskDefinition->id;
             if (!$artifact->position) {
                 $artifact->position = $this->resolveArtifactPosition($artifact, $artifacts);

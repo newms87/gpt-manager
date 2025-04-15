@@ -3,7 +3,7 @@
 		:color="count > 0 ? activeColor : 'slate-mid'"
 		size="xs"
 		class="node-artifacts-button flex items-center justify-center flex-nowrap flex-shrink-1"
-		:class="{'cursor-pointer': !disabled, 'cursor-not-allowed': disabled}"
+		:class="{'cursor-pointer': !disabled, 'cursor-not-allowed': disabled, 'outline outline-4 outline-sky-700': focused}"
 		@click="onShow"
 	>
 		{{ count || 0 }}
@@ -19,6 +19,7 @@ const props = withDefaults(defineProps<{
 	count?: number;
 	activeColor?: LabelPillWidgetProps["color"];
 	disabled?: boolean;
+	focused?: boolean;
 }>(), {
 	count: 0,
 	activeColor: "sky"

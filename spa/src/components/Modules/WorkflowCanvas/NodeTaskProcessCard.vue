@@ -1,14 +1,14 @@
 <template>
 	<div class="flex items-start flex-nowrap space-x-2">
-		<NodeArtifactsButton
-			class="mt-2"
-			:count="taskProcess.inputArtifacts?.length || 0"
-			active-color="sky"
-			:disabled="!taskProcess"
-			@show="isShowingInputArtifacts = !isShowingInputArtifacts"
-		/>
-		<div class="flex-grow min-w-0 overflow-hidden">
-			<div v-if="taskProcess.activity" class="flex-grow flex-x space-x-2">
+		<div class="flex-grow min-w-0 overflow-hidden px-2">
+			<div class="flex-grow flex-x space-x-2">
+				<NodeArtifactsButton
+					:count="taskProcess.inputArtifacts?.length || 0"
+					active-color="sky"
+					:disabled="!taskProcess"
+					:focused="isShowingInputArtifacts"
+					@show="isShowingInputArtifacts = !isShowingInputArtifacts"
+				/>
 				<div class="flex-grow rounded p-2 bg-slate-900 text-slate-400">
 					{{ taskProcess.activity }}
 				</div>
@@ -30,10 +30,17 @@
 						@update:model-value="refreshJobDispatchesRelation"
 					/>
 				</div>
+				<NodeArtifactsButton
+					:count="taskProcess.outputArtifacts?.length"
+					active-color="green"
+					:focused="isShowingOutputArtifacts"
+					:disabled="!taskProcess"
+					@show="isShowingOutputArtifacts = !isShowingOutputArtifacts"
+				/>
 			</div>
 			<div class="flex-x space-x-2 mt-2">
-				<LabelPillWidget :label="taskProcess.id" color="sky" size="xs" />
-				<LabelPillWidget :label="taskProcess.name" color="blue" size="xs" />
+				<LabelPillWidget :label="`pid: ${taskProcess.id}`" color="sky" size="xs" class="whitespace-nowrap" />
+				<LabelPillWidget :label="taskProcess.name" color="blue" size="xs" class="text-center max-w-64" />
 				<div class="flex-grow overflow-hidden">
 					<QLinearProgress size="29px" :value="taskProcess.percent_complete / 100" class="w-full rounded bg-sky-950">
 						<div class="absolute-full flex flex-center">
@@ -71,13 +78,13 @@
 					size="sm"
 				/>
 			</div>
-			<ListTransition class="space-y-4 mt-4">
+			<ListTransition>
 				<ArtifactList
 					v-if="isShowingInputArtifacts"
 					title="Input Artifacts"
 					title-class="text-sky-300"
 					dense
-					class="bg-sky-950 p-2 rounded max-w-full"
+					class="bg-sky-950 p-2 rounded max-w-full mt-4"
 					:artifacts="taskProcess.inputArtifacts"
 				/>
 				<ArtifactList
@@ -85,15 +92,15 @@
 					title="Output Artifacts"
 					title-class="text-green-300"
 					dense
-					class="bg-green-950 p-2 rounded max-w-full"
+					class="bg-green-950 p-2 rounded max-w-full mt-4"
 					:artifacts="taskProcess.outputArtifacts"
 				/>
 				<JobDispatchList
 					v-if="isShowingJobDispatches"
-					class="p-2 border-t border-slate-400"
+					class="p-2 border-t border-slate-400 mt-4"
 					:jobs="taskProcess.jobDispatches"
 				/>
-				<div v-if="isShowingAgentThread" class="bg-slate-900 p-4 rounded">
+				<div v-if="isShowingAgentThread" class="bg-slate-900 p-4 rounded mt-4">
 					<TaskProcessAgentThreadCard v-if="taskProcess.agentThread" :agent-thread="taskProcess.agentThread" />
 					<QSkeleton v-else-if="!hasLoadedAgentThread" class="h-24" />
 					<div v-else class="p-2 text-center">
@@ -102,13 +109,6 @@
 				</div>
 			</ListTransition>
 		</div>
-		<NodeArtifactsButton
-			class="mt-2"
-			:count="taskProcess.outputArtifacts?.length"
-			active-color="green"
-			:disabled="!taskProcess"
-			@show="isShowingOutputArtifacts = !isShowingOutputArtifacts"
-		/>
 	</div>
 </template>
 

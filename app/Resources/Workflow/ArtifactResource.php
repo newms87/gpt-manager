@@ -3,6 +3,7 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Task\Artifact;
+use App\Resources\TaskDefinition\TaskProcessResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 use Newms87\Danx\Resources\StoredFileResource;
@@ -26,14 +27,17 @@ class ArtifactResource extends ActionResource
             ],
             'files'                 => fn($fields) => StoredFileResource::collection($artifact->storedFiles->load('transcodes'), $fields),
             'meta'                  => fn($fields) => $artifact->meta,
+            'task_process_id'       => $artifact->task_process_id,
+            'taskProcess'           => fn($fields) => TaskProcessResource::make($artifact->taskProcess, $fields),
         ];
     }
 
     public static function details(Model $model, ?array $includeFields = null): array
     {
         return static::make($model, $includeFields ?? [
-            '*'     => true,
-            'files' => false,
+            '*'           => true,
+            'files'       => false,
+            'taskProcess' => false,
         ]);
     }
 }
