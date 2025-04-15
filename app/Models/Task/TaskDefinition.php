@@ -169,6 +169,8 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
             'agent_id'              => $service->registerRelatedModel($this->agent),
             'response_format'       => $this->response_format,
             'artifact_split_mode'   => $this->artifact_split_mode,
+            'input_artifact_levels' => $this->input_artifact_levels,
+            'output_artifact_mode'  => $this->output_artifact_mode,
             'timeout_after_seconds' => $this->timeout_after_seconds,
         ]);
     }
