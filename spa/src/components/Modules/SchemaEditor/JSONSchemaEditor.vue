@@ -22,6 +22,8 @@
 			</div>
 		</div>
 
+		<slot />
+
 		<QSeparator v-if="isSchemaVisible && !dialog" class="bg-slate-600 my-4" />
 
 		<div v-if="isSchemaVisible && !dialog" class="flex-grow overflow-y-auto h-full pb-8">
@@ -88,7 +90,7 @@ import { FaSolidCode as RawCodeIcon } from "danx-icon";
 import { FullScreenDialog, SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
-defineEmits<{ close: void }>();
+defineEmits<{ close: () => void }>();
 const props = defineProps<{
 	schemaDefinition?: SchemaDefinition;
 	savedAt?: string;

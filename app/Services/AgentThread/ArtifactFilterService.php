@@ -8,18 +8,23 @@ use App\Services\JsonSchema\JsonSchemaService;
 
 class ArtifactFilterService
 {
-    private ?Artifact $artifact         = null;
-    private bool      $includeText      = true;
-    private bool      $includeFiles     = true;
-    private bool      $includeJson      = true;
-    private array     $fragmentSelector = [];
+    private ?Artifact $artifact             = null;
+    private bool      $includeText          = true;
+    private bool      $includeFiles         = true;
+    private bool      $includeJson          = true;
+    private bool      $includeMeta          = true;
+    private array     $jsonFragmentSelector = [];
+    private array     $metaFragmentSelector = [];
 
     public function setFilter(TaskArtifactFilter $artifactFilter): static
     {
-        $this->includeFiles     = $artifactFilter->include_files;
-        $this->includeJson      = $artifactFilter->include_json;
-        $this->includeText      = $artifactFilter->include_text;
-        $this->fragmentSelector = $artifactFilter->schemaFragment?->fragment_selector ?? [];
+        $this->includeFiles = $artifactFilter->include_files;
+        $this->includeJson  = $artifactFilter->include_json;
+        $this->includeText  = $artifactFilter->include_text;
+        $this->includeMeta  = $artifactFilter->include_meta;
+
+        $this->jsonFragmentSelector = $artifactFilter->schemaFragment?->fragment_selector ?? [];
+        $this->metaFragmentSelector = $artifactFilter->meta_fragment_selector ?? [];
 
         return $this;
     }
@@ -47,10 +52,23 @@ class ArtifactFilterService
 
     public function includeJson(bool $included = true, array $fragmentSelector = []): static
     {
-        $this->includeJson      = $included;
-        $this->fragmentSelector = $fragmentSelector;
+        $this->includeJson          = $included;
+        $this->jsonFragmentSelector = $fragmentSelector;
 
         return $this;
+    }
+
+    public function includeMeta(bool $included = true, array $fragmentSelector = []): static
+    {
+        $this->includeMeta          = $included;
+        $this->metaFragmentSelector = $fragmentSelector;
+
+        return $this;
+    }
+
+    public function hasText(): bool
+    {
+        return $this->includeText && $this->artifact->text_content;
     }
 
     public function hasFiles(): bool
@@ -63,14 +81,14 @@ class ArtifactFilterService
         return $this->includeJson && $this->artifact->json_content;
     }
 
-    public function hasText(): bool
+    public function hasMeta(): bool
     {
-        return $this->includeText && $this->artifact->text_content;
+        return $this->includeMeta && $this->artifact->meta;
     }
 
     public function isTextOnly(): bool
     {
-        return $this->includeText && !$this->hasFiles() && !$this->hasJson();
+        return $this->includeText && !$this->hasFiles() && !$this->hasJson() && !$this->hasMeta();
     }
 
     /**
@@ -86,7 +104,11 @@ class ArtifactFilterService
             return false;
         }
 
-        if ($this->hasJson() && $this->getFilteredData()) {
+        if ($this->hasJson() && $this->getFilteredJson()) {
+            return false;
+        }
+
+        if ($this->hasMeta() && $this->getFilteredMeta()) {
             return false;
         }
 
@@ -98,13 +120,22 @@ class ArtifactFilterService
         return $this->artifact->text_content;
     }
 
-    public function getFilteredData(): ?array
+    public function getFilteredJson(): ?array
     {
-        if ($this->fragmentSelector) {
-            return app(JsonSchemaService::class)->useId()->filterDataByFragmentSelector($this->artifact->json_content ?? [], $this->fragmentSelector);
+        if ($this->jsonFragmentSelector) {
+            return app(JsonSchemaService::class)->useId()->filterDataByFragmentSelector($this->artifact->json_content ?? [], $this->jsonFragmentSelector);
         }
 
         return $this->artifact->json_content;
+    }
+
+    public function getFilteredMeta(): ?array
+    {
+        if ($this->metaFragmentSelector) {
+            return app(JsonSchemaService::class)->filterDataByFragmentSelector($this->artifact->meta ?? [], $this->metaFragmentSelector);
+        }
+
+        return $this->artifact->meta;
     }
 
     /**
@@ -123,9 +154,15 @@ class ArtifactFilterService
         }
 
         if ($this->hasJson()) {
-            $filteredArtifact->json_content = $this->getFilteredData();
+            $filteredArtifact->json_content = $this->getFilteredJson();
         } else {
             $filteredArtifact->json_content = null;
+        }
+
+        if ($this->hasMeta()) {
+            $filteredArtifact->meta = $this->getFilteredMeta();
+        } else {
+            $filteredArtifact->meta = null;
         }
 
         // Save all items on the artifact (before adding files, so we have an ID to associate to)
@@ -158,7 +195,11 @@ class ArtifactFilterService
             }
 
             if ($this->hasJson()) {
-                $data['json_content'] = $this->getFilteredData();
+                $data['json_content'] = $this->getFilteredJson();
+            }
+
+            if ($this->hasMeta()) {
+                $data['meta'] = $this->getFilteredMeta();
             }
 
             return $data;

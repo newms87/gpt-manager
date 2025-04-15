@@ -21,15 +21,19 @@ class TaskArtifactFilter extends Model implements AuditableContract, ResourcePac
         'include_text',
         'include_files',
         'include_json',
+        'include_meta',
         'schema_fragment_id',
+        'meta_fragment_selector',
     ];
 
     public function casts(): array
     {
         return [
-            'include_text'  => 'boolean',
-            'include_files' => 'boolean',
-            'include_json'  => 'boolean',
+            'include_text'           => 'boolean',
+            'include_files'          => 'boolean',
+            'include_json'           => 'boolean',
+            'include_meta'           => 'boolean',
+            'meta_fragment_selector' => 'json',
         ];
     }
 
@@ -58,12 +62,14 @@ class TaskArtifactFilter extends Model implements AuditableContract, ResourcePac
             'include_text'              => $this->include_text,
             'include_files'             => $this->include_files,
             'include_json'              => $this->include_json,
+            'include_meta'              => $this->include_meta,
             'schema_fragment_id'        => $this->schema_fragment_id,
+            'meta_fragment_selector'    => $this->meta_fragment_selector,
         ]);
     }
 
     public function __toString()
     {
-        return "<ArtifactFilter ($this->id) text='$this->include_text' files='$this->include_files' json='$this->include_json'>";
+        return "<ArtifactFilter ($this->id) text='$this->include_text' files='$this->include_files' json='$this->include_json' meta='$this->include_meta'>";
     }
 }

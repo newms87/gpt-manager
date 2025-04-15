@@ -4,6 +4,7 @@ import {
 	AgentResponseFormat,
 	AgentThread,
 	Artifact,
+	FragmentSelector,
 	PromptDirective,
 	SchemaAssociation,
 	SchemaDefinition,
@@ -49,8 +50,10 @@ export interface TaskArtifactFilter extends ActionTargetItem {
 	include_text: boolean;
 	include_files: boolean;
 	include_json: boolean;
+	include_meta: boolean;
 	schema_fragment_id?: string;
 	schemaFragment?: SchemaFragment;
+	meta_fragment_selector?: FragmentSelector;
 }
 
 export type ArtifactSplitMode = "" | "Node" | "Artifact";

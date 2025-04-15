@@ -15,6 +15,7 @@ class TaskArtifactFilterFactory extends Factory
             'include_text'              => true,
             'include_files'             => true,
             'include_json'              => true,
+            'include_meta'              => true,
             'fragment_selector'         => null,
         ];
     }

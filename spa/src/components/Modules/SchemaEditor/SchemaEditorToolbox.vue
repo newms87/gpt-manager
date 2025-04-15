@@ -103,6 +103,7 @@
 						tooltip="Show Example Response"
 					/>
 				</template>
+				<slot />
 			</JSONSchemaEditor>
 
 			<SchemaResponseExampleCard v-if="isShowingExample" :schema-definition="activeSchema" />

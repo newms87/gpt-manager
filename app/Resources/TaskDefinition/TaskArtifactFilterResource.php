@@ -17,7 +17,9 @@ class TaskArtifactFilterResource extends ActionResource
             'include_files'             => $taskArtifactFilter->include_files,
             'include_text'              => $taskArtifactFilter->include_text,
             'include_json'              => $taskArtifactFilter->include_json,
+            'include_meta'              => $taskArtifactFilter->include_meta,
             'schemaFragment'            => SchemaFragmentResource::make($taskArtifactFilter->schemaFragment),
+            'meta_fragment_selector'    => $taskArtifactFilter->meta_fragment_selector,
         ];
     }
 }
