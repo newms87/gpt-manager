@@ -10,7 +10,7 @@
 				<QTab name="" label="All Together" />
 				<QTab name="Node" label="Per Task" />
 				<QTab name="Top-Level" label="Per Top Level" />
-				<QTab name="Artifact" label="Individual" />
+				<QTab name="Artifact" label="Per Artifact" />
 				<QTab name="Combinations" label="All Combinations" />
 			</QTabs>
 			<div>

@@ -4,7 +4,7 @@
 		<div v-else-if="artifacts.length === 0" class="text-xl text-center text-gray-500">No Artifacts</div>
 		<template v-else>
 			<div class="flex-x gap-2" :class="dense ? 'mb-4' : 'mb-8'">
-				<div class="flex-grow text-lg" :class="titleClass">{{ title }}</div>
+				<div class="flex-grow text-lg" :class="titleClass">{{ computedTitle }}</div>
 				<ShowHideButton
 					v-if="hasText"
 					v-model="isShowingText"
@@ -64,6 +64,7 @@
 				:show-meta="isShowingMeta"
 				:show-group="isShowingGroup"
 				:artifact="artifact"
+				:level="level"
 			/>
 		</template>
 	</ListTransition>
@@ -75,8 +76,8 @@ import {
 	FaSolidBarcode as MetaIcon,
 	FaSolidDatabase as JsonIcon,
 	FaSolidFile as FilesIcon,
-	FaSolidT as TextIcon,
-	FaSolidLayerGroup as GroupIcon
+	FaSolidLayerGroup as GroupIcon,
+	FaSolidT as TextIcon
 } from "danx-icon";
 import { ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
@@ -86,10 +87,12 @@ const props = withDefaults(defineProps<{
 	titleClass?: string;
 	artifacts?: Artifact[];
 	dense?: boolean;
+	level?: number;
 }>(), {
 	titleClass: "",
-	title: "Artifacts",
-	artifacts: null
+	title: null,
+	artifacts: null,
+	level: 0
 });
 
 const isShowingAll = ref(false);
@@ -104,4 +107,6 @@ const isShowingFiles = ref(false);
 const isShowingJson = ref(false);
 const isShowingMeta = ref(false);
 const isShowingGroup = ref(false);
+
+const computedTitle = computed(() => props.title === null ? (props.level ? `Level ${props.level} Artifacts` : "Top-Level Artifacts") : props.title);
 </script>

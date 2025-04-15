@@ -93,8 +93,8 @@
 				v-if="isShowingGroup"
 				:artifacts="childArtifacts"
 				dense
-				title="Child Artifacts"
 				class="bg-slate-800 p-4"
+				:level="(level||0)+1"
 			/>
 		</ListTransition>
 	</div>
@@ -122,6 +122,7 @@ const props = defineProps<{
 	showJson?: boolean;
 	showMeta?: boolean;
 	showGroup?: boolean;
+	level?: number;
 }>();
 
 const hasText = computed(() => !!props.artifact.text_content);
