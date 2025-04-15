@@ -64,7 +64,7 @@ class WorkflowRunnerService
         TaskRunnerService::syncInputArtifactsFromWorkflowSourceNodes($taskRun);
 
         // Sync any additional artifacts that did not come directly from the workflow source nodes
-        $taskRun->syncInputArtifacts($artifacts);
+        $taskRun->addInputArtifacts($artifacts);
 
         // Prepare the task processes for the task run
         TaskRunnerService::prepareTaskProcesses($taskRun);

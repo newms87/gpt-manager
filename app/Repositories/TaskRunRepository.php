@@ -39,7 +39,7 @@ class TaskRunRepository extends ActionRepository
         if ($taskInputId) {
             $taskInput = $taskDefinition->taskInputs()->findOrFail($$taskInputId);
             $taskRun->taskInput()->associate($taskInput)->save();
-            $taskRun->syncInputArtifacts([$taskInput->toArtifact()]);
+            $taskRun->addInputArtifacts([$taskInput->toArtifact()]);
         }
 
         TaskRunnerService::continue($taskRun);

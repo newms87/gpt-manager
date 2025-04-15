@@ -179,7 +179,7 @@ class TaskRunnerService
             $outputArtifacts = $taskRun->workflowRun->collectOutputArtifactsForNode($connectionAsTarget->sourceNode);
 
             // Indicate the source task definition for these artifacts so the task run knows the relationship w/ these artifacts and can apply filters, etc.
-            $taskRun->syncInputArtifacts($outputArtifacts);
+            $taskRun->addInputArtifacts($outputArtifacts);
         }
     }
 

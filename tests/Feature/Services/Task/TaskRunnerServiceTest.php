@@ -61,7 +61,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
 
         // When
         $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition);
-        $taskRun->syncInputArtifacts($artifacts);
+        $taskRun->addInputArtifacts($artifacts);
         TaskRunnerService::prepareTaskProcesses($taskRun);
 
         // Then
@@ -84,7 +84,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
 
         // When
         $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition);
-        $taskRun->syncInputArtifacts($artifacts);
+        $taskRun->addInputArtifacts($artifacts);
         TaskRunnerService::prepareTaskProcesses($taskRun);
 
         // Then

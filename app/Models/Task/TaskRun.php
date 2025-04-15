@@ -116,15 +116,15 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         return $this->morphOne(UsageSummary::class, 'object');
     }
 
-    public function syncInputArtifacts($artifacts): static
+    public function addInputArtifacts($artifacts): static
     {
-        $this->inputArtifacts()->sync(collect($artifacts)->pluck('id')->toArray());
+        $this->inputArtifacts()->syncWithoutDetaching(collect($artifacts)->pluck('id')->toArray());
         $this->updateRelationCounter('inputArtifacts');
 
         return $this;
     }
 
-    public function syncOutputArtifacts($artifacts): static
+    public function addOutputArtifacts($artifacts): static
     {
         $this->outputArtifacts()->sync(collect($artifacts)->pluck('id'));
         $this->updateRelationCounter('inputArtifacts');
