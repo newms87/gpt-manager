@@ -282,6 +282,23 @@ class JsonSchemaService
     }
 
     /**
+     * Recursively get the leaf types of a fragment selector
+     */
+    public function getFragmentSelectorLeafTypes(array $fragmentSelector): array
+    {
+        if (empty($fragmentSelector['children'])) {
+            return (array)$fragmentSelector['type'] ?? [];
+        }
+
+        $types = [];
+        foreach($fragmentSelector['children'] as $child) {
+            $types = array_merge($types, $this->getFragmentSelectorLeafTypes($child));
+        }
+
+        return array_unique($types);
+    }
+
+    /**
      * Recursively filters data using a fragment selector to select a subset of properties
      */
     public function filterDataByFragmentSelector(array $data, array $fragmentSelector = null): array

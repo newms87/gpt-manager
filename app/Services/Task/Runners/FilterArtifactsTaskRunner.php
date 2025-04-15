@@ -5,9 +5,8 @@ namespace App\Services\Task\Runners;
 use App\Models\Task\Artifact;
 use App\Services\FilterService;
 use App\Services\JsonSchema\JsonSchemaService;
-use Carbon\Carbon;
+use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log as LaravelLog;
 use Newms87\Danx\Exceptions\ValidationError;
 
 /**
@@ -15,6 +14,8 @@ use Newms87\Danx\Exceptions\ValidationError;
  */
 class FilterArtifactsTaskRunner extends BaseTaskRunner
 {
+    use HasDebugLogging;
+
     const string RUNNER_NAME = 'Filter Artifacts';
 
     /**
@@ -42,11 +43,13 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     {
         $this->activity('Filtering artifacts based on content...', 10);
 
+        $inputArtifacts = $this->taskProcess->inputArtifacts;
+
         $filterConfig = $this->config('filter_config', []);
 
         if (empty($filterConfig)) {
             $this->activity('No filter config provided, passing all artifacts through', 100);
-            $this->complete($this->taskProcess->inputArtifacts);
+            $this->complete($inputArtifacts);
 
             return;
         }
@@ -54,7 +57,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         // If conditions array is empty, pass all artifacts through
         if (empty($filterConfig['conditions'])) {
             $this->activity('No filter conditions provided, passing all artifacts through', 100);
-            $this->complete($this->taskProcess->inputArtifacts);
+            $this->complete($inputArtifacts);
 
             return;
         }
@@ -66,9 +69,9 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         $this->configure($filterConfig);
 
         // Filter the artifacts
-        $filteredArtifacts = $this->filterArtifacts($this->taskProcess->inputArtifacts, $filterConfig);
+        $filteredArtifacts = $this->filterArtifacts($inputArtifacts, $filterConfig);
 
-        $totalArtifacts = $this->taskProcess->inputArtifacts->count();
+        $totalArtifacts = $inputArtifacts->count();
         $filteredCount  = count($filteredArtifacts);
 
         $this->activity("Filtered $filteredCount out of $totalArtifacts artifacts", 100);
@@ -132,7 +135,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
 
                 // Log useful information for debugging
                 $fragmentDot = !empty($condition['fragment_selector']) ? '.' . app(JsonSchemaService::class)->fragmentSelectorToDot($condition['fragment_selector']) : '';
-                static::log("Evaluating condition: {$condition['field']}$fragmentDot [{$condition['operator']}] " . json_encode($fieldValue));
+                static::log("Evaluating condition: {$condition['field']}$fragmentDot: " . json_encode($fieldValue) . " [{$condition['operator']}] " . json_encode($condition['value'] ?? null));
 
                 // Evaluate the condition against the field value
                 $result    = $this->filterService->evaluateCondition($fieldValue, $condition);
@@ -294,16 +297,5 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         $this->keep = ($config['action'] ?? 'keep') === 'keep';
 
         static::log("Filter task runner configured to " . ($this->keep ? "keep" : "discard") . " matching artifacts");
-    }
-
-    /**
-     * Log a message
-     *
-     * @param string $message The message to log
-     */
-    public static function log(string $message): void
-    {
-        $timestamp = Carbon::now()->format('Y-m-d H:i:s');
-        LaravelLog::info("[FilterArtifactsTaskRunner] [$timestamp] $message");
     }
 }

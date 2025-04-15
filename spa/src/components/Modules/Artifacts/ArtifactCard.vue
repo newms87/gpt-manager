@@ -44,7 +44,7 @@
 				size="sm"
 				:show-icon="GroupIcon"
 				tooltip="Show Child Artifacts"
-				:badge="artifact.child_artifacts_count"
+				:label="artifact.child_artifacts_count"
 			/>
 			<ShowHideButton
 				v-if="typeCount > 1"

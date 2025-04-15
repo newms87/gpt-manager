@@ -118,15 +118,9 @@ class BaseTaskRunner implements TaskRunnerContract
 
         if ($artifacts) {
             TaskRunnerService::validateArtifacts($artifacts);
+            $artifacts = self::copyArtifactsIfPassedFromSourceTask($artifacts);
 
-            foreach($artifacts as $artifact) {
-                static::log("Attaching $artifact");
-                $artifact->task_definition_id = $this->taskProcess->taskRun->task_definition_id;
-                if (!$artifact->position) {
-                    $artifact->position = $this->resolveArtifactPosition($artifact, $artifacts);
-                }
-                $artifact->save();
-            }
+            static::log("Attaching artifacts to task run and process: " . collect($artifacts)->pluck('id')->toJson());
 
             $this->attachArtifactsToTaskAndProcess($artifacts);
         }
@@ -139,6 +133,10 @@ class BaseTaskRunner implements TaskRunnerContract
         TaskProcessRunnerService::complete($this->taskProcess);
     }
 
+    /**
+     * Attach the artifacts to the task run and process considering the output artifact mode defined on the task
+     * definition
+     */
     public function attachArtifactsToTaskAndProcess($artifacts): void
     {
         $outputMode  = $this->taskDefinition->output_artifact_mode;
@@ -175,7 +173,7 @@ class BaseTaskRunner implements TaskRunnerContract
 
             default:
                 static::log("Attaching all artifacts to process and task run");
-                
+
                 // By default, all artifacts go to the process and the task
                 $taskRunArtifactIds = $artifactIds;
                 $processArtifactIds = $artifactIds;
@@ -192,6 +190,41 @@ class BaseTaskRunner implements TaskRunnerContract
             $this->taskRun->outputArtifacts()->syncWithoutDetaching($taskRunArtifactIds);
             $this->taskRun->updateRelationCounter('outputArtifacts');
         }
+    }
+
+    /**
+     * Get a list of fresh artifacts to attach and manipulate for the current process / task. Any artifacts that
+     * were created by a different task should be copied to this task so we do not modify the original artifacts
+     *
+     * @param Artifact[]|Collection $artifacts
+     */
+    public function copyArtifactsIfPassedFromSourceTask(array|Collection|EloquentCollection $artifacts): array
+    {
+        $copiedArtifacts = [];
+
+        foreach($artifacts as $artifact) {
+            // If this artifact belongs to a different task, it should be copied so we do not modify the output artifacts of the original task
+            // Otherwise, this artifact was created for this task and doesn't need to be copied
+            if ($artifact->task_definition_id && $artifact->task_definition_id !== $this->taskDefinition->id) {
+                $copiedArtifact = $artifact->replicate(['parent_artifact_id']);
+            } else {
+                $copiedArtifact = $artifact;
+            }
+
+            // Always make sure the artifact is for this task definition
+            $copiedArtifact->task_definition_id = $this->taskDefinition->id;
+            if (!$copiedArtifact->position) {
+                $copiedArtifact->position = $this->resolveArtifactPosition($artifact, $artifacts);
+            }
+            $copiedArtifact->save();
+
+            // Copy the stored files
+            $copiedArtifact->storedFiles()->sync($artifact->storedFiles->pluck('id')->toArray());
+
+            $copiedArtifacts[] = $copiedArtifact;
+        }
+
+        return $copiedArtifacts;
     }
 
     /**

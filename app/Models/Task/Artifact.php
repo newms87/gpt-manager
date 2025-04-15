@@ -106,7 +106,15 @@ class Artifact extends Model implements AuditableContract
      */
     public function getJsonFragmentValue(array $fragmentSelector = null): mixed
     {
-        return $this->getFlattenedMetaFragmentValues($fragmentSelector)[0] ?? null;
+        $values = $this->getFlattenedJsonFragmentValues($fragmentSelector);
+
+        $types = app(JsonSchemaService::class)->getFragmentSelectorLeafTypes($fragmentSelector);
+
+        if (in_array('array', $types)) {
+            return implode('|', $values) ?: null;
+        }
+
+        return $values[0] ?? null;
     }
 
     /**
@@ -114,7 +122,15 @@ class Artifact extends Model implements AuditableContract
      */
     public function getMetaFragmentValue(array $fragmentSelector = null): mixed
     {
-        return $this->getFlattenedMetaFragmentValues($fragmentSelector)[0] ?? null;
+        $values = $this->getFlattenedMetaFragmentValues($fragmentSelector);
+
+        $types = app(JsonSchemaService::class)->getFragmentSelectorLeafTypes($fragmentSelector);
+
+        if (in_array('array', $types)) {
+            return implode('|', $values) ?: null;
+        }
+
+        return $values[0] ?? null;
     }
 
     /**
