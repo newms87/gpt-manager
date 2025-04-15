@@ -74,12 +74,19 @@ class TaskProcessRunnerService
         foreach($artifacts as $artifact) {
             // If the current task does not own the artifact, we need to copy it
             if ($taskRun->task_definition_id !== $artifact->task_definition_id) {
-                $copiedArtifact                       = $artifact->replicate(['parent_artifact_id']);
+                $copiedArtifact                       = $artifact->replicate(['parent_artifact_id', 'child_artifacts_count']);
                 $copiedArtifact->original_artifact_id = $artifact->id;
                 $copiedArtifact->save();
 
                 // Copy the stored files
                 $copiedArtifact->storedFiles()->sync($artifact->storedFiles->pluck('id')->toArray());
+
+                if ($artifact->children()->exists()) {
+                    // Copy the child artifacts
+                    $childCopies = static::copyInputArtifactsForProcesses($taskRun, $artifact->children()->get());
+                    $copiedArtifact->children()->saveMany($childCopies);
+                    $copiedArtifact->updateRelationCounter('children');
+                }
                 $copiedArtifacts[] = $copiedArtifact;
             } else {
                 $copiedArtifacts[] = $artifact;
