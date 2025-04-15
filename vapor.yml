@@ -9,6 +9,7 @@ environments:
     timeout: 600
     cli-timeout: 600
     queue-timeout: 600
+    cache: redis-cluster-micro
     runtime: 'php-8.3:al2'
     database: predict_serverless
     database_user: gptmanager

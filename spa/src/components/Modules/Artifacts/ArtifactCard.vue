@@ -179,10 +179,18 @@ watch(() => isShowingGroup.value, () => {
 });
 
 async function loadChildArtifacts() {
+	const artifactsField = {
+		text_content: true,
+		json_content: true,
+		meta: true,
+		files: { transcodes: true, thumb: true }
+	};
+
 	const { data } = await dxArtifact.routes.list({
 		filter: {
 			parent_artifact_id: props.artifact.id
-		}
+		},
+		fields: artifactsField
 	}, { abortOn: "child-artifacts:" + props.artifact.id });
 	childArtifacts.value = data;
 }
