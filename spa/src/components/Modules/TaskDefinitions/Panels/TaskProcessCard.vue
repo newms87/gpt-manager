@@ -2,7 +2,7 @@
 	<div class="bg-slate-600 rounded">
 		<div class="p-2">
 			<div class="flex items-center space-x-2">
-				<LabelPillWidget :label="`pid: ${taskProcess.id}`" color="sky" size="xs" />
+				<LabelPillWidget :label="`pid: ${taskProcess.id}`" color="sky" size="xs" class="whitespace-nowrap" />
 				<div class="flex-grow w-96">
 					{{ taskProcess.name || "(No Name)" }}
 				</div>

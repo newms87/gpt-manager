@@ -9,6 +9,9 @@ use Str;
 
 class JsonSchemaService
 {
+    /** @var bool When strict mode is enabled, certain type castings will not be allowed (ie: scalar => array/object or object/array => scalar) */
+    protected bool $isStrict = true;
+
     /** @var bool  Whether to use citations for the schema. NOTE: This will modify the output so that */
     protected bool $useCitations = false;
     /** @var bool  Make sure each object includes the ID property */
@@ -311,6 +314,10 @@ class JsonSchemaService
             return [];
         }
 
+        if (array_key_exists('strict', $fragmentSelector)) {
+            $this->isStrict = (bool)$fragmentSelector['strict'];
+        }
+
         $filtered = [];
 
         // Special case for handling an array of objects at the top level, instead of an object w/ associative keys
@@ -347,21 +354,27 @@ class JsonSchemaService
 
             if (is_scalar($dataProperty)) {
                 if ($isObjectOrArray) {
-                    throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (an array of object type), but found " . gettype($dataProperty) . " (a scalar type) instead");
+                    if ($this->isStrict) {
+                        throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (an array of object type), but found " . gettype($dataProperty) . " (a scalar type) instead");
+                    }
                 }
                 $filtered[$selectedKey] = $dataProperty;
             } else {
                 if (!$isObjectOrArray) {
-                    throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (a scalar type), but found " . gettype($dataProperty) . " (an array of object type) instead");
-                }
-                if (is_associative_array($dataProperty)) {
-                    $result = $this->filterDataByFragmentSelector($dataProperty, $selectedProperty);
+                    if ($this->isStrict) {
+                        throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (a scalar type), but found " . gettype($dataProperty) . " (an array of object type) instead");
+                    }
+                    $filtered[$selectedKey] = json_encode($dataProperty);
                 } else {
-                    $result = array_map(fn($item) => is_array($item) ? $this->filterDataByFragmentSelector($item, $selectedProperty) : $item, $dataProperty);
-                }
+                    if (is_associative_array($dataProperty)) {
+                        $result = $this->filterDataByFragmentSelector($dataProperty, $selectedProperty);
+                    } else {
+                        $result = array_map(fn($item) => is_array($item) ? $this->filterDataByFragmentSelector($item, $selectedProperty) : $item, $dataProperty);
+                    }
 
-                if ($result) {
-                    $filtered[$selectedKey] = $result;
+                    if ($result) {
+                        $filtered[$selectedKey] = $result;
+                    }
                 }
             }
         }

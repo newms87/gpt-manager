@@ -48,7 +48,7 @@
 					size="xs"
 				/>
 			</div>
-			<template v-if="!isWorkflowRunning">
+			<template v-if="!isTaskRunning">
 				<ActionButton
 					type="copy"
 					color="blue"
@@ -101,7 +101,7 @@ const props = defineProps<{
 	loading?: boolean;
 }>();
 
-const isWorkflowRunning = computed(() => ["Running"].includes(activeWorkflowRun.value?.status));
+const isTaskRunning = computed(() => ["Running"].includes(props.taskRun?.status));
 
 const startNodeAction = dxWorkflowRun.getAction("start-node", { onFinish: refreshActiveWorkflowRun });
 const restartAction = dxTaskRun.getAction("restart", { onFinish: refreshActiveWorkflowRun });

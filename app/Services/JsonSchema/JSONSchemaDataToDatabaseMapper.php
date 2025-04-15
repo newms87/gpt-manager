@@ -44,7 +44,7 @@ class JSONSchemaDataToDatabaseMapper
     public function resolveTeamObject($type, $name, $input = []): ?TeamObject
     {
         if (!$type || !$name) {
-            throw new Exception("Team Objects requires a type and name for each object: \n\nType: $type\nName: $name\nInput:\n" . json_encode($input));
+            throw new ValidationError("Team Objects requires a type and name for each object: \n\nType: $type\nName: $name\nInput:\n" . json_encode($input));
         }
 
         $teamObjectQuery = TeamObject::where('type', $type)

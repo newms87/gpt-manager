@@ -7,7 +7,7 @@
 				:label="`pid: ${artifact.task_process_id}`"
 				color="sky"
 				size="xs"
-				class="cursor-pointer hover:outline outline-2 outline-sky-700 underline hover:text-sky-300"
+				class="cursor-pointer hover:outline outline-2 outline-sky-700 underline hover:text-sky-300 whitespace-nowrap"
 				:class="{'outline !outline-4 outline-sky-400 !text-sky-300': isShowingTaskProcess}"
 				@click="toggleShowTaskProcess"
 			/>
