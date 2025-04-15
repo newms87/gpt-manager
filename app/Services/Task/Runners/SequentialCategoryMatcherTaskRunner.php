@@ -8,6 +8,7 @@ use App\Repositories\ThreadRepository;
 use App\Services\Task\TaskProcessRunnerService;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Helpers\LockHelper;
 use Throwable;
 
 /**
@@ -35,6 +36,8 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 
     // A cached list of resolved artifact categories
     protected array $artifactCategoryMap = [];
+
+    protected array $changedArtifacts = [];
 
     /**
      * Initial activity message and
@@ -95,8 +98,38 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
             $this->activity('No category groups found to classify', 100);
         }
 
-        // Complete the task with all the input artifacts w/ categories updated in the meta
-        $this->complete($this->taskProcess->inputArtifacts);
+        // Acquire the lock so we know we're collecting the right output artifacts that no other process has already output
+        LockHelper::acquire($this->taskRun);
+
+        try {
+            // Complete the task with all the input artifacts w/ categories updated in the meta
+            $this->complete($this->collectOutputArtifacts());
+        } finally {
+            LockHelper::release($this->taskRun);
+        }
+    }
+
+    /**
+     * The output artifacts are the artifacts that have been changed by the task process OR have not yet been output
+     * by the task run. This is to ensure that we are not duplicating artifacts that have already been output.
+     */
+    protected function collectOutputArtifacts(): array
+    {
+        $outputArtifacts       = $this->changedArtifacts;
+        $taskOutputArtifactIds = $this->taskRun->outputArtifacts()->pluck('artifacts.id')->toArray();
+
+        static::log("Collecting output artifacts...\n\tChanged Artifacts " . collect($this->changedArtifacts)->pluck('id')->toJson() . "\n\tAlready Output Artifacts " . json_encode($taskOutputArtifactIds));
+
+        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+            // Check if the artifact that was used to clone this input artifact has already been included in the output
+            if ($this->getArtifactCategory($inputArtifact) && !in_array($inputArtifact->original_artifact_id, $taskOutputArtifactIds)) {
+                // If the artifact has a category, and has not already been output we will add it to the output artifacts
+                // NOTE: We will also be duplicating some of the changedArtifacts here most likely, but that's fine, they will be de-duped by the complete process
+                $outputArtifacts[] = $inputArtifact;
+            }
+        }
+
+        return $outputArtifacts;
     }
 
     /**
@@ -370,7 +403,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
                 /** @var Artifact|null $artifact */
                 $artifact = $artifacts->firstWhere('position', $page);
 
-                if ($artifact) {
+                if ($artifact && !$this->getArtifactCategory($artifact)) {
                     $this->applyCategory($artifact, $category);
                 }
             }
@@ -390,6 +423,9 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 
         // Be sure to update the cache so we're not out of sync
         $this->artifactCategoryMap[$artifact->id] = $category;
+
+        // Track all our changes so we can output them
+        $this->changedArtifacts[] = $artifact;
     }
 
     /**
