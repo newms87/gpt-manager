@@ -3,6 +3,7 @@ export { default as AndOrConditionTabs } from "./AndOrConditionTabs.vue";
 export { default as ConditionGroupField } from "./ConditionGroupField.vue";
 export { default as FilterConditionsField } from "./FilterConditionsField.vue";
 export { default as FragmentSelectorConfigField } from "./FragmentSelectorConfigField.vue";
+export { default as IncludeTextSourcesField } from "./IncludeTextSourcesField.vue";
 export { default as PromptDirectiveConfigField } from "./PromptDirectiveConfigField.vue";
 export { default as SchemaAndFragmentsConfigField } from "./SchemaAndFragmentsConfigField.vue";
 export { default as SimpleConditionField } from "./SimpleConditionField.vue";

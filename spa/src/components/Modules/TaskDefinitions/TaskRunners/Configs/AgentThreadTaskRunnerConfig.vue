@@ -2,7 +2,9 @@
 	<BaseTaskRunnerConfig :task-definition="taskDefinition">
 		<QSeparator class="bg-slate-400 my-4" />
 		<AgentThreadInstructions />
+		<IncludeTextSourcesField class="mt-6" :task-definition="taskDefinition" />
 		<TaskDefinitionAgentConfigField
+			class="mt-6"
 			:task-definition="taskDefinition"
 			:source-task-definitions="sourceTaskDefinitions"
 		/>
@@ -14,6 +16,7 @@
 import { TaskDefinition } from "@/types";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
 import {
+	IncludeTextSourcesField,
 	SchemaAndFragmentsConfigField,
 	TaskDefinitionAgentConfigField,
 	TaskDefinitionDirectivesConfigField

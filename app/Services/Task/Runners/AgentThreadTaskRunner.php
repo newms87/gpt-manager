@@ -75,7 +75,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
             // If the task definition is set to include text sources, we will add the text sources to the artifact
             // By default, this is set to true for all task definitions w/ JSON responses, as they are
             // assumed to be collecting data from text sources in this case
-            if ($this->config('include_text_sources', $this->taskDefinition->isJsonResponse())) {
+            if ($this->config('include_text_sources')) {
                 $this->appendTextSources($artifact);
             }
 
