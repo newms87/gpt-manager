@@ -93,7 +93,7 @@ class BaseTaskRunner implements TaskRunnerContract
         }
 
         $this->taskProcess->update([
-            'activity'         => $activity,
+            'activity'         => substr($activity, 0, 1000),
             'percent_complete' => $percentComplete ?? $this->taskProcess->percent_complete,
         ]);
     }
