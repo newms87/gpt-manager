@@ -103,6 +103,14 @@ class Artifact extends Model implements AuditableContract
         return $this;
     }
 
+    public function clearChildren(): static
+    {
+        $this->children()->delete();
+        $this->updateRelationCounter('children');
+
+        return $this;
+    }
+
     /**
      * Get the fragment defined by the fragment selector for the JSON content field
      */

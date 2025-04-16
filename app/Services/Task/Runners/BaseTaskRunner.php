@@ -199,6 +199,8 @@ class BaseTaskRunner implements TaskRunnerContract
      */
     public function prepareArtifactsForOutput(array|Collection|EloquentCollection $artifacts): void
     {
+        $maxLevel = $this->taskDefinition->output_artifact_levels[0] ?? 0;
+
         foreach($artifacts as $artifact) {
             // Always make sure the artifact is for this task definition
             $artifact->task_process_id    = $this->taskProcess->id;
@@ -207,7 +209,27 @@ class BaseTaskRunner implements TaskRunnerContract
                 $artifact->position = $this->resolveArtifactPosition($artifact, $artifacts);
             }
             $artifact->save();
+
+            static::log("Trimming artifact hierarchy for $artifact->id, max level: $maxLevel");
+            $this->trimArtifactHierarchy($artifact, $maxLevel);
         }
+    }
+
+    /**
+     * Recursively trim the artifact hierarchy for any children beyond the max level
+     */
+    public function trimArtifactHierarchy(Artifact $artifact, int $maxLevel, int $currentLevel = 0): void
+    {
+        // Keep moving down the hierarchy until we've reached the max level
+        if ($currentLevel < $maxLevel) {
+            foreach($artifact->children as $child) {
+                $this->trimArtifactHierarchy($child, $maxLevel, $currentLevel + 1);
+            }
+
+            return;
+        }
+
+        $artifact->clearChildren();
     }
 
     /**

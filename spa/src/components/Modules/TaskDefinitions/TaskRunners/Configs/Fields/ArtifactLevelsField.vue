@@ -59,7 +59,7 @@ const validateSelection = useDebounceFn((selection: number[]) => {
 	if (props.mode === "input") {
 		levels.value = selection.length === 0 ? [0] : selection;
 	} else {
-		levels.value = selection.length > 1 ? [selection[selection.length - 1]] : selection;
+		levels.value = selection.length > 1 ? [selection[selection.length - 1]] : (selection.length === 0 ? [0] : selection);
 	}
 }, 10);
 
