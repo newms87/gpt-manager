@@ -59,11 +59,19 @@ const validateSelection = useDebounceFn((selection: number[]) => {
 
 	if (props.mode === "output") {
 		selection = selection.length > 1 ? [selection[selection.length - 1]] : selection;
+
+		// Only update the output levels if the selection has changed
+		if (!levels.value || levels.value[0] !== selection[0]) {
+			levels.value = selection;
+		}
+	} else {
+		// Only update the input levels if the selection has changed
+		if (levels.value?.length !== selection.length) {
+			levels.value = selection;
+		}
 	}
 
-	if (levels.value?.length !== selection.length) {
-		levels.value = selection;
-	}
+
 }, 10);
 
 onMounted(() => validateSelection(levels.value));
