@@ -24,7 +24,7 @@ class ArtifactFilterService
         $this->includeMeta  = $artifactFilter->include_meta;
 
         $this->jsonFragmentSelector = $artifactFilter->schemaFragment?->fragment_selector ?? [];
-        $this->metaFragmentSelector = $artifactFilter->meta_fragment_selector ?? [];
+        $this->metaFragmentSelector = (array)($artifactFilter->meta_fragment_selector ?: []);
 
         return $this;
     }

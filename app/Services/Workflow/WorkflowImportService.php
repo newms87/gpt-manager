@@ -155,6 +155,10 @@ class WorkflowImportService
         $localObject           = $resourcePackageImport->getLocalObject();
 
         if (!$localObject) {
+            $localObject = $resourcePackageImport->resolveLocalObjectByUniqueKeys($this, $definition);
+        }
+
+        if (!$localObject) {
             $localObject = (new $objectType);
 
             if ($isTeam) {
@@ -165,36 +169,45 @@ class WorkflowImportService
         }
 
         foreach($definition as $key => $value) {
-            // First check if the value is a reference to another object
-            // (ie: The value is in the form "App\\Models\\Workflow\\WorkflowDefinition::3")
-            if ($value && is_string($value)) {
-                $parts = explode(':', $value);
-                if (count($parts) === 2) {
-                    $relationObjectType = $parts[0];
-                    $relationSourceId   = $parts[1];
-                    $mappedId           = $this->importedIdMap[$relationObjectType][$relationSourceId] ?? null;
-
-                    // resolve the mapped ID instead of using the original value
-                    if ($mappedId) {
-                        $value = $mappedId;
-                    }
-                }
-            }
-
-            if ($key === 'name') {
-                $value .= ' (' . $this->versionName . ')';
-            }
-
-            $localObject->$key = $value;
+            $localObject->$key = $this->resolveDefinitionValue($key, $value);
         }
 
         $localObject->save();
+
         $this->importedIdMap[$objectType][$sourceId] = $localObject->id;
 
         // Update the resource package import record with the local object ID so we can track future imports / updates
         $resourcePackageImport->local_object_id             = $localObject->id;
         $resourcePackageImport->resource_package_version_id = $this->resourcePackageVersion->id;
         $resourcePackageImport->save();
+    }
+
+    /**
+     * Resolve the definition value for the given key and value
+     */
+    public function resolveDefinitionValue($key, $value)
+    {
+        // First check if the value is a reference to another object
+        // (ie: The value is in the form "App\\Models\\Workflow\\WorkflowDefinition::3")
+        if ($value && is_string($value)) {
+            $parts = explode(':', $value);
+            if (count($parts) === 2) {
+                $relationObjectType = $parts[0];
+                $relationSourceId   = $parts[1];
+                $mappedId           = $this->importedIdMap[$relationObjectType][$relationSourceId] ?? null;
+
+                // resolve the mapped ID instead of using the original value
+                if ($mappedId) {
+                    return $mappedId;
+                }
+            }
+        }
+
+        if ($key === 'name') {
+            $value .= ' (' . $this->versionName . ')';
+        }
+
+        return $value;
     }
 
     /**

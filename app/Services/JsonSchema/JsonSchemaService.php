@@ -353,6 +353,7 @@ class JsonSchemaService
             $isObjectOrArray = in_array($selectedProperty['type'], ['object', 'array']);
 
             if (is_scalar($dataProperty)) {
+                // If the data is a scalar type, but the fragment selector is looking for an object or an array, then handle this scenario
                 if ($isObjectOrArray) {
                     if ($this->isStrict) {
                         throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (an array of object type), but found " . gettype($dataProperty) . " (a scalar type) instead");
@@ -360,6 +361,7 @@ class JsonSchemaService
                 }
                 $filtered[$selectedKey] = $dataProperty;
             } else {
+                // If the data is an object or an array, but the fragment selector is looking for a scalar type, then handle this scenario
                 if (!$isObjectOrArray) {
                     if ($this->isStrict) {
                         throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (a scalar type), but found " . gettype($dataProperty) . " (an array of object type) instead");
