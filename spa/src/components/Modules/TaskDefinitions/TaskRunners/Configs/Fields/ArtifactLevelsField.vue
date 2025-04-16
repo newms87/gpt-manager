@@ -54,12 +54,15 @@ const groupLevelOptions = [
 ];
 
 const validateSelection = useDebounceFn((selection: number[]) => {
-	selection = selection || [];
+	// Make sure the selection contains at least 1 entry (default to the top-level)
+	selection = (selection || []).length === 0 ? [0] : selection;
 
-	if (props.mode === "input") {
-		levels.value = selection.length === 0 ? [0] : selection;
-	} else {
-		levels.value = selection.length > 1 ? [selection[selection.length - 1]] : (selection.length === 0 ? [0] : selection);
+	if (props.mode === "output") {
+		selection = selection.length > 1 ? [selection[selection.length - 1]] : selection;
+	}
+
+	if (levels.value?.length !== selection.length) {
+		levels.value = selection;
 	}
 }, 10);
 

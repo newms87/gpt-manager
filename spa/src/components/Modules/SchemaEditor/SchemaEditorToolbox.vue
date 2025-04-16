@@ -220,8 +220,8 @@ async function onCreateFragment() {
 async function loadFragments() {
 	if (!activeSchema.value) return;
 
-	// NOTE The use of abortOn is to avoid generating duplicate requests at the same time causing this request to abort, leaving this instance w/o any fragments
-	const fragments = await routes.list({ filter: { schema_definition_id: activeSchema.value.id } }, { abortOn: instanceId });
+	// NOTE The use of requestKey is to avoid generating duplicate requests at the same time causing this request to abort, leaving this instance w/o any fragments
+	const fragments = await routes.list({ filter: { schema_definition_id: activeSchema.value.id } }, { requestKey: instanceId });
 	fragmentList.value = storeObjects(fragments.data);
 }
 

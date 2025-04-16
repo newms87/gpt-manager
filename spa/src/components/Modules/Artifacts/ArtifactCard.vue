@@ -209,7 +209,7 @@ async function loadChildArtifacts() {
 			parent_artifact_id: props.artifact.id
 		},
 		fields: artifactsField
-	}, { abortOn: "child-artifacts:" + props.artifact.id });
+	}, { requestKey: "child-artifacts:" + props.artifact.id });
 	childArtifacts.value = data;
 }
 
