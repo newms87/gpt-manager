@@ -128,8 +128,12 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         if ($threadRun->lastMessage) {
             $artifact = (new AgentThreadMessageToArtifactMapper)->setThreadRun($threadRun)->setMessage($threadRun->lastMessage)->map();
 
-            if ($artifact && $schemaDefinition) {
-                $artifact->schemaDefinition()->associate($schemaDefinition)->save();
+            if ($artifact) {
+                if ($schemaDefinition) {
+                    $artifact->schemaDefinition()->associate($schemaDefinition)->save();
+                }
+
+                $artifact->assignChildren($this->taskProcess->inputArtifacts);
             }
 
             return $artifact;

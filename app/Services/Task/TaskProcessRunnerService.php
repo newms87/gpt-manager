@@ -84,8 +84,7 @@ class TaskProcessRunnerService
                 if ($artifact->children()->exists()) {
                     // Copy the child artifacts
                     $childCopies = static::copyInputArtifactsForProcesses($taskRun, $artifact->children()->get());
-                    $copiedArtifact->children()->saveMany($childCopies);
-                    $copiedArtifact->updateRelationCounter('children');
+                    $copiedArtifact->assignChildren($childCopies);
                 }
                 $copiedArtifacts[] = $copiedArtifact;
             } else {

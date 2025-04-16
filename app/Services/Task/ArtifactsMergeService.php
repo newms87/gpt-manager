@@ -43,8 +43,7 @@ class ArtifactsMergeService
             }
         }
 
-        $mergedArtifact->children()->saveMany($artifacts);
-        $mergedArtifact->updateRelationCounter('children');
+        $mergedArtifact->assignChildren($artifacts);
 
         return $mergedArtifact;
     }

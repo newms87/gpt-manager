@@ -95,6 +95,14 @@ class Artifact extends Model implements AuditableContract
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
     }
 
+    public function assignChildren($artifacts): static
+    {
+        $this->children()->saveMany($artifacts);
+        $this->updateRelationCounter('children');
+
+        return $this;
+    }
+
     /**
      * Get the fragment defined by the fragment selector for the JSON content field
      */

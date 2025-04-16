@@ -3,7 +3,6 @@
 namespace App\Services\Task\Runners;
 
 use App\Models\Agent\AgentThreadRun;
-use App\Models\Task\Artifact;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use Newms87\Danx\Exceptions\ValidationError;
 
@@ -36,19 +35,10 @@ class SaveToDatabaseTaskRunner extends BaseTaskRunner
                 continue;
             }
 
-            $outputArtifact = Artifact::create([
-                'name'                 => $inputArtifact->name . ' (saved to DB)',
-                'json_content'         => $jsonContent,
-                'text_content'         => $inputArtifact->text_content,
-                'meta'                 => $inputArtifact->meta,
-                'schema_definition_id' => $inputArtifact->schema_definition_id,
-            ]);
+            $inputArtifact->name         .= " (saved to DB)";
+            $inputArtifact->json_content = $jsonContent;
 
-            if ($inputArtifact->storedFiles) {
-                $outputArtifact->storedFiles()->sync($inputArtifact->storedFiles->pluck('id'));
-            }
-
-            $outputArtifacts[] = $outputArtifact;
+            $outputArtifacts[] = $inputArtifact;
         }
 
         $this->complete($outputArtifacts);

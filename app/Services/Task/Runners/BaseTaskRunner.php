@@ -148,8 +148,7 @@ class BaseTaskRunner implements TaskRunnerContract
                 static::log("Grouping all artifacts into a single artifact");
 
                 $topLevelArtifact = $this->resolveSingletonTaskRunArtifact($artifacts);
-                $topLevelArtifact->children()->saveMany($artifacts);
-                $topLevelArtifact->updateRelationCounter('children');
+                $topLevelArtifact->assignChildren($artifacts);
 
                 // The processes will still output all the artifacts it produces, the roll up happens at the task level
                 // so keep the task run artifact IDs set to null
@@ -162,8 +161,7 @@ class BaseTaskRunner implements TaskRunnerContract
 
                 $processArtifact = $this->createMergedArtifactFromTopLevel($artifacts);
 
-                $processArtifact->children()->saveMany($artifacts);
-                $processArtifact->updateRelationCounter('children');
+                $processArtifact->assignChildren($artifacts);
 
                 // The process will have a single artifact containing a group of all the produced artifacts
                 $processArtifactIds = [$processArtifact->id];
