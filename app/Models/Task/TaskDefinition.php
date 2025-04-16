@@ -40,9 +40,10 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         'task_runner_name',
         'task_runner_config',
         'response_format',
-        'artifact_split_mode',
+        'input_artifact_mode',
         'input_artifact_levels',
         'output_artifact_mode',
+        'output_artifact_levels',
         'timeout_after_seconds',
         'schema_definition_id',
         'agent_id',
@@ -61,8 +62,9 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     public function casts()
     {
         return [
-            'task_runner_config'    => 'json',
-            'input_artifact_levels' => 'json',
+            'task_runner_config'     => 'json',
+            'input_artifact_levels'  => 'json',
+            'output_artifact_levels' => 'json',
         ];
     }
 
@@ -161,17 +163,18 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         $service->registerRelatedModels($this->taskDefinitionDirectives);
 
         return $service->register($this, [
-            'name'                  => $this->name,
-            'description'           => $this->description,
-            'task_runner_name'      => $this->task_runner_name,
-            'task_runner_config'    => $this->task_runner_config,
-            'schema_definition_id'  => $service->registerRelatedModel($this->schemaDefinition),
-            'agent_id'              => $service->registerRelatedModel($this->agent),
-            'response_format'       => $this->response_format,
-            'artifact_split_mode'   => $this->artifact_split_mode,
-            'input_artifact_levels' => $this->input_artifact_levels,
-            'output_artifact_mode'  => $this->output_artifact_mode,
-            'timeout_after_seconds' => $this->timeout_after_seconds,
+            'name'                   => $this->name,
+            'description'            => $this->description,
+            'task_runner_name'       => $this->task_runner_name,
+            'task_runner_config'     => $this->task_runner_config,
+            'schema_definition_id'   => $service->registerRelatedModel($this->schemaDefinition),
+            'agent_id'               => $service->registerRelatedModel($this->agent),
+            'response_format'        => $this->response_format,
+            'input_artifact_mode'    => $this->input_artifact_mode,
+            'input_artifact_levels'  => $this->input_artifact_levels,
+            'output_artifact_mode'   => $this->output_artifact_mode,
+            'output_artifact_levels' => $this->output_artifact_levels,
+            'timeout_after_seconds'  => $this->timeout_after_seconds,
         ]);
     }
 

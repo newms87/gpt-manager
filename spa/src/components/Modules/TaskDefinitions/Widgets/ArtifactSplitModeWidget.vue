@@ -34,55 +34,10 @@
 				</template>
 			</div>
 		</div>
-		<div class="mt-8">
-			<div class="font-bold mb-2 flex-x gap-2">
-				<div>Artifact Level</div>
-				<div class="relative">
-					<HelpIcon class="w-4" />
-					<QTooltip>
-						<div class="text-sm text-gray-100 space-y-1">
-							<p><span class="font-semibold">Artifact Grouping Level:</span> Choose which level(s) of the artifact
-								hierarchy to send to this task.</p>
-							<p><span class="text-blue-200">Default:</span> Only top-level artifacts are used.</p>
-							<p>Selecting lower levels will include child artifacts (e.g., pages within sections) instead of their
-								parent groups.</p>
-							<p>You may select multiple levels; all selected artifacts will be flattened before being processed.</p>
-						</div>
-					</QTooltip>
-				</div>
-			</div>
-			<div>
-				<SelectField
-					v-model="levels"
-					:options="groupLevelOptions"
-					multiple
-					@update="validateSelection"
-				/>
-			</div>
-		</div>
 	</div>
 </template>
 <script setup lang="ts">
 import { ArtifactSplitMode } from "@/types";
-import { FaSolidCircleQuestion as HelpIcon } from "danx-icon";
-import { SelectField } from "quasar-ui-danx";
-import { nextTick, onMounted } from "vue";
 
 const splitMode = defineModel<ArtifactSplitMode>();
-const levels = defineModel<number[]>("levels", {
-	default: [0],
-	validator: (value) => Array.isArray(value) && value.every((v) => typeof v === "number")
-});
-
-const groupLevelOptions = [
-	{ label: "Top Level", value: 0 },
-	...(new Array(10).fill(0).map((_, i) => ({ label: `Level ${i + 1}`, value: i + 1 })))
-];
-
-function validateSelection() {
-	nextTick(() => {
-		if (!levels.value?.length) {levels.value = [0];}
-	});
-}
-onMounted(validateSelection);
 </script>

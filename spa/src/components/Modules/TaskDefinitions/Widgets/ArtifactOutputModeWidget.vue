@@ -1,7 +1,8 @@
 <template>
 	<div class="flex-x gap-4">
+		<div class="font-bold">Grouping:</div>
 		<QTabs
-			:model-value="mode"
+			v-model="mode"
 			class="tab-buttons border-green-900 !w-[20rem] bg-green-950 text-green-200"
 			indicator-color="green-900"
 		>

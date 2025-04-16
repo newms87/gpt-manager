@@ -21,9 +21,10 @@ export interface TaskDefinition extends ActionTargetItem {
 	is_trigger: boolean;
 	task_runner_name: string;
 	task_runner_config?: AnyObject;
-	artifact_split_mode: ArtifactSplitMode;
+	input_artifact_mode: ArtifactSplitMode;
 	input_artifact_levels?: number[];
 	output_artifact_mode: ArtifactOutputMode;
+	output_artifact_levels?: number[];
 	response_format: AgentResponseFormat;
 	timeout_after_seconds: number;
 	task_run_count: number;

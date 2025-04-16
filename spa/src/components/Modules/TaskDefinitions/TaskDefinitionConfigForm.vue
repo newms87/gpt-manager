@@ -11,9 +11,12 @@
 		<div v-if="!taskDefinition.is_trigger" class="mt-4 bg-sky-950 p-4 rounded border-2 border-sky-600 text-sky-200">
 			<div class="text-sky-400 font-bold text-lg mb-4">Artifact Input Setup</div>
 			<ArtifactSplitModeWidget
-				:model-value="taskDefinition.artifact_split_mode"
+				:model-value="taskDefinition.input_artifact_mode"
+				@update:model-value="input_artifact_mode => updateAction.trigger(taskDefinition, {input_artifact_mode})"
+			/>
+			<ArtifactLevelsField
+				mode="input"
 				:levels="taskDefinition.input_artifact_levels"
-				@update:model-value="artifact_split_mode => updateAction.trigger(taskDefinition, {artifact_split_mode})"
 				@update:levels="input_artifact_levels => updateAction.trigger(taskDefinition, {input_artifact_levels})"
 			/>
 		</div>
@@ -23,6 +26,11 @@
 			<ArtifactOutputModeWidget
 				:model-value="taskDefinition.output_artifact_mode"
 				@update:model-value="output_artifact_mode => updateAction.trigger(taskDefinition, {output_artifact_mode})"
+			/>
+			<ArtifactLevelsField
+				mode="output"
+				:levels="taskDefinition.output_artifact_levels"
+				@update:levels="output_artifact_levels => updateAction.trigger(taskDefinition, {output_artifact_levels})"
 			/>
 		</div>
 
@@ -36,6 +44,7 @@
 <script setup lang="ts">
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { TaskRunnerClasses } from "@/components/Modules/TaskDefinitions/TaskRunners";
+import ArtifactLevelsField from "@/components/Modules/TaskDefinitions/TaskRunners/Configs/Fields/ArtifactLevelsField";
 import ArtifactOutputModeWidget from "@/components/Modules/TaskDefinitions/Widgets/ArtifactOutputModeWidget";
 import ArtifactSplitModeWidget from "@/components/Modules/TaskDefinitions/Widgets/ArtifactSplitModeWidget";
 import { dxWorkflowNode } from "@/components/Modules/WorkflowDefinitions/WorkflowNodes/config";
