@@ -67,6 +67,11 @@ class TaskRunnerService
             }
         }
 
+        if (!$taskProcesses) {
+            $taskRun->skipped_at = now();
+            $taskRun->save();
+        }
+
         $taskRun->taskProcesses()->saveMany($taskProcesses);
 
         return $taskProcesses;
@@ -146,16 +151,19 @@ class TaskRunnerService
             $taskRun->clearOutputArtifacts();
             $taskRun->clearInputArtifacts();
 
+            // Reset task run statuses
+            $taskRun->stopped_at   = null;
+            $taskRun->completed_at = null;
+            $taskRun->failed_at    = null;
+            $taskRun->started_at   = null;
+            $taskRun->skipped_at   = null;
+            $taskRun->save();
+
             // If this task run is part of a workflow run, collect the output artifacts from the source nodes and replace the current input artifacts
             if ($taskRun->workflow_run_id) {
                 static::syncInputArtifactsFromWorkflowSourceNodes($taskRun);
             }
 
-            $taskRun->stopped_at   = null;
-            $taskRun->completed_at = null;
-            $taskRun->failed_at    = null;
-            $taskRun->started_at   = null;
-            $taskRun->save();
             (new PrepareTaskProcessJob($taskRun))->dispatch();
         } finally {
             LockHelper::release($taskRun);
@@ -240,6 +248,12 @@ class TaskRunnerService
 
             // Double-check our state in case we're out of sync
             $taskRun->checkProcesses()->computeStatus()->save();
+
+            // If we're suppose to stop
+            if ($taskRun->isPending() && $taskRun->taskProcesses->isEmpty()) {
+                $taskRun->stopped_at = now();
+                $taskRun->save();
+            }
         } finally {
             LockHelper::release($taskRun);
         }

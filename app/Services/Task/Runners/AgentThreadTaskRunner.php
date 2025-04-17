@@ -100,6 +100,11 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         }
 
         $taskDefinition = $this->taskRun->taskDefinition;
+
+        if (!$taskDefinition->agent) {
+            throw new Exception("Agent not found for TaskRun: $this->taskRun");
+        }
+
         $this->activity("Setting up agent thread for: {$taskDefinition->agent->name}", 5);
 
         $agentThread = app(TaskDefinitionToAgentThreadMapper::class)

@@ -2,6 +2,7 @@
 
 namespace App\Services\Workflow;
 
+use App\Jobs\WorkflowStartNodeJob;
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
@@ -42,7 +43,7 @@ class WorkflowRunnerService
 
         // Start all the starting nodes
         foreach($workflowDefinition->startingWorkflowNodes as $workflowNode) {
-            static::startNode($workflowRun, $workflowNode, $artifacts);
+            WorkflowStartNodeJob::make($workflowRun, $workflowNode, $artifacts)->dispatch();
         }
 
         return $workflowRun;
@@ -172,7 +173,7 @@ class WorkflowRunnerService
     {
         static::log("Node Completed $workflowNode");
 
-        LockHelper::acquire($workflowRun);
+        LockHelper::acquire($workflowRun, 120);
 
         try {
             // For every connection on the workflow node, start the target node if it is ready to run
@@ -187,7 +188,7 @@ class WorkflowRunnerService
 
                 // If this node is ready to run, start it
                 if ($workflowRun->targetNodeReadyToRun($targetNode)) {
-                    WorkflowRunnerService::startNode($workflowRun, $targetNode);
+                    WorkflowStartNodeJob::make($workflowRun, $targetNode)->dispatch();
                 } else {
                     static::log("Waiting for sources before running target $targetNode");
                 }

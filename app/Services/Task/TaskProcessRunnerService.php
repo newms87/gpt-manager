@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as EloquentCollection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
+use Newms87\Danx\Jobs\Job;
 use Newms87\Danx\Models\Job\JobDispatch;
 use Throwable;
 
@@ -39,6 +40,9 @@ class TaskProcessRunnerService
             'status'   => WorkflowStatesContract::STATUS_PENDING,
         ]);
 
+        $taskProcess->jobDispatches()->attach(Job::$runningJob);
+        $taskProcess->updateRelationCounter('jobDispatches');
+
         // Associate an identical schema association to the task process
         if ($schemaAssociation) {
             $schemaAssociation->replicate()->forceFill([
@@ -48,15 +52,23 @@ class TaskProcessRunnerService
             ])->save();
         }
 
-        if ($artifacts->isNotEmpty()) {
-            $copiedArtifacts = static::copyInputArtifactsForProcesses($taskRun, $artifacts);
-            $taskProcess->inputArtifacts()->saveMany($copiedArtifacts);
-            $taskProcess->updateRelationCounter('inputArtifacts');
+        try {
+            if ($artifacts->isNotEmpty()) {
+                $copiedArtifacts = static::copyInputArtifactsForProcesses($taskRun, $artifacts);
+                $taskProcess->inputArtifacts()->saveMany($copiedArtifacts);
+                $taskProcess->updateRelationCounter('inputArtifacts');
+            }
+
+            $taskProcess->getRunner()->prepareProcess();
+        } catch(Throwable $throwable) {
+            static::log("TaskProcess preparation failed: $taskProcess");
+            $taskProcess->failed_at = now();
+            $taskProcess->save();
+            throw $throwable;
         }
 
-        $taskProcess->getRunner()->prepareProcess();
-
         static::log("Prepared $taskProcess");
+
 
         return $taskProcess;
     }

@@ -40,6 +40,11 @@ trait HasWorkflowStatesTrait
         return $this->completed_at !== null;
     }
 
+    public function isSkipped(): bool
+    {
+        return $this->skipped_at !== null;
+    }
+
     public function isTimeout(): bool
     {
         return $this->timeout_at !== null;
@@ -52,7 +57,7 @@ trait HasWorkflowStatesTrait
 
     public function isFinished(): bool
     {
-        return ($this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isTimeout()) && !$this->isAwaitingRunner();
+        return ($this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isSkipped() || $this->isTimeout()) && !$this->isAwaitingRunner();
     }
 
     public function canContinue(): bool
@@ -66,6 +71,8 @@ trait HasWorkflowStatesTrait
             $this->status = WorkflowStatesContract::STATUS_FAILED;
         } elseif ($this->isStopped()) {
             $this->status = WorkflowStatesContract::STATUS_STOPPED;
+        } elseif ($this->isSkipped()) {
+            $this->status = WorkflowStatesContract::STATUS_SKIPPED;
         } elseif (!$this->isStarted()) {
             $this->status = WorkflowStatesContract::STATUS_PENDING;
         } elseif (!$this->isCompleted()) {

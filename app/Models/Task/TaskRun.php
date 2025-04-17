@@ -34,6 +34,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         'stopped_at',
         'completed_at',
         'failed_at',
+        'skipped_at',
         'task_input_id',
     ];
 
@@ -53,6 +54,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
             'stopped_at'       => 'datetime',
             'completed_at'     => 'datetime',
             'failed_at'        => 'datetime',
+            'skipped_at'       => 'datetime',
         ];
     }
 
@@ -153,11 +155,13 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         LockHelper::acquire($this);
 
         try {
+            $taskProcesses       = $this->taskProcesses()->get();
             $hasRunningProcesses = false;
             $hasStoppedProcesses = false;
             $hasFailedProcesses  = false;
+            $hasProcesses        = $taskProcesses->isNotEmpty();
 
-            foreach($this->taskProcesses()->get() as $taskProcess) {
+            foreach($taskProcesses as $taskProcess) {
                 if ($taskProcess->isStopped()) {
                     $hasStoppedProcesses = true;
                 } elseif ($taskProcess->isFailed() || $taskProcess->isTimeout()) {
@@ -172,21 +176,32 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 $this->failed_at    = null;
                 $this->stopped_at   = null;
                 $this->completed_at = null;
+                $this->skipped_at   = null;
             } elseif ($hasFailedProcesses) {
                 $this->completed_at = null;
                 $this->stopped_at   = null;
+                $this->skipped_at   = null;
                 if (!$this->failed_at) {
                     $this->failed_at = now();
                 }
             } elseif ($hasStoppedProcesses) {
                 $this->completed_at = null;
                 $this->failed_at    = null;
+                $this->skipped_at   = null;
                 if (!$this->stopped_at) {
                     $this->stopped_at = now();
+                }
+            } elseif (!$hasProcesses) {
+                $this->failed_at    = null;
+                $this->stopped_at   = null;
+                $this->completed_at = null;
+                if (!$this->skipped_at) {
+                    $this->skipped_at = now();
                 }
             } else {
                 $this->failed_at  = null;
                 $this->stopped_at = null;
+                $this->skipped_at = null;
                 if (!$this->completed_at) {
                     $this->completed_at = now();
                 }
