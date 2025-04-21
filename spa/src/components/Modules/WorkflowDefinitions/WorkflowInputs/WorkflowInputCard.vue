@@ -3,12 +3,12 @@
 		<div class="flex-x space-x-2">
 			<div class="flex-grow flex-x space-x-4">
 				<ShowHideButton v-if="!readonly" v-model="isEditing" :show-icon="EditIcon" class="bg-slate-700" />
-				<QBtn v-if="readonly" class="rounded-full bg-sky-800 text-sky-200 px-4 py-2">
+				<QBtn v-if="readonly && !isEditing" class="rounded-full bg-sky-800 text-sky-200 px-4 py-2">
 					{{ workflowInput.name }}
 				</QBtn>
 				<div v-else class="rounded-full bg-sky-800 text-sky-200 px-4 py-2">
 					<EditableDiv
-						:readonly="readonly"
+						:readonly="readonly && !isEditing"
 						color="sky-800"
 						:model-value="workflowInput.name"
 						placeholder="Enter Name..."
@@ -16,7 +16,7 @@
 					/>
 				</div>
 				<EditableDiv
-					:readonly="readonly"
+					:readonly="readonly && !isEditing"
 					color="slate-700"
 					:model-value="workflowInput.description"
 					placeholder="Enter Description..."
@@ -65,8 +65,8 @@
 			/>
 		</div>
 		<MultiFileField
-			v-if="!readonly || workflowInput.files?.length > 0 || !!workflowInput.thumb"
-			:readonly="readonly"
+			v-if="!readonly || isEditing || workflowInput.files?.length > 0 || !!workflowInput.thumb"
+			:readonly="readonly && !isEditing"
 			:disabled="!isEditing"
 			:model-value="workflowInput.files || (workflowInput.thumb ? [workflowInput.thumb] : [])"
 			:width="70"
@@ -109,7 +109,7 @@ import {
 	SelectionMenuField,
 	ShowHideButton
 } from "quasar-ui-danx";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 
 defineEmits(["select", "remove"]);
 const props = defineProps<{
@@ -125,7 +125,7 @@ onMounted(() => loadAvailableTeamObjectsByType(props.workflowInput.team_object_t
 watch(() => props.workflowInput.team_object_type, () => loadAvailableTeamObjectsByType(props.workflowInput.team_object_type));
 
 // State
-const isEditing = ref(false);
+const isEditing = defineModel<boolean>("editing");
 const isLoadingTeamObjects = computed(() => updateAction.isApplying || isLoadingAvailableTeamObjects.value[props.workflowInput.team_object_type]);
 const availableTeamObjects = computed(() => availableTeamObjectsByType.value[props.workflowInput.team_object_type] || []);
 const selectedTeamObject = computed(() => availableTeamObjects.value.find(to => to.id === props.workflowInput.team_object_id));
