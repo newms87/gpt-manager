@@ -1,4 +1,5 @@
 export { default as AgentThreadTaskRunnerConfig } from "./AgentThreadTaskRunnerConfig.vue";
+export { default as ArtifactLevelProjectionTaskRunnerConfig } from "./ArtifactLevelProjectionTaskRunnerConfig.vue";
 export { default as BaseTaskRunnerConfig } from "./BaseTaskRunnerConfig.vue";
 export { default as CategorizeArtifactsTaskRunnerConfig } from "./CategorizeArtifactsTaskRunnerConfig.vue";
 export { default as ClassifierTaskRunnerConfig } from "./ClassifierTaskRunnerConfig.vue";

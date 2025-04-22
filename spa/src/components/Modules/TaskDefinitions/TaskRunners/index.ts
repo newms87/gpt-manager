@@ -1,5 +1,6 @@
 import {
 	AgentThreadRunnerLottie,
+	ArtifactLevelProjectionLottie,
 	CategorizeArtifactsLottie,
 	FilterArtifactsLottie,
 	ImageToTextLottie,
@@ -16,6 +17,7 @@ import {
 import { TaskRunnerClass } from "@/types";
 import {
 	AgentThreadTaskRunnerConfig,
+	ArtifactLevelProjectionTaskRunnerConfig,
 	BaseTaskRunnerConfig,
 	CategorizeArtifactsTaskRunnerConfig,
 	ClassifierTaskRunnerConfig,
@@ -59,6 +61,12 @@ export const TaskRunnerClasses = {
 		description: "Filter artifacts based on their content with complex AND/OR conditions",
 		lottie: FilterArtifactsLottie,
 		config: FilterArtifactsTaskRunnerConfig
+	},
+	"Artifact Level Projection": {
+		name: "Artifact Level Projection",
+		description: "Project content between different artifact levels while respecting hierarchy relationships",
+		lottie: ArtifactLevelProjectionLottie, 
+		config: ArtifactLevelProjectionTaskRunnerConfig
 	},
 	"Image To Text Transcoder": {
 		name: "Image To Text Transcoder",
