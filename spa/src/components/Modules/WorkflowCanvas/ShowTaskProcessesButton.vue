@@ -2,6 +2,8 @@
 	<ShowHideButton
 		v-model="isShowingTaskProcesses"
 		:show-icon="ProcessListIcon"
+		class="show-task-processes-button"
+		@update:model-value="refreshTaskRun(taskRun)"
 	>
 		<div class="ml-2">{{ taskRun.process_count }}</div>
 		<InfoDialog
@@ -34,8 +36,8 @@ import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config"
 import NodeTaskProcessCard from "@/components/Modules/WorkflowCanvas/NodeTaskProcessCard";
 import { TaskRun } from "@/types";
 import { FaSolidFileInvoice as ProcessListIcon } from "danx-icon";
-import { autoRefreshObject, InfoDialog, ListTransition, ShowHideButton, stopAutoRefreshObject } from "quasar-ui-danx";
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { InfoDialog, ListTransition, ShowHideButton } from "quasar-ui-danx";
+import { ref } from "vue";
 
 const emit = defineEmits<{ restart: void }>();
 const props = defineProps<{
@@ -51,29 +53,6 @@ const artifactsField = {
 
 // Handle auto refreshing task processes while they're being shown
 const isShowingTaskProcesses = ref(false);
-let autoRefreshId = "";
-watch(() => props.taskRun, registerAutoRefresh);
-onMounted(registerAutoRefresh);
-onUnmounted(() => stopAutoRefreshObject(autoRefreshId));
-
-function registerAutoRefresh() {
-	if (props.taskRun) {
-		autoRefreshId = "task-run-task-processes:" + props.taskRun.id;
-		autoRefreshObject(
-			autoRefreshId,
-			props.taskRun,
-			(tr: TaskRun) =>
-				isShowingTaskProcesses.value &&
-				(!tr.processes?.length ||
-					["Running", "Pending"].includes(tr.status) ||
-					!!tr.processes.find(p => p.status === "Running")
-				),
-			refreshTaskRun
-		);
-	} else if (autoRefreshId) {
-		stopAutoRefreshObject(autoRefreshId);
-	}
-}
 
 function onRestart() {
 	refreshTaskRun(props.taskRun);

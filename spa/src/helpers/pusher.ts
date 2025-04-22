@@ -29,7 +29,6 @@ export function usePusher() {
 		const channelNames = [
 			"WorkflowRun",
 			"TaskRun",
-			"TaskProcess",
 			"AgentThread"
 		];
 		const channels = [];
@@ -37,6 +36,7 @@ export function usePusher() {
 		for (const channelName of channelNames) {
 			const channel = pusher.subscribe(`private-${channelName}.${authTeam.value.id}`);
 			channel.bind("updated", function (data) {
+				console.log("received update " + channelName, data);
 				storeObject(data);
 			});
 			channels.push(channel);

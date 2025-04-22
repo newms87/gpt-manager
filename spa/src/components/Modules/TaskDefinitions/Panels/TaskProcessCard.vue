@@ -114,7 +114,6 @@ import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import JobDispatchList from "@/components/Modules/Audits/JobDispatches/JobDispatchList";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
-import { WORKFLOW_STATUS } from "@/components/Modules/WorkflowDefinitions/workflows";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import { TaskProcess } from "@/types";
 import {
@@ -122,17 +121,10 @@ import {
 	FaSolidMessage as AgentThreadIcon,
 	FaSolidPersonRunning as RunThreadIcon
 } from "danx-icon";
-import {
-	ActionButton,
-	autoRefreshObject,
-	fPercent,
-	LabelPillWidget,
-	ShowHideButton,
-	stopAutoRefreshObject
-} from "quasar-ui-danx";
-import { onMounted, onUnmounted, ref } from "vue";
+import { ActionButton, fPercent, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
+import { ref } from "vue";
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
 	taskProcess: TaskProcess;
 	colorClass?: string;
 }>(), {
@@ -161,26 +153,4 @@ const artifactsField = {
 	meta: true,
 	files: { transcodes: true, thumb: true }
 };
-
-/********
- * Refresh the task run every 2 seconds while it is running
- */
-const autoRefreshId = "task-process:" + props.taskProcess.id;
-onMounted(() => {
-	autoRefreshObject(
-		autoRefreshId,
-		props.taskProcess,
-		(tp: TaskProcess) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value, WORKFLOW_STATUS.DISPATCHED.value].includes(tp.status),
-		(tp: TaskProcess) => dxTaskProcess.routes.details(tp, {
-			agentThread: isShowingAgentThread.value ? agentThreadField : false,
-			jobDispatches: isShowingJobDispatches.value ? jobDispatchesField : false,
-			inputArtifacts: isShowingInputArtifacts.value ? artifactsField : false,
-			outputArtifacts: isShowingOutputArtifacts.value ? artifactsField : false
-		})
-	);
-});
-
-onUnmounted(() => {
-	stopAutoRefreshObject(autoRefreshId);
-});
 </script>

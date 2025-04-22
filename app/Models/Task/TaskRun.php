@@ -2,6 +2,7 @@
 
 namespace App\Models\Task;
 
+use App\Events\TaskRunUpdatedEvent;
 use App\Models\Usage\UsageSummary;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
@@ -243,6 +244,10 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                         TaskProcessRunnerService::eventTriggered($taskProcessListener);
                     }
                 }
+            }
+
+            if ($taskRun->wasChanged(['status', 'input_artifacts_count', 'output_artifacts_count', 'percent_complete'])) {
+                TaskRunUpdatedEvent::dispatch($taskRun);
             }
         });
     }

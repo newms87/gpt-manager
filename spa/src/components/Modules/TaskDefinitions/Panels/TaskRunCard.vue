@@ -10,7 +10,7 @@
 				v-model="isShowingProcesses"
 				:label="taskRun.process_count + ' Processes'"
 				class="bg-slate-600 text-slate-200"
-				@show="dxTaskRun.routes.details(taskRun, {processes: true})"
+				@show="loadTaskProcesses"
 			/>
 			<WorkflowStatusTimerPill :runner="taskRun" />
 			<AiTokenUsageButton v-if="taskRun.usage" :usage="taskRun.usage" />
@@ -66,18 +66,10 @@
 import TaskProcessCard from "@/components/Modules/TaskDefinitions/Panels/TaskProcessCard";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
-import { WORKFLOW_STATUS } from "@/components/Modules/WorkflowDefinitions/workflows";
 import { AiTokenUsageButton } from "@/components/Shared";
 import { TaskRun } from "@/types";
-import {
-	ActionButton,
-	autoRefreshObject,
-	LabelPillWidget,
-	ListTransition,
-	ShowHideButton,
-	stopAutoRefreshObject
-} from "quasar-ui-danx";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { ActionButton, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
+import { computed, ref } from "vue";
 
 defineEmits(["deleted"]);
 const props = defineProps<{
@@ -92,20 +84,7 @@ const isShowingProcesses = ref(false);
 const isStopped = computed(() => props.taskRun.status === "Stopped" || props.taskRun.status === "Pending");
 const isRunning = computed(() => props.taskRun.status === "Running");
 
-/********
- * Refresh the task run every 2 seconds while it is running
- */
-const autoRefreshId = "task-run:" + props.taskRun.id;
-onMounted(() => {
-	autoRefreshObject(
-		autoRefreshId,
-		props.taskRun,
-		(tr: TaskRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(tr.status),
-		(tr: TaskRun) => dxTaskRun.routes.details(tr, { processes: false })
-	);
-});
-
-onUnmounted(() => {
-	stopAutoRefreshObject(autoRefreshId);
-});
+async function loadTaskProcesses() {
+	await dxTaskRun.routes.details(props.taskRun, { processes: true });
+}
 </script>
