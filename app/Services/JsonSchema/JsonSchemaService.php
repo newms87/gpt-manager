@@ -10,7 +10,7 @@ use Str;
 class JsonSchemaService
 {
     /** @var bool When strict mode is enabled, certain type castings will not be allowed (ie: scalar => array/object or object/array => scalar) */
-    protected bool $isStrict = true;
+    protected bool $isStrict = false;
 
     /** @var bool  Whether to use citations for the schema. NOTE: This will modify the output so that */
     protected bool $useCitations = false;
