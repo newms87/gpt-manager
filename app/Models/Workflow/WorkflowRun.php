@@ -139,6 +139,9 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         if ($this->hasRunAllTasks()) {
             static::log("All tasks have been run, setting flag");
             $this->has_run_all_tasks = true;
+        } else {
+            $this->has_run_all_tasks = false;
+            $this->completed_at      = null;
         }
 
         foreach($this->taskRuns()->get() as $taskRun) {

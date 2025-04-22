@@ -30,7 +30,7 @@ class TaskProcessRunnerService
     public static function prepare(TaskRun $taskRun, SchemaAssociation $schemaAssociation = null, $artifacts = []): TaskProcess
     {
         $artifacts = collect($artifacts);
-        static::log("Prepare task process for $taskRun w/ " . $artifacts->count() . " artifacts");
+        static::log("Prepare task process for $taskRun w/ " . $artifacts->count() . " artifacts" . ($schemaAssociation ? ' and schema association ' . $schemaAssociation->id : ''));
 
         $taskDefinition = $taskRun->taskDefinition;
         $name           = ($schemaAssociation?->schemaFragment?->name ?: $taskDefinition->name);

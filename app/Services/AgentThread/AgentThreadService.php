@@ -30,6 +30,13 @@ class AgentThreadService
     protected ?SchemaFragment    $responseFragment  = null;
     protected ?JsonSchemaService $jsonSchemaService = null;
 
+    protected array $retryProfile = [
+        'invalid_image_url' => [
+            'retries' => 3,
+            'delay'   => 5,
+        ],
+    ];
+
     /**
      * Overrides the response format for the thread run.
      * This will replace the Agent's response format with the provided schema and fragment
@@ -229,6 +236,10 @@ class AgentThreadService
                             sleep(5);
                             continue;
                         }
+                    } elseif ($exception->getStatusCode() === 400) {
+                        if ($this->shouldRetry($exception->getJson())) {
+                            continue;
+                        }
                     }
 
                     // If the error is not a 500 level error, or we have exhausted retries, throw the exception
@@ -254,6 +265,34 @@ class AgentThreadService
             LockHelper::release($agentThreadRun);
             LockHelper::release($agentThreadRun->agentThread);
         }
+    }
+
+    public function shouldRetry(array $responseJson): bool
+    {
+        $errorCode = $responseJson['error']['code'] ?? null;
+
+        Log::error("Agent returned error code: $errorCode");
+
+        if (!$errorCode) {
+            return false;
+        }
+
+        $profile = $this->retryProfile[$errorCode] ?? null;
+
+        if ($profile) {
+            $retries = $profile['retries'] ?? 0;
+            $delay   = $profile['delay'] ?? 0;
+
+            if ($retries > 0) {
+                Log::warning("Error code $errorCode: Retrying in $delay seconds... (retries left: $retries)");
+                $this->retryProfile[$errorCode]['retries'] = $retries - 1;
+                sleep($delay);
+
+                return true;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -292,7 +331,7 @@ class AgentThreadService
                 $messages[] = $formattedMessage;
             }
         }
-        
+
         $responseMessage = $this->getResponseMessage($agentThreadRun);
 
         if ($responseMessage) {
