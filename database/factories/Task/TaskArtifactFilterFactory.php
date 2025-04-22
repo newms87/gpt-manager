@@ -16,7 +16,8 @@ class TaskArtifactFilterFactory extends Factory
             'include_files'             => true,
             'include_json'              => true,
             'include_meta'              => true,
-            'fragment_selector'         => null,
+            'schema_fragment_id'        => null,
+            'meta_fragment_selector'    => null,
         ];
     }
 }
