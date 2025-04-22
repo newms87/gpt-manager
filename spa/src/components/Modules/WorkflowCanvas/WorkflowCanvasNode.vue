@@ -85,6 +85,7 @@ const {
 	taskRunner,
 	isTaskRunning,
 	isTaskCompleted,
+	isTaskSkipped,
 	isTaskFailed,
 	isTaskPending
 } = useWorkflowNode(workflowNode, taskRun);
@@ -95,6 +96,7 @@ const nodeClass = computed(() => {
 		"border-gray-300 bg-slate-700": isTaskPending.value,
 		"bg-sky-900 border-sky-400": isTaskRunning.value,
 		"bg-red-900 border-red-400": isTaskFailed.value,
+		"bg-skipped border-yellow-600": isTaskSkipped.value,
 		"bg-green-900 border-green-400": isTaskCompleted.value
 	};
 });

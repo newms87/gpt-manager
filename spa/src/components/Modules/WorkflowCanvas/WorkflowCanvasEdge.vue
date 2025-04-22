@@ -19,7 +19,7 @@
 				offsetPath: `path('${path[0]}')`,
 				offsetDistance: `${transitionPercent}%`,
 				offsetRotate: '0deg',
-				offsetAnchor: 'center',
+				offsetAnchor: 'center'
 			}"
 		>
 			<div class="artifact-transit-icon relative inline-block">
@@ -31,7 +31,7 @@
 			:style="{
 				pointerEvents: 'all',
 				position: 'absolute',
-				transform: `translate(-50%, -50%) translate(${path[1]}px,${path[2]}px)`,
+				transform: `translate(-50%, -50%) translate(${path[1]}px,${path[2]}px)`
 			}"
 			class="nodrag nopan group z-[1000]"
 			@mouseenter="isHoveringMenu = true"
@@ -87,6 +87,8 @@ watch(() => props.workflowRun, async () => {
 		newPercent = 100;
 	} else if (targetTaskRun.value?.status === "Pending") {
 		newPercent = 75;
+	} else if (["Skipped", "Stopped"].includes(targetTaskRun.value?.status)) {
+		newPercent = 0;
 	} else if (sourceTaskRun.value?.status === "Completed") {
 		newPercent = 25;
 	}

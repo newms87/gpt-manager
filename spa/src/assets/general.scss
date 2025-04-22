@@ -37,3 +37,13 @@ h6 {
 .flex-x {
 	@apply flex items-center flex-nowrap;
 }
+
+@layer utilities {
+	.bg-skipped {
+		background-image: repeating-linear-gradient(
+				135deg,
+				theme("colors.yellow.700") 0 10px,
+				theme("colors.gray.700") 10px 20px
+		);
+	}
+}

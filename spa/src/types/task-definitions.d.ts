@@ -134,4 +134,4 @@ export interface UsageSummary {
 	total_cost: number;
 }
 
-export type TaskRunStatus = "Pending" | "Running" | "Failed" | "Completed" | "Stopped" | "Timeout";
+export type TaskRunStatus = "Pending" | "Running" | "Failed" | "Skipped" | "Completed" | "Stopped" | "Timeout";

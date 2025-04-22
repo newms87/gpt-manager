@@ -11,6 +11,7 @@ export function useWorkflowNode(workflowNode: Ref<WorkflowNode>, taskRun: Ref<Ta
 	const targetEdges = computed<Edge[]>(() => edges.value.filter((edge) => edge.target === workflowNode.value.id.toString()));
 	const isTaskRunning = computed(() => taskRun.value?.status === "Running");
 	const isTaskFailed = computed(() => taskRun.value?.status === "Failed");
+	const isTaskSkipped = computed(() => taskRun.value?.status === "Skipped");
 	const isTaskCompleted = computed(() => taskRun.value?.status === "Completed");
 	const isTaskPending = computed(() => !isTaskRunning.value && !isTaskCompleted.value && !isTaskFailed.value);
 
@@ -21,6 +22,7 @@ export function useWorkflowNode(workflowNode: Ref<WorkflowNode>, taskRun: Ref<Ta
 		targetEdges,
 		isTaskRunning,
 		isTaskFailed,
+		isTaskSkipped,
 		isTaskCompleted,
 		isTaskPending
 	};
