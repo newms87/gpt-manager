@@ -22,12 +22,14 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { usePusher } from "@/helpers/pusher";
 import { useQuasar } from "quasar";
 import { ActionVnode, FlashMessages } from "quasar-ui-danx";
 import { onMounted } from "vue";
 
 onMounted(() => {
 	FlashMessages.notify = useQuasar().notify;
+	usePusher();
 });
 
 </script>

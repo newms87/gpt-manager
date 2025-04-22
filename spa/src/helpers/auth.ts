@@ -60,7 +60,7 @@ export async function loadAuthTeam(uuid: string = null): Promise<AuthTeam | null
 
 	if (!uuid) return null;
 
-	const teamList = await dxTeam.routes.list({ filter: { uuid } });
+	const teamList = await dxTeam.routes.list({ filter: { uuid } }) as unknown as { data: AuthTeam[], abort?: boolean };
 
 	// If the request was aborted, that means multiple calls were made, so wait a little bit and return the loaded value
 	if (teamList?.abort) {

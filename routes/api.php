@@ -91,3 +91,8 @@ ActionRoute::routes('team-objects', new TeamObjectsController);
 
 // Audits
 ActionRoute::routes('audit-requests', new AuditRequestsController);
+
+// Websockets Pusher Broadcasting
+Route::post('broadcasting/auth', function (Request $request) {
+    return Broadcast::auth($request);
+});
