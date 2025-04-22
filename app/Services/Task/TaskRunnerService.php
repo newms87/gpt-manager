@@ -46,7 +46,16 @@ class TaskRunnerService
     {
         static::log("Preparing task processes for $taskRun");
 
-        $artifacts = $taskRun->inputArtifacts()->get();
+        $query = $taskRun->inputArtifacts();
+
+        $maxLevel = max($taskRun->taskDefinition->input_artifact_levels);
+
+        // Eager load the children of the artifacts to avoid N+1 queries
+        if ($maxLevel > 0) {
+            $query->with(implode('.', array_fill(0, $maxLevel, 'children')));
+        }
+        
+        $artifacts = $query->get();
 
         $taskProcesses = [];
 

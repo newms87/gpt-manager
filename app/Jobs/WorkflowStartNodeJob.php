@@ -14,7 +14,7 @@ class WorkflowStartNodeJob extends Job
     protected WorkflowNode     $workflowNode;
     protected array|Collection $artifacts;
 
-    public int $timeout = 120;
+    public int $timeout = 300;
 
     public function __construct(WorkflowRun $workflowRun, WorkflowNode $workflowNode, array|Collection $artifacts = [])
     {
