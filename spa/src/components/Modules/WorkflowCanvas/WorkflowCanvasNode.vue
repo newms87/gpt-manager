@@ -16,7 +16,6 @@
 				@copy="$emit('copy', node)"
 				@edit="$emit('edit', node)"
 				@remove="$emit('remove', node)"
-				@restart="refreshActiveWorkflowRun"
 			/>
 
 			<div class="flex justify-center items-center h-full">
@@ -57,7 +56,6 @@ import { BaseTaskRunnerNode } from "@/components/Modules/TaskDefinitions/TaskRun
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
 import { useWorkflowNode } from "@/components/Modules/WorkflowCanvas/useWorkflowNode";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
-import { refreshActiveWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
 import { TaskRun, WorkflowDefinition, WorkflowRun } from "@/types";
 import { Node } from "@vue-flow/core";
 import { computed } from "vue";

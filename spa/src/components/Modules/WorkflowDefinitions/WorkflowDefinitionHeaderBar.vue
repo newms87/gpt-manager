@@ -67,7 +67,7 @@
 						:workflow-run="run"
 						class="my-2"
 						selectable
-						@select="(activeWorkflowRun = run) && (isShowing = false)"
+						@select="onSelectActiveWorkflowRun(run)"
 					/>
 				</div>
 			</div>
@@ -84,13 +84,14 @@ import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinition
 import {
 	activeWorkflowDefinition,
 	activeWorkflowRun,
-	createWorkflowRun
+	createWorkflowRun,
+	refreshWorkflowRun
 } from "@/components/Modules/WorkflowDefinitions/store";
 import SelectWorkflowInputDialog
 	from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/SelectWorkflowInputDialog";
 import WorkflowRunCard from "@/components/Modules/WorkflowDefinitions/WorkflowRunCard";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
-import { WorkflowInput } from "@/types";
+import { WorkflowInput, WorkflowRun } from "@/types";
 import { FaSolidPersonRunning as RunsIcon } from "danx-icon";
 import { ActionButton, EditableDiv, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
@@ -121,5 +122,10 @@ async function onCreateWorkflowRun(workflowInput?: WorkflowInput) {
 	isSelectingWorkflowInput.value = false;
 
 	await createWorkflowRun(workflowInput);
+}
+async function onSelectActiveWorkflowRun(workflowRun: WorkflowRun) {
+	activeWorkflowRun.value = workflowRun;
+	isShowing.value = false;
+	await refreshWorkflowRun(workflowRun);
 }
 </script>

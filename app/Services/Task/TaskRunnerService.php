@@ -46,17 +46,6 @@ class TaskRunnerService
     {
         static::log("Preparing task processes for $taskRun");
 
-        $query = $taskRun->inputArtifacts();
-
-        $maxLevel = max($taskRun->taskDefinition->input_artifact_levels);
-
-        // Eager load the children of the artifacts to avoid N+1 queries
-        if ($maxLevel > 0) {
-            $query->with(implode('.', array_fill(0, $maxLevel, 'children')));
-        }
-        
-        $artifacts = $query->get();
-
         $taskProcesses = [];
 
         $taskDefinition     = $taskRun->taskDefinition;
@@ -66,6 +55,18 @@ class TaskRunnerService
         if ($taskDefinition->isTextResponse() || $schemaAssociations->isEmpty()) {
             $schemaAssociations = [null];
         }
+
+        $query = $taskRun->inputArtifacts();
+
+        $maxLevel = max($taskDefinition->input_artifact_levels ?? [0]);
+
+        // Eager load the children of the artifacts to avoid N+1 queries
+        if ($maxLevel > 0) {
+            $query->with(implode('.', array_fill(0, $maxLevel, 'children')));
+        }
+
+        $artifacts = $query->get();
+
 
         // Split up the artifacts into the groups defined by the task definition
         $artifactGroups = ArtifactsSplitterService::split($taskDefinition->input_artifact_mode ?: '', $artifacts, $taskDefinition->input_artifact_levels);

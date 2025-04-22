@@ -82,7 +82,7 @@
 <script setup lang="ts">
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
-import { activeWorkflowRun, refreshActiveWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
+import { activeWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { TaskRun, WorkflowNode } from "@/types";
 import { ActionButton } from "quasar-ui-danx";
@@ -103,9 +103,9 @@ const props = defineProps<{
 
 const isTaskRunning = computed(() => ["Running"].includes(props.taskRun?.status));
 
-const startNodeAction = dxWorkflowRun.getAction("start-node", { onFinish: refreshActiveWorkflowRun });
-const restartAction = dxTaskRun.getAction("restart", { onFinish: refreshActiveWorkflowRun });
-const resumeAction = dxTaskRun.getAction("resume", { onFinish: refreshActiveWorkflowRun });
+const startNodeAction = dxWorkflowRun.getAction("start-node");
+const restartAction = dxTaskRun.getAction("restart");
+const resumeAction = dxTaskRun.getAction("resume");
 const stopAction = dxTaskRun.getAction("stop");
 const isStopped = computed(() => ["Stopped"].includes(props.taskRun?.status));
 const isRunning = computed(() => ["Running"].includes(props.taskRun?.status));

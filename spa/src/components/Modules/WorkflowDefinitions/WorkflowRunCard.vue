@@ -26,17 +26,9 @@ import TaskRunCard from "@/components/Modules/TaskDefinitions/Panels/TaskRunCard
 import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/config";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
-import { WORKFLOW_STATUS } from "@/components/Modules/WorkflowDefinitions/workflows";
 import { WorkflowDefinition, WorkflowRun } from "@/types";
-import {
-	ActionButton,
-	autoRefreshObject,
-	fDateTime,
-	LabelPillWidget,
-	ShowHideButton,
-	stopAutoRefreshObject
-} from "quasar-ui-danx";
-import { onMounted, onUnmounted, ref } from "vue";
+import { ActionButton, fDateTime, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
+import { ref } from "vue";
 
 defineEmits(["select"]);
 const props = defineProps<{
@@ -47,21 +39,4 @@ const props = defineProps<{
 
 const deleteWorkflowRunAction = dxWorkflowRun.getAction("delete", { onFinish: () => dxWorkflowDefinition.routes.details(props.workflowDefinition) });
 const isShowing = ref(false);
-
-/**
- * Refresh the workflow run every 2 seconds while it is running
- */
-const autoRefreshName = "workflow-run:" + props.workflowRun.id;
-onMounted(() => {
-	autoRefreshObject(
-		autoRefreshName,
-		props.workflowRun,
-		(tr: WorkflowRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value].includes(tr.status),
-		(tr: WorkflowRun) => dxWorkflowRun.routes.details(tr, { taskRuns: true })
-	);
-});
-
-onUnmounted(() => {
-	stopAutoRefreshObject(autoRefreshName);
-});
 </script>

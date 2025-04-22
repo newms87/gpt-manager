@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Schema\SchemaAssociation;
+use App\Models\Task\TaskProcess;
 use DB;
 use Illuminate\Console\Command;
 
@@ -63,6 +65,9 @@ class WorkspaceCleanCommand extends Command
                 'workflow_runs_count',
             ],
         ];
+
+        $this->comment("Cleaning task process schema associations");
+        SchemaAssociation::where('object_type', TaskProcess::class)->delete();
 
         $this->resetCounts($counts);
 

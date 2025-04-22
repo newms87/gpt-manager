@@ -1,17 +1,18 @@
 import { authTeam, authToken } from "@/helpers";
 import { Channel, default as Pusher } from "pusher-js";
+import { storeObject } from "quasar-ui-danx";
 
 let pusher: Pusher, channels: Channel[];
 
 export function usePusher() {
 	if (!pusher) {
 		if (!authToken.value) {
-			console.log("No auth token, not connecting to Pusher");
+			console.debug("No auth token, not connecting to Pusher");
 			return;
 		}
 
 		if (!authTeam.value) {
-			console.log("No auth team, not connecting to Pusher");
+			console.debug("No auth team, not connecting to Pusher");
 			return;
 		}
 
@@ -26,14 +27,17 @@ export function usePusher() {
 		});
 
 		const channelNames = [
-			"WorkflowRun"
+			"WorkflowRun",
+			"TaskRun",
+			"TaskProcess",
+			"AgentThread"
 		];
 		const channels = [];
 
 		for (const channelName of channelNames) {
 			const channel = pusher.subscribe(`private-${channelName}.${authTeam.value.id}`);
 			channel.bind("updated", function (data) {
-				console.log("got message", data);
+				storeObject(data);
 			});
 			channels.push(channel);
 		}

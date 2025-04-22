@@ -2,6 +2,7 @@
 
 namespace App\Models\Workflow;
 
+use App\Events\WorkflowRunUpdatedEvent;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
@@ -209,6 +210,8 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
                         TaskProcessRunnerService::eventTriggered($taskProcessListener);
                     }
                 }
+
+                WorkflowRunUpdatedEvent::dispatch($workflowRun);
             }
         });
     }

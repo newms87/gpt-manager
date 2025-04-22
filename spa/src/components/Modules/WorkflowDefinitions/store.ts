@@ -1,9 +1,8 @@
 import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/config";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
-import { WORKFLOW_STATUS } from "@/components/Modules/WorkflowDefinitions/workflows";
 import { TaskDefinition, TaskRunnerClass, WorkflowDefinition, WorkflowInput, WorkflowNode, WorkflowRun } from "@/types";
-import { autoRefreshObject, getItem, setItem, stopAutoRefreshObject, storeObjects } from "quasar-ui-danx";
-import { ref, watch } from "vue";
+import { getItem, setItem, storeObjects } from "quasar-ui-danx";
+import { ref } from "vue";
 
 const ACTIVE_WORKFLOW_DEFINITION_KEY = "dx-active-workflow-definition-id";
 
@@ -49,29 +48,13 @@ async function loadWorkflowRuns() {
 	return await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value, { "*": false, runs: true });
 }
 
-async function refreshActiveWorkflowRun() {
-	if (!activeWorkflowRun.value) return null;
-	return await dxWorkflowRun.routes.details(activeWorkflowRun.value, { taskRuns: { taskDefinition: true } });
-}
-
-watch(() => activeWorkflowRun.value, autoRefreshWorkflowRun);
-async function autoRefreshWorkflowRun() {
-	const AUTO_REFRESH_NAME = "active-workflow-run";
-	if (activeWorkflowRun.value) {
-		await autoRefreshObject(
-				AUTO_REFRESH_NAME,
-				activeWorkflowRun.value,
-				(tr: WorkflowRun) => [WORKFLOW_STATUS.PENDING.value, WORKFLOW_STATUS.RUNNING.value, WORKFLOW_STATUS.DISPATCHED.value].includes(tr.status) || !activeWorkflowRun.value.taskRuns,
-				refreshActiveWorkflowRun
-		);
-	} else {
-		stopAutoRefreshObject(AUTO_REFRESH_NAME);
-	}
+async function refreshWorkflowRun(workflowRun: WorkflowRun) {
+	return await dxWorkflowRun.routes.details(workflowRun, { taskRuns: { taskDefinition: true } });
 }
 
 const addNodeAction = dxWorkflowDefinition.getAction("add-node", {
 	optimistic: (action, target: WorkflowDefinition, data: WorkflowNode) => target.nodes.push({ ...data }),
-	onFinish: refreshActiveWorkflowDefinition
+	onFinish: async () => await refreshWorkflowRun(activeWorkflowRun.value)
 });
 
 async function addWorkflowNode(newNode: TaskDefinition | TaskRunnerClass, input: Partial<WorkflowNode> = {}) {
@@ -108,7 +91,7 @@ export {
 	workflowDefinitions,
 	initWorkflowState,
 	refreshActiveWorkflowDefinition,
-	refreshActiveWorkflowRun,
+	refreshWorkflowRun,
 	createWorkflowRun,
 	loadWorkflowDefinitions,
 	loadWorkflowRuns,
