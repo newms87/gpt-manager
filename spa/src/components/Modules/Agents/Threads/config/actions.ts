@@ -1,34 +1,12 @@
 import { controls as agentControls } from "@/components/Modules/Agents/config/controls";
 import { AgentThreadMessage } from "@/types";
-import {
-	ActionOptions,
-	ConfirmActionDialog,
-	pollUntil,
-	storeObject,
-	useActions,
-	withDefaultActions
-} from "quasar-ui-danx";
+import { ActionOptions, ConfirmActionDialog, useActions, withDefaultActions } from "quasar-ui-danx";
 import { h } from "vue";
 import { routes } from "./routes";
 
 export const actions: ActionOptions[] = [
 	...withDefaultActions("Agent Thread"),
-	{
-		name: "run",
-		onAction: async (action, target, input) => {
-			const response = await routes.applyAction(action, target, input);
-
-			if (response.success) {
-				pollUntil(async () => {
-					const thread = await routes.details(target);
-					storeObject(thread);
-					return !thread.is_running;
-				}, 1000);
-			}
-
-			return response;
-		}
-	},
+	{ name: "run" },
 	{
 		name: "create-message",
 		optimistic: (action, target, data) => {

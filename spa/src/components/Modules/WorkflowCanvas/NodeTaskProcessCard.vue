@@ -152,11 +152,7 @@ watch(() => props.taskProcess.status, () => {
 
 const hasLoadedAgentThread = ref(false);
 async function refreshAgentThreadRelation() {
-	const result = await dxTaskProcess.routes.details(props.taskProcess, { agentThread: AgentThreadFields });
+	await dxTaskProcess.routes.details(props.taskProcess, { agentThread: AgentThreadFields });
 	hasLoadedAgentThread.value = true;
-	// If the process is running, but the thread is not, the thread is probably out of sync / or will start running soon, so keep checking until it is running or the process has stopped running.
-	if (isRunning.value && !result?.agentThread?.is_running) {
-		setTimeout(refreshAgentThreadRelation, 1000);
-	}
 }
 </script>

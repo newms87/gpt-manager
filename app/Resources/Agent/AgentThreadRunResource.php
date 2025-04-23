@@ -5,7 +5,7 @@ namespace App\Resources\Agent;
 use App\Models\Agent\AgentThreadRun;
 use Newms87\Danx\Resources\ActionResource;
 
-class ThreadRunResource extends ActionResource
+class AgentThreadRunResource extends ActionResource
 {
     public static function data(AgentThreadRun $threadRun): array
     {
@@ -21,6 +21,7 @@ class ThreadRunResource extends ActionResource
             'response_format'      => $threadRun->response_format,
             'response_schema_id'   => $threadRun->response_schema_id,
             'response_fragment_id' => $threadRun->response_fragment_id,
+            'agent_thread_id'      => $threadRun->agent_thread_id,
             'thread'               => fn($fields) => AgentThreadResource::make($threadRun->agentThread, $fields),
         ];
     }

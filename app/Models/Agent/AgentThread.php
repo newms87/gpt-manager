@@ -2,7 +2,6 @@
 
 namespace App\Models\Agent;
 
-use App\Events\AgentThreadUpdatedEvent;
 use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -132,15 +131,6 @@ class AgentThread extends Model implements AuditableContract
     public function getTotalCost()
     {
         return $this->getUsage()['total_cost'];
-    }
-
-    public static function booted()
-    {
-        static::saved(function (AgentThread $agentThread) {
-            if ($agentThread->wasChanged(['name', 'summary'])) {
-                AgentThreadUpdatedEvent::dispatch($agentThread);
-            }
-        });
     }
 
     public function __toString()

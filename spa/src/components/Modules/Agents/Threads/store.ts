@@ -10,7 +10,7 @@ const AgentThreadFields = {
 	}
 };
 async function refreshAgentThread(agentThread: AgentThread): Promise<AgentThread> {
-	return await dxAgentThread.routes.details(agentThread, AgentThreadFields);
+	return await dxAgentThread.routes.details(agentThread, AgentThreadFields) as AgentThread;
 }
 
 export {

@@ -59,13 +59,15 @@
 <script setup lang="ts">
 import { AgentThreadResponseField } from "@/components/Modules/Agents/Fields";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
+import { refreshAgentThread } from "@/components/Modules/Agents/Threads/store";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import JobDispatchCard from "@/components/Modules/Audits/JobDispatches/JobDispatchCard";
 import { AiTokenUsageButton } from "@/components/Shared";
-import { AgentThread, AgentThreadResponseFormat } from "@/types";
+import { usePusher } from "@/helpers/pusher";
+import { AgentThread, AgentThreadResponseFormat, AgentThreadRun } from "@/types";
 import { FaRegularMessage as CreateIcon, FaSolidBusinessTime as JobDispatchIcon } from "danx-icon";
 import { ActionButton, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 const props = defineProps<{
 	agentThread: AgentThread;
@@ -99,4 +101,12 @@ async function refreshJobDispatch() {
 	});
 	isLoadingJobDispatch.value = false;
 }
+
+onMounted(() => {
+	usePusher().subscribe("AgentThreadRun", "updated", async (data: AgentThreadRun) => {
+		if (data.agent_thread_id === props.agentThread.id) {
+			await refreshAgentThread(props.agentThread);
+		}
+	});
+});
 </script>

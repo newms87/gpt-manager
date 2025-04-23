@@ -4,7 +4,7 @@ import { ActionTargetItem, storeObject } from "quasar-ui-danx";
 
 export interface ChannelEventSubscription {
 	channel: string;
-	event: string;
+	events: string[];
 	callback: (data: ActionTargetItem) => void;
 }
 
@@ -36,7 +36,7 @@ export function usePusher() {
 		const channelNames = {
 			"WorkflowRun": ["updated"],
 			"TaskRun": ["updated", "created"],
-			"AgentThread": ["updated"]
+			"AgentThreadRun": ["updated"]
 		};
 		const channels = [];
 
@@ -46,7 +46,6 @@ export function usePusher() {
 
 			for (const event of events) {
 				channel.bind(event, function (data) {
-					console.log("received " + event + " " + channelName, data);
 					storeObject(data);
 					fireSubscriberEvents(channelName, event, data);
 				});
@@ -55,17 +54,31 @@ export function usePusher() {
 		}
 	}
 
-	function subscribe(channel: string, event: string, callback: (data: ActionTargetItem) => void) {
+	function subscribe(channel: string, event: string | string[], callback: (data: ActionTargetItem) => void) {
 		subscriptions.push({
 			channel,
-			event,
+			events: Array.isArray(event) ? event : [event],
 			callback
+		});
+	}
+
+	function subscribeToModel(model: ActionTargetItem, event: string | string[], callback: (data: ActionTargetItem) => void) {
+		if (!model.id) {
+			console.warn("Cannot subscribe to model without id", model);
+			return;
+		}
+
+		const channel = model.__type.replace("Resource", "");
+		subscribe(channel, event, (data: ActionTargetItem) => {
+			if (data.id === model.id) {
+				callback(data);
+			}
 		});
 	}
 
 	function fireSubscriberEvents(channel: string, event: string, data: ActionTargetItem) {
 		for (const subscription of subscriptions) {
-			if (subscription.channel === channel && subscription.event === event) {
+			if ([channel, "private-" + channel].includes(subscription.channel) && subscription.events.includes(event)) {
 				subscription.callback(data);
 			}
 		}
@@ -74,6 +87,7 @@ export function usePusher() {
 	return {
 		pusher,
 		channels,
-		subscribe
+		subscribe,
+		subscribeToModel
 	};
 }

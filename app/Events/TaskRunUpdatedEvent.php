@@ -4,29 +4,21 @@ namespace App\Events;
 
 use App\Models\Task\TaskRun;
 use App\Resources\TaskDefinition\TaskRunResource;
-use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
-class TaskRunUpdatedEvent implements ShouldBroadcast
+class TaskRunUpdatedEvent extends ModelSavedEvent
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
-
-    public function __construct(protected TaskRun $taskRun, protected bool $created = false) { }
+    public function __construct(protected TaskRun $taskRun, protected string $event)
+    {
+        parent::__construct($taskRun, $event);
+    }
 
     public function broadcastOn()
     {
         return new PrivateChannel('TaskRun.' . $this->taskRun->taskDefinition->team_id);
     }
 
-    public function broadcastAs()
-    {
-        return $this->created ? 'created' : 'updated';
-    }
-
-    public function broadcastWith()
+    public function data(): array
     {
         return TaskRunResource::make($this->taskRun);
     }

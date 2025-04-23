@@ -13,11 +13,8 @@ class ExecuteThreadRunJob extends Job
     public bool $failOnTimeout = true;
     public int  $tries         = 1;
 
-    public AgentThreadRun $threadRun;
-
-    public function __construct(AgentThreadRun $threadRun)
+    public function __construct(public AgentThreadRun $threadRun)
     {
-        $this->threadRun = $threadRun;
         Log::debug("ExecuteThreadRunJob created for thread run $threadRun->id");
         parent::__construct();
     }

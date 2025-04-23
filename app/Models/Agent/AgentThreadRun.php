@@ -2,7 +2,7 @@
 
 namespace App\Models\Agent;
 
-use App\Events\AgentThreadUpdatedEvent;
+use App\Events\AgentThreadRunUpdatedEvent;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Services\JsonSchema\JsonSchemaService;
@@ -104,7 +104,7 @@ class AgentThreadRun extends Model implements AuditableContract
     {
         static::saved(function (AgentThreadRun $agentThreadRun) {
             if ($agentThreadRun->wasChanged(['status', 'last_message_id'])) {
-                AgentThreadUpdatedEvent::dispatch($agentThreadRun->agentThread);
+                AgentThreadRunUpdatedEvent::dispatch($agentThreadRun);
             }
         });
     }
