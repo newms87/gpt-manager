@@ -23,7 +23,7 @@ export function usePusher() {
 			return;
 		}
 
-		pusher = new Pusher("22d7fbae1a703b7acaff", {
+		pusher = new Pusher(import.meta.env.VITE_PUSHER_API_KEY, {
 			cluster: "us2",
 			authEndpoint: import.meta.env.VITE_API_URL + "/broadcasting/auth",
 			auth: {

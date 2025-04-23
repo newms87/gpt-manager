@@ -168,7 +168,7 @@ class JSONSchemaDataToDatabaseMapper
 
         $jsonValue = StringHelper::safeJsonDecode($value, maxEntrySize: 100000, forceJson: false);
 
-        $teamObjectAttribute = TeamObjectAttribute::updateOrCreate([
+        $teamObjectAttribute = TeamObjectAttribute::withTrashed()->updateOrCreate([
             'team_object_id' => $teamObject->id,
             'name'           => $name,
         ], [
@@ -176,6 +176,7 @@ class JSONSchemaDataToDatabaseMapper
             'json_value' => $jsonValue ?: null,
             'reason'     => $reason,
             'confidence' => $confidence,
+            'deleted_at' => null,
         ]);
 
         // Clear out the old sources
