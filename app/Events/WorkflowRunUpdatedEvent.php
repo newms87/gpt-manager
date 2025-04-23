@@ -14,7 +14,7 @@ class WorkflowRunUpdatedEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public WorkflowRun $workflowRun) { }
+    public function __construct(protected WorkflowRun $workflowRun) { }
 
     public function broadcastOn()
     {

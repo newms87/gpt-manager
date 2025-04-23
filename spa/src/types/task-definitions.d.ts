@@ -75,6 +75,7 @@ export interface TaskRun extends TaskRunner {
 	process_count: number;
 	job_dispatch_count: number;
 	processes?: TaskProcess[];
+	workflow_run_id: number;
 	task_definition_id: number;
 	taskDefinition?: TaskDefinition;
 	workflow_node_id: number;

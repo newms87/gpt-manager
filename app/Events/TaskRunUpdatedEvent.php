@@ -14,7 +14,7 @@ class TaskRunUpdatedEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public TaskRun $taskRun) { }
+    public function __construct(protected TaskRun $taskRun, protected bool $created = false) { }
 
     public function broadcastOn()
     {
@@ -23,7 +23,7 @@ class TaskRunUpdatedEvent implements ShouldBroadcast
 
     public function broadcastAs()
     {
-        return 'updated';
+        return $this->created ? 'created' : 'updated';
     }
 
     public function broadcastWith()

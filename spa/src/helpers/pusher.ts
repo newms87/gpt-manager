@@ -1,8 +1,15 @@
 import { authTeam, authToken } from "@/helpers";
 import { Channel, default as Pusher } from "pusher-js";
-import { storeObject } from "quasar-ui-danx";
+import { ActionTargetItem, storeObject } from "quasar-ui-danx";
+
+export interface ChannelEventSubscription {
+	channel: string;
+	event: string;
+	callback: (data: ActionTargetItem) => void;
+}
 
 let pusher: Pusher, channels: Channel[];
+const subscriptions: ChannelEventSubscription[] = [];
 
 export function usePusher() {
 	if (!pusher) {
@@ -26,25 +33,47 @@ export function usePusher() {
 			}
 		});
 
-		const channelNames = [
-			"WorkflowRun",
-			"TaskRun",
-			"AgentThread"
-		];
+		const channelNames = {
+			"WorkflowRun": ["updated"],
+			"TaskRun": ["updated", "created"],
+			"AgentThread": ["updated"]
+		};
 		const channels = [];
 
-		for (const channelName of channelNames) {
+		for (const channelName of Object.keys(channelNames)) {
+			const events = channelNames[channelName];
 			const channel = pusher.subscribe(`private-${channelName}.${authTeam.value.id}`);
-			channel.bind("updated", function (data) {
-				console.log("received update " + channelName, data);
-				storeObject(data);
-			});
+
+			for (const event of events) {
+				channel.bind(event, function (data) {
+					console.log("received " + event + " " + channelName, data);
+					storeObject(data);
+					fireSubscriberEvents(channelName, event, data);
+				});
+			}
 			channels.push(channel);
+		}
+	}
+
+	function subscribe(channel: string, event: string, callback: (data: ActionTargetItem) => void) {
+		subscriptions.push({
+			channel,
+			event,
+			callback
+		});
+	}
+
+	function fireSubscriberEvents(channel: string, event: string, data: ActionTargetItem) {
+		for (const subscription of subscriptions) {
+			if (subscription.channel === channel && subscription.event === event) {
+				subscription.callback(data);
+			}
 		}
 	}
 
 	return {
 		pusher,
-		channels
+		channels,
+		subscribe
 	};
 }

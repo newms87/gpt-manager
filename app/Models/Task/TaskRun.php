@@ -247,7 +247,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
             }
 
             if ($taskRun->wasChanged(['status', 'input_artifacts_count', 'output_artifacts_count', 'percent_complete'])) {
-                TaskRunUpdatedEvent::dispatch($taskRun);
+                TaskRunUpdatedEvent::dispatch($taskRun, $taskRun->wasRecentlyCreated);
             }
         });
     }

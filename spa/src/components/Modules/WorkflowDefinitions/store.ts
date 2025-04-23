@@ -1,6 +1,15 @@
 import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/config";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
-import { TaskDefinition, TaskRunnerClass, WorkflowDefinition, WorkflowInput, WorkflowNode, WorkflowRun } from "@/types";
+import { usePusher } from "@/helpers/pusher";
+import {
+	TaskDefinition,
+	TaskRun,
+	TaskRunnerClass,
+	WorkflowDefinition,
+	WorkflowInput,
+	WorkflowNode,
+	WorkflowRun
+} from "@/types";
 import { getItem, setItem, storeObjects } from "quasar-ui-danx";
 import { ref } from "vue";
 
@@ -51,6 +60,15 @@ async function loadWorkflowRuns() {
 async function refreshWorkflowRun(workflowRun: WorkflowRun) {
 	return await dxWorkflowRun.routes.details(workflowRun, { taskRuns: { taskDefinition: true } });
 }
+
+/**
+ *  Whenever a task run has been created for the workflow run, refresh the workflow to get the latest taskRuns list
+ */
+usePusher().subscribe("TaskRun", "created", async (taskRun: TaskRun) => {
+	if (taskRun.workflow_run_id === activeWorkflowRun.value?.id) {
+		await refreshWorkflowRun(activeWorkflowRun.value);
+	}
+});
 
 const addNodeAction = dxWorkflowDefinition.getAction("add-node", {
 	optimistic: (action, target: WorkflowDefinition, data: WorkflowNode) => target.nodes.push({ ...data }),
