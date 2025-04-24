@@ -55,6 +55,14 @@ return [
                     'temperature',
                 ],
             ],
+            'o4-mini'     => [
+                'input'            => 1.1 / $million,
+                'output'           => 4.4 / $million,
+                'context'          => 200000,
+                'excluded_options' => [
+                    'temperature',
+                ],
+            ],
             'o3-mini'     => [
                 'input'            => 1.1 / $million,
                 'output'           => 4.4 / $million,
