@@ -45,7 +45,7 @@ trait HasWorkflowStatesTrait
         return $this->skipped_at !== null;
     }
 
-    public function isTimeout(): bool
+    public function isTimedout(): bool
     {
         return $this->timeout_at !== null;
     }
@@ -57,7 +57,7 @@ trait HasWorkflowStatesTrait
 
     public function isFinished(): bool
     {
-        return ($this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isSkipped() || $this->isTimeout()) && !$this->isAwaitingRunner();
+        return ($this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isSkipped() || $this->isTimedout()) && !$this->isAwaitingRunner();
     }
 
     public function canContinue(): bool

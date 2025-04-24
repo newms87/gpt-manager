@@ -4,14 +4,16 @@ namespace App\Repositories;
 
 use App\Models\Task\TaskProcess;
 use App\Services\Task\TaskProcessRunnerService;
+use App\Traits\HasDebugLogging;
 use Log;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class TaskProcessRepository extends ActionRepository
 {
-    const int PENDING_PROCESS_TIMEOUT    = 120; // 2 minutes
-    const int DISPATCHED_PROCESS_TIMEOUT = 120; // 2 minutes
+    use HasDebugLogging;
+
+    const int PENDING_PROCESS_TIMEOUT = 120; // 2 minutes
 
     public static string $model = TaskProcess::class;
 
@@ -29,15 +31,16 @@ class TaskProcessRepository extends ActionRepository
      */
     public function checkForTimeout(TaskProcess $taskProcess): bool
     {
-        if ($taskProcess->isPending() && $taskProcess->created_at->isBefore(now()->subSeconds(self::PENDING_PROCESS_TIMEOUT))) {
-            $this->handleTimeout($taskProcess);
+        static::log("Checking for timeout on task process: $taskProcess");
 
-            return true;
-        } elseif ($taskProcess->isDispatched() && $taskProcess->created_at->isBefore(now()->subSeconds(self::DISPATCHED_PROCESS_TIMEOUT))) {
+        // If a task is in pending or dispatched state and hasn't been modified for 2 minutes, it is considered timed out
+        if (($taskProcess->isPending() || $taskProcess->isDispatched()) && $taskProcess->updated_at->isBefore(now()->subSeconds(self::PENDING_PROCESS_TIMEOUT))) {
+            static::log("\tPending / Dispatch timeout");
             $this->handleTimeout($taskProcess);
 
             return true;
         } elseif ($taskProcess->isRunning() && $taskProcess->isPastTimeout()) {
+            static::log("\tRunning timeout");
             $this->handleTimeout($taskProcess);
 
             return true;

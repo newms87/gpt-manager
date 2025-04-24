@@ -250,7 +250,7 @@ class TaskRunnerService
             }
 
             foreach($taskRun->taskProcesses as $taskProcess) {
-                if (!$taskProcess->isCompleted() && !$taskProcess->isStopped() && !$taskProcess->isFailed() && !$taskProcess->isTimeout()) {
+                if (!$taskProcess->isCompleted() && !$taskProcess->isStopped() && !$taskProcess->isFailed() && !$taskProcess->isTimedout()) {
                     $taskProcess->stopped_at = now();
                     $taskProcess->save();
                 }

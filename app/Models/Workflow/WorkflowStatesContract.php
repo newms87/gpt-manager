@@ -26,7 +26,7 @@ interface WorkflowStatesContract
 
     public function isCompleted(): bool;
 
-    public function isTimeout(): bool;
+    public function isTimedout(): bool;
 
     public function isFinished(): bool;
 

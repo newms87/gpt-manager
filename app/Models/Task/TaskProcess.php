@@ -129,7 +129,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
     public function canBeRun(): bool
     {
-        return $this->isDispatched() && !$this->isStarted() && !$this->isStopped() && !$this->isFailed() && !$this->isCompleted() && !$this->isTimeout();
+        return $this->isDispatched() && !$this->isStarted() && !$this->isStopped() && !$this->isFailed() && !$this->isCompleted() && !$this->isTimedout();
     }
 
     public function canResume(): bool
@@ -144,7 +144,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
             $this->status = WorkflowStatesContract::STATUS_STOPPED;
         } elseif ($this->isFailed()) {
             $this->status = WorkflowStatesContract::STATUS_FAILED;
-        } elseif ($this->isTimeout()) {
+        } elseif ($this->isTimedout()) {
             $this->status = WorkflowStatesContract::STATUS_TIMEOUT;
         } elseif (!$this->isDispatched()) {
             $this->status = WorkflowStatesContract::STATUS_PENDING;
