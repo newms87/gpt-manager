@@ -14,9 +14,10 @@ class TaskTimeoutCommand extends Command
 
     public function handle()
     {
-        $taskProcesses = TaskProcess::where('status', WorkflowStatesContract::STATUS_RUNNING)->get();
+        $statuses         = [WorkflowStatesContract::STATUS_RUNNING, WorkflowStatesContract::STATUS_PENDING, WorkflowStatesContract::STATUS_DISPATCHED];
+        $runningProcesses = TaskProcess::whereIn('status', $statuses)->get();
 
-        foreach($taskProcesses as $taskProcess) {
+        foreach($runningProcesses as $taskProcess) {
             app(TaskProcessRepository::class)->checkForTimeout($taskProcess);
         }
 

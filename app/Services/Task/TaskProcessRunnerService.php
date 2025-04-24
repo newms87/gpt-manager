@@ -220,6 +220,7 @@ class TaskProcessRunnerService
             $taskProcess->started_at       = null;
             $taskProcess->completed_at     = null;
             $taskProcess->percent_complete = 0;
+            $taskProcess->restart_count    += 1;
             $taskProcess->save();
         } finally {
             LockHelper::release($taskProcess);
