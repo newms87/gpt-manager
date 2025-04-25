@@ -39,6 +39,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
     ];
 
     protected array $keywordFields = [
+        'id',
         'status',
         'name',
         'activity',

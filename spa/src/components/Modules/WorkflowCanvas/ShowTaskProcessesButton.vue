@@ -22,6 +22,7 @@
 							:debounce="500"
 							@update:model-value="keywords => filters = {...filters, keywords}"
 						/>
+						<ActionButton type="refresh" size="sm" color="sky" tooltip="Refresh List" @click="loadTaskProcesses" />
 					</div>
 					<div class="flex-grow overflow-y-auto">
 						<template v-if="taskProcesses.length === 0">
@@ -57,7 +58,7 @@ import { usePusher } from "@/helpers/pusher";
 import { TaskProcess, TaskRun } from "@/types";
 import { PaginationModel } from "@/types/Pagination";
 import { FaSolidFileInvoice as ProcessListIcon } from "danx-icon";
-import { AnyObject, InfoDialog, ListControlsPagination, ShowHideButton } from "quasar-ui-danx";
+import { ActionButton, AnyObject, InfoDialog, ListControlsPagination, ShowHideButton } from "quasar-ui-danx";
 import { ref, shallowRef, watch } from "vue";
 
 const emit = defineEmits<{ restart: void }>();
