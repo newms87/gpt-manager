@@ -14,9 +14,9 @@ interface WorkflowStatesContract
         STATUS_TIMEOUT = 'Timeout',
         STATUS_FAILED = 'Failed';
 
-    public function isPending(): bool;
+    public function isStatusPending(): bool;
 
-    public function isRunning(): bool;
+    public function isStatusRunning(): bool;
 
     public function isStarted(): bool;
 

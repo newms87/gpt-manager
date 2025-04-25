@@ -51,11 +51,14 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
     {
         return [
             'percent_complete' => 'float',
-            'started_at'       => 'datetime',
-            'stopped_at'       => 'datetime',
-            'completed_at'     => 'datetime',
-            'failed_at'        => 'datetime',
-            'skipped_at'       => 'datetime',
+            'started_at'       => 'datetime:Y-m-d H:i:s.v',
+            'stopped_at'       => 'datetime:Y-m-d H:i:s.v',
+            'completed_at'     => 'datetime:Y-m-d H:i:s.v',
+            'failed_at'        => 'datetime:Y-m-d H:i:s.v',
+            'skipped_at'       => 'datetime:Y-m-d H:i:s.v',
+            'created_at'       => 'datetime:Y-m-d H:i:s.v',
+            'updated_at'       => 'datetime:Y-m-d H:i:s.v',
+            'deleted_at'       => 'datetime:Y-m-d H:i:s.v',
         ];
     }
 

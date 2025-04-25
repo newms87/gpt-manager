@@ -40,11 +40,14 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
     {
         return [
             'percent_complete' => 'float',
-            'started_at'       => 'datetime',
-            'stopped_at'       => 'datetime',
-            'completed_at'     => 'datetime',
-            'failed_at'        => 'datetime',
-            'timeout_at'       => 'datetime',
+            'started_at'       => 'datetime:Y-m-d H:i:s.v',
+            'stopped_at'       => 'datetime:Y-m-d H:i:s.v',
+            'completed_at'     => 'datetime:Y-m-d H:i:s.v',
+            'failed_at'        => 'datetime:Y-m-d H:i:s.v',
+            'timeout_at'       => 'datetime:Y-m-d H:i:s.v',
+            'created_at'       => 'datetime:Y-m-d H:i:s.v',
+            'updated_at'       => 'datetime:Y-m-d H:i:s.v',
+            'deleted_at'       => 'datetime:Y-m-d H:i:s.v',
         ];
     }
 
@@ -135,7 +138,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
     public function canResume(): bool
     {
         // If the process is not currently running, it can be resumed. If it is running, it must first be stopped before resuming.
-        return !$this->isRunning();
+        return !$this->isStatusRunning();
     }
 
     public function computeStatus(): static

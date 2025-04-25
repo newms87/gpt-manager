@@ -42,6 +42,9 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
             'stopped_at'   => 'datetime:Y-m-d H:i:s.v',
             'completed_at' => 'datetime:Y-m-d H:i:s.v',
             'failed_at'    => 'datetime:Y-m-d H:i:s.v',
+            'created_at'   => 'datetime:Y-m-d H:i:s.v',
+            'updated_at'   => 'datetime:Y-m-d H:i:s.v',
+            'deleted_at'   => 'datetime:Y-m-d H:i:s.v',
         ];
     }
 

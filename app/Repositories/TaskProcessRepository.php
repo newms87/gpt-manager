@@ -34,12 +34,12 @@ class TaskProcessRepository extends ActionRepository
         static::log("Checking for timeout on task process: $taskProcess");
 
         // If a task is in pending or dispatched state and hasn't been modified for 2 minutes, it is considered timed out
-        if (($taskProcess->isPending() || $taskProcess->isDispatched()) && $taskProcess->updated_at->isBefore(now()->subSeconds(self::PENDING_PROCESS_TIMEOUT))) {
+        if (($taskProcess->isStatusPending() || $taskProcess->isStatusDispatched()) && $taskProcess->updated_at->isBefore(now()->subSeconds(self::PENDING_PROCESS_TIMEOUT))) {
             static::log("\tPending / Dispatch timeout");
             $this->handleTimeout($taskProcess);
 
             return true;
-        } elseif ($taskProcess->isRunning() && $taskProcess->isPastTimeout()) {
+        } elseif ($taskProcess->isStatusRunning() && $taskProcess->isPastTimeout()) {
             static::log("\tRunning timeout");
             $this->handleTimeout($taskProcess);
 
@@ -59,7 +59,7 @@ class TaskProcessRepository extends ActionRepository
 
         try {
             // Can only be timed out if it is in one of these states
-            if (!$taskProcess->isPending() && !$taskProcess->isDispatched() && !$taskProcess->isRunning()) {
+            if (!$taskProcess->isStatusPending() && !$taskProcess->isStatusDispatched() && !$taskProcess->isStatusRunning()) {
                 return;
             }
 

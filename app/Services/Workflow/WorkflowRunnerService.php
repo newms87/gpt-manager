@@ -111,7 +111,7 @@ class WorkflowRunnerService
         LockHelper::acquire($workflowRun);
 
         try {
-            if (!$workflowRun->isStopped() && !$workflowRun->isPending()) {
+            if (!$workflowRun->isStopped() && !$workflowRun->isStatusPending()) {
                 static::log("WorkflowRun is not stopped, skipping resume");
 
                 return;

@@ -113,7 +113,7 @@ class TaskRunnerService
                 return;
             }
 
-            if ($taskRun->isPending()) {
+            if ($taskRun->isStatusPending()) {
                 static::log("TaskRun was Pending, starting now...");
                 // Only start the task run if it is pending
                 $taskRun->started_at = now();
@@ -127,7 +127,7 @@ class TaskRunnerService
                 }
 
                 // Only dispatch a task process if it is pending
-                if ($taskProcess->isPending()) {
+                if ($taskProcess->isStatusPending()) {
                     TaskProcessRunnerService::dispatch($taskProcess);
                 } elseif ($taskProcess->isPastTimeout()) {
                     static::log("TaskProcess $taskProcess timed out, stopping TaskRun $taskRun");
@@ -211,7 +211,7 @@ class TaskRunnerService
         LockHelper::acquire($taskRun);
 
         try {
-            if (!$taskRun->isStopped() && !$taskRun->isPending()) {
+            if (!$taskRun->isStopped() && !$taskRun->isStatusPending()) {
                 static::log("TaskRun is not stopped, skipping resume");
 
                 return;
@@ -260,7 +260,7 @@ class TaskRunnerService
             $taskRun->checkProcesses()->computeStatus()->save();
 
             // If we're suppose to stop
-            if ($taskRun->isPending() && $taskRun->taskProcesses->isEmpty()) {
+            if ($taskRun->isStatusPending() && $taskRun->taskProcesses->isEmpty()) {
                 $taskRun->stopped_at = now();
                 $taskRun->save();
             }

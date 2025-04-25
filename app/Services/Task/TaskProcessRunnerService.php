@@ -208,7 +208,7 @@ class TaskProcessRunnerService
         LockHelper::acquire($taskProcess);
 
         try {
-            if ($taskProcess->isRunning()) {
+            if ($taskProcess->isStatusRunning()) {
                 throw new ValidationError("TaskProcess is currently running, cannot restart");
             }
             $taskProcess->clearOutputArtifacts();
