@@ -162,7 +162,13 @@ const artifactsField = {
 };
 
 // Watch for changes in pagination or filters to reload data
-watch([pagination, mergedFilters], loadArtifacts);
+watch(mergedFilters, (value, oldValue) => {
+	if (JSON.stringify(value) !== JSON.stringify(oldValue)) {
+		pagination.value.page = 1;
+		loadArtifacts();
+	}
+});
+watch(pagination, loadArtifacts);
 
 async function loadArtifacts() {
 	isLoading.value = true;

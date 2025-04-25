@@ -259,7 +259,6 @@ function goToPage(page: number) {
 
 onMounted(() => {
 	if (props.rememberKey) {
-		console.log("key", REMEMBER_PAGE_SIZE_KEY, getItem(REMEMBER_PAGE_SIZE_KEY));
 		pagination.value.perPage = getItem(REMEMBER_PAGE_SIZE_KEY, pagination.value.perPage || props.defaultSize);
 	}
 

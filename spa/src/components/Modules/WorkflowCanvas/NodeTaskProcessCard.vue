@@ -3,7 +3,7 @@
 		<div class="flex-grow min-w-0 overflow-hidden px-2">
 			<div class="flex-grow flex-x space-x-2">
 				<NodeArtifactsButton
-					:count="taskProcess.inputArtifacts?.length || 0"
+					:count="taskProcess.input_artifact_count || 0"
 					active-color="sky"
 					:disabled="!taskProcess"
 					:focused="isShowingInputArtifacts"
@@ -31,7 +31,7 @@
 					/>
 				</div>
 				<NodeArtifactsButton
-					:count="taskProcess.outputArtifacts?.length"
+					:count="taskProcess.output_artifact_count || 0"
 					active-color="green"
 					:focused="isShowingOutputArtifacts"
 					:disabled="!taskProcess"
@@ -81,19 +81,21 @@
 			<ListTransition>
 				<ArtifactList
 					v-if="isShowingInputArtifacts"
+					key="input-artifacts"
 					title="Input Artifacts"
 					title-class="text-sky-300"
 					dense
 					class="bg-sky-950 p-2 rounded max-w-full mt-4"
-					:artifacts="taskProcess.inputArtifacts"
+					:filter="{taskProcess: {category: 'input', artifactable_id: taskProcess.id}}"
 				/>
 				<ArtifactList
 					v-if="isShowingOutputArtifacts"
+					key="output-artifacts"
 					title="Output Artifacts"
 					title-class="text-green-300"
 					dense
 					class="bg-green-950 p-2 rounded max-w-full mt-4"
-					:artifacts="taskProcess.outputArtifacts"
+					:filter="{taskProcess: {category: 'output', artifactable_id: taskProcess.id}}"
 				/>
 				<JobDispatchList
 					v-if="isShowingJobDispatches"

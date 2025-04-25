@@ -23,13 +23,11 @@
 					v-model="isShowingInputArtifacts"
 					:label="taskProcess.input_artifact_count + ' Input'"
 					:class="colorClass"
-					@show="dxTaskProcess.routes.details(taskProcess, {inputArtifacts: artifactsField})"
 				/>
 				<ShowHideButton
 					v-model="isShowingOutputArtifacts"
 					:label="taskProcess.output_artifact_count + ' Output'"
 					:class="colorClass"
-					@show="dxTaskProcess.routes.details(taskProcess, {outputArtifacts: artifactsField})"
 				/>
 				<WorkflowStatusTimerPill :runner="taskProcess" />
 			</div>
@@ -99,12 +97,12 @@
 		<ArtifactList
 			v-if="isShowingInputArtifacts"
 			class="p-2 border-t border-slate-400 mt-2"
-			:artifacts="taskProcess.inputArtifacts"
+			:filter="{taskProcess: {category: 'input', artifactable_id: taskProcess.id}}"
 		/>
 		<ArtifactList
 			v-if="isShowingOutputArtifacts"
 			class="p-2 border-t border-slate-400 mt-2"
-			:artifacts="taskProcess.outputArtifacts"
+			:filter="{taskProcess: {category: 'output', artifactable_id: taskProcess.id}}"
 		/>
 	</div>
 </template>
@@ -146,11 +144,4 @@ const agentThreadField = { messages: { files: { thumb: true, transcodes: true } 
 // Defines the fields to fetch when requesting JobDispatches
 const jobDispatchesField = { logs: true, apiLogs: true, errors: true };
 
-// Defines the fields to fetch when requesting artifacts
-const artifactsField = {
-	text_content: true,
-	json_content: true,
-	meta: true,
-	files: { transcodes: true, thumb: true }
-};
 </script>

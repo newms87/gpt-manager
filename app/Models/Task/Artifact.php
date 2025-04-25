@@ -92,6 +92,11 @@ class Artifact extends Model implements AuditableContract
         return $this->belongsTo(TaskRun::class);
     }
 
+    public function taskProcess(): BelongsTo|TaskProcess
+    {
+        return $this->belongsTo(TaskProcess::class);
+    }
+
     public function scopeTaskRun(Builder $query, $filter): Builder
     {
         return $query->whereHas('artifactables', fn(Builder $q) => $q->where($filter)
@@ -99,9 +104,11 @@ class Artifact extends Model implements AuditableContract
         );
     }
 
-    public function taskProcess(): BelongsTo|TaskProcess
+    public function scopeTaskProcess(Builder $query, $filter): Builder
     {
-        return $this->belongsTo(TaskProcess::class);
+        return $query->whereHas('artifactables', fn(Builder $q) => $q->where($filter)
+            ->where('artifactable_type', TaskProcess::class)
+        );
     }
 
     public function storedFiles(): MorphToMany|StoredFile

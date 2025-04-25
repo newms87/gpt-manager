@@ -5,8 +5,6 @@ namespace App\Repositories;
 use App\Models\Task\TaskProcess;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Traits\HasDebugLogging;
-use Log;
-use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class TaskProcessRepository extends ActionRepository
@@ -36,43 +34,17 @@ class TaskProcessRepository extends ActionRepository
         // If a task is in pending or dispatched state and hasn't been modified for 2 minutes, it is considered timed out
         if (($taskProcess->isStatusPending() || $taskProcess->isStatusDispatched()) && $taskProcess->updated_at->isBefore(now()->subSeconds(self::PENDING_PROCESS_TIMEOUT))) {
             static::log("\tPending / Dispatch timeout");
-            $this->handleTimeout($taskProcess);
+            TaskProcessRunnerService::handleTimeout($taskProcess);
 
             return true;
         } elseif ($taskProcess->isStatusRunning() && $taskProcess->isPastTimeout()) {
             static::log("\tRunning timeout");
-            $this->handleTimeout($taskProcess);
+            TaskProcessRunnerService::handleTimeout($taskProcess);
 
             return true;
         }
 
         return false;
-    }
-
-    /**
-     * Handle the timeout of a task process.
-     * The task process will be restarted automatically if the max_process_retries has not been reached
-     */
-    public function handleTimeout(TaskProcess $taskProcess): void
-    {
-        LockHelper::acquire($taskProcess);
-
-        try {
-            // Can only be timed out if it is in one of these states
-            if (!$taskProcess->isStatusPending() && !$taskProcess->isStatusDispatched() && !$taskProcess->isStatusRunning()) {
-                return;
-            }
-
-            Log::warning("Task process timed out: $taskProcess");
-            $taskProcess->timeout_at = now();
-            $taskProcess->save();
-
-            if ($taskProcess->restart_count < $taskProcess->taskRun->taskDefinition->max_process_retries) {
-                $this->restartTaskProcess($taskProcess);
-            }
-        } finally {
-            LockHelper::release($taskProcess);
-        }
     }
 
     public function restartTaskProcess(TaskProcess $taskProcess): TaskProcess

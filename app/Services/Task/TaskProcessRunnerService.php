@@ -213,6 +213,8 @@ class TaskProcessRunnerService
             }
             $taskProcess->clearOutputArtifacts();
 
+            static::halt($taskProcess);
+
             $taskProcess->stopped_at = null;
             $taskProcess->failed_at  = null;
             $taskProcess->timeout_at = null;
@@ -277,6 +279,8 @@ class TaskProcessRunnerService
 
             $taskProcess->stopped_at = now();
             $taskProcess->save();
+
+            static::halt($taskProcess);
         } finally {
             LockHelper::release($taskProcess);
         }
@@ -300,4 +304,44 @@ class TaskProcessRunnerService
             LockHelper::release($taskProcess);
         }
     }
+
+    /**
+     * Handle the timeout of a task process.
+     * The task process will be restarted automatically if the max_process_retries has not been reached
+     */
+    public function handleTimeout(TaskProcess $taskProcess): void
+    {
+        LockHelper::acquire($taskProcess);
+
+        try {
+            // Can only be timed out if it is in one of these states
+            if (!$taskProcess->isStatusPending() && !$taskProcess->isStatusDispatched() && !$taskProcess->isStatusRunning()) {
+                return;
+            }
+
+            static::log("Task process timed out: $taskProcess");
+            $taskProcess->timeout_at = now();
+            $taskProcess->save();
+
+            static::halt($taskProcess);
+
+            if ($taskProcess->restart_count < $taskProcess->taskRun->taskDefinition->max_process_retries) {
+                static::restart($taskProcess);
+            }
+        } finally {
+            LockHelper::release($taskProcess);
+        }
+    }
+
+    /**
+     * Stops any running threads for the task process
+     */
+    public static function halt(TaskProcess $taskProcess): void
+    {
+        if ($taskProcess->agentThread?->isRunning()) {
+            $taskProcess->agentThread->currentRun->failed_at = now();
+            $taskProcess->agentThread->currentRun->save();
+        }
+    }
+
 }

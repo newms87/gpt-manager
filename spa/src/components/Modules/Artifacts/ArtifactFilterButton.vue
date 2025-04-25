@@ -87,19 +87,19 @@ const filters = defineModel<AnyObject>({ default: {} });
 // PopMenu state
 const isShowing = ref(false);
 const hasTextContent = computed({
-	get: () => filters.value.text_content,
+	get: () => !!filters.value.text_content,
 	set: (value) => (filters.value.text_content = value ? { null: false } : undefined)
 });
 const hasJsonContent = computed({
-	get: () => filters.value.json_content,
+	get: () => !!filters.value.json_content,
 	set: (value) => (filters.value.json_content = value ? { null: false } : undefined)
 });
 const hasMeta = computed({
-	get: () => filters.value.meta,
+	get: () => !!filters.value.meta,
 	set: (value) => (filters.value.meta = value ? { null: false } : undefined)
 });
 const hasFiles = computed({
-	get: () => filters.value["storedFiles.id"],
+	get: () => !!filters.value["storedFiles.id"],
 	set: (value) => (filters.value["storedFiles.id"] = value ? { null: false } : undefined)
 });
 

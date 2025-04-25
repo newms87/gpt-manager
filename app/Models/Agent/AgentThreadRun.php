@@ -6,6 +6,7 @@ use App\Events\AgentThreadRunUpdatedEvent;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Services\JsonSchema\JsonSchemaService;
+use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,7 +18,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class AgentThreadRun extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes, ActionModelTrait;
+    use HasFactory, AuditableTrait, SoftDeletes, ActionModelTrait, HasWorkflowStatesTrait;
 
     const string
         RESPONSE_FORMAT_TEXT = 'text',
@@ -58,10 +59,14 @@ class AgentThreadRun extends Model implements AuditableContract
             'json_schema_config'   => 'json',
             'response_json_schema' => 'json',
             'temperature'          => 'float',
-            'started_at'           => 'datetime',
-            'completed_at'         => 'datetime',
-            'failed_at'            => 'datetime',
-            'refreshed_at'         => 'datetime',
+            'started_at'           => 'datetime:Y-m-d H:i:s.v',
+            'stopped_at'           => 'datetime:Y-m-d H:i:s.v',
+            'completed_at'         => 'datetime:Y-m-d H:i:s.v',
+            'failed_at'            => 'datetime:Y-m-d H:i:s.v',
+            'refreshed_at'         => 'datetime:Y-m-d H:i:s.v',
+            'created_at'           => 'datetime:Y-m-d H:i:s.v',
+            'updated_at'           => 'datetime:Y-m-d H:i:s.v',
+            'deleted_at'           => 'datetime:Y-m-d H:i:s.v',
         ];
     }
 
@@ -100,8 +105,13 @@ class AgentThreadRun extends Model implements AuditableContract
         return $this->getJsonSchemaService()->formatAndFilterSchema($name, $schema, $fragmentSelector);
     }
 
-    public static function booted()
+    public static function booted(): void
     {
+        static::saving(function (AgentThreadRun $agentThreadRun) {
+            if ($agentThreadRun->isDirty(['started_at', 'failed_at', 'completed_at', 'stopped_at'])) {
+                $agentThreadRun->computeStatus();
+            }
+        });
         static::saved(function (AgentThreadRun $agentThreadRun) {
             if ($agentThreadRun->wasChanged(['status', 'last_message_id'])) {
                 AgentThreadRunUpdatedEvent::dispatch($agentThreadRun);

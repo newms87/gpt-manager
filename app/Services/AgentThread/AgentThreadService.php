@@ -75,7 +75,6 @@ class AgentThreadService
                 'response_fragment_id' => $this->responseFragment?->id,
                 'json_schema_config'   => $this->jsonSchemaService?->getConfig(),
                 'seed'                 => config('ai.seed'),
-                'started_at'           => now(),
             ]);
 
             // Save a snapshot of the resolved JSON Schema to use as the agent's response schema,
@@ -136,7 +135,7 @@ class AgentThreadService
         LockHelper::acquire($thread);
         $threadRun = $thread->currentRun;
         if ($threadRun) {
-            $threadRun->status = AgentThreadRun::STATUS_STOPPED;
+            $threadRun->stopped_at = now();
             $threadRun->save();
         }
         LockHelper::release($thread);
@@ -147,19 +146,23 @@ class AgentThreadService
     /**
      * Resume the previously stopped thread (if there was a stopped thread run)
      */
-    public function resume(AgentThread $thread): AgentThreadRun|null
+    public function resume(AgentThread $agentThread): AgentThreadRun|null
     {
-        LockHelper::acquire($thread);
-        $threadRun = $thread->runs()->where('status', AgentThreadRun::STATUS_STOPPED)->latest()->first();
+        LockHelper::acquire($agentThread);
+        $agentThreadRun = $agentThread->runs()->where('status', AgentThreadRun::STATUS_STOPPED)->latest()->first();
 
-        if ($threadRun) {
-            $threadRun->status          = AgentThreadRun::STATUS_RUNNING;
-            $threadRun->job_dispatch_id = (new ExecuteThreadRunJob($threadRun))->dispatch()->getJobDispatch()?->id;
-            $threadRun->save();
+        if ($agentThreadRun) {
+            $agentThreadRun->stopped_at   = null;
+            $agentThreadRun->completed_at = null;
+            $agentThreadRun->failed_at    = null;
+            $agentThreadRun->started_at   = null;
+
+            $agentThreadRun->job_dispatch_id = (new ExecuteThreadRunJob($agentThreadRun))->dispatch()->getJobDispatch()?->id;
+            $agentThreadRun->save();
         }
-        LockHelper::release($thread);
+        LockHelper::release($agentThread);
 
-        return $threadRun;
+        return $agentThreadRun;
     }
 
     /**
@@ -170,6 +173,9 @@ class AgentThreadService
         try {
             LockHelper::acquire($agentThreadRun->agentThread);
             LockHelper::acquire($agentThreadRun);
+
+            $agentThreadRun->started_at = now();
+            $agentThreadRun->save();
 
             static::log("Executing $agentThreadRun");
 
@@ -207,7 +213,7 @@ class AgentThreadService
 
             do {
                 $agentThreadRun->refresh();
-                if ($agentThreadRun->status !== AgentThreadRun::STATUS_RUNNING) {
+                if (!$agentThreadRun->isStatusRunning()) {
                     static::log("$agentThreadRun is no longer running: " . $agentThreadRun->status);
                     break;
                 }
@@ -257,7 +263,6 @@ class AgentThreadService
                 $this->handleResponse($agentThread, $agentThreadRun, $response);
             } while(!$response?->isFinished() || $retries > 0);
         } catch(Throwable $throwable) {
-            $agentThreadRun->status    = AgentThreadRun::STATUS_FAILED;
             $agentThreadRun->failed_at = now();
             $agentThreadRun->save();
             throw $throwable;
