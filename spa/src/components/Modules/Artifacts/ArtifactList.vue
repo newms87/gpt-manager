@@ -55,45 +55,44 @@
 				:label="isShowingAll ? 'Collapse All' : 'Expand All'"
 				size="sm"
 			/>
-			<ArtifactFilterBar v-model="filters" />
+			<ArtifactFilterButton v-model="filters" />
 		</div>
 		<div class="flex-grow overflow-hidden">
 			<template v-if="!artifacts.length && isLoading">
 				<QSkeleton v-for="i in pagination.perPage" :key="i" class="h-12 my-4" />
 			</template>
 			<div v-else-if="artifacts.length === 0" class="text-xl text-center text-gray-500">No Artifacts</div>
-			<div v-else class="relative h-full">
+			<div v-else class="relative h-full overflow-y-auto">
 				<LoadingOverlay v-if="isLoading && artifacts.length > 0" />
 
-				<ListTransition :class="dense ? 'space-y-2' : 'space-y-4'" class="overflow-y-auto h-full">
-					<ArtifactCard
-						v-for="artifact in artifacts"
-						:key="artifact.id"
-						:show="isShowingAll"
-						:show-text="isShowingText"
-						:show-files="isShowingFiles"
-						:show-json="isShowingJson"
-						:show-meta="isShowingMeta"
-						:show-group="isShowingGroup"
-						:artifact="artifact"
-						:level="level"
-					/>
-				</ListTransition>
+				<ArtifactCard
+					v-for="artifact in artifacts"
+					:key="artifact.id"
+					:show="isShowingAll"
+					:show-text="isShowingText"
+					:show-files="isShowingFiles"
+					:show-json="isShowingJson"
+					:show-meta="isShowingMeta"
+					:show-group="isShowingGroup"
+					:artifact="artifact"
+					:level="level"
+					class="my-2"
+				/>
 			</div>
 		</div>
 
 		<PaginationNavigator
-			v-if="pagination.total > 0"
+			v-if="pagination.total > 10"
 			v-model="pagination"
-			class="flex-shrink-0 bg-sky-950 text-slate-400 py-4 mt-4 px-6 shadow-lg rounded-lg"
+			class="bg-sky-950 text-slate-400 py-2 mt-4 px-3 shadow-lg rounded-lg"
+			remember-key="artifact-filter-list"
 		/>
 	</div>
 </template>
 <script setup lang="ts">
+import ArtifactFilterButton from "@/components/Modules/Artifacts/ArtifactFilterButton";
 import { dxArtifact } from "@/components/Modules/Artifacts/config";
-import LoadingOverlay from "@/components/Shared/LoadingOverlay";
-import PaginationNavigator from "@/components/Shared/PaginationNavigator";
-import SearchBox from "@/components/Shared/SearchBox";
+import { LoadingOverlay, PaginationNavigator, SearchBox } from "@/components/Shared";
 import { Artifact } from "@/types";
 import { PaginationModel } from "@/types/Pagination";
 import {
@@ -103,10 +102,9 @@ import {
 	FaSolidLayerGroup as GroupIcon,
 	FaSolidT as TextIcon
 } from "danx-icon";
-import { AnyObject, ListControlsPagination, ListTransition, ShowHideButton } from "quasar-ui-danx";
+import { AnyObject, ListControlsPagination, ShowHideButton } from "quasar-ui-danx";
 import { computed, onMounted, ref, shallowRef, watch } from "vue";
 import ArtifactCard from "./ArtifactCard.vue";
-import ArtifactFilterBar from "./ArtifactFilterBar.vue";
 
 const props = withDefaults(defineProps<{
 	title?: string;
@@ -139,11 +137,10 @@ const isShowingMeta = ref(false);
 const isShowingGroup = ref(false);
 
 const computedTitle = computed(() => props.title === null ? (props.level ? `Level ${props.level} Artifacts` : "Top-Level Artifacts") : props.title);
-
 // Pagination state
 const pagination = ref<PaginationModel>({
 	page: 1,
-	perPage: 20,
+	perPage: 10,
 	total: 0
 });
 

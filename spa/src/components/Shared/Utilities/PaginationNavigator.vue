@@ -222,8 +222,11 @@ import { computed, onMounted } from "vue";
 const props = withDefaults(defineProps<{
 	pageSizes?: number[];
 	rememberKey?: string;
+	defaultSize?: number;
 }>(), {
-	pageSizes: () => [10, 20, 50, 100]
+	pageSizes: () => [10, 20, 50, 100],
+	rememberKey: "",
+	defaultSize: 10
 });
 
 const REMEMBER_PAGE_SIZE_KEY = props.rememberKey + "-page-size";
@@ -256,7 +259,12 @@ function goToPage(page: number) {
 
 onMounted(() => {
 	if (props.rememberKey) {
-		pagination.value.perPage = getItem(REMEMBER_PAGE_SIZE_KEY, pagination.value.perPage || 10);
+		console.log("key", REMEMBER_PAGE_SIZE_KEY, getItem(REMEMBER_PAGE_SIZE_KEY));
+		pagination.value.perPage = getItem(REMEMBER_PAGE_SIZE_KEY, pagination.value.perPage || props.defaultSize);
+	}
+
+	if (!pagination.value.perPage) {
+		pagination.value.perPage = props.defaultSize;
 	}
 });
 

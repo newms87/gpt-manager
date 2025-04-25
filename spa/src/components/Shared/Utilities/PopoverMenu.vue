@@ -13,7 +13,7 @@
 				leave-to-class="transform scale-95 opacity-0"
 			>
 				<div
-					v-if="modelValue"
+					v-if="isShowing"
 					ref="contentRef"
 					:class="['popover-content absolute shadow-lg', positionClass]"
 					:style="contentStyle"
@@ -27,11 +27,9 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener, useWindowSize } from "@vueuse/core";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 const props = withDefaults(defineProps<{
-	modelValue: boolean;
 	placement?: "top" | "right" | "bottom" | "left" | "auto";
 	offset?: number;
 	closeOnClickOutside?: boolean;
@@ -45,9 +43,7 @@ const props = withDefaults(defineProps<{
 	anchorWidth: false
 });
 
-const emit = defineEmits<{
-	"update:modelValue": [value: boolean];
-}>();
+const isShowing = defineModel<boolean>();
 
 // References
 const triggerRef = ref<HTMLElement | null>(null);
@@ -59,8 +55,6 @@ const contentPosition = ref({
 	left: 0,
 	width: 0
 });
-
-const windowSize = useWindowSize();
 
 // Computed properties
 const positionClass = computed(() => {
@@ -84,11 +78,7 @@ const contentStyle = computed(() => {
 // Reactive current placement that may adapt based on available space
 const currentPlacement = ref(props.placement);
 
-// Update position on window resize
-watch(windowSize, updatePosition);
-
-// Watch for changes in modelValue
-watch(() => props.modelValue, async (isOpen) => {
+watch(() => isShowing.value, async (isOpen) => {
 	if (isOpen) {
 		// Reset placement to prop value when opening
 		currentPlacement.value = props.placement;
@@ -104,15 +94,15 @@ watch(() => props.modelValue, async (isOpen) => {
 
 // Public methods
 function toggle() {
-	emit("update:modelValue", !props.modelValue);
+	isShowing.value = !isShowing.value;
 }
 
 function close() {
-	emit("update:modelValue", false);
+	isShowing.value = false;
 }
 
 function updatePosition() {
-	if (!triggerRef.value || !contentRef.value || !props.modelValue) return;
+	if (!triggerRef.value || !contentRef.value || !isShowing.value) return;
 
 	const triggerRect = triggerRef.value.getBoundingClientRect();
 	const contentRect = contentRef.value.getBoundingClientRect();
@@ -205,43 +195,46 @@ function updatePosition() {
 function handleClickOutside(event: MouseEvent) {
 	if (
 		props.closeOnClickOutside &&
-		props.modelValue &&
+		isShowing.value &&
 		triggerRef.value &&
 		contentRef.value &&
 		!triggerRef.value.contains(event.target as Node) &&
 		!contentRef.value.contains(event.target as Node)
 	) {
-		emit("update:modelValue", false);
+		close();
 		event.preventDefault();
 	}
 }
 
 function handleEscapeKey(event: KeyboardEvent) {
-	if (event.key === "Escape" && props.modelValue) {
-		emit("update:modelValue", false);
+	if (event.key === "Escape" && isShowing.value) {
+		close();
 	}
 }
 
 // Auto-close handling for click inside popover
 function handlePopoverClick() {
 	if (props.autoClose) {
-		emit("update:modelValue", false);
+		close();
 	}
 }
 
 onMounted(() => {
 	document.addEventListener("click", handleClickOutside, true);
 	document.addEventListener("keydown", handleEscapeKey);
-	
+
 	if (contentRef.value && props.autoClose) {
 		contentRef.value.addEventListener("click", handlePopoverClick);
 	}
+
+	// Watch for window resize to update position
+	window.addEventListener("resize", updatePosition);
 });
 
 onUnmounted(() => {
 	document.removeEventListener("click", handleClickOutside, true);
 	document.removeEventListener("keydown", handleEscapeKey);
-	
+
 	if (contentRef.value && props.autoClose) {
 		contentRef.value.removeEventListener("click", handlePopoverClick);
 	}
@@ -253,9 +246,9 @@ defineExpose({ toggle, close, updatePosition });
 
 <style scoped lang="scss">
 .popover-content {
-  max-width: calc(100vw - 16px);
-  max-height: calc(100vh - 16px);
-  overflow: auto;
-  z-index: 9999 !important; /* Ensure popover appears above all other elements */
+	max-width: calc(100vw - 16px);
+	max-height: calc(100vh - 16px);
+	overflow: auto;
+	z-index: 9999 !important; /* Ensure popover appears above all other elements */
 }
 </style>
