@@ -21,6 +21,7 @@
 					<SelectField
 						v-model="selectedStatuses"
 						multiple
+						placeholder="(All Statuses)"
 						:options="statusOptions"
 						@update="filters = {...filters, status: selectedStatuses}"
 					/>
@@ -51,7 +52,6 @@ const filters = defineModel<AnyObject>({ default: {} });
 
 const selectedStatuses = ref([]);
 const statusOptions = [
-	{ label: "All", value: "all" },
 	{ label: "Running", value: "Running" },
 	{ label: "Completed", value: "Completed" },
 	{ label: "Failed", value: "Failed" },

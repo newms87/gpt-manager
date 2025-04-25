@@ -14,8 +14,14 @@
 		>
 			<div class="w-[70rem] h-[80vh] overflow-hidden">
 				<div class="flex flex-col flex-no-wrap h-full overflow-hidden">
-					<div>
+					<div class="flex-x gap-2 mb-4">
 						<TaskProcessFilterButton v-model="filters" />
+						<SearchBox
+							class="flex-grow"
+							:model-value="filters.keywords"
+							:debounce="500"
+							@update:model-value="keywords => filters = {...filters, keywords}"
+						/>
 					</div>
 					<div class="flex-grow overflow-y-auto">
 						<template v-if="taskProcesses.length === 0">
@@ -29,7 +35,7 @@
 								v-for="taskProcess in taskProcesses"
 								:key="taskProcess.id"
 								:task-process="taskProcess"
-								class="bg-slate-700 p-2 my-2 rounded-lg"
+								class="bg-slate-700 p-2 mb-4 rounded-lg"
 								@restart="onRestart"
 							/>
 						</template>
@@ -46,7 +52,7 @@ import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/Tas
 import TaskProcessFilterButton
 	from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/TaskProcessFilterButton";
 import NodeTaskProcessCard from "@/components/Modules/WorkflowCanvas/NodeTaskProcessCard";
-import { PaginationNavigator } from "@/components/Shared";
+import { PaginationNavigator, SearchBox } from "@/components/Shared";
 import { usePusher } from "@/helpers/pusher";
 import { TaskProcess, TaskRun } from "@/types";
 import { PaginationModel } from "@/types/Pagination";

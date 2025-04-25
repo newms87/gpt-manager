@@ -3,6 +3,7 @@
 		v-model="searchText"
 		:placeholder="placeholder"
 		input-class="!py-1"
+		:debounce="debounce"
 	>
 		<template #prepend>
 			<SearchIcon class="w-4" />
@@ -17,9 +18,11 @@ import { TextField } from "quasar-ui-danx";
 withDefaults(defineProps<{
 	placeholder?: string;
 	clearable?: boolean;
+	debounce?: number;
 }>(), {
 	placeholder: "Search...",
-	clearable: true
+	clearable: true,
+	debounce: 0
 });
 
 // Define model with string type
