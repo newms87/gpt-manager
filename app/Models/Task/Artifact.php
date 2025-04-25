@@ -4,6 +4,7 @@ namespace App\Models\Task;
 
 use App\Models\Schema\SchemaDefinition;
 use App\Services\JsonSchema\JsonSchemaService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -83,6 +84,18 @@ class Artifact extends Model implements AuditableContract
     public function artifactables(): HasMany|Artifactable
     {
         return $this->hasMany(Artifactable::class);
+    }
+
+    public function taskRun(): BelongsTo|TaskRun
+    {
+        return $this->belongsTo(TaskRun::class);
+    }
+
+    public function scopeTaskRun(Builder $query, $filter): Builder
+    {
+        return $query->whereHas('artifactables', fn(Builder $q) => $q->where($filter)
+            ->where('artifactable_type', TaskRun::class)
+        );
     }
 
     public function taskProcess(): BelongsTo|TaskProcess

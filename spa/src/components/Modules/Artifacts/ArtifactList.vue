@@ -71,7 +71,7 @@
 </template>
 <script setup lang="ts">
 import ArtifactCard from "@/components/Modules/Artifacts/ArtifactCard";
-import { Artifact } from "@/types";
+import { dxArtifact } from "@/components/Modules/Artifacts/config";
 import {
 	FaSolidBarcode as MetaIcon,
 	FaSolidDatabase as JsonIcon,
@@ -79,29 +79,30 @@ import {
 	FaSolidLayerGroup as GroupIcon,
 	FaSolidT as TextIcon
 } from "danx-icon";
-import { ListTransition, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { AnyObject, ListControlsPagination, ListTransition, ShowHideButton } from "quasar-ui-danx";
+import { computed, ref, shallowRef } from "vue";
 
 const props = withDefaults(defineProps<{
 	title?: string;
 	titleClass?: string;
-	artifacts?: Artifact[];
+	filter?: AnyObject;
 	dense?: boolean;
 	level?: number;
 }>(), {
 	titleClass: "",
 	title: null,
-	artifacts: null,
+	filter: null,
 	level: 0
 });
 
+const artifacts = shallowRef([]);
 const isShowingAll = ref(false);
 
-const hasText = computed(() => props.artifacts?.some((artifact) => artifact.text_content));
-const hasFiles = computed(() => props.artifacts?.some((artifact) => artifact.files?.length > 0));
-const hasJson = computed(() => props.artifacts?.some((artifact) => artifact.json_content));
-const hasMeta = computed(() => props.artifacts?.some((artifact) => artifact.meta));
-const hasGroup = computed(() => props.artifacts?.some((artifact) => (artifact.child_artifacts_count || 0) > 0));
+const hasText = computed(() => artifacts.value.some((artifact) => artifact.text_content));
+const hasFiles = computed(() => artifacts.value.some((artifact) => artifact.files?.length > 0));
+const hasJson = computed(() => artifacts.value.some((artifact) => artifact.json_content));
+const hasMeta = computed(() => artifacts.value.some((artifact) => artifact.meta));
+const hasGroup = computed(() => artifacts.value.some((artifact) => (artifact.child_artifacts_count || 0) > 0));
 const isShowingText = ref(false);
 const isShowingFiles = ref(false);
 const isShowingJson = ref(false);
@@ -109,4 +110,23 @@ const isShowingMeta = ref(false);
 const isShowingGroup = ref(false);
 
 const computedTitle = computed(() => props.title === null ? (props.level ? `Level ${props.level} Artifacts` : "Top-Level Artifacts") : props.title);
+
+const artifactsField = {
+	text_content: true,
+	json_content: true,
+	meta: true,
+	files: { transcodes: true, thumb: true }
+};
+
+async function loadArtifacts() {
+	const results = await dxArtifact.routes.list({
+		filter: props.filter,
+		fields: artifactsField
+	} as ListControlsPagination);
+
+	artifacts.value = results.data;
+	console.log("got results", results.data);
+}
+
+loadArtifacts();
 </script>

@@ -17,7 +17,6 @@
 
 <script setup lang="ts">
 import NodeArtifactsButton from "@/components/Modules/WorkflowCanvas/NodeArtifactsButton";
-import { Artifact } from "@/types";
 import { Handle, Position } from "@vue-flow/core";
 
 defineEmits<{
@@ -25,14 +24,12 @@ defineEmits<{
 }>();
 withDefaults(defineProps<{
 	count?: number;
-	artifacts?: Artifact[];
 	isConnected?: boolean;
 	portId: string;
 	type: "target" | "source";
 	disabled?: boolean;
 }>(), {
-	count: 0,
-	artifacts: null
+	count: 0
 });
 </script>
 <style lang="scss" scoped>
