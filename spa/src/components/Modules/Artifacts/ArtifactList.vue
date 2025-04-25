@@ -2,6 +2,11 @@
 	<div class="relative flex flex-col overflow-hidden">
 		<div class="flex-x gap-2" :class="dense ? 'mb-4' : 'mb-8'">
 			<div class="flex-grow text-lg" :class="titleClass">{{ computedTitle }}</div>
+			<SearchBox
+				v-model="searchText"
+				class="w-96"
+				placeholder="Search artifacts..."
+			/>
 			<ShowHideButton
 				v-if="hasText"
 				v-model="isShowingText"
@@ -88,6 +93,7 @@
 import { dxArtifact } from "@/components/Modules/Artifacts/config";
 import LoadingOverlay from "@/components/Shared/LoadingOverlay";
 import PaginationNavigator from "@/components/Shared/PaginationNavigator";
+import SearchBox from "@/components/Shared/SearchBox";
 import { Artifact } from "@/types";
 import { PaginationModel } from "@/types/Pagination";
 import {
@@ -141,12 +147,13 @@ const pagination = ref<PaginationModel>({
 	total: 0
 });
 
-// Filter state (managed by ArtifactFilterBar component)
+// Search text and filter state
+const searchText = ref("");
 const filters = ref<AnyObject>({});
 
 // Merge parent filter (like parent_artifact_id) with filters from filter component
 const mergedFilters = computed(() => {
-	return { ...props.filter, ...filters.value };
+	return { ...props.filter, ...filters.value, keywords: searchText.value };
 });
 
 // Requested fields for artifacts

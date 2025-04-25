@@ -33,6 +33,7 @@ class Artifact extends Model implements AuditableContract
         'name',
         'text_content',
         'json_content',
+        'meta',
     ];
 
     public array $relationCounters = [
