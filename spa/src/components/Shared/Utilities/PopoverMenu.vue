@@ -37,10 +37,7 @@ const props = withDefaults(defineProps<{
 	anchorWidth?: boolean;
 }>(), {
 	placement: "bottom",
-	offset: 8,
-	closeOnClickOutside: true,
-	autoClose: false,
-	anchorWidth: false
+	offset: 8
 });
 
 const isShowing = defineModel<boolean>();
@@ -70,8 +67,7 @@ const contentStyle = computed(() => {
 	return {
 		top: `${contentPosition.value.top}px`,
 		left: `${contentPosition.value.left}px`,
-		width: props.anchorWidth ? `${contentPosition.value.width}px` : undefined,
-		zIndex: 9999
+		width: props.anchorWidth ? `${contentPosition.value.width}px` : undefined
 	};
 });
 
@@ -86,9 +82,6 @@ watch(() => isShowing.value, async (isOpen) => {
 		await nextTick();
 		// Calculate position
 		updatePosition();
-		if (contentRef.value) {
-			contentRef.value.style.zIndex = "9999";
-		}
 	}
 });
 
@@ -249,6 +242,6 @@ defineExpose({ toggle, close, updatePosition });
 	max-width: calc(100vw - 16px);
 	max-height: calc(100vh - 16px);
 	overflow: auto;
-	z-index: 9999 !important; /* Ensure popover appears above all other elements */
+	z-index: 6000 !important; /* Ensure popover appears above all other elements */
 }
 </style>

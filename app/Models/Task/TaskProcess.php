@@ -21,10 +21,11 @@ use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
+use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class TaskProcess extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes, HasWorkflowStatesTrait;
+    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait, HasWorkflowStatesTrait;
 
     protected $fillable = [
         'name',
@@ -35,6 +36,13 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         'timeout_at',
         'percent_complete',
         'activity',
+    ];
+
+    protected array $keywordFields = [
+        'status',
+        'name',
+        'activity',
+        'agentThread.messages.content',
     ];
 
     public function casts(): array

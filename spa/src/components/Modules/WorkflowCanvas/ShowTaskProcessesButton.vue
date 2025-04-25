@@ -14,6 +14,9 @@
 		>
 			<div class="w-[70rem] h-[80vh] overflow-hidden">
 				<div class="flex flex-col flex-no-wrap h-full overflow-hidden">
+					<div>
+						<TaskProcessFilterButton v-model="filters" />
+					</div>
 					<div class="flex-grow overflow-y-auto">
 						<template v-if="taskProcesses.length === 0">
 							<QSkeleton v-if="isLoading" class="h-12" />
@@ -40,6 +43,8 @@
 
 <script setup lang="ts">
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
+import TaskProcessFilterButton
+	from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/TaskProcessFilterButton";
 import NodeTaskProcessCard from "@/components/Modules/WorkflowCanvas/NodeTaskProcessCard";
 import { PaginationNavigator } from "@/components/Shared";
 import { usePusher } from "@/helpers/pusher";
@@ -89,9 +94,9 @@ async function loadTaskProcesses() {
 
 	const results = await dxTaskProcess.routes.list({
 		...pagination.value,
-		filter: { task_run_id: props.taskRun.id }
+		filter: { ...filters.value, task_run_id: props.taskRun.id }
 	} as ListControlsPagination);
-	
+
 	// Ignore bad responses (probably an abort or network connection issue)
 	if (!results.data) return;
 
