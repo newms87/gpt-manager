@@ -2,12 +2,12 @@
 	<div class="flex flex-col sm:flex-row items-center gap-4">
 		<!-- Page size selector -->
 		<div class="flex items-center gap-2">
-			<label for="page-size" class="text-sm text-gray-600">Items per page:</label>
+			<label for="page-size" class="text-sm">Per page:</label>
 			<SelectField
 				:model-value="pagination.perPage"
 				:options="pageSizeOptions"
 				select-class="dx-select-field-dense"
-				@update:model-value="perPage => pagination = {...pagination, perPage}"
+				@update:model-value="onUpdatePerPage"
 			/>
 		</div>
 
@@ -194,20 +194,20 @@
 
 		<!-- Page number input -->
 		<div class="flex items-center gap-2">
-			<span class="text-sm text-gray-600">Go to page:</span>
+			<span class="text-sm">Go to page:</span>
 			<input
-				v-model.number="manualPage"
+				v-model.number="pagination.page"
 				type="number"
 				min="1"
 				:max="totalPages"
-				class="w-16 p-1 rounded border border-gray-300 bg-white text-gray-700 text-sm"
+				class="w-12 py-1 px-.5 rounded bg-slate-700 text-slate-300 text-center text-sm"
 				aria-label="Enter page number"
 				@input="debouncedHandleManualPageInput"
 			/>
 		</div>
 
 		<!-- Page info -->
-		<div class="text-sm text-gray-600 ml-auto">
+		<div class="text-sm ml-auto">
 			<span>{{ pageRangeStart }}-{{ pageRangeEnd }} of {{ pagination.total }} items</span>
 		</div>
 	</div>
@@ -216,23 +216,19 @@
 <script setup lang="ts">
 import { PaginationModel } from "@/types/Pagination";
 import { useDebounceFn } from "@vueuse/core";
-import { SelectField } from "quasar-ui-danx";
-import { computed, ref, watch } from "vue";
+import { getItem, SelectField, setItem } from "quasar-ui-danx";
+import { computed, onMounted } from "vue";
 
 const props = withDefaults(defineProps<{
 	pageSizes?: number[];
+	rememberKey?: string;
 }>(), {
 	pageSizes: () => [10, 20, 50, 100]
 });
 
+const REMEMBER_PAGE_SIZE_KEY = props.rememberKey + "-page-size";
 const pagination = defineModel<PaginationModel>();
 
-type PaginationEmits = {
-	"update:page": [value: number]
-	"update:perPage": [value: number]
-}
-
-const emit = defineEmits<PaginationEmits>();
 const pageSizeOptions = computed(() => {
 	return props.pageSizes.map(size => ({ label: size.toString(), value: size }));
 });
@@ -251,27 +247,34 @@ const pageRangeEnd = computed(() => {
 	return end > pagination.value.total ? pagination.value.total : end;
 });
 
-// Manual page input
-const manualPage = ref(currentPage.value);
-
-// Watch for external page changes to update the input field
-watch(() => pagination.value.page, (newPage) => {
-	manualPage.value = Math.max(newPage || 1, 1);
-});
 
 // Methods
 function goToPage(page: number) {
 	if (page < 1 || page > totalPages.value) return;
-	emit("update:page", page);
+	pagination.value = { ...pagination.value, page };
+}
+
+onMounted(() => {
+	if (props.rememberKey) {
+		pagination.value.perPage = getItem(REMEMBER_PAGE_SIZE_KEY, pagination.value.perPage || 10);
+	}
+});
+
+function onUpdatePerPage(perPage) {
+	pagination.value = { ...pagination.value, perPage, page: 1 };
+
+	if (props.rememberKey) {
+		setItem(REMEMBER_PAGE_SIZE_KEY, pagination.value.perPage);
+	}
 }
 
 // Debounced handler for manual page input
 const debouncedHandleManualPageInput = useDebounceFn(() => {
-	let page = manualPage.value;
+	let page = pagination.value.page;
 
 	// Validate the input
 	if (!page || isNaN(page)) {
-		manualPage.value = currentPage.value;
+		pagination.value.page = currentPage.value;
 		return;
 	}
 
@@ -279,10 +282,6 @@ const debouncedHandleManualPageInput = useDebounceFn(() => {
 	if (page < 1) page = 1;
 	if (page > totalPages.value) page = totalPages.value;
 
-	if (page !== pagination.value.page) {
-		emit("update:page", page);
-	}
-
-	manualPage.value = page;
-}, 500); // 500ms debounce
+	pagination.value = { ...pagination.value, page };
+}, 500);
 </script>
