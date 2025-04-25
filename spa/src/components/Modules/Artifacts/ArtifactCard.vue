@@ -47,7 +47,7 @@
 				tooltip="Show Artifact Meta"
 			/>
 			<ShowHideButton
-				v-if="artifact.child_artifacts_count > 0"
+				v-if="hasGroup"
 				v-model="isShowingGroup"
 				class="bg-indigo-700 flex-shrink-0"
 				size="sm"
@@ -69,7 +69,7 @@
 				<NodeTaskProcessCard v-if="taskProcess" :task-process="taskProcess" class="bg-slate-700 p-4" />
 				<QSkeleton v-else class="h-20 w-full" />
 			</div>
-			<div v-if="artifact.files?.length && isShowingFiles">
+			<div v-if="hasFiles && isShowingFiles">
 				<div class="flex items-stretch justify-start">
 					<FilePreview
 						v-for="file in artifact.files"
@@ -81,21 +81,21 @@
 					/>
 				</div>
 			</div>
-			<div v-if="artifact.text_content && isShowingText">
+			<div v-if="hasText && isShowingText">
 				<MarkdownEditor
 					:model-value="artifact.text_content"
 					format="text"
 					readonly
 				/>
 			</div>
-			<div v-if="artifact.json_content && isShowingJson">
+			<div v-if="hasJson && isShowingJson">
 				<MarkdownEditor
 					:model-value="artifact.json_content"
 					format="yaml"
 					readonly
 				/>
 			</div>
-			<div v-if="artifact.meta && isShowingMeta">
+			<div v-if="hasMeta && isShowingMeta">
 				<MarkdownEditor
 					:model-value="artifact.meta"
 					format="yaml"
@@ -103,8 +103,8 @@
 				/>
 			</div>
 			<ArtifactList
-				v-if="isShowingGroup"
-				:artifacts="childArtifacts"
+				v-if="hasGroup && isShowingGroup"
+				:filter="{parent_artifact_id: artifact.id}"
 				dense
 				class="bg-slate-800 p-4"
 				:level="(level||0)+1"
@@ -115,7 +115,6 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
-import { dxArtifact } from "@/components/Modules/Artifacts/config";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import NodeTaskProcessCard from "@/components/Modules/WorkflowCanvas/NodeTaskProcessCard";
 import { Artifact, TaskProcess } from "@/types";
@@ -153,8 +152,6 @@ const isShowingMeta = ref(props.showMeta);
 const isShowingGroup = ref(props.showGroup);
 const isShowingTaskProcess = ref(false);
 
-const childArtifacts = shallowRef([]);
-
 const idLabel = computed(() => "Artifact: " + (props.artifact.original_artifact_id ? props.artifact.original_artifact_id + " -> " : "") + props.artifact.id);
 
 const isShowingAll = computed(() =>
@@ -189,29 +186,6 @@ watch(() => props.showMeta, (state) => {
 watch(() => props.showGroup, (state) => {
 	isShowingGroup.value = state;
 });
-watch(() => isShowingGroup.value, () => {
-	if (isShowingGroup.value) {
-		loadChildArtifacts();
-	}
-});
-
-const artifactsField = {
-	text_content: true,
-	json_content: true,
-	meta: true,
-	files: { transcodes: true, thumb: true }
-};
-
-async function loadChildArtifacts() {
-
-	const { data } = await dxArtifact.routes.list({
-		filter: {
-			parent_artifact_id: props.artifact.id
-		},
-		fields: artifactsField
-	}, { requestKey: "child-artifacts:" + props.artifact.id });
-	childArtifacts.value = data;
-}
 
 const taskProcess = shallowRef<TaskProcess>(null);
 async function toggleShowTaskProcess() {
@@ -220,10 +194,7 @@ async function toggleShowTaskProcess() {
 	isShowingTaskProcess.value = !isShowingTaskProcess.value;
 
 	if (isShowingTaskProcess.value) {
-		taskProcess.value = await dxTaskProcess.routes.details({ id: props.artifact.task_process_id } as TaskProcess, {
-			inputArtifacts: true,
-			outputArtifacts: true
-		}) as TaskProcess;
+		taskProcess.value = await dxTaskProcess.routes.details({ id: props.artifact.task_process_id } as TaskProcess) as TaskProcess;
 	}
 }
 </script>
