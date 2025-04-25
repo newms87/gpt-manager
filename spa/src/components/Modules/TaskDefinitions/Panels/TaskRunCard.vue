@@ -67,6 +67,7 @@ import TaskProcessCard from "@/components/Modules/TaskDefinitions/Panels/TaskPro
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
 import { AiTokenUsageButton } from "@/components/Shared";
+import { usePusher } from "@/helpers/pusher";
 import { TaskRun } from "@/types";
 import { ActionButton, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
@@ -85,6 +86,7 @@ const isStopped = computed(() => props.taskRun.status === "Stopped" || props.tas
 const isRunning = computed(() => props.taskRun.status === "Running");
 
 async function loadTaskProcesses() {
+	usePusher().subscribeToProcesses(props.taskRun);
 	await dxTaskRun.routes.details(props.taskRun, { processes: true });
 }
 </script>

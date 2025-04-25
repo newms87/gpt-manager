@@ -8,6 +8,7 @@ use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
+use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowNode;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\TaskRunnerService;
@@ -68,6 +69,11 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         ];
     }
 
+    public function team(): BelongsTo|Team
+    {
+        return $this->belongsTo(Team::class);
+    }
+    
     public function agent(): BelongsTo|Agent
     {
         return $this->belongsTo(Agent::class);

@@ -103,7 +103,7 @@ async function refreshJobDispatch() {
 }
 
 onMounted(() => {
-	usePusher().subscribe("AgentThreadRun", "updated", async (data: AgentThreadRun) => {
+	usePusher().onEvent("AgentThreadRun", "updated", async (data: AgentThreadRun) => {
 		if (data.agent_thread_id === props.agentThread.id) {
 			await refreshAgentThread(props.agentThread);
 		}

@@ -64,7 +64,9 @@ ActionRoute::routes('artifacts', new ArtifactsController);
 ActionRoute::routes('task-definitions', new TaskDefinitionsController);
 ActionRoute::routes('task-artifact-filters', new TaskArtifactFiltersController);
 ActionRoute::routes('task-inputs', new TaskInputsController);
-ActionRoute::routes('task-runs', new TaskRunsController);
+ActionRoute::routes('task-runs', new TaskRunsController, function () {
+    Route::get('{taskRun}/subscribe-to-processes', [TaskRunsController::class, 'subscribeToProcesses']);
+});
 ActionRoute::routes('task-processes', new TaskProcessesController);
 
 // Workflows

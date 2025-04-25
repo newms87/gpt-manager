@@ -64,7 +64,7 @@ async function refreshWorkflowRun(workflowRun: WorkflowRun) {
 /**
  *  Whenever a task run has been created for the workflow run, refresh the workflow to get the latest taskRuns list
  */
-usePusher().subscribe("TaskRun", "created", async (taskRun: TaskRun) => {
+usePusher().onEvent("TaskRun", "created", async (taskRun: TaskRun) => {
 	if (taskRun.workflow_run_id === activeWorkflowRun.value?.id) {
 		await refreshWorkflowRun(activeWorkflowRun.value);
 	}

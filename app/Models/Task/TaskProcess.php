@@ -2,6 +2,7 @@
 
 namespace App\Models\Task;
 
+use App\Events\TaskProcessUpdatedEvent;
 use App\Models\Agent\AgentThread;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Usage\UsageSummary;
@@ -179,6 +180,18 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         static::saved(function (TaskProcess $taskProcess) {
             if ($taskProcess->wasChanged('status')) {
                 $taskProcess->taskRun->checkProcesses()->save();
+            }
+
+            if ($taskProcess->wasChanged([
+                'status',
+                'last_job_dispatch_id',
+                'activity',
+                'percent_complete',
+                'input_artifact_count',
+                'output_artifact_count',
+                'restart_count',
+            ])) {
+                TaskProcessUpdatedEvent::dispatch($taskProcess);
             }
         });
     }

@@ -14,3 +14,7 @@ Broadcast::channel('TaskRun.{teamId}', function (User $user, $teamId) {
 Broadcast::channel('AgentThreadRun.{teamId}', function (User $user, $teamId) {
     return (bool)$user->teams()->find($teamId);
 });
+
+Broadcast::channel('TaskProcess.{userId}', function (User $user, $userId) {
+    return $user->id === (int)$userId;
+});

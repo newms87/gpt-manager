@@ -309,7 +309,7 @@ class TaskProcessRunnerService
      * Handle the timeout of a task process.
      * The task process will be restarted automatically if the max_process_retries has not been reached
      */
-    public function handleTimeout(TaskProcess $taskProcess): void
+    public static function handleTimeout(TaskProcess $taskProcess): void
     {
         LockHelper::acquire($taskProcess);
 

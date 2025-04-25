@@ -11,7 +11,7 @@ import {
 	SchemaFragment,
 	WorkflowInput
 } from "@/types";
-import { ActionTargetItem, AnyObject } from "quasar-ui-danx";
+import { ActionTargetItem, AnyObject, ListControlsRoutes } from "quasar-ui-danx";
 import { VNode } from "vue";
 
 export interface TaskDefinition extends ActionTargetItem {
@@ -136,3 +136,7 @@ export interface UsageSummary {
 }
 
 export type TaskRunStatus = "Pending" | "Running" | "Failed" | "Skipped" | "Completed" | "Stopped" | "Timeout";
+
+export interface TaskRunRoutes extends ListControlsRoutes<TaskRun> {
+	subscribeToProcesses(target: TaskRun): Promise<void>;
+}
