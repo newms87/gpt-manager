@@ -35,6 +35,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         // Create task process
         $this->taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
+            'activity'    => 'Testing filter artifacts',
         ]);
     }
 
@@ -1198,7 +1199,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
                 'id'     => 1,
                 'name'   => 'Test Item',
                 'active' => true,
-                'tags'   => ['important', 'active'],
+                'tags'   => ['important', 'document', 'critical'],
             ],
         ]);
 
@@ -1303,9 +1304,9 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
     }
 
     /**
-     * Test filtering with boolean-specific operators
+     * Test filtering with is_true boolean operator
      */
-    public function test_filter_artifacts_with_boolean_specific_operators()
+    public function test_filter_artifacts_with_is_true_operator()
     {
         // Given we have 3 artifacts with different boolean values
         $artifact1 = Artifact::factory()->create([
@@ -1323,7 +1324,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         // Attach artifacts to the task process input
         $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
 
-        // Test filtering with is_true operator
+        // Configure filter with is_true operator
         $this->taskDefinition->update([
             'task_runner_config' => [
                 'filter_config' => [
@@ -1351,8 +1352,30 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
         $this->assertCount(1, $outputArtifacts);
         $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
+    }
 
-        // Test filtering with is_false operator
+    /**
+     * Test filtering with is_false boolean operator
+     */
+    public function test_filter_artifacts_with_is_false_operator()
+    {
+        // Given we have 3 artifacts with different boolean values
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => ['active' => true],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => ['active' => false],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => ['active' => null],
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Configure filter with is_false operator
         $this->taskDefinition->update([
             'task_runner_config' => [
                 'filter_config' => [
@@ -1373,15 +1396,170 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
             ],
         ]);
 
-        // Reset the task process with the original artifacts again, since previous run might have modified it
-        $this->taskProcess->outputArtifacts()->detach();
-        $this->taskProcess->inputArtifacts()->detach();
-        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
-
-        // When we run the filter task again
+        // When we run the filter task
         $this->taskProcess->getRunner()->run();
 
         // Then only artifact with active=false should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact2->id, $outputArtifacts->first()->id);
+    }
+
+    /**
+     * Test filtering with is_true operator on boolean array values
+     */
+    public function test_filter_artifacts_with_boolean_array_is_true()
+    {
+        // Given we have artifacts with arrays of boolean values
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => ['flags' => [true, false, true]], // Contains true values
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => ['flags' => [false, false, false]], // Contains only false values
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => ['flags' => [true, true, true]], // Contains only true values
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Filter for true should match artifacts containing at least one true
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type'              => 'condition',
+                            'field'             => 'json_content',
+                            'fragment_selector' => [
+                                'type'     => 'object',
+                                'children' => [
+                                    'flags' => ['type' => 'boolean'],
+                                ],
+                            ],
+                            'operator'          => 'is_true',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then artifacts with at least one true should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(2, $outputArtifacts);
+        $outputArtifactIds = $outputArtifacts->pluck('id')->toArray();
+        $this->assertContains($artifact1->id, $outputArtifactIds);
+        $this->assertContains($artifact3->id, $outputArtifactIds);
+        $this->assertNotContains($artifact2->id, $outputArtifactIds);
+    }
+
+    /**
+     * Test filtering with is_false operator on boolean array values
+     */
+    public function test_filter_artifacts_with_boolean_array_is_false()
+    {
+        // Given we have artifacts with arrays of boolean values
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => ['flags' => [true, false, true]], // Contains false values
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => ['flags' => [false, false, false]], // Contains only false values
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => ['flags' => [true, true, true]], // Contains no false values
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Filter for false should match artifacts containing at least one false
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type'              => 'condition',
+                            'field'             => 'json_content',
+                            'fragment_selector' => [
+                                'type'     => 'object',
+                                'children' => [
+                                    'flags' => ['type' => 'boolean'],
+                                ],
+                            ],
+                            'operator'          => 'is_false',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then artifacts with at least one false should be in the output
+        $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
+        $this->assertCount(2, $outputArtifacts);
+        $outputArtifactIds = $outputArtifacts->pluck('id')->toArray();
+        $this->assertContains($artifact1->id, $outputArtifactIds);
+        $this->assertContains($artifact2->id, $outputArtifactIds);
+        $this->assertNotContains($artifact3->id, $outputArtifactIds);
+    }
+
+    /**
+     * Test filtering with is_true operator on boolean array values with discard action
+     */
+    public function test_filter_artifacts_with_boolean_array_discard_action()
+    {
+        // Given we have artifacts with arrays of boolean values
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => ['flags' => [true, false, true]], // Contains true values
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => ['flags' => [false, false, false]], // Contains only false values
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => ['flags' => [true, true, true]], // Contains only true values
+        ]);
+
+        // Attach artifacts to the task process input
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+
+        // Filter with discard action - discard artifacts that contain true values
+        $this->taskDefinition->update([
+            'task_runner_config' => [
+                'filter_config' => [
+                    'conditions' => [
+                        [
+                            'type'              => 'condition',
+                            'field'             => 'json_content',
+                            'fragment_selector' => [
+                                'type'     => 'object',
+                                'children' => [
+                                    'flags' => ['type' => 'boolean'],
+                                ],
+                            ],
+                            'operator'          => 'is_true',
+                        ],
+                    ],
+                    'action'     => 'discard', // Discard artifacts where condition is true
+                ],
+            ],
+        ]);
+
+        // When we run the filter task
+        $this->taskProcess->getRunner()->run();
+
+        // Then only artifact with all false values should be in the output
         $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
         $this->assertCount(1, $outputArtifacts);
         $this->assertEquals($artifact2->id, $outputArtifacts->first()->id);

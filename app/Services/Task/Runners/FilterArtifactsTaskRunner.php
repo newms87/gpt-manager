@@ -4,7 +4,6 @@ namespace App\Services\Task\Runners;
 
 use App\Models\Task\Artifact;
 use App\Services\FilterService;
-use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -133,10 +132,6 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
                     $condition['fragment_selector'] ?? null
                 );
 
-                // Log useful information for debugging
-                $fragmentDot = !empty($condition['fragment_selector']) ? '.' . app(JsonSchemaService::class)->fragmentSelectorToDot($condition['fragment_selector']) : '';
-                static::log("Evaluating condition: {$condition['field']}$fragmentDot: " . json_encode($fieldValue) . " [{$condition['operator']}] " . json_encode($condition['value'] ?? null));
-
                 // Evaluate the condition against the field value
                 $result    = $this->filterService->evaluateCondition($fieldValue, $condition);
                 $results[] = $result;
@@ -150,15 +145,14 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             }
         }
 
-        if (empty($results)) {
-            return false;
-        }
+        // Combine the results using the specified operator
+        $finalResult = ($operator === 'AND') ?
+            (!empty($results) && !in_array(false, $results)) :
+            (!empty($results) && in_array(true, $results));
 
-        if ($operator === 'AND') {
-            return !in_array(false, $results, true);
-        } else { // OR
-            return in_array(true, $results, true);
-        }
+        static::log("Final result for artifact $artifact->id: " . ($finalResult ? "true" : "false"));
+
+        return $finalResult;
     }
 
     /**
