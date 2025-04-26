@@ -43,23 +43,32 @@ class WorkflowRunnerService
 
         // Start all the starting nodes
         foreach($workflowDefinition->startingWorkflowNodes as $workflowNode) {
-            WorkflowStartNodeJob::make($workflowRun, $workflowNode, $artifacts)->dispatch();
+            $taskRun = static::prepareNode($workflowRun, $workflowNode);
+            (new WorkflowStartNodeJob($taskRun, $artifacts))->dispatch();
         }
 
         return $workflowRun;
     }
 
     /**
-     * Start a task run for the given node in the workflow, passing all source node output artifacts
+     * Prepare a task run for the given workflow node
      */
-    public static function startNode(WorkflowRun $workflowRun, WorkflowNode $workflowNode, Collection|array $artifacts = []): TaskRun
+    public static function prepareNode(WorkflowRun $workflowRun, WorkflowNode $workflowNode): TaskRun
     {
-        static::log("Starting node $workflowNode");
-
-        // Then run the node
+        static::log("Preparing node $workflowNode");
         $taskRun = TaskRunnerService::prepareTaskRun($workflowNode->taskDefinition);
         $taskRun->workflowRun()->associate($workflowRun)->save();
         $taskRun->workflowNode()->associate($workflowNode)->save();
+
+        return $taskRun;
+    }
+
+    /**
+     * Start a task run for the given node in the workflow, passing all source node output artifacts
+     */
+    public static function startNode(TaskRun $taskRun, Collection|array $artifacts = []): TaskRun
+    {
+        static::log("Starting node $taskRun->workflowNode");
 
         // Sync artifacts from the workflow source nodes
         TaskRunnerService::syncInputArtifactsFromWorkflowSourceNodes($taskRun);
@@ -188,7 +197,8 @@ class WorkflowRunnerService
 
                 // If this node is ready to run, start it
                 if ($workflowRun->targetNodeReadyToRun($targetNode)) {
-                    WorkflowStartNodeJob::make($workflowRun, $targetNode)->dispatch();
+                    $taskRun = WorkflowRunnerService::prepareNode($workflowRun, $targetNode);
+                    (new WorkflowStartNodeJob($taskRun))->dispatch();
                 } else {
                     static::log("Waiting for sources before running target $targetNode");
                 }

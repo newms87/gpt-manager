@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Jobs\WorkflowStartNodeJob;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowStatesContract;
@@ -64,7 +65,8 @@ class WorkflowRunRepository extends ActionRepository
 
         $workflowNode = WorkflowNode::findOrFail($workflowNodeId);
 
-        WorkflowRunnerService::startNode($workflowRun, $workflowNode);
+        $taskRun = WorkflowRunnerService::prepareNode($workflowRun, $workflowNode);
+        (new WorkflowStartNodeJob($taskRun))->dispatch();
 
         return $workflowRun;
     }
