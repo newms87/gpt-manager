@@ -117,6 +117,22 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         return $this->morphOne(UsageSummary::class, 'object');
     }
 
+    public function addInputArtifacts($artifacts): static
+    {
+        $this->inputArtifacts()->syncWithoutDetaching(collect($artifacts)->pluck('id')->toArray());
+        $this->updateRelationCounter('inputArtifacts');
+
+        return $this;
+    }
+
+    public function addOutputArtifacts($artifacts): static
+    {
+        $this->outputArtifacts()->sync(collect($artifacts)->pluck('id'));
+        $this->updateRelationCounter('inputArtifacts');
+
+        return $this;
+    }
+    
     public function clearOutputArtifacts(): void
     {
         $this->outputArtifacts()->detach();
