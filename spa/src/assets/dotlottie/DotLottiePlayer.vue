@@ -7,11 +7,13 @@
 		:src="src"
 		:speed="speed"
 		:mode="mode"
+		:class="$props.class"
 		@mouseover="onHoverIn"
 		@mouseout="onHoverOut"
 	/>
 </template>
 <script setup lang="ts">
+import { onViewportChangeEnd } from "@/components/Modules/WorkflowCanvas/helpers";
 import { DotLottieVue } from "@lottiefiles/dotlottie-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
@@ -27,17 +29,28 @@ const props = withDefaults(defineProps<{
 	finalFrame?: number;
 	finished?: boolean;
 	playOnHover?: boolean;
+	class?: string;
 }>(), {
 	loop: true,
 	segment: null,
 	startFrame: 0,
 	finalFrame: 100,
 	speed: 1,
-	mode: "forward"
+	mode: "forward",
+	class: "w-full h-full"
 });
 
 const lottieRef = ref();
 const player = computed(() => lottieRef.value.getDotLottieInstance());
+
+// Always keep the player size in sync with the canvas / window size so the animation appears full size and sharp
+onViewportChangeEnd(async () => {
+	if (player.value) {
+		await nextTick();
+		player.value.resize();
+	}
+});
+
 onMounted(() => {
 	player.value.addEventListener("load", setStoppedFrame);
 	player.value.addEventListener("loop", emitLoop);

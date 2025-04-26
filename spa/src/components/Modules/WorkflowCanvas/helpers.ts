@@ -4,7 +4,9 @@ import { Connection, Position, useVueFlow } from "@vue-flow/core";
 import { nanoid } from "nanoid";
 import { shallowRef } from "vue";
 
-const { edges } = useVueFlow();
+const { edges, onViewportChangeEnd } = useVueFlow("workflow-canvas-vf");
+
+export { onViewportChangeEnd };
 
 // The list of all tasks in the teams account
 const taskDefinitions = shallowRef([]);
