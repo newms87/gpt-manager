@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Jobs\Job;
 use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -200,7 +201,13 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
                 'output_artifact_count',
                 'restart_count',
             ])) {
-                TaskProcessUpdatedEvent::dispatch($taskProcess);
+                // If this is the execute task process job, we want to broadcast the status changes immediately to provide a better user experience
+                // No need to spin up another job just to broadcast the status
+                if ($taskProcess->wasChanged('status') && Job::$runningJob?->name === 'ExecuteTaskProcessJob') {
+                    TaskProcessUpdatedEvent::broadcast($taskProcess);
+                } else {
+                    TaskProcessUpdatedEvent::dispatch($taskProcess);
+                }
             }
         });
     }

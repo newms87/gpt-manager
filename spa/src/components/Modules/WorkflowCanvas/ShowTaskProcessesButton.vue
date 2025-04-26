@@ -4,7 +4,6 @@
 		:show-icon="ProcessListIcon"
 		class="show-task-processes-button"
 		:label="taskRun.process_count"
-		@update:model-value="onShow"
 	>
 		<InfoDialog
 			v-if="isShowingTaskProcesses"
@@ -82,9 +81,10 @@ const pagination = ref<PaginationModel>({
 });
 
 // Search text and filter state
-const filters = ref<AnyObject>({
+const defaultFilters = {
 	keywords: ""
-});
+};
+const filters = ref<AnyObject>(defaultFilters);
 
 // Watch for changes in pagination or filters to reload data
 watch(filters, (value, oldValue) => {
@@ -96,7 +96,6 @@ watch(filters, (value, oldValue) => {
 watch(pagination, loadTaskProcesses);
 
 async function loadTaskProcesses() {
-
 	isLoading.value = true;
 
 	const results = await dxTaskProcess.routes.list({
@@ -112,8 +111,14 @@ async function loadTaskProcesses() {
 	isLoading.value = false;
 }
 
-function onShow() {
-	usePusher().subscribeToProcesses(props.taskRun);
-	loadTaskProcesses();
-}
+// Toggle web socket subscription to task processes
+watch(isShowingTaskProcesses, () => {
+	if (isShowingTaskProcesses.value) {
+		usePusher().subscribeToProcesses(props.taskRun);
+		loadTaskProcesses();
+	} else {
+		usePusher().unsubscribeFromProcesses();
+		filters.value = defaultFilters;
+	}
+});
 </script>

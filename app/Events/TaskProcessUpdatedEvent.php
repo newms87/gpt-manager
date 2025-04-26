@@ -19,7 +19,7 @@ class TaskProcessUpdatedEvent extends ModelSavedEvent
         $channels = [];
         $teamId   = $this->taskProcess->taskRun->taskDefinition->team_id;
         $userIds  = Team::query()->where('teams.id', $teamId)->join('team_user', 'team_id', 'teams.id')->pluck('user_id')->toArray();
-        
+
         foreach($userIds as $userId) {
             if (cache()->get('subscribe:task-run-processes:' . $userId)) {
                 $channels[] = new PrivateChannel('TaskProcess.' . $userId);

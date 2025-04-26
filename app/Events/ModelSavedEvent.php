@@ -13,13 +13,27 @@ abstract class ModelSavedEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(protected Model $model, protected string $event)
-    {
-    }
+    public function __construct(protected Model $model, protected string $event) { }
 
     public static function lockKey(Model $model): string
     {
-        return $model->getTable() . '.' . $model->getKey();
+        return 'model-saved:' . $model->getTable() . ':' . $model->getKey();
+    }
+
+    public static function getEvent(Model $model): string
+    {
+        if ($model->wasRecentlyCreated) {
+            return 'created';
+        } elseif ($model->exists) {
+            return 'updated';
+        }
+
+        return 'deleted';
+    }
+
+    public static function broadcast(Model $model): void
+    {
+        broadcast(new static($model, static::getEvent($model)));
     }
 
     public static function dispatch(Model $model): void
@@ -27,13 +41,7 @@ abstract class ModelSavedEvent implements ShouldBroadcast
         $lock = Cache::lock(static::lockKey($model), 5);
 
         if ($lock->get()) {
-            $event = 'deleted';
-            if ($model->wasRecentlyCreated) {
-                $event = 'created';
-            } elseif ($model->exists) {
-                $event = 'updated';
-            }
-            event(new static($model, $event));
+            event(new static($model, static::getEvent($model)));
         }
     }
 

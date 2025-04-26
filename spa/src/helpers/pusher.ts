@@ -18,7 +18,7 @@ export interface UserSubscription {
 let pusher: Pusher;
 const channels: Channel[] = [];
 const listeners: ChannelEventListener[] = [];
-const userSubscriptions: UserSubscription[] = [];
+const userSubscriptionsMap: Map<string, UserSubscription> = new Map();
 
 const defaultChannelNames = {
 	"WorkflowRun": ["updated"],
@@ -58,13 +58,23 @@ function fireSubscriberEvents(channel: string, event: string, data: ActionTarget
  *  Adds a user subscription to the list of subscriptions. A user subscription will notify the server every minute that it is listening while the subscription is active.
  *  This way only selective messages are sent to the client, instead of all messages for a channel.
  */
-async function addUserSubscription(userSubscription: UserSubscription) {
-	userSubscriptions.push(userSubscription);
+async function addUserSubscription(name: string, userSubscription: UserSubscription) {
+	userSubscriptionsMap.set(name, userSubscription);
 	await fireUserSubscription(userSubscription);
 
 	// Make sure we initialize the fireUserSubscriptions function
 	if (!cancelFireUserSubscriptionsId) {
-		await fireUserSubscriptions();
+		await continuouslyFireUserSubscriptions();
+	}
+}
+
+/**
+ *  Removes a user subscription from the list of subscriptions.
+ *  This will stop notifying the server that the client is listening to a specific event.
+ */
+function removeUserSubscription(name: string) {
+	if (userSubscriptionsMap.has(name)) {
+		userSubscriptionsMap.delete(name);
 	}
 }
 
@@ -80,16 +90,20 @@ async function fireUserSubscription(userSubscription: UserSubscription) {
  *  This is done every minute to keep the subscription alive on the server
  */
 let cancelFireUserSubscriptionsId: NodeJS.Timeout | null = null;
-async function fireUserSubscriptions() {
+async function continuouslyFireUserSubscriptions() {
 	const promises = [];
-	for (const userSubscription of userSubscriptions) {
+	for (const userSubscription of userSubscriptionsMap.values()) {
 		promises.push(fireUserSubscription(userSubscription));
 	}
 	try {
 		await Promise.all(promises);
 	} finally {
-		// Fire the user subscriptions once per minute
-		cancelFireUserSubscriptionsId = setTimeout(fireUserSubscriptions, 1000 * 60);
+		// Fire the user subscriptions once per minute while there are subscriptions active
+		if (userSubscriptionsMap.size > 0) {
+			cancelFireUserSubscriptionsId = setTimeout(continuouslyFireUserSubscriptions, 1000 * 60);
+		} else {
+			cancelFireUserSubscriptionsId = null;
+		}
 	}
 }
 
@@ -124,7 +138,7 @@ export function usePusher() {
 		// Subscribe to the default channels (every page session will subscribe to all of these channels)
 		for (const channelName of Object.keys(defaultChannelNames)) {
 			const events = defaultChannelNames[channelName];
-			subscribeToChannel(channelName, authUser.value.id, events);
+			subscribeToChannel(channelName, authTeam.value.id, events);
 		}
 	}
 
@@ -133,9 +147,12 @@ export function usePusher() {
 	 *  This is used to get updates on the processes of a task run.
 	 */
 	async function subscribeToProcesses(taskRun: TaskRun) {
-		if (subscribeToChannel("TaskProcess", authUser.value.id, ["updated", "created"])) {
-			await addUserSubscription({ endpoint: dxTaskRun.routes.subscribeToProcesses, params: taskRun });
-		}
+		subscribeToChannel("TaskProcess", authUser.value.id, ["updated", "created"]);
+		await addUserSubscription("task-processes", { endpoint: dxTaskRun.routes.subscribeToProcesses, params: taskRun });
+	}
+
+	function unsubscribeFromProcesses() {
+		removeUserSubscription("task-processes");
 	}
 
 	function onEvent(channel: string, event: string | string[], callback: (data: ActionTargetItem) => void) {
@@ -166,6 +183,7 @@ export function usePusher() {
 		channels,
 		onEvent,
 		onModelEvent,
-		subscribeToProcesses
+		subscribeToProcesses,
+		unsubscribeFromProcesses
 	};
 }

@@ -221,8 +221,11 @@ class TaskRunnerService
             $taskRun->save();
 
             foreach($taskRun->taskProcesses as $taskProcess) {
-                if ($taskProcess->isStopped()) {
-                    $taskProcess->stopped_at = null;
+                if ($taskProcess->isStatusStopped()) {
+                    $taskProcess->stopped_at           = null;
+                    $taskProcess->timeout_at           = null;
+                    $taskProcess->started_at           = null;
+                    $taskProcess->last_job_dispatch_id = null;
                     $taskProcess->save();
                 }
             }
