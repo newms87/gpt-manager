@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Helpers\LockHelper;
+use Newms87\Danx\Jobs\Job;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
@@ -251,8 +252,14 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 }
             }
 
-            if ($taskRun->wasChanged(['status', 'input_artifacts_count', 'output_artifacts_count', 'percent_complete'])) {
-                TaskRunUpdatedEvent::dispatch($taskRun);
+            if ($taskRun->wasRecentlyCreated || $taskRun->wasChanged(['status', 'input_artifacts_count', 'output_artifacts_count', 'percent_complete'])) {
+                // If this is the execute task process job, we want to broadcast the changes immediately to provide a better user experience
+                // No need to spin up another job just to broadcast the status
+                if (Job::$runningJob?->name === 'ExecuteTaskProcessJob') {
+                    TaskRunUpdatedEvent::broadcast($taskRun);
+                } else {
+                    TaskRunUpdatedEvent::dispatch($taskRun);
+                }
             }
         });
     }

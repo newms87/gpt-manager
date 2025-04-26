@@ -151,9 +151,9 @@
       <path value="$PROJECT_DIR$/vendor/intervention/image" />
       <path value="$PROJECT_DIR$/vendor/intervention/gif" />
       <path value="$PROJECT_DIR$/vendor/league/html-to-markdown" />
-      <path value="$PROJECT_DIR$/vendor/newms87/danx" />
       <path value="$PROJECT_DIR$/vendor/pusher/pusher-php-server" />
       <path value="$PROJECT_DIR$/vendor/paragonie/sodium_compat" />
+      <path value="$PROJECT_DIR$/vendor/newms87/danx" />
     </include_path>
   </component>
   <component name="PhpInterpreters">
