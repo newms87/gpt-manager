@@ -58,7 +58,7 @@ class TaskRunnerService
 
         $query = $taskRun->inputArtifacts();
 
-        $maxLevel = max($taskDefinition->input_artifact_levels ?? [0]);
+        $maxLevel = max($taskDefinition->input_artifact_levels ?: [0]);
 
         // Eager load the children of the artifacts to avoid N+1 queries
         if ($maxLevel > 0) {

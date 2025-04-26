@@ -45,7 +45,7 @@ class ArtifactsSplitterService
         $artifacts = collect($artifacts);
 
         // Filter artifacts by levels if specified
-        if ($levels !== null) {
+        if ($levels) {
             $filteredArtifacts = collect();
 
             // Process artifacts based on their level
@@ -128,7 +128,7 @@ class ArtifactsSplitterService
     /**
      * Split the artifacts by creating one group per top-level artifact
      * Each group will contain a top-level artifact and any of its descendants that match the levels filter
-     * 
+     *
      * @param Artifact[]|Collection $artifacts
      */
     public static function byTopLevel(Collection|EloquentCollection $artifacts): Collection
@@ -136,32 +136,32 @@ class ArtifactsSplitterService
         // First, identify all the top-level artifacts (those without a parent)
         // and organize all artifacts by their root ancestor
         $topLevelArtifacts = collect();
-        $artifactGroups = collect();
-        
+        $artifactGroups    = collect();
+
         foreach($artifacts as $artifact) {
             // Find the top-level ancestor for this artifact
             $topLevelAncestor = self::findTopLevelAncestor($artifact);
-            
+
             // Save the top-level artifact if we haven't seen it before
             if (!$topLevelArtifacts->contains('id', $topLevelAncestor->id)) {
                 $topLevelArtifacts->push($topLevelAncestor);
             }
-            
+
             // Add this artifact to the group of its top-level ancestor
             if (!isset($artifactGroups[$topLevelAncestor->id])) {
                 $artifactGroups[$topLevelAncestor->id] = collect();
             }
-            
+
             $artifactGroups[$topLevelAncestor->id]->push($artifact);
         }
-        
+
         // Return the groups organized by top-level ancestors
         return $artifactGroups->values();
     }
-    
+
     /**
      * Find the top-level ancestor of an artifact
-     * 
+     *
      * @param Artifact $artifact The artifact to find the top-level ancestor for
      * @return Artifact The top-level ancestor (or the artifact itself if it's already top-level)
      */
@@ -170,14 +170,14 @@ class ArtifactsSplitterService
         if ($artifact->parent_artifact_id === null) {
             return $artifact;
         }
-        
+
         // Recursively find the topmost parent
         $parent = $artifact->parent;
         if (!$parent) {
             // If parent relationship is broken, treat this as a top-level artifact
             return $artifact;
         }
-        
+
         return self::findTopLevelAncestor($parent);
     }
 

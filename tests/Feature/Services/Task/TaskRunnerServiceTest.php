@@ -69,9 +69,9 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $this->assertNotNull($taskRun, 'TaskRun should be created');
         $this->assertCount(1, $taskRun->taskProcesses, 'TaskRun should have a single process for all artifacts');
 
-        $process = $taskRun->taskProcesses->first();
+        $taskProcess = $taskRun->taskProcesses->first();
 
-        $this->assertEquals(2, $process->inputArtifacts()->count(), 'Process should have 2 input artifacts');
+        $this->assertEquals(2, $taskProcess->inputArtifacts()->count(), 'Process should have 2 input artifacts');
     }
 
     public function test_prepareTaskRun_withArtifactsAndMultipleSchemaAssociations_createsAProcessWithAllArtifactsForEachSchemaAssociation(): void
