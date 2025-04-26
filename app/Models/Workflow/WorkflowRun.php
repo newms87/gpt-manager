@@ -38,14 +38,16 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
     public function casts(): array
     {
         return [
-            'started_at'   => 'datetime:Y-m-d H:i:s.v',
-            'stopped_at'   => 'datetime:Y-m-d H:i:s.v',
-            'completed_at' => 'datetime:Y-m-d H:i:s.v',
-            'failed_at'    => 'datetime:Y-m-d H:i:s.v',
-            'created_at'   => 'datetime:Y-m-d H:i:s.v',
-            'updated_at'   => 'datetime:Y-m-d H:i:s.v',
-            'deleted_at'   => 'datetime:Y-m-d H:i:s.v',
+            'started_at'   => 'datetime',
+            'stopped_at'   => 'datetime',
+            'completed_at' => 'datetime',
+            'failed_at'    => 'datetime',
         ];
+    }
+
+    public function getDateFormat(): string
+    {
+        return 'Y-m-d H:i:s.v';
     }
 
     public function workflowApiInvocation(): HasOne|WorkflowApiInvocation

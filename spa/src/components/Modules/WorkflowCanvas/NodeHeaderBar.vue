@@ -1,6 +1,6 @@
 <template>
 	<div class="node-header" draggable="false" @click.prevent.stop @mousedown.prevent.stop>
-		<div class="flex flex-nowrap items-center space-x-2 h-8">
+		<div class="flex flex-nowrap items-center space-x-1 h-8">
 			<div class="flex-grow flex-x space-x-1">
 				<ShowTaskProcessesButton
 					v-if="taskRun"

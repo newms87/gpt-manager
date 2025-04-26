@@ -59,15 +59,17 @@ class AgentThreadRun extends Model implements AuditableContract
             'json_schema_config'   => 'json',
             'response_json_schema' => 'json',
             'temperature'          => 'float',
-            'started_at'           => 'datetime:Y-m-d H:i:s.v',
-            'stopped_at'           => 'datetime:Y-m-d H:i:s.v',
-            'completed_at'         => 'datetime:Y-m-d H:i:s.v',
-            'failed_at'            => 'datetime:Y-m-d H:i:s.v',
-            'refreshed_at'         => 'datetime:Y-m-d H:i:s.v',
-            'created_at'           => 'datetime:Y-m-d H:i:s.v',
-            'updated_at'           => 'datetime:Y-m-d H:i:s.v',
-            'deleted_at'           => 'datetime:Y-m-d H:i:s.v',
+            'started_at'           => 'datetime',
+            'stopped_at'           => 'datetime',
+            'completed_at'         => 'datetime',
+            'failed_at'            => 'datetime',
+            'refreshed_at'         => 'datetime',
         ];
+    }
+
+    public function getDateFormat(): string
+    {
+        return 'Y-m-d H:i:s.v';
     }
 
     public function agentThread(): AgentThread|BelongsTo
