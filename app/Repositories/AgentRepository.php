@@ -80,6 +80,7 @@ class AgentRepository extends ActionRepository
             'model'       => config('ai.default_model'),
             'temperature' => 0,
             'tools'       => [],
+            'retry_count' => 2,
         ];
 
         $agent->fill($data);

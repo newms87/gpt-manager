@@ -14,6 +14,7 @@ use App\Repositories\AgentRepository;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
 use Exception;
+use GuzzleHttp\Exception\ConnectException;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ApiRequestException;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -235,6 +236,16 @@ class AgentThreadService
                         $messages,
                         $options
                     );
+                } catch(ConnectException $exception) {
+                    // Handle connection errors
+                    if (str_contains($exception->getMessage(), 'timed out') && ($retries-- > 0)) {
+                        Log::warning("Connection timed out from completion API. Retrying in 5 seconds...");
+                        sleep(5);
+                        continue;
+                    }
+
+                    // If the error is not a connection error, throw the exception
+                    throw $exception;
                 } catch(ApiRequestException $exception) {
                     if ($exception->getStatusCode() >= 500) {
                         if ($status500retries-- > 0) {
