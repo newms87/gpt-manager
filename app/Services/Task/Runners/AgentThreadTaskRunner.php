@@ -46,10 +46,10 @@ class AgentThreadTaskRunner extends BaseTaskRunner
     {
         $agentThread = $this->setupAgentThread($this->taskProcess->inputArtifacts()->get());
         $artifact    = $this->runAgentThread($agentThread);
-        $this->complete([$artifact]);
+        $this->complete($artifact ? [$artifact] : null);
     }
 
-    public function runAgentThread(AgentThread $agentThread)
+    public function runAgentThread(AgentThread $agentThread): Artifact|null
     {
         $agent             = $agentThread->agent;
         $schemaDefinition  = $this->taskDefinition->schemaDefinition;

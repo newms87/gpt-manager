@@ -17,6 +17,8 @@ class TaskDefinitionToAgentThreadMapper
 {
     use HasDebugLogging;
 
+    protected int $maxFiles = 5;
+
     protected ?TaskRun       $taskRun = null;
     protected TaskDefinition $taskDefinition;
     /** @var array|Collection|EloquentCollection|Artifact[] */
@@ -64,11 +66,9 @@ class TaskDefinitionToAgentThreadMapper
     {
         static::log("Mapping to agent thread: $this->taskDefinition");
 
-        $agent = $this->taskDefinition->agent;
+        $this->validate();
 
-        if (!$agent) {
-            throw new Exception("Agent not found for Task Definition: $this->taskDefinition");
-        }
+        $agent = $this->taskDefinition->agent;
 
         $threadName  = $this->taskDefinition->name . ': ' . $agent->name;
         $agentThread = app(ThreadRepository::class)->create($agent, $threadName);
@@ -79,6 +79,22 @@ class TaskDefinitionToAgentThreadMapper
         $this->addDirectives($agentThread, $this->taskDefinition->afterThreadDirectives()->get());
 
         return $agentThread;
+    }
+
+    private function validate(): void
+    {
+        if (!$this->taskDefinition->agent) {
+            throw new Exception("Agent not found for Task Definition: $this->taskDefinition");
+        }
+
+        $totalFiles = 0;
+        foreach($this->artifacts as $artifact) {
+            $totalFiles += $artifact->files()->count();
+        }
+
+        if ($totalFiles > $this->maxFiles) {
+            throw new Exception("Too many files in artifacts: $totalFiles (max: $this->maxFiles)");
+        }
     }
 
     /**
