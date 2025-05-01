@@ -72,6 +72,11 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         ],
     ];
 
+    public function lastJobDispatch(): BelongsTo|JobDispatch
+    {
+        return $this->belongsTo(JobDispatch::class, 'last_job_dispatch_id');
+    }
+
     public function taskRun(): BelongsTo|TaskRun
     {
         return $this->belongsTo(TaskRun::class);
@@ -132,7 +137,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
         return $this;
     }
-    
+
     public function clearOutputArtifacts(): void
     {
         $this->outputArtifacts()->detach();

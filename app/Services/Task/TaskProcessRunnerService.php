@@ -9,6 +9,7 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
+use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
@@ -113,6 +114,16 @@ class TaskProcessRunnerService
     public static function dispatch(TaskProcess $taskProcess): ?JobDispatch
     {
         static::log("Dispatch $taskProcess");
+
+        // Always make sure the user and team is setup when dispatching a task in case this task was restarted by the cron
+        if (!user() && $taskProcess->lastJobDispatch?->user_id) {
+            $user   = $taskProcess->lastJobDispatch->user;
+            $teamId = $taskProcess->lastJobDispatch->data['team_id'] ?? null;
+            if ($teamId) {
+                $user->currentTeam = Team::find($teamId);
+            }
+            auth()->guard()->setUser($user);
+        }
 
         // associate job dispatch before dispatching in case of synchronous job execution
         $job = (new ExecuteTaskProcessJob($taskProcess));
