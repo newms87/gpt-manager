@@ -309,6 +309,9 @@ class TaskProcessRunnerService
 
         try {
             // Mark this task process as completed
+            $taskProcess->failed_at    = null;
+            $taskProcess->stopped_at   = null;
+            $taskProcess->timeout_at   = null;
             $taskProcess->completed_at = now();
             $taskProcess->save();
         } finally {
