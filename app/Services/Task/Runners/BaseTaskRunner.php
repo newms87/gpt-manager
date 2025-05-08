@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as EloquentCollection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
+use Newms87\Danx\Models\Utilities\StoredFile;
 
 class BaseTaskRunner implements TaskRunnerContract
 {
@@ -37,6 +38,27 @@ class BaseTaskRunner implements TaskRunnerContract
     public function isTrigger(): bool
     {
         return static::IS_TRIGGER;
+    }
+
+    /**
+     * Get all files from the input artifacts of the task process
+     * @return StoredFile[]
+     */
+    public function getAllFiles($allowedExts = []): array
+    {
+        $files = [];
+
+        foreach($this->taskProcess->inputArtifacts as $artifact) {
+            foreach($artifact->storedFiles as $storedFile) {
+                if ($allowedExts && !in_array(strtolower(pathinfo($storedFile->filename, PATHINFO_EXTENSION)), $allowedExts)) {
+                    continue;
+                }
+
+                $files[] = $storedFile;
+            }
+        }
+
+        return $files;
     }
 
     public function setTaskRun(TaskRun $taskRun): static
