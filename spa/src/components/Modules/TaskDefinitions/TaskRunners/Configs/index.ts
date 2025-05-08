@@ -5,6 +5,7 @@ export { default as CategorizeArtifactsTaskRunnerConfig } from "./CategorizeArti
 export { default as ClassifierTaskRunnerConfig } from "./ClassifierTaskRunnerConfig.vue";
 export { default as FilterArtifactsTaskRunnerConfig } from "./FilterArtifactsTaskRunnerConfig.vue";
 export { default as ImageToTextTranscoderTaskRunnerConfig } from "./ImageToTextTranscoderTaskRunnerConfig.vue";
+export { default as LoadCsvTaskRunnerConfig } from "./LoadCsvTaskRunnerConfig.vue";
 export { default as MergeArtifactsTaskRunnerConfig } from "./MergeArtifactsTaskRunnerConfig.vue";
 export { default as PagesOrganizerTaskRunnerConfig } from "./PagesOrganizerTaskRunnerConfig.vue";
 export { default as RunWorkflowTaskRunnerConfig } from "./RunWorkflowTaskRunnerConfig.vue";

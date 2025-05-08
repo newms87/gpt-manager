@@ -4,6 +4,7 @@ import {
 	CategorizeArtifactsLottie,
 	FilterArtifactsLottie,
 	ImageToTextLottie,
+	LoadCsvLottie,
 	LoadFromDbLottie,
 	MergeArtifactsLottie,
 	PageOrganizerLottie,
@@ -23,6 +24,7 @@ import {
 	ClassifierTaskRunnerConfig,
 	FilterArtifactsTaskRunnerConfig,
 	ImageToTextTranscoderTaskRunnerConfig,
+	LoadCsvTaskRunnerConfig,
 	MergeArtifactsTaskRunnerConfig,
 	PagesOrganizerTaskRunnerConfig,
 	RunWorkflowTaskRunnerConfig,
@@ -143,5 +145,14 @@ export const TaskRunnerClasses = {
 		lottie: WorkflowInputLottie,
 		node: { is: WorkflowInputTaskRunnerNode },
 		config: BaseTaskRunnerConfig
+	},
+	"Load Csv": {
+		name: "Load Csv",
+		description: "Process CSV files and create artifacts from rows with configurable batching.",
+		lottie: LoadCsvLottie,
+		node: {
+			lottieClass: "w-[10rem]"
+		},
+		config: LoadCsvTaskRunnerConfig
 	}
 };

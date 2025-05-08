@@ -5,6 +5,7 @@ export { default as CategorizeArtifactsLottie } from "./CategorizeArtifactsLotti
 export { default as DeliveryBoyLottie } from "./DeliveryBoyLottie.vue";
 export { default as FilterArtifactsLottie } from "./FilterArtifactsLottie.vue";
 export { default as ImageToTextLottie } from "./ImageToTextLottie.vue";
+export { default as LoadCsvLottie } from "./LoadCsvLottie.vue";
 export { default as LoadFromDbLottie } from "./LoadFromDbLottie.vue";
 export { default as MergeArtifactsLottie } from "./MergeArtifactsLottie.vue";
 export { default as PageOrganizerLottie } from "./PageOrganizerLottie.vue";
