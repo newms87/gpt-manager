@@ -11,8 +11,8 @@ environments:
     queue-timeout: 600
     cache: redis-cluster-micro
     runtime: 'php-8.3:al2'
-    database: predict_serverless
-    database_user: gptmanager
+    database: sageus
+    database_user: vapor
     domain:
       - api.ai.on-demands.com
       - api.tortguard.com
