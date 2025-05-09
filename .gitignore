@@ -24,3 +24,5 @@ yarn-error.log
 *.log
 
 public/ball.html
+
+pgloader/temp_db_sync.load
