@@ -1,0 +1,17 @@
+LOAD DATABASE
+     FROM mysql://gptmanager:zburPizJQ9h7mBAgBSjgDChBLrsHhODJwmnei3fo@localhost:3307/gpt_manager
+     INTO postgresql://vapor:iMoKYGU59rRJSeH6t8h6gVFjJ6DGWn5Hsfuj07Ae@localhost:5433/postgres
+
+WITH create no tables,
+     create no indexes,
+     data only
+
+SET maintenance_work_mem to '512MB',
+    work_mem to '16MB',
+    standard_conforming_strings to 'on',
+    client_encoding to 'utf8'
+
+BEFORE LOAD DO
+$$ CREATE SCHEMA IF NOT EXISTS public; $$
+
+ALTER SCHEMA 'gpt_manager' RENAME TO 'public';
