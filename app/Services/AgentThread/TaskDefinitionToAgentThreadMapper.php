@@ -89,7 +89,7 @@ class TaskDefinitionToAgentThreadMapper
 
         $totalFiles = 0;
         foreach($this->artifacts as $artifact) {
-            $totalFiles += $artifact->files()->count();
+            $totalFiles += $artifact->storedFiles()->count();
         }
 
         if ($totalFiles > $this->maxFiles) {

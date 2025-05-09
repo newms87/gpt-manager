@@ -112,12 +112,15 @@ class WorkspaceCleanCommand extends Command
 
     private function truncateTables($tables): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        // Disable FK checks in postgres
+        DB::statement('SET CONSTRAINTS ALL DEFERRED;');
         foreach($tables as $table) {
             $this->warn("Truncating table: $table");
             DB::table($table)->truncate();
         }
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // Enable FK checks in postgres
+        DB::statement('SET CONSTRAINTS ALL IMMEDIATE;');
+
     }
 
     private function resetCounts($counts): void
