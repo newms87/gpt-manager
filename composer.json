@@ -12,6 +12,7 @@
         "aws/aws-sdk-php": "^3.305",
         "doctrine/dbal": "^4.0",
         "intervention/image": "^3.6",
+        "itsgoingd/clockwork": "^5.3",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",

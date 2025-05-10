@@ -12,8 +12,12 @@ use Newms87\Danx\Resources\ActionResource;
 
 class TaskProcessResource extends ActionResource
 {
-    public static function data(TaskProcess $taskProcess): array
+    public static function data(TaskProcess $taskProcess, array $includedFields = []): array
     {
+        if (!empty($includedFields['jobDispatches'])) {
+            $taskProcess->loadMissing(['jobDispatches.runningAuditRequest' => ['apiLogs', 'errorLogEntries']]);
+        }
+
         return [
             'id'                    => $taskProcess->id,
             'name'                  => $taskProcess->name,

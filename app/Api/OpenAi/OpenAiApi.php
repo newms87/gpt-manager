@@ -11,6 +11,11 @@ use Newms87\Danx\Exceptions\ApiException;
 
 class OpenAiApi extends BearerTokenApi implements AgentApiContract
 {
+    protected array $rateLimits = [
+        // 5 requests per second, wait 1 second between attempts
+        ['limit' => 5, 'interval' => 1, 'waitPerAttempt' => 1],
+    ];
+
     public static string $serviceName = 'OpenAI';
 
     public function __construct()

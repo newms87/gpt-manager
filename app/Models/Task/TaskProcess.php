@@ -94,7 +94,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
     public function jobDispatches(): MorphToMany
     {
-        return $this->morphToMany(JobDispatch::class, 'model', 'job_dispatchables');
+        return $this->morphToMany(JobDispatch::class, 'model', 'job_dispatchables')->orderByDesc('id');
     }
 
     public function artifacts(): MorphToMany|Artifact

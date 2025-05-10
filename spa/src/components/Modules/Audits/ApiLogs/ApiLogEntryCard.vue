@@ -2,13 +2,14 @@
 	<QCard class="bg-slate-700 p-3">
 		<div class="flex-x overflow-hidden">
 			<div class="flex-x space-x-3 flex-grow">
+				<LabelPillWidget :label="'api-log: ' + apiLog.id" color="sky" size="xs" />
 				<div class="rounded-2xl px-3 py-1" :class="methodClass">{{ apiLog.method }}</div>
 				<div
 					class="rounded-2xl px-3 py-1"
 					:class="{
 					'bg-red-800': apiLog.status_code >= 400,
 					'bg-yellow-700': apiLog.status_code < 400 && apiLog.status_code >= 300,
-					'bg-slate-500': apiLog.status_code < 300
+					'bg-green-800': apiLog.status_code < 300
 				}"
 				>
 					{{ apiLog.status_code }}
@@ -18,7 +19,8 @@
 				<ShowHideButton v-model="showRequest" label="Request" class="bg-slate-800 mr-2" />
 				<ShowHideButton v-model="showResponse" label="Response" class="bg-slate-800 mr-2" />
 				<div class="bg-slate-900 px-4 py-1 rounded-2xl text-no-wrap">
-					{{ dbDateTime(apiLog.created_at) }}
+					{{ fDateTime(apiLog.created_at) }}
+					<QTooltip class="text-base">{{ fDateTimeMs(apiLog.created_at) }}</QTooltip>
 				</div>
 			</div>
 		</div>
@@ -45,7 +47,7 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { ApiLog } from "@/components/Modules/Audits/audit-requests";
-import { dbDateTime, ShowHideButton } from "quasar-ui-danx";
+import { fDateTime, fDateTimeMs, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = defineProps<{

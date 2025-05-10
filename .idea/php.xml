@@ -153,7 +153,6 @@
       <path value="$PROJECT_DIR$/vendor/league/html-to-markdown" />
       <path value="$PROJECT_DIR$/vendor/pusher/pusher-php-server" />
       <path value="$PROJECT_DIR$/vendor/paragonie/sodium_compat" />
-      <path value="$PROJECT_DIR$/vendor/newms87/danx" />
       <path value="$PROJECT_DIR$/.vapor/build/app/vendor/laravel/vapor-cli" />
       <path value="$PROJECT_DIR$/.vapor/build/app/vendor/laravel/framework" />
       <path value="$PROJECT_DIR$/.vapor/build/app/vendor/laravel/tinker" />
@@ -252,6 +251,8 @@
       <path value="$PROJECT_DIR$/.vapor/build/app/vendor/psr/container" />
       <path value="$PROJECT_DIR$/.vapor/build/app/vendor/aws/aws-crt-php" />
       <path value="$PROJECT_DIR$/.vapor/build/app/vendor/aws/aws-sdk-php" />
+      <path value="$PROJECT_DIR$/vendor/newms87/danx" />
+      <path value="$PROJECT_DIR$/vendor/itsgoingd/clockwork" />
     </include_path>
   </component>
   <component name="PhpInterpreters">
@@ -361,7 +362,6 @@
   <component name="PhpUnit">
     <phpunit_settings>
       <PhpUnitSettings configuration_file_path="$PROJECT_DIR$/.vapor/build/app/phpunit.xml" custom_loader_path="$PROJECT_DIR$/.vapor/build/app/vendor/autoload.php" use_configuration_file="true" />
-      <PhpUnitSettings bootstrap_file_path="$PROJECT_DIR$/vendor/autoload.php" configuration_file_path="$PROJECT_DIR$/phpunit.xml" custom_loader_path="$PROJECT_DIR$/vendor/autoload.php" phpunit_phar_path="" use_bootstrap_file="true" use_configuration_file="true" />
     </phpunit_settings>
   </component>
   <component name="PsalmOptionsConfiguration">
