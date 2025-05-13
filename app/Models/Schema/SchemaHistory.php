@@ -37,20 +37,20 @@ class SchemaHistory extends Model
         self::cleanupOldHistory($schemaDefinition, now()->subMinutes(15));
 
         // Cleanup history records older than 1 day so we only retain 1 per hour
-        self::cleanupOldHistory($schemaDefinition, now()->subDay(), '%Y-%m-%d %H');
+        self::cleanupOldHistory($schemaDefinition, now()->subDay(), 'YYYY-MM-DD HH24');
 
         // Cleanup history records older than 1 week so we only retain 1 per day
-        self::cleanupOldHistory($schemaDefinition, now()->subWeek(), '%Y-%m-%d');
+        self::cleanupOldHistory($schemaDefinition, now()->subWeek(), 'YYYY-MM-DD');
 
         return $history;
     }
 
-    public static function cleanupOldHistory(SchemaDefinition $schemaDefinition, Carbon $newestDate, string $groupFormat = '%Y-%m-%d %H:%i'): void
+    public static function cleanupOldHistory(SchemaDefinition $schemaDefinition, Carbon $newestDate, string $groupFormat = 'YYYY-MM-DD HH24:MI'): void
     {
         // Collect the IDs of all the records that are the most recent for each interval (older than the newestDate)
         $ids = self::where('created_at', '<', $newestDate)
             ->where('schema_definition_id', $schemaDefinition->id)
-            ->groupByRaw("DATE_FORMAT(created_at, '$groupFormat')")
+            ->groupByRaw("TO_CHAR(created_at, '$groupFormat')")
             ->selectRaw('MAX(id) as id')
             ->pluck('id');
 
