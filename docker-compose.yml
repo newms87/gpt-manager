@@ -41,7 +41,7 @@ services:
             XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
             IGNITION_LOCAL_SITES_PATH: '${PWD}'
-        command: php artisan queue:work
+        command: php artisan queue:work --queue=default,llm,convertapi
         volumes:
             - '.:/var/www/html'
             - '../danx:/var/www/danx'
