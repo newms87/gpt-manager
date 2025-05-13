@@ -5,6 +5,7 @@ namespace App\Events;
 use App\Models\Workflow\WorkflowRun;
 use App\Resources\Workflow\WorkflowRunResource;
 use Illuminate\Broadcasting\PrivateChannel;
+use Newms87\Danx\Events\ModelSavedEvent;
 
 class WorkflowRunUpdatedEvent extends ModelSavedEvent
 {

@@ -6,6 +6,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Team\Team;
 use App\Resources\TaskDefinition\TaskProcessResource;
 use Illuminate\Broadcasting\PrivateChannel;
+use Newms87\Danx\Events\ModelSavedEvent;
 
 class TaskProcessUpdatedEvent extends ModelSavedEvent
 {

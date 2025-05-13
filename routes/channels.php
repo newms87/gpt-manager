@@ -18,3 +18,7 @@ Broadcast::channel('AgentThreadRun.{teamId}', function (User $user, $teamId) {
 Broadcast::channel('TaskProcess.{userId}', function (User $user, $userId) {
     return $user->id === (int)$userId;
 });
+
+Broadcast::channel('StoredFile.{userId}', function (User $user, $userId) {
+    return $user->id === (int)$userId;
+});

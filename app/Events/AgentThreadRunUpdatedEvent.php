@@ -5,6 +5,7 @@ namespace App\Events;
 use App\Models\Agent\AgentThreadRun;
 use App\Resources\Agent\AgentThreadRunResource;
 use Illuminate\Broadcasting\PrivateChannel;
+use Newms87\Danx\Events\ModelSavedEvent;
 
 class AgentThreadRunUpdatedEvent extends ModelSavedEvent
 {

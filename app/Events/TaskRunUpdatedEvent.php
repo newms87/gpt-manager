@@ -5,6 +5,7 @@ namespace App\Events;
 use App\Models\Task\TaskRun;
 use App\Resources\TaskDefinition\TaskRunResource;
 use Illuminate\Broadcasting\PrivateChannel;
+use Newms87\Danx\Events\ModelSavedEvent;
 
 class TaskRunUpdatedEvent extends ModelSavedEvent
 {
