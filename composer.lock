@@ -3151,16 +3151,16 @@
         },
         {
             "name": "newms87/danx",
-            "version": "1.2.68",
+            "version": "1.2.70",
             "source": {
                 "type": "git",
                 "url": "https://github.com/newms87/danx.git",
-                "reference": "8cdf2abc447528b53177662b6c54d6db7bb488ab"
+                "reference": "b7520bb29715e01542708a68fbe3c1f6a0d054a6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/newms87/danx/zipball/8cdf2abc447528b53177662b6c54d6db7bb488ab",
-                "reference": "8cdf2abc447528b53177662b6c54d6db7bb488ab",
+                "url": "https://api.github.com/repos/newms87/danx/zipball/b7520bb29715e01542708a68fbe3c1f6a0d054a6",
+                "reference": "b7520bb29715e01542708a68fbe3c1f6a0d054a6",
                 "shasum": ""
             },
             "require": {
@@ -3176,6 +3176,7 @@
                 "illuminate/contracts": "^11.1",
                 "illuminate/database": "^11.1",
                 "illuminate/encryption": "^11.1",
+                "illuminate/events": "^11.1",
                 "illuminate/queue": "^11.1",
                 "illuminate/routing": "^11.1",
                 "illuminate/support": "^11.1",
@@ -3191,7 +3192,9 @@
             "require-dev": {
                 "beyondcode/tinkerwell": "dev-main",
                 "fakerphp/faker": "^1.24",
-                "phpunit/phpunit": "^9.3"
+                "laravel/framework": "^11.1",
+                "orchestra/testbench": "^9.0",
+                "phpunit/phpunit": "^10.5"
             },
             "type": "library",
             "extra": {
@@ -3203,9 +3206,7 @@
             },
             "autoload": {
                 "psr-4": {
-                    "Tests\\": "tests/",
-                    "Newms87\\Danx\\": "src/",
-                    "Database\\Factories\\": "database/factories/"
+                    "Newms87\\Danx\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -3215,9 +3216,9 @@
             "description": "Danx Auditing, Logging, and Helpers",
             "support": {
                 "issues": "https://github.com/newms87/danx/issues",
-                "source": "https://github.com/newms87/danx/tree/1.2.68"
+                "source": "https://github.com/newms87/danx/tree/1.2.70"
             },
-            "time": "2025-05-09T22:52:45+00:00"
+            "time": "2025-05-13T22:29:57+00:00"
         },
         {
             "name": "nikic/php-parser",
