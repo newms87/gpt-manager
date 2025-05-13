@@ -107,9 +107,9 @@ class AgentThread extends Model implements AuditableContract
         if (!$this->usage) {
             $this->usage = $this->runs()->withTrashed()->selectRaw(
                 'count(*) as count,' .
-                'ifnull(sum(ifnull(input_tokens, 0)), 0) as input_tokens,' .
-                'ifnull(sum(ifnull(output_tokens, 0)), 0) as output_tokens,' .
-                'ifnull(sum(ifnull(total_cost, 0)), 0) as total_cost'
+                'coalesce(sum(coalesce(input_tokens, 0)), 0) as input_tokens,' .
+                'coalesce(sum(coalesce(output_tokens, 0)), 0) as output_tokens,' .
+                'coalesce(sum(coalesce(total_cost, 0)), 0) as total_cost'
             )
                 ->first()
                 ->toArray();
