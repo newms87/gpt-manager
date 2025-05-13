@@ -8,6 +8,7 @@ use Newms87\Danx\Exceptions\ValidationError;
 class ClassifierTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'Classifier';
+    public static string $queue = 'llm';
 
     const string CATEGORY_EXCLUDE = '__exclude';
 
@@ -18,7 +19,7 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
         $agentThread = $this->setupAgentThread($inputArtifacts);
 
         app(ThreadRepository::class)->addMessageToThread($agentThread, "If the only content in the artifact is 'Excluded...' or is very obviously all redacted content and there is no other content of interest, then set the category values to __exclude so the artifacts will be ignored entirely");
-        
+
         $artifact = $this->runAgentThread($agentThread);
 
         if (!$artifact->json_content) {

@@ -127,6 +127,7 @@ class TaskProcessRunnerService
 
         // associate job dispatch before dispatching in case of synchronous job execution
         $job = (new ExecuteTaskProcessJob($taskProcess));
+        $job->onQueue($taskProcess->getQueue());
 
         // Associate JobDispatch to TaskProcess
         $jobDispatch = $job->getJobDispatch();

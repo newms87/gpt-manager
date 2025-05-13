@@ -27,6 +27,8 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'Categorize Artifacts';
 
+    public static string $queue = 'llm';
+
     // Special category constants
     const string
         CATEGORY_UNKNOWN = '__unknown',

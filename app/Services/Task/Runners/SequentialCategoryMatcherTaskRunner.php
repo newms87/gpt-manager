@@ -27,7 +27,8 @@ use Throwable;
 class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'Sequential Category Matcher';
-
+    public static string $queue = 'llm';
+    
     // Special category constants
     const string CATEGORY_EXCLUDE = '__exclude';
 

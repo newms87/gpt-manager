@@ -28,6 +28,9 @@ interface TaskRunnerContract
 
     public function setTaskProcess(TaskProcess $taskProcess): static;
 
+    /** The name of the queue task process jobs should run on */
+    public function getQueue(): string;
+
     /**
      * Prepare the task runner for running
      */

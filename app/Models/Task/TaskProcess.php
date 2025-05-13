@@ -204,6 +204,12 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         return $this->taskRun->getRunner()->setTaskProcess($this);
     }
 
+    /** Get the queue name this task process should be dispatched to */
+    public function getQueue(): string
+    {
+        return $this->taskRun->getRunner()->setTaskProcess($this)->getQueue();
+    }
+
     public static function booted(): void
     {
         static::saving(function (TaskProcess $taskProcess) {

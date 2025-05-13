@@ -5,10 +5,14 @@ environments:
   production:
     memory: 1024
     cli-memory: 512
-    queue-concurrency: 50
+    queue-concurrency: 65
     timeout: 600
     cli-timeout: 600
     queue-timeout: 600
+    queues:
+      - llm: 5
+      - convertapi: 10
+      - default: 50
     cache: redis-cluster-micro
     runtime: 'php-8.3:al2'
     database: sageus

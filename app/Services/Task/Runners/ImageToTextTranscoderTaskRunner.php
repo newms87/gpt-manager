@@ -14,6 +14,7 @@ use Newms87\Danx\Services\TranscodeFileService;
 class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'Image To Text Transcoder';
+    public static string $queue = 'llm';
 
     public function run(): void
     {
