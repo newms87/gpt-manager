@@ -253,6 +253,7 @@
       <path value="$PROJECT_DIR$/.vapor/build/app/vendor/aws/aws-sdk-php" />
       <path value="$PROJECT_DIR$/vendor/itsgoingd/clockwork" />
       <path value="$PROJECT_DIR$/vendor/newms87/danx" />
+      <path value="$PROJECT_DIR$/vendor/spatie/fork" />
     </include_path>
   </component>
   <component name="PhpInterpreters">

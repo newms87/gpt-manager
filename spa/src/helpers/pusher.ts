@@ -23,7 +23,8 @@ const userSubscriptionsMap: Map<string, UserSubscription> = new Map();
 const defaultChannelNames = {
 	"WorkflowRun": ["updated"],
 	"TaskRun": ["updated", "created"],
-	"AgentThreadRun": ["updated"]
+	"AgentThreadRun": ["updated"],
+	"StoredFile": ["updated"]
 };
 
 function subscribeToChannel(channelName, id, events): boolean {
