@@ -4,8 +4,7 @@ import { AgentThread } from "@/types";
 const AgentThreadFields = {
 	messages: {
 		files: {
-			thumb: true,
-			transcodes: true
+			thumb: true
 		}
 	}
 };

@@ -139,7 +139,7 @@ const isShowingOutputArtifacts = ref(false);
 const isShowingJobDispatches = ref(false);
 
 // Defines the fields to fetch when requesting the AgentThread
-const agentThreadField = { messages: { files: { thumb: true, transcodes: true } } };
+const agentThreadField = { messages: { files: { thumb: true } } };
 
 // Defines the fields to fetch when requesting JobDispatches
 const jobDispatchesField = { logs: true, apiLogs: true, errors: true };

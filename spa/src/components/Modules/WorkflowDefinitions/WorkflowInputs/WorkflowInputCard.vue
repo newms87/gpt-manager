@@ -72,6 +72,7 @@
 			:width="70"
 			:height="60"
 			add-icon-class="w-5"
+			show-transcodes
 			file-preview-class="rounded-lg"
 			file-preview-btn-size="xs"
 			@update:model-value="files => updateAction.trigger(workflowInput, { files })"

@@ -158,7 +158,7 @@ const artifactsField = {
 	text_content: true,
 	json_content: true,
 	meta: true,
-	files: { transcodes: true, thumb: true }
+	files: { thumb: true }
 };
 
 // Watch for changes in pagination or filters to reload data
