@@ -120,21 +120,8 @@ class TaskRunnerService
                 $taskRun->save();
             }
 
-            foreach($taskRun->taskProcesses as $taskProcess) {
-                if ($taskProcess->isCompleted()) {
-                    static::log("TaskProcess already Completed. Skipping dispatch: $taskProcess");
-                    continue;
-                }
-
-                // Only dispatch a task process if it is pending
-                if ($taskProcess->isStatusPending()) {
-                    TaskProcessRunnerService::dispatch($taskProcess);
-                } elseif ($taskProcess->isPastTimeout()) {
-                    static::log("TaskProcess $taskProcess timed out, stopping TaskRun $taskRun");
-                    $taskProcess->timeout_at = now();
-                    $taskProcess->save();
-                }
-            }
+            // Use the dispatcher service to handle process dispatching
+            TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
         } finally {
             LockHelper::release($taskRun);
         }

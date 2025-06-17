@@ -318,20 +318,25 @@ class TaskProcessRunnerService
         } finally {
             LockHelper::release($taskProcess);
         }
+
+        // Dispatch more pending processes if available
+        TaskProcessDispatcherService::dispatchForTaskRun($taskProcess->taskRun);
     }
 
     /**
      * Handle the timeout of a task process.
      * The task process will be restarted automatically if the max_process_retries has not been reached
+     *
+     * @return bool True if the process was restarted (and dispatched), false otherwise
      */
-    public static function handleTimeout(TaskProcess $taskProcess): void
+    public static function handleTimeout(TaskProcess $taskProcess): bool
     {
         LockHelper::acquire($taskProcess);
 
         try {
             // Can only be timed out if it is in one of these states
             if (!$taskProcess->isStatusPending() && !$taskProcess->isStatusDispatched() && !$taskProcess->isStatusRunning()) {
-                return;
+                return false;
             }
 
             static::log("Task process timed out: $taskProcess");
@@ -342,7 +347,11 @@ class TaskProcessRunnerService
 
             if ($taskProcess->restart_count < $taskProcess->taskRun->taskDefinition->max_process_retries) {
                 static::restart($taskProcess);
+
+                return true; // Process was restarted and dispatched
             }
+
+            return false; // Process was not restarted
         } finally {
             LockHelper::release($taskProcess);
         }

@@ -7,6 +7,7 @@ use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
+use App\Services\Task\TaskProcessDispatcherService;
 use App\Services\Task\TaskRunnerService;
 use App\Traits\HasDebugLogging;
 use Exception;
@@ -104,7 +105,8 @@ class WorkflowRunnerService
         }
 
         try {
-            throw new Exception("Implement this, check for the next task runs to dispatch");
+            // Check and dispatch available processes based on max_workers limit
+            TaskProcessDispatcherService::dispatchForWorkflowRun($workflowRun);
         } finally {
             LockHelper::release($workflowRun);
         }

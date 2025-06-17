@@ -14,7 +14,7 @@
 		<!-- Filter popup menu -->
 		<PopoverMenu v-model="isShowing">
 			<div class="bg-slate-700 p-4 rounded-lg shadow-xl">
-				<h3 class="text-sm font-semibold mb-2">Show only artifacts with:</h3>
+				<h3 class="text-sm font-semibold mb-2">Show only processes with:</h3>
 
 				<!-- Filter toggles -->
 				<div class="flex-x gap-2">
@@ -57,7 +57,8 @@ const statusOptions = [
 	{ label: "Failed", value: "Failed" },
 	{ label: "Stopped", value: "Stopped" },
 	{ label: "Dispatched", value: "Dispatched" },
-	{ label: "Pending", value: "Pending" }
+	{ label: "Pending", value: "Pending" },
+	{ label: "Timeout", value: "Timeout" }
 ];
 // PopMenu state
 const isShowing = ref(false);

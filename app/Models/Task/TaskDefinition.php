@@ -48,6 +48,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         'timeout_after_seconds',
         'schema_definition_id',
         'agent_id',
+        'max_workers',
     ];
 
     protected array $keywordFields = [
@@ -66,8 +67,13 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
             'task_runner_config'     => 'json',
             'input_artifact_levels'  => 'json',
             'output_artifact_levels' => 'json',
+            'max_workers'            => 'integer',
         ];
     }
+
+    protected $attributes = [
+        'max_workers' => 10,
+    ];
 
     public function team(): BelongsTo|Team
     {

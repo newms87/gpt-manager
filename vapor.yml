@@ -10,7 +10,7 @@ environments:
     cli-timeout: 600
     queue-timeout: 600
     queues:
-      - llm: 5
+      - llm: 10
       - convertapi: 10
       - default: 50
     cache: redis-cluster-micro

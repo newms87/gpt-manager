@@ -1,0 +1,2 @@
+- If you run into permissions issues inside the sail (ie docker) containers, then run "sail artisan fix"
+- NEVER use git add / commit / checkout etc or any git commands that will either change code or change the state of the repo, unless explicitly instructed to do so

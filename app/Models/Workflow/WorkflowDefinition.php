@@ -24,6 +24,15 @@ class WorkflowDefinition extends Model implements AuditableContract, ResourcePac
     protected $fillable = [
         'name',
         'description',
+        'max_workers',
+    ];
+
+    protected $casts = [
+        'max_workers' => 'integer',
+    ];
+
+    protected $attributes = [
+        'max_workers' => 20,
     ];
 
     public array $relationCounters = [
