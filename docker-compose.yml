@@ -59,6 +59,7 @@ services:
             - 'sail-redis:/data'
         networks:
             - sail
+        command: redis-server --save "" --stop-writes-on-bgsave-error no
         healthcheck:
             test:
                 - CMD

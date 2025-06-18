@@ -33,6 +33,7 @@
 				:schema="schemaDefinition.schema || {} as JsonSchema"
 				class="mt-4 bg-slate-800 rounded"
 				@select="dxTeamObject.activatePanel(teamObject, 'workflows')"
+				@merge="showMergeDialog(teamObject)"
 			/>
 		</ListTransition>
 
@@ -45,12 +46,21 @@
 			@update:model-value="panel => dxTeamObject.activatePanel(activeTeamObject, panel)"
 			@close="dxTeamObject.setActiveItem(null)"
 		/>
+
+		<TeamObjectMergeDialog
+			v-model="showMergeDialogRef"
+			:source-object="sourceTeamObject"
+			:available-objects="teamObjects || []"
+			@merge="performMerge"
+		/>
 	</div>
 </template>
 <script setup lang="ts">
 import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
+import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
+import TeamObjectMergeDialog from "@/components/Modules/TeamObjects/TeamObjectMergeDialog.vue";
 import { JsonSchema, SchemaDefinition } from "@/types";
-import { ActionButton, ListTransition, PanelsDrawer } from "quasar-ui-danx";
+import { ActionButton, ListTransition, PanelsDrawer, request } from "quasar-ui-danx";
 import { computed, onMounted, ref, watch } from "vue";
 
 const props = defineProps<{ schemaDefinition: SchemaDefinition }>();
@@ -63,6 +73,9 @@ const teamObjectType = computed(() => props.schemaDefinition?.schema?.title);
 const teamObjects = computed(() => dxTeamObject.pagedItems.value?.data);
 const activeTeamObject = computed(() => dxTeamObject.activeItem.value);
 const activePanel = ref("workflows");
+
+const showMergeDialogRef = ref(false);
+const sourceTeamObject = ref<TeamObject | null>(null);
 
 async function init() {
 	dxTeamObject.setActiveFilter({
@@ -100,5 +113,24 @@ async function loadTeamObjects() {
 		schema_definition_id: props.schemaDefinition.id,
 		type: teamObjectType.value
 	});
+}
+
+function showMergeDialog(teamObject: TeamObject) {
+	sourceTeamObject.value = teamObject;
+	showMergeDialogRef.value = true;
+}
+
+async function performMerge(sourceObject: TeamObject, targetObject: TeamObject) {
+	try {
+		const response = await request.post(`team-objects/${sourceObject.id}/merge/${targetObject.id}`);
+
+		if (response) {
+			showMergeDialogRef.value = false;
+			sourceTeamObject.value = null;
+			await loadTeamObjects();
+		}
+	} catch (error) {
+		console.error("Merge error:", error);
+	}
 }
 </script>

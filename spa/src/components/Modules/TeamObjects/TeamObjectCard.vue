@@ -43,6 +43,13 @@
 					<WorkflowIcon class="w-4" />
 				</QBtn>
 				<QBtn
+					v-if="level === 0"
+					class="p-3 bg-blue-900 text-blue-300"
+					@click="$emit('merge')"
+				>
+					<MergeIcon class="w-3.5" />
+				</QBtn>
+				<QBtn
 					class="p-3 bg-red-900"
 					:disable="deleteAction.isApplying"
 					@click="deleteAction.trigger(object)"
@@ -118,6 +125,7 @@ import TeamObjectRelationArray from "@/components/Modules/TeamObjects/TeamObject
 import TeamObjectRelationObject from "@/components/Modules/TeamObjects/TeamObjectRelationObject";
 import { JsonSchema } from "@/types";
 import {
+	FaSolidCodeMerge as MergeIcon,
 	FaSolidLink as LinkIcon,
 	FaSolidPencil as EditIcon,
 	FaSolidTrash as DeleteIcon,
@@ -126,7 +134,7 @@ import {
 import { EditableDiv, fDate, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
-defineEmits(["select"]);
+defineEmits(["select", "merge"]);
 const props = withDefaults(defineProps<{
 	level?: number,
 	object: TeamObject,

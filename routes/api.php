@@ -89,7 +89,9 @@ ActionRoute::routes('messages', new MessagesController);
 ActionRoute::routes('prompt/directives', new PromptDirectivesController);
 
 // Team Objects
-ActionRoute::routes('team-objects', new TeamObjectsController);
+ActionRoute::routes('team-objects', new TeamObjectsController, function () {
+    Route::post('{sourceObject}/merge/{targetObject}', [TeamObjectsController::class, 'merge'])->name('team-objects.merge');
+});
 
 // Audits
 ActionRoute::routes('audit-requests', new AuditRequestsController);
