@@ -39,7 +39,6 @@ actionControls.modifyAction("create", {
 
 actionControls.modifyAction("edit", {
 	alias: "update",
-	onAction: routes.applyAction,
 	vnode: (target: TeamObject) => h(RenderedFormDialog, {
 		title: "Edit " + target.name,
 		contentClass: "w-96",

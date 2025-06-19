@@ -24,20 +24,29 @@
 					:schema="schema"
 					:class="levelObjectClass"
 					:level="level"
+					@merge="showMergeDialog(relation)"
 				/>
 
 				<QSeparator v-if="index < relations.length - 1" :class="levelSeparatorClass" />
 			</template>
 		</div>
+
+		<TeamObjectMergeDialog
+			v-model="showMergeDialogRef"
+			:source-object="sourceTeamObject"
+			:available-objects="availableMergeTargets"
+			@merge="performMerge"
+		/>
 	</div>
 </template>
 <script setup lang="ts">
 import { dxTeamObject } from "@/components/Modules/TeamObjects/config";
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
 import TeamObjectCard from "@/components/Modules/TeamObjects/TeamObjectCard";
+import TeamObjectMergeDialog from "@/components/Modules/TeamObjects/TeamObjectMergeDialog.vue";
 import { JsonSchema } from "@/types";
 import { FaSolidPlus as CreateIcon } from "danx-icon";
-import { ShowHideButton } from "quasar-ui-danx";
+import { request, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const props = withDefaults(defineProps<{
@@ -81,4 +90,31 @@ const levelClassSettings = {
 const levelClass = computed(() => levelClassSettings[props.level] || levelClassSettings[3]);
 const levelObjectClass = computed(() => props.objectClass || levelClass.value.object);
 const levelSeparatorClass = computed(() => props.separatorClass || levelClass.value.separator);
+
+const showMergeDialogRef = ref(false);
+const sourceTeamObject = ref<TeamObject | null>(null);
+
+const availableMergeTargets = computed(() => {
+	if (!sourceTeamObject.value) return [];
+	return props.relations.filter(obj => obj.id !== sourceTeamObject.value?.id);
+});
+
+function showMergeDialog(teamObject: TeamObject) {
+	sourceTeamObject.value = teamObject;
+	showMergeDialogRef.value = true;
+}
+
+async function performMerge(sourceObject: TeamObject, targetObject: TeamObject) {
+	try {
+		const response = await request.post(`team-objects/${sourceObject.id}/merge/${targetObject.id}`);
+
+		if (response) {
+			showMergeDialogRef.value = false;
+			sourceTeamObject.value = null;
+			await dxTeamObject.routes.details(props.parent);
+		}
+	} catch (error) {
+		console.error("Merge error:", error);
+	}
+}
 </script>

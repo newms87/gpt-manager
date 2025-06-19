@@ -43,7 +43,6 @@
 					<WorkflowIcon class="w-4" />
 				</QBtn>
 				<QBtn
-					v-if="level === 0"
 					class="p-3 bg-blue-900 text-blue-300"
 					@click="$emit('merge')"
 				>

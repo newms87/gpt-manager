@@ -9,13 +9,13 @@ use Newms87\Danx\Helpers\ModelHelper;
 
 class TeamObjectMergeService
 {
-    public function merge(TeamObject $sourceObject, TeamObject $targetObject): TeamObject
+    public function merge(TeamObject $sourceObject, TeamObject $targetObject, ?array $schema = null): TeamObject
     {
         $this->validateMerge($sourceObject, $targetObject);
 
-        return DB::transaction(function () use ($sourceObject, $targetObject) {
+        return DB::transaction(function () use ($sourceObject, $targetObject, $schema) {
             $this->mergeAttributes($sourceObject, $targetObject);
-            $this->mergeRelationships($sourceObject, $targetObject);
+            $this->mergeRelationships($sourceObject, $targetObject, $schema);
 
             $sourceObject->delete();
 
@@ -67,11 +67,70 @@ class TeamObjectMergeService
             ->update(['team_object_id' => $targetObject->id]);
     }
 
-    protected function mergeRelationships(TeamObject $sourceObject, TeamObject $targetObject): void
+    protected function mergeRelationships(TeamObject $sourceObject, TeamObject $targetObject, ?array $schema = null): void
     {
+        if (!$schema) {
+            $schema = $targetObject->schemaDefinition?->schema;
+        }
+        $schemaProperties = $schema['properties'] ?? [];
+        
         $sourceRelationships = $sourceObject->relationships()->with('related')->get();
+        $groupedSourceRelationships = $sourceRelationships->groupBy('relationship_name');
 
-        foreach($sourceRelationships as $relationship) {
+        foreach ($groupedSourceRelationships as $relationshipName => $relationships) {
+            $relationshipSchema = $schemaProperties[$relationshipName] ?? null;
+            $relationshipType = $relationshipSchema['type'] ?? 'array';
+
+            if ($relationshipType === 'object') {
+                $this->mergeObjectRelationship($targetObject, $relationshipName, $relationships, $relationshipSchema);
+            } else {
+                $this->mergeArrayRelationship($targetObject, $relationshipName, $relationships, $relationshipSchema);
+            }
+        }
+
+        $sourceObject->relationships()
+            ->update(['team_object_id' => $targetObject->id]);
+    }
+
+    protected function mergeObjectRelationship(TeamObject $targetObject, string $relationshipName, $sourceRelationships, ?array $relationshipSchema): void
+    {
+        $existingTargetRelationship = $targetObject->relationships()
+            ->where('relationship_name', $relationshipName)
+            ->with('related')
+            ->first();
+
+        $sourceRelationship = $sourceRelationships->first();
+        $sourceRelatedObject = $sourceRelationship?->related;
+
+        if (!$sourceRelatedObject) {
+            return;
+        }
+
+        if ($existingTargetRelationship && $existingTargetRelationship->related) {
+            $targetRelatedObject = $existingTargetRelationship->related;
+            $this->merge($sourceRelatedObject, $targetRelatedObject, $relationshipSchema);
+        } else {
+            $uniqueName = ModelHelper::getNextModelName(
+                TeamObject::make(['name' => $sourceRelatedObject->name]),
+                'name',
+                [
+                    'team_id' => $sourceRelatedObject->team_id,
+                    'type' => $sourceRelatedObject->type,
+                    'schema_definition_id' => $sourceRelatedObject->schema_definition_id,
+                    'root_object_id' => $targetObject->id,
+                ]
+            );
+
+            $sourceRelatedObject->update([
+                'name' => $uniqueName,
+                'root_object_id' => $targetObject->id,
+            ]);
+        }
+    }
+
+    protected function mergeArrayRelationship(TeamObject $targetObject, string $relationshipName, $sourceRelationships, ?array $relationshipSchema): void
+    {
+        foreach ($sourceRelationships as $relationship) {
             $relatedObject = $relationship->related;
 
             if (!$relatedObject) {
@@ -82,20 +141,17 @@ class TeamObjectMergeService
                 TeamObject::make(['name' => $relatedObject->name]),
                 'name',
                 [
-                    'team_id'              => $relatedObject->team_id,
-                    'type'                 => $relatedObject->type,
+                    'team_id' => $relatedObject->team_id,
+                    'type' => $relatedObject->type,
                     'schema_definition_id' => $relatedObject->schema_definition_id,
-                    'root_object_id'       => $targetObject->id,
+                    'root_object_id' => $targetObject->id,
                 ]
             );
 
             $relatedObject->update([
-                'name'           => $uniqueName,
+                'name' => $uniqueName,
                 'root_object_id' => $targetObject->id,
             ]);
         }
-
-        $sourceObject->relationships()
-            ->update(['team_object_id' => $targetObject->id]);
     }
 }
