@@ -61,7 +61,9 @@ ActionRoute::routes('schemas/associations', new SchemaAssociationsController);
 ActionRoute::routes('artifacts', new ArtifactsController);
 
 // Tasks
-ActionRoute::routes('task-definitions', new TaskDefinitionsController);
+ActionRoute::routes('task-definitions', new TaskDefinitionsController, function () {
+    Route::post('{taskDefinition}/generate-claude-code', [TaskDefinitionsController::class, 'generateClaudeCode']);
+});
 ActionRoute::routes('task-artifact-filters', new TaskArtifactFiltersController);
 ActionRoute::routes('task-inputs', new TaskInputsController);
 ActionRoute::routes('task-runs', new TaskRunsController, function () {

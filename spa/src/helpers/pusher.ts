@@ -24,7 +24,8 @@ const defaultChannelNames = {
 	"WorkflowRun": ["updated"],
 	"TaskRun": ["updated", "created"],
 	"AgentThreadRun": ["updated"],
-	"StoredFile": ["updated"]
+	"StoredFile": ["updated"],
+	"ClaudeCodeGeneration": ["started", "progress", "code_chunk", "completed", "error"]
 };
 
 function subscribeToChannel(channelName, id, events): boolean {

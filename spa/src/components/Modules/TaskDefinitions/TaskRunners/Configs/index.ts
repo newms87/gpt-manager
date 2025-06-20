@@ -3,6 +3,7 @@ export { default as ArtifactLevelProjectionTaskRunnerConfig } from "./ArtifactLe
 export { default as BaseTaskRunnerConfig } from "./BaseTaskRunnerConfig.vue";
 export { default as CategorizeArtifactsTaskRunnerConfig } from "./CategorizeArtifactsTaskRunnerConfig.vue";
 export { default as ClassifierTaskRunnerConfig } from "./ClassifierTaskRunnerConfig.vue";
+export { default as ClaudeTaskRunnerConfig } from "./ClaudeTaskRunnerConfig.vue";
 export { default as FilterArtifactsTaskRunnerConfig } from "./FilterArtifactsTaskRunnerConfig.vue";
 export { default as ImageToTextTranscoderTaskRunnerConfig } from "./ImageToTextTranscoderTaskRunnerConfig.vue";
 export { default as LoadCsvTaskRunnerConfig } from "./LoadCsvTaskRunnerConfig.vue";

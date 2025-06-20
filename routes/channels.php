@@ -22,3 +22,7 @@ Broadcast::channel('TaskProcess.{userId}', function (User $user, $userId) {
 Broadcast::channel('StoredFile.{userId}', function (User $user, $userId) {
     return $user->id === (int)$userId;
 });
+
+Broadcast::channel('ClaudeCodeGeneration.{teamId}', function (User $user, $teamId) {
+    return (bool)$user->teams()->find($teamId);
+});

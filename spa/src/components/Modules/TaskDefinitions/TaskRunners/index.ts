@@ -22,6 +22,7 @@ import {
 	BaseTaskRunnerConfig,
 	CategorizeArtifactsTaskRunnerConfig,
 	ClassifierTaskRunnerConfig,
+	ClaudeTaskRunnerConfig,
 	FilterArtifactsTaskRunnerConfig,
 	ImageToTextTranscoderTaskRunnerConfig,
 	LoadCsvTaskRunnerConfig,
@@ -57,6 +58,12 @@ export const TaskRunnerClasses = {
 		description: "Classify artifacts based on their content.",
 		lottie: CategorizeArtifactsLottie,
 		config: ClassifierTaskRunnerConfig
+	},
+	"Claude Code": {
+		name: "Claude Code",
+		description: "Generate and execute custom PHP code using Claude AI to perform complex tasks.",
+		lottie: AgentThreadRunnerLottie,
+		config: ClaudeTaskRunnerConfig
 	},
 	"Filter Artifacts": {
 		name: "Filter Artifacts",
