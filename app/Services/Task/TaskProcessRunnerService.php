@@ -136,7 +136,7 @@ class TaskProcessRunnerService
             }
 
             // Associate current job dispatch if we're running in a job context
-            $jobDispatch = Job::$runningJob?->getJobDispatch();
+            $jobDispatch = Job::$runningJob;
             if ($jobDispatch) {
                 // track the most recent dispatch for easier referencing
                 $taskProcess->last_job_dispatch_id = $jobDispatch->id;

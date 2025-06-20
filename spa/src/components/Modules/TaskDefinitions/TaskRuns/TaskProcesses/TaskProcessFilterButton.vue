@@ -56,7 +56,6 @@ const statusOptions = [
 	{ label: "Completed", value: "Completed" },
 	{ label: "Failed", value: "Failed" },
 	{ label: "Stopped", value: "Stopped" },
-	{ label: "Dispatched", value: "Dispatched" },
 	{ label: "Pending", value: "Pending" },
 	{ label: "Timeout", value: "Timeout" }
 ];

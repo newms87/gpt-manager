@@ -14,7 +14,7 @@ class TaskProcessJob extends Job
 
     public function __construct(private ?TaskRun $taskRun = null, private ?WorkflowRun $workflowRun = null)
     {
-        if (!$this->taskRun || !$this->workflowRun) {
+        if (!$this->taskRun && !$this->workflowRun) {
             throw new Exception('Task process job needs workflow run or task run');
         }
         parent::__construct();
