@@ -2,7 +2,7 @@
 
 namespace App\Services\Task;
 
-use App\Models\Task\TaskProcess;
+use App\Jobs\TaskProcessJob;
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowStatesContract;
@@ -36,13 +36,18 @@ class TaskProcessDispatcherService
             $availableSlots = static::calculateAvailableSlotsForTaskRun($taskRun);
 
             if ($availableSlots <= 0) {
-                static::log("No available worker slots");
+                static::log("No available worker slots for TaskRun $taskRun");
 
                 return;
             }
 
-            // Process task processes
-            static::processTaskRunProcesses($taskRun, $availableSlots);
+            // Dispatch generic jobs up to the available slots
+            static::log("Dispatching $availableSlots TaskProcessJobs for TaskRun {$taskRun->id}");
+            for ($i = 0; $i < $availableSlots; $i++) {
+                $job = new TaskProcessJob($taskRun);
+                $job->onQueue('task-process');
+                $job->dispatch();
+            }
         } finally {
             LockHelper::release($taskRun);
         }
@@ -59,62 +64,26 @@ class TaskProcessDispatcherService
         LockHelper::acquire($workflowRun, 60);
 
         try {
-            $availableWorkflowSlots = static::calculateAvailableSlotsForWorkflow($workflowRun);
+            $availableSlots = static::calculateAvailableSlotsForWorkflow($workflowRun);
 
-            if ($availableWorkflowSlots <= 0) {
+            if ($availableSlots <= 0) {
                 static::log("No available workflow worker slots");
 
                 return;
             }
 
-            // Get all pending processes across all task runs, ordered by created_at
-            $pendingProcesses = TaskProcess::whereHas('taskRun', function ($query) use ($workflowRun) {
-                $query->where('workflow_run_id', $workflowRun->id);
-            })
-                ->where('status', WorkflowStatesContract::STATUS_PENDING)
-                ->orderBy('created_at')
-                ->get();
-
-            static::log("Found " . $pendingProcesses->count() . " pending processes across workflow");
-
-            if ($pendingProcesses->isEmpty()) {
-                return;
+            // Dispatch generic jobs up to the available slots for the workflow
+            // The jobs will internally check queue type limits when selecting processes
+            for ($i = 0; $i < $availableSlots; $i++) {
+                $job = new TaskProcessJob(null, $workflowRun);
+                $job->onQueue('task-process');
+                $job->dispatch();
             }
-
-            $dispatchedCount  = 0;
-            $taskRunSlotCache = [];
-
-            // Process each pending process in order, checking task-level limits
-            foreach($pendingProcesses as $taskProcess) {
-                if ($dispatchedCount >= $availableWorkflowSlots) {
-                    break;
-                }
-
-                $taskRun   = $taskProcess->taskRun;
-                $taskRunId = $taskRun->id;
-
-                // Cache task-level slot calculations to avoid recalculating for same task run
-                if (!isset($taskRunSlotCache[$taskRunId])) {
-                    $taskRunSlotCache[$taskRunId] = static::calculateAvailableSlotsForTaskRun($taskRun);
-                }
-
-                if ($taskRunSlotCache[$taskRunId] <= 0) {
-                    static::log("No available slots for TaskRun $taskRun, skipping");
-                    continue;
-                }
-
-                // Handle timeout or dispatch pending process
-                if (static::handleTaskProcess($taskProcess)) {
-                    $dispatchedCount++;
-                    $taskRunSlotCache[$taskRunId]--; // Decrement available slots for this task run
-                }
-            }
-
-            static::log("Dispatched $dispatchedCount processes for WorkflowRun $workflowRun");
         } finally {
             LockHelper::release($workflowRun);
         }
     }
+
 
     /**
      * Calculate available slots for a workflow
@@ -130,30 +99,22 @@ class TaskProcessDispatcherService
     }
 
     /**
-     * Calculate available slots for a task run (only considering task-level limits)
+     * Calculate available slots for a task run (using queue type limits)
      */
     private static function calculateAvailableSlotsForTaskRun(TaskRun $taskRun): int
     {
-        $taskMaxWorkers          = $taskRun->taskDefinition->max_workers ?? 10;
-        $runningTaskWorkersCount = static::countRunningWorkersForTaskRun($taskRun);
+        $taskQueueType = $taskRun->taskDefinition->taskQueueType;
+        if (!$taskQueueType) {
+            static::log("TaskRun $taskRun has no queue type, defaulting to 10 available slots");
+            return 10;
+        }
 
-        static::log("TaskRun $taskRun has $runningTaskWorkersCount/$taskMaxWorkers workers running");
+        $availableSlots = $taskQueueType->getAvailableSlots();
+        static::log("TaskRun $taskRun queue type '{$taskQueueType->name}' has $availableSlots available slots");
 
-        return $taskMaxWorkers - $runningTaskWorkersCount;
+        return $availableSlots;
     }
 
-    /**
-     * Count running workers for a task run
-     */
-    private static function countRunningWorkersForTaskRun(TaskRun $taskRun): int
-    {
-        return $taskRun->taskProcesses()
-            ->whereIn('status', [
-                WorkflowStatesContract::STATUS_DISPATCHED,
-                WorkflowStatesContract::STATUS_RUNNING,
-            ])
-            ->count();
-    }
 
     /**
      * Count running workers for a workflow
@@ -162,54 +123,7 @@ class TaskProcessDispatcherService
     {
         return $workflowRun->taskRuns()
             ->join('task_processes', 'task_runs.id', '=', 'task_processes.task_run_id')
-            ->whereIn('task_processes.status', [
-                WorkflowStatesContract::STATUS_DISPATCHED,
-                WorkflowStatesContract::STATUS_RUNNING,
-            ])
+            ->where('task_processes.status', WorkflowStatesContract::STATUS_RUNNING)
             ->count();
-    }
-
-    /**
-     * Process task processes for a task run
-     */
-    private static function processTaskRunProcesses(TaskRun $taskRun, int $limit): void
-    {
-        $processedCount = 0;
-
-        foreach($taskRun->taskProcesses as $taskProcess) {
-            if ($processedCount >= $limit) {
-                break;
-            }
-
-            if ($taskProcess->isCompleted()) {
-                static::log("TaskProcess already Completed. Skipping dispatch: $taskProcess");
-                continue;
-            }
-
-            // Handle timeout or dispatch pending process
-            if (static::handleTaskProcess($taskProcess)) {
-                $processedCount++;
-            }
-        }
-    }
-
-    /**
-     * Handle a task process - either dispatch if pending or handle timeout
-     *
-     * @return bool True if a process was dispatched (either directly or via restart), false otherwise
-     */
-    private static function handleTaskProcess(TaskProcess $taskProcess): bool
-    {
-        if ($taskProcess->isPastTimeout()) {
-            static::log("TaskProcess $taskProcess timed out");
-
-            return TaskProcessRunnerService::handleTimeout($taskProcess);
-        } elseif ($taskProcess->isStatusPending()) {
-            TaskProcessRunnerService::dispatch($taskProcess);
-
-            return true;
-        }
-
-        return false;
     }
 }

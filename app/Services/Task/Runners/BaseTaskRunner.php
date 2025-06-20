@@ -22,7 +22,6 @@ class BaseTaskRunner implements TaskRunnerContract
     use HasDebugLogging;
 
     const string RUNNER_NAME = 'Base';
-    public static string $queue = 'default';
 
     // Indicates if the class is a workflow trigger
     const bool   IS_TRIGGER = false;
@@ -41,10 +40,6 @@ class BaseTaskRunner implements TaskRunnerContract
         return static::IS_TRIGGER;
     }
 
-    public function getQueue(): string
-    {
-        return static::$queue;
-    }
 
     /**
      * Get all files from the input artifacts of the task process

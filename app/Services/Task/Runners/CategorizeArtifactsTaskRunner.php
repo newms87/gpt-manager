@@ -5,6 +5,7 @@ namespace App\Services\Task\Runners;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
+use App\Services\Task\TaskProcessDispatcherService;
 use App\Services\Task\TaskProcessRunnerService;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,8 +27,6 @@ use Throwable;
 class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'Categorize Artifacts';
-
-    public static string $queue = 'llm';
 
     // Special category constants
     const string
@@ -419,8 +418,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
             $taskProcesses[] = TaskProcessRunnerService::prepare($this->taskRun, null, $categoryGroupArtifacts);
         }
 
-        foreach($taskProcesses as $taskProcess) {
-            TaskProcessRunnerService::dispatch($taskProcess);
-        }
+        // Trigger dispatcher to pick up the new processes
+        TaskProcessDispatcherService::dispatchForTaskRun($this->taskRun);
     }
 }

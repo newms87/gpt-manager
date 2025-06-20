@@ -5,6 +5,7 @@ namespace App\Services\Task\Runners;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
+use App\Services\Task\TaskProcessDispatcherService;
 use App\Services\Task\TaskProcessRunnerService;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -27,7 +28,6 @@ use Throwable;
 class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'Sequential Category Matcher';
-    public static string $queue = 'llm';
     
     // Special category constants
     const string CATEGORY_EXCLUDE = '__exclude';
@@ -575,9 +575,8 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
             $taskProcesses[] = TaskProcessRunnerService::prepare($this->taskRun, null, $categoryGroupArtifacts);
         }
 
-        foreach($taskProcesses as $taskProcess) {
-            TaskProcessRunnerService::dispatch($taskProcess);
-        }
+        // Trigger dispatcher to pick up the new processes
+        TaskProcessDispatcherService::dispatchForTaskRun($this->taskRun);
     }
 
     public static function debugLogCategoryGroups($categoryGroups): void

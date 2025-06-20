@@ -9,6 +9,7 @@
 - ONE way to do everything - the correct, modern way
 - Remove dead code on sight
 - Refactor any code that doesn't meet standards
+- Never use chmod on files to fix permissions!!! Always use sail artisan fix
 
 ## Laravel Backend Standards
 

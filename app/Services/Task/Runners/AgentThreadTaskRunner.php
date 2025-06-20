@@ -16,7 +16,6 @@ use Newms87\Danx\Helpers\StringHelper;
 class AgentThreadTaskRunner extends BaseTaskRunner
 {
     const string RUNNER_NAME = 'AI Agent';
-    public static string $queue = 'llm';
 
     protected bool $includePageNumbersInThread = false;
 

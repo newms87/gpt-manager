@@ -2,7 +2,6 @@
 
 namespace App\Services\Task;
 
-use App\Jobs\ExecuteTaskProcessJob;
 use App\Jobs\WorkflowApiInvocationWebhookJob;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\Artifact;
@@ -108,44 +107,6 @@ class TaskProcessRunnerService
         return $copiedArtifacts;
     }
 
-    /**
-     * Dispatch a task process to be executed by the job queue
-     */
-    public static function dispatch(TaskProcess $taskProcess): ?JobDispatch
-    {
-        static::log("Dispatch $taskProcess");
-
-        // Always make sure the user and team is setup when dispatching a task in case this task was restarted by the cron
-        if (!user() && $taskProcess->lastJobDispatch?->user_id) {
-            $user   = $taskProcess->lastJobDispatch->user;
-            $teamId = $taskProcess->lastJobDispatch->data['team_id'] ?? null;
-            if ($teamId) {
-                $user->currentTeam = Team::find($teamId);
-            }
-            auth()->guard()->setUser($user);
-        }
-
-        // associate job dispatch before dispatching in case of synchronous job execution
-        $job = (new ExecuteTaskProcessJob($taskProcess));
-        $job->onQueue($taskProcess->getQueue());
-
-        // Associate JobDispatch to TaskProcess
-        $jobDispatch = $job->getJobDispatch();
-        if ($jobDispatch) {
-            // track the most recent dispatch for easier referencing
-            $taskProcess->last_job_dispatch_id = $jobDispatch->id;
-            $taskProcess->save();
-
-            // Associate all job dispatches with the task process for logging purposes
-            $taskProcess->jobDispatches()->attach($jobDispatch->id);
-            $taskProcess->updateRelationCounter('jobDispatches');
-        }
-
-        // Dispatch the job
-        $job->dispatch();
-
-        return $jobDispatch;
-    }
 
     /**
      * Run the task process. This will execute the task process.
@@ -162,6 +123,27 @@ class TaskProcessRunnerService
                 static::log("TaskProcess is $taskProcess->status, skipping execution");
 
                 return;
+            }
+
+            // Always make sure the user and team is setup when running a task
+            if (!user() && $taskProcess->lastJobDispatch?->user_id) {
+                $user   = $taskProcess->lastJobDispatch->user;
+                $teamId = $taskProcess->lastJobDispatch->data['team_id'] ?? null;
+                if ($teamId) {
+                    $user->currentTeam = Team::find($teamId);
+                }
+                auth()->guard()->setUser($user);
+            }
+
+            // Associate current job dispatch if we're running in a job context
+            $jobDispatch = Job::$runningJob?->getJobDispatch();
+            if ($jobDispatch) {
+                // track the most recent dispatch for easier referencing
+                $taskProcess->last_job_dispatch_id = $jobDispatch->id;
+                
+                // Associate all job dispatches with the task process for logging purposes
+                $taskProcess->jobDispatches()->attach($jobDispatch->id);
+                $taskProcess->updateRelationCounter('jobDispatches');
             }
 
             $taskProcess->started_at = now();
@@ -240,7 +222,8 @@ class TaskProcessRunnerService
             LockHelper::release($taskProcess);
         }
 
-        static::dispatch($taskProcess);
+        // Trigger dispatcher to pick up this restarted process
+        TaskProcessDispatcherService::dispatchForTaskRun($taskProcess->taskRun);
     }
 
     /**
@@ -270,7 +253,8 @@ class TaskProcessRunnerService
             LockHelper::release($taskProcess);
         }
 
-        static::dispatch($taskProcess);
+        // Trigger dispatcher to pick up this restarted process
+        TaskProcessDispatcherService::dispatchForTaskRun($taskProcess->taskRun);
     }
 
     /**
@@ -335,7 +319,7 @@ class TaskProcessRunnerService
 
         try {
             // Can only be timed out if it is in one of these states
-            if (!$taskProcess->isStatusPending() && !$taskProcess->isStatusDispatched() && !$taskProcess->isStatusRunning()) {
+            if (!$taskProcess->isStatusPending() && !$taskProcess->isStatusRunning()) {
                 return false;
             }
 

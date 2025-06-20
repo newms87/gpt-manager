@@ -6,7 +6,6 @@ interface WorkflowStatesContract
 {
     const string
         STATUS_PENDING = 'Pending',
-        STATUS_DISPATCHED = 'Dispatched',
         STATUS_RUNNING = 'Running',
         STATUS_STOPPED = 'Stopped',
         STATUS_SKIPPED = 'Skipped',

@@ -20,10 +20,6 @@ trait HasWorkflowStatesTrait
         return $this->status === WorkflowStatesContract::STATUS_RUNNING;
     }
 
-    public function isStatusDispatched(): bool
-    {
-        return $this->status === WorkflowStatesContract::STATUS_DISPATCHED;
-    }
 
     public function isStatusTimeout(): bool
     {
@@ -82,7 +78,7 @@ trait HasWorkflowStatesTrait
 
     public function isFinished(): bool
     {
-        return ($this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isSkipped() || $this->isTimedout()) && !$this->isStatusDispatched();
+        return $this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isSkipped() || $this->isTimedout();
     }
 
     public function canContinue(): bool

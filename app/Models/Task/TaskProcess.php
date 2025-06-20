@@ -150,10 +150,6 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         $this->updateRelationCounter('inputArtifacts');
     }
 
-    public function isDispatched(): bool
-    {
-        return $this->last_job_dispatch_id !== null;
-    }
 
     public function isPastTimeout(): bool
     {
@@ -166,7 +162,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
     public function canBeRun(): bool
     {
-        return $this->isDispatched() && !$this->isStarted() && !$this->isStopped() && !$this->isFailed() && !$this->isCompleted() && !$this->isTimedout();
+        return $this->isStatusPending() && !$this->isStopped() && !$this->isFailed() && !$this->isCompleted() && !$this->isTimedout();
     }
 
     public function canResume(): bool
@@ -183,10 +179,8 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
             $this->status = WorkflowStatesContract::STATUS_FAILED;
         } elseif ($this->isTimedout()) {
             $this->status = WorkflowStatesContract::STATUS_TIMEOUT;
-        } elseif (!$this->isDispatched()) {
-            $this->status = WorkflowStatesContract::STATUS_PENDING;
         } elseif (!$this->isStarted()) {
-            $this->status = WorkflowStatesContract::STATUS_DISPATCHED;
+            $this->status = WorkflowStatesContract::STATUS_PENDING;
         } elseif (!$this->isCompleted()) {
             $this->status = WorkflowStatesContract::STATUS_RUNNING;
         } else {
@@ -204,11 +198,6 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         return $this->taskRun->getRunner()->setTaskProcess($this);
     }
 
-    /** Get the queue name this task process should be dispatched to */
-    public function getQueue(): string
-    {
-        return $this->taskRun->getRunner()->setTaskProcess($this)->getQueue();
-    }
 
     public static function booted(): void
     {
@@ -230,9 +219,9 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
                 'output_artifact_count',
                 'restart_count',
             ])) {
-                // If this is the execute task process job, we want to broadcast the status changes immediately to provide a better user experience
+                // If this is a task process job, we want to broadcast the status changes immediately to provide a better user experience
                 // No need to spin up another job just to broadcast the status
-                if ($taskProcess->wasChanged('status') && Job::$runningJob?->name === 'ExecuteTaskProcessJob') {
+                if ($taskProcess->wasChanged('status') && Job::$runningJob?->name === 'TaskProcessJob') {
                     TaskProcessUpdatedEvent::broadcast($taskProcess);
                 } else {
                     TaskProcessUpdatedEvent::dispatch($taskProcess);

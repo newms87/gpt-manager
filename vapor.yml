@@ -5,14 +5,15 @@ environments:
   production:
     memory: 1024
     cli-memory: 512
-    queue-concurrency: 65
+    queue-concurrency: 100
     timeout: 600
     cli-timeout: 600
     queue-timeout: 600
     queues:
-      - llm: 10
-      - convertapi: 10
       - default: 50
+      # Dedicated queue for TaskProcessJobs that dynamically pick up work
+      # Worker limits for task execution are managed by TaskQueueType records in the database
+      - task-process: 50
     cache: redis-cluster-micro
     runtime: 'php-8.3:al2'
     database: sageus

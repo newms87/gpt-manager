@@ -8,7 +8,6 @@ use Newms87\Danx\Exceptions\ValidationError;
 class ClassifierTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'Classifier';
-    public static string $queue = 'llm';
 
     const string CATEGORY_EXCLUDE = '__exclude';
 

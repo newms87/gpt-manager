@@ -30,7 +30,7 @@ class TaskProcessRepository extends ActionRepository
      */
     public function checkForTimeouts(): void
     {
-        $statuses         = [WorkflowStatesContract::STATUS_RUNNING, WorkflowStatesContract::STATUS_PENDING, WorkflowStatesContract::STATUS_DISPATCHED];
+        $statuses         = [WorkflowStatesContract::STATUS_RUNNING, WorkflowStatesContract::STATUS_PENDING];
         $runningProcesses = TaskProcess::whereIn('status', $statuses)->get();
 
         static::log("Checking for timeouts on task processes: " . $runningProcesses->count());
@@ -45,8 +45,8 @@ class TaskProcessRepository extends ActionRepository
      */
     public function checkForTimeout(TaskProcess $taskProcess): bool
     {
-        // If a task is in pending or dispatched state and hasn't been modified for 2 minutes, it is considered timed out
-        if (($taskProcess->isStatusPending() || $taskProcess->isStatusDispatched()) && $taskProcess->updated_at->isBefore(now()->subSeconds(self::PENDING_PROCESS_TIMEOUT))) {
+        // If a task is in pending state and hasn't been modified for 2 minutes, it is considered timed out
+        if ($taskProcess->isStatusPending() && $taskProcess->updated_at->isBefore(now()->subSeconds(self::PENDING_PROCESS_TIMEOUT))) {
             static::log("\t$taskProcess->id: Pending / Dispatch timeout");
             TaskProcessRunnerService::handleTimeout($taskProcess);
 

@@ -253,9 +253,9 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
             }
 
             if ($taskRun->wasRecentlyCreated || $taskRun->wasChanged(['status', 'input_artifacts_count', 'output_artifacts_count', 'percent_complete'])) {
-                // If this is the execute task process job, we want to broadcast the changes immediately to provide a better user experience
+                // If this is a task process job, we want to broadcast the changes immediately to provide a better user experience
                 // No need to spin up another job just to broadcast the status
-                if (Job::$runningJob?->name === 'ExecuteTaskProcessJob') {
+                if (Job::$runningJob) {
                     TaskRunUpdatedEvent::broadcast($taskRun);
                 } else {
                     TaskRunUpdatedEvent::dispatch($taskRun);

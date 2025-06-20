@@ -8,6 +8,7 @@ use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
+use App\Models\TaskQueueType;
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowNode;
 use App\Services\Task\Runners\BaseTaskRunner;
@@ -48,7 +49,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         'timeout_after_seconds',
         'schema_definition_id',
         'agent_id',
-        'max_workers',
+        'task_queue_type_id',
     ];
 
     protected array $keywordFields = [
@@ -67,17 +68,18 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
             'task_runner_config'     => 'json',
             'input_artifact_levels'  => 'json',
             'output_artifact_levels' => 'json',
-            'max_workers'            => 'integer',
         ];
     }
 
-    protected $attributes = [
-        'max_workers' => 10,
-    ];
 
     public function team(): BelongsTo|Team
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function taskQueueType(): BelongsTo|TaskQueueType
+    {
+        return $this->belongsTo(TaskQueueType::class);
     }
     
     public function agent(): BelongsTo|Agent

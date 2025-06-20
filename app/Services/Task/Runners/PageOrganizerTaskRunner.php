@@ -14,7 +14,6 @@ use Newms87\Danx\Helpers\StringHelper;
 class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'Pages Organizer';
-    public static string $queue = 'llm';
 
     public function run(): void
     {
