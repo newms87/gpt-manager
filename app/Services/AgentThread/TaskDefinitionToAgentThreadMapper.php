@@ -89,7 +89,14 @@ class TaskDefinitionToAgentThreadMapper
 
         $totalFiles = 0;
         foreach($this->artifacts as $artifact) {
-            $totalFiles += $artifact->storedFiles()->count();
+            $artifactFilterService = $this->resolveArtifactFilterService($artifact);
+            $filteredMessage = $artifactFilterService->setArtifact($artifact)->filter();
+            
+            // Only count files if the filtered artifact will actually be sent (not null)
+            // and the filter includes files
+            if ($filteredMessage !== null && $artifactFilterService->hasFiles()) {
+                $totalFiles += $artifact->storedFiles()->count();
+            }
         }
 
         if ($totalFiles > $this->maxFiles) {
