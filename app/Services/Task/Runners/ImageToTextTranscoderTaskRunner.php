@@ -5,11 +5,15 @@ namespace App\Services\Task\Runners;
 use App\Api\ImageToText\ImageToTextOcrApi;
 use App\Models\Task\Artifact;
 use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
+use Aws\S3\Exception\S3Exception;
 use Exception;
+use GuzzleHttp\Exception\ClientException;
+use League\Flysystem\UnableToReadFile;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Services\TranscodeFileService;
+use Throwable;
 
 class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 {
@@ -28,17 +32,33 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         if ($transcodedFile) {
             $this->activity("File already transcoded", 100);
             static::log("$transcodedFile");
-            $artifact = Artifact::create([
-                'name'            => $transcodedFile->filename,
-                'task_process_id' => $this->taskProcess->id,
-                'text_content'    => $transcodedFile->getContents(),
-                'json_content'    => $inputArtifact->json_content,
-                'meta'            => $inputArtifact->meta,
-            ]);
-            $artifact->storedFiles()->attach($transcodedFile->originalFile);
-            $this->complete([$artifact]);
+            
+            try {
+                $transcodedContents = $transcodedFile->getContents();
+            } catch (Throwable $e) {
+                // If the transcoded file doesn't exist in S3 (404 error), delete the bad record and continue processing
+                if ($this->is404Error($e)) {
+                    $this->activity("Transcoded file not found in S3, cleaning up bad transcode record: {$transcodedFile->filename}", 5);
+                    $transcodedFile->delete();
+                    // Continue processing as if the file wasn't transcoded
+                } else {
+                    throw $e;
+                }
+            }
+            
+            if (isset($transcodedContents)) {
+                $artifact = Artifact::create([
+                    'name'            => $transcodedFile->filename,
+                    'task_process_id' => $this->taskProcess->id,
+                    'text_content'    => $transcodedContents,
+                    'json_content'    => $inputArtifact->json_content,
+                    'meta'            => $inputArtifact->meta,
+                ]);
+                $artifact->storedFiles()->attach($transcodedFile->originalFile);
+                $this->complete([$artifact]);
 
-            return;
+                return;
+            }
         }
 
         $ocrTranscode = $this->getOcrTranscode($fileToTranscode);
@@ -50,9 +70,9 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         $this->activity("Using agent to transcode $agent->name", 10);
         $artifact = $this->runAgentThreadWithSchema($agentThread, $schemaAssociation?->schemaDefinition, $schemaAssociation?->schemaFragment);
 
-        // If we didn't receive an artifact from the agent, record the failure
+        // If we didn't receive an artifact from the agent, record the incomplete state for retry
         if (!$artifact) {
-            $this->taskProcess->failed_at = now();
+            $this->taskProcess->incomplete_at = now();
             $this->taskProcess->save();
             $this->activity("No response from $agent->name", 100);
 
@@ -117,10 +137,23 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         $this->activity("Setup agent thread with Stored File $storedFile->id" . ($storedFile->page_number ? " (page: $storedFile->page_number)" : ''), 15);
 
         // Add the OCR transcode text to the thread
-        $ocrPrompt   = "OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ";
+        $ocrPrompt = "OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ";
+        
+        try {
+            $ocrContents = $ocrTranscodedFile->getContents();
+        } catch (Throwable $e) {
+            // If the OCR file doesn't exist in S3 (404 error), delete the bad record and re-throw
+            if ($this->is404Error($e)) {
+                $this->activity("OCR file not found in S3, cleaning up bad transcode record: {$ocrTranscodedFile->filename}", 5);
+                $ocrTranscodedFile->delete();
+                throw new Exception("OCR transcode file not found in S3. Bad record cleaned up. Please retry the task.", 0, $e);
+            }
+            throw $e;
+        }
+        
         $agentThread = app(TaskDefinitionToAgentThreadMapper::class)
             ->setTaskDefinition($this->taskDefinition)
-            ->addMessage($ocrPrompt . $ocrTranscodedFile->getContents())
+            ->addMessage($ocrPrompt . $ocrContents)
             ->addMessage(['files' => [$storedFile]])
             ->map();
 
@@ -151,5 +184,32 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         }
 
         return $ocrTranscode;
+    }
+    
+    /**
+     * Check if the exception (or any in its chain) is a 404 Not Found error
+     */
+    protected function is404Error(Throwable $e): bool
+    {
+        // Check the current exception
+        if ($e instanceof ClientException && $e->getCode() === 404) {
+            return true;
+        }
+        
+        if ($e instanceof S3Exception && $e->getStatusCode() === 404) {
+            return true;
+        }
+        
+        // Check if the exception message contains S3 NoSuchKey error
+        if (str_contains($e->getMessage(), 'NoSuchKey')) {
+            return true;
+        }
+        
+        // Check previous exceptions in the chain
+        if ($e->getPrevious()) {
+            return $this->is404Error($e->getPrevious());
+        }
+        
+        return false;
     }
 }

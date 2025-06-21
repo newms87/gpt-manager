@@ -81,7 +81,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
             $this->activity("Received response from $agent->name", 100);
         } else {
-            $this->taskProcess->failed_at = now();
+            $this->taskProcess->incomplete_at = now();
             $this->taskProcess->save();
             $this->activity("No response from $agent->name", 100);
         }

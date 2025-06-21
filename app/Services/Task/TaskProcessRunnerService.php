@@ -62,7 +62,7 @@ class TaskProcessRunnerService
             $taskProcess->getRunner()->prepareProcess();
         } catch(Throwable $throwable) {
             static::log("TaskProcess preparation failed: $taskProcess");
-            $taskProcess->failed_at = now();
+            $taskProcess->incomplete_at = now();
             $taskProcess->save();
             throw $throwable;
         }
@@ -158,7 +158,7 @@ class TaskProcessRunnerService
             static::log("TaskProcess finished running: $taskProcess");
         } catch(Throwable $throwable) {
             static::log("TaskProcess failed: $taskProcess");
-            $taskProcess->failed_at = now();
+            $taskProcess->incomplete_at = now();
             $taskProcess->save();
             throw $throwable;
         }
@@ -186,7 +186,7 @@ class TaskProcessRunnerService
             static::log("TaskProcess finished handling event: $taskProcessListener");
         } catch(Throwable $throwable) {
             static::log("TaskProcess event handler failed: $taskProcess");
-            $taskProcess->failed_at = now();
+            $taskProcess->incomplete_at = now();
             $taskProcess->save();
             throw $throwable;
         }
@@ -209,9 +209,10 @@ class TaskProcessRunnerService
 
             static::halt($taskProcess);
 
-            $taskProcess->stopped_at = null;
-            $taskProcess->failed_at  = null;
-            $taskProcess->timeout_at = null;
+            $taskProcess->stopped_at    = null;
+            $taskProcess->failed_at     = null;
+            $taskProcess->incomplete_at = null;
+            $taskProcess->timeout_at    = null;
             // NOTE: we must reset the started_at and completed_at flag so the task process can be re-run
             $taskProcess->started_at       = null;
             $taskProcess->completed_at     = null;
@@ -242,9 +243,10 @@ class TaskProcessRunnerService
                 return;
             }
 
-            $taskProcess->stopped_at = null;
-            $taskProcess->failed_at  = null;
-            $taskProcess->timeout_at = null;
+            $taskProcess->stopped_at    = null;
+            $taskProcess->failed_at     = null;
+            $taskProcess->incomplete_at = null;
+            $taskProcess->timeout_at    = null;
             // NOTE: we must reset the started_at and completed_at flag so the task process can be re-run
             $taskProcess->started_at   = null;
             $taskProcess->completed_at = null;
@@ -294,10 +296,11 @@ class TaskProcessRunnerService
 
         try {
             // Mark this task process as completed
-            $taskProcess->failed_at    = null;
-            $taskProcess->stopped_at   = null;
-            $taskProcess->timeout_at   = null;
-            $taskProcess->completed_at = now();
+            $taskProcess->failed_at     = null;
+            $taskProcess->incomplete_at = null;
+            $taskProcess->stopped_at    = null;
+            $taskProcess->timeout_at    = null;
+            $taskProcess->completed_at  = now();
             $taskProcess->save();
         } finally {
             LockHelper::release($taskProcess);

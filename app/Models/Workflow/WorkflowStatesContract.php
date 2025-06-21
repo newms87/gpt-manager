@@ -11,7 +11,8 @@ interface WorkflowStatesContract
         STATUS_SKIPPED = 'Skipped',
         STATUS_COMPLETED = 'Completed',
         STATUS_TIMEOUT = 'Timeout',
-        STATUS_FAILED = 'Failed';
+        STATUS_FAILED = 'Failed',
+        STATUS_INCOMPLETE = 'Incomplete';
 
     public function isStatusPending(): bool;
 
@@ -26,6 +27,8 @@ interface WorkflowStatesContract
     public function isCompleted(): bool;
 
     public function isTimedout(): bool;
+
+    public function isIncomplete(): bool;
 
     public function isFinished(): bool;
 

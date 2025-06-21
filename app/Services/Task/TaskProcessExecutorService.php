@@ -72,9 +72,9 @@ class TaskProcessExecutorService
             ->where(function (Builder $q) {
                 // Pending processes
                 $q->where('status', WorkflowStatesContract::STATUS_PENDING)
-                    // Or timed out processes that can be retried
-                    ->orWhere(function (Builder $timeoutQuery) {
-                        $timeoutQuery->where('status', WorkflowStatesContract::STATUS_TIMEOUT)
+                    // Or incomplete/timeout processes that can be retried
+                    ->orWhere(function (Builder $retryQuery) {
+                        $retryQuery->whereIn('status', [WorkflowStatesContract::STATUS_INCOMPLETE, WorkflowStatesContract::STATUS_TIMEOUT])
                             ->whereHas('taskRun.taskDefinition', function (Builder $taskDefQuery) {
                                 $taskDefQuery->whereColumn('task_processes.restart_count', '<', 'task_definitions.max_process_retries');
                             });
@@ -116,9 +116,9 @@ class TaskProcessExecutorService
             ->where(function (Builder $q) {
                 // Pending processes
                 $q->where('status', WorkflowStatesContract::STATUS_PENDING)
-                    // Or timed out processes that can be retried
-                    ->orWhere(function (Builder $timeoutQuery) {
-                        $timeoutQuery->where('status', WorkflowStatesContract::STATUS_TIMEOUT)
+                    // Or incomplete/timeout processes that can be retried
+                    ->orWhere(function (Builder $retryQuery) {
+                        $retryQuery->whereIn('status', [WorkflowStatesContract::STATUS_INCOMPLETE, WorkflowStatesContract::STATUS_TIMEOUT])
                             ->whereHas('taskRun.taskDefinition', function (Builder $taskDefQuery) {
                                 $taskDefQuery->whereColumn('task_processes.restart_count', '<', 'task_definitions.max_process_retries');
                             });
@@ -133,11 +133,11 @@ class TaskProcessExecutorService
      */
     protected function executeTaskProcess(TaskProcess $taskProcess): void
     {
-        static::log("Found pending task process: $taskProcess");
+        static::log("Found available task process: $taskProcess");
 
-        // If this is a timed out process, restart it first
-        if ($taskProcess->isStatusTimeout()) {
-            static::log("Restarting timed out process: $taskProcess");
+        // If this is a timed out or incomplete process, restart it first
+        if ($taskProcess->isStatusTimeout() || $taskProcess->isStatusIncomplete()) {
+            static::log("Restarting {$taskProcess->status} process: $taskProcess");
             TaskProcessRunnerService::restart($taskProcess);
             return;
         }
