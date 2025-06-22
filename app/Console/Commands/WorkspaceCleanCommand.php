@@ -2,14 +2,16 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Agent\AgentThreadMessage;
 use App\Models\Schema\SchemaAssociation;
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use DB;
 use Illuminate\Console\Command;
 
 class WorkspaceCleanCommand extends Command
 {
-    protected $signature   = 'workspace:clean {--team-objects} {--all-runs} {--auditing}';
+    protected $signature   = 'workspace:clean {--team-objects} {--runs} {--inputs} {--auditing}';
     protected $description = 'Deletes workspace data based on flags: team objects, all runs, agent threads and messages, ';
 
     public function handle(): void
@@ -20,8 +22,12 @@ class WorkspaceCleanCommand extends Command
             $this->cleanTeamObjects();
         }
 
-        if ($this->option('all-runs')) {
-            $this->cleanAllRuns();
+        if ($this->option('runs')) {
+            $this->cleanRuns();
+        }
+
+        if ($this->option('inputs')) {
+            $this->cleanInputs();
         }
 
         if ($this->option('auditing')) {
@@ -31,9 +37,25 @@ class WorkspaceCleanCommand extends Command
         $this->info("Data cleaning completed successfully");
     }
 
-    private function cleanAllRuns(): void
+    private function cleanInputs(): void
     {
-        $this->alert("Cleaning all runs, inputs, and artifacts");
+        $this->alert("Cleaning all inputs");
+
+        $tables = [
+            'task_inputs',
+            'stored_file_storables',
+            'stored_files',
+            'workflow_inputs',
+        ];
+
+        $this->truncateTables($tables);
+
+        $this->info("All inputs have been cleaned\n\n");
+    }
+
+    private function cleanRuns(): void
+    {
+        $this->alert("Cleaning all runs and artifacts");
 
         $tables = [
             'agent_thread_messageables',
@@ -42,13 +64,9 @@ class WorkspaceCleanCommand extends Command
             'agent_threads',
             'artifactables',
             'artifacts',
-            'stored_file_storables',
-            'stored_files',
-            'task_inputs',
             'task_process_listeners',
             'task_processes',
             'task_runs',
-            'workflow_inputs',
             'workflow_runs',
         ];
 
@@ -68,7 +86,7 @@ class WorkspaceCleanCommand extends Command
 
         $this->comment("Cleaning task process schema associations");
         SchemaAssociation::where('object_type', TaskProcess::class)->delete();
-
+        DB::statement("DELETE FROM stored_file_storables WHERE storable_type IN ('" . AgentThreadMessage::class . "','" . Artifact::class . "')");
         $this->resetCounts($counts);
 
         $this->info("All runs have been cleaned\n\n");

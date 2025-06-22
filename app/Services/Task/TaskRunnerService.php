@@ -78,6 +78,7 @@ class TaskRunnerService
         }
 
         if (!$taskProcesses) {
+            static::log("No task processes created. Marking as skipped: $taskRun");
             $taskRun->skipped_at = now();
             $taskRun->save();
         }

@@ -168,6 +168,10 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
             $hasFailedProcesses  = false;
             $hasProcesses        = $taskProcesses->isNotEmpty();
 
+            if (!$this->started_at && $hasProcesses) {
+                $this->started_at = now();
+            }
+
             foreach($taskProcesses as $taskProcess) {
                 if ($taskProcess->isStopped()) {
                     $hasStoppedProcesses = true;

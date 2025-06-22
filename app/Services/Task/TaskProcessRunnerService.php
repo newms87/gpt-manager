@@ -39,6 +39,8 @@ class TaskProcessRunnerService
             'status'   => WorkflowStatesContract::STATUS_PENDING,
         ]);
 
+        LockHelper::acquire($taskProcess);
+
         $taskProcess->jobDispatches()->attach(Job::$runningJob);
         $taskProcess->updateRelationCounter('jobDispatches');
 
@@ -66,8 +68,8 @@ class TaskProcessRunnerService
             throw $throwable;
         }
 
+        LockHelper::release($taskProcess);
         static::log("Prepared $taskProcess");
-
 
         return $taskProcess;
     }

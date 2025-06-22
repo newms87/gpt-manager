@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\Task\TaskProcess;
 use App\Models\Workflow\WorkflowStatesContract;
+use Exception;
 
 /**
  * @mixin TaskProcess
@@ -98,8 +99,14 @@ trait HasWorkflowStatesTrait
 
     public function computeStatus(): static
     {
-        if (!$this->isStarted() && $this->isFinished()) {
-            throw new \Exception("State Validation Error: The state is finished without being started: $this");
+        if (!$this->isStarted() && ($this->isCompleted() || $this->isFailed() || $this->isTimeout() || $this->isIncomplete())) {
+            $timestamps = 'completed_at=' . $this->completed_at . "\n" .
+                'failed_at=' . $this->failed_at . "\n" .
+                'incomplete_at=' . $this->incomplete_at . "\n" .
+                'timeout_at=' . $this->timeout_at . "\n" .
+                'started_at=' . $this->started_at . "\n";
+
+            throw new Exception("State Validation Error: The state is post-run state without being started: $this\n$timestamps");
         }
 
         if ($this->isFailed()) {
@@ -112,6 +119,8 @@ trait HasWorkflowStatesTrait
             $this->status = WorkflowStatesContract::STATUS_SKIPPED;
         } elseif ($this->isCompleted()) {
             $this->status = WorkflowStatesContract::STATUS_COMPLETED;
+        } elseif ($this->isTimeout()) {
+            $this->status = WorkflowStatesContract::STATUS_TIMEOUT;
         } elseif ($this->isStarted()) {
             $this->status = WorkflowStatesContract::STATUS_RUNNING;
         } else {

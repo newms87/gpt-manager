@@ -39,15 +39,12 @@
 				</div>
 			</div>
 			<div class="object-controls flex items-center p-2 space-x-3">
-				<QBtn class="bg-green-900 text-green-300 p-3" @click="$emit('select')">
-					<WorkflowIcon class="w-4" />
-				</QBtn>
-				<QBtn
-					class="p-3 bg-blue-900 text-blue-300"
+				<ActionButton
+					color="blue-invert"
+					type="merge"
+					tooltip="Merge into..."
 					@click="$emit('merge')"
-				>
-					<MergeIcon class="w-3.5" />
-				</QBtn>
+				/>
 				<QBtn
 					class="p-3 bg-red-900"
 					:disable="deleteAction.isApplying"
@@ -123,14 +120,8 @@ import TeamObjectAttribute from "@/components/Modules/TeamObjects/TeamObjectAttr
 import TeamObjectRelationArray from "@/components/Modules/TeamObjects/TeamObjectRelationArray";
 import TeamObjectRelationObject from "@/components/Modules/TeamObjects/TeamObjectRelationObject";
 import { JsonSchema } from "@/types";
-import {
-	FaSolidCodeMerge as MergeIcon,
-	FaSolidLink as LinkIcon,
-	FaSolidPencil as EditIcon,
-	FaSolidTrash as DeleteIcon,
-	FaSolidWorm as WorkflowIcon
-} from "danx-icon";
-import { EditableDiv, fDate, ShowHideButton } from "quasar-ui-danx";
+import { FaSolidLink as LinkIcon, FaSolidPencil as EditIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
+import { ActionButton, EditableDiv, fDate, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 defineEmits(["select", "merge"]);

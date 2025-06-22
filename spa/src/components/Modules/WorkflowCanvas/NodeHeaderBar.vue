@@ -33,7 +33,7 @@
 					type="refresh"
 					:action="restartAction"
 					:target="taskRun"
-					color="sky"
+					color="orange"
 					tooltip="Restart task"
 					size="xs"
 				/>
