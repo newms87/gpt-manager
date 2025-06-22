@@ -105,8 +105,8 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
             if (!$sourceTaskRun?->isCompleted()) {
                 // Bad data handling - in case something went wrong and the data was corrupted, we can fix it here
                 if (!$connectionAsTarget->sourceNode) {
-                    static::log('Source node did not exist. Removing all connections for the node: ' . $connectionAsTarget->source_node_id);
-                    WorkflowConnection::where('source_node_id', $connectionAsTarget->source_node_id)->orWhere('target_node_id', $connectionAsTarget->source_node_id)->delete();
+                    static::log('Source node did not exist: ' . $connectionAsTarget->source_node_id);
+                    $this->cleanCorruptedConnections();
                     continue;
                 }
                 static::log("Waiting for $connectionAsTarget->sourceNode to complete: " . ($sourceTaskRun ?: "(No Task Run)"));
@@ -116,6 +116,25 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         }
 
         return true;
+    }
+
+    public function cleanCorruptedConnections()
+    {
+        static::log("Clean corrupted connections for $this");
+
+        $validNodeIds = $this->workflowDefinition->workflowNodes()->pluck('id');
+        
+        $corruptedConnections = WorkflowConnection::where('workflow_definition_id', $this->workflowDefinition->id)
+            ->where(function ($query) use ($validNodeIds) {
+                $query->whereNotIn('source_node_id', $validNodeIds)
+                      ->orWhereNotIn('target_node_id', $validNodeIds);
+            })
+            ->get();
+
+        if ($corruptedConnections->isNotEmpty()) {
+            static::log("Found " . $corruptedConnections->count() . " corrupted connections to delete");
+            $corruptedConnections->each->delete();
+        }
     }
 
     /**

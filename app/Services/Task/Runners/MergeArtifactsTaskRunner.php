@@ -29,13 +29,19 @@ class MergeArtifactsTaskRunner extends BaseTaskRunner
         $jsonContentFragmentSelector = $this->config('json_content_fragment_selector') ?: [];
         $metaFragmentSelector        = $this->config('meta_fragment_selector') ?: [];
 
+        $artifacts = $this->taskProcess->inputArtifacts;
+
+        static::log("Merging " . $artifacts->count() . " artifacts:\n" . $artifacts->pluck('id')->implode(','));
+
         if (!$metaFragmentSelector && !$jsonContentFragmentSelector) {
-            return ['default' => $this->taskProcess->inputArtifacts];
+            static::log("No fragment selectors applied, merging full artifacts...");
+
+            return ['default' => $artifacts];
         }
 
         $artifactsByGroup = [];
 
-        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+        foreach($artifacts as $inputArtifact) {
             $jsonContentKey = $inputArtifact->getFlattenedJsonFragmentValuesString($jsonContentFragmentSelector);
             $metaKey        = $inputArtifact->getFlattenedMetaFragmentValuesString($metaFragmentSelector);
             $groupKey       = "$jsonContentKey;$metaKey";

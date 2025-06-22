@@ -76,6 +76,8 @@ class TaskProcessDispatcherService
                 ->filter(['taskRuns.taskProcesses.status' => WorkflowStatesContract::STATUS_PENDING])
                 ->count();
 
+            static::log("Workers: $availableSlots available slots / $pendingProcessesCount pending processes");
+            
             $workerCount = min($availableSlots, $pendingProcessesCount);
 
             if ($workerCount <= 0) {

@@ -190,6 +190,12 @@ class WorkflowRunnerService
             foreach($workflowNode->connectionsAsSource as $workflowConnection) {
                 $targetNode = $workflowConnection->targetNode;
 
+                // XXX: Sometimes a workflow is getting its connections list corrupted - not sure why but remove when fixed.
+                if (!$targetNode) {
+                    $workflowRun->cleanCorruptedConnections();
+                    continue;
+                }
+
                 // If this workflow node has already been started, we don't want to start it again
                 $taskRun = $workflowRun->taskRuns()->where('workflow_node_id', $targetNode->id)->first();
                 if ($taskRun && !$taskRun->isStatusPending()) {
