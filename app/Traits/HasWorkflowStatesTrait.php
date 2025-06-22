@@ -76,7 +76,7 @@ trait HasWorkflowStatesTrait
         return $this->skipped_at !== null;
     }
 
-    public function isTimedout(): bool
+    public function isTimeout(): bool
     {
         return $this->timeout_at !== null;
     }
@@ -88,7 +88,7 @@ trait HasWorkflowStatesTrait
 
     public function isFinished(): bool
     {
-        return $this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isSkipped() || $this->isTimedout();
+        return $this->isCompleted() || $this->isFailed() || $this->isStopped() || $this->isSkipped();
     }
 
     public function canContinue(): bool
@@ -98,6 +98,10 @@ trait HasWorkflowStatesTrait
 
     public function computeStatus(): static
     {
+        if (!$this->isStarted() && $this->isFinished()) {
+            throw new \Exception("State Validation Error: The state is finished without being started: $this");
+        }
+
         if ($this->isFailed()) {
             $this->status = WorkflowStatesContract::STATUS_FAILED;
         } elseif ($this->isIncomplete()) {
@@ -106,12 +110,12 @@ trait HasWorkflowStatesTrait
             $this->status = WorkflowStatesContract::STATUS_STOPPED;
         } elseif ($this->isSkipped()) {
             $this->status = WorkflowStatesContract::STATUS_SKIPPED;
-        } elseif (!$this->isStarted()) {
-            $this->status = WorkflowStatesContract::STATUS_PENDING;
-        } elseif (!$this->isCompleted()) {
+        } elseif ($this->isCompleted()) {
+            $this->status = WorkflowStatesContract::STATUS_COMPLETED;
+        } elseif ($this->isStarted()) {
             $this->status = WorkflowStatesContract::STATUS_RUNNING;
         } else {
-            $this->status = WorkflowStatesContract::STATUS_COMPLETED;
+            $this->status = WorkflowStatesContract::STATUS_PENDING;
         }
 
         return $this;

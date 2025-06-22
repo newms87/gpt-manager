@@ -81,6 +81,8 @@ ActionRoute::routes('workflow-nodes', new WorkflowNodesController);
 ActionRoute::routes('workflow-connections', new WorkflowConnectionsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
     Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');
+    Route::get('{workflowRun}/active-job-dispatches', [WorkflowRunsController::class, 'activeJobDispatches'])->name('workflow-runs.active-job-dispatches');
+    Route::post('{workflowRun}/dispatch-workers', [WorkflowRunsController::class, 'dispatchWorkers'])->name('workflow-runs.dispatch-workers');
 });
 ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
 

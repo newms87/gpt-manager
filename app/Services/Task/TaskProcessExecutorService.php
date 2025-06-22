@@ -20,20 +20,21 @@ class TaskProcessExecutorService
     public function runNextTaskProcessForWorkflowRun(WorkflowRun $workflowRun): void
     {
         LockHelper::acquire($workflowRun, 60);
+        $taskProcess = null;
 
         try {
             // Check for timed out running processes first
             $this->checkForTimedOutProcesses($workflowRun);
 
             $taskProcess = $this->findNextTaskProcessForWorkflow($workflowRun);
-
-            if ($taskProcess) {
-                $this->executeTaskProcess($taskProcess);
-            } else {
-                static::log("No available task processes for WorkflowRun {$workflowRun->id}");
-            }
         } finally {
             LockHelper::release($workflowRun);
+        }
+
+        if ($taskProcess) {
+            $this->executeTaskProcess($taskProcess);
+        } else {
+            static::log("No available task processes for WorkflowRun {$workflowRun->id}");
         }
     }
 
@@ -86,11 +87,12 @@ class TaskProcessExecutorService
         // Use chunk to process one at a time until we find one with available slots
         $foundProcess = null;
         $baseQuery->chunk(1, function ($processes) use (&$foundProcess) {
-            $process = $processes->first();
+            $process       = $processes->first();
             $taskQueueType = $process->taskRun->taskDefinition->taskQueueType;
 
             if (!$taskQueueType || $taskQueueType->hasAvailableSlots()) {
                 $foundProcess = $process;
+
                 return false; // Stop chunking
             }
 
@@ -109,6 +111,7 @@ class TaskProcessExecutorService
         $taskQueueType = $taskRun->taskDefinition->taskQueueType;
         if ($taskQueueType && !$taskQueueType->hasAvailableSlots()) {
             static::log("Queue type '{$taskQueueType->name}' has no available slots for TaskRun {$taskRun->id}");
+
             return null;
         }
 
@@ -139,6 +142,7 @@ class TaskProcessExecutorService
         if ($taskProcess->isStatusTimeout() || $taskProcess->isStatusIncomplete()) {
             static::log("Restarting {$taskProcess->status} process: $taskProcess");
             TaskProcessRunnerService::restart($taskProcess);
+
             return;
         }
 
@@ -162,12 +166,12 @@ class TaskProcessExecutorService
                 ->get();
         }
 
-        foreach ($runningProcesses as $process) {
+        foreach($runningProcesses as $process) {
             if ($process->isPastTimeout()) {
                 static::log("Marking timed out process as timeout: $process");
                 $process->update([
                     'timeout_at' => now(),
-                    'status' => WorkflowStatesContract::STATUS_TIMEOUT,
+                    'status'     => WorkflowStatesContract::STATUS_TIMEOUT,
                 ]);
             }
         }

@@ -152,6 +152,14 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         $this->updateRelationCounter('inputArtifacts');
     }
 
+    public function isFailedAndCannotBeRetried(): bool
+    {
+        if ($this->isFailed() || $this->isTimeout()) {
+            return $this->restart_count < $this->taskRun->taskDefinition->max_process_retries;
+        }
+
+        return false;
+    }
 
     public function isPastTimeout(): bool
     {
@@ -164,7 +172,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
     public function canBeRun(): bool
     {
-        return $this->isStatusPending() && !$this->isStopped() && !$this->isFailed() && !$this->isIncomplete() && !$this->isCompleted() && !$this->isTimedout();
+        return $this->isStatusPending() && !$this->isStopped() && !$this->isIncomplete() && !$this->isCompleted() && !$this->isFailedAndCannotBeRetried();
     }
 
     public function canResume(): bool
@@ -181,7 +189,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
             $this->status = WorkflowStatesContract::STATUS_FAILED;
         } elseif ($this->isIncomplete()) {
             $this->status = WorkflowStatesContract::STATUS_INCOMPLETE;
-        } elseif ($this->isTimedout()) {
+        } elseif ($this->isTimeout()) {
             $this->status = WorkflowStatesContract::STATUS_TIMEOUT;
         } elseif (!$this->isStarted()) {
             $this->status = WorkflowStatesContract::STATUS_PENDING;
@@ -209,9 +217,9 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
             // If process is marked incomplete but has exceeded retry limit, mark as permanently failed
             if ($taskProcess->isIncomplete() && $taskProcess->restart_count > 3) {
                 $taskProcess->incomplete_at = null;
-                $taskProcess->failed_at = now();
+                $taskProcess->failed_at     = now();
             }
-            
+
             $taskProcess->computeStatus();
         });
 

@@ -21,6 +21,24 @@
 							:debounce="500"
 							@update:model-value="keywords => filters = {...filters, keywords}"
 						/>
+						<QCheckbox
+							v-if="taskProcesses.length > 0"
+							:model-value="isAllSelected"
+							:indeterminate="isPartiallySelected"
+							@update:model-value="toggleSelectAll"
+							label="Select All"
+							class="text-slate-300 whitespace-nowrap"
+						/>
+						<ActionButton
+							v-if="selectedProcesses.length > 0"
+							type="restart"
+							:label="`Restart ${selectedProcesses.length}`"
+							color="orange"
+							size="sm"
+							:confirm="true"
+							:confirm-text="`Restart ${selectedProcesses.length} selected task processes? This will delete any existing output artifacts created by these processes.`"
+							@click="batchRestart"
+						/>
 						<ActionButton type="refresh" size="sm" color="sky" tooltip="Refresh List" @click="loadTaskProcesses" />
 					</div>
 					<div class="flex-grow overflow-y-auto">
@@ -31,13 +49,22 @@
 							</div>
 						</template>
 						<template v-else>
-							<NodeTaskProcessCard
+							<div
 								v-for="taskProcess in taskProcesses"
 								:key="taskProcess.id"
-								:task-process="taskProcess"
-								class="bg-slate-700 p-2 mb-4 rounded-lg"
-								@restart="onRestart"
-							/>
+								class="bg-slate-700 p-2 mb-4 rounded-lg flex items-start gap-2"
+							>
+								<QCheckbox
+									:model-value="selectedProcesses.includes(taskProcess.id)"
+									@update:model-value="value => toggleSelection(taskProcess.id, value)"
+									class="mt-2"
+								/>
+								<NodeTaskProcessCard
+									:task-process="taskProcess"
+									class="flex-grow"
+									@restart="onRestart"
+								/>
+							</div>
 						</template>
 					</div>
 					<PaginationNavigator v-model="pagination" class="bg-sky-950 px-4 py-1 rounded-lg mt-4 text-slate-400" />
@@ -58,7 +85,7 @@ import { TaskProcess, TaskRun } from "@/types";
 import { PaginationModel } from "@/types/Pagination";
 import { FaSolidFileInvoice as ProcessListIcon } from "danx-icon";
 import { ActionButton, AnyObject, InfoDialog, ListControlsPagination, ShowHideButton } from "quasar-ui-danx";
-import { ref, shallowRef, watch } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 
 const emit = defineEmits<{ restart: void }>();
 const props = defineProps<{
@@ -69,6 +96,8 @@ const props = defineProps<{
 const isShowingTaskProcesses = ref(false);
 const isLoading = ref(false);
 const taskProcesses = shallowRef<TaskProcess[]>([]);
+const selectedProcesses = ref<number[]>([]);
+
 function onRestart() {
 	emit("restart");
 }
@@ -111,6 +140,46 @@ async function loadTaskProcesses() {
 	isLoading.value = false;
 }
 
+// Selection logic
+const isAllSelected = computed(() => 
+	taskProcesses.value.length > 0 && selectedProcesses.value.length === taskProcesses.value.length
+);
+
+const isPartiallySelected = computed(() => 
+	selectedProcesses.value.length > 0 && selectedProcesses.value.length < taskProcesses.value.length
+);
+
+function toggleSelection(processId: number, selected: boolean) {
+	if (selected) {
+		selectedProcesses.value.push(processId);
+	} else {
+		selectedProcesses.value = selectedProcesses.value.filter(id => id !== processId);
+	}
+}
+
+function toggleSelectAll(selected: boolean) {
+	if (selected) {
+		selectedProcesses.value = taskProcesses.value.map(p => p.id);
+	} else {
+		selectedProcesses.value = [];
+	}
+}
+
+async function batchRestart() {
+	const restartAction = dxTaskProcess.getAction("restart");
+	
+	for (const processId of selectedProcesses.value) {
+		const process = taskProcesses.value.find(p => p.id === processId);
+		if (process) {
+			await restartAction.trigger(process);
+		}
+	}
+	
+	selectedProcesses.value = [];
+	emit("restart");
+	loadTaskProcesses();
+}
+
 // Toggle web socket subscription to task processes
 watch(isShowingTaskProcesses, () => {
 	if (isShowingTaskProcesses.value) {
@@ -119,6 +188,7 @@ watch(isShowingTaskProcesses, () => {
 	} else {
 		usePusher().unsubscribeFromProcesses();
 		filters.value = defaultFilters;
+		selectedProcesses.value = [];
 	}
 });
 </script>

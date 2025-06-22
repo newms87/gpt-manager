@@ -31,6 +31,16 @@
 					:target="activeWorkflowRun"
 				/>
 				<WorkflowStatusTimerPill :runner="activeWorkflowRun" timer-class="px-4 bg-slate-800 rounded-full" />
+				
+				<ActionButton
+					v-if="activeWorkflowRun"
+					type="users"
+					color="amber"
+					size="sm"
+					:label="`${activeWorkflowRun.active_workers_count || 0}/${activeWorkflowDefinition?.max_workers || 20}`"
+					tooltip="View Workers"
+					@click="isShowingWorkers = true"
+				/>
 			</div>
 			<div v-if="activeWorkflowRun" class="px-2">
 				<QSeparator class="bg-slate-400 h-6" vertical />
@@ -77,6 +87,13 @@
 				@close="isSelectingWorkflowInput = false"
 			/>
 		</div>
+		
+		<WorkflowWorkersInfoDialog
+			:is-showing="isShowingWorkers"
+			:workflow-run="activeWorkflowRun"
+			:workflow-definition="activeWorkflowDefinition"
+			@close="isShowingWorkers = false"
+		/>
 	</div>
 </template>
 <script setup lang="ts">
@@ -90,6 +107,7 @@ import {
 import SelectWorkflowInputDialog
 	from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/SelectWorkflowInputDialog";
 import WorkflowRunCard from "@/components/Modules/WorkflowDefinitions/WorkflowRunCard";
+import WorkflowWorkersInfoDialog from "@/components/Modules/WorkflowDefinitions/WorkflowWorkersInfoDialog.vue";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { WorkflowInput, WorkflowRun } from "@/types";
 import { FaSolidPersonRunning as RunsIcon } from "danx-icon";
@@ -100,6 +118,7 @@ defineEmits(["confirm", "close"]);
 
 const isShowing = ref(false);
 const isSelectingWorkflowInput = ref(false);
+const isShowingWorkers = ref(false);
 const updateWorkflowRunAction = dxWorkflowRun.getAction("update");
 const stopWorkflowRunAction = dxWorkflowRun.getAction("stop");
 const resumeWorkflowRunAction = dxWorkflowRun.getAction("resume");

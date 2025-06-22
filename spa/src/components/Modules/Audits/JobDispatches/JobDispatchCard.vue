@@ -26,12 +26,18 @@
 		</div>
 		<div class="p-3 grid grid-cols-7">
 			<LabelValueBlock label="Running Request">
-				<a @click="$router.push({path: `/audit-requests/${job.running_audit_request_id}/ran-jobs`})">
+				<a
+					:href="$router.resolve({path: `/audit-requests/${job.running_audit_request_id}/ran-jobs`}).href"
+					target="_blank"
+				>
 					{{ job.running_audit_request_id }}
 				</a>
 			</LabelValueBlock>
 			<LabelValueBlock label="Dispatch Request">
-				<a @click="$router.push({path: `/audit-requests/${job.dispatch_audit_request_id}/dispatched-jobs`})">
+				<a
+					:href="$router.resolve({path: `/audit-requests/${job.dispatch_audit_request_id}/dispatched-jobs`}).href"
+					target="_blank"
+				>
 					{{ job.dispatch_audit_request_id }}
 				</a>
 			</LabelValueBlock>

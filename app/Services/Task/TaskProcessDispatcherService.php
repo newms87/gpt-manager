@@ -14,11 +14,11 @@ class TaskProcessDispatcherService
     use HasDebugLogging;
 
     /**
-     * Dispatch available processes for a single task run
+     * Dispatch available workers for a single task run
      */
     public static function dispatchForTaskRun(TaskRun $taskRun): void
     {
-        static::log("Dispatching processes for TaskRun $taskRun");
+        static::log("Dispatching workers for TaskRun $taskRun");
 
         // If this task run is part of a workflow, dispatch at the workflow level
         // to ensure proper prioritization across all tasks
@@ -43,7 +43,7 @@ class TaskProcessDispatcherService
 
             // Dispatch generic jobs up to the available slots
             static::log("Dispatching $availableSlots TaskProcessJobs for TaskRun {$taskRun->id}");
-            for ($i = 0; $i < $availableSlots; $i++) {
+            for($i = 0; $i < $availableSlots; $i++) {
                 $job = new TaskProcessJob($taskRun);
                 $job->onQueue('task-process');
                 $job->dispatch();
@@ -54,11 +54,11 @@ class TaskProcessDispatcherService
     }
 
     /**
-     * Dispatch available processes for all task runs in a workflow
+     * Dispatch available workers for all task runs in a workflow
      */
     public static function dispatchForWorkflowRun(WorkflowRun $workflowRun): void
     {
-        static::log("Dispatching processes for WorkflowRun $workflowRun");
+        static::log("Dispatching workers for $workflowRun");
 
         // Lock at the workflow level to prevent concurrent dispatching
         LockHelper::acquire($workflowRun, 60);
@@ -67,18 +67,38 @@ class TaskProcessDispatcherService
             $availableSlots = static::calculateAvailableSlotsForWorkflow($workflowRun);
 
             if ($availableSlots <= 0) {
-                static::log("No available workflow worker slots");
+                static::log("No available worker slots");
 
                 return;
             }
 
-            // Dispatch generic jobs up to the available slots for the workflow
-            // The jobs will internally check queue type limits when selecting processes
-            for ($i = 0; $i < $availableSlots; $i++) {
-                $job = new TaskProcessJob(null, $workflowRun);
-                $job->onQueue('task-process');
-                $job->dispatch();
+            $pendingProcessesCount = $workflowRun
+                ->filter(['taskRuns.taskProcesses.status' => WorkflowStatesContract::STATUS_PENDING])
+                ->count();
+
+            $workerCount = min($availableSlots, $pendingProcessesCount);
+
+            if ($workerCount <= 0) {
+                static::log("No workers required");
+
+                return;
             }
+
+            static::log("Dispatching $availableSlots workers");
+
+            // Dispatch generic jobs up to the available slots for the workflow
+            // The jobs will internally check queue type limits when selecting workers for task processes
+            $jobIds = [];
+            for($i = 0; $i < $availableSlots; $i++) {
+                $job = new TaskProcessJob(null, $workflowRun);
+                $job->onQueue('task-process')->dispatch();
+                static::log("Dispatched worker " . ($i + 1) . "/{$availableSlots}");
+                $jobIds[] = $job->getJobDispatch()->id;
+            }
+
+            // Update the cached active workers count
+            $workflowRun->jobDispatches()->syncWithoutDetaching($jobIds);
+            $workflowRun->updateActiveWorkersCount();
         } finally {
             LockHelper::release($workflowRun);
         }
@@ -90,12 +110,11 @@ class TaskProcessDispatcherService
      */
     private static function calculateAvailableSlotsForWorkflow(WorkflowRun $workflowRun): int
     {
-        $workflowMaxWorkers          = $workflowRun->workflowDefinition->max_workers ?? 20;
-        $runningWorkflowWorkersCount = static::countRunningWorkersForWorkflow($workflowRun);
+        $workflowMaxWorkers = $workflowRun->workflowDefinition->max_workers ?? 20;
 
-        static::log("WorkflowRun $workflowRun has $runningWorkflowWorkersCount/$workflowMaxWorkers workers running");
+        static::log("WorkflowRun $workflowRun has $workflowRun->active_workers_count/$workflowMaxWorkers workers running");
 
-        return $workflowMaxWorkers - $runningWorkflowWorkersCount;
+        return $workflowMaxWorkers - $workflowRun->active_workers_count;
     }
 
     /**
@@ -106,6 +125,7 @@ class TaskProcessDispatcherService
         $taskQueueType = $taskRun->taskDefinition->taskQueueType;
         if (!$taskQueueType) {
             static::log("TaskRun $taskRun has no queue type, defaulting to 10 available slots");
+
             return 10;
         }
 
@@ -116,14 +136,4 @@ class TaskProcessDispatcherService
     }
 
 
-    /**
-     * Count running workers for a workflow
-     */
-    private static function countRunningWorkersForWorkflow(WorkflowRun $workflowRun): int
-    {
-        return $workflowRun->taskRuns()
-            ->join('task_processes', 'task_runs.id', '=', 'task_processes.task_run_id')
-            ->where('task_processes.status', WorkflowStatesContract::STATUS_RUNNING)
-            ->count();
-    }
 }

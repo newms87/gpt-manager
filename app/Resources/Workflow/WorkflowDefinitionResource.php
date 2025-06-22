@@ -14,6 +14,7 @@ class WorkflowDefinitionResource extends ActionResource
             'id'          => $workflowDefinition->id,
             'name'        => $workflowDefinition->name,
             'description' => $workflowDefinition->description,
+            'max_workers' => $workflowDefinition->max_workers,
             'created_at'  => $workflowDefinition->created_at,
             'updated_at'  => $workflowDefinition->updated_at,
 

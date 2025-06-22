@@ -69,11 +69,11 @@
 					size="sm"
 				/>
 				<ActionButton
-					type="refresh"
+					type="restart"
 					:disabled="isRunning"
 					:action="restartAction"
 					:target="taskProcess"
-					color="sky"
+					color="orange"
 					tooltip="Restart process. NOTE: This will delete any existing output artifacts created by this process."
 					size="sm"
 				/>

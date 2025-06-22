@@ -17,9 +17,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
@@ -33,6 +35,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         'stopped_at',
         'completed_at',
         'failed_at',
+        'active_workers_count',
     ];
 
     public function casts(): array
@@ -48,6 +51,19 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
     public function getDateFormat(): string
     {
         return 'Y-m-d H:i:s.v';
+    }
+
+    public function jobDispatches(): MorphToMany
+    {
+        return $this->morphToMany(JobDispatch::class, 'model', 'job_dispatchables')->orderByDesc('id');
+    }
+
+    /**
+     * Calculate the current number of active workers for this workflow
+     */
+    public function activeWorkers(): MorphToMany|JobDispatch
+    {
+        return $this->jobDispatches()->whereIn('status', [JobDispatch::STATUS_RUNNING, JobDispatch::STATUS_PENDING]);
     }
 
     public function workflowApiInvocation(): HasOne|WorkflowApiInvocation
@@ -85,7 +101,16 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         foreach($targetNode->connectionsAsTarget as $connectionAsTarget) {
             // Check if this workflow run has a task run for the source node that has completed.
             // If not, the target node is not ready to be executed
-            if ($this->taskRuns()->where('workflow_node_id', $connectionAsTarget->source_node_id)->where('status', WorkflowStatesContract::STATUS_COMPLETED)->doesntExist()) {
+            $sourceTaskRun = $this->taskRuns()->where('workflow_node_id', $connectionAsTarget->source_node_id)->first();
+            if (!$sourceTaskRun?->isCompleted()) {
+                // Bad data handling - in case something went wrong and the data was corrupted, we can fix it here
+                if (!$connectionAsTarget->sourceNode) {
+                    static::log('Source node did not exist. Removing all connections for the node: ' . $connectionAsTarget->source_node_id);
+                    WorkflowConnection::where('source_node_id', $connectionAsTarget->source_node_id)->orWhere('target_node_id', $connectionAsTarget->source_node_id)->delete();
+                    continue;
+                }
+                static::log("Waiting for $connectionAsTarget->sourceNode to complete: " . ($sourceTaskRun ?: "(No Task Run)"));
+
                 return false;
             }
         }
@@ -193,6 +218,14 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         return $this->taskRuns()->whereIn('status', [WorkflowStatesContract::STATUS_PENDING, WorkflowStatesContract::STATUS_RUNNING])->doesntExist();
     }
 
+    /**
+     * Update the cached active workers count
+     */
+    public function updateActiveWorkersCount(): void
+    {
+        $this->update(['active_workers_count' => $this->activeWorkers()->count()]);
+    }
+
     public static function booted(): void
     {
         static::saving(function (WorkflowRun $workflowRun) {
@@ -214,9 +247,11 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
                     foreach($workflowRun->taskProcessListeners as $taskProcessListener) {
                         TaskProcessRunnerService::eventTriggered($taskProcessListener);
                     }
-                }
+                };
+            }
 
-                WorkflowRunUpdatedEvent::dispatch($workflowRun);
+            if ($workflowRun->wasChanged(['status', 'active_workers_count', 'name'])) {
+                WorkflowRunUpdatedEvent::broadcast($workflowRun);
             }
         });
     }

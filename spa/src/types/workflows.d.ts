@@ -4,6 +4,7 @@ import { ActionTargetItem, AnyObject, ListControlsRoutes } from "quasar-ui-danx"
 export interface WorkflowDefinition extends ActionTargetItem {
 	name: string;
 	description: string;
+	max_workers?: number;
 	created_at: string;
 	nodes?: WorkflowNode[];
 	connections?: WorkflowConnection[];
@@ -36,6 +37,7 @@ export interface WorkflowNodeSettings {
 }
 
 export interface WorkflowRun extends TaskRunner {
+	active_workers_count?: number;
 	taskRuns?: TaskRun[];
 }
 

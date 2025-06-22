@@ -57,8 +57,8 @@
 					v-else
 					:action="resumeProcessAction"
 					:target="taskProcess"
-					:icon="ResumeProcessIcon"
-					color="sky"
+					type="restart"
+					color="orange"
 					size="sm"
 					tooltip="Resume / Restart Task Process"
 				/>
@@ -115,7 +115,6 @@ import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinition
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
 import { TaskProcess } from "@/types";
 import {
-	FaSolidArrowsRotate as ResumeProcessIcon,
 	FaSolidMessage as AgentThreadIcon,
 	FaSolidPersonRunning as RunThreadIcon
 } from "danx-icon";

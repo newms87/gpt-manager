@@ -16,7 +16,6 @@ use Illuminate\Support\Collection as EloquentCollection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Jobs\Job;
-use Newms87\Danx\Models\Job\JobDispatch;
 use Throwable;
 
 class TaskProcessRunnerService
@@ -140,7 +139,7 @@ class TaskProcessRunnerService
             if ($jobDispatch) {
                 // track the most recent dispatch for easier referencing
                 $taskProcess->last_job_dispatch_id = $jobDispatch->id;
-                
+
                 // Associate all job dispatches with the task process for logging purposes
                 $taskProcess->jobDispatches()->attach($jobDispatch->id);
                 $taskProcess->updateRelationCounter('jobDispatches');

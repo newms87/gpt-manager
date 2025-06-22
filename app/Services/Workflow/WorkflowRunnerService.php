@@ -10,7 +10,6 @@ use App\Models\Workflow\WorkflowRun;
 use App\Services\Task\TaskProcessDispatcherService;
 use App\Services\Task\TaskRunnerService;
 use App\Traits\HasDebugLogging;
-use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
@@ -192,14 +191,17 @@ class WorkflowRunnerService
                 $targetNode = $workflowConnection->targetNode;
 
                 // If this workflow node has already been started, we don't want to start it again
-                if ($workflowRun->taskRuns()->where('workflow_node_id', $targetNode->id)->exists()) {
+                $taskRun = $workflowRun->taskRuns()->where('workflow_node_id', $targetNode->id)->first();
+                if ($taskRun && !$taskRun->isStatusPending()) {
                     static::log("Target node has already been started $targetNode");
                     continue;
                 }
 
                 // If this node is ready to run, start it
                 if ($workflowRun->targetNodeReadyToRun($targetNode)) {
-                    $taskRun = WorkflowRunnerService::prepareNode($workflowRun, $targetNode);
+                    if (!$taskRun) {
+                        $taskRun = WorkflowRunnerService::prepareNode($workflowRun, $targetNode);
+                    }
                     (new WorkflowStartNodeJob($taskRun))->dispatch();
                 } else {
                     static::log("Waiting for sources before running target $targetNode");

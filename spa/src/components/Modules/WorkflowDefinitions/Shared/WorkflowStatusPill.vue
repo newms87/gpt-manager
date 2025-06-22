@@ -7,14 +7,14 @@
 		<QSpinnerOrbit v-if="status === WORKFLOW_STATUS.RUNNING.value" class="w-6 flex-shrink-0" />
 		<RestartIcon
 			v-if="canRestart"
-			class="w-3 flex-shrink-0 cursor-pointer	ml-2"
+			class="w-3 flex-shrink-0 cursor-pointer	ml-2 text-orange-400 hover:text-orange-300"
 			@click="$emit('restart')"
 		/>
 	</div>
 </template>
 <script setup lang="ts">
 import { WORKFLOW_STATUS } from "@/components/Modules/WorkflowDefinitions/workflows";
-import { FaSolidArrowsRotate as RestartIcon } from "danx-icon";
+import { FaSolidArrowRotateRight as RestartIcon } from "danx-icon";
 import { computed } from "vue";
 
 export interface WorkflowStatusProps {
