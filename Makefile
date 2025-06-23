@@ -10,9 +10,13 @@ danx-core:
 
 danx: fix-danx-ui danx-spa danx-core
 
-queue-scale:
+queue-stop:
 	docker-compose stop queue-worker
+
+queue-up:
 	docker-compose up -d --scale queue-worker=10
+
+queue-refresh: queue-stop queue-up
 
 queue-restart:
 	vendor/bin/sail artisan queue:restart

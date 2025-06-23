@@ -10,6 +10,7 @@ use App\Services\AgentThread\AgentThreadMessageToArtifactMapper;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
 use App\Services\JsonSchema\JsonSchemaService;
+use App\Services\Task\ArtifactDeduplicationService;
 use Exception;
 use Newms87\Danx\Helpers\StringHelper;
 
@@ -191,6 +192,45 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
         if ($sourceTextContent) {
             $artifact->text_content = ($artifact->text_content ?? "") . "\n\n-----\n\n# Sources: $sourceTextContent";
+        }
+    }
+
+    /**
+     * Called after all parallel processes have completed
+     */
+    public function afterAllProcessesCompleted(): void
+    {
+        parent::afterAllProcessesCompleted();
+
+        // Check if deduplication is enabled
+        if (!$this->config('deduplicate_names')) {
+            return;
+        }
+
+        // Only run deduplication for JSON schema responses
+        if ($this->taskDefinition->response_format !== 'json_schema') {
+            static::log("Skipping deduplication - response format is not json_schema");
+            return;
+        }
+
+        static::log("Running name deduplication across all process artifacts");
+
+        // Get all output artifacts from completed processes
+        $artifacts = $this->taskRun->outputArtifacts()
+            ->whereNotNull('json_content')
+            ->get();
+
+        if ($artifacts->isEmpty()) {
+            static::log("No JSON artifacts found for deduplication");
+            return;
+        }
+
+        // Run deduplication service
+        try {
+            app(ArtifactDeduplicationService::class)->deduplicateArtifactNames($artifacts);
+            static::log("Deduplication completed successfully");
+        } catch (Exception $e) {
+            static::log("Error during deduplication: " . $e->getMessage());
         }
     }
 }

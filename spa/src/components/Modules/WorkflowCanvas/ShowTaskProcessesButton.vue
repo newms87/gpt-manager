@@ -25,9 +25,9 @@
 							v-if="taskProcesses.length > 0"
 							:model-value="isAllSelected"
 							:indeterminate="isPartiallySelected"
-							@update:model-value="toggleSelectAll"
 							label="Select All"
 							class="text-slate-300 whitespace-nowrap"
+							@update:model-value="toggleSelectAll"
 						/>
 						<ActionButton
 							v-if="selectedProcesses.length > 0"
@@ -56,8 +56,8 @@
 							>
 								<QCheckbox
 									:model-value="selectedProcesses.includes(taskProcess.id)"
-									@update:model-value="value => toggleSelection(taskProcess.id, value)"
 									class="mt-2"
+									@update:model-value="value => toggleSelection(taskProcess.id, value)"
 								/>
 								<NodeTaskProcessCard
 									:task-process="taskProcess"

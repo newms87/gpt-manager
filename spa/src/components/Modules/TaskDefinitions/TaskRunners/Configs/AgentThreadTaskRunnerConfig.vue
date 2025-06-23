@@ -10,12 +10,14 @@
 		/>
 		<TaskDefinitionDirectivesConfigField :task-definition="taskDefinition" class="mt-6" />
 		<SchemaAndFragmentsConfigField class="mt-6" :task-definition="taskDefinition" />
+		<DeduplicationConfigField :task-definition="taskDefinition" />
 	</BaseTaskRunnerConfig>
 </template>
 <script setup lang="ts">
 import { TaskDefinition } from "@/types";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
 import {
+	DeduplicationConfigField,
 	IncludeTextSourcesField,
 	SchemaAndFragmentsConfigField,
 	TaskDefinitionAgentConfigField,
