@@ -154,11 +154,16 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
     public function isFailedAndCannotBeRetried(): bool
     {
-        if ($this->isFailed() || $this->isTimeout()) {
-            return $this->restart_count < $this->taskRun->taskDefinition->max_process_retries;
+        if ($this->isFailed() || $this->isTimeout() || $this->isIncomplete()) {
+            return !$this->canBeRetried();
         }
 
         return false;
+    }
+
+    public function canBeRetried(): bool
+    {
+        return $this->restart_count < $this->taskRun->taskDefinition->max_process_retries;
     }
 
     public function isPastTimeout(): bool
@@ -215,7 +220,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
     {
         static::saving(function (TaskProcess $taskProcess) {
             // If process is marked incomplete but has exceeded retry limit, mark as permanently failed
-            if ($taskProcess->isIncomplete() && $taskProcess->restart_count > 3) {
+            if ($taskProcess->isIncomplete() && $taskProcess->isFailedAndCannotBeRetried()) {
                 $taskProcess->incomplete_at = null;
                 $taskProcess->failed_at     = now();
             }

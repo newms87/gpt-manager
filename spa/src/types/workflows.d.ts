@@ -49,6 +49,7 @@ export interface WorkflowDefinitionRoutes extends ListControlsRoutes<WorkflowDef
 
 export interface WorkflowRunRoutes extends ListControlsRoutes<WorkflowRun> {
 	runStatuses(filter: AnyObject): Promise<WorkflowRunStatuses>;
+	subscribeToJobDispatches(workflowRun: WorkflowRun): Promise<{ success: boolean }>;
 }
 
 export interface WorkflowRunStatuses {

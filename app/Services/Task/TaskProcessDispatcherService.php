@@ -5,7 +5,6 @@ namespace App\Services\Task;
 use App\Jobs\TaskProcessJob;
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowRun;
-use App\Models\Workflow\WorkflowStatesContract;
 use App\Traits\HasDebugLogging;
 use Newms87\Danx\Helpers\LockHelper;
 
@@ -72,12 +71,10 @@ class TaskProcessDispatcherService
                 return;
             }
 
-            $pendingProcessesCount = $workflowRun
-                ->filter(['taskRuns.taskProcesses.status' => WorkflowStatesContract::STATUS_PENDING])
-                ->count();
+            $pendingProcessesCount = $workflowRun->taskProcessesReadyToRun()->count();
 
             static::log("Workers: $availableSlots available slots / $pendingProcessesCount pending processes");
-            
+
             $workerCount = min($availableSlots, $pendingProcessesCount);
 
             if ($workerCount <= 0) {

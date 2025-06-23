@@ -67,20 +67,7 @@ class TaskProcessExecutorService
     protected function findNextTaskProcessForWorkflow(WorkflowRun $workflowRun): ?TaskProcess
     {
         // Query for eligible processes one at a time to avoid loading thousands
-        $baseQuery = TaskProcess::whereHas('taskRun', function (Builder $q) use ($workflowRun) {
-            $q->where('workflow_run_id', $workflowRun->id);
-        })
-            ->where(function (Builder $q) {
-                // Pending processes
-                $q->where('status', WorkflowStatesContract::STATUS_PENDING)
-                    // Or incomplete/timeout processes that can be retried
-                    ->orWhere(function (Builder $retryQuery) {
-                        $retryQuery->whereIn('status', [WorkflowStatesContract::STATUS_INCOMPLETE, WorkflowStatesContract::STATUS_TIMEOUT])
-                            ->whereHas('taskRun.taskDefinition', function (Builder $taskDefQuery) {
-                                $taskDefQuery->whereColumn('task_processes.restart_count', '<', 'task_definitions.max_process_retries');
-                            });
-                    });
-            })
+        $baseQuery = $workflowRun->taskProcessesReadyToRun()
             ->with(['taskRun.taskDefinition.taskQueueType'])
             ->orderBy('created_at');
 

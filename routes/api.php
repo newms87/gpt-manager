@@ -83,6 +83,7 @@ ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
     Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');
     Route::get('{workflowRun}/active-job-dispatches', [WorkflowRunsController::class, 'activeJobDispatches'])->name('workflow-runs.active-job-dispatches');
     Route::post('{workflowRun}/dispatch-workers', [WorkflowRunsController::class, 'dispatchWorkers'])->name('workflow-runs.dispatch-workers');
+    Route::get('{workflowRun}/subscribe-to-job-dispatches', [WorkflowRunsController::class, 'subscribeToJobDispatches'])->name('workflow-runs.subscribe-to-job-dispatches');
 });
 ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
 

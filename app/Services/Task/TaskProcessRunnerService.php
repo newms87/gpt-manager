@@ -117,6 +117,11 @@ class TaskProcessRunnerService
     {
         static::log("Running: $taskProcess");
 
+        // Make sure the task run is not locked before proceeding to prevent running processes before preparation is complete
+        LockHelper::acquire($taskProcess->taskRun);
+        LockHelper::release($taskProcess->taskRun);
+
+        // Acquire lock for the task process to prevent multiple workers from running it simultaneously
         LockHelper::acquire($taskProcess);
 
         try {
@@ -333,7 +338,7 @@ class TaskProcessRunnerService
 
             static::halt($taskProcess);
 
-            if ($taskProcess->restart_count < $taskProcess->taskRun->taskDefinition->max_process_retries) {
+            if ($taskProcess->canBeRetried()) {
                 static::restart($taskProcess);
 
                 return true; // Process was restarted and dispatched

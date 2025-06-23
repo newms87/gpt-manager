@@ -11,6 +11,7 @@ use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Runners\TaskRunnerContract;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Task\TaskRunnerService;
+use App\Traits\HasDebugLogging;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,7 +30,7 @@ use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, HasWorkflowStatesTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, HasDebugLogging, HasWorkflowStatesTrait, SoftDeletes;
 
     protected $fillable = [
         'started_at',
@@ -207,6 +208,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 $this->stopped_at   = null;
                 $this->completed_at = null;
                 if (!$this->skipped_at) {
+                    static::log("No processes for task, marking as skipped: $this");
                     $this->skipped_at = now();
                 }
             } else {

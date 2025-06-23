@@ -70,17 +70,24 @@ class WorkflowRunnerService
     {
         static::log("Starting node $taskRun->workflowNode");
 
-        // Sync artifacts from the workflow source nodes
-        TaskRunnerService::syncInputArtifactsFromWorkflowSourceNodes($taskRun);
+        // Acquire the lock for the task run to prevent workers from picking it up before we're ready
+        LockHelper::acquire($taskRun);
 
-        // Sync any additional artifacts that did not come directly from the workflow source nodes
-        $taskRun->addInputArtifacts($artifacts);
+        try {
+            // Sync artifacts from the workflow source nodes
+            TaskRunnerService::syncInputArtifactsFromWorkflowSourceNodes($taskRun);
 
-        // Prepare the task processes for the task run
-        TaskRunnerService::prepareTaskProcesses($taskRun);
+            // Sync any additional artifacts that did not come directly from the workflow source nodes
+            $taskRun->addInputArtifacts($artifacts);
 
-        // Start the task run
-        TaskRunnerService::continue($taskRun);
+            // Prepare the task processes for the task run
+            TaskRunnerService::prepareTaskProcesses($taskRun);
+
+            // Start the task run
+            TaskRunnerService::continue($taskRun);
+        } finally {
+            LockHelper::release($taskRun);
+        }
 
         return $taskRun;
     }

@@ -23,8 +23,8 @@ Broadcast::channel('StoredFile.{userId}', function (User $user, $userId) {
     return $user->id === (int)$userId;
 });
 
-Broadcast::channel('JobDispatch.{teamId}', function (User $user, $teamId) {
-    return (bool)$user->teams()->find($teamId);
+Broadcast::channel('JobDispatch.{userId}', function (User $user, $userId) {
+    return $user->id === (int)$userId;
 });
 
 Broadcast::channel('ClaudeCodeGeneration.{teamId}', function (User $user, $teamId) {

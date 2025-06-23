@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Events\JobDispatchUpdatedEvent;
 use App\Models\Workflow\WorkflowRun;
 use DB;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +23,11 @@ class EventServiceProvider extends ServiceProvider
             $jobDispatch->data = ['team_id' => team()?->id];
         });
 
+        JobDispatch::created(function (JobDispatch $jobDispatch) {
+            // Broadcast the JobDispatch created event
+            JobDispatchUpdatedEvent::dispatch($jobDispatch, 'created');
+        });
+
         JobDispatch::updated(function (JobDispatch $jobDispatch) {
             // Notify the WorkflowRuns when a job dispatch worker has changed state
             if ($jobDispatch->wasChanged('status')) {
@@ -38,6 +44,9 @@ class EventServiceProvider extends ServiceProvider
                     }
                 }
             }
+
+            // Broadcast the JobDispatch update event
+            JobDispatchUpdatedEvent::dispatch($jobDispatch, 'updated');
         });
 
         $modelsWithTrait = ModelHelper::getModelsWithTrait(HasRelationCountersTrait::class);

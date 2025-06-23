@@ -1,6 +1,7 @@
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
+import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { authTeam, authToken, authUser } from "@/helpers";
-import { TaskRun } from "@/types";
+import { TaskRun, WorkflowRun } from "@/types";
 import { Channel, default as Pusher } from "pusher-js";
 import { ActionTargetItem, AnyObject, storeObject } from "quasar-ui-danx";
 
@@ -25,6 +26,7 @@ const defaultChannelNames = {
 	"TaskRun": ["updated", "created"],
 	"AgentThreadRun": ["updated"],
 	"StoredFile": ["updated"],
+	"JobDispatch": ["updated", "created"],
 	"ClaudeCodeGeneration": ["started", "progress", "code_chunk", "completed", "error"]
 };
 
@@ -62,11 +64,12 @@ function fireSubscriberEvents(channel: string, event: string, data: ActionTarget
  */
 async function addUserSubscription(name: string, userSubscription: UserSubscription) {
 	userSubscriptionsMap.set(name, userSubscription);
-	await fireUserSubscription(userSubscription);
 
 	// Make sure we initialize the fireUserSubscriptions function
 	if (!cancelFireUserSubscriptionsId) {
 		await continuouslyFireUserSubscriptions();
+	} else {
+		await fireUserSubscription(userSubscription);
 	}
 }
 
@@ -157,6 +160,18 @@ export function usePusher() {
 		removeUserSubscription("task-processes");
 	}
 
+	async function subscribeToWorkflowJobDispatches(workflowRun: WorkflowRun) {
+		subscribeToChannel("JobDispatch", authUser.value.id, ["updated", "created"]);
+		await addUserSubscription("workflow-job-dispatches", {
+			endpoint: dxWorkflowRun.routes.subscribeToJobDispatches,
+			params: workflowRun
+		});
+	}
+
+	function unsubscribeFromWorkflowJobDispatches() {
+		removeUserSubscription("workflow-job-dispatches");
+	}
+
 	function onEvent(channel: string, event: string | string[], callback: (data: ActionTargetItem) => void) {
 		listeners.push({
 			channel,
@@ -186,6 +201,8 @@ export function usePusher() {
 		onEvent,
 		onModelEvent,
 		subscribeToProcesses,
-		unsubscribeFromProcesses
+		unsubscribeFromProcesses,
+		subscribeToWorkflowJobDispatches,
+		unsubscribeFromWorkflowJobDispatches
 	};
 }

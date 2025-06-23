@@ -31,4 +31,11 @@ class WorkflowRunsController extends ActionController
 
         return WorkflowRunResource::make($workflowRun);
     }
+
+    public function subscribeToJobDispatches(WorkflowRun $workflowRun)
+    {
+        cache()->put('subscribe:workflow-job-dispatches:' . user()->id . ':' . $workflowRun->id, true, 60);
+
+        return ['success' => true];
+    }
 }

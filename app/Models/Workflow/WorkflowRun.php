@@ -4,6 +4,7 @@ namespace App\Models\Workflow;
 
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Usage\UsageSummary;
@@ -11,6 +12,7 @@ use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Workflow\WorkflowRunnerService;
 use App\Traits\HasDebugLogging;
 use App\Traits\HasWorkflowStatesTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -123,11 +125,11 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         static::log("Clean corrupted connections for $this");
 
         $validNodeIds = $this->workflowDefinition->workflowNodes()->pluck('id');
-        
+
         $corruptedConnections = WorkflowConnection::where('workflow_definition_id', $this->workflowDefinition->id)
             ->where(function ($query) use ($validNodeIds) {
                 $query->whereNotIn('source_node_id', $validNodeIds)
-                      ->orWhereNotIn('target_node_id', $validNodeIds);
+                    ->orWhereNotIn('target_node_id', $validNodeIds);
             })
             ->get();
 
@@ -173,6 +175,26 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         }
 
         return $outputArtifacts;
+    }
+
+    public function taskProcessesReadyToRun(): Builder
+    {
+        $workflowRun = $this;
+
+        return TaskProcess::whereHas('taskRun', function (Builder $q) use ($workflowRun) {
+            $q->where('workflow_run_id', $workflowRun->id);
+        })
+            ->where(function (Builder $q) {
+                // Pending processes
+                $q->where('status', WorkflowStatesContract::STATUS_PENDING)
+                    // Or incomplete/timeout processes that can be retried
+                    ->orWhere(function (Builder $retryQuery) {
+                        $retryQuery->whereIn('status', [WorkflowStatesContract::STATUS_INCOMPLETE, WorkflowStatesContract::STATUS_TIMEOUT])
+                            ->whereHas('taskRun.taskDefinition', function (Builder $taskDefQuery) {
+                                $taskDefQuery->whereColumn('task_processes.restart_count', '<', 'task_definitions.max_process_retries');
+                            });
+                    });
+            });
     }
 
     /**

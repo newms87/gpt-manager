@@ -181,8 +181,8 @@ import {
 	FaSolidUsersSlash as NoWorkersIcon
 } from "danx-icon";
 import { QSpinner } from "quasar";
-import { ActionButton, InfoDialog, LabelPillWidget, NumberField, request, storeObjects } from "quasar-ui-danx";
-import { computed, onMounted, ref, watch } from "vue";
+import { ActionButton, InfoDialog, LabelPillWidget, NumberField, request, storeObject } from "quasar-ui-danx";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
 	workflowRun?: WorkflowRun;
@@ -293,36 +293,19 @@ function onMaxWorkersChange() {
 	}, 500);
 }
 
-// Setup websocket subscription for real-time job dispatch updates
-onMounted(() => {
-	const pusher = usePusher();
-	if (pusher) {
-		// Listen for JobDispatch updates and filter for this workflow run
-		pusher.onEvent("JobDispatch", ["updated", "created"], (jobDispatch: JobDispatch) => {
-			if (props.isShowing && props.workflowRun && jobDispatch.workflow_run_id === props.workflowRun.id) {
-				// Update the reactive store which will automatically update the UI
-				storeObjects([jobDispatch]);
-				// Refresh the list to ensure we have the latest data
-				loadActiveJobDispatches();
-			}
-		});
-	}
-});
-
 // Load active job dispatches when dialog opens and subscribe to updates
 watch(() => props.isShowing, async (showing) => {
-	if (showing && props.workflowRun) {
-		const pusher = usePusher();
-		if (pusher) {
-			await pusher.subscribeToWorkflowJobDispatches(props.workflowRun.id);
-		}
+	if (!props.workflowRun) return;
+
+	const pusher = usePusher();
+
+	if (showing) {
+		console.log("subscribing");
+		await pusher.subscribeToWorkflowJobDispatches(props.workflowRun);
+		pusher.onEvent("JobDispatch", ["updated", "created"], storeObject);
 		await loadActiveJobDispatches();
-	} else if (props.workflowRun) {
-		// Unsubscribe when dialog closes
-		const pusher = usePusher();
-		if (pusher) {
-			pusher.unsubscribeFromWorkflowJobDispatches();
-		}
+	} else {
+		pusher.unsubscribeFromWorkflowJobDispatches();
 	}
 });
 

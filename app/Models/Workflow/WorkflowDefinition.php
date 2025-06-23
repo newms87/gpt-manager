@@ -4,11 +4,13 @@ namespace App\Models\Workflow;
 
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
+use App\Models\Team\Team;
 use App\Services\Task\Runners\WorkflowInputTaskRunner;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
@@ -38,6 +40,11 @@ class WorkflowDefinition extends Model implements AuditableContract, ResourcePac
     public array $relationCounters = [
         WorkflowRun::class => ['workflowRuns' => 'workflow_runs_count'],
     ];
+
+    public function team(): BelongsTo|Team
+    {
+        return $this->belongsTo(Team::class);
+    }
 
     public function workflowRuns(): HasMany|WorkflowRun
     {
