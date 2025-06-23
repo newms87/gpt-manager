@@ -7,7 +7,7 @@
 	>
 		<InfoDialog
 			v-if="isShowingTaskProcesses"
-			:title="`${taskRun.taskDefinition.name}: Task Processes`"
+			:title="`${taskRun.taskDefinition.name} (${taskRun.id}): Task Processes`"
 			hide-done
 			@close="isShowingTaskProcesses = false"
 		>
@@ -141,11 +141,11 @@ async function loadTaskProcesses() {
 }
 
 // Selection logic
-const isAllSelected = computed(() => 
+const isAllSelected = computed(() =>
 	taskProcesses.value.length > 0 && selectedProcesses.value.length === taskProcesses.value.length
 );
 
-const isPartiallySelected = computed(() => 
+const isPartiallySelected = computed(() =>
 	selectedProcesses.value.length > 0 && selectedProcesses.value.length < taskProcesses.value.length
 );
 
@@ -167,14 +167,14 @@ function toggleSelectAll(selected: boolean) {
 
 async function batchRestart() {
 	const restartAction = dxTaskProcess.getAction("restart");
-	
+
 	for (const processId of selectedProcesses.value) {
 		const process = taskProcesses.value.find(p => p.id === processId);
 		if (process) {
 			await restartAction.trigger(process);
 		}
 	}
-	
+
 	selectedProcesses.value = [];
 	emit("restart");
 	loadTaskProcesses();

@@ -210,6 +210,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         // Only run deduplication for JSON schema responses
         if ($this->taskDefinition->response_format !== 'json_schema') {
             static::log("Skipping deduplication - response format is not json_schema");
+
             return;
         }
 
@@ -222,6 +223,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
         if ($artifacts->isEmpty()) {
             static::log("No JSON artifacts found for deduplication");
+
             return;
         }
 
@@ -229,7 +231,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         try {
             app(ArtifactDeduplicationService::class)->deduplicateArtifactNames($artifacts);
             static::log("Deduplication completed successfully");
-        } catch (Exception $e) {
+        } catch(Exception $e) {
             static::log("Error during deduplication: " . $e->getMessage());
         }
     }

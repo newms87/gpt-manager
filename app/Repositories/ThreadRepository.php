@@ -31,8 +31,8 @@ class ThreadRepository extends ActionRepository
         }
 
         $thread = AgentThread::make()->forceFill([
-            'team_id'  => team()->id,
-            'user_id'  => user()->id,
+            'team_id'  => team()?->id ?: $agent->team_id,
+            'user_id'  => user()?->id,
             'name'     => StringHelper::logSafeString(substr($name, 0, 150)),
             'agent_id' => $agent->id,
         ]);
