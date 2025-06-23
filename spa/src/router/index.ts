@@ -11,6 +11,7 @@ import {
 	PageNotFoundView,
 	SchemaDefinitionsView,
 	TaskDefinitionsView,
+	WhatsAppView,
 	WorkflowDefinitionsView,
 	WorkflowInputsView
 } from "@/views";
@@ -80,6 +81,12 @@ const router = createRouter({
 					name: "audit-requests",
 					component: AuditRequestsView,
 					meta: { title: "Auditing", type: "AuditRequestResource" }
+				},
+				{
+					path: "/whatsapp-connections/:id?/:panel?",
+					name: "whatsapp-connections",
+					component: WhatsAppView,
+					meta: { title: "WhatsApp", type: "WhatsAppConnectionResource" }
 				}
 			]
 		},

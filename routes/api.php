@@ -20,6 +20,9 @@ use App\Http\Controllers\Ai\WorkflowDefinitionsController;
 use App\Http\Controllers\Ai\WorkflowInputsController;
 use App\Http\Controllers\Ai\WorkflowNodesController;
 use App\Http\Controllers\Ai\WorkflowRunsController;
+use App\Http\Controllers\Api\WebhooksController;
+use App\Http\Controllers\Api\WhatsAppConnectionsController;
+use App\Http\Controllers\Api\WhatsAppMessagesController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
 use App\Http\Controllers\Team\TeamsController;
@@ -100,6 +103,23 @@ ActionRoute::routes('team-objects', new TeamObjectsController, function () {
 
 // Audits
 ActionRoute::routes('audit-requests', new AuditRequestsController);
+
+// WhatsApp
+ActionRoute::routes('whatsapp-connections', new WhatsAppConnectionsController);
+ActionRoute::routes('whatsapp-messages', new WhatsAppMessagesController);
+
+Route::post('whatsapp-connections/{whatsAppConnection}/verify', [WhatsAppConnectionsController::class, 'verify']);
+Route::post('whatsapp-connections/{whatsAppConnection}/generate-webhook-url', [WhatsAppConnectionsController::class, 'generateWebhookUrl']);
+Route::post('whatsapp-connections/{whatsAppConnection}/test-message', [WhatsAppConnectionsController::class, 'testMessage']);
+Route::post('whatsapp-connections/{whatsAppConnection}/sync-messages', [WhatsAppConnectionsController::class, 'syncMessages']);
+
+Route::get('whatsapp-messages/conversation', [WhatsAppMessagesController::class, 'conversation']);
+Route::get('whatsapp-messages/recent', [WhatsAppMessagesController::class, 'recent']);
+
+// Webhooks (no auth middleware)
+Route::any('webhooks/whatsapp/{connection}/{token}', [WebhooksController::class, 'whatsappIncoming'])
+    ->name('webhooks.whatsapp.incoming')
+    ->withoutMiddleware(['auth:sanctum']);
 
 // Websockets Pusher Broadcasting
 Route::post('broadcasting/auth', function (Request $request) {

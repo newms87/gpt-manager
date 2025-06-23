@@ -31,4 +31,8 @@ return [
         ],
     ],
 
+    'whatsapp' => [
+        'verify_token' => env('WHATSAPP_VERIFY_TOKEN', 'gpt_manager_webhook_token'),
+    ],
+
 ];

@@ -30,7 +30,8 @@ import {
 	PagesOrganizerTaskRunnerConfig,
 	RunWorkflowTaskRunnerConfig,
 	SequentialCategoryMatcherTaskRunnerConfig,
-	SplitArtifactsTaskRunnerConfig
+	SplitArtifactsTaskRunnerConfig,
+	WhatsAppTaskRunnerConfig
 } from "./Configs";
 import { WorkflowInputTaskRunnerNode } from "./Nodes";
 
@@ -161,5 +162,11 @@ export const TaskRunnerClasses = {
 			lottieClass: "w-[10rem]"
 		},
 		config: LoadCsvTaskRunnerConfig
+	},
+	"WhatsApp": {
+		name: "WhatsApp",
+		description: "Send/receive WhatsApp messages and process conversations using WhatsApp Business API or Twilio.",
+		lottie: AgentThreadRunnerLottie,
+		config: WhatsAppTaskRunnerConfig
 	}
 };
