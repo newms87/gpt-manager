@@ -9,7 +9,7 @@
 - ONE way to do everything - the correct, modern way
 - Remove dead code on sight
 - Refactor any code that doesn't meet standards
-- Never use chmod on files to fix permissions!!! Always use sail artisan fix
+- Never use chmod on files to fix permissions!!! Always use `./vendor/bin/sail artisan fix`
 
 ## Laravel Backend Standards
 
@@ -85,7 +85,7 @@ class TeamObjectsController extends ActionController
 
 ### Database Standards
 
-- Use `sail artisan make:migration` for migrations
+- Use `./vendor/bin/sail artisan make:migration` for migrations
 - Anonymous class migrations (Laravel 9+ style)
 - Proper foreign key constraints
 - Composite indexes for performance
@@ -310,6 +310,7 @@ When encountering legacy code:
 **Core Philosophy**: Comprehensive UI component library that replaces Vuex/Pinia with `storeObjects` pattern.
 
 **Key Components**:
+
 - **Forms**: `TextField`, `NumberField`, `SelectField`, `DateField`, `MultiFileField`
 - **Actions**: `ActionButton`, `ActionTableLayout`, `ActionForm`, `ActionMenu`
 - **Layout**: `PanelsDrawer`, `CollapsableSidebar`, `EditableDiv`, `ShowHideButton`
@@ -317,6 +318,7 @@ When encountering legacy code:
 - **Dialogs**: `ConfirmDialog`, `RenderedFormDialog`, `FullScreenDialog`
 
 **State Management with storeObjects**:
+
 ```typescript
 // storeObjects - Reactive normalized data storage (replaces Vuex/Pinia)
 import { storeObjects, storeObject } from "quasar-ui-danx";
@@ -328,12 +330,13 @@ workflowDefinitions.value = storeObjects((await dxWorkflowDefinition.routes.list
 storeObject(updatedObject);
 
 // Real-time updates via Pusher automatically call storeObject
-channel.bind(event, function (data) {
+channel.bind(event, function(data) {
     storeObject(data); // Updates all components using this object
 });
 ```
 
 **Controller Pattern**:
+
 ```typescript
 // Each module uses a DanxController for CRUD operations
 const dxAgent = new DanxController("agents", {
@@ -351,6 +354,7 @@ await updateAction.trigger(object, data);
 ```
 
 **Common Patterns**:
+
 - Use `ActionTableLayout` for complete CRUD tables
 - Use `PanelsDrawer` for detail panels
 - Use formatting functions: `fDate`, `fNumber`, `fCurrency`, `fPercent`
@@ -359,11 +363,13 @@ await updateAction.trigger(object, data);
 ### danx-icon Library
 
 **Available Icon Types**:
+
 - `FaSolid*` - Solid/filled icons (most common, 1500+ icons)
-- `FaRegular*` - Outline/regular icons (~200 icons)  
+- `FaRegular*` - Outline/regular icons (~200 icons)
 - `FaBrands*` - Brand/company logos
 
 **Usage Pattern**:
+
 ```typescript
 import {
     FaSolidPencil as EditIcon,
@@ -377,6 +383,7 @@ import {
 ```
 
 **Icon Categories**:
+
 - Actions: Edit, Delete, Create, Save, Merge
 - Navigation: Chevron, Arrow directions
 - Status: Check, X, Warning, Info
@@ -388,27 +395,32 @@ import {
 **When to use different approaches**:
 
 1. **Simple utilities** - Use Tailwind classes directly:
+
 ```vue
+
 <div class="bg-slate-900 text-white p-4 rounded-lg">
 ```
 
 2. **Complex combinations** - Move to scoped styles:
+
 ```vue
+
 <style lang="scss" scoped>
-.team-object-header {
-    .edit-button {
-        transition: all 0.3s;
-        opacity: 0;
+    .team-object-header {
+        .edit-button {
+            transition: all 0.3s;
+            opacity: 0;
+        }
+
+        &:hover .edit-button {
+            opacity: 1;
+        }
     }
-    
-    &:hover .edit-button {
-        opacity: 1;
-    }
-}
 </style>
 ```
 
 3. **Global patterns** - Use `@apply` in `/spa/src/assets/*.scss`:
+
 ```scss
 // In general.scss
 .flex-x {
@@ -422,18 +434,60 @@ body {
 @layer utilities {
     .bg-skipped {
         background-image: repeating-linear-gradient(
-            135deg,
-            theme("colors.yellow.700") 0 10px,
-            theme("colors.gray.700") 10px 20px
+                135deg,
+                theme("colors.yellow.700") 0 10px,
+                theme("colors.gray.700") 10px 20px
         );
     }
 }
 ```
 
+## Authentication & API Testing
+
+### Generate API Tokens for CLI Testing
+
+Use the `auth:token` command to generate authentication tokens for testing endpoints via CLI:
+
+```bash
+# Generate token for a user (uses first team)
+./vendor/bin/sail artisan auth:token user@example.com
+
+# Generate token for specific team
+./vendor/bin/sail artisan auth:token user@example.com --team=team-uuid-here
+
+# Generate token with custom name
+./vendor/bin/sail artisan auth:token user@example.com --name=testing-token
+```
+
+**Usage in CLI requests:**
+
+```bash
+# Test API endpoints with generated token
+curl -H "Authorization: Bearer your-token-here" \
+     -H "Accept: application/json" \
+     http://localhost/api/user
+
+# Test with data
+curl -X POST \
+     -H "Authorization: Bearer your-token-here" \
+     -H "Accept: application/json" \
+     -H "Content-Type: application/json" \
+     -d '{"key":"value"}' \
+     http://localhost/api/endpoint
+```
+
+**Authentication System Overview:**
+
+- Uses Laravel Sanctum for API authentication
+- Multi-tenant with team-based access control
+- Token names contain team UUID for context resolution
+- Users must have roles assigned to generate tokens
+- Supports team switching via token regeneration
+
 ## Docker/Sail Commands
 
-- Use `sail artisan` for all artisan commands
-- Run `sail artisan fix` for permission issues
+- Use `./vendor/bin/sail artisan` for all artisan commands
+- Run `./vendor/bin/sail artisan fix` for permission issues
 - Never modify git state without explicit instruction
 
 ## Summary
