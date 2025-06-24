@@ -7,6 +7,7 @@
 			:model-value="activeSchema"
 			can-select
 			previewable
+			toggle-raw-json
 			@update:model-value="onSelectSchemaDefinition"
 		/>
 

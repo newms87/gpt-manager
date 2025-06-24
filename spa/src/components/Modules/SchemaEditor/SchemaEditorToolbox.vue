@@ -14,6 +14,7 @@
 				:saving="updateSchemaAction.isApplying"
 				:selectable="isEditingFragment"
 				:hide-save-state="hideSaveState"
+				:toggle-raw-json="toggleRawJson"
 				@update:model-value="schema => activeSchema && updateSchemaAction.trigger(activeSchema, { schema })"
 				@update:fragment-selector="fragment_selector => activeFragment && updateFragmentAction.trigger(activeFragment, { fragment_selector })"
 				@close="onCloseDialog"
@@ -140,6 +141,7 @@ const props = withDefaults(defineProps<{
 	editable?: boolean;
 	example?: boolean;
 	loading?: boolean;
+	toggleRawJson?: boolean;
 	buttonColor?: string;
 	excludeSchemaIds?: string[] | number[];
 	dialog?: boolean;
