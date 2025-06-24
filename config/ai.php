@@ -58,7 +58,23 @@ return [
             'o4-mini'     => [
                 'input'            => 1.1 / $million,
                 'output'           => 4.4 / $million,
-                'context'          => 200000,
+                'context'          => 200_000,
+                'excluded_options' => [
+                    'temperature',
+                ],
+            ],
+            'gpt-4.1'     => [
+                'input'            => 2 / $million,
+                'output'           => 8 / $million,
+                'context'          => 1_047_576,
+                'excluded_options' => [
+                    'temperature',
+                ],
+            ],
+            'o3'          => [
+                'input'            => 2 / $million,
+                'output'           => 8 / $million,
+                'context'          => 200_000,
                 'excluded_options' => [
                     'temperature',
                 ],
@@ -66,7 +82,7 @@ return [
             'o3-mini'     => [
                 'input'            => 1.1 / $million,
                 'output'           => 4.4 / $million,
-                'context'          => 128000,
+                'context'          => 128_000,
                 'excluded_options' => [
                     'temperature',
                 ],
