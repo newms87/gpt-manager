@@ -12,3 +12,4 @@ export { default as TaskArtifactFiltersField } from "./TaskArtifactFiltersField.
 export { default as TaskArtifactFiltersFieldForm } from "./TaskArtifactFiltersFieldForm.vue";
 export { default as TaskDefinitionAgentConfigField } from "./TaskDefinitionAgentConfigField.vue";
 export { default as TaskDefinitionDirectivesConfigField } from "./TaskDefinitionDirectivesConfigField.vue";
+export { default as UniquePageNumbersField } from "./UniquePageNumbersField.vue";

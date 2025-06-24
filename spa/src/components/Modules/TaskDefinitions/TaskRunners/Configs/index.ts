@@ -12,3 +12,4 @@ export { default as PagesOrganizerTaskRunnerConfig } from "./PagesOrganizerTaskR
 export { default as RunWorkflowTaskRunnerConfig } from "./RunWorkflowTaskRunnerConfig.vue";
 export { default as SequentialCategoryMatcherTaskRunnerConfig } from "./SequentialCategoryMatcherTaskRunnerConfig.vue";
 export { default as SplitArtifactsTaskRunnerConfig } from "./SplitArtifactsTaskRunnerConfig.vue";
+export { default as SplitByFileTaskRunnerConfig } from "./SplitByFileTaskRunnerConfig.vue";

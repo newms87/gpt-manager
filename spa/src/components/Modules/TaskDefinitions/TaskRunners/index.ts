@@ -30,7 +30,8 @@ import {
 	PagesOrganizerTaskRunnerConfig,
 	RunWorkflowTaskRunnerConfig,
 	SequentialCategoryMatcherTaskRunnerConfig,
-	SplitArtifactsTaskRunnerConfig
+	SplitArtifactsTaskRunnerConfig,
+	SplitByFileTaskRunnerConfig
 } from "./Configs";
 import { WorkflowInputTaskRunnerNode } from "./Nodes";
 
@@ -138,7 +139,7 @@ export const TaskRunnerClasses = {
 		name: "Split By File",
 		description: "Split artifact files by individual transcodes of the file.",
 		lottie: SplitByFileLottie,
-		config: BaseTaskRunnerConfig
+		config: SplitByFileTaskRunnerConfig
 	},
 	"Split Artifacts": {
 		name: "Split Artifacts",
