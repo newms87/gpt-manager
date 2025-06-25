@@ -117,6 +117,7 @@ class AgentThreadRun extends Model implements AuditableContract
         static::saved(function (AgentThreadRun $agentThreadRun) {
             if ($agentThreadRun->wasChanged(['status', 'last_message_id'])) {
                 AgentThreadRunUpdatedEvent::dispatch($agentThreadRun);
+                $agentThreadRun->agentThread->touch();
             }
         });
     }

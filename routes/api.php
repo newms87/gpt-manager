@@ -20,6 +20,7 @@ use App\Http\Controllers\Ai\WorkflowDefinitionsController;
 use App\Http\Controllers\Ai\WorkflowInputsController;
 use App\Http\Controllers\Ai\WorkflowNodesController;
 use App\Http\Controllers\Ai\WorkflowRunsController;
+use App\Http\Controllers\Assistant\UniversalAssistantController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
 use App\Http\Controllers\Team\TeamsController;
@@ -92,6 +93,16 @@ ActionRoute::routes('agents', new AgentsController);
 ActionRoute::routes('threads', new ThreadsController);
 ActionRoute::routes('messages', new MessagesController);
 ActionRoute::routes('prompt/directives', new PromptDirectivesController);
+
+// Universal Assistant
+Route::prefix('assistant')->group(function () {
+    Route::post('chat', [UniversalAssistantController::class, 'chat']);
+    Route::get('threads/{thread}', [UniversalAssistantController::class, 'getThread']);
+    Route::get('actions', [UniversalAssistantController::class, 'getActions']);
+    Route::post('actions/{action}/approve', [UniversalAssistantController::class, 'approveAction']);
+    Route::post('actions/{action}/cancel', [UniversalAssistantController::class, 'cancelAction']);
+    Route::get('capabilities', [UniversalAssistantController::class, 'getContextCapabilities']);
+});
 
 // Team Objects
 ActionRoute::routes('team-objects', new TeamObjectsController, function () {

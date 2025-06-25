@@ -1,6 +1,7 @@
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { authTeam, authToken, authUser } from "@/helpers";
+import { useAssistantDebug } from "@/composables/useAssistantDebug";
 import { TaskRun, WorkflowRun } from "@/types";
 import { Channel, default as Pusher } from "pusher-js";
 import { ActionTargetItem, AnyObject, storeObject } from "quasar-ui-danx";
@@ -25,6 +26,7 @@ const defaultChannelNames = {
 	"WorkflowRun": ["updated"],
 	"TaskRun": ["updated", "created"],
 	"AgentThreadRun": ["updated"],
+	"AgentThread": ["updated"],
 	"StoredFile": ["updated"],
 	"JobDispatch": ["updated", "created"],
 	"ClaudeCodeGeneration": ["started", "progress", "code_chunk", "completed", "error"]
@@ -118,14 +120,16 @@ async function continuouslyFireUserSubscriptions() {
  *  It also provides methods to listen to events on channels and models.
  */
 export function usePusher() {
+	const { debugLog } = useAssistantDebug();
+	
 	if (!pusher) {
 		if (!authToken.value) {
-			console.debug("No auth token, not connecting to Pusher");
+			debugLog('WEBSOCKET', 'No auth token, not connecting to Pusher');
 			return;
 		}
 
 		if (!authTeam.value) {
-			console.debug("No auth team, not connecting to Pusher");
+			debugLog('WEBSOCKET', 'No auth team, not connecting to Pusher');
 			return;
 		}
 
@@ -182,7 +186,7 @@ export function usePusher() {
 
 	function onModelEvent(model: ActionTargetItem, event: string | string[], callback: (data: ActionTargetItem) => void) {
 		if (!model.id) {
-			console.warn("Cannot subscribe to model without id", model);
+			debugLog('ERROR', 'Cannot subscribe to model without id', model);
 			return;
 		}
 

@@ -88,7 +88,8 @@ import SchemaUndoActions from "@/components/Modules/SchemaEditor/SchemaUndoActio
 import { FragmentSelector, JsonSchema, SchemaDefinition } from "@/types";
 import { FaSolidCode as RawCodeIcon } from "danx-icon";
 import { FullScreenDialog, SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, toRef } from "vue";
+import { useAssistantContextProvider } from "@/composables/useAssistantContextProvider";
 
 defineEmits<{ close: () => void }>();
 const props = defineProps<{
@@ -125,5 +126,23 @@ watch(schema, () => {
 	if (editableSchema.value?.title !== schema.value?.title) {
 		editableSchema.value = schema.value;
 	}
+});
+
+// Register this component as a context provider for the assistant
+const schemaDefinitionRef = toRef(props, 'schemaDefinition');
+const contextMetadata = computed(() => ({
+	schemaId: props.schemaDefinition?.id,
+	schemaName: props.schemaDefinition?.name,
+	schemaType: props.schemaDefinition?.type,
+	isReadonly: props.readonly,
+	currentSchema: editableSchema.value
+}));
+
+useAssistantContextProvider({
+	context: 'schema-editor',
+	priority: 100, // High priority for editor contexts
+	object: schemaDefinitionRef,
+	metadata: contextMetadata,
+	autoRegister: true // Automatically register/unregister on mount/unmount
 });
 </script>

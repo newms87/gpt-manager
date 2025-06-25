@@ -88,4 +88,14 @@ class AgentThreadMessage extends Model implements AuditableContract
 
         return "<AgentThreadMessage ($this->id) $message>";
     }
+
+    public static function booted(): void
+    {
+        static::saved(function (AgentThreadMessage $message) {
+            // Touch the parent thread to trigger its updated event
+            if ($message->agentThread) {
+                $message->agentThread->touch();
+            }
+        });
+    }
 }

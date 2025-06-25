@@ -2,6 +2,7 @@
 
 namespace App\Models\Agent;
 
+use App\Events\AgentThreadUpdatedEvent;
 use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -97,6 +98,11 @@ class AgentThread extends Model implements AuditableContract
         return $this->belongsTo(Agent::class);
     }
 
+    public function assistantActions(): HasMany
+    {
+        return $this->hasMany(\App\Models\Assistant\AssistantAction::class);
+    }
+
     public function isRunning(): bool
     {
         return $this->currentRun()->exists();
@@ -136,5 +142,15 @@ class AgentThread extends Model implements AuditableContract
     public function __toString()
     {
         return "<AgentThread ($this->id) $this->name>";
+    }
+
+    public static function booted(): void
+    {
+        static::saved(function (AgentThread $agentThread) {
+            // Broadcast updates when messages are added or thread is updated
+            if ($agentThread->wasChanged(['name', 'updated_at']) || $agentThread->wasRecentlyCreated) {
+                AgentThreadUpdatedEvent::broadcast($agentThread);
+            }
+        });
     }
 }
