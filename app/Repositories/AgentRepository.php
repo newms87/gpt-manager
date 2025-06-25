@@ -42,11 +42,8 @@ class AgentRepository extends ActionRepository
             ];
         })->values()->toArray();
 
-        $aiTools = config('ai.tools');
-
         return [
             'aiModels' => $aiModels,
-            'aiTools'  => $aiTools,
         ];
     }
 
@@ -79,7 +76,6 @@ class AgentRepository extends ActionRepository
         $data += [
             'model'       => config('ai.default_model'),
             'temperature' => 0,
-            'tools'       => [],
             'retry_count' => 2,
         ];
 

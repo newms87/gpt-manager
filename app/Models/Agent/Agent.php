@@ -35,7 +35,6 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
         'api',
         'model',
         'temperature',
-        'tools',
         'retry_count',
     ];
 
@@ -53,7 +52,6 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
     public function casts(): array
     {
         return [
-            'tools'       => 'json',
             'temperature' => 'float',
         ];
     }
@@ -93,23 +91,6 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
         return $this->hasMany(AgentThread::class);
     }
 
-    public function formatTools(): array
-    {
-        $availableTools = collect(config('ai.tools'))->keyBy('name');
-        $tools          = [];
-        foreach(($this->tools ?: []) as $name) {
-            $availableTool = $availableTools->get($name);
-            if (!$availableTool) {
-                continue;
-            }
-            $tools[] = [
-                'type'     => 'function',
-                'function' => $availableTool,
-            ];
-        }
-
-        return $tools;
-    }
 
     public function resetModel(): static
     {
@@ -156,7 +137,6 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
             'api'         => 'required|string',
             'model'       => 'required|string',
             'temperature' => 'required|numeric',
-            'tools'       => 'nullable|array',
         ])->validate();
 
         return $this;

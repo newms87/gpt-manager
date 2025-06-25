@@ -3,7 +3,6 @@
 namespace App\Services\AgentThread;
 
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
-use App\Api\OpenAi\Classes\OpenAiToolCaller;
 use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
@@ -19,7 +18,6 @@ use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ApiRequestException;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
-use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Jobs\Job;
 use Throwable;
 
@@ -69,8 +67,6 @@ class AgentThreadService
                 'agent_model'          => $agent->model,
                 'status'               => AgentThreadRun::STATUS_RUNNING,
                 'temperature'          => $agent->temperature,
-                'tools'                => $agent->tools,
-                'tool_choice'          => 'auto',
                 'response_format'      => $this->responseSchema ? 'json_schema' : 'text',
                 'response_schema_id'   => $this->responseSchema?->id,
                 'response_fragment_id' => $this->responseFragment?->id,
@@ -199,13 +195,6 @@ class AgentThreadService
                 }
 
                 $options['response_format'][AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA] = $jsonSchema;
-            }
-
-            $tools = $agent->formatTools();
-
-            if ($tools) {
-                $options['tool_choice'] = $agentThreadRun->tool_choice;
-                $options['tools']       = $tools;
             }
 
             $response         = null;
@@ -419,27 +408,10 @@ STR;
             'data'    => $response->getDataFields() ?: null,
         ]);
 
-        if (!$response->isToolCall() && !$response->isFinished()) {
-            throw new Exception('Unexpected response from AI model');
-        }
-
-        if ($response->isToolCall()) {
-            // Check for duplicated tool calls and immediately stop thread so we don't waste resources
-            if ($this->hasDuplicatedToolCall($threadRun, $response)) {
-                Log::error("Duplicated tool call detected, stopping thread");
-                $lastMessage = $thread->messages()->create([
-                    'role'    => AgentThreadMessage::ROLE_USER,
-                    'content' => "Duplicated tool call detected, stopping thread",
-                ]);
-                $this->finishThreadResponse($threadRun, $lastMessage);
-            } else {
-                $this->callToolsWithToolResponse($thread, $threadRun, $response);
-                static::log("Tool call response completed.");
-            }
-        }
-
         if ($response->isFinished()) {
             $this->finishThreadResponse($threadRun, $lastMessage);
+        } else {
+            throw new Exception('Unexpected response from AI model - response not finished');
         }
     }
 
@@ -456,113 +428,10 @@ STR;
             'last_message_id' => $lastMessage->id,
         ]);
 
-        if ($lastMessage->content) {
-            $jsonData = $lastMessage->getJsonContent();
-
-            // Call the response tools if they are set
-            $responseTools = $jsonData['response_tools'] ?? [];
-            if ($responseTools) {
-                $this->callResponseTools($threadRun, $responseTools);
-            }
-        }
 
         static::log("AgentThread response is finished");
     }
 
-    /**
-     * Call the response tools for the thread run
-     */
-    public function callResponseTools(AgentThreadRun $threadRun, array $responseTools): void
-    {
-        static::log("Finishing thread response with " . count($responseTools) . " response tools");
 
-        foreach($responseTools as $tool) {
-            $toolName = $tool['name'] ?? null;
 
-            if (!$toolName) {
-                throw new Exception("Response tool name is required: \n" . json_encode($tool));
-            }
-
-            static::log("Handling tool call: " . $toolName);
-
-            $toolCaller = new OpenAiToolCaller(
-                '',
-                $tool['name'],
-                json_decode($tool['arguments'], true)
-            );
-
-            $toolCaller->call($threadRun);
-        }
-    }
-
-    /**
-     * Call the AI Tools and attach the response from the tools to the thread for further processing by the AI Agent
-     */
-    public function callToolsWithToolResponse(AgentThread $thread, AgentThreadRun $threadRun, AgentCompletionResponseContract $response): void
-    {
-        static::log("Completion Response: Handling " . count($response->getToolCallerFunctions()) . " tool calls");
-
-        // Additional messages that support the tool response, such as images
-        // These messages must appear after all tool responses,
-        // otherwise ChatGPT will throw an error thinking it is missing tool response messages
-        $additionalMessages = [];
-
-        // Call the tool functions
-        foreach($response->getToolCallerFunctions() as $toolCallerFunction) {
-            static::log("Handling tool call: " . $toolCallerFunction->getName());
-
-            $messages = $toolCallerFunction->call($threadRun);
-
-            if ($messages) {
-                // Add the tool message
-                $toolMessage = array_shift($messages);
-                $thread->messages()->create($toolMessage);
-
-                // Append the additional messages to the list to appear after all tool responses
-                $additionalMessages = array_merge($additionalMessages, $messages);
-            }
-        }
-
-        // Save all the tool response messages
-        foreach($additionalMessages as $message) {
-            if (isset($message['content']) && is_array($message['content'])) {
-                $message['content'] = StringHelper::safeJsonEncode($message['content']);
-            }
-            $thread->messages()->create($message);
-        }
-    }
-
-    /**
-     * Check if the thread run has already made the exact same tool call in the current thread.
-     * This will avoid any looping by the agent
-     */
-    public function hasDuplicatedToolCall(AgentThreadRun $threadRun, AgentCompletionResponseContract $response): bool
-    {
-        $assistantMessages = $threadRun->agentThread->messages()->where('role', AgentThreadMessage::ROLE_ASSISTANT)->get();
-
-        $toolCallHashes = [];
-
-        foreach($assistantMessages as $message) {
-            if (!$message->data || empty($message->data['tool_calls'])) {
-                continue;
-            }
-
-            $toolCalls = $message->data['tool_calls'];
-
-            foreach($toolCalls as $toolCall) {
-                if (empty($toolCall['function'])) {
-                    continue;
-                }
-                $hash = md5(json_encode($toolCall['function']));
-
-                if (!empty($toolCallHashes[$hash])) {
-                    return true;
-                }
-
-                $toolCallHashes[$hash] = true;
-            }
-        }
-
-        return false;
-    }
 }

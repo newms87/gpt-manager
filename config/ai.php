@@ -14,7 +14,7 @@ return [
     // The seed to use for AI completions to ensure consistent results
     'seed'          => env('AI_SEED', 11181987),
     'default_api'   => OpenAiApi::$serviceName,
-    'default_model' => 'gpt-4o',
+    'default_model' => 'o4-mini',
     'models'        => [
         PerplexityAiApi::$serviceName => [
             'llama-3.1-sonar-small-128k-online' => [
