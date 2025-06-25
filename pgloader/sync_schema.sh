@@ -81,6 +81,25 @@ read_prod_db_settings() {
         JUMPBOX_CONNECTION=$(grep -E '^JUMPBOX_CONNECTION=' "$ENV_FILE" | cut -d '=' -f2)
     fi
     
+    # Check if all required values are present and SSH key file exists
+    if [ -n "$PROD_DB_HOST" ] && [ -n "$PROD_DB_PORT" ] && [ -n "$PROD_DB_NAME" ] && \
+       [ -n "$PROD_DB_USER" ] && [ -n "$PROD_DB_PASS" ] && [ -n "$SSH_KEY_FILE" ] && \
+       [ -n "$JUMPBOX_CONNECTION" ] && [ -f "$SSH_KEY_FILE" ]; then
+        
+        echo -e "${GREEN}Using production database settings from .env file:${NC}"
+        echo -e "  SSH Key File: ${GREEN}${SSH_KEY_FILE}${NC}"
+        echo -e "  Jumpbox Connection: ${GREEN}${JUMPBOX_CONNECTION}${NC}"
+        echo -e "  Production DB Host: ${GREEN}${PROD_DB_HOST}${NC}"
+        echo -e "  Production DB Port: ${GREEN}${PROD_DB_PORT}${NC}"
+        echo -e "  Production DB Name: ${GREEN}${PROD_DB_NAME}${NC}"
+        echo -e "  Production DB User: ${GREEN}${PROD_DB_USER}${NC}"
+        echo -e "  Production DB Password: ${GREEN}********${NC}"
+        
+        # Update .env file to ensure consistency
+        update_env_file
+        return 0
+    fi
+    
     # Prompt for production database settings or confirm defaults
     echo -e "${CYAN}Please provide production database connection details:${NC}"
     
