@@ -8,6 +8,6 @@ use Newms87\Danx\Http\Controllers\ActionController;
 
 class SchemaAssociationsController extends ActionController
 {
-    public static string  $repo     = SchemaAssociationRepository::class;
+    public static ?string $repo     = SchemaAssociationRepository::class;
     public static ?string $resource = SchemaAssociationResource::class;
 }

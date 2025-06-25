@@ -8,6 +8,6 @@ use Newms87\Danx\Http\Controllers\ActionController;
 
 class AuditRequestsController extends ActionController
 {
-    public static string  $repo     = AuditRequestRepository::class;
+    public static ?string $repo     = AuditRequestRepository::class;
     public static ?string $resource = AuditRequestResource::class;
 }

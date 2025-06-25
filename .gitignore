@@ -26,3 +26,5 @@ yarn-error.log
 public/ball.html
 
 pgloader/temp_db_sync.load
+
+test_assistant_endpoints.php

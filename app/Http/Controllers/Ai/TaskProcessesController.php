@@ -8,7 +8,7 @@ use Newms87\Danx\Http\Controllers\ActionController;
 
 class TaskProcessesController extends ActionController
 {
-    public static string  $repo     = TaskProcessRepository::class;
+    public static ?string $repo     = TaskProcessRepository::class;
     public static ?string $resource = TaskProcessResource::class;
 
     public function details($model): mixed

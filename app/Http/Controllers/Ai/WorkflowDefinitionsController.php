@@ -17,7 +17,7 @@ use Throwable;
 
 class WorkflowDefinitionsController extends ActionController
 {
-    public static string  $repo     = WorkflowDefinitionRepository::class;
+    public static ?string $repo     = WorkflowDefinitionRepository::class;
     public static ?string $resource = WorkflowDefinitionResource::class;
 
     public function invoke(WorkflowDefinition $workflowDefinition, PagerRequest $request)

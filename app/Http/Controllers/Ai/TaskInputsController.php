@@ -8,6 +8,6 @@ use Newms87\Danx\Http\Controllers\ActionController;
 
 class TaskInputsController extends ActionController
 {
-    public static string  $repo     = TaskInputRepository::class;
+    public static ?string $repo     = TaskInputRepository::class;
     public static ?string $resource = TaskInputResource::class;
 }

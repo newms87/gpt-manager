@@ -10,6 +10,7 @@
 - Remove dead code on sight
 - Refactor any code that doesn't meet standards
 - Never use chmod on files to fix permissions!!! Always use `./vendor/bin/sail artisan fix`
+- Never use the rg command, use grep instead
 
 ## Laravel Backend Standards
 

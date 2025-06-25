@@ -8,6 +8,6 @@ use Newms87\Danx\Http\Controllers\ActionController;
 
 class AgentsController extends ActionController
 {
-    public static string  $repo     = AgentRepository::class;
+    public static ?string $repo     = AgentRepository::class;
     public static ?string $resource = AgentResource::class;
 }

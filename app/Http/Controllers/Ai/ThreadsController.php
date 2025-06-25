@@ -8,6 +8,6 @@ use Newms87\Danx\Http\Controllers\ActionController;
 
 class ThreadsController extends ActionController
 {
-    public static string  $repo     = ThreadRepository::class;
-    public static ?string $resource = AgentThreadResource::class;
+	public static ?string $repo     = ThreadRepository::class;
+	public static ?string $resource = AgentThreadResource::class;
 }

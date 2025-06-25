@@ -6,12 +6,11 @@ use App\Models\TeamObject\TeamObject;
 use App\Repositories\TeamObjectRepository;
 use App\Resources\TeamObject\TeamObjectResource;
 use App\Services\TeamObject\TeamObjectMergeService;
-use Illuminate\Http\Request;
 use Newms87\Danx\Http\Controllers\ActionController;
 
 class TeamObjectsController extends ActionController
 {
-    public static string  $repo     = TeamObjectRepository::class;
+    public static ?string $repo     = TeamObjectRepository::class;
     public static ?string $resource = TeamObjectResource::class;
 
     public function merge(TeamObject $sourceObject, TeamObject $targetObject)
