@@ -28,21 +28,27 @@ trait AiMockData
 
     public function mocksOpenAiNotCalled()
     {
-        $this->mock(OpenAiApi::class)->shouldNotReceive('complete');
+        $this->mock(OpenAiApi::class)->shouldNotReceive('responses');
     }
 
-    public function mocksOpenAiCompletionResponse($content = 'Mock completion message content', $finishReason = 'stop', $usage = null): CompositeExpectation
+    public function mocksOpenAiResponsesResponse($content = 'Mock response message content', $status = 'completed', $usage = null): CompositeExpectation
     {
         return $this->mock(OpenAiApi::class)
             ->shouldReceive('formatter')->andReturn(new OpenAiMessageFormatter)
-            ->shouldReceive('complete')->andReturn(TestAiCompletionResponse::make([
-                'choices' => [
+            ->shouldReceive('responses')->andReturn(TestAiCompletionResponse::make([
+                'id' => 'resp_mock_12345',
+                'status' => $status,
+                'output' => [
                     [
-                        'message'       => ['content' => $content],
-                        'finish_reason' => $finishReason,
+                        'content' => [
+                            [
+                                'type' => 'text',
+                                'text' => $content,
+                            ],
+                        ],
                     ],
                 ],
-                'usage'   => $usage ?: ['prompt_tokens' => 10, 'completion_tokens' => 6],
+                'usage' => $usage ?: ['input_tokens' => 10, 'output_tokens' => 6],
             ]));
     }
 }

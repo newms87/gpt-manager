@@ -2,6 +2,9 @@
 
 namespace App\Api\AgentApiContracts;
 
+use App\Api\Options\ResponsesApiOptions;
+use App\Models\Agent\AgentThreadMessage;
+
 interface AgentApiContract
 {
     /**
@@ -11,12 +14,23 @@ interface AgentApiContract
     public function formatter(): AgentMessageFormatterContract;
 
     /**
-     * Completes the messages with the given model and temperature
+     * Execute using the Responses API (if supported by the implementation)
      *
-     * @param string $model
-     * @param array  $messages
-     * @param array  $options
+     * @param string              $model
+     * @param array               $messages
+     * @param ResponsesApiOptions $options
      * @return AgentCompletionResponseContract
      */
-    public function complete(string $model, array $messages, array $options): AgentCompletionResponseContract;
+    public function responses(string $model, array $messages, ResponsesApiOptions $options): AgentCompletionResponseContract;
+
+    /**
+     * Execute streaming Responses API call with real-time message updates
+     *
+     * @param string              $model
+     * @param array               $messages
+     * @param ResponsesApiOptions $options
+     * @param AgentThreadMessage  $streamMessage Message to populate with stream data
+     * @return AgentCompletionResponseContract
+     */
+    public function streamResponses(string $model, array $messages, ResponsesApiOptions $options, AgentThreadMessage $streamMessage): AgentCompletionResponseContract;
 }

@@ -1,9 +1,0 @@
-description: 'Search the web using Google Search Engine and get the results'
-parameters:
-  type: object
-  required:
-    - q
-  properties:
-    q:
-      type: string
-      description: 'The search query terms'

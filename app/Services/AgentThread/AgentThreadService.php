@@ -3,6 +3,7 @@
 namespace App\Services\AgentThread;
 
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
+use App\Api\Options\ResponsesApiOptions;
 use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
@@ -25,9 +26,10 @@ class AgentThreadService
 {
     use HasDebugLogging;
 
-    protected ?SchemaDefinition  $responseSchema    = null;
-    protected ?SchemaFragment    $responseFragment  = null;
-    protected ?JsonSchemaService $jsonSchemaService = null;
+    protected ?SchemaDefinition    $responseSchema      = null;
+    protected ?SchemaFragment      $responseFragment    = null;
+    protected ?JsonSchemaService   $jsonSchemaService   = null;
+    protected ?ResponsesApiOptions $responsesApiOptions = null;
 
     protected array $retryProfile = [
         'invalid_image_url' => [
@@ -68,6 +70,7 @@ class AgentThreadService
                 'agent_model'          => $agent->model,
                 'status'               => AgentThreadRun::STATUS_RUNNING,
                 'temperature'          => $agent->temperature,
+                'api_options'          => $agent->api_options,
                 'response_format'      => $this->responseSchema ? 'json_schema' : 'text',
                 'response_schema_id'   => $this->responseSchema?->id,
                 'response_fragment_id' => $this->responseFragment?->id,
@@ -221,17 +224,14 @@ class AgentThreadService
                         $options = array_diff_key($options, array_combine($excludedOptions, $excludedOptions));
                     }
 
-                    $response = $agent->getModelApi()->complete(
-                        $agent->model,
-                        $messages,
-                        $options
-                    );
+                    // Always use Responses API (completions API removed)
+                    $response = $this->executeResponsesApi($agent, $agentThread, $agentThreadRun, $messages, $options);
                 } catch(ConnectException $exception) {
                     // Handle connection errors
                     if (str_contains($exception->getMessage(), 'timed out') && ($retries-- > 0)) {
                         // Apply a random exponential backoff strategy
                         $exponentialTimeout = random_int(5, 10) * max(10, pow(3, $agent->retry_count - $retries - 1));
-                        Log::warning("Connection timed out from completion API. Retrying in $exponentialTimeout seconds...");
+                        Log::warning("Connection timed out from Responses API. Retrying in $exponentialTimeout seconds...");
                         sleep($exponentialTimeout);
                         continue;
                     }
@@ -311,30 +311,15 @@ class AgentThreadService
         $agent        = $thread->agent;
         $apiFormatter = $agent->getModelApi()->formatter();
 
-        $corePrompt = "The current date and time is " . now()->toDateTimeString() . "\n\n";
-        $corePrompt .= "You're an agent created by a user to perform a task.\nYour Name: {$thread->agent->name}";
-
-        if ($thread->agent->description) {
-            $corePrompt .= "\nDescription: {$thread->agent->description}";
-        }
-
-        if ($agentThreadRun->responseSchema) {
-            $corePrompt .= "\nResponse Schema Name: {$agentThreadRun->responseSchema->name}";
-
-            if ($agentThreadRun->responseFragment) {
-                $corePrompt .= "\nResponse Fragment Name: {$agentThreadRun->responseFragment->name}";
-            }
-        }
-
-
-        $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $corePrompt);
+        // For Responses API, we'll handle the instructions separately in the executeResponsesApi method
+        $messages = [];
 
         // AgentThread messages are inserted between the directives
         foreach($thread->messages()->get() as $message) {
             $formattedMessage = $apiFormatter->message($message);
 
             // For agents that rely on citing messages as sources, wrap the message in an AgentMessage tag
-            if ($agentThreadRun->getJsonSchemaService()->isUsingCitations() && ($message->isUser() || $message->isTool())) {
+            if ($agentThreadRun->getJsonSchemaService()->isUsingCitations() && $message->isUser()) {
                 $messages[] = $apiFormatter->wrapMessage("<AgentMessage id='$message->id'>", $formattedMessage, "</AgentMessage>");
             } else {
                 $messages[] = $formattedMessage;
@@ -420,7 +405,7 @@ STR;
     }
 
     /**
-     * Finish the thread response by updating the thread run and calling the response tools (if any)
+     * Finish the thread response by updating the thread run
      */
     public function finishThreadResponse(AgentThreadRun $threadRun, AgentThreadMessage $lastMessage): void
     {
@@ -436,5 +421,119 @@ STR;
         static::log("AgentThread response is finished");
     }
 
+    /**
+     * Execute the thread run using the Responses API with response ID optimization
+     */
+    protected function executeResponsesApi($agent, AgentThread $thread, AgentThreadRun $threadRun, array $messages, array $baseOptions): AgentCompletionResponseContract
+    {
+        // Get API options from the thread run (source of truth) or use defaults
+        $apiOptions = $threadRun->api_options ? ResponsesApiOptions::fromArray($threadRun->api_options) : new ResponsesApiOptions();
 
+        // Build system instructions and always prepend them
+        $systemInstructions   = $this->buildSystemInstructions($thread, $threadRun);
+        $existingInstructions = $apiOptions->getInstructions();
+
+        if ($existingInstructions) {
+            // Prepend system instructions to existing instructions
+            $apiOptions->setInstructions($systemInstructions . "\n\n" . $existingInstructions);
+        } else {
+            // Set system instructions as the main instructions
+            $apiOptions->setInstructions($systemInstructions);
+        }
+
+        // Optimize with previous response ID - only send new messages since last tracked response
+        $lastTrackedMessage = AgentThreadMessage::getLastTrackedMessageInThread($thread);
+        if ($lastTrackedMessage) {
+            // Use previous response ID for optimization
+            $apiOptions->setPreviousResponseId($lastTrackedMessage->api_response_id);
+
+            // Only get unsent messages (messages created after the last tracked response)
+            $messages = AgentThreadMessage::getUnsentMessagesInThread($thread);
+
+            static::log("Using previous response ID optimization: {$lastTrackedMessage->api_response_id}. Sending " . count($messages) . " new messages.");
+        } else {
+            static::log("No previous response ID found. Sending all " . count($messages) . " messages.");
+        }
+
+        // Handle streaming if enabled
+        if ($apiOptions->isStreaming()) {
+            return $this->executeStreamingResponsesApi($agent, $thread, $threadRun, $messages, $apiOptions);
+        }
+
+        // Regular non-streaming Responses API call
+        $response = $agent->getModelApi()->responses(
+            $agent->model,
+            $messages,
+            $apiOptions
+        );
+
+        // Track the response ID for future optimization
+        if (method_exists($response, 'getResponseId')) {
+            // Find the assistant message created for this response and track it
+            $assistantMessage = $thread->messages()
+                ->where('role', AgentThreadMessage::ROLE_ASSISTANT)
+                ->whereNull('api_response_id')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($assistantMessage) {
+                $assistantMessage->setApiResponseId($response->getResponseId());
+                static::log("Tracked response ID: {$response->getResponseId()} for message {$assistantMessage->id}");
+            }
+        }
+
+        return $response;
+    }
+
+    /**
+     * Execute streaming Responses API call
+     */
+    protected function executeStreamingResponsesApi($agent, AgentThread $thread, AgentThreadRun $threadRun, array $messages, ResponsesApiOptions $apiOptions): AgentCompletionResponseContract
+    {
+        // Create a placeholder message for streaming
+        $streamMessage = $thread->messages()->create([
+            'role'    => AgentThreadMessage::ROLE_ASSISTANT,
+            'content' => '',
+            'data'    => null,
+        ]);
+
+        // Execute streaming request using the separate streamResponses method
+        $response = $agent->getModelApi()->streamResponses(
+            $agent->model,
+            $messages,
+            $apiOptions,
+            $streamMessage
+        );
+
+        // Track the response ID for future optimization
+        if (method_exists($response, 'getResponseId')) {
+            $streamMessage->setApiResponseId($response->getResponseId());
+            static::log("Tracked streaming response ID: {$response->getResponseId()} for message {$streamMessage->id}");
+        }
+
+        return $response;
+    }
+
+    /**
+     * Build system instructions for Responses API
+     */
+    protected function buildSystemInstructions(AgentThread $thread, AgentThreadRun $threadRun): string
+    {
+        $instructions = "The current date and time is " . now()->toDateTimeString() . "\n\n";
+        $instructions .= "You're an agent created by a user to perform a task.\nYour Name: {$thread->agent->name}";
+
+        if ($thread->agent->description) {
+            $instructions .= "\nDescription: {$thread->agent->description}";
+        }
+
+        if ($threadRun->responseSchema) {
+            $instructions .= "\nResponse Schema Name: {$threadRun->responseSchema->name}";
+
+            if ($threadRun->responseFragment) {
+                $instructions .= "\nResponse Fragment Name: {$threadRun->responseFragment->name}";
+            }
+        }
+
+        return $instructions;
+    }
 }

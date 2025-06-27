@@ -36,6 +36,7 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
         'model',
         'temperature',
         'retry_count',
+        'api_options',
     ];
 
     protected array $keywordFields = [
@@ -53,6 +54,7 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
     {
         return [
             'temperature' => 'float',
+            'api_options' => 'json',
         ];
     }
 
@@ -137,6 +139,7 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
             'api'         => 'required|string',
             'model'       => 'required|string',
             'temperature' => 'required|numeric',
+            'api_options' => 'nullable|array',
         ])->validate();
 
         return $this;
@@ -166,6 +169,7 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
             'model'       => $this->model,
             'temperature' => $this->temperature,
             'retry_count' => $this->retry_count,
+            'api_options' => $this->api_options,
         ]);
     }
 

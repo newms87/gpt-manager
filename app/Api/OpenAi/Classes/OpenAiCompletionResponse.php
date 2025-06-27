@@ -6,91 +6,75 @@ use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use Newms87\Danx\Input\Input;
 
 /**
- * @property string $id      Unique identifier for the object
- * @property string $object  Type of object (ie: chat.completion)
+ * @property string $id      Unique identifier for the response (starts with 'resp_')
+ * @property string $object  Type of object (ie: response)
  * @property int    $created Unix timestamp
- * @property string $model   Model used for completion
- * @property array  $choices Array of completion choices
- * @property array  $usage   Usage statistics for the model (ie: prompt_tokens)
+ * @property string $model   Model used for response
+ * @property array  $output  Array of response outputs
+ * @property array  $usage   Usage statistics for the model
  */
 class OpenAiCompletionResponse extends Input implements AgentCompletionResponseContract
 {
     public function isMessageEmpty(): bool
     {
-        return !$this->getContent() && !$this->getToolCalls();
-    }
-
-    public function isToolCall(): bool
-    {
-        return $this->choices[0]['finish_reason'] === 'tool_calls';
+        return !$this->getContent();
     }
 
     public function isFinished(): bool
     {
-        if ($this->choices[0]['finish_reason'] === 'stop') {
-            return true;
-        }
-
-        // Check if the is_finished flag was set to true for all tool calls.
-        // If so, the completion is finished. If any tools are not finished,
-        // the completion is not finished.
-        $toolsFinished = false;
-
-        foreach($this->getToolCalls() as $toolCall) {
-            if ($toolCall['type'] === 'function') {
-                $function  = $toolCall['function'];
-                $arguments = json_decode($function['arguments'], true);
-                if (empty($arguments['is_finished'])) {
-                    return false;
-                } else {
-                    // If the function is finished, set the flag to true.
-                    $toolsFinished = true;
-                }
-            }
-        }
-
-        return $toolsFinished;
+        // Responses API format - responses are typically finished when returned
+        return (bool)$this->output;
     }
 
     public function getDataFields(): array
     {
-        return collect($this->choices[0]['message'])->except(['role', 'content'])->toArray();
-    }
-
-    public function getToolCallerFunctions(): array
-    {
-        $toolCallerFunctions = [];
-        foreach($this->getToolCalls() as $toolCall) {
-            if ($toolCall['type'] === 'function') {
-                $function              = $toolCall['function'];
-                $toolCallerFunctions[] = new OpenAiToolCaller(
-                    $toolCall['id'],
-                    $function['name'],
-                    json_decode($function['arguments'], true)
-                );
+        // For Responses API, extract data from output content
+        if (isset($this->output[0]['content'])) {
+            $fields = [];
+            foreach($this->output[0]['content'] as $content) {
+                if (isset($content['type']) && $content['type'] !== 'text') {
+                    $fields = array_merge($fields, collect($content)->except(['type', 'text'])->toArray());
+                }
             }
+
+            return $fields;
         }
 
-        return $toolCallerFunctions;
+        return [];
     }
 
     public function getContent(): ?string
     {
-        return $this->choices[0]['message']['content'] ?? null;
-    }
+        // Responses API format only
+        if (isset($this->output[0]['content'])) {
+            foreach($this->output[0]['content'] as $content) {
+                if (isset($content['type']) && $content['type'] === 'text' && isset($content['text'])) {
+                    return $content['text'];
+                }
+            }
+        }
 
-    public function getToolCalls(): array
-    {
-        return $this->choices[0]['message']['tool_calls'] ?? [];
+        return null;
     }
 
     public function inputTokens(): int
     {
-        return $this->usage['prompt_tokens'];
+        // Responses API format
+        return $this->usage['input_tokens'] ?? 0;
     }
 
     public function outputTokens(): int
     {
-        return $this->usage['completion_tokens'];
+        // Responses API format
+        return $this->usage['output_tokens'] ?? 0;
+    }
+
+    /**
+     * Get the response ID for tracking previous responses in future API calls
+     * For Responses API, this is the 'id' field that starts with 'resp_'
+     */
+    public function getResponseId(): string
+    {
+        return $this->id;
     }
 }

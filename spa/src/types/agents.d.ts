@@ -12,6 +12,18 @@ export interface Agent extends ActionTargetItem {
 	tools: string[];
 	threads: AgentThread[];
 	directives?: AgentPromptDirective[];
+	api_options?: AgentApiOptions;
+}
+
+export interface AgentApiOptions {
+	temperature?: number;
+	model?: string;
+	reasoning?: {
+		effort?: 'low' | 'medium' | 'high';
+		summary?: 'auto' | 'detailed' | null;
+	};
+	service_tier?: 'auto' | 'default' | 'flex';
+	stream?: boolean;
 }
 
 export interface AgentThread extends ActionTargetItem {
@@ -46,6 +58,7 @@ export interface AgentThreadMessage extends ActionTargetItem {
 	data?: AnyObject;
 	files?: UploadedFile[];
 	timestamp: string;
+	api_response_id?: string;
 }
 
 export interface AgentThreadResponseFormat {

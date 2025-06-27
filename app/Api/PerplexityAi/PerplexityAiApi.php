@@ -4,8 +4,10 @@ namespace App\Api\PerplexityAi;
 
 use App\Api\AgentApiContracts\AgentApiContract;
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
+use App\Api\Options\ResponsesApiOptions;
 use App\Api\PerplexityAi\Classes\PerplexityAiCompletionResponse;
 use App\Api\PerplexityAi\Classes\PerplexityAiMessageFormatter;
+use App\Models\Agent\AgentThreadMessage;
 use Newms87\Danx\Api\BearerTokenApi;
 
 class PerplexityAiApi extends BearerTokenApi implements AgentApiContract
@@ -26,22 +28,43 @@ class PerplexityAiApi extends BearerTokenApi implements AgentApiContract
         $this->token      = config('perplexityai.api_key');
     }
 
-    public function complete(string $model, array $messages, array $options = []): PerplexityAiCompletionResponse|AgentCompletionResponseContract
+    public function formatter(): PerplexityAiMessageFormatter
     {
-        $options += [
-            'temperature' => .2,
+        return app(PerplexityAiMessageFormatter::class);
+    }
+
+    /**
+     * PerplexityAI doesn't support Responses API - fallback to chat/completions
+     */
+    public function responses(string $model, array $messages, ResponsesApiOptions $options): AgentCompletionResponseContract
+    {
+        // Convert ResponsesApiOptions to basic completion options
+        $completionOptions = [
+            'temperature' => .2, // PerplexityAI default
         ];
+        
+        // Add instructions as a system message if available
+        if ($options->getInstructions()) {
+            // Add the instructions as a system message at the beginning
+            array_unshift($messages, [
+                'role' => 'system',
+                'content' => $options->getInstructions()
+            ]);
+        }
 
         $response = $this->post('chat/completions', [
                 'model'    => $model,
                 'messages' => $messages,
-            ] + $options)->json();
+            ] + $completionOptions)->json();
 
         return PerplexityAiCompletionResponse::make($response);
     }
 
-    public function formatter(): PerplexityAiMessageFormatter
+    /**
+     * PerplexityAI doesn't support streaming Responses API
+     */
+    public function streamResponses(string $model, array $messages, ResponsesApiOptions $options, AgentThreadMessage $streamMessage): AgentCompletionResponseContract
     {
-        return app(PerplexityAiMessageFormatter::class);
+        throw new \RuntimeException('PerplexityAI does not support streaming. Please disable the stream option in your agent configuration.');
     }
 }

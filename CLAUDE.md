@@ -88,6 +88,7 @@ class TeamObjectsController extends ActionController
 ### Database Standards
 
 - Use `./vendor/bin/sail artisan make:migration` for migrations
+- ALWAYS run `./vendor/bin/sail artisan fix` after creating migrations to fix permissions
 - Anonymous class migrations (Laravel 9+ style)
 - Proper foreign key constraints
 - Composite indexes for performance
@@ -380,8 +381,10 @@ import {
 } from "danx-icon";
 
 // In template
-<QBtn><EditIcon class="w-3" /></QBtn>
-<ShowHideButton :show-icon="EditIcon" />
+<QBtn><EditIcon class = "w-3" / > </QBtn>
+    < ShowHideButton
+:
+show - icon = "EditIcon" / >
 ```
 
 **Icon Categories**:

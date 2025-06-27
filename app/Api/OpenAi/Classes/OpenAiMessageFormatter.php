@@ -2,7 +2,6 @@
 
 namespace App\Api\OpenAi\Classes;
 
-use App\AiTools\AiToolResponse;
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
 use App\Models\Agent\AgentThreadMessage;
 use Exception;
@@ -47,42 +46,11 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
             ] + ($data ?? []);
     }
 
-    public function toolResponse(string $toolId, string $toolName, AiToolResponse $response): array
-    {
-        $messages = [];
-
-        $contentItems = $response->getContentItems();
-
-        foreach($contentItems as $index => $contentItem) {
-            if ($index === 0) {
-                // The first message needs to be the tool response for the Completion API to respond correctly
-                // NOTE: the 'data' entry is stored directly on the message.data attribute in the DB (hence the structure)
-                // This will be used when setting up the response in the thread run.
-                $messages[] = $this->rawMessage(AgentThreadMessage::ROLE_TOOL, $contentItem, [
-                    'data' => [
-                        'tool_call_id' => $toolId,
-                        'tool_name'    => $toolName,
-                    ],
-                ]);
-            } else {
-                // Subsequent messages are user messages
-                $messages[] = $this->rawMessage(AgentThreadMessage::ROLE_USER, $contentItem);
-            }
-        }
-
-        // If there are file URLs, add them as a separate message
-        if ($response->hasFiles()) {
-            $messages[] = $this->filesMessage('', $response->getFiles());
-        }
-
-        return $messages;
-    }
-
     public function message(AgentThreadMessage $message): array
     {
         Log::debug("Appending $message to messages");
 
-        // If summary is set, use that instead of the original content of the message (this is to save on tokens and used by the Summarizer AI Tool)
+        // If summary is set, use that instead of the original content of the message
         $content = $this->formatContentMessage($message->summary ?: $message->content ?: '');
 
         $files = $message->storedFiles()->get();
@@ -140,7 +108,7 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
     protected function formatContentMessage(string|array $content): array
     {
         // If first and last character of the message is a [ and ] then json decode the message as its an array of message elements (ie: text or image_url)
-        // This can happen with tool calls or when the user sends a message with multiple elements
+        // This can happen with when the user sends a message with multiple elements
         if (str_starts_with($content, '[') && str_ends_with($content, ']')) {
             $decodedContent = json_decode($content, true);
             if ($decodedContent) {

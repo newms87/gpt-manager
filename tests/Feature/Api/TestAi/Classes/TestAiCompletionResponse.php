@@ -6,20 +6,14 @@ use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use Newms87\Danx\Input\Input;
 
 /**
- * @property string $id       Unique identifier for the object
- * @property string $object   Type of object (ie: chat.completion)
- * @property int    $created  Unix timestamp
- * @property string $model    Model used for completion
- * @property array  $messages Array of completion choices
- * @property array  $usage    Usage statistics for the model (ie: prompt_tokens)
+ * @property string $id       Unique identifier for the response
+ * @property string $status   Status of the response (completed, etc.)
+ * @property string $model    Model used for response
+ * @property array  $output   Array of response outputs
+ * @property array  $usage    Usage statistics for the model (input_tokens, output_tokens)
  */
 class TestAiCompletionResponse extends Input implements AgentCompletionResponseContract
 {
-    public function isToolCall(): bool
-    {
-        return false;
-    }
-
     public function isMessageEmpty(): bool
     {
         return false;
@@ -35,13 +29,18 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
         return [];
     }
 
-    public function getToolCallerFunctions(): array
-    {
-        return [];
-    }
-
     public function getContent(): ?string
     {
+        // Handle Responses API format
+        if (isset($this->output[0]['content'])) {
+            foreach($this->output[0]['content'] as $content) {
+                if (isset($content['type']) && $content['type'] === 'text' && isset($content['text'])) {
+                    return $content['text'];
+                }
+            }
+        }
+
+        // Fallback to legacy format for backward compatibility in tests
         foreach($this->get('messages', []) as $message) {
             $content = $message['content'] ?? null;
             if (is_array($content)) {
@@ -58,11 +57,11 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function inputTokens(): int
     {
-        return 100000;
+        return $this->usage['input_tokens'] ?? 100000;
     }
 
     public function outputTokens(): int
     {
-        return 500;
+        return $this->usage['output_tokens'] ?? 500;
     }
 }

@@ -2,20 +2,11 @@
 
 namespace App\Api\AgentApiContracts;
 
-use App\AiTools\AiToolCaller;
-
 interface AgentCompletionResponseContract
 {
     public function isMessageEmpty(): bool;
 
-    public function isToolCall(): bool;
-
     public function getDataFields(): array;
-
-    /**
-     * @return array|AiToolCaller[]
-     */
-    public function getToolCallerFunctions(): array;
 
     /**
      * The completion is finished

@@ -30,8 +30,10 @@ class AgentThreadRun extends Model implements AuditableContract
         STATUS_STOPPED = 'Stopped',
         STATUS_FAILED = 'Failed';
 
+
     protected $fillable = [
         'agent_model',
+        'api_options',
         'completed_at',
         'failed_at',
         'input_tokens',
@@ -47,17 +49,15 @@ class AgentThreadRun extends Model implements AuditableContract
         'started_at',
         'status',
         'temperature',
-        'tool_choice',
-        'tools',
         'total_cost',
     ];
 
     public function casts(): array
     {
         return [
-            'tools'                => 'json',
             'json_schema_config'   => 'json',
             'response_json_schema' => 'json',
+            'api_options'          => 'json',
             'temperature'          => 'float',
             'started_at'           => 'datetime',
             'stopped_at'           => 'datetime',

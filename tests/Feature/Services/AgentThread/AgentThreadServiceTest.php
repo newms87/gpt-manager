@@ -46,7 +46,6 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
         $this->assertEquals($temperature, $threadRun->temperature);
-        $this->assertEquals($agent->tools, $threadRun->tools);
         $this->assertEquals(AgentThreadRun::RESPONSE_FORMAT_TEXT, $threadRun->response_format);
     }
 

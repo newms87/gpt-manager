@@ -19,8 +19,7 @@ class AgentThreadMessage extends Model implements AuditableContract
 
     const string
         ROLE_USER = 'user',
-        ROLE_ASSISTANT = 'assistant',
-        ROLE_TOOL = 'tool';
+        ROLE_ASSISTANT = 'assistant';
 
     protected $fillable = [
         'role',
@@ -28,6 +27,7 @@ class AgentThreadMessage extends Model implements AuditableContract
         'summary',
         'content',
         'data',
+        'api_response_id',
     ];
 
     public function casts()
@@ -50,11 +50,6 @@ class AgentThreadMessage extends Model implements AuditableContract
     public function isUser(): bool
     {
         return $this->role === self::ROLE_USER;
-    }
-
-    public function isTool(): bool
-    {
-        return $this->role === self::ROLE_TOOL;
     }
 
     /**
@@ -80,6 +75,54 @@ class AgentThreadMessage extends Model implements AuditableContract
         }
 
         return ['text_content' => $content];
+    }
+
+    /**
+     * Check if this message has a tracked API response ID
+     */
+    public function hasApiResponseId(): bool
+    {
+        return !empty($this->api_response_id);
+    }
+
+    /**
+     * Set the API response ID for this message
+     */
+    public function setApiResponseId(string $responseId): void
+    {
+        $this->api_response_id = $responseId;
+        $this->save();
+    }
+
+    /**
+     * Get the last message in the thread with an API response ID
+     */
+    public static function getLastTrackedMessageInThread(AgentThread $thread): ?self
+    {
+        return $thread->messages()
+            ->whereNotNull('api_response_id')
+            ->orderBy('created_at', 'desc')
+            ->first();
+    }
+
+    /**
+     * Get all messages in the thread after the last tracked response
+     */
+    public static function getUnsentMessagesInThread(AgentThread $thread): array
+    {
+        $lastTrackedMessage = self::getLastTrackedMessageInThread($thread);
+
+        if (!$lastTrackedMessage) {
+            // No tracked messages, return all messages
+            return $thread->messages()->orderBy('created_at')->get()->toArray();
+        }
+
+        // Return messages created after the last tracked message
+        return $thread->messages()
+            ->where('created_at', '>', $lastTrackedMessage->created_at)
+            ->orderBy('created_at')
+            ->get()
+            ->toArray();
     }
 
     public function __toString()

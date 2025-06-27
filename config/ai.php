@@ -1,9 +1,5 @@
 <?php
 
-use App\AiTools\GoogleSerp\GoogleSerpAiTool;
-use App\AiTools\Summarizer\SummarizerAiTool;
-use App\AiTools\UrlToImage\UrlToImageAiTool;
-use App\AiTools\UrlToMarkdown\UrlToMarkdownAiTool;
 use App\Api\OpenAi\OpenAiApi;
 use App\Api\PerplexityAi\PerplexityAiApi;
 
@@ -94,31 +90,5 @@ return [
     'apis'          => [
         OpenAiApi::$serviceName       => OpenAiApi::class,
         PerplexityAiApi::$serviceName => PerplexityAiApi::class,
-    ],
-    'tools'         => [
-        [
-            'class'       => UrlToImageAiTool::class,
-            'name'        => UrlToImageAiTool::$name,
-            'description' => UrlToImageAiTool::description(),
-            'parameters'  => UrlToImageAiTool::parameters(),
-        ],
-        [
-            'class'       => UrlToMarkdownAiTool::class,
-            'name'        => UrlToMarkdownAiTool::$name,
-            'description' => UrlToMarkdownAiTool::description(),
-            'parameters'  => UrlToMarkdownAiTool::parameters(),
-        ],
-        [
-            'class'       => SummarizerAiTool::class,
-            'name'        => SummarizerAiTool::$name,
-            'description' => SummarizerAiTool::description(),
-            'parameters'  => SummarizerAiTool::parameters(),
-        ],
-        [
-            'class'       => GoogleSerpAiTool::class,
-            'name'        => GoogleSerpAiTool::$name,
-            'description' => GoogleSerpAiTool::description(),
-            'parameters'  => GoogleSerpAiTool::parameters(),
-        ],
     ],
 ];

@@ -19,7 +19,6 @@ class AgentResource extends ActionResource
             'api'            => $agent->api,
             'model'          => $agent->model,
             'temperature'    => $agent->temperature,
-            'tools'          => $agent->tools ?: [],
             'retry_count'    => $agent->retry_count,
             'threads_count'  => $agent->threads_count,
             'created_at'     => $agent->created_at,
