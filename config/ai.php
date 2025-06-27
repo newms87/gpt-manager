@@ -7,8 +7,8 @@ use App\AiTools\UrlToMarkdown\UrlToMarkdownAiTool;
 use App\Api\OpenAi\OpenAiApi;
 use App\Api\PerplexityAi\PerplexityAiApi;
 
-$million  = 1000000;
-$thousand = 1000;
+$million  = 1_000_000;
+$thousand = 1_000;
 
 return [
     // The seed to use for AI completions to ensure consistent results
@@ -37,24 +37,6 @@ return [
             ],
         ],
         OpenAiApi::$serviceName       => [
-            'o1'          => [
-                'input'   => 15 / $million,
-                'output'  => 60 / $million,
-                'context' => 200000,
-                'image'   => [
-                    'tokens' => 150,
-                    'base'   => 75,
-                    'tile'   => '512x512',
-                ],
-            ],
-            'o1-mini'     => [
-                'input'            => 1.1 / $million,
-                'output'           => 4.4 / $million,
-                'context'          => 128000,
-                'excluded_options' => [
-                    'temperature',
-                ],
-            ],
             'o4-mini'     => [
                 'input'            => 1.1 / $million,
                 'output'           => 4.4 / $million,
