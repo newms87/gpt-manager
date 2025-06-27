@@ -73,55 +73,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, watch } from "vue";
 import { FaSolidGear, FaSolidX } from "danx-icon";
 import { useAssistantGlobalContext } from "@/composables/useAssistantGlobalContext";
-import { useAssistantDebug } from "@/composables/useAssistantDebug";
+import { useAssistantChat } from "@/composables/useAssistantChat";
 
-// Get capabilities directly from the global context
+// Get capabilities from global state
 const { currentContext } = useAssistantGlobalContext();
+const { contextCapabilities, capabilitiesLoaded, loadCapabilities } = useAssistantChat();
 
 // State
 const showCapabilitiesMenu = ref(false);
-const { debugError } = useAssistantDebug();
-const contextCapabilities = ref<Array<{ key: string; label: string }>>([]);
-const capabilitiesLoaded = ref(false);
-
-// Load capabilities from API (only when needed)
-async function loadCapabilities() {
-    try {
-        if (!currentContext.value || capabilitiesLoaded.value) return;
-        
-        const { request } = await import("quasar-ui-danx");
-        const params = new URLSearchParams();
-        params.append('context', currentContext.value);
-        
-        const url = `assistant/capabilities?${params.toString()}`;
-        const capabilities = await request.get(url);
-        
-        if (capabilities) {
-            contextCapabilities.value = Object.entries(capabilities).map(([key, label]) => ({
-                key,
-                label: label as string,
-            }));
-            capabilitiesLoaded.value = true;
-        }
-    } catch (error) {
-        debugError('loading capabilities', error);
-    }
-}
 
 // Reset capabilities when context changes
-import { watch } from "vue";
 watch(currentContext, () => {
-    capabilitiesLoaded.value = false;
-    contextCapabilities.value = [];
+    // Capabilities will be auto-cleared by the composable
 });
 
 // Load capabilities when button is clicked
-function handleButtonClick() {
-    if (!capabilitiesLoaded.value) {
-        loadCapabilities();
+async function handleButtonClick() {
+    if (!capabilitiesLoaded.value && currentContext.value) {
+        await loadCapabilities(currentContext.value);
     }
     showCapabilitiesMenu.value = !showCapabilitiesMenu.value;
 }

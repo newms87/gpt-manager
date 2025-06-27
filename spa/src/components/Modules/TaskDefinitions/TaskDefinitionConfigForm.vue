@@ -59,7 +59,7 @@ const props = defineProps<{
 
 const updateAction = dxTaskDefinition.getAction("update");
 const TaskRunnerConfigComponent = computed(() => TaskRunnerClasses[props.taskDefinition.task_runner_name]?.config || TaskRunnerClasses["AI Agent"].config);
-const sourceTaskDefinitions = computed(() => props.workflowNode?.connectionsAsTarget?.map(c => c.sourceNode.taskDefinition));
+const sourceTaskDefinitions = computed(() => props.workflowNode?.connectionsAsTarget?.filter(c => !!c.sourceNode).map(c => c.sourceNode.taskDefinition));
 
 onMounted(async () => {
 	if (props.workflowNode) {

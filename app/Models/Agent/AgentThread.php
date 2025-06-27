@@ -3,6 +3,7 @@
 namespace App\Models\Agent;
 
 use App\Events\AgentThreadUpdatedEvent;
+use App\Models\Assistant\AssistantAction;
 use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -93,6 +94,14 @@ class AgentThread extends Model implements AuditableContract
         return $this->messages()->orderBy('id');
     }
 
+    public function sortedVisibleMessages(): HasMany|AgentThreadMessage
+    {
+        return $this->sortedMessages()->where(function ($query) {
+            $query->whereNull('data->hidden_from_user')
+                ->orWhere('data->hidden_from_user', false);
+        });
+    }
+
     public function agent(): BelongsTo|Agent
     {
         return $this->belongsTo(Agent::class);
@@ -100,7 +109,7 @@ class AgentThread extends Model implements AuditableContract
 
     public function assistantActions(): HasMany
     {
-        return $this->hasMany(\App\Models\Assistant\AssistantAction::class);
+        return $this->hasMany(AssistantAction::class)->orderByDesc('created_at');
     }
 
     public function isRunning(): bool

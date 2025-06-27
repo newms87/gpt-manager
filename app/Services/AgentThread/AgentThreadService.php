@@ -49,6 +49,7 @@ class AgentThreadService
         return $this;
     }
 
+
     /**
      * Creates an agent thread run based on the defined parameters configured for the service
      */
@@ -228,8 +229,10 @@ class AgentThreadService
                 } catch(ConnectException $exception) {
                     // Handle connection errors
                     if (str_contains($exception->getMessage(), 'timed out') && ($retries-- > 0)) {
-                        Log::warning("Connection timed out from completion API. Retrying in 5 seconds...");
-                        sleep(5);
+                        // Apply a random exponential backoff strategy
+                        $exponentialTimeout = random_int(5, 10) * max(10, pow(3, $agent->retry_count - $retries - 1));
+                        Log::warning("Connection timed out from completion API. Retrying in $exponentialTimeout seconds...");
+                        sleep($exponentialTimeout);
                         continue;
                     }
 
@@ -322,6 +325,7 @@ class AgentThreadService
                 $corePrompt .= "\nResponse Fragment Name: {$agentThreadRun->responseFragment->name}";
             }
         }
+
 
         $messages[] = $apiFormatter->rawMessage(AgentThreadMessage::ROLE_USER, $corePrompt);
 
@@ -431,7 +435,6 @@ STR;
 
         static::log("AgentThread response is finished");
     }
-
 
 
 }

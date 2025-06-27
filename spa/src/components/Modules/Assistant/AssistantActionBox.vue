@@ -9,7 +9,7 @@
                         :class="statusIndicatorClass"
                     />
                     <span class="action-title font-medium text-sm text-gray-900">
-                        {{ action.title }}
+                        {{ formatActionType(action.action_type) }}
                     </span>
                 </div>
                 <div class="action-status">
@@ -95,27 +95,11 @@
                 class="action-buttons flex items-center justify-end space-x-2"
             >
                 <button
-                    v-if="action.preview_data && action.is_pending"
-                    class="preview-button text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+                    v-if="action.is_pending"
+                    class="preview-button bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
                     @click="handlePreview"
                 >
-                    Preview Changes
-                </button>
-                
-                <button
-                    v-if="action.is_pending"
-                    class="approve-button bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                    @click="handleApprove"
-                >
-                    Approve
-                </button>
-                
-                <button
-                    v-if="action.is_pending || action.is_in_progress"
-                    class="cancel-button bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                    @click="handleCancel"
-                >
-                    Cancel
+                    Review & Approve
                 </button>
             </div>
 
@@ -144,6 +128,10 @@ import {
     FaSolidSpinner,
 } from "danx-icon";
 import { AssistantAction } from "./types";
+import { useAssistantChat } from "@/composables/useAssistantChat";
+
+// Get action methods from composable
+const { approveAction, cancelAction } = useAssistantChat();
 
 // Props
 interface Props {
@@ -152,10 +140,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
-// Emits
+// Emits (only preview now)
 interface Emits {
-    (e: 'approve', action: AssistantAction): void;
-    (e: 'cancel', action: AssistantAction): void;
     (e: 'preview', action: AssistantAction): void;
 }
 
@@ -203,12 +189,12 @@ const showActionButtons = computed(() => {
 });
 
 // Methods
-function handleApprove(): void {
-    emit('approve', props.action);
+async function handleApprove(): Promise<void> {
+    await approveAction(props.action.id);
 }
 
-function handleCancel(): void {
-    emit('cancel', props.action);
+async function handleCancel(): Promise<void> {
+    await cancelAction(props.action.id);
 }
 
 function handlePreview(): void {
@@ -259,6 +245,28 @@ function formatResultMessage(): string {
     } catch (error) {
         return 'Action completed successfully';
     }
+}
+
+function formatActionType(actionType: string): string {
+    // Convert snake_case action types to human-readable titles
+    const typeMap: Record<string, string> = {
+        'create_schema': 'Create Schema',
+        'modify_schema': 'Modify Schema',
+        'delete_schema': 'Delete Schema',
+        'add_property': 'Add Property',
+        'remove_property': 'Remove Property',
+        'modify_property': 'Modify Property',
+        'create_workflow': 'Create Workflow',
+        'modify_workflow': 'Modify Workflow',
+        'create_agent': 'Create Agent',
+        'modify_agent': 'Modify Agent',
+        'execute_task': 'Execute Task',
+        'run_workflow': 'Run Workflow',
+    };
+    
+    return typeMap[actionType] || actionType.split('_').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
 }
 </script>
 

@@ -105,6 +105,16 @@ function formatTime(timestamp: string): string {
 }
 
 function formatMessageContent(content: string): string {
+    // Check if content is JSON and extract message field
+    try {
+        const jsonData = JSON.parse(content);
+        if (jsonData && typeof jsonData === 'object' && jsonData.message) {
+            content = jsonData.message;
+        }
+    } catch {
+        // Not JSON, use content as-is
+    }
+    
     // Basic markdown-like formatting
     return content
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')

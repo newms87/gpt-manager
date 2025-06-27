@@ -2,6 +2,7 @@
 
 namespace App\Resources\Agent;
 
+use App\Http\Resources\Assistant\AssistantActionResource;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
 use App\Resources\Audit\JobDispatchResource;
@@ -22,13 +23,17 @@ class AgentThreadResource extends ActionResource
             'timestamp'        => $agentThread->updated_at,
             'can'              => $agentThread->can(),
 
-            'messages'    => fn($fields) => $agentThread->canView() ? MessageResource::collection($agentThread->sortedMessages, $fields) : [
+            'messages'    => fn($fields) => $agentThread->canView() ? MessageResource::collection(
+                $agentThread->sortedVisibleMessages,
+                $fields
+            ) : [
                 new AgentThreadMessage([
                     'role'    => AgentThreadMessage::ROLE_USER,
                     'title'   => "Not Authorized",
                     'content' => "The contents of this message are hidden. You are not authorized to view this thread as it contains sensitive information belonging to another team",
                 ]),
             ],
+            'actions'     => fn($fields) => AssistantActionResource::collection($agentThread->assistantActions, $fields),
             'jobDispatch' => fn($fields) => JobDispatchResource::make($agentThread->lastRun?->jobDispatch, $fields),
         ];
     }

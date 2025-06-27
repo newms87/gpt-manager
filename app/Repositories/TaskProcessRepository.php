@@ -6,6 +6,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Traits\HasDebugLogging;
+use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class TaskProcessRepository extends ActionRepository
@@ -45,17 +46,17 @@ class TaskProcessRepository extends ActionRepository
      */
     public function checkForTimeout(TaskProcess $taskProcess): bool
     {
-        // If a task is in pending state and hasn't been modified for 2 minutes, it is considered timed out
-        if ($taskProcess->isStatusPending() && $taskProcess->updated_at->isBefore(now()->subSeconds(self::PENDING_PROCESS_TIMEOUT))) {
-            static::log("\t$taskProcess->id: Pending / Dispatch timeout");
-            TaskProcessRunnerService::handleTimeout($taskProcess);
+        LockHelper::acquire($taskProcess);
 
-            return true;
-        } elseif ($taskProcess->isStatusRunning() && $taskProcess->isPastTimeout()) {
-            static::log("\t$taskProcess->id: Running timeout");
-            TaskProcessRunnerService::handleTimeout($taskProcess);
+        try {
+            if ($taskProcess->isStatusRunning() && $taskProcess->isPastTimeout()) {
+                static::log("\t$taskProcess->id: Running timeout");
+                TaskProcessRunnerService::handleTimeout($taskProcess);
 
-            return true;
+                return true;
+            }
+        } finally {
+            LockHelper::release($taskProcess);
         }
 
         return false;

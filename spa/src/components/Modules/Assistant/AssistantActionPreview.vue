@@ -1,345 +1,402 @@
 <template>
-    <FullScreenDialog
-        v-model="isVisible"
-        title="Action Preview"
-        :loading="loading"
+    <ConfirmDialog
+        v-if="visible"
+        :title="formatActionType(action.action_type)"
+        color="blue"
+        :hide-cancel="true"
+        :hide-ok="true"
+        content-class="!max-w-4xl"
         @close="handleClose"
     >
-        <template #default>
-            <div class="action-preview-content p-6">
-                <!-- Action Header -->
-                <div class="action-header mb-6">
-                    <div class="flex items-center space-x-3 mb-2">
-                        <div
-                            class="status-indicator w-4 h-4 rounded-full bg-yellow-400"
-                        />
-                        <h2 class="text-xl font-semibold text-gray-900">
-                            {{ action.title }}
-                        </h2>
-                        <div class="action-type bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                            {{ formatActionType() }}
+        <div class="action-preview-container">
+            <!-- Action Description Section -->
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <div :class="['w-10 h-10 rounded-full flex items-center justify-center', actionIconBg]">
+                            <component :is="actionIcon" class="w-5 h-5 text-white" />
                         </div>
                     </div>
-                    
-                    <p
-                        v-if="action.description"
-                        class="text-gray-600 text-sm"
-                    >
-                        {{ action.description }}
-                    </p>
-                </div>
-
-                <!-- Target Information -->
-                <div
-                    v-if="action.target_type"
-                    class="target-info bg-gray-50 rounded-lg p-4 mb-6"
-                >
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">
-                        Target
-                    </h3>
-                    <div class="text-sm text-gray-600">
-                        <div><strong>Type:</strong> {{ formatTargetType() }}</div>
-                        <div v-if="action.target_id">
-                            <strong>ID:</strong> {{ action.target_id }}
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                            {{ action.description || 'Action Details' }}
+                        </h3>
+                        <div v-if="action.target_type" class="text-sm text-gray-600">
+                            <span class="font-medium">Target:</span> 
+                            {{ formatTargetType(action.target_type) }}
+                            <span v-if="action.target_id" class="ml-1">
+                                (ID: {{ action.target_id }})
+                            </span>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Changes Preview -->
-                <div
-                    v-if="action.preview_data"
-                    class="changes-preview mb-6"
-                >
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        Proposed Changes
-                    </h3>
-                    
-                    <!-- Schema Changes -->
-                    <div
-                        v-if="action.context === 'schema-editor'"
-                        class="schema-changes"
-                    >
-                        <SchemaChangePreview
-                            :preview-data="action.preview_data"
-                            :action-type="action.action_type"
-                        />
-                    </div>
-                    
-                    <!-- Generic Changes -->
-                    <div
-                        v-else
-                        class="generic-changes bg-white border border-gray-200 rounded-lg p-4"
-                    >
-                        <pre class="text-sm text-gray-700 whitespace-pre-wrap overflow-auto max-h-96"><code>{{ formatPreviewData() }}</code></pre>
-                    </div>
+            <!-- Preview Content Section -->
+            <div class="bg-white rounded-lg border border-gray-200 mb-6 overflow-hidden">
+                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                    <h4 class="text-base font-medium text-gray-900">
+                        Preview Changes
+                    </h4>
                 </div>
-
-                <!-- Action Payload -->
-                <div
-                    v-if="action.payload && showAdvanced"
-                    class="action-payload mb-6"
-                >
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        Technical Details
-                    </h3>
-                    <div class="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-auto max-h-64">
-                        <pre><code>{{ JSON.stringify(action.payload, null, 2) }}</code></pre>
-                    </div>
-                </div>
-
-                <!-- Risk Assessment -->
-                <div class="risk-assessment bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                    <div class="flex items-start space-x-3">
-                        <FaSolidTriangleExclamation class="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                            <h4 class="font-medium text-yellow-800 mb-2">
-                                Review Changes Carefully
-                            </h4>
-                            <div class="text-sm text-yellow-700 space-y-1">
-                                <div v-if="action.context === 'schema-editor'">
-                                    • Schema changes may affect existing data validation
-                                </div>
-                                <div v-if="action.action_type.includes('delete')">
-                                    • This action will permanently remove data
-                                </div>
-                                <div>
-                                    • Changes cannot be automatically undone
-                                </div>
-                                <div>
-                                    • Test in development before applying to production
-                                </div>
+                
+                <div class="preview-content">
+                    <!-- Schema Editor for schema-related actions -->
+                    <div v-if="isSchemaAction" class="p-4">
+                        <div class="mb-4 text-sm text-gray-600">
+                            The following schema will be {{ actionVerb }}:
+                        </div>
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <JSONSchemaEditor
+                                v-if="schemaContent"
+                                :model-value="schemaContent"
+                                :readonly="true"
+                                :show-toolbar="false"
+                                class="h-96"
+                            />
+                            <div v-else class="p-8 text-center text-gray-500">
+                                No schema preview available
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Toggle Advanced -->
-                <div class="advanced-toggle mb-6">
-                    <button
-                        class="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                        @click="showAdvanced = !showAdvanced"
-                    >
-                        {{ showAdvanced ? 'Hide' : 'Show' }} Technical Details
-                        <FaSolidChevronDown
-                            v-if="!showAdvanced"
-                            class="w-3 h-3 inline ml-1"
-                        />
-                        <FaSolidChevronUp
-                            v-else
-                            class="w-3 h-3 inline ml-1"
-                        />
-                    </button>
+                    <!-- Markdown Editor for content changes -->
+                    <div v-else-if="isContentAction" class="p-4">
+                        <div class="mb-4 text-sm text-gray-600">
+                            The following content will be {{ actionVerb }}:
+                        </div>
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <MarkdownEditor
+                                v-if="contentPreview"
+                                :model-value="contentPreview"
+                                :readonly="true"
+                                :show-toolbar="false"
+                                class="h-96"
+                            />
+                            <div v-else class="p-8 text-center text-gray-500">
+                                No content preview available
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generic JSON Preview -->
+                    <div v-else class="p-4">
+                        <div v-if="action.preview_data" class="bg-gray-900 rounded-lg p-4 overflow-auto max-h-96">
+                            <pre class="text-sm text-gray-100"><code>{{ JSON.stringify(action.preview_data, null, 2) }}</code></pre>
+                        </div>
+                        <div v-else class="text-center text-gray-500 py-8">
+                            No preview data available
+                        </div>
+                    </div>
                 </div>
             </div>
-        </template>
 
-        <template #actions>
-            <div class="flex items-center justify-between w-full">
-                <div class="flex items-center space-x-2">
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
                     <button
-                        class="cancel-button bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                        @click="handleCancel"
+                        class="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                        @click="handleReject"
                     >
-                        Cancel Action
+                        <FaSolidXmark class="w-4 h-4 inline mr-2" />
+                        Reject & Cancel
+                    </button>
+                    <button
+                        class="px-6 py-2.5 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+                        @click="handleRequestChange"
+                    >
+                        <FaSolidPencil class="w-4 h-4 inline mr-2" />
+                        Request Changes
                     </button>
                 </div>
                 
-                <div class="flex items-center space-x-2">
-                    <button
-                        class="close-button bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors"
-                        @click="handleClose"
-                    >
-                        Close Preview
-                    </button>
-                    <button
-                        class="approve-button bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                        @click="handleApprove"
-                    >
-                        <FaSolidCheck class="w-4 h-4 inline mr-2" />
-                        Approve & Execute
-                    </button>
-                </div>
+                <button
+                    class="px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                    :disabled="isProcessing"
+                    @click="handleApprove"
+                >
+                    <FaSolidSpinner v-if="isProcessing" class="w-4 h-4 inline mr-2 animate-spin" />
+                    <FaSolidCheck v-else class="w-4 h-4 inline mr-2" />
+                    Approve & Execute
+                </button>
             </div>
-        </template>
-    </FullScreenDialog>
+        </div>
+    </ConfirmDialog>
+
+    <!-- Request Changes Dialog -->
+    <ConfirmDialog
+        v-if="showRequestChangeDialog"
+        title="Request Changes"
+        color="yellow"
+        confirm-text="Send Request"
+        @confirm="handleSendChangeRequest"
+        @close="showRequestChangeDialog = false"
+    >
+        <div class="space-y-4">
+            <p class="text-gray-600">
+                Please describe what changes you'd like to make to this action:
+            </p>
+            <textarea
+                v-model="changeRequest"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                rows="4"
+                placeholder="Describe the changes you'd like..."
+            />
+        </div>
+    </ConfirmDialog>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { FullScreenDialog } from "quasar-ui-danx";
+import { ConfirmDialog } from "quasar-ui-danx";
 import {
     FaSolidCheck,
-    FaSolidChevronDown,
-    FaSolidChevronUp,
-    FaSolidTriangleExclamation,
+    FaSolidXmark,
+    FaSolidPencil,
+    FaSolidSpinner,
+    FaSolidWandMagicSparkles,
+    FaSolidCode,
+    FaSolidFileLines,
+    FaSolidPlus,
+    FaSolidPenToSquare,
+    FaSolidTrash,
 } from "danx-icon";
-import SchemaChangePreview from "./SchemaChangePreview.vue";
+import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor.vue";
+import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor.vue";
 import { AssistantAction } from "./types";
+import { useAssistantChat } from "@/composables/useAssistantChat";
+import { notify } from "quasar-ui-danx";
 
 // Props
 interface Props {
     action: AssistantAction;
     visible?: boolean;
-    loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     visible: false,
-    loading: false,
 });
 
 // Emits
 interface Emits {
-    (e: 'approve'): void;
-    (e: 'cancel'): void;
     (e: 'close'): void;
 }
 
 const emit = defineEmits<Emits>();
 
 // State
-const isVisible = ref(props.visible);
-const showAdvanced = ref(false);
+const isProcessing = ref(false);
+const showRequestChangeDialog = ref(false);
+const changeRequest = ref('');
 
-// Watch for visibility changes
-watch(
-    () => props.visible,
-    (newValue) => {
-        isVisible.value = newValue;
-    }
-);
+// Get methods from composable
+const { approveAction, cancelAction, sendMessage } = useAssistantChat();
 
 // Computed properties
-const actionTypeColors = computed(() => {
-    const colors = {
-        create: 'bg-green-100 text-green-800',
-        update: 'bg-blue-100 text-blue-800',
-        modify: 'bg-blue-100 text-blue-800',
-        delete: 'bg-red-100 text-red-800',
-        remove: 'bg-red-100 text-red-800',
-        validate: 'bg-purple-100 text-purple-800',
-        generate: 'bg-yellow-100 text-yellow-800',
-    };
+const isSchemaAction = computed(() => {
+    return props.action.context === 'schema-editor' || 
+           props.action.action_type.includes('schema') ||
+           props.action.target_type === 'schema';
+});
+
+const isContentAction = computed(() => {
+    return props.action.action_type.includes('content') ||
+           props.action.action_type.includes('text') ||
+           props.action.action_type.includes('document');
+});
+
+const actionVerb = computed(() => {
+    const action = props.action.action_type.toLowerCase();
+    if (action.includes('create') || action.includes('add')) return 'created';
+    if (action.includes('modify') || action.includes('update') || action.includes('edit')) return 'modified';
+    if (action.includes('delete') || action.includes('remove')) return 'deleted';
+    return 'processed';
+});
+
+const actionIcon = computed(() => {
+    const action = props.action.action_type.toLowerCase();
+    if (action.includes('create') || action.includes('add')) return FaSolidPlus;
+    if (action.includes('modify') || action.includes('update') || action.includes('edit')) return FaSolidPenToSquare;
+    if (action.includes('delete') || action.includes('remove')) return FaSolidTrash;
+    if (action.includes('schema')) return FaSolidCode;
+    if (action.includes('content')) return FaSolidFileLines;
+    return FaSolidWandMagicSparkles;
+});
+
+const actionIconBg = computed(() => {
+    const action = props.action.action_type.toLowerCase();
+    if (action.includes('create') || action.includes('add')) return 'bg-green-600';
+    if (action.includes('modify') || action.includes('update') || action.includes('edit')) return 'bg-blue-600';
+    if (action.includes('delete') || action.includes('remove')) return 'bg-red-600';
+    return 'bg-purple-600';
+});
+
+const schemaContent = computed(() => {
+    if (!props.action.preview_data) return null;
     
-    const actionType = props.action.action_type.toLowerCase();
-    
-    for (const [key, color] of Object.entries(colors)) {
-        if (actionType.includes(key)) {
-            return color;
-        }
+    // Check for after_schema in preview data
+    if (props.action.preview_data.after_schema) {
+        return JSON.stringify(props.action.preview_data.after_schema, null, 2);
     }
     
-    return 'bg-gray-100 text-gray-800';
+    // Check for schema in payload
+    if (props.action.payload?.schema) {
+        return JSON.stringify(props.action.payload.schema, null, 2);
+    }
+    
+    // Check if preview_data itself is a schema
+    if (props.action.preview_data.properties || props.action.preview_data.type) {
+        return JSON.stringify(props.action.preview_data, null, 2);
+    }
+    
+    return null;
+});
+
+const contentPreview = computed(() => {
+    if (!props.action.preview_data) return null;
+    
+    // Check for content fields
+    if (props.action.preview_data.content) {
+        return props.action.preview_data.content;
+    }
+    
+    if (props.action.preview_data.text) {
+        return props.action.preview_data.text;
+    }
+    
+    if (props.action.preview_data.markdown) {
+        return props.action.preview_data.markdown;
+    }
+    
+    // Check payload for content
+    if (props.action.payload?.content) {
+        return props.action.payload.content;
+    }
+    
+    return null;
 });
 
 // Methods
-function handleApprove(): void {
-    emit('approve');
+async function handleApprove(): Promise<void> {
+    isProcessing.value = true;
+    try {
+        await approveAction(props.action);
+        notify.success('Action approved and executing');
+        handleClose();
+    } catch (error) {
+        notify.error('Failed to approve action');
+    } finally {
+        isProcessing.value = false;
+    }
 }
 
-function handleCancel(): void {
-    emit('cancel');
+async function handleReject(): Promise<void> {
+    isProcessing.value = true;
+    try {
+        await cancelAction(props.action);
+        notify.info('Action cancelled');
+        handleClose();
+    } catch (error) {
+        notify.error('Failed to cancel action');
+    } finally {
+        isProcessing.value = false;
+    }
 }
+
+function handleRequestChange(): void {
+    showRequestChangeDialog.value = true;
+}
+
+async function handleSendChangeRequest(): Promise<void> {
+    if (!changeRequest.value.trim()) {
+        notify.warning('Please describe the changes you want');
+        return;
+    }
+    
+    // Cancel the current action
+    await cancelAction(props.action);
+    
+    // Send a new message with the change request
+    const message = `Please modify the previous action: ${changeRequest.value}`;
+    await sendMessage(message);
+    
+    // Reset and close
+    changeRequest.value = '';
+    showRequestChangeDialog.value = false;
+    handleClose();
+}
+
 
 function handleClose(): void {
-    isVisible.value = false;
     emit('close');
 }
 
-function formatActionType(): string {
-    return props.action.action_type
-        .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-}
-
-function formatTargetType(): string {
-    return props.action.target_type
-        .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-}
-
-function formatPreviewData(): string {
-    if (!props.action.preview_data) return 'No preview data available';
+function formatActionType(actionType: string): string {
+    const typeMap: Record<string, string> = {
+        'create_schema': 'Create Schema',
+        'modify_schema': 'Modify Schema', 
+        'delete_schema': 'Delete Schema',
+        'add_property': 'Add Property',
+        'remove_property': 'Remove Property',
+        'modify_property': 'Modify Property',
+        'create_workflow': 'Create Workflow',
+        'modify_workflow': 'Modify Workflow',
+        'create_agent': 'Create Agent',
+        'modify_agent': 'Modify Agent',
+        'execute_task': 'Execute Task',
+        'run_workflow': 'Run Workflow',
+    };
     
-    try {
-        if (typeof props.action.preview_data === 'object') {
-            return JSON.stringify(props.action.preview_data, null, 2);
-        }
-        
-        return String(props.action.preview_data);
-    } catch (error) {
-        return 'Error formatting preview data';
-    }
+    return typeMap[actionType] || actionType.split('_').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+}
+
+function formatTargetType(targetType: string): string {
+    return targetType.split('_').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
 }
 </script>
 
 <style lang="scss" scoped>
-.action-preview-content {
-    max-width: 4xl;
-    margin: 0 auto;
+.action-preview-container {
+    min-height: 400px;
+}
 
-    .status-indicator {
-        flex-shrink: 0;
-    }
-
-    .changes-preview {
-        pre {
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.875rem;
-            line-height: 1.5;
-            
-            &::-webkit-scrollbar {
-                width: 8px;
-                height: 8px;
-            }
-            
-            &::-webkit-scrollbar-track {
-                background: #f1f1f1;
-                border-radius: 4px;
-            }
-            
-            &::-webkit-scrollbar-thumb {
-                background: #c1c1c1;
-                border-radius: 4px;
-                
-                &:hover {
-                    background: #a1a1a1;
-                }
-            }
-        }
-    }
-
-    .action-payload {
-        code {
-            font-size: 0.8rem;
-            line-height: 1.4;
-        }
-    }
-
-    .risk-assessment {
-        animation: fadeIn 0.3s ease-out;
+.preview-content {
+    :deep(.schema-editor),
+    :deep(.markdown-editor) {
+        border: none !important;
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
+        .editor-container {
+            border: none !important;
         }
-    }
-
-    .advanced-toggle {
-        border-top: 1px solid #e5e7eb;
-        padding-top: 1rem;
     }
 }
 
-// Responsive adjustments
-@media (max-width: 768px) {
-    .action-preview-content {
-        padding: 1rem;
+pre {
+    margin: 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    
+    &::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
         
-        .changes-preview pre {
-            font-size: 0.75rem;
+        &:hover {
+            background: rgba(255, 255, 255, 0.5);
         }
     }
 }

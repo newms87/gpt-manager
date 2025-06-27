@@ -34,7 +34,7 @@
 		>
 			<ArtifactList
 				:filter="artifactsFilter"
-				class="w-[60rem] h-[80vh]"
+				class="w-[80vw] h-[80vh]"
 			/>
 		</InfoDialog>
 	</div>

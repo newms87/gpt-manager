@@ -59,16 +59,55 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { FaSolidRobot, FaSolidLightbulb } from "danx-icon";
+import { useAssistantGlobalContext } from "@/composables/useAssistantGlobalContext";
 
-interface Props {
-    context: string;
-    contextDisplayName: string;
-    welcomeMessage: string;
-    suggestedQuestions: string[];
-}
+const { currentContext, contextDisplayName } = useAssistantGlobalContext();
 
-defineProps<Props>();
+const welcomeMessage = computed((): string => {
+    const contextMessages = {
+        'schema-editor': 'I can help you design and improve JSON schemas. Tell me about the data structure you want to model!',
+        'workflow-editor': 'I can assist with designing and optimizing workflows. What process would you like to automate?',
+        'agent-management': 'I can help configure and optimize AI agents. What kind of agent are you setting up?',
+        'task-management': 'I can help with task definitions and automation. What task are you trying to create?',
+        'general-chat': 'I\'m here to help with any questions about the platform or general assistance.',
+    };
+    
+    return contextMessages[currentContext.value as keyof typeof contextMessages] || contextMessages['general-chat'];
+});
+
+const suggestedQuestions = computed((): string[] => {
+    const contextQuestions = {
+        'schema-editor': [
+            'Help me design a schema for user profiles',
+            'What validation rules should I add?',
+            'How can I improve my current schema?',
+        ],
+        'workflow-editor': [
+            'How do I create an efficient workflow?',
+            'What are workflow best practices?',
+            'Help me optimize my current workflow',
+        ],
+        'agent-management': [
+            'How do I configure agent parameters?',
+            'What makes an effective agent prompt?',
+            'Help me troubleshoot agent behavior',
+        ],
+        'task-management': [
+            'How do I create a new task definition?',
+            'What are the different task runners?',
+            'Help me optimize task performance',
+        ],
+        'general-chat': [
+            'How does this platform work?',
+            'What can I do here?',
+            'Show me around the features',
+        ],
+    };
+    
+    return contextQuestions[currentContext.value as keyof typeof contextQuestions] || contextQuestions['general-chat'];
+});
 
 interface Emits {
     (e: 'question-selected', question: string): void;

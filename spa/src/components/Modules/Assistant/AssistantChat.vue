@@ -8,10 +8,6 @@
             <!-- Welcome Message -->
             <ChatWelcomeMessage
                 v-if="isWelcomeVisible"
-                :context="context"
-                :context-display-name="contextDisplayName"
-                :welcome-message="welcomeMessage"
-                :suggested-questions="suggestedQuestions"
                 @question-selected="handleSuggestedQuestion"
             />
 
@@ -24,7 +20,7 @@
 
             <!-- Typing Indicator -->
             <div
-                v-if="loading || isLoading"
+                v-if="isLoading"
                 class="typing-indicator bg-gray-100 rounded-lg px-4 py-2 max-w-[80%]"
             >
                 <div class="flex items-center space-x-2">
@@ -39,14 +35,7 @@
         </div>
 
         <!-- Message Input -->
-        <ChatInput
-            ref="chatInput"
-            :has-active-thread="!!currentThread"
-            :is-thread-running="isThreadRunning"
-            :disabled="loading || isLoading"
-            @send-message="handleSendMessage"
-            @new-chat="handleNewChat"
-        />
+        <ChatInput ref="chatInput" />
     </div>
 </template>
 
@@ -59,29 +48,7 @@ import ChatWelcomeMessage from "./ChatWelcomeMessage.vue";
 import ChatMessage from "./ChatMessage.vue";
 import ChatInput from "./ChatInput.vue";
 
-// Props
-interface Props {
-    thread?: AssistantThread | null;
-    context: string;
-    contextData?: Record<string, any>;
-    loading?: boolean;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-    thread: null,
-    contextData: () => ({}),
-    loading: false,
-});
-
-// Emits
-interface Emits {
-    (e: 'message', message: string): void;
-    (e: 'thread-created', thread: AssistantThread): void;
-}
-
-const emit = defineEmits<Emits>();
-
-// Composable for chat logic
+// Composable for chat logic - single source of truth
 const {
     isLoading,
     currentThread,
@@ -89,7 +56,7 @@ const {
     isThreadRunning,
     sendMessage,
     startNewChat,
-} = useAssistantChat(props.context, props.contextData);
+} = useAssistantChat();
 
 // Template refs
 const messagesContainer = ref<HTMLElement>();
@@ -97,84 +64,13 @@ const chatInput = ref<InstanceType<typeof ChatInput>>();
 
 // Computed properties
 const isWelcomeVisible = computed(() => {
-    const activeThread = props.thread || currentThread.value;
-    return (!activeThread || !activeThread.messages?.length) && messages.value.length === 0;
-});
-
-const contextDisplayName = computed((): string => {
-    const names = {
-        'schema-editor': 'Schema Editor Assistant',
-        'workflow-editor': 'Workflow Assistant', 
-        'agent-management': 'Agent Configuration Assistant',
-        'task-management': 'Task Management Assistant',
-        'general-chat': 'AI Assistant',
-    };
-    
-    return names[props.context as keyof typeof names] || 'AI Assistant';
-});
-
-const welcomeMessage = computed((): string => {
-    const contextMessages = {
-        'schema-editor': 'I can help you design and improve JSON schemas. Tell me about the data structure you want to model!',
-        'workflow-editor': 'I can assist with designing and optimizing workflows. What process would you like to automate?',
-        'agent-management': 'I can help configure and optimize AI agents. What kind of agent are you setting up?',
-        'task-management': 'I can help with task definitions and automation. What task are you trying to create?',
-        'general-chat': 'I\'m here to help with any questions about the platform or general assistance.',
-    };
-    
-    return contextMessages[props.context as keyof typeof contextMessages] || contextMessages['general-chat'];
-});
-
-const suggestedQuestions = computed((): string[] => {
-    const contextQuestions = {
-        'schema-editor': [
-            'Help me design a schema for user profiles',
-            'What validation rules should I add?',
-            'How can I improve my current schema?',
-        ],
-        'workflow-editor': [
-            'How do I create an efficient workflow?',
-            'What are workflow best practices?',
-            'Help me optimize my current workflow',
-        ],
-        'agent-management': [
-            'How do I configure agent parameters?',
-            'What makes an effective agent prompt?',
-            'Help me troubleshoot agent behavior',
-        ],
-        'task-management': [
-            'How do I create a new task definition?',
-            'What are the different task runners?',
-            'Help me optimize task performance',
-        ],
-        'general-chat': [
-            'How does this platform work?',
-            'What can I do here?',
-            'Show me around the features',
-        ],
-    };
-    
-    return contextQuestions[props.context as keyof typeof contextQuestions] || contextQuestions['general-chat'];
+    return (!currentThread.value || !currentThread.value.messages?.length) && messages.value.length === 0;
 });
 
 // Methods
-async function handleSendMessage(message: string): Promise<void> {
-    await sendMessage(message);
-    emit('message', message);
-    
-    // Emit thread-created if this is a new thread
-    if (currentThread.value && !props.thread) {
-        emit('thread-created', currentThread.value);
-    }
-}
-
-function handleNewChat(): void {
-    startNewChat();
-}
-
 function handleSuggestedQuestion(question: string): void {
     chatInput.value?.setMessage(question);
-    handleSendMessage(question);
+    sendMessage(question);
 }
 
 async function scrollToBottom(): Promise<void> {
@@ -193,11 +89,12 @@ watch(
 );
 
 watch(
-    () => props.loading,
+    () => isLoading.value,
     () => {
         scrollToBottom();
     }
 );
+
 </script>
 
 <style lang="scss" scoped>
