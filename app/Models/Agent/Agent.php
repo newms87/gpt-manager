@@ -3,7 +3,6 @@
 namespace App\Models\Agent;
 
 use App\Api\AgentApiContracts\AgentApiContract;
-use App\Models\Prompt\AgentPromptDirective;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Task\TaskDefinition;
@@ -34,7 +33,6 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
         'description',
         'api',
         'model',
-        'temperature',
         'retry_count',
         'api_options',
     ];
@@ -53,7 +51,6 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
     public function casts(): array
     {
         return [
-            'temperature' => 'float',
             'api_options' => 'json',
         ];
     }
@@ -73,33 +70,9 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
         return $this->hasMany(TaskDefinition::class);
     }
 
-    public function directives(): HasMany|AgentPromptDirective
-    {
-        return $this->hasMany(AgentPromptDirective::class)->orderBy('position');
-    }
-
-    public function topDirectives(): HasMany|AgentPromptDirective
-    {
-        return $this->directives()->where('section', AgentPromptDirective::SECTION_TOP);
-    }
-
-    public function bottomDirectives(): HasMany|AgentPromptDirective
-    {
-        return $this->directives()->where('section', AgentPromptDirective::SECTION_BOTTOM);
-    }
-
     public function threads(): HasMany|AgentThread
     {
         return $this->hasMany(AgentThread::class);
-    }
-
-
-    public function resetModel(): static
-    {
-        $this->api   = config('ai.default_api');
-        $this->model = config('ai.default_model');
-
-        return $this;
     }
 
     public function getModelConfig($key = null, $default = null): ?array
@@ -138,7 +111,6 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
             ],
             'api'         => 'required|string',
             'model'       => 'required|string',
-            'temperature' => 'required|numeric',
             'api_options' => 'nullable|array',
         ])->validate();
 
@@ -167,7 +139,6 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
             'description' => $this->description,
             'api'         => $this->api,
             'model'       => $this->model,
-            'temperature' => $this->temperature,
             'retry_count' => $this->retry_count,
             'api_options' => $this->api_options,
         ]);

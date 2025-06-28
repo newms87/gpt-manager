@@ -102,6 +102,37 @@ class AgentThread extends Model implements AuditableContract
         });
     }
 
+    /**
+     * Get the last message in the thread with an API response ID
+     */
+    public function getLastTrackedMessageInThread(): AgentThreadMessage|null
+    {
+        return $this->messages()
+            ->whereNotNull('api_response_id')
+            ->orderByDesc('created_at')
+            ->first();
+    }
+
+
+    /**
+     * Get all messages in the thread after the last tracked response
+     */
+    public function getUnsentMessagesInThread(): array
+    {
+        $lastTrackedMessage = $this->getLastTrackedMessageInThread();
+
+        if (!$lastTrackedMessage) {
+            // No tracked messages, return all messages
+            return $this->sortedMessages()->get()->toArray();
+        }
+
+        // Return messages created after the last tracked message
+        return $this->sortedMessages()
+            ->where('id', '>', $lastTrackedMessage->id)
+            ->get()
+            ->toArray();
+    }
+
     public function agent(): BelongsTo|Agent
     {
         return $this->belongsTo(Agent::class);

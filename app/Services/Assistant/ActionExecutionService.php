@@ -91,7 +91,9 @@ class ActionExecutionService
         ], [
             'description' => 'Specialized agent for executing complex actions using the O3 model',
             'model' => 'o3',
-            'temperature' => 0.1, // Lower temperature for more precise actions
+            'api_options' => [
+                'temperature' => 0.1, // Lower temperature for more precise actions
+            ],
         ]);
     }
 

@@ -48,7 +48,6 @@ class AgentThreadRun extends Model implements AuditableContract
         'seed',
         'started_at',
         'status',
-        'temperature',
         'total_cost',
     ];
 
@@ -58,7 +57,6 @@ class AgentThreadRun extends Model implements AuditableContract
             'json_schema_config'   => 'json',
             'response_json_schema' => 'json',
             'api_options'          => 'json',
-            'temperature'          => 'float',
             'started_at'           => 'datetime',
             'stopped_at'           => 'datetime',
             'completed_at'         => 'datetime',

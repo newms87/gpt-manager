@@ -3,7 +3,6 @@
 namespace App\Api\OpenAi\Classes;
 
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
-use App\Models\Agent\AgentThreadMessage;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -21,22 +20,6 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
         return $messages;
     }
 
-    public function wrapMessage(string $prefix, array $message, string $suffix = ''): array
-    {
-        if (!isset($message['content'])) {
-            throw new Exception('Error wrapping formatted message: Invalid Open AI AgentThreadMessage format');
-        }
-
-        if (is_string($message['content'])) {
-            $message['content'] = $prefix . $message['content'] . $suffix;
-        } else {
-            $prefixText         = ['type' => 'text', 'text' => $prefix];
-            $suffixText         = ['type' => 'text', 'text' => $suffix];
-            $message['content'] = array_merge([$prefixText], $message['content'], [$suffixText]);
-        }
-
-        return $message;
-    }
 
     public function rawMessage(string $role, string|array $content, array $data = null): array
     {
@@ -46,39 +29,62 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
             ] + ($data ?? []);
     }
 
-    public function message(AgentThreadMessage $message): array
+    /**
+     * Convert raw messages from AgentThreadService to Responses API input format
+     */
+    public function convertRawMessagesToResponsesApiInput(array $rawMessages): array|string
     {
-        Log::debug("Appending $message to messages");
+        $input = [];
 
-        // If summary is set, use that instead of the original content of the message
-        $content = $this->formatContentMessage($message->summary ?: $message->content ?: '');
+        foreach($rawMessages as $messageData) {
+            if (!isset($messageData['role']) || !isset($messageData['content'])) {
+                continue;
+            }
 
-        $files = $message->storedFiles()->get();
+            $content = [];
 
-        // Add Image URLs to the content
-        if ($files->isNotEmpty()) {
-            $imageFiles = $this->getImageFiles($files);
+            // Add text content
+            if (!empty($messageData['content'])) {
+                $content[] = [
+                    'type' => 'input_text',
+                    'text' => $messageData['content'],
+                ];
+            }
 
-            $content = array_merge($content, $this->formatFilesContent($imageFiles));
+            // Add file content (images) with proper processing
+            if (!empty($messageData['files'])) {
+                $imageFiles   = $this->getImageFiles($messageData['files']);
+                $filesContent = $this->formatFilesContent($imageFiles);
+                $content      = array_merge($content, $filesContent);
+            }
+
+            // Add citation instructions if needed
+            if (!empty($messageData['should_cite'])) {
+                $content[] = [
+                    'type' => 'input_text',
+                    'text' => "\n\nPlease cite this message in your response using message ID: {$messageData['id']}",
+                ];
+            }
+
+            $input[] = [
+                'role'    => $messageData['role'],
+                'content' => $content,
+            ];
         }
 
-        return $this->rawMessage($message->role, $content, $message->data);
+        // If only one user message with simple text content, return as string
+        if (count($input) === 1 &&
+            $input[0]['role'] === 'user' &&
+            count($input[0]['content']) === 1 &&
+            $input[0]['content'][0]['type'] === 'input_text') {
+            return $input[0]['content'][0]['text'];
+        }
+
+        return $input;
     }
 
     /**
-     * Build a message with the content and file URLs
-     */
-    public function filesMessage(array|string $content, array $fileUrls): array
-    {
-        $content = $this->formatContentMessage($content);
-
-        $content = array_merge($content, $this->formatFilesContent($fileUrls));
-
-        return $this->rawMessage(AgentThreadMessage::ROLE_USER, $content);
-    }
-
-    /**
-     * Get the Open AI parts for Image URL files for the vision API
+     * Get Responses API format for image files
      * @param StoredFile[]|array $storedFiles
      */
     protected function formatFilesContent(array $storedFiles, $detail = 'high'): array
@@ -88,45 +94,17 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
         $filesContent = [];
 
         foreach($storedFiles as $storedFile) {
-            $url = $storedFile instanceof StoredFile ? $storedFile->url : $storedFile['url'];
+            $url = $storedFile instanceof StoredFile ? $storedFile->url : $storedFile->url ?? $storedFile['url'] ?? null;
 
-            $filesContent[] = [
-                'type'      => 'image_url',
-                'image_url' => [
-                    'url'    => $url,
-                    'detail' => $detail,
-                ],
-            ];
-        }
-
-        return $filesContent;
-    }
-
-    /**
-     * Return a standard Open AI format for a content text message
-     */
-    protected function formatContentMessage(string|array $content): array
-    {
-        // If first and last character of the message is a [ and ] then json decode the message as its an array of message elements (ie: text or image_url)
-        // This can happen with when the user sends a message with multiple elements
-        if (str_starts_with($content, '[') && str_ends_with($content, ']')) {
-            $decodedContent = json_decode($content, true);
-            if ($decodedContent) {
-                $content = $decodedContent;
+            if ($url) {
+                $filesContent[] = [
+                    'type'      => 'input_image',
+                    'image_url' => $url,
+                ];
             }
         }
 
-        // Convert string content to an array of text elements
-        if (is_string($content)) {
-            $content = [
-                [
-                    'type' => 'text',
-                    'text' => $content,
-                ],
-            ];
-        }
-
-        return $content;
+        return $filesContent;
     }
 
     /**

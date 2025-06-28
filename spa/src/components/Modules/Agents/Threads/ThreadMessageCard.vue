@@ -113,8 +113,7 @@ import {
 	FaRegularUser as UserIcon,
 	FaSolidFilePen as ToggleMetaFieldsIcon,
 	FaSolidImage as AddImageIcon,
-	FaSolidRobot as AssistantIcon,
-	FaSolidToolbox as ToolIcon
+	FaSolidRobot as AssistantIcon
 } from "danx-icon";
 import {
 	ActionButton,
@@ -145,8 +144,7 @@ const showFiles = ref(files.value.length > 0);
 const isUserMessage = computed(() => props.message.role === "user");
 const nextRole = {
 	user: "assistant",
-	assistant: "tool",
-	tool: "user"
+	assistant: "user"
 };
 const avatar = computed<{
 	icon: object;
@@ -159,8 +157,6 @@ const avatar = computed<{
 			return { icon: UserIcon, class: "bg-lime-700", messageClass: "bg-lime-900" };
 		case "assistant":
 			return { icon: AssistantIcon, class: "bg-sky-600", iconClass: "w-4", messageClass: "bg-sky-800" };
-		case "tool":
-			return { icon: ToolIcon, class: "bg-indigo-500", messageClass: "bg-indigo-800" };
 		default:
 			return { icon: UserIcon, class: "bg-red-700", messageClass: "bg-red-900" };
 	}

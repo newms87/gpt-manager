@@ -92,7 +92,9 @@ class SchemaDefinitionRepository extends ActionRepository
         ], [
             'api'         => config('ai.default_api'),
             'model'       => config('ai.default_model'),
-            'temperature' => 0,
+            'api_options' => [
+                'temperature' => 0,
+            ],
         ]);
 
         $threadRepo = app(ThreadRepository::class);

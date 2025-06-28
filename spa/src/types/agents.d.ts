@@ -6,10 +6,8 @@ export interface Agent extends ActionTargetItem {
 	id: string;
 	name: string;
 	model: string;
-	temperature: string;
 	description: string;
 	threads_count: number;
-	tools: string[];
 	threads: AgentThread[];
 	directives?: AgentPromptDirective[];
 	api_options?: AgentApiOptions;
@@ -19,10 +17,10 @@ export interface AgentApiOptions {
 	temperature?: number;
 	model?: string;
 	reasoning?: {
-		effort?: 'low' | 'medium' | 'high';
-		summary?: 'auto' | 'detailed' | null;
+		effort?: "low" | "medium" | "high";
+		summary?: "auto" | "detailed" | null;
 	};
-	service_tier?: 'auto' | 'default' | 'flex';
+	service_tier?: "auto" | "default" | "flex";
 	stream?: boolean;
 }
 
@@ -51,7 +49,7 @@ export interface AgentThreadRun extends ActionTargetItem {
 
 export interface AgentThreadMessage extends ActionTargetItem {
 	id: number;
-	role: "assistant" | "user" | "tool";
+	role: "assistant" | "user";
 	title: string;
 	summary?: string;
 	content?: string;

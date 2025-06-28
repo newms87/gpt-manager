@@ -21,7 +21,6 @@ class AgentThreadRunFactory extends Factory
         return [
             'agent_thread_id' => AgentThread::factory(),
             'status'          => AgentThreadRun::STATUS_RUNNING,
-            'temperature'     => 1,
             'response_format' => 'text',
             'started_at'      => now(),
             'completed_at'    => null,

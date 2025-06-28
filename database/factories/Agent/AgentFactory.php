@@ -19,7 +19,9 @@ class AgentFactory extends Factory
             'name'         => fake()->unique()->firstName,
             'description'  => fake()->paragraph,
             'model'        => 'test-model',
-            'temperature'  => 0,
+            'api_options'  => [
+                'temperature' => 0.7,
+            ],
         ];
     }
 }

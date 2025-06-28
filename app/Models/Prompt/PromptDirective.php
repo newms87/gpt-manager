@@ -49,11 +49,6 @@ class PromptDirective extends Model implements AuditableContract, ResourcePackag
         return $this->belongsToMany(Agent::class, 'agent_prompt_directives');
     }
 
-    public function agentPromptDirectives(): HasMany|AgentPromptDirective
-    {
-        return $this->hasMany(AgentPromptDirective::class);
-    }
-
     public function taskDefinitionDirectives(): HasMany|TaskDefinitionDirective
     {
         return $this->hasMany(TaskDefinitionDirective::class);
@@ -61,10 +56,6 @@ class PromptDirective extends Model implements AuditableContract, ResourcePackag
 
     public function delete(): bool
     {
-        foreach($this->agentPromptDirectives as $agentPromptDirective) {
-            $agentPromptDirective->delete();
-        }
-
         foreach($this->taskDefinitionDirectives as $taskDefinitionDirective) {
             $taskDefinitionDirective->delete();
         }

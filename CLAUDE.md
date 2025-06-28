@@ -508,3 +508,9 @@ Write production-ready code that is:
 - Using danx-icon for all iconography needs
 
 Remember: ONE RIGHT WAY - NO EXCEPTIONS!
+
+# CRITICALLY IMPORTANT RULE:
+
+* Before each code change, make a TODO list and the FIRST STEP IN THAT TODO LIST should state:
+* "I will follow the best practices and standards: DRY Principles, no Legacy / backwards compatibility, and use the
+  correct patterns."

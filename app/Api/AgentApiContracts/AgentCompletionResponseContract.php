@@ -31,4 +31,9 @@ interface AgentCompletionResponseContract
      * @return int
      */
     public function outputTokens(): int;
+
+    /**
+     * Get the response ID for tracking previous responses in future API calls caching current thread
+     */
+    public function getResponseId(): string|null;
 }

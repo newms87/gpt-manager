@@ -24,18 +24,6 @@ export const fields = [
 		required: true
 	},
 	{
-		name: "temperature",
-		vnode: (props) => h(SliderNumberField, {
-			...props,
-			min: 0,
-			max: 2,
-			step: .1,
-			dark: true
-		}),
-		label: "Temperature",
-		required: true
-	},
-	{
 		name: "retry_count",
 		label: "Valid response retries?",
 		vnode: (props) => h(NumberField, { ...props, class: "w-40" })

@@ -18,10 +18,6 @@ export const actions: ActionOptions[] = [
 	},
 	{
 		name: "create-thread"
-	},
-	{
-		name: "update-directives",
-		optimistic: true
 	}
 ];
 

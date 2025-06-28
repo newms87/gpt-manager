@@ -1,5 +1,6 @@
 /.phpunit.cache
 /node_modules
+/tmp_tests
 /public/build
 /public/dist
 /public/hot

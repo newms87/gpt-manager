@@ -3,7 +3,6 @@
 namespace App\Services\Workflow;
 
 use App\Models\Agent\Agent;
-use App\Models\Prompt\AgentPromptDirective;
 use App\Models\Prompt\PromptDirective;
 use App\Models\ResourcePackage\ResourcePackage;
 use App\Models\ResourcePackage\ResourcePackageImport;
@@ -108,7 +107,6 @@ class WorkflowImportService
             TaskDefinitionDirective::class => [],
             TaskArtifactFilter::class      => [],
             SchemaAssociation::class       => [],
-            AgentPromptDirective::class    => [],
             WorkflowDefinition::class      => ['is_team' => true],
             WorkflowNode::class            => [],
             WorkflowConnection::class      => [],

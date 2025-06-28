@@ -36,11 +36,6 @@ export const columns: TableColumn[] = [
 		align: "left"
 	},
 	{
-		name: "temperature",
-		label: "Temperature",
-		sortable: true
-	},
-	{
 		name: "threads_count",
 		label: "Threads",
 		format: fNumber,

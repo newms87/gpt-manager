@@ -4,7 +4,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import AgentApiConfigForm from "@/components/Modules/Agents/Forms/AgentApiConfigForm.vue";
+import AgentApiConfigForm from "@/components/Modules/Agents/Forms/AgentApiConfigForm";
 import { Agent } from "@/types";
 
 defineProps<{

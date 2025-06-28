@@ -50,23 +50,19 @@ import { dxTeamObject } from "@/components/Modules/TeamObjects";
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
 import { computed, ref } from "vue";
 
+const isVisible = defineModel<boolean>({ required: true });
+
 const props = defineProps<{
-	modelValue: boolean;
 	sourceObject: TeamObject | null;
 	availableObjects: TeamObject[];
 }>();
 
 const emit = defineEmits<{
-	'update:modelValue': [value: boolean];
 	'merge': [sourceObject: TeamObject, targetObject: TeamObject];
 }>();
 
 const isLoading = ref(false);
 
-const isVisible = computed({
-	get: () => props.modelValue,
-	set: (value) => emit('update:modelValue', value)
-});
 
 const mergeableObjects = computed(() => {
 	if (!props.sourceObject || !props.availableObjects) return [];

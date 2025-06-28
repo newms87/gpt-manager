@@ -45,10 +45,10 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function getContent(): ?string
     {
-        // Responses API format only
+        // Responses API format - output_text type only
         if (isset($this->output[0]['content'])) {
             foreach($this->output[0]['content'] as $content) {
-                if (isset($content['type']) && $content['type'] === 'text' && isset($content['text'])) {
+                if (isset($content['type']) && $content['type'] === 'output_text' && isset($content['text'])) {
                     return $content['text'];
                 }
             }
@@ -73,7 +73,7 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
      * Get the response ID for tracking previous responses in future API calls
      * For Responses API, this is the 'id' field that starts with 'resp_'
      */
-    public function getResponseId(): string
+    public function getResponseId(): string|null
     {
         return $this->id;
     }

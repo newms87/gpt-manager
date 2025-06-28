@@ -15,9 +15,8 @@ import { computed, ref } from "vue";
 defineEmits(["confirm", "close"]);
 const input = ref({
 	model: undefined,
-	description: undefined,
-	temperature: undefined
+	description: undefined
 });
 
-const batchFields = computed(() => fields.filter(f => ["model", "description", "temperature"].includes(f.name)));
+const batchFields = computed(() => fields.filter(f => ["model", "description"].includes(f.name)));
 </script>

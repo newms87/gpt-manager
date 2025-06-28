@@ -55,7 +55,9 @@ class ContextualAgentFactory
             [
                 'description' => 'AI assistant specialized in JSON schema design and modification',
                 'model' => 'o4-mini',
-                'temperature' => 0.1,
+                'api_options' => [
+                    'temperature' => 0.1,
+                ],
             ]
         );
     }
@@ -70,7 +72,9 @@ class ContextualAgentFactory
             [
                 'description' => 'AI assistant for workflow design and automation',
                 'model' => 'o4-mini',
-                'temperature' => 0.2,
+                'api_options' => [
+                    'temperature' => 0.2,
+                ],
             ]
         );
     }
@@ -85,7 +89,9 @@ class ContextualAgentFactory
             [
                 'description' => 'AI assistant for configuring and managing AI agents',
                 'model' => 'o4-mini',
-                'temperature' => 0.3,
+                'api_options' => [
+                    'temperature' => 0.3,
+                ],
             ]
         );
     }
@@ -100,7 +106,9 @@ class ContextualAgentFactory
             [
                 'description' => 'AI assistant for task definition and management',
                 'model' => 'o4-mini',
-                'temperature' => 0.2,
+                'api_options' => [
+                    'temperature' => 0.2,
+                ],
             ]
         );
     }
@@ -115,7 +123,9 @@ class ContextualAgentFactory
             [
                 'description' => 'General purpose AI assistant for questions and help',
                 'model' => 'o4-mini',
-                'temperature' => 0.7,
+                'api_options' => [
+                    'temperature' => 0.7,
+                ],
             ]
         );
     }
