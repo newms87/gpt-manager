@@ -65,7 +65,6 @@ class AgentThreadService
                 'response_schema_id'   => $this->responseSchema?->id,
                 'response_fragment_id' => $this->responseFragment?->id,
                 'json_schema_config'   => $this->jsonSchemaService?->getConfig(),
-                'seed'                 => config('ai.seed'),
             ]);
 
             // Save a snapshot of the resolved JSON Schema to use as the agent's response schema,
@@ -334,6 +333,12 @@ STR;
             'data'    => $response->getDataFields() ?: null,
         ]);
 
+        // Track the response ID for future optimization
+        if ($response->getResponseId()) {
+            $lastMessage->setApiResponseId($response->getResponseId());
+            static::log("Tracked response ID: {$lastMessage->api_response_id} for message {$lastMessage->id}");
+        }
+
         if ($response->isFinished()) {
             $this->finishThreadResponse($threadRun, $lastMessage);
         } else {
@@ -368,10 +373,6 @@ STR;
         // Get API options from the thread run (source of truth) or use defaults
         $apiOptions = ResponsesApiOptions::fromArray($agentThreadRun->api_options ?? []);
 
-        // Set seed from the thread run if available
-        if ($agentThreadRun->seed) {
-            $apiOptions->setSeed((int)$agentThreadRun->seed);
-        }
 
         // Build system instructions and always prepend them
         $apiOptions->addInstructions($this->buildSystemInstructions($agentThreadRun));
@@ -392,7 +393,7 @@ STR;
 
         // Handle message optimization with previous response ID
         // Use previous response ID for optimization
-        $apiOptions->setPreviousResponseId($agentThread->getLastTrackedMessageInThread?->api_response_id ?? null);
+        $apiOptions->setPreviousResponseId($agentThread->getLastTrackedMessageInThread()?->api_response_id ?? null);
         $messages = $this->getMessagesForApi($agentThread, $agentThreadRun);
 
         // Handle streaming if enabled
@@ -408,20 +409,6 @@ STR;
             );
         }
 
-        // Track the response ID for future optimization
-        if ($response->getResponseId()) {
-            // Find the assistant message created for this response and track it
-            $assistantMessage = $agentThread->messages()
-                ->where('role', AgentThreadMessage::ROLE_ASSISTANT)
-                ->whereNull('api_response_id')
-                ->orderBy('created_at', 'desc')
-                ->first();
-
-            if ($assistantMessage) {
-                $assistantMessage->setApiResponseId($response->getResponseId());
-                static::log("Tracked response ID: $assistantMessage->api_response_id for message $assistantMessage->id");
-            }
-        }
 
         return $response;
     }

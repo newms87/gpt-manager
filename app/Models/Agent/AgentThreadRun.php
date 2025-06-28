@@ -45,7 +45,6 @@ class AgentThreadRun extends Model implements AuditableContract
         'response_fragment_id',
         'json_schema_config',
         'response_json_schema',
-        'seed',
         'started_at',
         'status',
         'total_cost',

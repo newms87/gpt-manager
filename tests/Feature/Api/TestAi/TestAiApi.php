@@ -34,4 +34,21 @@ class TestAiApi implements AgentApiContract
     {
         return app(OpenAiMessageFormatter::class);
     }
+
+    public function responses(string $model, array $messages, \App\Api\Options\ResponsesApiOptions $options): \App\Api\AgentApiContracts\AgentCompletionResponseContract
+    {
+        return TestAiCompletionResponse::make([
+            'messages' => $messages,
+            'options' => $options->toArray(),
+        ]);
+    }
+
+    public function streamResponses(string $model, array $messages, \App\Api\Options\ResponsesApiOptions $options, \App\Models\Agent\AgentThreadMessage $streamMessage): \App\Api\AgentApiContracts\AgentCompletionResponseContract
+    {
+        return TestAiCompletionResponse::make([
+            'messages' => $messages,
+            'options' => $options->toArray(),
+            'streaming' => true,
+        ]);
+    }
 }

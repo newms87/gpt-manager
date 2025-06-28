@@ -22,6 +22,7 @@ class AgentThreadMessage extends Model implements AuditableContract
         ROLE_ASSISTANT = 'assistant';
 
     protected $fillable = [
+        'agent_thread_id',
         'role',
         'title',
         'summary',

@@ -43,10 +43,11 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
 
             $content = [];
 
-            // Add text content
+            // Add text content with correct type based on role
             if (!empty($messageData['content'])) {
+                $textType = $messageData['role'] === 'assistant' ? 'output_text' : 'input_text';
                 $content[] = [
-                    'type' => 'input_text',
+                    'type' => $textType,
                     'text' => $messageData['content'],
                 ];
             }

@@ -25,7 +25,6 @@ class ResponsesApiOptions
     protected ?array  $textFormat         = null;
     protected ?string $previousResponseId = null;
     protected ?float  $temperature        = null;
-    protected ?int    $seed               = null;
 
     public function __construct(array $options = [])
     {
@@ -57,9 +56,6 @@ class ResponsesApiOptions
             $this->setTemperature($options['temperature']);
         }
 
-        if (isset($options['seed'])) {
-            $this->setSeed($options['seed']);
-        }
     }
 
     public function setReasoning(?array $reasoning): self
@@ -105,8 +101,9 @@ class ResponsesApiOptions
     {
         return $this->setTextFormat([
             'format' => [
-                'type'        => 'json_schema',
-                'json_schema' => $jsonSchema,
+                'type'   => 'json_schema',
+                'name'   => $jsonSchema['name'] ?? 'response',
+                'schema' => $jsonSchema['schema'] ?? $jsonSchema,
             ],
         ]);
     }
@@ -157,12 +154,6 @@ class ResponsesApiOptions
         return $this;
     }
 
-    public function setSeed(?int $seed): self
-    {
-        $this->seed = $seed;
-
-        return $this;
-    }
 
     public function getReasoning(): ?array
     {
@@ -199,10 +190,6 @@ class ResponsesApiOptions
         return $this->temperature;
     }
 
-    public function getSeed(): ?int
-    {
-        return $this->seed;
-    }
 
     /**
      * Convert to array for API request
@@ -235,9 +222,6 @@ class ResponsesApiOptions
             $options['temperature'] = $this->temperature;
         }
 
-        if ($this->seed !== null) {
-            $options['seed'] = $this->seed;
-        }
 
         return $options;
     }
