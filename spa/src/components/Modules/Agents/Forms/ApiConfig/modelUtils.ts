@@ -35,11 +35,3 @@ export interface ModelInfo {
 	api: string;
 	details: ModelDetails;
 }
-
-/**
- * Get model features - only use what's explicitly defined in backend features
- */
-export function getModelFeatures(model: ModelInfo): ModelFeatures | null {
-	// Only return features if they are explicitly provided by the backend
-	return model.details.features || null;
-}

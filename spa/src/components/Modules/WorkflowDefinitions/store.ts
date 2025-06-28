@@ -64,11 +64,14 @@ async function refreshWorkflowRun(workflowRun: WorkflowRun) {
 /**
  *  Whenever a task run has been created for the workflow run, refresh the workflow to get the latest taskRuns list
  */
-usePusher().onEvent("TaskRun", "created", async (taskRun: TaskRun) => {
-	if (taskRun.workflow_run_id === activeWorkflowRun.value?.id) {
-		await refreshWorkflowRun(activeWorkflowRun.value);
-	}
-});
+const pusher = usePusher();
+if (pusher) {
+	pusher.onEvent("TaskRun", "created", async (taskRun: TaskRun) => {
+		if (taskRun.workflow_run_id === activeWorkflowRun.value?.id) {
+			await refreshWorkflowRun(activeWorkflowRun.value);
+		}
+	});
+}
 
 const addNodeAction = dxWorkflowDefinition.getAction("add-node", {
 	optimistic: (action, target: WorkflowDefinition, data: WorkflowNode) => target.nodes.push({ ...data }),

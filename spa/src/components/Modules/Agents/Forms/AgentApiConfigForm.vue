@@ -37,7 +37,7 @@
 		<!-- Temperature Control (only for models that support it) -->
 		<div v-if="modelSupportsTemperature" class="mb-6">
 			<TemperatureControl
-				:model-value="apiOptions.temperature || 0.7"
+				:model-value="apiOptions.temperature || 0"
 				@update:model-value="updateApiOption('temperature', $event)"
 			/>
 		</div>
@@ -83,26 +83,17 @@ import { Agent, AgentApiOptions } from "@/types";
 import { FaSolidBrain } from "danx-icon";
 import { QIcon, QTooltip } from "quasar";
 import { SaveStateIndicator } from "quasar-ui-danx";
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 
 // Import sub-components
 import ModelSelector from "./ApiConfig/ModelSelector.vue";
-import { getModelFeatures, type ModelInfo } from "./ApiConfig/modelUtils";
+import { type ModelInfo } from "./ApiConfig/modelUtils";
 import ReasoningControl from "./ApiConfig/ReasoningControl.vue";
 import ServiceTierSelector from "./ApiConfig/ServiceTierSelector.vue";
 import StreamingToggle from "./ApiConfig/StreamingToggle.vue";
 import TemperatureControl from "./ApiConfig/TemperatureControl.vue";
 
-const props = defineProps<{
-	agent: Agent;
-}>();
-
-const emit = defineEmits<{
-	"update:agent": [agent: Agent];
-}>();
-
-// Local reactive copy
-const localAgent = ref<Agent>({ ...props.agent });
+const localAgent = defineModel<Agent>("agent");
 
 // Computed API options with proper defaults
 const apiOptions = computed<AgentApiOptions>(() => ({
@@ -122,31 +113,17 @@ const apiOptions = computed<AgentApiOptions>(() => ({
 const availableModels = computed(() => controls.getFieldOptions("aiModels") as ModelInfo[]);
 
 // Find selected model configuration
-const selectedModelConfig = computed(() => {
-	const model = availableModels.value.find(m => m.name === localAgent.value.model);
-	if (!model) return null;
-
-	return model;
-});
+const selectedModelConfig = computed(() => availableModels.value.find(m => m.name === localAgent.value.model));
 
 // Get features for selected model
-const selectedModelFeatures = computed(() => {
-	if (!selectedModelConfig.value) return null;
-	return getModelFeatures(selectedModelConfig.value);
-});
+const selectedModelFeatures = computed(() => selectedModelConfig.value?.details?.features);
 
 // Feature support computed properties
-const modelSupportsTemperature = computed(() => {
-	return selectedModelFeatures.value?.temperature === true;
-});
+const modelSupportsTemperature = computed(() => selectedModelFeatures.value?.temperature === true);
 
-const modelSupportsReasoning = computed(() => {
-	return selectedModelFeatures.value?.reasoning === true;
-});
+const modelSupportsReasoning = computed(() => selectedModelFeatures.value?.reasoning === true);
 
-const modelSupportsStreaming = computed(() => {
-	return selectedModelFeatures.value?.streaming === true;
-});
+const modelSupportsStreaming = computed(() => selectedModelFeatures.value?.streaming === true);
 
 // Reasoning options
 const reasoningOptions = computed(() => ({
@@ -157,38 +134,30 @@ const reasoningOptions = computed(() => ({
 // Update action
 const updateAction = dxAgent.getAction("update-debounced");
 
-// Watch for external changes
-watch(() => props.agent, (newAgent) => {
-	localAgent.value = { ...newAgent };
-}, { deep: true });
-
 // Update basic field
 function updateField(field: keyof Agent, value: any) {
-	(localAgent.value as any)[field] = value;
+	localAgent.value = { ...localAgent.value, [field]: value };
 	saveChanges();
 }
 
 // Update API option
 function updateApiOption(key: keyof AgentApiOptions, value: any) {
-	if (!localAgent.value.api_options) {
-		localAgent.value.api_options = {};
-	}
-	(localAgent.value.api_options as any)[key] = value;
-	saveChanges();
+	updateField("api_options", {
+		...localAgent.value.api_options,
+		[key]: value
+	});
 }
 
 // Update reasoning options
 function updateReasoningOptions(value: any) {
-	if (!localAgent.value.api_options) {
-		localAgent.value.api_options = {};
-	}
-	localAgent.value.api_options.reasoning = value;
-	saveChanges();
+	updateApiOption("reasoning", {
+		...apiOptions.value.reasoning,
+		...value
+	});
 }
 
 // Save changes
 function saveChanges() {
-	emit("update:agent", { ...localAgent.value });
 	updateAction.trigger(localAgent.value, {
 		api_options: localAgent.value.api_options,
 		model: localAgent.value.model
