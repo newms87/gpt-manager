@@ -114,7 +114,7 @@ class AgentThreadService
 
         $this->executeThreadRun($agentThreadRun);
 
-        return $agentThreadRun;
+        return $agentThreadRun->fresh();
     }
 
     /**
@@ -175,8 +175,7 @@ class AgentThreadService
             $agentThread = $agentThreadRun->agentThread;
             $agent       = $agentThread->agent;
 
-            $response = null;
-            $retries  = $agent->retry_count ?: 0;
+            $retries = $agent->retry_count ?: 0;
 
             // Create exception handler for this thread run
             $exceptionHandler = new AgentThreadExceptionHandler();
@@ -191,6 +190,17 @@ class AgentThreadService
                 try {
                     // Always use Responses API (completions API removed)
                     $response = $this->executeResponsesApi($agentThreadRun);
+
+                    if ($response->isFinished()) {
+                        $this->handleResponse($agentThread, $agentThreadRun, $response);
+                        break;
+                    }
+
+                    if ($response->isMessageEmpty()) {
+                        throw new Exception("Empty response from AI model", 580);
+                    }
+
+                    throw new Exception("Response from AI model is not finished: " . json_encode($response->getContent()), 581);
                 } catch(Throwable $exception) {
                     // Handle all exceptions through centralized retry logic
                     if ($exceptionHandler->shouldRetry($exception)) {
@@ -200,17 +210,7 @@ class AgentThreadService
                     // If we shouldn't retry, throw the exception
                     throw $exception;
                 }
-
-                if ($response->isMessageEmpty() && ($retries-- > 0)) {
-                    static::log("Empty response from AI model. Retrying... (retries left: $retries)");
-                    continue;
-                } elseif ($response->isFinished()) {
-                    // If we have a non-empty finished response, no need to retry
-                    $retries = 0;
-                }
-
-                $this->handleResponse($agentThread, $agentThreadRun, $response);
-            } while(!$response?->isFinished() || $retries > 0);
+            } while($retries-- >= 0);
         } catch(Throwable $throwable) {
             $agentThreadRun->failed_at = now();
             $agentThreadRun->save();
@@ -247,7 +247,7 @@ class AgentThreadService
             $messageData = [
                 'role'        => $message->role,
                 'content'     => $message->summary ?: $message->content ?: '',
-                'files'       => $message->storedFiles()->get()->toArray(),
+                'files'       => $message->storedFiles,
                 'data'        => $message->data,
                 'id'          => $message->id,
                 'should_cite' => $agentThreadRun->getJsonSchemaService()->isUsingCitations() && $message->isUser(),

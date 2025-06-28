@@ -3,9 +3,8 @@
 namespace App\Api\OpenAi;
 
 use App\Api\AgentApiContracts\AgentApiContract;
-use App\Api\AgentApiContracts\AgentCompletionResponseContract;
-use App\Api\OpenAi\Classes\OpenAiCompletionResponse;
 use App\Api\OpenAi\Classes\OpenAiMessageFormatter;
+use App\Api\OpenAi\Classes\OpenAiResponsesResponse;
 use App\Api\Options\ResponsesApiOptions;
 use App\Events\AgentThreadMessageStreamEvent;
 use App\Models\Agent\AgentThreadMessage;
@@ -46,7 +45,7 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
     /**
      * Execute using the Responses API
      */
-    public function responses(string $model, array $messages, ResponsesApiOptions $options): OpenAiCompletionResponse|AgentCompletionResponseContract
+    public function responses(string $model, array $messages, ResponsesApiOptions $options): OpenAiResponsesResponse
     {
         // Build request body for Responses API
         $requestBody = [
@@ -59,13 +58,13 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         // Regular request (no streaming in this method)
         $response = $this->post('responses', $requestBody)->json();
 
-        return OpenAiCompletionResponse::make($response);
+        return OpenAiResponsesResponse::make($response);
     }
 
     /**
      * Execute streaming Responses API call with real-time message updates
      */
-    public function streamResponses(string $model, array $messages, ResponsesApiOptions $options, AgentThreadMessage $streamMessage): OpenAiCompletionResponse|AgentCompletionResponseContract
+    public function streamResponses(string $model, array $messages, ResponsesApiOptions $options, AgentThreadMessage $streamMessage): OpenAiResponsesResponse
     {
         // Build request body for streaming Responses API
         $requestBody = [
@@ -117,7 +116,7 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         ));
 
         // Return the final response
-        return OpenAiCompletionResponse::make($response->json());
+        return OpenAiResponsesResponse::make($response->json());
     }
 
 }

@@ -4,7 +4,6 @@ namespace App\Services\AgentThread;
 
 use App\Traits\HasDebugLogging;
 use GuzzleHttp\Exception\ConnectException;
-use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ApiRequestException;
 use Throwable;
 
@@ -52,6 +51,7 @@ class AgentThreadExceptionHandler
         // Check if we've exceeded max retries for this exception type
         if ($this->exceptionRetries[$exceptionType] >= 3) {
             static::log("Max retries (3) reached for exception type: $exceptionType");
+
             return false;
         }
 
@@ -60,7 +60,7 @@ class AgentThreadExceptionHandler
         $attemptNumber = $this->exceptionRetries[$exceptionType];
 
         // Calculate exponential backoff delay
-        $baseDelay = $this->getBaseDelayForExceptionType($exceptionType);
+        $baseDelay        = $this->getBaseDelayForExceptionType($exceptionType);
         $exponentialDelay = $baseDelay * pow(2, $attemptNumber - 1) + random_int(1, 3);
 
         static::log("Retrying exception type '$exceptionType' (attempt $attemptNumber/3) after {$exponentialDelay}s delay: {$exception->getMessage()}");
@@ -79,6 +79,7 @@ class AgentThreadExceptionHandler
             if (str_contains($exception->getMessage(), 'timed out')) {
                 return 'connection_timeout';
             }
+
             return 'connection_error';
         }
 
@@ -95,11 +96,18 @@ class AgentThreadExceptionHandler
                 if ($errorCode) {
                     return 'client_error_' . $errorCode;
                 }
+
                 return 'client_error_' . $statusCode;
             }
         }
 
-        return 'unknown_error';
+        $code = $exception->getCode();
+
+        return match ($code) {
+            580 => 'empty_response',
+            581 => 'invalid_response',
+            default => 'unknown_error',
+        };
     }
 
     /**
@@ -111,9 +119,10 @@ class AgentThreadExceptionHandler
             $responseBody = $exception->getContents();
             if ($responseBody) {
                 $responseJson = json_decode($responseBody, true);
+
                 return $responseJson['error']['code'] ?? null;
             }
-        } catch (Throwable $e) {
+        } catch(Throwable $e) {
             // Ignore parsing errors
         }
 
@@ -141,6 +150,7 @@ class AgentThreadExceptionHandler
             // For 400-level errors, only retry specific whitelisted codes
             if ($statusCode >= 400 && $statusCode < 500) {
                 $errorCode = $this->extractErrorCodeFromApiException($exception);
+
                 return $this->isRetryable400Error($errorCode);
             }
         }
@@ -161,7 +171,7 @@ class AgentThreadExceptionHandler
      */
     protected function getBaseDelayForExceptionType(string $exceptionType): int
     {
-        return match(true) {
+        return match (true) {
             str_starts_with($exceptionType, 'connection_') => 5,
             str_starts_with($exceptionType, 'server_error_') => 3,
             str_starts_with($exceptionType, 'client_error_') => 2,

@@ -13,7 +13,7 @@ use Newms87\Danx\Input\Input;
  * @property array  $output  Array of response outputs
  * @property array  $usage   Usage statistics for the model
  */
-class OpenAiCompletionResponse extends Input implements AgentCompletionResponseContract
+class OpenAiResponsesResponse extends Input implements AgentCompletionResponseContract
 {
     public function isMessageEmpty(): bool
     {
@@ -45,11 +45,17 @@ class OpenAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function getContent(): ?string
     {
-        // Responses API format - output_text type only
-        if (isset($this->output[0]['content'])) {
-            foreach($this->output[0]['content'] as $content) {
-                if (isset($content['type']) && $content['type'] === 'output_text' && isset($content['text'])) {
-                    return $content['text'];
+        foreach($this->output as $outputItem) {
+            if (($outputItem['type'] ?? '') !== 'message') {
+                continue;
+            }
+
+            // Responses API format - output_text type only
+            if (isset($outputItem['content'])) {
+                foreach($outputItem['content'] as $content) {
+                    if (($content['type'] ?? '') === 'output_text') {
+                        return $content['text'] ?? '';
+                    }
                 }
             }
         }

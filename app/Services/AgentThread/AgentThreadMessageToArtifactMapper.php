@@ -75,6 +75,7 @@ class AgentThreadMessageToArtifactMapper
             'json_content' => $jsonContent,
             'meta'         => [
                     'agent_thread_run_id' => $this->threadRun?->id,
+                    'api_response_id'     => $this->message->api_response_id,
                 ] + $jsonMeta,
         ]);
 

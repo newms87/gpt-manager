@@ -5,8 +5,8 @@ namespace App\Api\PerplexityAi;
 use App\Api\AgentApiContracts\AgentApiContract;
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use App\Api\Options\ResponsesApiOptions;
-use App\Api\PerplexityAi\Classes\PerplexityAiCompletionResponse;
 use App\Api\PerplexityAi\Classes\PerplexityAiMessageFormatter;
+use App\Api\PerplexityAi\Classes\PerplexityAiResponsesResponse;
 use App\Models\Agent\AgentThreadMessage;
 use Newms87\Danx\Api\BearerTokenApi;
 
@@ -42,13 +42,13 @@ class PerplexityAiApi extends BearerTokenApi implements AgentApiContract
         $completionOptions = [
             'temperature' => .2, // PerplexityAI default
         ];
-        
+
         // Add instructions as a system message if available
         if ($options->getInstructions()) {
             // Add the instructions as a system message at the beginning
             array_unshift($messages, [
-                'role' => 'system',
-                'content' => $options->getInstructions()
+                'role'    => 'system',
+                'content' => $options->getInstructions(),
             ]);
         }
 
@@ -57,7 +57,7 @@ class PerplexityAiApi extends BearerTokenApi implements AgentApiContract
                 'messages' => $messages,
             ] + $completionOptions)->json();
 
-        return PerplexityAiCompletionResponse::make($response);
+        return PerplexityAiResponsesResponse::make($response);
     }
 
     /**
