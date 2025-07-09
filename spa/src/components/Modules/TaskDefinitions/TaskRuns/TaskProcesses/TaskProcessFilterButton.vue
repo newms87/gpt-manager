@@ -57,6 +57,7 @@ const statusOptions = [
 	{ label: "Failed", value: "Failed" },
 	{ label: "Stopped", value: "Stopped" },
 	{ label: "Pending", value: "Pending" },
+	{ label: "Incomplete", value: "Incomplete" },
 	{ label: "Timeout", value: "Timeout" }
 ];
 // PopMenu state
