@@ -3,6 +3,7 @@
 use App\Http\Controllers\Ai\AgentsController;
 use App\Http\Controllers\Ai\ArtifactsController;
 use App\Http\Controllers\Ai\ContentSourcesController;
+use App\Http\Controllers\Ai\McpServersController;
 use App\Http\Controllers\Ai\MessagesController;
 use App\Http\Controllers\Ai\PromptDirectivesController;
 use App\Http\Controllers\Ai\SchemaAssociationsController;
@@ -91,6 +92,7 @@ ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
 
 // Agents
 ActionRoute::routes('agents', new AgentsController);
+ActionRoute::routes('mcp-servers', new McpServersController);
 ActionRoute::routes('threads', new ThreadsController);
 ActionRoute::routes('messages', new MessagesController);
 ActionRoute::routes('prompt/directives', new PromptDirectivesController);

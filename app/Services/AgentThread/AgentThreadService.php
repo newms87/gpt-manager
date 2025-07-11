@@ -377,6 +377,12 @@ STR;
         // Build system instructions and always prepend them
         $apiOptions->addInstructions($this->buildSystemInstructions($agentThreadRun));
 
+        // Add MCP server configuration if available
+        $mcpServers = $this->getMcpServerConfiguration($agentThreadRun);
+        if (!empty($mcpServers)) {
+            $apiOptions->setMcpServers($mcpServers);
+        }
+
         // Handle response format using Structured Outputs
         if ($agentThreadRun->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA) {
             $jsonSchema = $agentThreadRun->response_json_schema;
@@ -450,6 +456,20 @@ STR;
         }
 
         return $instructions;
+    }
+
+    /**
+     * Get MCP server configuration for the task definition
+     */
+    protected function getMcpServerConfiguration(AgentThreadRun $agentThreadRun): array
+    {
+        // Only get MCP server configuration if this thread run is associated with a task
+        if (!$agentThreadRun->taskRun) {
+            return [];
+        }
+        
+        return app(McpServerConfigurationService::class)
+            ->getMcpServerToolsForTaskDefinition($agentThreadRun->taskRun->taskDefinition);
     }
 
 }

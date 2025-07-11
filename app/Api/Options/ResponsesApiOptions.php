@@ -25,6 +25,7 @@ class ResponsesApiOptions
     protected ?array  $textFormat         = null;
     protected ?string $previousResponseId = null;
     protected ?float  $temperature        = null;
+    protected ?array  $mcpServers         = null;
 
     public function __construct(array $options = [])
     {
@@ -54,6 +55,10 @@ class ResponsesApiOptions
 
         if (isset($options['temperature'])) {
             $this->setTemperature($options['temperature']);
+        }
+
+        if (isset($options['mcp_servers'])) {
+            $this->setMcpServers($options['mcp_servers']);
         }
 
     }
@@ -154,6 +159,13 @@ class ResponsesApiOptions
         return $this;
     }
 
+    public function setMcpServers(?array $mcpServers): self
+    {
+        $this->mcpServers = $mcpServers;
+
+        return $this;
+    }
+
 
     public function getReasoning(): ?array
     {
@@ -190,6 +202,11 @@ class ResponsesApiOptions
         return $this->temperature;
     }
 
+    public function getMcpServers(): ?array
+    {
+        return $this->mcpServers;
+    }
+
 
     /**
      * Convert to array for API request
@@ -222,6 +239,9 @@ class ResponsesApiOptions
             $options['temperature'] = $this->temperature;
         }
 
+        if ($this->mcpServers) {
+            $options['tools'] = $this->mcpServers;
+        }
 
         return $options;
     }

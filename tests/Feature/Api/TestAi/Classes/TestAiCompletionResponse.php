@@ -64,4 +64,19 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
     {
         return $this->usage['output_tokens'] ?? 500;
     }
+
+    public function getResponseId(): string|null
+    {
+        return 'test-response-id';
+    }
+
+    public function before($value, $strict = false)
+    {
+
+    }
+
+    public function after($value, $strict = false)
+    {
+        
+    }
 }

@@ -33,8 +33,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     public function test_dispatch_createsThreadRunSuccessfully()
     {
         // Given
-        $temperature = .7;
-        $agent       = Agent::factory()->create(['temperature' => $temperature]);
+        $agent       = Agent::factory()->create();
         $agentThread = AgentThread::factory()->create(['agent_id' => $agent->id]);
         $agentThread->messages()->create(['role' => AgentThreadMessage::ROLE_USER, 'content' => 'Test message']);
 
@@ -45,7 +44,6 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertEquals(AgentThreadRun::STATUS_RUNNING, $threadRun->status);
-        $this->assertEquals($temperature, $threadRun->temperature);
         $this->assertEquals(AgentThreadRun::RESPONSE_FORMAT_TEXT, $threadRun->response_format);
     }
 

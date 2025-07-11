@@ -9,6 +9,7 @@
 			:source-task-definitions="sourceTaskDefinitions"
 		/>
 		<TaskDefinitionDirectivesConfigField :task-definition="taskDefinition" class="mt-6" />
+		<McpServerConfigField class="mt-6" :task-definition="taskDefinition" />
 		<SchemaAndFragmentsConfigField class="mt-6" :task-definition="taskDefinition" />
 		<DeduplicationConfigField :task-definition="taskDefinition" />
 	</BaseTaskRunnerConfig>
@@ -19,6 +20,7 @@ import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
 import {
 	DeduplicationConfigField,
 	IncludeTextSourcesField,
+	McpServerConfigField,
 	SchemaAndFragmentsConfigField,
 	TaskDefinitionAgentConfigField,
 	TaskDefinitionDirectivesConfigField
