@@ -53,7 +53,7 @@
 			<!-- MCP Servers Table -->
 			<div class="flex-grow overflow-hidden mt-6">
 				<ActionTableLayout
-					:controls="dxMcpServer"
+					:controller="dxMcpServer"
 					:refresh-data="refreshData"
 					table-class="h-full"
 				/>

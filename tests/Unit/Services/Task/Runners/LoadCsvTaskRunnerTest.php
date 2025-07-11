@@ -29,7 +29,18 @@ class LoadCsvTaskRunnerTest extends TestCase
         ];
 
         // Create mock task runner with mocked methods
-        $this->taskRunner = Mockery::mock(LoadCsvTaskRunner::class)->makePartial();
+        $this->taskRunner = Mockery::mock(LoadCsvTaskRunner::class)->makePartial()->shouldAllowMockingProtectedMethods();
+        
+        // Mock the taskProcess to prevent validation errors
+        $mockTaskProcess = Mockery::mock('App\Models\Task\TaskProcess');
+        $mockTaskProcess->shouldReceive('update')->withAnyArgs()->andReturnSelf();
+        $mockTaskProcess->shouldReceive('getAttribute')->withAnyArgs()->andReturn(null);
+        
+        // Use reflection to set the taskProcess property
+        $reflection = new \ReflectionClass($this->taskRunner);
+        $property = $reflection->getProperty('taskProcess');
+        $property->setAccessible(true);
+        $property->setValue($this->taskRunner, $mockTaskProcess);
     }
 
     /**
@@ -38,7 +49,7 @@ class LoadCsvTaskRunnerTest extends TestCase
      * @param string $filename The filename for the mock file
      * @return StoredFile
      */
-    protected function createMockStoredFile(string $filename = 'test_data.csv'): StoredFile
+    protected function createMockStoredFile(string $filename = 'test.csv'): StoredFile
     {
         $storedFile = Mockery::mock(StoredFile::class);
         $storedFile->shouldReceive('getAttribute')->with('filename')->andReturn($filename);
@@ -388,7 +399,7 @@ class LoadCsvTaskRunnerTest extends TestCase
         // Setup mockTaskRunner for the run method test
         $this->taskRunner->shouldReceive('config')->with('batch_size', 1)->andReturn(1);
         $this->taskRunner->shouldReceive('config')->with('selected_columns', [])->andReturn($selectedColumns);
-        $this->taskRunner->shouldReceive('activity')->with('Starting CSV loading process w/ batch size 1: [\"name\",\"nonexistent_column\"]', 10)->once();
+        $this->taskRunner->shouldReceive('activity')->with('Starting CSV loading process w/ batch size 1: ["name","nonexistent_column"]', 10)->once();
         $this->taskRunner->shouldReceive('activity')->with('Processing CSV files with batch size: 1')->once();
         $this->taskRunner->shouldReceive('activity')->with('Processing file test.csv')->once();
         $this->taskRunner->shouldReceive('getAllFiles')->with(['csv'])->andReturn([$mockFile]);
@@ -400,9 +411,13 @@ class LoadCsvTaskRunnerTest extends TestCase
             ->with('path/to/test.csv', 0, 1, $selectedColumns)
             ->andThrow(new ValidationError('Column nonexistent_column not found in CSV file'));
 
-        $this->taskRunner->shouldReceive('error')
+        $this->taskRunner->shouldReceive('activity')
             ->once()
-            ->with('Column nonexistent_column not found in CSV file', Mockery::any());
+            ->with('Error processing CSV file: Column nonexistent_column not found in CSV file');
+
+        $this->taskRunner->shouldReceive('activity')
+            ->once()
+            ->with('Finished processing file test.csv', Mockery::any());
 
         $this->taskRunner->shouldReceive('complete')
             ->once()

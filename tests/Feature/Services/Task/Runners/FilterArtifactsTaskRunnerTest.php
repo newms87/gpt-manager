@@ -422,6 +422,12 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
 
         // Reset output artifacts
         $this->taskProcess->outputArtifacts()->detach();
+        
+        // Re-attach input artifacts since the task process might have consumed them
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+        
+        // Reset task process status to allow it to run again
+        $this->taskProcess->update(['status' => 'Pending', 'activity' => null, 'percent_complete' => 0]);
 
         // Test less_than operator
         $this->taskDefinition->update([
@@ -506,6 +512,12 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
 
         // Reset output artifacts
         $this->taskProcess->outputArtifacts()->detach();
+        
+        // Re-attach input artifacts since the task process might have consumed them
+        $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
+        
+        // Reset task process status to allow it to run again
+        $this->taskProcess->update(['status' => 'Pending', 'activity' => null, 'percent_complete' => 0]);
 
         // Test case-insensitive search (default)
         $this->taskDefinition->update([
