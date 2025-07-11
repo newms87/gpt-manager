@@ -1,6 +1,5 @@
 <template>
 	<InfoDialog
-		v-if="isShowing"
 		title="MCP Server Manager"
 		content-class="w-[85vw] h-[85vh] overflow-hidden bg-slate-950"
 		@close="$emit('close')"
@@ -84,9 +83,6 @@ import {
 import { ActionButton, ActionTableLayout, InfoDialog, LabelPillWidget, RenderedFormDialog } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 
-defineProps<{
-	isShowing?: boolean;
-}>();
 
 defineEmits<{
 	close: [];

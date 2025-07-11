@@ -25,7 +25,8 @@ if (!function_exists('team')) {
             $token = $user->currentAccessToken();
 
             // The token name matches the name of the team the user is authorized to access
-            if ($token) {
+            // TransientToken (used in tests) doesn't have a name property
+            if ($token && $token instanceof PersonalAccessToken) {
                 $user->setCurrentTeam($token->name);
             } else {
                 $user->setCurrentTeam($user->teams()->first()?->uuid);
