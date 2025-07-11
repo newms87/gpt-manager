@@ -2,7 +2,7 @@
 	<InfoDialog
 		title="MCP Server Manager"
 		content-class="w-[85vw] h-[85vh] overflow-hidden bg-slate-950"
-		@close="$emit('close')"
+		@close="emit('close')"
 	>
 		<div class="h-full flex flex-col">
 			<!-- Header Section -->
@@ -59,8 +59,12 @@
 							:key="server.id"
 							:mcp-server="server"
 							show-actions
+							show-select
+							:is-selected="server.id === props.selectedServerId"
+							:class="{ 'ring-2 ring-blue-500': server.id === props.selectedServerId }"
 							@edit="onEditServer"
 							@delete="onDeleteServer"
+							@select="emit('select', $event)"
 						/>
 					</div>
 				</div>
@@ -101,8 +105,13 @@ import { computed, onMounted, ref, shallowRef, watch } from "vue";
 
 const dialogTitle = computed(() => editingServer.value ? "Edit MCP Server" : "Create MCP Server");
 
-defineEmits<{
+const props = defineProps<{
+	selectedServerId?: string | null;
+}>();
+
+const emit = defineEmits<{
 	close: [];
+	select: [server: McpServer | null];
 }>();
 
 const showDialog = ref(false);
@@ -183,6 +192,10 @@ async function onDeleteServer(server: McpServer) {
 	if (confirm(`Are you sure you want to delete "${server.name}"?`)) {
 		await dxMcpServer.getAction("delete").trigger(server);
 		await refreshData();
+		// If we deleted the selected server, emit null selection
+		if (server.id === props.selectedServerId) {
+			emit('select', null);
+		}
 	}
 }
 

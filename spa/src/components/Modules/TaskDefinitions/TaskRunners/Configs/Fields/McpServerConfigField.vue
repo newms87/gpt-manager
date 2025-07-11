@@ -1,29 +1,27 @@
 <template>
 	<div>
-		<SelectionMenuField
-			v-model:selected="selectedMcpServer"
-			selectable
-			creatable
-			class="w-full"
-			:select-icon="ServerIcon"
-			select-text="MCP Server"
-			empty-text="No MCP servers configured. Create one to get started."
-			label-class="text-slate-300"
-			:options="availableMcpServers"
-			:loading="isLoading"
-			@create="onCreateMcpServer"
+		<!-- Selected MCP Server -->
+		<div v-if="selectedMcpServer" class="cursor-pointer" @click="showMcpManager = true">
+			<McpServerCard :mcp-server="selectedMcpServer" />
+		</div>
+		
+		<!-- Empty State -->
+		<div 
+			v-else 
+			class="bg-slate-800/50 rounded-lg p-6 border-2 border-dashed border-slate-700 hover:border-slate-600 transition-colors cursor-pointer text-center"
+			@click="showMcpManager = true"
 		>
-			<template #selected="{ item }">
-				<McpServerCard :mcp-server="item" class="mb-2" />
-			</template>
-			<template #option="{ item }">
-				<McpServerCard :mcp-server="item" />
-			</template>
-		</SelectionMenuField>
+			<ServerIcon class="w-8 h-8 text-slate-500 mx-auto mb-2" />
+			<div class="text-slate-400">No MCP server selected</div>
+			<div class="text-sm text-slate-500 mt-1">Click to select a server</div>
+		</div>
 
+		<!-- MCP Server Manager Dialog -->
 		<McpServerManagerDialog
 			v-if="showMcpManager"
-			@close="onCloseManager"
+			:selected-server-id="selectedMcpServerId"
+			@close="showMcpManager = false"
+			@select="onSelectServer"
 		/>
 	</div>
 </template>
@@ -35,7 +33,6 @@ import McpServerManagerDialog from "@/components/Modules/McpServers/McpServerMan
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions/config";
 import { McpServer, TaskDefinition } from "@/types";
 import { FaSolidServer as ServerIcon } from "danx-icon";
-import { SelectionMenuField } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 
 const props = defineProps<{
@@ -45,58 +42,31 @@ const props = defineProps<{
 const mcpServers = ref<McpServer[]>([]);
 const showMcpManager = ref(false);
 
-const isLoading = ref(false);
-
-const selectedMcpServerId = computed(() =>
+const selectedMcpServerId = computed(() => 
 	props.taskDefinition.task_runner_config?.mcp_server_id || null
 );
 
-const availableMcpServers = computed(() =>
-	mcpServers.value
+const selectedMcpServer = computed(() => 
+	mcpServers.value.find(server => server.id === selectedMcpServerId.value) || null
 );
 
-const selectedMcpServer = computed({
-	get: () => mcpServers.value.find(server =>
-		server.id === selectedMcpServerId.value
-	) || null,
-	set: async (server: McpServer | null) => {
-		// Extract just the ID from the server object
-		const serverId = server?.id || null;
-		
-		const updatedConfig = {
-			...props.taskDefinition.task_runner_config,
-			mcp_server_id: serverId
-		};
+async function onSelectServer(server: McpServer | null) {
+	const updatedConfig = {
+		...props.taskDefinition.task_runner_config,
+		mcp_server_id: server?.id || null
+	};
 
-		await dxTaskDefinition.getAction("update").trigger(props.taskDefinition, {
-			task_runner_config: updatedConfig
-		});
-	}
-});
-
-async function loadMcpServers() {
-	isLoading.value = true;
-	try {
-			const response = await dxMcpServer.routes.list();
-		// Filter out any invalid entries (like empty arrays or malformed data)
-		mcpServers.value = (response.data || []).filter(server => 
-			server && typeof server === 'object' && server.id && server.name
-		);
-	} catch (error) {
-		console.error("Failed to load MCP servers:", error);
-	} finally {
-		isLoading.value = false;
-	}
-}
-
-
-function onCreateMcpServer() {
-	showMcpManager.value = true;
-}
-
-async function onCloseManager() {
+	await dxTaskDefinition.getAction("update").trigger(props.taskDefinition, {
+		task_runner_config: updatedConfig
+	});
+	
 	showMcpManager.value = false;
 	await loadMcpServers();
+}
+
+async function loadMcpServers() {
+	const response = await dxMcpServer.routes.list();
+	mcpServers.value = response.data || [];
 }
 
 onMounted(loadMcpServers);
