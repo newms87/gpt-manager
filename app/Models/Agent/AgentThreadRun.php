@@ -38,6 +38,7 @@ class AgentThreadRun extends Model implements AuditableContract
         'failed_at',
         'input_tokens',
         'last_message_id',
+        'mcp_server_id',
         'output_tokens',
         'refreshed_at',
         'response_format',
@@ -92,6 +93,11 @@ class AgentThreadRun extends Model implements AuditableContract
     public function responseFragment(): BelongsTo|SchemaFragment
     {
         return $this->belongsTo(SchemaFragment::class, 'response_fragment_id');
+    }
+
+    public function mcpServer(): BelongsTo|McpServer
+    {
+        return $this->belongsTo(McpServer::class, 'mcp_server_id');
     }
 
     public function getJsonSchemaService(): JsonSchemaService

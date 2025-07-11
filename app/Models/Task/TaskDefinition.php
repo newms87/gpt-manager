@@ -82,16 +82,20 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     {
         return $this->belongsTo(TaskQueueType::class);
     }
-    
+
     public function agent(): BelongsTo|Agent
     {
         return $this->belongsTo(Agent::class);
     }
 
-    public function mcpServer(): BelongsTo|McpServer
+    public function getMcpServer(): ?McpServer
     {
-        return $this->belongsTo(McpServer::class, 'task_runner_config->mcp_server_id')
-            ->where('team_id', $this->team_id);
+        $mcpServerId = $this->task_runner_config['mcp_server_id'] ?? null;
+        if (!$mcpServerId) {
+            return null;
+        }
+
+        return McpServer::where('id', $mcpServerId)->where('team_id', $this->team_id)->first();
     }
 
     public function schemaDefinition(): BelongsTo|SchemaDefinition

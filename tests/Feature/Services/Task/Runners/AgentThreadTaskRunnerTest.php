@@ -3,6 +3,7 @@
 namespace Tests\Feature\Services\Task\Runners;
 
 use App\Models\Agent\AgentThreadRun;
+use App\Models\Agent\McpServer;
 use App\Models\Prompt\PromptDirective;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\TaskDefinitionDirective;
@@ -54,7 +55,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $promptDirective  = PromptDirective::factory()->create(['directive_text' => $directiveContent]);
         $taskProcess->taskRun->taskDefinition->taskDefinitionDirectives()->create([
             'prompt_directive_id' => $promptDirective->id,
-            'section' => TaskDefinitionDirective::SECTION_TOP,
+            'section'             => TaskDefinitionDirective::SECTION_TOP,
         ]);
 
         // When
@@ -135,5 +136,53 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
 
         // When
         AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
+    }
+
+    public function test_run_withMcpServer_mcpServerIsPassedToApi(): void
+    {
+        // Given
+        $taskProcess = TaskProcess::factory()->withAgent()->create();
+
+        $mcpServer = McpServer::factory()->create([
+            'team_id'       => $taskProcess->taskRun->taskDefinition->team_id,
+            'name'          => 'Test MCP Server',
+            'server_url'    => 'https://test-mcp-server.com',
+            'allowed_tools' => ['tool1', 'tool2'],
+            'headers'       => ['Authorization' => 'Bearer token123'],
+        ]);
+        $taskProcess->taskRun->taskDefinition->update([
+            'task_runner_config' => ['mcp_server_id' => $mcpServer->id],
+        ]);
+        $taskProcess->taskRun->taskDefinition->refresh();
+
+        // Verify the task definition can find the MCP server
+        $foundMcpServer = $taskProcess->taskRun->taskDefinition->getMcpServer();
+        $this->assertNotNull($foundMcpServer, 'MCP server should be found via TaskDefinition');
+        $this->assertEquals($mcpServer->id, $foundMcpServer->id, 'MCP server IDs should match');
+
+        // Then
+        $this->partialMock(TestAiApi::class)
+            ->shouldReceive('complete')->withArgs(function ($model, $messages, $options) use ($mcpServer) {
+                $mcpServers = $options['mcp_servers'] ?? [];
+                $this->assertNotEmpty($mcpServers, 'MCP servers should be included in options');
+                $this->assertEquals('mcp', $mcpServers[0]['type']);
+                $this->assertEquals($mcpServer->server_url, $mcpServers[0]['server_url']);
+                $this->assertEquals($mcpServer->name, $mcpServers[0]['server_label']);
+                $this->assertEquals($mcpServer->allowed_tools, $mcpServers[0]['allowed_tools']);
+                $this->assertEquals($mcpServer->headers, $mcpServers[0]['headers']);
+
+                return true;
+            })->andReturn(new TestAiCompletionResponse());
+
+        // When
+        AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
+        
+        // Verify the AgentThreadRun has the MCP server relationship set
+        $taskProcess->refresh();
+        $agentThreadRun = $taskProcess->agentThread->runs()->latest()->first();
+        $this->assertNotNull($agentThreadRun, 'AgentThreadRun should exist');
+        $this->assertEquals($mcpServer->id, $agentThreadRun->mcp_server_id, 'AgentThreadRun should have MCP server ID set');
+        $this->assertNotNull($agentThreadRun->mcpServer, 'AgentThreadRun should have MCP server relationship');
+        $this->assertEquals($mcpServer->id, $agentThreadRun->mcpServer->id, 'AgentThreadRun MCP server should match');
     }
 }

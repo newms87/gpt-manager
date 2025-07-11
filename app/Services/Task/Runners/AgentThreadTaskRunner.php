@@ -125,9 +125,13 @@ class AgentThreadTaskRunner extends BaseTaskRunner
      */
     public function runAgentThreadWithSchema(AgentThread $agentThread, SchemaDefinition $schemaDefinition = null, SchemaFragment $schemaFragment = null, JsonSchemaService $jsonSchemaService = null): Artifact|null
     {
+        // Get MCP server from task definition
+        $mcpServer = $this->taskDefinition->getMcpServer();
+
         // Run the thread synchronously (ie: dispatch = false)
         $threadRun = (new AgentThreadService)
             ->withResponseFormat($schemaDefinition, $schemaFragment, $jsonSchemaService)
+            ->withMcpServer($mcpServer)
             ->run($agentThread);
 
         // Create the artifact and associate it with the task process

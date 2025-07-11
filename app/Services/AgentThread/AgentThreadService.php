@@ -8,6 +8,7 @@ use App\Jobs\ExecuteThreadRunJob;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
 use App\Models\Agent\AgentThreadRun;
+use App\Models\Agent\McpServer;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Repositories\AgentRepository;
@@ -26,6 +27,7 @@ class AgentThreadService
     protected ?SchemaDefinition  $responseSchema    = null;
     protected ?SchemaFragment    $responseFragment  = null;
     protected ?JsonSchemaService $jsonSchemaService = null;
+    protected ?McpServer         $mcpServer         = null;
 
     protected int $currentTotalRetries = 0;
 
@@ -38,6 +40,16 @@ class AgentThreadService
         $this->responseSchema    = $responseSchema;
         $this->responseFragment  = $responseFragment;
         $this->jsonSchemaService = $jsonSchemaService;
+
+        return $this;
+    }
+
+    /**
+     * Set the MCP server to be used for this thread run
+     */
+    public function withMcpServer(McpServer $mcpServer = null): static
+    {
+        $this->mcpServer = $mcpServer;
 
         return $this;
     }
@@ -65,6 +77,7 @@ class AgentThreadService
                 'response_schema_id'   => $this->responseSchema?->id,
                 'response_fragment_id' => $this->responseFragment?->id,
                 'json_schema_config'   => $this->jsonSchemaService?->getConfig(),
+                'mcp_server_id'        => $this->mcpServer?->id,
             ]);
 
             // Save a snapshot of the resolved JSON Schema to use as the agent's response schema,
@@ -459,12 +472,12 @@ STR;
     }
 
     /**
-     * Get MCP server configuration for the task definition
+     * Get MCP server configuration for the agent thread run
      */
     protected function getMcpServerConfiguration(AgentThreadRun $agentThreadRun): array
     {
-        // Only get MCP server configuration if this thread run is associated with a task
-        $mcpServer = $agentThreadRun->taskRun?->taskDefinition?->mcpServer;
+        $mcpServer = $agentThreadRun->mcpServer;
+
         if (!$mcpServer) {
             return [];
         }
