@@ -74,9 +74,9 @@ abstract class BasePromptTest
         return [
             'thread_run' => $threadRun,
             'response_content' => $responseContent,
-            'input_tokens' => $threadRun->input_tokens,
-            'output_tokens' => $threadRun->output_tokens,
-            'total_cost' => $threadRun->total_cost,
+            'input_tokens' => $threadRun->input_tokens ?? 0,
+            'output_tokens' => $threadRun->output_tokens ?? 0,
+            'total_cost' => $threadRun->total_cost ?? 0,
             'tool_calls' => $this->extractToolCalls($lastMessage),
         ];
     }

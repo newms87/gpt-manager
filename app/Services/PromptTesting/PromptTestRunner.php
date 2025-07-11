@@ -93,26 +93,39 @@ class PromptTestRunner
                 'success' => false,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
+                'input_tokens' => 0,
+                'output_tokens' => 0,
+                'total_cost' => 0,
+                'tool_calls' => [],
+                'response_content' => null,
+                'assertions' => [],
             ];
         }
     }
 
     private function loadTest(string $testName): BasePromptTest
     {
-        // Convert test name to class name
-        $className = 'App\\Services\\PromptTesting\\Tests\\' . str_replace('/', '\\', $testName) . 'Test';
+        // Try different variations of the test name
+        $possibleClasses = [
+            'App\\Services\\PromptTesting\\Tests\\' . str_replace('/', '\\', $testName) . 'Test',
+            'App\\Services\\PromptTesting\\Tests\\' . str_replace('/', '\\', $testName),
+            'App\\Services\\PromptTesting\\Tests\\McpServer\\' . $testName . 'Test',
+            'App\\Services\\PromptTesting\\Tests\\McpServer\\' . $testName,
+        ];
         
-        if (!class_exists($className)) {
-            throw new Exception("Test class not found: {$className}");
+        foreach ($possibleClasses as $className) {
+            if (class_exists($className)) {
+                $test = new $className();
+                
+                if (!$test instanceof BasePromptTest) {
+                    throw new Exception("Test class must extend BasePromptTest: {$className}");
+                }
+                
+                return $test;
+            }
         }
-
-        $test = new $className();
         
-        if (!$test instanceof BasePromptTest) {
-            throw new Exception("Test class must extend BasePromptTest: {$className}");
-        }
-
-        return $test;
+        throw new Exception("Test class not found. Tried: " . implode(', ', $possibleClasses));
     }
 
     private function saveResults(array $result): void

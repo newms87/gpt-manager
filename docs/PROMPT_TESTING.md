@@ -23,19 +23,25 @@ php artisan prompt:list
 php artisan prompt:resources
 ```
 
-### 3. Run a Test
+### 3. Run Tests
 ```bash
-# Basic test
-php artisan prompt:test McpServer/BasicMcp
+# Run all tests
+php artisan prompt:test --agent=1 --mcp-server=1
 
-# With specific agent and MCP server
-php artisan prompt:test McpServer/GoogleDocsTemplate --agent=1 --mcp-server=1
+# Run all tests with detailed output
+php artisan prompt:test --agent=1 --mcp-server=1 --detailed
 
-# With verbose output
-php artisan prompt:test McpServer/BasicMcp --verbose
+# Run all tests and continue even if some fail
+php artisan prompt:test --agent=1 --mcp-server=1 --continue-on-failure
+
+# Run a specific test
+php artisan prompt:test McpServer/BasicMcp --agent=1 --mcp-server=1
+
+# Run a specific test (short name format)
+php artisan prompt:test BasicMcp --agent=1 --mcp-server=1
 
 # Save results to database
-php artisan prompt:test McpServer/BasicMcp --save-results
+php artisan prompt:test --save-results --agent=1 --mcp-server=1
 ```
 
 ## Test Structure
@@ -166,13 +172,28 @@ Tool Call 2: get_tool_description
 
 ## Advanced Usage
 
-### Running Multiple Tests
+### Running All Tests
 ```bash
-# Run all tests in a category
-for test in $(php artisan prompt:list | grep "McpServer" | awk '{print $2}'); do
-    php artisan prompt:test $test --verbose
-done
+# Run all available tests
+php artisan prompt:test --agent=1 --mcp-server=1
+
+# Run all tests with detailed output and continue on failures
+php artisan prompt:test --agent=1 --mcp-server=1 --detailed --continue-on-failure
+
+# Run all tests and save results
+php artisan prompt:test --save-results --agent=1 --mcp-server=1
 ```
+
+### Test Execution Control
+- **Stop on First Failure** (default): Tests stop when the first test fails
+- **Continue on Failure**: Use `--continue-on-failure` to run all tests regardless of failures
+- **Detailed Output**: Use `--detailed` to see full response content and tool call details
+
+### Test Summary Output
+When running all tests, you'll see:
+- Individual test results with pass/fail status and duration
+- Aggregate metrics: total duration, tokens used, cost, and success rate
+- Detailed breakdown when using `--detailed` flag
 
 ### Custom Configuration
 Tests can be configured with custom settings:

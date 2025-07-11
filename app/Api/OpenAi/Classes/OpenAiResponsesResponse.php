@@ -28,35 +28,60 @@ class OpenAiResponsesResponse extends Input implements AgentCompletionResponseCo
 
     public function getDataFields(): array
     {
-        // For Responses API, extract data from output content
-        if (isset($this->output[0]['content'])) {
-            $fields = [];
-            foreach($this->output[0]['content'] as $content) {
-                if (isset($content['type']) && $content['type'] !== 'text') {
-                    $fields = array_merge($fields, collect($content)->except(['type', 'text'])->toArray());
+        $fields = [];
+        
+        // Extract MCP tool calls from output
+        foreach($this->output as $outputItem) {
+            if (($outputItem['type'] ?? '') === 'mcp_call') {
+                if (!isset($fields['tool_calls'])) {
+                    $fields['tool_calls'] = [];
+                }
+                
+                $fields['tool_calls'][] = [
+                    'id' => $outputItem['id'] ?? null,
+                    'type' => 'mcp',
+                    'function' => [
+                        'name' => $outputItem['name'] ?? 'unknown',
+                        'arguments' => json_decode($outputItem['arguments'] ?? '{}', true),
+                    ],
+                    'result' => json_decode($outputItem['output'] ?? '{}', true),
+                    'server_label' => $outputItem['server_label'] ?? null,
+                ];
+            }
+        }
+        
+        // Also extract other data from message content if present
+        foreach($this->output as $outputItem) {
+            if (($outputItem['type'] ?? '') === 'message' && isset($outputItem['content'])) {
+                foreach($outputItem['content'] as $content) {
+                    if (isset($content['type']) && $content['type'] !== 'text' && $content['type'] !== 'output_text') {
+                        $fields = array_merge($fields, collect($content)->except(['type', 'text'])->toArray());
+                    }
                 }
             }
-
-            return $fields;
         }
 
-        return [];
+        return $fields;
     }
 
     public function getContent(): ?string
     {
         foreach($this->output as $outputItem) {
-            if (($outputItem['type'] ?? '') !== 'message') {
-                continue;
-            }
-
-            // Responses API format - output_text type only
-            if (isset($outputItem['content'])) {
-                foreach($outputItem['content'] as $content) {
-                    if (($content['type'] ?? '') === 'output_text') {
-                        return $content['text'] ?? '';
+            // Handle standard message output
+            if (($outputItem['type'] ?? '') === 'message') {
+                // Responses API format - output_text type only
+                if (isset($outputItem['content'])) {
+                    foreach($outputItem['content'] as $content) {
+                        if (($content['type'] ?? '') === 'output_text') {
+                            return $content['text'] ?? '';
+                        }
                     }
                 }
+            }
+            
+            // Handle MCP approval requests - return a message indicating tool approval is needed
+            if (($outputItem['type'] ?? '') === 'mcp_approval_request') {
+                return "MCP tool approval required for: {$outputItem['name']} on {$outputItem['server_label']}";
             }
         }
 

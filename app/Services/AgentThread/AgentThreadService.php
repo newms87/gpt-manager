@@ -484,11 +484,12 @@ STR;
 
         return [
             [
-                'type'          => 'mcp',
-                'server_url'    => $mcpServer->server_url,
-                'server_label'  => $mcpServer->name,
-                'allowed_tools' => $mcpServer->allowed_tools,
-                'headers'       => $mcpServer->headers,
+                'type'             => 'mcp',
+                'server_url'       => $mcpServer->server_url,
+                'server_label'     => $mcpServer->name,
+                'allowed_tools'    => $mcpServer->allowed_tools,
+                'headers'          => $mcpServer->headers,
+                'require_approval' => 'never', // Allow AI to use tools without approval
             ],
         ];
     }
