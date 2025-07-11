@@ -32,8 +32,9 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
     public function getContent(): ?string
     {
         // Handle Responses API format
-        if (isset($this->output[0]['content'])) {
-            foreach($this->output[0]['content'] as $content) {
+        $output = $this->get('output');
+        if (isset($output[0]['content'])) {
+            foreach($output[0]['content'] as $content) {
                 if (isset($content['type']) && $content['type'] === 'text' && isset($content['text'])) {
                     return $content['text'];
                 }
@@ -57,12 +58,12 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function inputTokens(): int
     {
-        return $this->usage['input_tokens'] ?? 100000;
+        return $this->get('usage.input_tokens', 100000);
     }
 
     public function outputTokens(): int
     {
-        return $this->usage['output_tokens'] ?? 500;
+        return $this->get('usage.output_tokens', 500);
     }
 
     public function getResponseId(): string|null

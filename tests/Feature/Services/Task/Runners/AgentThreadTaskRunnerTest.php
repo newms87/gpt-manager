@@ -54,6 +54,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $promptDirective  = PromptDirective::factory()->create(['directive_text' => $directiveContent]);
         $taskProcess->taskRun->taskDefinition->taskDefinitionDirectives()->create([
             'prompt_directive_id' => $promptDirective->id,
+            'section' => TaskDefinitionDirective::SECTION_TOP,
         ]);
 
         // When

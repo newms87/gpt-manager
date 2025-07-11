@@ -32,13 +32,10 @@ class McpServerRepository extends ActionRepository
             'team_id' => team()->id,
         ]);
 
-        $data += [
-            'require_approval' => 'never',
-            'is_active' => true,
-        ];
-
         $mcpServer->fill($data);
         $mcpServer->name = ModelHelper::getNextModelName($mcpServer);
+
+
         $mcpServer->validate()->save();
 
         return $mcpServer;
@@ -53,9 +50,8 @@ class McpServerRepository extends ActionRepository
 
     public function copyMcpServer(McpServer $mcpServer): McpServer
     {
-        $newMcpServer = $mcpServer->replicate();
+        $newMcpServer       = $mcpServer->replicate();
         $newMcpServer->name = ModelHelper::getNextModelName($mcpServer);
-        $newMcpServer->label = $newMcpServer->label . '_copy';
         $newMcpServer->save();
 
         return $newMcpServer;

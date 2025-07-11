@@ -16,6 +16,12 @@ abstract class TestCase extends BaseTestCase
         // Always reset all jobs to enabled in case a previous test disabled something
         Job::enableAll();
     }
+
+    protected function tearDown(): void
+    {
+        \Mockery::close();
+        parent::tearDown();
+    }
     
     /**
      * Disable automatic seeding for tests to avoid performance issues

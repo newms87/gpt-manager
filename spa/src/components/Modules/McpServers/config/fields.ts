@@ -1,4 +1,4 @@
-import { BooleanField, SelectField, TextField } from "quasar-ui-danx";
+import { TextField } from "quasar-ui-danx";
 import { h } from "vue";
 
 export const fields = [
@@ -6,12 +6,6 @@ export const fields = [
 		name: "name",
 		vnode: (props) => h(TextField, { ...props, maxLength: 80 }),
 		label: "Server Name",
-		required: true
-	},
-	{
-		name: "label",
-		vnode: (props) => h(TextField, { ...props, maxLength: 80 }),
-		label: "Server Label",
 		required: true
 	},
 	{
@@ -44,22 +38,5 @@ export const fields = [
 			placeholder: '["tool1", "tool2"]' 
 		}),
 		label: "Allowed Tools (JSON Array)"
-	},
-	{
-		name: "require_approval",
-		vnode: (props) => h(SelectField, {
-			...props,
-			options: [
-				{ value: "never", label: "Never" },
-				{ value: "always", label: "Always" }
-			]
-		}),
-		label: "Require Approval",
-		required: true
-	},
-	{
-		name: "is_active",
-		vnode: (props) => h(BooleanField, props),
-		label: "Active"
 	}
 ];

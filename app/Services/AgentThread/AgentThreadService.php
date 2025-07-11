@@ -464,12 +464,20 @@ STR;
     protected function getMcpServerConfiguration(AgentThreadRun $agentThreadRun): array
     {
         // Only get MCP server configuration if this thread run is associated with a task
-        if (!$agentThreadRun->taskRun) {
+        $mcpServer = $agentThreadRun->taskRun?->taskDefinition?->mcpServer;
+        if (!$mcpServer) {
             return [];
         }
-        
-        return app(McpServerConfigurationService::class)
-            ->getMcpServerToolsForTaskDefinition($agentThreadRun->taskRun->taskDefinition);
+
+        return [
+            [
+                'type'          => 'mcp',
+                'server_url'    => $mcpServer->server_url,
+                'server_label'  => $mcpServer->name,
+                'allowed_tools' => $mcpServer->allowed_tools,
+                'headers'       => $mcpServer->headers,
+            ],
+        ];
     }
 
 }

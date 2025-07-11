@@ -369,9 +369,9 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
     }
 
     /**
-     * Test filtering with numeric comparison operators (greater_than, less_than)
+     * Test filtering with greater_than numeric comparison operator
      */
-    public function test_filter_artifacts_with_numeric_comparisons()
+    public function test_filter_artifacts_with_greater_than_operator()
     {
         // Given we have 3 artifacts with numeric values
         $artifact1 = Artifact::factory()->create([
@@ -419,15 +419,28 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         $this->assertCount(2, $outputArtifactIds);
         $this->assertContains($artifact2->id, $outputArtifactIds);
         $this->assertContains($artifact3->id, $outputArtifactIds);
+    }
 
-        // Reset output artifacts
-        $this->taskProcess->outputArtifacts()->detach();
-        
-        // Re-attach input artifacts since the task process might have consumed them
+    /**
+     * Test filtering with less_than numeric comparison operator
+     */
+    public function test_filter_artifacts_with_less_than_operator()
+    {
+        // Given we have 3 artifacts with numeric values
+        $artifact1 = Artifact::factory()->create([
+            'json_content' => ['value' => 10],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'json_content' => ['value' => 50],
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'json_content' => ['value' => 100],
+        ]);
+
+        // Attach artifacts to the task process input
         $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
-        
-        // Reset task process status to allow it to run again
-        $this->taskProcess->update(['status' => 'Pending', 'activity' => null, 'percent_complete' => 0]);
 
         // Test less_than operator
         $this->taskDefinition->update([
@@ -451,7 +464,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
             ],
         ]);
 
-        // When we run the filter task again
+        // When we run the filter task
         $this->taskProcess->getRunner()->run();
 
         // Then only artifacts with value < 75 should be in the output
@@ -462,9 +475,9 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
     }
 
     /**
-     * Test filtering with case sensitivity
+     * Test filtering with case sensitive search
      */
-    public function test_filter_artifacts_with_case_sensitivity()
+    public function test_filter_artifacts_with_case_sensitive_search()
     {
         // Given we have 3 artifacts with text values
         $artifact1 = Artifact::factory()->create([
@@ -509,15 +522,28 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
         $outputArtifacts = $this->taskProcess->fresh()->outputArtifacts;
         $this->assertCount(1, $outputArtifacts);
         $this->assertEquals($artifact1->id, $outputArtifacts->first()->id);
+    }
 
-        // Reset output artifacts
-        $this->taskProcess->outputArtifacts()->detach();
-        
-        // Re-attach input artifacts since the task process might have consumed them
+    /**
+     * Test filtering with case insensitive search (default)
+     */
+    public function test_filter_artifacts_with_case_insensitive_search()
+    {
+        // Given we have 3 artifacts with text values
+        $artifact1 = Artifact::factory()->create([
+            'text_content' => 'This document contains IMPORTANT information',
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'text_content' => 'This document contains important details',
+        ]);
+
+        $artifact3 = Artifact::factory()->create([
+            'text_content' => 'This document has no matching content',
+        ]);
+
+        // Attach artifacts to the task process input
         $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id, $artifact3->id]);
-        
-        // Reset task process status to allow it to run again
-        $this->taskProcess->update(['status' => 'Pending', 'activity' => null, 'percent_complete' => 0]);
 
         // Test case-insensitive search (default)
         $this->taskDefinition->update([
@@ -538,7 +564,7 @@ class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
             ],
         ]);
 
-        // When we run the filter task again
+        // When we run the filter task
         $this->taskProcess->getRunner()->run();
 
         // Then both artifacts with case-insensitive matches should be in the output

@@ -13,13 +13,10 @@ class McpServerResource extends ActionResource
         return [
             'id' => $mcpServer->id,
             'name' => $mcpServer->name,
-            'label' => $mcpServer->label,
             'description' => $mcpServer->description,
             'server_url' => $mcpServer->server_url,
             'headers' => $mcpServer->headers,
             'allowed_tools' => $mcpServer->allowed_tools,
-            'require_approval' => $mcpServer->require_approval,
-            'is_active' => $mcpServer->is_active,
             'created_at' => $mcpServer->created_at,
             'updated_at' => $mcpServer->updated_at,
         ];

@@ -43,6 +43,7 @@ class LoadCsvTaskRunnerTest extends TestCase
         $property->setValue($this->taskRunner, $mockTaskProcess);
     }
 
+
     /**
      * Helper to create a mock StoredFile for testing
      *
@@ -198,6 +199,8 @@ class LoadCsvTaskRunnerTest extends TestCase
     /**
      * Test the run method with one CSV file and batch size 1
      */
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     public function testRunWithOneCsvFileBatchSizeOne()
     {
         // Create a mock StoredFile for testing
@@ -269,6 +272,8 @@ class LoadCsvTaskRunnerTest extends TestCase
     /**
      * Test the run method with one CSV file and batch size 0 (all in one batch)
      */
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     public function testRunWithOneCsvFileBatchSizeZero()
     {
         // Create a mock StoredFile for testing
@@ -320,6 +325,8 @@ class LoadCsvTaskRunnerTest extends TestCase
     /**
      * Test the run method with selected columns
      */
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     public function testRunWithSelectedColumns()
     {
         // Create a mock StoredFile for testing
@@ -386,6 +393,8 @@ class LoadCsvTaskRunnerTest extends TestCase
     /**
      * Test the run method with nonexistent columns
      */
+    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
+    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
     public function testRunWithNonexistentColumns()
     {
         // Create a mock StoredFile for testing
@@ -433,9 +442,4 @@ class LoadCsvTaskRunnerTest extends TestCase
     /**
      * Clean up after tests
      */
-    public function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
 }

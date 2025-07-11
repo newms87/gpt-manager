@@ -73,10 +73,10 @@ class TaskDefinitionToAgentThreadMapper
         $threadName  = $this->taskDefinition->name . ': ' . $agent->name;
         $agentThread = app(ThreadRepository::class)->create($agent, $threadName);
 
-        $this->addDirectives($agentThread, $this->taskDefinition->beforeThreadDirectives()->get());
+        $this->addDirectives($agentThread, $this->taskDefinition->beforeThreadDirectives()->with('directive')->get());
         $this->addArtifacts($agentThread);
         $this->appendMessages($agentThread);
-        $this->addDirectives($agentThread, $this->taskDefinition->afterThreadDirectives()->get());
+        $this->addDirectives($agentThread, $this->taskDefinition->afterThreadDirectives()->with('directive')->get());
 
         return $agentThread;
     }

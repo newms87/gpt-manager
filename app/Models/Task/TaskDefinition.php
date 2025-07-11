@@ -4,6 +4,7 @@ namespace App\Models\Task;
 
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThreadRun;
+use App\Models\Agent\McpServer;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Schema\SchemaAssociation;
@@ -85,6 +86,12 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     public function agent(): BelongsTo|Agent
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function mcpServer(): BelongsTo|McpServer
+    {
+        return $this->belongsTo(McpServer::class, 'task_runner_config->mcp_server_id')
+            ->where('team_id', $this->team_id);
     }
 
     public function schemaDefinition(): BelongsTo|SchemaDefinition

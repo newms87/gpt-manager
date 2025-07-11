@@ -9,280 +9,233 @@ use Tests\TestCase;
 
 class McpServerTest extends TestCase
 {
-    protected User $user;
-    protected Team $team;
-
-    public function setUp(): void
+    public function test_creates_mcp_server_via_api()
     {
-        parent::setUp();
+        $user = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->users()->attach($user);
+        $user->currentTeam = $team;
+        $this->actingAs($user);
 
-        $this->user = User::factory()->create();
-        $this->team = Team::factory()->create();
-        $this->user->teams()->attach($this->team);
-        $this->user->setCurrentTeam($this->team->uuid);
-
-        $this->actingAs($this->user);
-        session(['team_id' => $this->team->id]);
-    }
-
-    public function test_can_create_mcp_server()
-    {
         $mcpServerData = [
-            'name'             => 'Test MCP Server',
-            'label'            => 'test-mcp-server',
-            'description'      => 'A test MCP server',
-            'server_url'       => 'https://api.example.com/mcp',
-            'headers'          => ['Authorization' => 'Bearer test-token'],
-            'allowed_tools'    => ['search', 'create'],
-            'require_approval' => 'never',
-            'is_active'        => true,
-        ];
-
-        $response = $this->postJson('/api/mcp-servers/apply-action', [
-            'action' => 'create',
-            'data'   => $mcpServerData,
-        ]);
-
-        $response->assertStatus(200);
-
-        $this->assertDatabaseHas('mcp_servers', [
-            'name'    => 'Test MCP Server',
-            'label'   => 'test-mcp-server',
-            'team_id' => $this->team->id,
-        ]);
-    }
-
-    public function test_can_list_mcp_servers()
-    {
-        // Create servers for this team
-        McpServer::factory()->count(3)->create(['team_id' => $this->team->id]);
-
-        $response = $this->postJson('/api/mcp-servers/list');
-
-        $response->assertStatus(200);
-        
-        // Just verify we get some results
-        $responseData = $response->json();
-        $this->assertIsArray($responseData);
-        $this->assertNotEmpty($responseData);
-    }
-
-    public function test_can_show_mcp_server()
-    {
-        $mcpServer = McpServer::factory()->create(['team_id' => $this->team->id]);
-
-        $response = $this->getJson("/api/mcp-servers/{$mcpServer->id}/details");
-
-        $response->assertStatus(200);
-        $response->assertJson([
-            'id'    => $mcpServer->id,
-            'name'  => $mcpServer->name,
-            'label' => $mcpServer->label,
-        ]);
-    }
-
-    public function test_can_update_mcp_server()
-    {
-        $mcpServer = McpServer::factory()->create(['team_id' => $this->team->id]);
-
-        $updateData = [
-            'name'        => 'Updated MCP Server',
-            'description' => 'Updated description',
-            'is_active'   => false,
-        ];
-
-        $response = $this->postJson("/api/mcp-servers/{$mcpServer->id}/apply-action", [
-            'action' => 'update',
-            'data'   => $updateData,
-        ]);
-
-        $response->assertStatus(200);
-        $response->assertJson([
-            'success' => true,
-            'result' => [
-                'name'        => 'Updated MCP Server',
-                'description' => 'Updated description',
-                'is_active'   => false,
+            'name'        => 'Test MCP Server',
+            'description' => 'A test MCP server for API testing',
+            'server_url'  => 'http://localhost:8080',
+            'headers'     => [
+                'Authorization' => 'Bearer test-token',
+                'Content-Type'  => 'application/json'
             ],
-        ]);
+            'allowed_tools' => ['tool1', 'tool2'],
+        ];
 
-        $this->assertDatabaseHas('mcp_servers', [
-            'id'        => $mcpServer->id,
-            'name'      => 'Updated MCP Server',
-            'is_active' => false,
-        ]);
-    }
-
-    public function test_can_delete_mcp_server()
-    {
-        $mcpServer = McpServer::factory()->create(['team_id' => $this->team->id]);
-
-        $response = $this->postJson("/api/mcp-servers/{$mcpServer->id}/apply-action", [
-            'action' => 'delete',
+        $response = $this->postJson(route('mcp-servers.apply-action.create'), [
+            'action' => 'create',
+            'data' => $mcpServerData
         ]);
 
         $response->assertStatus(200);
-        $this->assertSoftDeleted('mcp_servers', ['id' => $mcpServer->id]);
-    }
-
-    public function test_can_copy_mcp_server()
-    {
-        $mcpServer = McpServer::factory()->create([
-            'team_id' => $this->team->id,
-            'name'    => 'Original Server',
-            'label'   => 'original-server',
-        ]);
-
-        $response = $this->postJson("/api/mcp-servers/{$mcpServer->id}/apply-action", [
-            'action' => 'copy',
-        ]);
-
-        $response->assertStatus(200);
-
-        // Verify the copy was created
         $this->assertDatabaseHas('mcp_servers', [
-            'team_id' => $this->team->id,
-            'label'   => 'original-server_copy',
+            'name'       => 'Test MCP Server',
+            'server_url' => 'http://localhost:8080',
+            'team_id'    => $team->id,
         ]);
-
-        // Verify original still exists
-        $this->assertDatabaseHas('mcp_servers', [
-            'id'    => $mcpServer->id,
-            'label' => 'original-server',
-        ]);
-    }
-
-    public function test_cannot_access_other_teams_mcp_servers()
-    {
-        $otherTeam      = Team::factory()->create();
-        $otherMcpServer = McpServer::factory()->create(['team_id' => $otherTeam->id]);
-
-        // Currently the API doesn't enforce team isolation on individual resources
-        // This is handled by the danx package - marking this test as incomplete
-        $this->markTestIncomplete('Team isolation on individual resources needs to be implemented in danx package');
-
-        $response = $this->getJson("/api/mcp-servers/{$otherMcpServer->id}/details");
-        $response->assertStatus(404);
-
-        $response = $this->postJson("/api/mcp-servers/{$otherMcpServer->id}/apply-action", [
-            'action' => 'update',
-            'data'   => ['name' => 'Hacked'],
-        ]);
-        $response->assertStatus(404);
-
-        $response = $this->postJson("/api/mcp-servers/{$otherMcpServer->id}/apply-action", [
-            'action' => 'delete',
-        ]);
-        $response->assertStatus(404);
     }
 
     public function test_validates_required_fields()
     {
-        $response = $this->postJson('/api/mcp-servers/apply-action', [
+        $user = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->users()->attach($user);
+        $user->currentTeam = $team;
+        $this->actingAs($user);
+
+        $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
-            'data'   => [],
+            'data' => []
         ]);
 
         $response->assertStatus(400);
-        // Validation errors are returned differently in this system
-        $this->assertTrue($response->status() === 400 || $response->status() === 422);
     }
 
-    public function test_validates_unique_label_per_team()
+    public function test_reads_mcp_server_via_api()
     {
-        McpServer::factory()->create([
-            'team_id' => $this->team->id,
-            'label'   => 'duplicate-label',
+        $user = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->users()->attach($user);
+        $user->currentTeam = $team;
+        $this->actingAs($user);
+
+        $mcpServer = McpServer::factory()->create([
+            'team_id'    => $team->id,
+            'name'       => 'Test Server',
+            'server_url' => 'http://example.com',
         ]);
 
-        $response = $this->postJson('/api/mcp-servers/apply-action', [
-            'action' => 'create',
-            'data'   => [
-                'name'       => 'Another Server',
-                'label'      => 'duplicate-label',
-                'server_url' => 'https://api.example.com/mcp',
-            ],
+        $response = $this->getJson(route('mcp-servers.details', $mcpServer));
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'id'         => $mcpServer->id,
+                'name'       => 'Test Server',
+                'server_url' => 'http://example.com',
+            ]);
+    }
+
+    public function test_updates_mcp_server_via_api()
+    {
+        $user = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->users()->attach($user);
+        $user->currentTeam = $team;
+        $this->actingAs($user);
+
+        $mcpServer = McpServer::factory()->create([
+            'team_id' => $team->id,
+            'name'    => 'Original Server',
         ]);
 
-        $response->assertStatus(400);
-        // Validation errors are returned differently in this system
-        $this->assertTrue($response->status() === 400 || $response->status() === 422);
+        $updateData = [
+            'name'        => 'Updated Server',
+            'description' => 'Updated description',
+            'server_url'  => 'http://updated.example.com',
+        ];
+
+        $response = $this->postJson(route('mcp-servers.apply-action', $mcpServer), [
+            'action' => 'update',
+            'data' => $updateData
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('mcp_servers', [
+            'id'         => $mcpServer->id,
+            'name'       => 'Updated Server',
+            'server_url' => 'http://updated.example.com',
+        ]);
+    }
+
+    public function test_deletes_mcp_server_via_api()
+    {
+        $user = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->users()->attach($user);
+        $user->currentTeam = $team;
+        $this->actingAs($user);
+
+        $mcpServer = McpServer::factory()->create([
+            'team_id' => $team->id,
+        ]);
+
+        $response = $this->postJson(route('mcp-servers.apply-action', $mcpServer), [
+            'action' => 'delete'
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertSoftDeleted($mcpServer);
+    }
+
+    public function test_duplicates_mcp_server()
+    {
+        $user = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->users()->attach($user);
+        $user->currentTeam = $team;
+        $this->actingAs($user);
+
+        $originalServer = McpServer::factory()->create([
+            'team_id'     => $team->id,
+            'name'        => 'original-server',
+            'description' => 'Original description',
+            'server_url'  => 'http://original.example.com',
+        ]);
+
+        $response = $this->postJson(route('mcp-servers.apply-action', $originalServer), [
+            'action' => 'copy'
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('mcp_servers', [
+            'name'        => 'original-server (1)',
+            'description' => 'Original description',
+            'server_url'  => 'http://original.example.com',
+            'team_id'     => $team->id,
+        ]);
+
+        $duplicatedServer = McpServer::where('name', 'original-server (1)')->first();
+        $this->assertNotEquals($originalServer->id, $duplicatedServer->id);
     }
 
     public function test_validates_server_url_format()
     {
-        $response = $this->postJson('/api/mcp-servers/apply-action', [
+        $user = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->users()->attach($user);
+        $user->currentTeam = $team;
+        $this->actingAs($user);
+
+        $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
-            'data'   => [
-                'name'       => 'Test Server',
-                'label'      => 'test-server',
-                'server_url' => 'not-a-url',
-            ],
+            'data' => [
+                'name'       => 'test-server',
+                'server_url' => 'invalid-url',
+            ]
         ]);
 
         $response->assertStatus(400);
-        // Validation errors are returned differently in this system
-        $this->assertTrue($response->status() === 400 || $response->status() === 422);
     }
 
-    public function test_validates_require_approval_enum()
+    public function test_validates_name_is_required()
     {
-        $response = $this->postJson('/api/mcp-servers/apply-action', [
+        $user = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->users()->attach($user);
+        $user->currentTeam = $team;
+        $this->actingAs($user);
+
+        $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
-            'data'   => [
-                'name'             => 'Test Server',
-                'label'            => 'test-server',
-                'server_url'       => 'https://api.example.com/mcp',
-                'require_approval' => 'invalid-value',
-            ],
+            'data' => [
+                'server_url' => 'http://example.com',
+            ]
         ]);
 
         $response->assertStatus(400);
-        // Validation errors are returned differently in this system
-        $this->assertTrue($response->status() === 400 || $response->status() === 422);
     }
 
-    public function test_model_validation_works()
+    public function test_validates_server_url_is_required()
     {
-        $mcpServer = new McpServer([
-            'team_id'          => $this->team->id,
-            'name'             => 'Test Server',
-            'label'            => 'test-server',
-            'server_url'       => 'https://api.example.com/mcp',
-            'require_approval' => 'never',
+        $user = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->users()->attach($user);
+        $user->currentTeam = $team;
+        $this->actingAs($user);
+
+        $response = $this->postJson(route('mcp-servers.apply-action.create'), [
+            'action' => 'create',
+            'data' => [
+                'name' => 'test-server',
+            ]
         ]);
 
-        // Should not throw exception
-        $mcpServer->validate();
-        $this->assertTrue(true);
+        $response->assertStatus(400);
     }
 
-    public function test_model_validation_fails_with_invalid_data()
+    public function test_scopes_to_team()
     {
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $team1 = Team::factory()->create();
+        $team2 = Team::factory()->create();
 
-        $mcpServer = new McpServer([
-            'team_id'    => $this->team->id,
-            'name'       => '', // Invalid: required field
-            'label'      => 'test-server',
-            'server_url' => 'not-a-url', // Invalid: not a URL
-        ]);
+        $server1 = McpServer::factory()->create(['team_id' => $team1->id]);
+        McpServer::factory()->create(['team_id' => $team2->id]);
 
-        $mcpServer->validate();
-    }
+        $user1 = User::factory()->create();
+        $team1->users()->attach($user1);
+        $user1->currentTeam = $team1;
+        $this->actingAs($user1);
 
-    public function test_string_representation()
-    {
-        $mcpServer = McpServer::factory()->create([
-            'team_id'    => $this->team->id,
-            'name'       => 'Test Server with Very Long Name That Should Be Truncated',
-            'server_url' => 'https://api.example.com/mcp',
-        ]);
+        $response = $this->postJson(route('mcp-servers.list'), []);
 
-        $string = (string)$mcpServer;
-
-        $this->assertStringContainsString('McpServer', $string);
-        $this->assertStringContainsString($mcpServer->id, $string);
-        $this->assertStringContainsString('https://api.example.com/mcp', $string);
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data'));
+        $this->assertEquals($server1->id, $response->json('data.0.id'));
     }
 }

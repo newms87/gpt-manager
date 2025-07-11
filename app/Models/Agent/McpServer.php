@@ -28,18 +28,14 @@ class McpServer extends Model implements AuditableContract, ResourcePackageableC
 
     protected $fillable = [
         'name',
-        'label',
         'description',
         'server_url',
         'headers',
         'allowed_tools',
-        'require_approval',
-        'is_active',
     ];
 
     protected array $keywordFields = [
         'name',
-        'label',
         'description',
         'server_url',
     ];
@@ -49,7 +45,6 @@ class McpServer extends Model implements AuditableContract, ResourcePackageableC
         return [
             'headers' => 'json',
             'allowed_tools' => 'json',
-            'is_active' => 'boolean',
         ];
     }
 
@@ -66,17 +61,9 @@ class McpServer extends Model implements AuditableContract, ResourcePackageableC
                 'max:80',
                 'string',
             ],
-            'label' => [
-                'required',
-                'max:80',
-                'string',
-                Rule::unique('mcp_servers')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
-            ],
             'server_url' => 'required|url',
             'headers' => 'nullable|array',
             'allowed_tools' => 'nullable|array',
-            'require_approval' => 'required|in:never,always',
-            'is_active' => 'boolean',
         ])->validate();
 
         return $this;
@@ -93,13 +80,10 @@ class McpServer extends Model implements AuditableContract, ResourcePackageableC
     {
         return $service->register($this, [
             'name' => $this->name,
-            'label' => $this->label,
             'description' => $this->description,
             'server_url' => $this->server_url,
             'headers' => $this->headers,
             'allowed_tools' => $this->allowed_tools,
-            'require_approval' => $this->require_approval,
-            'is_active' => $this->is_active,
         ]);
     }
 

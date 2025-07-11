@@ -148,7 +148,7 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $taskDefinition = TaskDefinition::factory()->create();
         $taskRun        = TaskRunnerService::prepareTaskRun($taskDefinition);
         TaskRunnerService::prepareTaskProcesses($taskRun);
-        $taskRun->update(['failed_at' => now()]);
+        $taskRun->update(['started_at' => now(), 'failed_at' => now()]);
         $taskProcess = $taskRun->taskProcesses->first();
 
         // When

@@ -1,114 +1,102 @@
 <template>
 	<div>
-		<div class="flex-x justify-between items-center mb-3">
-			<div>
-				<div class="text-base font-medium text-slate-200">MCP Servers</div>
-				<div class="text-sm text-slate-400 mt-1">Enable Model Context Protocol servers for enhanced capabilities</div>
-			</div>
-			<ActionButton
-				type="settings"
-				color="slate"
-				size="sm"
-				tooltip="Manage MCP Servers"
-				@click="showMcpManager = true"
-			/>
-		</div>
-
-		<SelectField
-			:model-value="selectedMcpServerIds"
-			:options="mcpServerOptions"
-			multiple
-			clearable
-			placeholder="Select MCP servers to enable..."
-			@update:model-value="onSelectionChange"
-		/>
-
-		<div v-if="selectedMcpServers.length > 0" class="mt-4">
-			<div class="text-sm font-medium text-slate-300 mb-2">Selected Servers:</div>
-			<div class="space-y-2">
-				<div
-					v-for="server in selectedMcpServers"
-					:key="server.id"
-					class="bg-slate-800/50 rounded-lg p-3 border border-slate-700"
-				>
-					<div class="flex-x justify-between items-start">
-						<div>
-							<div class="font-medium text-slate-200">{{ server.name }}</div>
-							<div class="text-xs text-slate-400">{{ server.server_url }}</div>
-							<div v-if="server.allowed_tools?.length" class="text-xs text-slate-500 mt-1">
-								Tools: {{ server.allowed_tools.join(", ") }}
-							</div>
-						</div>
-						<LabelPillWidget
-							:label="server.require_approval"
-							:color="server.require_approval === 'never' ? 'green' : 'orange'"
-							size="xs"
-						/>
-					</div>
-				</div>
-			</div>
-		</div>
+		<SelectionMenuField
+			v-model:selected="selectedMcpServer"
+			selectable
+			creatable
+			class="w-full"
+			:select-icon="ServerIcon"
+			select-text="MCP Server"
+			empty-text="No MCP servers configured. Create one to get started."
+			label-class="text-slate-300"
+			:options="availableMcpServers"
+			:loading="isLoading"
+			@create="onCreateMcpServer"
+		>
+			<template #selected="{ item }">
+				<McpServerCard :mcp-server="item" class="mb-2" />
+			</template>
+			<template #option="{ item }">
+				<McpServerCard :mcp-server="item" />
+			</template>
+		</SelectionMenuField>
 
 		<McpServerManagerDialog
-			:is-showing="showMcpManager"
-			@close="showMcpManager = false"
+			v-if="showMcpManager"
+			@close="onCloseManager"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { dxMcpServer } from "@/components/Modules/McpServers";
+import McpServerCard from "@/components/Modules/McpServers/McpServerCard.vue";
 import McpServerManagerDialog from "@/components/Modules/McpServers/McpServerManagerDialog";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions/config";
 import { McpServer, TaskDefinition } from "@/types";
-import { ActionButton, LabelPillWidget, SelectField } from "quasar-ui-danx";
+import { FaSolidServer as ServerIcon } from "danx-icon";
+import { SelectionMenuField } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 
 const props = defineProps<{
 	taskDefinition: TaskDefinition;
 }>();
 
-const showMcpManager = ref(false);
 const mcpServers = ref<McpServer[]>([]);
+const showMcpManager = ref(false);
 
-const selectedMcpServerIds = computed(() =>
-	props.taskDefinition.task_runner_config?.mcp_server_ids || []
+const isLoading = ref(false);
+
+const selectedMcpServerId = computed(() =>
+	props.taskDefinition.task_runner_config?.mcp_server_id || null
 );
 
-const mcpServerOptions = computed(() =>
+const availableMcpServers = computed(() =>
 	mcpServers.value
-		.filter(server => server.is_active)
-		.map(server => ({
-			value: server.id,
-			label: server.name,
-			description: server.server_url
-		}))
 );
 
-const selectedMcpServers = computed(() =>
-	mcpServers.value.filter(server =>
-		selectedMcpServerIds.value.includes(server.id)
-	)
-);
+const selectedMcpServer = computed({
+	get: () => mcpServers.value.find(server =>
+		server.id === selectedMcpServerId.value
+	) || null,
+	set: async (server: McpServer | null) => {
+		// Extract just the ID from the server object
+		const serverId = server?.id || null;
+		
+		const updatedConfig = {
+			...props.taskDefinition.task_runner_config,
+			mcp_server_id: serverId
+		};
+
+		await dxTaskDefinition.getAction("update").trigger(props.taskDefinition, {
+			task_runner_config: updatedConfig
+		});
+	}
+});
 
 async function loadMcpServers() {
+	isLoading.value = true;
 	try {
-		const response = await dxMcpServer.routes.list();
-		mcpServers.value = response.data;
+			const response = await dxMcpServer.routes.list();
+		// Filter out any invalid entries (like empty arrays or malformed data)
+		mcpServers.value = (response.data || []).filter(server => 
+			server && typeof server === 'object' && server.id && server.name
+		);
 	} catch (error) {
 		console.error("Failed to load MCP servers:", error);
+	} finally {
+		isLoading.value = false;
 	}
 }
 
-async function onSelectionChange(serverIds: string[]) {
-	const updatedConfig = {
-		...props.taskDefinition.task_runner_config,
-		mcp_server_ids: serverIds
-	};
 
-	await dxTaskDefinition.getAction("update").trigger(props.taskDefinition, {
-		task_runner_config: updatedConfig
-	});
+function onCreateMcpServer() {
+	showMcpManager.value = true;
+}
+
+async function onCloseManager() {
+	showMcpManager.value = false;
+	await loadMcpServers();
 }
 
 onMounted(loadMcpServers);

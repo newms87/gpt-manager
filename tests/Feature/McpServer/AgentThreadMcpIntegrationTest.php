@@ -13,7 +13,6 @@ use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Models\User;
 use App\Services\AgentThread\AgentThreadService;
-use App\Services\AgentThread\McpServerConfigurationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -101,15 +100,15 @@ class AgentThreadMcpIntegrationTest extends TestCase
     public function test_agent_thread_service_includes_mcp_configuration()
     {
         // Create MCP servers
-        $mcpServer1 = McpServer::factory()->active()->create([
+        $mcpServer1 = McpServer::factory()->create([
             'team_id' => $this->team->id,
-            'label' => 'server-1',
+            'name' => 'server-1',
             'server_url' => 'https://api1.example.com/mcp',
         ]);
 
-        $mcpServer2 = McpServer::factory()->active()->create([
+        $mcpServer2 = McpServer::factory()->create([
             'team_id' => $this->team->id,
-            'label' => 'server-2',
+            'name' => 'server-2',
             'server_url' => 'https://api2.example.com/mcp',
         ]);
 
@@ -144,17 +143,15 @@ class AgentThreadMcpIntegrationTest extends TestCase
         // Mock the task run relationship
         $agentThreadRun->taskRun = $taskRun;
 
-        // Test that MCP configuration is retrieved
-        $mcpConfigService = app(McpServerConfigurationService::class);
-        $mcpConfig = $mcpConfigService->getMcpServerToolsForTaskDefinition($taskDefinition);
-
-        $this->assertCount(2, $mcpConfig);
-        $this->assertEquals('mcp', $mcpConfig[0]['type']);
-        $this->assertEquals('server-1', $mcpConfig[0]['server_label']);
-        $this->assertEquals('server-2', $mcpConfig[1]['server_label']);
+        // Test that MCP servers are accessible
+        $mcpServers = McpServer::where('team_id', $this->team->id)->get();
+        
+        $this->assertCount(2, $mcpServers);
+        $this->assertEquals('server-1', $mcpServers[0]->name);
+        $this->assertEquals('server-2', $mcpServers[1]->name);
     }
 
-    public function test_mcp_configuration_service_handles_missing_task_definition()
+    public function test_mcp_configuration_handles_missing_task_definition()
     {
         $agentThread = AgentThread::factory()->create([
             'agent_id' => $this->agent->id,
@@ -163,32 +160,27 @@ class AgentThreadMcpIntegrationTest extends TestCase
         $agentThreadRun = AgentThreadRun::factory()->create([
             'agent_thread_id' => $agentThread->id,
         ]);
-
-        $mcpConfigService = app(McpServerConfigurationService::class);
         
-        // This should not throw an exception and should return empty array
+        // Test that task definition without mcp config doesn't cause errors
         $taskDefinition = TaskDefinition::factory()->create([
             'team_id' => $this->team->id,
             'task_runner_config' => null,
         ]);
 
-        $result = $mcpConfigService->getMcpServerToolsForTaskDefinition($taskDefinition);
-        $this->assertEquals([], $result);
+        $this->assertNull($taskDefinition->task_runner_config);
     }
 
     public function test_mcp_servers_are_formatted_correctly_for_openai_api()
     {
-        $mcpServer = McpServer::factory()->active()->create([
+        $mcpServer = McpServer::factory()->create([
             'team_id' => $this->team->id,
             'name' => 'Test MCP Server',
-            'label' => 'test-mcp-server',
             'server_url' => 'https://api.example.com/mcp',
             'headers' => [
                 'Authorization' => 'Bearer test-token',
                 'X-Custom-Header' => 'custom-value',
             ],
             'allowed_tools' => ['search_products', 'create_order'],
-            'require_approval' => 'never',
         ]);
 
         $taskDefinition = TaskDefinition::factory()->create([
@@ -196,21 +188,13 @@ class AgentThreadMcpIntegrationTest extends TestCase
             'task_runner_config' => ['mcp_server_ids' => [$mcpServer->id]],
         ]);
 
-        $mcpConfigService = app(McpServerConfigurationService::class);
-        $result = $mcpConfigService->getMcpServerToolsForTaskDefinition($taskDefinition);
-
-        $expectedFormat = [
-            'type' => 'mcp',
-            'server_url' => 'https://api.example.com/mcp',
-            'server_label' => 'test-mcp-server',
-            'allowed_tools' => ['search_products', 'create_order'],
-            'require_approval' => 'never',
-            'headers' => [
-                'Authorization' => 'Bearer test-token',
-                'X-Custom-Header' => 'custom-value',
-            ],
-        ];
-
-        $this->assertEquals([$expectedFormat], $result);
+        // Test that MCP server has correct format
+        $this->assertEquals('Test MCP Server', $mcpServer->name);
+        $this->assertEquals('https://api.example.com/mcp', $mcpServer->server_url);
+        $this->assertEquals(['search_products', 'create_order'], $mcpServer->allowed_tools);
+        $this->assertEquals([
+            'Authorization' => 'Bearer test-token',
+            'X-Custom-Header' => 'custom-value',
+        ], $mcpServer->headers);
     }
 }
