@@ -100,7 +100,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $this->assertEquals($afterContent, $messages[2]->content, 'Third message should be the after directive content');
     }
 
-    public function test_setupAgentThread_withOutputFragment_completeApiCallHasFilteredStructuredOutput(): void
+    public function test_setupAgentThread_withOutputFragment_responsesApiCallHasFilteredStructuredOutput(): void
     {
         // Given
         $outputSchema           = [
@@ -122,20 +122,25 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $schemaAssociation      = SchemaAssociation::factory()->withObject($taskProcess, 'output')->withSchema($outputSchema, $outputFragmentSelector)->create();
         $taskProcess->taskRun->taskDefinition->schemaDefinition()->associate($schemaAssociation->schemaDefinition)->save();
 
+        $capturedOptions = null;
 
         // Then
         $this->partialMock(TestAiApi::class)
-            ->shouldReceive('complete')->withArgs(function ($model, $messages, $options) {
-                $this->assertEquals(AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA, $options['response_format']['type'] ?? null);
-                $this->assertNull($options['response_format']['json_schema']['schema']['properties']['phone'] ?? null, 'Phone should NOT be in the response schema');
-                $this->assertNotNull($options['response_format']['json_schema']['schema']['properties']['email'] ?? null, 'Email should be in the response schema');
-                $this->assertNotNull($options['response_format']['json_schema']['schema']['properties']['dob'] ?? null, 'DOB should be in the response schema');
+            ->shouldReceive('responses')->withArgs(function ($model, $messages, $options) use (&$capturedOptions) {
+                $capturedOptions = $options->toArray();
 
                 return true;
-            })->andReturn(new TestAiCompletionResponse());
+            })->once()->andReturn(new TestAiCompletionResponse());
 
         // When
         AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
+
+        // Assert the captured options
+        $this->assertNotNull($capturedOptions, 'API options should have been captured');
+        $this->assertEquals(AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA, $capturedOptions['text']['format']['type'] ?? null);
+        $this->assertNull($capturedOptions['text']['format']['schema']['properties']['phone'] ?? null, 'Phone should NOT be in the response schema');
+        $this->assertNotNull($capturedOptions['text']['format']['schema']['properties']['email'] ?? null, 'Email should be in the response schema');
+        $this->assertNotNull($capturedOptions['text']['format']['schema']['properties']['dob'] ?? null, 'DOB should be in the response schema');
     }
 
     public function test_run_withMcpServer_mcpServerIsPassedToApi(): void
@@ -160,23 +165,29 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $this->assertNotNull($foundMcpServer, 'MCP server should be found via TaskDefinition');
         $this->assertEquals($mcpServer->id, $foundMcpServer->id, 'MCP server IDs should match');
 
+        $capturedOptions = null;
+
         // Then
         $this->partialMock(TestAiApi::class)
-            ->shouldReceive('complete')->withArgs(function ($model, $messages, $options) use ($mcpServer) {
-                $mcpServers = $options['mcp_servers'] ?? [];
-                $this->assertNotEmpty($mcpServers, 'MCP servers should be included in options');
-                $this->assertEquals('mcp', $mcpServers[0]['type']);
-                $this->assertEquals($mcpServer->server_url, $mcpServers[0]['server_url']);
-                $this->assertEquals($mcpServer->name, $mcpServers[0]['server_label']);
-                $this->assertEquals($mcpServer->allowed_tools, $mcpServers[0]['allowed_tools']);
-                $this->assertEquals($mcpServer->headers, $mcpServers[0]['headers']);
+            ->shouldReceive('responses')->withArgs(function ($model, $messages, $options) use (&$capturedOptions) {
+                $capturedOptions = $options->toArray();
 
                 return true;
-            })->andReturn(new TestAiCompletionResponse());
+            })->once()->andReturn(new TestAiCompletionResponse());
 
         // When
         AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
-        
+
+        // Assert the captured options
+        $this->assertNotNull($capturedOptions, 'API options should have been captured');
+        $tools = $capturedOptions['tools'] ?? [];
+        $this->assertNotEmpty($tools, 'Tools should be included in options');
+        $this->assertEquals('mcp', $tools[0]['type']);
+        $this->assertEquals($mcpServer->server_url, $tools[0]['server_url']);
+        $this->assertEquals($mcpServer->name, $tools[0]['server_label']);
+        $this->assertEquals($mcpServer->allowed_tools, $tools[0]['allowed_tools']);
+        $this->assertEquals($mcpServer->headers, $tools[0]['headers']);
+
         // Verify the AgentThreadRun has the MCP server relationship set
         $taskProcess->refresh();
         $agentThreadRun = $taskProcess->agentThread->runs()->latest()->first();
