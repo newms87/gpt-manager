@@ -4,6 +4,7 @@
 			<LabelPillWidget :label="`WorkflowRun: ${workflowRun.id}`" color="sky" size="xs" />
 			<LabelPillWidget :label=" fDateTime(workflowRun.created_at)" color="gray" size="xs" />
 			<div class="flex-grow font-bold">{{ workflowRun.name }}</div>
+			<UsageVisualizationButton v-if="workflowRun.usage" :usage="workflowRun.usage" />
 			<WorkflowStatusTimerPill :runner="workflowRun" />
 			<ShowHideButton v-model="isShowing" class="bg-sky-900" />
 			<ActionButton
@@ -23,6 +24,7 @@
 </template>
 <script setup lang="ts">
 import TaskRunCard from "@/components/Modules/TaskDefinitions/Panels/TaskRunCard";
+import UsageVisualizationButton from "@/components/Shared/Usage/UsageVisualizationButton";
 import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/config";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";

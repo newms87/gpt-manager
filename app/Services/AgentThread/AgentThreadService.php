@@ -13,6 +13,7 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Repositories\AgentRepository;
 use App\Services\JsonSchema\JsonSchemaService;
+use App\Services\Usage\UsageTrackingService;
 use App\Traits\HasDebugLogging;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -327,18 +328,29 @@ STR;
      */
     public function handleResponse(AgentThread $thread, AgentThreadRun $threadRun, AgentCompletionResponseContract $response): void
     {
-        $inputTokens  = $threadRun->input_tokens + $response->inputTokens();
-        $outputTokens = $threadRun->output_tokens + $response->outputTokens();
+        $newInputTokens  = $response->inputTokens();
+        $newOutputTokens = $response->outputTokens();
 
-        static::log("Handling response from AI model. input: " . $inputTokens . ", output: " . $outputTokens);
+        static::log("Handling response from AI model. input: " . $newInputTokens . ", output: " . $newOutputTokens);
 
         $threadRun->update([
             'agent_model'   => $thread->agent->model,
             'refreshed_at'  => now(),
-            'total_cost'    => app(AgentRepository::class)->calcTotalCost($thread->agent, $inputTokens, $outputTokens),
-            'input_tokens'  => $inputTokens,
-            'output_tokens' => $outputTokens,
         ]);
+
+        // Record usage event for this specific AI call
+        if ($newInputTokens > 0 || $newOutputTokens > 0) {
+            app(UsageTrackingService::class)->recordAiUsage(
+                $threadRun,
+                $thread->agent->api,
+                $thread->agent->model,
+                [
+                    'input_tokens' => $newInputTokens,
+                    'output_tokens' => $newOutputTokens,
+                    'api_response' => $response->toArray(),
+                ]
+            );
+        }
 
         $lastMessage = $thread->messages()->create([
             'role'    => AgentThreadMessage::ROLE_ASSISTANT,

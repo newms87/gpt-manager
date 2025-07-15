@@ -45,6 +45,7 @@ class MergeArtifactsTaskRunner extends BaseTaskRunner
             $jsonContentKey = $inputArtifact->getFlattenedJsonFragmentValuesString($jsonContentFragmentSelector);
             $metaKey        = $inputArtifact->getFlattenedMetaFragmentValuesString($metaFragmentSelector);
             $groupKey       = "$jsonContentKey;$metaKey";
+            static::log("Group key for Artifact $inputArtifact->id: $groupKey");
 
             $artifactsByGroup[$groupKey][] = $inputArtifact;
         }

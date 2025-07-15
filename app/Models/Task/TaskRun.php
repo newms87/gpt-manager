@@ -3,6 +3,7 @@
 namespace App\Models\Task;
 
 use App\Events\TaskRunUpdatedEvent;
+use App\Models\Traits\HasUsageTracking;
 use App\Models\Usage\UsageSummary;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
@@ -30,7 +31,7 @@ use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, HasDebugLogging, HasWorkflowStatesTrait, SoftDeletes;
+    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, HasDebugLogging, HasWorkflowStatesTrait, SoftDeletes, HasUsageTracking;
 
     protected $fillable = [
         'started_at',
@@ -121,10 +122,6 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         return $this->artifacts()->withPivotValue('category', 'output');
     }
 
-    public function usageSummary(): MorphOne
-    {
-        return $this->morphOne(UsageSummary::class, 'object');
-    }
 
     public function addInputArtifacts($artifacts): static
     {
@@ -232,6 +229,11 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
     public function getRunner(): TaskRunnerContract
     {
         return $this->taskDefinition->getRunner()->setTaskRun($this);
+    }
+
+    public function refreshUsageFromProcesses(): void
+    {
+        $this->aggregateChildUsage('taskProcesses');
     }
 
     public static function booted(): void

@@ -5,6 +5,7 @@ namespace App\Services\Task\Runners;
 use App\Api\ImageToText\ImageToTextOcrApi;
 use App\Models\Task\Artifact;
 use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
+use App\Services\Usage\UsageTrackingService;
 use Aws\S3\Exception\S3Exception;
 use Exception;
 use GuzzleHttp\Exception\ClientException;
@@ -171,7 +172,28 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         if (!$ocrTranscode) {
             $this->activity("Transcoding $storedFile->filename to text", 10);
-            $ocrText            = app(ImageToTextOcrApi::class)->convert($storedFile->url);
+            
+            $startTime = microtime(true);
+            $ocrText = app(ImageToTextOcrApi::class)->convert($storedFile->url);
+            $endTime = microtime(true);
+            $runTimeMs = intval(($endTime - $startTime) * 1000);
+            
+            // Record usage for OCR API call
+            app(UsageTrackingService::class)->recordApiUsage(
+                $this->taskProcess,
+                'imagetotext',
+                'ocr_conversion',
+                [
+                    'data_volume' => strlen($ocrText),
+                    'metadata' => [
+                        'filename' => $storedFile->filename,
+                        'file_size' => $storedFile->size,
+                        'url' => $storedFile->url,
+                    ],
+                ],
+                $runTimeMs
+            );
+            
             $transcodedFilename = preg_replace("/\\.[a-z0-9]+/", ".ocr.txt", $storedFile->filename);
             // Save the transcoded record
             $ocrTranscode = app(TranscodeFileService::class)->storeTranscodedFile(

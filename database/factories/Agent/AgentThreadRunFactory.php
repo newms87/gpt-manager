@@ -26,8 +26,6 @@ class AgentThreadRunFactory extends Factory
             'completed_at'    => null,
             'failed_at'       => null,
             'refreshed_at'    => null,
-            'input_tokens'    => 0,
-            'output_tokens'   => 0,
         ];
     }
 }

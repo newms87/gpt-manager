@@ -18,7 +18,7 @@ class AgentThreadResource extends ActionResource
             'summary'          => $agentThread->summary,
             'is_running'       => $agentThread->isRunning(),
             'logs'             => $agentThread->lastRun?->jobDispatch?->runningAuditRequest?->logs ?? '',
-            'usage'            => $agentThread->getUsage(),
+            'usage'            => $agentThread->usage,
             'audit_request_id' => $agentThread->lastRun?->jobDispatch?->running_audit_request_id,
             'timestamp'        => $agentThread->updated_at,
             'can'              => $agentThread->can(),

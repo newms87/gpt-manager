@@ -5,6 +5,7 @@ namespace App\Models\Agent;
 use App\Events\AgentThreadUpdatedEvent;
 use App\Models\Assistant\AssistantAction;
 use App\Models\Team\Team;
+use App\Models\Traits\HasUsageTracking;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,15 +18,13 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class AgentThread extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes, ActionModelTrait;
+    use HasFactory, AuditableTrait, SoftDeletes, ActionModelTrait, HasUsageTracking;
 
     protected $guarded = [
         'id',
         'created_at',
         'updated_at',
     ];
-
-    protected array $usage = [];
 
     protected array $can = [
         'view' => null,
@@ -148,35 +147,9 @@ class AgentThread extends Model implements AuditableContract
         return $this->currentRun()->exists();
     }
 
-    public function getUsage(): array
+    public function refreshUsageFromRuns(): void
     {
-        if (!$this->usage) {
-            $this->usage = $this->runs()->withTrashed()->selectRaw(
-                'count(*) as count,' .
-                'coalesce(sum(coalesce(input_tokens, 0)), 0) as input_tokens,' .
-                'coalesce(sum(coalesce(output_tokens, 0)), 0) as output_tokens,' .
-                'coalesce(sum(coalesce(total_cost, 0)), 0) as total_cost'
-            )
-                ->first()
-                ->toArray();
-        }
-
-        return $this->usage;
-    }
-
-    public function getTotalInputTokens()
-    {
-        return $this->getUsage()['input_tokens'];
-    }
-
-    public function getTotalOutputTokens()
-    {
-        return $this->getUsage()['output_tokens'];
-    }
-
-    public function getTotalCost()
-    {
-        return $this->getUsage()['total_cost'];
+        $this->aggregateChildUsage('runs');
     }
 
     public function __toString()

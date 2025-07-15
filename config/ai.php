@@ -11,6 +11,12 @@ return [
     'seed'          => env('AI_SEED', 11181987),
     'default_api'   => OpenAiApi::$serviceName,
     'default_model' => 'o4-mini',
+    
+    // Classification deduplication agent configuration
+    'classification_deduplication' => [
+        'agent_name' => 'Classification Deduplication Agent',
+        'model' => env('AI_CLASSIFICATION_DEDUP_MODEL', 'o4-mini'),
+    ],
     'models'        => [
         OpenAiApi::$serviceName => [
             'gpt-4o' => [

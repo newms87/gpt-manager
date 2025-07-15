@@ -130,9 +130,12 @@ export interface UsageSummary {
 	run_time_ms: number;
 	input_tokens: number;
 	output_tokens: number;
+	total_tokens: number;
 	input_cost: number;
 	output_cost: number;
 	total_cost: number;
+	request_count: number;
+	data_volume: number;
 }
 
 export type TaskRunStatus = "Pending" | "Running" | "Failed" | "Skipped" | "Completed" | "Stopped" | "Timeout";

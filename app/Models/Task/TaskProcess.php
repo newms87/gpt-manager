@@ -5,6 +5,7 @@ namespace App\Models\Task;
 use App\Events\TaskProcessUpdatedEvent;
 use App\Models\Agent\AgentThread;
 use App\Models\Schema\SchemaAssociation;
+use App\Models\Traits\HasUsageTracking;
 use App\Models\Usage\UsageSummary;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Runners\TaskRunnerContract;
@@ -26,7 +27,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class TaskProcess extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait, HasWorkflowStatesTrait;
+    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait, HasWorkflowStatesTrait, HasUsageTracking;
 
     protected $fillable = [
         'name',
@@ -119,10 +120,6 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         return $this->morphOne(SchemaAssociation::class, 'object')->where('category', 'output');
     }
 
-    public function usageSummary(): MorphOne
-    {
-        return $this->morphOne(UsageSummary::class, 'object');
-    }
 
     public function addInputArtifacts($artifacts): static
     {

@@ -54,7 +54,7 @@ class ActionExecutionService
                     'action_thread_id' => $actionThread->id,
                     'execution_details' => [
                         'model' => $actionAgent->model,
-                        'tokens_used' => $threadRun->input_tokens + $threadRun->output_tokens,
+                        'tokens_used' => $threadRun->usage['total_tokens'] ?? 0,
                         'execution_time' => $threadRun->completed_at?->diffInSeconds($threadRun->started_at)
                     ]
                 ]);

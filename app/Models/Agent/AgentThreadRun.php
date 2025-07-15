@@ -5,6 +5,7 @@ namespace App\Models\Agent;
 use App\Events\AgentThreadRunUpdatedEvent;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
+use App\Models\Traits\HasUsageTracking;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +19,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class AgentThreadRun extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes, ActionModelTrait, HasWorkflowStatesTrait;
+    use HasFactory, AuditableTrait, SoftDeletes, ActionModelTrait, HasWorkflowStatesTrait, HasUsageTracking;
 
     const string
         RESPONSE_FORMAT_TEXT = 'text',
@@ -36,10 +37,8 @@ class AgentThreadRun extends Model implements AuditableContract
         'api_options',
         'completed_at',
         'failed_at',
-        'input_tokens',
         'last_message_id',
         'mcp_server_id',
-        'output_tokens',
         'refreshed_at',
         'response_format',
         'response_schema_id',
@@ -48,7 +47,6 @@ class AgentThreadRun extends Model implements AuditableContract
         'response_json_schema',
         'started_at',
         'status',
-        'total_cost',
     ];
 
     public function casts(): array

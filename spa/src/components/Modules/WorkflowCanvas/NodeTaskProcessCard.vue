@@ -41,6 +41,7 @@
 			<div class="flex-x space-x-2 mt-2">
 				<LabelPillWidget :label="`pid: ${taskProcess.id}`" color="sky" size="xs" class="whitespace-nowrap" />
 				<LabelPillWidget :label="taskProcess.name" color="blue" size="xs" class="text-center max-w-64" />
+				<UsageSummaryCard v-if="taskProcess.usage" :usage="taskProcess.usage" variant="compact" class="max-w-32" />
 				<div class="flex-grow overflow-hidden">
 					<QLinearProgress size="29px" :value="taskProcess.percent_complete / 100" class="w-full rounded bg-sky-950">
 						<div class="absolute-full flex flex-center">
@@ -118,6 +119,7 @@
 import { AgentThreadFields } from "@/components/Modules/Agents/Threads/store";
 import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import JobDispatchList from "@/components/Modules/Audits/JobDispatches/JobDispatchList";
+import UsageSummaryCard from "@/components/Shared/Usage/UsageSummaryCard";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import NodeArtifactsButton from "@/components/Modules/WorkflowCanvas/NodeArtifactsButton";
 import TaskProcessAgentThreadCard from "@/components/Modules/WorkflowCanvas/TaskProcessAgentThreadCard";

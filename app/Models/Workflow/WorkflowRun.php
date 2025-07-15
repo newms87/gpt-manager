@@ -7,6 +7,7 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
+use App\Models\Traits\HasUsageTracking;
 use App\Models\Usage\UsageSummary;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Workflow\WorkflowRunnerService;
@@ -29,7 +30,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowRun extends Model implements WorkflowStatesContract, AuditableContract
 {
-    use SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowStatesTrait, HasDebugLogging;
+    use SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowStatesTrait, HasDebugLogging, HasUsageTracking;
 
     protected $fillable = [
         'name',
@@ -83,10 +84,6 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         return $this->hasMany(TaskRun::class);
     }
 
-    public function usageSummary(): MorphOne
-    {
-        return $this->morphOne(UsageSummary::class, 'object');
-    }
 
     public function taskProcessListeners(): MorphMany
     {
@@ -265,6 +262,11 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
     public function updateActiveWorkersCount(): void
     {
         $this->update(['active_workers_count' => $this->activeWorkers()->count()]);
+    }
+
+    public function refreshUsageFromTaskRuns(): void
+    {
+        $this->aggregateChildUsage('taskRuns');
     }
 
     public static function booted(): void
