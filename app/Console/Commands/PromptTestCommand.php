@@ -3,19 +3,16 @@
 namespace App\Console\Commands;
 
 use App\Models\Agent\Agent;
-use App\Models\Agent\AgentThread;
 use App\Models\Agent\McpServer;
-use App\Services\AgentThread\AgentThreadService;
 use App\Services\PromptTesting\PromptTestRunner;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 
-class RunPromptTest extends Command
+class PromptTestCommand extends Command
 {
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'prompt:test 
+    protected $signature = 'prompt:test
                            {test? : The test name/path to run (optional - runs all tests if not specified)}
                            {--agent= : Agent ID to use for testing}
                            {--mcp-server= : MCP Server ID to use for testing}
@@ -33,18 +30,18 @@ class RunPromptTest extends Command
      */
     public function handle(): int
     {
-        $testName = $this->argument('test');
-        $agentId = $this->option('agent');
-        $mcpServerId = $this->option('mcp-server');
-        $verbose = $this->option('detailed');
-        $saveResults = $this->option('save-results');
+        $testName          = $this->argument('test');
+        $agentId           = $this->option('agent');
+        $mcpServerId       = $this->option('mcp-server');
+        $verbose           = $this->option('detailed');
+        $saveResults       = $this->option('save-results');
         $continueOnFailure = $this->option('continue-on-failure');
 
         // Initialize the prompt test runner
         $runner = new PromptTestRunner([
-            'verbose' => $verbose,
+            'verbose'      => $verbose,
             'save_results' => $saveResults,
-            'console' => $this,
+            'console'      => $this,
         ]);
 
         try {
@@ -76,11 +73,12 @@ class RunPromptTest extends Command
 
             return $result['success'] ? 0 : 1;
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             $this->error("Test failed: {$e->getMessage()}");
             if ($verbose) {
                 $this->error($e->getTraceAsString());
             }
+
             return 1;
         }
     }
@@ -95,46 +93,47 @@ class RunPromptTest extends Command
 
         // Get all available tests
         $tests = $this->findAllTests();
-        
+
         if (empty($tests)) {
             $this->warn('No tests found.');
+
             return 0;
         }
 
-        $totalTests = count($tests);
+        $totalTests  = count($tests);
         $passedTests = 0;
         $failedTests = 0;
-        $results = [];
+        $results     = [];
 
-        foreach ($tests as $i => $testName) {
+        foreach($tests as $i => $testName) {
             $this->line("Running test " . ($i + 1) . "/{$totalTests}: {$testName}");
-            
+
             try {
-                $result = $runner->runTest($testName);
+                $result    = $runner->runTest($testName);
                 $results[] = $result;
-                
+
                 if ($result['success']) {
                     $this->info("✅ {$testName} PASSED ({$result['duration']}s)");
                     $passedTests++;
                 } else {
                     $this->error("❌ {$testName} FAILED ({$result['duration']}s)");
                     $failedTests++;
-                    
+
                     if (!$continueOnFailure) {
                         $this->error("Stopping test execution due to failure. Use --continue-on-failure to run all tests.");
                         break;
                     }
                 }
-            } catch (\Exception $e) {
+            } catch(\Exception $e) {
                 $this->error("❌ {$testName} ERROR: {$e->getMessage()}");
                 $failedTests++;
-                
+
                 if (!$continueOnFailure) {
                     $this->error("Stopping test execution due to error. Use --continue-on-failure to run all tests.");
                     break;
                 }
             }
-            
+
             $this->newLine();
         }
 
@@ -150,8 +149,8 @@ class RunPromptTest extends Command
     private function findAllTests(): array
     {
         $testPath = app_path('Services/PromptTesting/Tests');
-        $tests = [];
-        
+        $tests    = [];
+
         if (!is_dir($testPath)) {
             return $tests;
         }
@@ -160,24 +159,25 @@ class RunPromptTest extends Command
             new \RecursiveDirectoryIterator($testPath)
         );
 
-        foreach ($iterator as $file) {
+        foreach($iterator as $file) {
             if (!$file->isFile() || $file->getExtension() !== 'php') {
                 continue;
             }
 
             $relativePath = str_replace($testPath . '/', '', $file->getPathname());
-            $className = str_replace(['/', '.php'], ['\\', ''], $relativePath);
-            
+            $className    = str_replace(['/', '.php'], ['\\', ''], $relativePath);
+
             if ($className === 'BasePromptTest') {
                 continue;
             }
 
             // Convert class name back to test name
             $testName = str_replace('Test', '', $className);
-            $tests[] = $testName;
+            $tests[]  = $testName;
         }
 
         sort($tests);
+
         return $tests;
     }
 
@@ -187,21 +187,21 @@ class RunPromptTest extends Command
     private function displayTestSummary(array $results, int $passed, int $failed, int $total): void
     {
         $this->line('=== Test Summary ===');
-        
+
         if ($failed > 0) {
             $this->error("❌ {$failed} test(s) failed");
         }
         if ($passed > 0) {
             $this->info("✅ {$passed} test(s) passed");
         }
-        
+
         $this->line("Total: {$total} tests");
-        
+
         // Calculate aggregate metrics
         $totalDuration = array_sum(array_column($results, 'duration'));
-        $totalTokens = array_sum(array_column($results, 'input_tokens')) + array_sum(array_column($results, 'output_tokens'));
-        $totalCost = array_sum(array_column($results, 'total_cost'));
-        
+        $totalTokens   = array_sum(array_column($results, 'input_tokens')) + array_sum(array_column($results, 'output_tokens'));
+        $totalCost     = array_sum(array_column($results, 'total_cost'));
+
         $this->table(['Metric', 'Value'], [
             ['Total Duration', round($totalDuration, 2) . 's'],
             ['Total Tokens', number_format($totalTokens)],
@@ -212,7 +212,7 @@ class RunPromptTest extends Command
         if ($this->option('detailed') && !empty($results)) {
             $this->newLine();
             $this->line('=== Individual Test Results ===');
-            foreach ($results as $result) {
+            foreach($results as $result) {
                 $status = $result['success'] ? '✅' : '❌';
                 $this->line("{$status} {$result['test_name']} - {$result['duration']}s");
             }
@@ -226,7 +226,7 @@ class RunPromptTest extends Command
     {
         $this->newLine();
         $this->line('=== Test Results ===');
-        
+
         if ($result['success']) {
             $this->info('✅ Test PASSED');
         } else {
@@ -247,7 +247,7 @@ class RunPromptTest extends Command
         if (isset($result['assertions'])) {
             $this->newLine();
             $this->line('=== Assertions ===');
-            foreach ($result['assertions'] as $assertion) {
+            foreach($result['assertions'] as $assertion) {
                 $status = $assertion['passed'] ? '✅' : '❌';
                 $this->line("{$status} {$assertion['description']}");
                 if (!$assertion['passed'] && isset($assertion['error'])) {
@@ -265,7 +265,7 @@ class RunPromptTest extends Command
         if (isset($result['tool_calls']) && !empty($result['tool_calls'])) {
             $this->newLine();
             $this->line('=== Tool Calls ===');
-            foreach ($result['tool_calls'] as $i => $toolCall) {
+            foreach($result['tool_calls'] as $i => $toolCall) {
                 $this->line("Tool Call " . ($i + 1) . ": {$toolCall['tool_name']}");
                 if ($this->option('detailed')) {
                     $this->line("  Arguments: " . json_encode($toolCall['arguments'], JSON_PRETTY_PRINT));

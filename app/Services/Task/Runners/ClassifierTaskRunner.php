@@ -3,6 +3,7 @@
 namespace App\Services\Task\Runners;
 
 use App\Repositories\ThreadRepository;
+use App\Services\Task\ClassificationDeduplicationService;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class ClassifierTaskRunner extends AgentThreadTaskRunner
@@ -63,5 +64,32 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
         }
 
         return false;
+    }
+
+    /**
+     * Called after all parallel processes have completed
+     * Override parent to add classification-specific deduplication
+     */
+    public function afterAllProcessesCompleted(): void
+    {
+        parent::afterAllProcessesCompleted();
+
+        static::log("Running classification deduplication across all process artifacts");
+
+        $artifacts = $this->taskRun->outputArtifacts()
+            ->whereNotNull('meta->classification')
+            ->get();
+
+        if ($artifacts->isEmpty()) {
+            static::log("No artifacts with classification metadata found for deduplication");
+            return;
+        }
+
+        try {
+            app(ClassificationDeduplicationService::class)->deduplicateClassificationLabels($artifacts);
+            static::log("Classification deduplication completed successfully");
+        } catch(\Exception $e) {
+            static::log("Error during classification deduplication: " . $e->getMessage());
+        }
     }
 }
