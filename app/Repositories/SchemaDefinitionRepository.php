@@ -70,7 +70,7 @@ class SchemaDefinitionRepository extends ActionRepository
         if (!$schemaDefinition->canEdit()) {
             throw new ValidationError('You do not have permission to edit this schema.');
         }
-        
+
         $schemaDefinition->fill($input);
 
         $schemaDefinition->validate()->save($input);
@@ -90,7 +90,6 @@ class SchemaDefinitionRepository extends ActionRepository
         $agent = team()->agents()->firstOrCreate([
             'name' => 'Schema Response Example Generator [GENERATED]',
         ], [
-            'api'         => config('ai.default_api'),
             'model'       => config('ai.default_model'),
             'api_options' => [
                 'temperature' => 0,

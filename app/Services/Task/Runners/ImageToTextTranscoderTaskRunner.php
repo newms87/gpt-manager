@@ -9,7 +9,6 @@ use App\Services\Usage\UsageTrackingService;
 use Aws\S3\Exception\S3Exception;
 use Exception;
 use GuzzleHttp\Exception\ClientException;
-use League\Flysystem\UnableToReadFile;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\ArrayHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -33,10 +32,10 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         if ($transcodedFile) {
             $this->activity("File already transcoded", 100);
             static::log("$transcodedFile");
-            
+
             try {
                 $transcodedContents = $transcodedFile->getContents();
-            } catch (Throwable $e) {
+            } catch(Throwable $e) {
                 // If the transcoded file doesn't exist in S3 (404 error), delete the bad record and continue processing
                 if ($this->is404Error($e)) {
                     $this->activity("Transcoded file not found in S3, cleaning up bad transcode record: {$transcodedFile->filename}", 5);
@@ -46,7 +45,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
                     throw $e;
                 }
             }
-            
+
             if (isset($transcodedContents)) {
                 $artifact = Artifact::create([
                     'name'            => $transcodedFile->filename,
@@ -139,10 +138,10 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         // Add the OCR transcode text to the thread
         $ocrPrompt = "OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ";
-        
+
         try {
             $ocrContents = $ocrTranscodedFile->getContents();
-        } catch (Throwable $e) {
+        } catch(Throwable $e) {
             // If the OCR file doesn't exist in S3 (404 error), delete the bad record and re-throw
             if ($this->is404Error($e)) {
                 $this->activity("OCR file not found in S3, cleaning up bad transcode record: {$ocrTranscodedFile->filename}", 5);
@@ -151,7 +150,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
             }
             throw $e;
         }
-        
+
         $agentThread = app(TaskDefinitionToAgentThreadMapper::class)
             ->setTaskDefinition($this->taskDefinition)
             ->addMessage($ocrPrompt . $ocrContents)
@@ -172,28 +171,29 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         if (!$ocrTranscode) {
             $this->activity("Transcoding $storedFile->filename to text", 10);
-            
+
             $startTime = microtime(true);
-            $ocrText = app(ImageToTextOcrApi::class)->convert($storedFile->url);
-            $endTime = microtime(true);
+            $ocrText   = app(ImageToTextOcrApi::class)->convert($storedFile->url);
+            $endTime   = microtime(true);
             $runTimeMs = intval(($endTime - $startTime) * 1000);
-            
+
             // Record usage for OCR API call
             app(UsageTrackingService::class)->recordApiUsage(
                 $this->taskProcess,
-                'imagetotext',
-                'ocr_conversion',
+                ImageToTextOcrApi::class,
+                'OCR Conversion',
                 [
                     'data_volume' => strlen($ocrText),
-                    'metadata' => [
-                        'filename' => $storedFile->filename,
-                        'file_size' => $storedFile->size,
-                        'url' => $storedFile->url,
+                    'metadata'    => [
+                        'stored_file_id' => $storedFile->id,
+                        'filename'       => $storedFile->filename,
+                        'file_size'      => $storedFile->size,
+                        'url'            => $storedFile->url,
                     ],
                 ],
                 $runTimeMs
             );
-            
+
             $transcodedFilename = preg_replace("/\\.[a-z0-9]+/", ".ocr.txt", $storedFile->filename);
             // Save the transcoded record
             $ocrTranscode = app(TranscodeFileService::class)->storeTranscodedFile(
@@ -207,7 +207,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         return $ocrTranscode;
     }
-    
+
     /**
      * Check if the exception (or any in its chain) is a 404 Not Found error
      */
@@ -217,21 +217,21 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         if ($e instanceof ClientException && $e->getCode() === 404) {
             return true;
         }
-        
+
         if ($e instanceof S3Exception && $e->getStatusCode() === 404) {
             return true;
         }
-        
+
         // Check if the exception message contains S3 NoSuchKey error
         if (str_contains($e->getMessage(), 'NoSuchKey')) {
             return true;
         }
-        
+
         // Check previous exceptions in the chain
         if ($e->getPrevious()) {
             return $this->is404Error($e->getPrevious());
         }
-        
+
         return false;
     }
 }

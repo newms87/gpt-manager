@@ -20,10 +20,7 @@ trait AiMockData
             $user = user();
         }
 
-        return Agent::factory()->recycle($user)->create([
-            'api' => OpenAiApi::$serviceName,
-            ...$attributes,
-        ]);
+        return Agent::factory()->recycle($user)->create($attributes);
     }
 
     public function mocksOpenAiNotCalled()
@@ -36,7 +33,7 @@ trait AiMockData
         return $this->mock(OpenAiApi::class)
             ->shouldReceive('formatter')->andReturn(new OpenAiMessageFormatter)
             ->shouldReceive('responses')->andReturn(TestAiCompletionResponse::make([
-                'id' => 'resp_mock_12345',
+                'id'     => 'resp_mock_12345',
                 'status' => $status,
                 'output' => [
                     [
@@ -48,7 +45,7 @@ trait AiMockData
                         ],
                     ],
                 ],
-                'usage' => $usage ?: ['input_tokens' => 10, 'output_tokens' => 6],
+                'usage'  => $usage ?: ['input_tokens' => 10, 'output_tokens' => 6],
             ]));
     }
 }

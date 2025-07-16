@@ -4,13 +4,13 @@ namespace App\Services\Usage;
 
 class CostCalculationService
 {
-    public function calculateAiCosts(string $apiName, string $modelName, array $usage): array
+    public function calculateAiCosts(string $modelName, array $usage): array
     {
-        $pricing = app(PricingService::class)->getModelPricing($apiName, $modelName);
-        
+        $pricing = config("ai.models.$modelName");
+
         if (!$pricing) {
             return [
-                'input_cost' => null,
+                'input_cost'  => null,
                 'output_cost' => null,
             ];
         }
@@ -33,15 +33,15 @@ class CostCalculationService
         );
 
         return [
-            'input_cost' => $inputCost + $requestCost,
+            'input_cost'  => $inputCost + $requestCost,
             'output_cost' => $outputCost,
         ];
     }
 
     public function calculateApiCosts(string $apiName, array $usage): array
     {
-        $pricing = app(PricingService::class)->getApiPricing($apiName);
-        
+        $pricing = config("apis.$apiName.pricing");
+
         if (!$pricing) {
             return ['input_cost' => null, 'output_cost' => null];
         }
@@ -54,19 +54,20 @@ class CostCalculationService
         $dataCost = ($usage['data_volume'] ?? 0) * ($pricing['per_unit'] ?? 0);
 
         return [
-            'input_cost' => $requestCost + $dataCost,
+            'input_cost'  => $requestCost + $dataCost,
             'output_cost' => 0,
         ];
     }
 
     private function calculateTokenCost(
-        int $tokens,
-        float $costPerToken,
-        int $cachedTokens = 0,
+        int    $tokens,
+        float  $costPerToken,
+        int    $cachedTokens = 0,
         ?float $cachedCostPerToken = null
-    ): float {
+    ): float
+    {
         $cost = $tokens * $costPerToken;
-        
+
         if ($cachedTokens > 0 && $cachedCostPerToken !== null) {
             $cost += $cachedTokens * $cachedCostPerToken;
         }

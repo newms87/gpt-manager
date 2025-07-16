@@ -8,11 +8,10 @@ use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadRun;
 use App\Models\Usage\UsageEvent;
 use App\Services\AgentThread\AgentThreadService;
-use App\Services\Usage\UsageTrackingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class AgentThreadServiceUsageTrackingTest extends TestCase
 {
@@ -29,12 +28,9 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
     #[Test]
     public function it_tracks_usage_when_handling_ai_response()
     {
-        $agent = Agent::factory()->create([
-            'api' => 'openai',
-            'model' => 'gpt-4o',
-        ]);
-        
-        $thread = AgentThread::factory()->create(['agent_id' => $agent->id]);
+        $agent = Agent::factory()->create(['model' => 'gpt-4o']);
+
+        $thread    = AgentThread::factory()->create(['agent_id' => $agent->id]);
         $threadRun = AgentThreadRun::factory()->create([
             'agent_thread_id' => $thread->id,
         ]);
@@ -76,11 +72,10 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
     public function it_does_not_track_usage_when_no_tokens_consumed()
     {
         $agent = Agent::factory()->create([
-            'api' => 'openai',
             'model' => 'gpt-4o',
         ]);
-        
-        $thread = AgentThread::factory()->create(['agent_id' => $agent->id]);
+
+        $thread    = AgentThread::factory()->create(['agent_id' => $agent->id]);
         $threadRun = AgentThreadRun::factory()->create(['agent_thread_id' => $thread->id]);
 
         // Mock response with zero tokens
@@ -109,17 +104,16 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
         // Set up pricing config (per token, not per 1000 tokens)
         config([
             'ai.models.OpenAI.gpt-4o' => [
-                'input' => 0.0025 / 1000,  // 0.0025 per 1000 tokens = 0.0000025 per token
+                'input'  => 0.0025 / 1000,  // 0.0025 per 1000 tokens = 0.0000025 per token
                 'output' => 0.01 / 1000,   // 0.01 per 1000 tokens = 0.00001 per token
             ],
         ]);
 
         $agent = Agent::factory()->create([
-            'api' => 'OpenAI', // Use exact case
             'model' => 'gpt-4o',
         ]);
-        
-        $thread = AgentThread::factory()->create(['agent_id' => $agent->id]);
+
+        $thread    = AgentThread::factory()->create(['agent_id' => $agent->id]);
         $threadRun = AgentThreadRun::factory()->create(['agent_thread_id' => $thread->id]);
 
         // Mock response
@@ -147,15 +141,14 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
     public function it_includes_api_response_in_metadata()
     {
         $agent = Agent::factory()->create([
-            'api' => 'openai',
             'model' => 'gpt-4o',
         ]);
-        
-        $thread = AgentThread::factory()->create(['agent_id' => $agent->id]);
+
+        $thread    = AgentThread::factory()->create(['agent_id' => $agent->id]);
         $threadRun = AgentThreadRun::factory()->create(['agent_thread_id' => $thread->id]);
 
         $apiResponseData = [
-            'id' => 'test-123',
+            'id'    => 'test-123',
             'model' => 'gpt-4o',
             'usage' => ['total_tokens' => 300],
         ];

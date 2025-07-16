@@ -15,7 +15,7 @@ class AgentResource extends ActionResource
             'knowledge_name' => $agent->knowledge?->name,
             'name'           => $agent->name,
             'description'    => $agent->description,
-            'api'            => $agent->api,
+            'api'            => config('ai.models.' . $agent->model)['api'] ?? null,
             'model'          => $agent->model,
             'api_options'    => $agent->api_options,
             'retry_count'    => $agent->retry_count,

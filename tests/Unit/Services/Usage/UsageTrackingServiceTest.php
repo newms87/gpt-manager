@@ -10,8 +10,8 @@ use App\Models\User;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Usage\UsageTrackingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class UsageTrackingServiceTest extends TestCase
 {
@@ -29,7 +29,7 @@ class UsageTrackingServiceTest extends TestCase
     public function it_records_api_usage_event()
     {
         $taskProcess = TaskProcess::factory()->create();
-        $user = User::factory()->create();
+        $user        = User::factory()->create();
         $this->actingAs($user);
 
         $usageEvent = $this->service->recordApiUsage(
@@ -38,8 +38,8 @@ class UsageTrackingServiceTest extends TestCase
             'ocr_conversion',
             [
                 'request_count' => 2,
-                'data_volume' => 2048,
-                'metadata' => ['test' => true],
+                'data_volume'   => 2048,
+                'metadata'      => ['test' => true],
             ],
             1500,
             $user
@@ -60,7 +60,7 @@ class UsageTrackingServiceTest extends TestCase
     public function it_records_ai_usage_event()
     {
         $taskProcess = TaskProcess::factory()->create();
-        $user = User::factory()->create();
+        $user        = User::factory()->create();
         $this->actingAs($user);
 
         $usageEvent = $this->service->recordAiUsage(
@@ -68,8 +68,8 @@ class UsageTrackingServiceTest extends TestCase
             'openai',
             'gpt-4o',
             [
-                'input_tokens' => 100,
-                'output_tokens' => 50,
+                'input_tokens'        => 100,
+                'output_tokens'       => 50,
                 'cached_input_tokens' => 20,
             ],
             2000,
@@ -92,15 +92,15 @@ class UsageTrackingServiceTest extends TestCase
         // Mock config values for testing
         config([
             'ai.models.OpenAI.gpt-4o' => [
-                'input' => 0.0025,
-                'output' => 0.01,
+                'input'        => 0.0025,
+                'output'       => 0.01,
                 'cached_input' => 0.00125,
             ],
         ]);
 
-        $costs = $this->service->calculateCosts('openai', 'gpt-4o', [
-            'input_tokens' => 1000,
-            'output_tokens' => 500,
+        $costs = $this->service->calculateCosts('gpt-4o', [
+            'input_tokens'        => 1000,
+            'output_tokens'       => 500,
             'cached_input_tokens' => 200,
         ]);
 
@@ -119,7 +119,7 @@ class UsageTrackingServiceTest extends TestCase
         ]);
 
         $taskProcess = TaskProcess::factory()->create();
-        
+
         $usageEvent = $this->service->recordApiUsage(
             $taskProcess,
             'imagetotext',
@@ -189,7 +189,7 @@ class UsageTrackingServiceTest extends TestCase
         config(['ai.models.OpenAI.gpt-4o' => null]);
 
         $costs = $this->service->calculateCosts('openai', 'non-existent-model', [
-            'input_tokens' => 1000,
+            'input_tokens'  => 1000,
             'output_tokens' => 500,
         ]);
 
@@ -202,20 +202,20 @@ class UsageTrackingServiceTest extends TestCase
     {
         config([
             'ai.models.OpenAI.gpt-4o' => [
-                'input' => 0.0025,
+                'input'  => 0.0025,
                 'output' => 0.01,
             ],
         ]);
 
         // Test with lowercase
         $costs1 = $this->service->calculateCosts('openai', 'gpt-4o', [
-            'input_tokens' => 1000,
+            'input_tokens'  => 1000,
             'output_tokens' => 500,
         ]);
 
         // Test with exact case
         $costs2 = $this->service->calculateCosts('OpenAI', 'gpt-4o', [
-            'input_tokens' => 1000,
+            'input_tokens'  => 1000,
             'output_tokens' => 500,
         ]);
 
@@ -248,7 +248,7 @@ class UsageTrackingServiceTest extends TestCase
     public function it_associates_usage_events_with_user()
     {
         $user = User::factory()->create();
-        
+
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = $this->service->recordApiUsage(
@@ -290,7 +290,7 @@ class UsageTrackingServiceTest extends TestCase
     #[Test]
     public function it_aggregates_child_usage_for_task_runs()
     {
-        $taskRun = TaskRun::factory()->create();
+        $taskRun      = TaskRun::factory()->create();
         $taskProcess1 = TaskProcess::factory()->create(['task_run_id' => $taskRun->id]);
         $taskProcess2 = TaskProcess::factory()->create(['task_run_id' => $taskRun->id]);
 
@@ -327,42 +327,42 @@ class UsageTrackingServiceTest extends TestCase
     {
         // Create workflow run and task runs manually since WorkflowRun factory doesn't exist
         $workflowRun = WorkflowRun::create([
-            'name' => 'Test Workflow',
+            'name'                   => 'Test Workflow',
             'workflow_definition_id' => 1,
         ]);
-        
+
         $taskRun1 = TaskRun::factory()->create(['workflow_run_id' => $workflowRun->id]);
         $taskRun2 = TaskRun::factory()->create(['workflow_run_id' => $workflowRun->id]);
 
         // Create usage summaries for task runs
         UsageSummary::create([
-            'object_type' => TaskRun::class,
-            'object_id' => (string) $taskRun1->id,
+            'object_type'   => TaskRun::class,
+            'object_id'     => (string)$taskRun1->id,
             'object_id_int' => $taskRun1->id,
-            'count' => 1,
-            'input_tokens' => 100,
+            'count'         => 1,
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.0005,
-            'total_cost' => 0.0015,
-            'run_time_ms' => 1000,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.0005,
+            'total_cost'    => 0.0015,
+            'run_time_ms'   => 1000,
             'request_count' => 1,
-            'data_volume' => 1024,
+            'data_volume'   => 1024,
         ]);
 
         UsageSummary::create([
-            'object_type' => TaskRun::class,
-            'object_id' => (string) $taskRun2->id,
+            'object_type'   => TaskRun::class,
+            'object_id'     => (string)$taskRun2->id,
             'object_id_int' => $taskRun2->id,
-            'count' => 1,
-            'input_tokens' => 200,
+            'count'         => 1,
+            'input_tokens'  => 200,
             'output_tokens' => 100,
-            'input_cost' => 0.002,
-            'output_cost' => 0.001,
-            'total_cost' => 0.003,
-            'run_time_ms' => 2000,
+            'input_cost'    => 0.002,
+            'output_cost'   => 0.001,
+            'total_cost'    => 0.003,
+            'run_time_ms'   => 2000,
             'request_count' => 2,
-            'data_volume' => 2048,
+            'data_volume'   => 2048,
         ]);
 
         // Aggregate to workflow run

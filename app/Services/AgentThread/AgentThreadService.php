@@ -11,7 +11,6 @@ use App\Models\Agent\AgentThreadRun;
 use App\Models\Agent\McpServer;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
-use App\Repositories\AgentRepository;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Services\Usage\UsageTrackingService;
 use App\Traits\HasDebugLogging;
@@ -334,20 +333,19 @@ STR;
         static::log("Handling response from AI model. input: " . $newInputTokens . ", output: " . $newOutputTokens);
 
         $threadRun->update([
-            'agent_model'   => $thread->agent->model,
-            'refreshed_at'  => now(),
+            'agent_model'  => $thread->agent->model,
+            'refreshed_at' => now(),
         ]);
 
         // Record usage event for this specific AI call
         if ($newInputTokens > 0 || $newOutputTokens > 0) {
             app(UsageTrackingService::class)->recordAiUsage(
                 $threadRun,
-                $thread->agent->api,
                 $thread->agent->model,
                 [
-                    'input_tokens' => $newInputTokens,
+                    'input_tokens'  => $newInputTokens,
                     'output_tokens' => $newOutputTokens,
-                    'api_response' => $response->toArray(),
+                    'api_response'  => $response->toArray(),
                 ]
             );
         }
@@ -443,6 +441,7 @@ STR;
 
         return $response;
     }
+
 
     /**
      * Execute streaming Responses API call

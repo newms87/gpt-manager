@@ -6,16 +6,19 @@ use InvalidArgumentException;
 
 class ResponsesApiOptions
 {
-    public const REASONING_EFFORT_LOW    = 'low';
-    public const REASONING_EFFORT_MEDIUM = 'medium';
-    public const REASONING_EFFORT_HIGH   = 'high';
+    public const string
+        REASONING_EFFORT_LOW = 'low',
+        REASONING_EFFORT_MEDIUM = 'medium',
+        REASONING_EFFORT_HIGH = 'high';
 
-    public const REASONING_SUMMARY_AUTO     = 'auto';
-    public const REASONING_SUMMARY_DETAILED = 'detailed';
+    public const string
+        REASONING_SUMMARY_AUTO = 'auto',
+        REASONING_SUMMARY_DETAILED = 'detailed';
 
-    public const SERVICE_TIER_AUTO    = 'auto';
-    public const SERVICE_TIER_DEFAULT = 'default';
-    public const SERVICE_TIER_FLEX    = 'flex';
+    public const string
+        SERVICE_TIER_AUTO = 'auto',
+        SERVICE_TIER_DEFAULT = 'default',
+        SERVICE_TIER_FLEX = 'flex';
 
     protected ?array $reasoning = null;
 
@@ -211,7 +214,7 @@ class ResponsesApiOptions
     /**
      * Convert to array for API request
      */
-    public function toArray(): array
+    public function toArray(string $model = null): array
     {
         $options = [
             'service_tier' => $this->serviceTier,
@@ -236,7 +239,10 @@ class ResponsesApiOptions
         }
 
         if ($this->temperature !== null) {
-            $options['temperature'] = $this->temperature;
+            $modelConfig = config("ai.models.$model");
+            if (!empty($modelConfig['features']['temperature'])) {
+                $options['temperature'] = $this->temperature;
+            }
         }
 
         if ($this->mcpServers) {

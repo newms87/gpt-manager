@@ -28,14 +28,12 @@ class AgentRepository extends ActionRepository
     public function fieldOptions(?array $filter = []): array
     {
         $aiModels = [];
-        foreach(config('ai.models') as $api => $apiModels) {
-            foreach($apiModels as $modelName => $modelDetails) {
-                $aiModels[] = [
-                    'name'    => $modelName,
-                    'api'     => $api,
-                    'details' => $modelDetails,
-                ];
-            }
+        foreach(config('ai.models') as $modelName => $modelDetails) {
+            $aiModels[] = [
+                'name'    => $modelName,
+                'api'     => $modelDetails['api'] ?? null,
+                'details' => $modelDetails,
+            ];
         }
 
         return [
@@ -69,14 +67,10 @@ class AgentRepository extends ActionRepository
         $data += [
             'model'       => config('ai.default_model'),
             'retry_count' => 2,
-            'api_options' => array_merge($data['api_options'] ?? [], [
-                'temperature' => 0.7
-            ]),
         ];
 
         $agent->fill($data);
         $agent->name = ModelHelper::getNextModelName($agent);
-        $agent->api  = static::getApiForModel($agent->model);
         $agent->validate()->save();
 
         return $agent;
@@ -102,57 +96,5 @@ class AgentRepository extends ActionRepository
         $newAgent->save();
 
         return $newAgent;
-    }
-
-    /**
-     * Reverse lookup API from model
-     */
-    public static function getApiForModel(string $model): ?string
-    {
-        foreach(static::getAiModels() as $aiModel) {
-            if ($aiModel['name'] === $model) {
-                return $aiModel['api'];
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Get all available AI models
-     */
-    public static function getAiModels(): array
-    {
-        $aiModels = [];
-        $aiConfig = config('ai');
-
-        foreach($aiConfig['apis'] as $apiName => $apiClass) {
-            $models = $aiConfig['models'][$apiName] ?? [];
-            foreach($models as $modelName => $model) {
-                $aiModels[$apiName . ':' . $modelName] = [
-                    'api'     => $apiName,
-                    'name'    => $modelName,
-                    'details' => $model,
-                ];
-            }
-        }
-
-        return $aiModels;
-    }
-
-    /**
-     * Calculate the total cost of using the agent based in input and output tokens accumulated over all thread runs
-     */
-    public function calcTotalCost(Agent $agent, $inputTokens, $outputToken): ?float
-    {
-        $inputTokens = $inputTokens ?? 0;
-        $outputToken = $outputToken ?? 0;
-        $modelCosts  = config('ai.models')[$agent->api][$agent->model] ?? null;
-
-        if (!$modelCosts) {
-            return null;
-        }
-
-        return ($modelCosts['input'] * $inputTokens) + ($modelCosts['output'] * $outputToken);
     }
 }

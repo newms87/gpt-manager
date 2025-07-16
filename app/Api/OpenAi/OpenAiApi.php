@@ -50,7 +50,7 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         // Build request body for Responses API
         $requestBody = [
                 'model' => $model,
-            ] + $options->toArray();
+            ] + $options->toArray($model);
 
         // Convert messages to proper Responses API input format
         $requestBody['input'] = $this->formatter()->convertRawMessagesToResponsesApiInput($messages);
@@ -70,7 +70,7 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         $requestBody = [
                 'model'  => $model,
                 'stream' => true, // Always stream for this method
-            ] + $options->toArray();
+            ] + $options->toArray($model);
 
         // Convert messages to proper Responses API input format
         $requestBody['input'] = $this->formatter()->convertRawMessagesToResponsesApiInput($messages);

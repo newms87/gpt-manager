@@ -3,16 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskRun;
 use App\Services\Task\ClassificationDeduplicationService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
-
-// Global team helper function for CLI context
-if (!function_exists('team')) {
-    function team() {
-        return app('team');
-    }
-}
+use Illuminate\Support\Collection;
 
 class TestClassificationDeduplicationCommand extends Command
 {
@@ -34,20 +28,9 @@ class TestClassificationDeduplicationCommand extends Command
      */
     public function handle(): int
     {
-        // Set up team context (required for agent operations)
-        $team = \App\Models\Team\Team::first();
-        if (!$team) {
-            $this->error('No team found. Please create a team first.');
-            return 1;
-        }
-        
-        // Set team context
-        app()->bind('team', fn() => $team);
-        $this->info("Using team: {$team->name} (ID: {$team->id})");
-        
-        $taskRunId = $this->option('task-run');
+        $taskRunId      = $this->option('task-run');
         $createTestData = $this->option('create-test-data');
-        $model = $this->option('model');
+        $model          = $this->option('model');
 
         // Override model in config if specified
         if ($model) {
@@ -64,11 +47,13 @@ class TestClassificationDeduplicationCommand extends Command
             $artifacts = $this->getArtifactsFromTaskRun($taskRunId);
         } else {
             $this->error('Please specify either --task-run=ID or --create-test-data');
+
             return 1;
         }
 
         if ($artifacts->isEmpty()) {
             $this->error('No artifacts found with classification metadata');
+
             return 1;
         }
 
@@ -77,7 +62,7 @@ class TestClassificationDeduplicationCommand extends Command
 
         // Show original classifications
         $this->info('=== ORIGINAL CLASSIFICATIONS ===');
-        foreach ($artifacts as $index => $artifact) {
+        foreach($artifacts as $index => $artifact) {
             $this->info("Artifact " . ($index + 1) . ":");
             $this->line(json_encode($artifact->meta['classification'], JSON_PRETTY_PRINT));
             $this->newLine();
@@ -86,12 +71,14 @@ class TestClassificationDeduplicationCommand extends Command
         // Run deduplication
         $this->info('=== RUNNING DEDUPLICATION ===');
         $service = app(ClassificationDeduplicationService::class);
-        
+
         try {
             $service->deduplicateClassificationLabels($artifacts);
             $this->info('✅ Deduplication completed successfully');
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             $this->error('❌ Deduplication failed: ' . $e->getMessage());
+            $this->error('Stack trace: ' . $e->getTraceAsString());
+
             return 1;
         }
 
@@ -99,7 +86,7 @@ class TestClassificationDeduplicationCommand extends Command
 
         // Show updated classifications
         $this->info('=== UPDATED CLASSIFICATIONS ===');
-        foreach ($artifacts as $index => $artifact) {
+        foreach($artifacts as $index => $artifact) {
             $artifact->refresh();
             $this->info("Artifact " . ($index + 1) . ":");
             $this->line(json_encode($artifact->meta['classification'], JSON_PRETTY_PRINT));
@@ -112,78 +99,118 @@ class TestClassificationDeduplicationCommand extends Command
     /**
      * Get artifacts from a specific task run
      */
-    protected function getArtifactsFromTaskRun(string $taskRunId): \Illuminate\Support\Collection
+    protected function getArtifactsFromTaskRun(string $taskRunId): Collection
     {
-        return DB::table('artifacts')
-            ->join('artifact_task_run_outputs', 'artifacts.id', '=', 'artifact_task_run_outputs.artifact_id')
-            ->where('artifact_task_run_outputs.task_run_id', $taskRunId)
-            ->whereNotNull('artifacts.meta->classification')
-            ->select('artifacts.*')
-            ->get()
-            ->map(function ($row) {
-                return Artifact::find($row->id);
-            })
-            ->filter();
+        $taskRun = TaskRun::findOrFail($taskRunId);
+
+        return $taskRun->outputArtifacts()
+            ->whereNotNull('meta->classification')
+            ->get();
     }
 
     /**
      * Create test data for demonstration
      */
-    protected function createTestData(): \Illuminate\Support\Collection
+    protected function createTestData(): Collection
     {
         $this->info('Creating test data...');
 
         $testData = [
             [
                 'classification' => [
-                    'provider' => 'HEALTHCARE PROVIDER',
-                    'category' => 'Primary Care',
-                    'professional' => [
-                        'name' => 'Dr. John Smith',
-                        'role' => 'Primary',
-                    ],
-                    'date' => '2024-01-15',
-                    'active' => true,
-                    'score' => 95.5,
+                    'provider'  => 'CNCC',
+                    'category'  => 'Chiropractic Care',
+                    'specialty' => 'Chiropractic',
+                    'location'  => '123 Main St',
+                    'type'      => 'In-Person Visit',
+                    'urgency'   => 'Routine',
                 ],
             ],
             [
                 'classification' => [
-                    'provider' => 'healthcare provider',
-                    'category' => 'primary care',
-                    'professional' => [
-                        'name' => 'Dr. John Smith',
-                        'role' => 'Main',
-                    ],
-                    'date' => '2024-01-15',
-                    'active' => true,
-                    'score' => 92.3,
+                    'provider'  => 'Chiropractic Natural Care Center',
+                    'category'  => 'chiropractic care',
+                    'specialty' => 'CHIROPRACTIC',
+                    'location'  => '123 main street',
+                    'type'      => 'in person visit',
+                    'urgency'   => 'ROUTINE',
                 ],
             ],
             [
                 'classification' => [
-                    'provider' => 'Healthcare Provider',
-                    'category' => 'PRIMARY CARE',
-                    'professional' => [
-                        'name' => 'Dr. Johnny Smith',
-                        'role' => 'Primary',
-                    ],
-                    'date' => '01/15/2024',
-                    'active' => false,
-                    'score' => 88.7,
+                    'provider'  => 'CNCC Chiropractic Natural Care Center',
+                    'category'  => 'CHIROPRACTIC CARE',
+                    'specialty' => 'Chiropractor',
+                    'location'  => '123 Main Street',
+                    'type'      => 'Office Visit',
+                    'urgency'   => 'routine',
                 ],
             ],
             [
                 'classification' => [
-                    'food_categories' => 'Dairy, milk, cream, eggs, meat, vegetables',
-                    'provider' => 'MEDICAL CENTER',
-                    'tags' => ['urgent', 'follow-up', 'priority'],
+                    'provider'  => 'cncc',
+                    'category'  => 'Chiropractic',
+                    'specialty' => 'Chiropractic Medicine',
+                    'location'  => '123 MAIN ST',
+                    'type'      => 'Visit',
+                    'urgency'   => 'Standard',
+                ],
+            ],
+            [
+                'classification' => [
+                    'provider'  => 'NYC General Hospital',
+                    'category'  => 'Emergency Medicine',
+                    'specialty' => 'Emergency',
+                    'location'  => '456 Hospital Way',
+                    'urgency'   => 'urgent',
+                ],
+            ],
+            [
+                'classification' => [
+                    'provider'  => 'NYCGH',
+                    'category'  => 'emergency medicine',
+                    'specialty' => 'Emergency Medicine',
+                    'location'  => '456 Hospital Way',
+                    'urgency'   => 'Urgent',
+                ],
+            ],
+            [
+                'classification' => [
+                    'provider'  => 'New York City General Hospital',
+                    'category'  => 'EMERGENCY',
+                    'specialty' => 'ER',
+                    'location'  => '456 hospital way',
+                    'urgency'   => 'URGENT',
+                ],
+            ],
+            [
+                'classification' => [
+                    'provider'  => 'Dr. Smith Family Practice',
+                    'category'  => 'Family Medicine',
+                    'specialty' => 'Family Practice',
+                    'location'  => '789 Oak Avenue',
+                ],
+            ],
+            [
+                'classification' => [
+                    'provider'  => 'Dr Smith Family Practice',
+                    'category'  => 'family medicine',
+                    'specialty' => 'Family Med',
+                    'location'  => '789 oak ave',
+                ],
+            ],
+            [
+                'classification' => [
+                    'provider'  => 'DR. SMITH FAMILY PRACTICE',
+                    'category'  => 'FAMILY PRACTICE',
+                    'specialty' => 'Family Medicine',
+                    'location'  => '789 Oak Ave.',
                 ],
             ],
         ];
 
         $artifacts = collect();
-        foreach ($testData as $index => $data) {
+        foreach($testData as $index => $data) {
             $artifact = new Artifact([
                 'name' => 'Test Artifact ' . ($index + 1),
                 'meta' => $data,
