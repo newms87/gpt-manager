@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services\Usage;
 
+use App\Api\ImageToText\ImageToTextOcrApi;
+use App\Api\OpenAi\OpenAiApi;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\Usage\UsageEvent;
@@ -34,7 +36,7 @@ class UsageTrackingServiceTest extends TestCase
 
         $usageEvent = $this->service->recordApiUsage(
             $taskProcess,
-            'imagetotext',
+            ImageToTextOcrApi::class,
             'ocr_conversion',
             [
                 'request_count' => 2,
@@ -46,7 +48,7 @@ class UsageTrackingServiceTest extends TestCase
         );
 
         $this->assertInstanceOf(UsageEvent::class, $usageEvent);
-        $this->assertEquals('imagetotext', $usageEvent->api_name);
+        $this->assertEquals(ImageToTextOcrApi::class, $usageEvent->api_name);
         $this->assertEquals('ocr_conversion', $usageEvent->event_type);
         $this->assertEquals(2, $usageEvent->request_count);
         $this->assertEquals(2048, $usageEvent->data_volume);
@@ -59,13 +61,18 @@ class UsageTrackingServiceTest extends TestCase
     #[Test]
     public function it_records_ai_usage_event()
     {
+        config([
+            'ai.models.gpt-4o' => [
+                'api' => OpenAiApi::class,
+            ],
+        ]);
+
         $taskProcess = TaskProcess::factory()->create();
         $user        = User::factory()->create();
         $this->actingAs($user);
 
         $usageEvent = $this->service->recordAiUsage(
             $taskProcess,
-            'openai',
             'gpt-4o',
             [
                 'input_tokens'        => 100,
@@ -77,7 +84,7 @@ class UsageTrackingServiceTest extends TestCase
         );
 
         $this->assertInstanceOf(UsageEvent::class, $usageEvent);
-        $this->assertEquals('openai', $usageEvent->api_name);
+        $this->assertEquals(OpenAiApi::class, $usageEvent->api_name);
         $this->assertEquals('ai_completion', $usageEvent->event_type);
         $this->assertEquals(100, $usageEvent->input_tokens);
         $this->assertEquals(50, $usageEvent->output_tokens);
@@ -91,7 +98,7 @@ class UsageTrackingServiceTest extends TestCase
     {
         // Mock config values for testing
         config([
-            'ai.models.OpenAI.gpt-4o' => [
+            'ai.models.gpt-4o' => [
                 'input'        => 0.0025,
                 'output'       => 0.01,
                 'cached_input' => 0.00125,
@@ -113,7 +120,7 @@ class UsageTrackingServiceTest extends TestCase
     {
         // Mock config values for testing
         config([
-            'apis.imagetotext.pricing' => [
+            'apis.' . ImageToTextOcrApi::class . '.pricing' => [
                 'per_request' => 0.001,
             ],
         ]);
@@ -122,7 +129,7 @@ class UsageTrackingServiceTest extends TestCase
 
         $usageEvent = $this->service->recordApiUsage(
             $taskProcess,
-            'imagetotext',
+            ImageToTextOcrApi::class,
             'ocr_conversion',
             ['request_count' => 5]
         );
@@ -140,7 +147,7 @@ class UsageTrackingServiceTest extends TestCase
 
         $this->service->recordApiUsage(
             $taskProcess,
-            'imagetotext',
+            ImageToTextOcrApi::class,
             'ocr_conversion',
             ['request_count' => 1]
         );
@@ -159,7 +166,6 @@ class UsageTrackingServiceTest extends TestCase
         // First event
         $this->service->recordAiUsage(
             $taskProcess,
-            'openai',
             'gpt-4o',
             ['input_tokens' => 100, 'output_tokens' => 50],
             1000
@@ -168,7 +174,6 @@ class UsageTrackingServiceTest extends TestCase
         // Second event
         $this->service->recordAiUsage(
             $taskProcess,
-            'openai',
             'gpt-4o',
             ['input_tokens' => 200, 'output_tokens' => 100],
             2000
@@ -186,9 +191,9 @@ class UsageTrackingServiceTest extends TestCase
     #[Test]
     public function it_handles_missing_pricing_configuration_gracefully()
     {
-        config(['ai.models.OpenAI.gpt-4o' => null]);
+        config(['ai.models.gpt-4o' => null]);
 
-        $costs = $this->service->calculateCosts('openai', 'non-existent-model', [
+        $costs = $this->service->calculateCosts('gpt-4o', [
             'input_tokens'  => 1000,
             'output_tokens' => 500,
         ]);
@@ -201,20 +206,20 @@ class UsageTrackingServiceTest extends TestCase
     public function it_normalizes_api_names_for_pricing_lookup()
     {
         config([
-            'ai.models.OpenAI.gpt-4o' => [
+            'ai.models.gpt-4o' => [
                 'input'  => 0.0025,
                 'output' => 0.01,
             ],
         ]);
 
-        // Test with lowercase
-        $costs1 = $this->service->calculateCosts('openai', 'gpt-4o', [
+        // Test with model name
+        $costs1 = $this->service->calculateCosts('gpt-4o', [
             'input_tokens'  => 1000,
             'output_tokens' => 500,
         ]);
 
-        // Test with exact case
-        $costs2 = $this->service->calculateCosts('OpenAI', 'gpt-4o', [
+        // Test with same model name
+        $costs2 = $this->service->calculateCosts('gpt-4o', [
             'input_tokens'  => 1000,
             'output_tokens' => 500,
         ]);
@@ -253,7 +258,7 @@ class UsageTrackingServiceTest extends TestCase
 
         $usageEvent = $this->service->recordApiUsage(
             $taskProcess,
-            'imagetotext',
+            ImageToTextOcrApi::class,
             'ocr_conversion',
             [],
             null,
@@ -271,7 +276,6 @@ class UsageTrackingServiceTest extends TestCase
         // Record some usage
         $this->service->recordAiUsage(
             $taskProcess,
-            'openai',
             'gpt-4o',
             ['input_tokens' => 100, 'output_tokens' => 50],
             1000
@@ -297,7 +301,6 @@ class UsageTrackingServiceTest extends TestCase
         // Add usage to processes
         $this->service->recordAiUsage(
             $taskProcess1,
-            'openai',
             'gpt-4o',
             ['input_tokens' => 100, 'output_tokens' => 50],
             1000
@@ -305,7 +308,6 @@ class UsageTrackingServiceTest extends TestCase
 
         $this->service->recordAiUsage(
             $taskProcess2,
-            'openai',
             'gpt-4o',
             ['input_tokens' => 200, 'output_tokens' => 100],
             2000

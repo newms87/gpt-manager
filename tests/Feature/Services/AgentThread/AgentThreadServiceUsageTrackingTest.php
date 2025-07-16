@@ -3,6 +3,7 @@
 namespace Tests\Feature\Services\AgentThread;
 
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
+use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadRun;
@@ -54,7 +55,7 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
             ->first();
 
         $this->assertNotNull($usageEvent);
-        $this->assertEquals('OpenAI', $usageEvent->api_name);
+        $this->assertEquals(OpenAiApi::class, $usageEvent->api_name);
         $this->assertEquals('ai_completion', $usageEvent->event_type);
         $this->assertEquals(200, $usageEvent->input_tokens);
         $this->assertEquals(100, $usageEvent->output_tokens);
@@ -103,7 +104,8 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
     {
         // Set up pricing config (per token, not per 1000 tokens)
         config([
-            'ai.models.OpenAI.gpt-4o' => [
+            'ai.models.gpt-4o' => [
+                'api'    => OpenAiApi::class,
                 'input'  => 0.0025 / 1000,  // 0.0025 per 1000 tokens = 0.0000025 per token
                 'output' => 0.01 / 1000,   // 0.01 per 1000 tokens = 0.00001 per token
             ],

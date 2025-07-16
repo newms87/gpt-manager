@@ -181,14 +181,13 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
             app(UsageTrackingService::class)->recordApiUsage(
                 $this->taskProcess,
                 ImageToTextOcrApi::class,
-                'OCR Conversion',
+                'ocr_conversion',
                 [
                     'data_volume' => strlen($ocrText),
                     'metadata'    => [
-                        'stored_file_id' => $storedFile->id,
-                        'filename'       => $storedFile->filename,
-                        'file_size'      => $storedFile->size,
-                        'url'            => $storedFile->url,
+                        'filename'  => $storedFile->filename,
+                        'file_size' => $storedFile->size,
+                        'url'       => $storedFile->url,
                     ],
                 ],
                 $runTimeMs

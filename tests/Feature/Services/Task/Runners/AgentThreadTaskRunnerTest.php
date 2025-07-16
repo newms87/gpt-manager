@@ -9,12 +9,25 @@ use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\TaskDefinitionDirective;
 use App\Models\Task\TaskProcess;
 use App\Services\Task\Runners\AgentThreadTaskRunner;
+use Illuminate\Support\Facades\Config;
 use Tests\AuthenticatedTestCase;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
 use Tests\Feature\Api\TestAi\TestAiApi;
 
 class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+        
+        // Configure test-model for testing
+        Config::set('ai.models.test-model', [
+            'api'     => TestAiApi::class,
+            'name'    => 'Test Model',
+            'context' => 4096,
+        ]);
+    }
+
     public function test_run_withEmptyThread_agentResponds(): void
     {
         // Given

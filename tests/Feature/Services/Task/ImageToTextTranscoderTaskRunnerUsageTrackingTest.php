@@ -9,8 +9,8 @@ use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Newms87\Danx\Models\Utilities\StoredFile;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
 {
@@ -21,16 +21,16 @@ class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
     {
         // Set up pricing config
         config([
-            'apis.imagetotext.pricing' => [
+            'apis.' . ImageToTextOcrApi::class . '.pricing' => [
                 'per_request' => 0.001,
             ],
         ]);
 
         $taskProcess = TaskProcess::factory()->create();
-        $storedFile = StoredFile::factory()->create([
+        $storedFile  = StoredFile::factory()->create([
             'filename' => 'test-image.jpg',
-            'url' => 'https://example.com/test-image.jpg',
-            'size' => 102400, // 100KB
+            'url'      => 'https://example.com/test-image.jpg',
+            'size'     => 102400, // 100KB
         ]);
 
         // Mock the OCR API
@@ -53,12 +53,12 @@ class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
         // Check that usage event was created
         $usageEvent = UsageEvent::where('object_type', TaskProcess::class)
             ->where('object_id', $taskProcess->id)
-            ->where('api_name', 'imagetotext')
+            ->where('api_name', ImageToTextOcrApi::class)
             ->where('event_type', 'ocr_conversion')
             ->first();
 
         $this->assertNotNull($usageEvent);
-        $this->assertEquals('imagetotext', $usageEvent->api_name);
+        $this->assertEquals(ImageToTextOcrApi::class, $usageEvent->api_name);
         $this->assertEquals('ocr_conversion', $usageEvent->event_type);
         $this->assertEquals(1, $usageEvent->request_count);
         $this->assertEquals(0.001, $usageEvent->input_cost);
@@ -79,13 +79,13 @@ class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
     public function it_does_not_track_usage_when_transcode_already_exists()
     {
         $taskProcess = TaskProcess::factory()->create();
-        $storedFile = StoredFile::factory()->create();
+        $storedFile  = StoredFile::factory()->create();
 
         // Create existing OCR transcode
         $storedFile->transcodes()->create([
             'transcode_name' => 'OCR',
-            'filename' => 'test.ocr.txt',
-            'content' => 'Existing OCR text',
+            'filename'       => 'test.ocr.txt',
+            'content'        => 'Existing OCR text',
         ]);
 
         $runner = new ImageToTextTranscoderTaskRunner();
@@ -108,7 +108,7 @@ class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
     public function it_handles_api_errors_gracefully()
     {
         $taskProcess = TaskProcess::factory()->create();
-        $storedFile = StoredFile::factory()->create();
+        $storedFile  = StoredFile::factory()->create();
 
         // Mock API to throw exception
         $mockApi = Mockery::mock(ImageToTextOcrApi::class);
