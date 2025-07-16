@@ -11,9 +11,9 @@ return [
     'seed'                         => env('AI_SEED', 11181987),
     'default_model'                => 'o4-mini',
 
-    // Classification deduplication agent configuration
+    // Data deduplication agent configuration
     'classification_deduplication' => [
-        'agent_name' => 'Classification Deduplication Agent',
+        'agent_name' => 'Data Normalization Agent',
         'model'      => env('AI_CLASSIFICATION_DEDUP_MODEL', 'o4-mini'),
     ],
     'models'                       => [

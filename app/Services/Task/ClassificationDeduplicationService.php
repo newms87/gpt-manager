@@ -16,7 +16,7 @@ class ClassificationDeduplicationService
     /**
      * Get or create the classification deduplication agent based on config
      */
-    protected function getOrCreateClassificationDeduplicationAgent(): Agent
+    public function getOrCreateClassificationDeduplicationAgent(): Agent
     {
         $config    = config('ai.classification_deduplication');
         $agentName = $config['agent_name'];
@@ -25,7 +25,6 @@ class ClassificationDeduplicationService
         // Find existing agent by name and model (no team context needed)
         $agent = Agent::whereNull('team_id')
             ->where('name', $agentName)
-            ->where('model', $model)
             ->first();
 
         if (!$agent) {
@@ -33,7 +32,7 @@ class ClassificationDeduplicationService
             $agent = Agent::create([
                 'name'        => $agentName,
                 'model'       => $model,
-                'description' => 'Automated agent for classification label deduplication',
+                'description' => 'Automated agent for data value deduplication and normalization',
                 'api_options' => ['temperature' => 0],
                 'team_id'     => null,
                 'retry_count' => 2,
@@ -44,35 +43,6 @@ class ClassificationDeduplicationService
         return $agent;
     }
 
-    /**
-     * Categorize labels for better logging display
-     */
-    protected function categorizeLabelsForLogging(array $labels): array
-    {
-        $categorized = [
-            'Provider Names'     => [],
-            'Professional Names' => [],
-            'JSON Objects'       => [],
-            'Other'              => [],
-        ];
-
-        foreach($labels as $label) {
-            if (str_starts_with($label, '{')) {
-                $categorized['JSON Objects'][] = $label;
-            } elseif (preg_match('/\b(Dr\.|MD|DO|Center|Hospital|Care|Clinic|Medical)\b/i', $label)) {
-                if (preg_match('/\bDr\./i', $label)) {
-                    $categorized['Professional Names'][] = $label;
-                } else {
-                    $categorized['Provider Names'][] = $label;
-                }
-            } else {
-                $categorized['Other'][] = $label;
-            }
-        }
-
-        // Remove empty categories
-        return array_filter($categorized, fn($items) => !empty($items));
-    }
 
     /**
      * Deduplicate classification labels across artifacts
@@ -92,16 +62,11 @@ class ClassificationDeduplicationService
             return;
         }
 
-        static::log("Found " . count($labelsToNormalize) . " unique classification labels to process");
+        static::log("Found " . count($labelsToNormalize) . " unique values to process");
 
-        // Group labels by apparent category for better logging
-        $categorizedLabels = $this->categorizeLabelsForLogging($labelsToNormalize);
-
-        foreach($categorizedLabels as $category => $labels) {
-            info("Deduplicating category '$category' with " . count($labels) . " variations");
-            foreach($labels as $label) {
-                static::log("  - " . (strlen($label) > 80 ? substr($label, 0, 80) . "..." : $label));
-            }
+        // Log the values for debugging
+        foreach($labelsToNormalize as $label) {
+            static::log("  - " . (strlen($label) > 80 ? substr($label, 0, 80) . "..." : $label));
         }
 
         $normalizedMappings = $this->getNormalizedClassificationMappings($labelsToNormalize);
@@ -169,10 +134,14 @@ class ClassificationDeduplicationService
             } elseif (is_array($value)) {
                 // Check if this is an associative array (object) with mixed types
                 if ($this->isAssociativeArray($value)) {
-                    // Treat the whole object as a JSON string for deduplication
-                    $jsonString = json_encode($value);
-                    if ($jsonString) {
-                        $labels[] = $jsonString;
+                    // Only process objects that have an id or name property
+                    if ($this->shouldDeduplicateObject($value)) {
+                        // Extract the id or name value for deduplication
+                        if (isset($value['id']) && $value['id'] !== null) {
+                            $labels[] = $value['id'];
+                        } elseif (isset($value['name']) && $value['name'] !== null) {
+                            $labels[] = $value['name'];
+                        }
                     }
                 } else {
                     // Regular array - recurse into it
@@ -200,6 +169,28 @@ class ClassificationDeduplicationService
     }
 
     /**
+     * Check if an object should be deduplicated based on id/name properties
+     *
+     * @param array $object
+     * @return bool
+     */
+    protected function shouldDeduplicateObject(array $object): bool
+    {
+        // Check for id property first
+        if (isset($object['id']) && $object['id'] !== null) {
+            return true;
+        }
+
+        // Check for name property second
+        if (isset($object['name']) && $object['name'] !== null) {
+            return true;
+        }
+
+        // Object has neither id nor name (or they're null), don't deduplicate
+        return false;
+    }
+
+    /**
      * Get normalized classification mappings from AI agent
      *
      * @param array $labels
@@ -211,9 +202,9 @@ class ClassificationDeduplicationService
 
         $threadRepository = app(ThreadRepository::class);
         $agent            = $this->getOrCreateClassificationDeduplicationAgent();
-        $agentThread      = $threadRepository->create($agent, 'Classification Label Deduplication');
+        $agentThread      = $threadRepository->create($agent, 'Data Value Deduplication');
 
-        $systemMessage = 'You are a classification label normalization assistant. Your job is to identify duplicate or similar labels and normalize them to a consistent format. Always respond with valid JSON.';
+        $systemMessage = 'You are a data normalization assistant. Your job is to identify duplicate or similar values and normalize them to a consistent format. Always respond with valid JSON.';
         $threadRepository->addMessageToThread($agentThread, $systemMessage);
 
         $threadRepository->addMessageToThread($agentThread, $prompt);
@@ -263,55 +254,59 @@ class ClassificationDeduplicationService
         $labelsJson = json_encode(array_values($labels), JSON_PRETTY_PRINT);
 
         return <<<PROMPT
-I have classification labels extracted from multiple document processing tasks. Some labels may represent the same concept but with different wording, formatting, or redundancy.
+I have data values extracted from structured data. Some values may represent the same concept but with different wording, formatting, casing, or redundancy.
 
-The labels include both simple strings and JSON objects that represent structured data.
+IMPORTANT: The values are individual string values, NOT full JSON objects. These strings represent any kind of data that may have variations in formatting, casing, or representation.
 
-Classification labels to normalize:
+Data values to normalize:
 $labelsJson
 
-Please analyze these labels and create a mapping of original labels to normalized labels. Focus on:
+Please analyze these values and create a mapping of original values to normalized values. Focus on:
 
-**For String Labels:**
-1. **Entity Recognition**: Identify when different strings refer to the same entity (e.g., "CNCC", "Chiropractic Natural Care Center", "CNCC Chiropractic Natural Care Center" all refer to the same provider)
-2. **Proper Name Casing**: For proper names (businesses, organizations, people), preserve appropriate title casing:
-   - Business names: "Chiropractic Natural Care Center" (not "chiropractic natural care center")
-   - Acronyms: Keep as uppercase "CNCC" or "NYC"
-   - Person names: "Dr. Smith" (not "dr. smith")
-3. **Generic terms**: Convert generic terms to lowercase (e.g., "emergency medicine", "family practice")
-4. **Redundancy removal**: Remove duplicate concepts while preserving the most complete/formal version
-5. **Address normalization**: Standardize addresses (e.g., "123 Main St" vs "123 main street" → "123 Main Street")
+**For String Values:**
+1. **Entity Recognition**: Identify when different strings refer to the same entity or concept
+   - Be AGGRESSIVE in identifying entities that are clearly the same organization/person with location suffixes
+   - Example: "University Orthopedic Care", "University Orthopedic Care, Palm Springs", "University Orthopedic Care, Tamarac" should ALL map to "University Orthopedic Care"
+   - Example: "Dr. John Smith", "Dr John Smith", "John Smith, MD" should ALL map to "Dr. John Smith"
+2. **Location Suffix Removal**: Remove location suffixes from organization names when they clearly refer to the same entity
+   - "Company Name, City" → "Company Name"
+   - "Practice Name, Location" → "Practice Name"
+3. **Consistent Casing**: Normalize casing to be consistent:
+   - Proper nouns: Use appropriate title casing
+   - Acronyms: Keep as uppercase
+   - Common terms: Use lowercase unless they are proper nouns
+4. **Standardization**: Normalize similar formats to a consistent standard
+5. **Redundancy removal**: Remove duplicate concepts while preserving the most complete/formal version
+6. **Formatting consistency**: Standardize punctuation, spacing, and formatting
 
-**For JSON Object Labels:**
-1. **Name normalization**: Normalize similar names within objects (e.g., "Dan Newman" vs "Danny Newman" → choose one)
-2. **Field value normalization**: Normalize similar values (e.g., "Primary" vs "Main" → choose one)
-3. **Maintain JSON structure**: Return valid JSON objects with normalized values
-4. **Consistent formatting**: Use consistent key-value formatting
-5. **Array handling**: For arrays, normalize individual items but keep distinct concepts separate
+**Important**: You are normalizing individual string values. These strings represent any kind of data that may have variations in formatting, casing, or representation.
 
 IMPORTANT RULES:
-1. Only include entries where the label actually needs to be changed
-2. If a label is already in its best normalized form, don't include it
-3. For entity names, choose the most complete and properly formatted version:
-   - Prefer full names over acronyms when consolidating (unless acronym is more commonly used)
-   - Maintain proper title casing for names of businesses, people, and places
-4. For generic descriptive terms (not proper names), use lowercase
-5. **CRITICAL**: For arrays, do NOT collapse different concepts into the same value
+1. Only include entries where the value actually needs to be changed
+2. If a value is already in its best normalized form, don't include it
+3. Choose the most complete and properly formatted version when consolidating
+4. Maintain consistency in formatting and casing
+5. **CRITICAL**: Do NOT collapse different concepts into the same value
 6. **CRITICAL**: Ensure arrays contain unique values - no duplicates
 
 Example response format:
 {
-  "CNCC": "Chiropractic Natural Care Center",
-  "cncc": "Chiropractic Natural Care Center",
-  "emergency medicine": "emergency medicine",
-  "EMERGENCY MEDICINE": "emergency medicine",
-  "Dr Smith Family Practice": "Dr. Smith Family Practice",
-  "DR. SMITH FAMILY PRACTICE": "Dr. Smith Family Practice",
-  "123 main street": "123 Main Street",
-  "{\"name\":\"Danny Newman\",\"role\":\"Main\"}": "{\"name\":\"Dan Newman\",\"role\":\"Primary\"}"
+  "APPLE": "Apple",
+  "apple inc": "Apple Inc",
+  "University Orthopedic Care, Palm Springs": "University Orthopedic Care",
+  "University Orthopedic Care, Tamarac": "University Orthopedic Care",
+  "Dr John Smith": "Dr. John Smith",
+  "John Smith, MD": "Dr. John Smith",
+  "red": "red",
+  "RED": "red",
+  "New York City": "New York City",
+  "new york city": "New York City",
+  "NYC": "New York City",
+  "user-123": "user-123",
+  "USER_456": "user-456"
 }
 
-Return only the JSON object with mappings for labels that need normalization.
+Return only the JSON object with mappings for values that need normalization.
 PROMPT;
     }
 
@@ -349,7 +344,8 @@ PROMPT;
 
                 static::log("=== Updated artifact {$artifact->id} ===");
                 foreach($updates as $update) {
-                    static::log("  '{$update['original']}' => '{$update['normalized']}'");
+                    $path = isset($update['path']) ? " at '{$update['path']}'" : "";
+                    static::log("  '{$update['original']}' => '{$update['normalized']}'$path");
                     $totalUpdates++;
                 }
             }
@@ -383,24 +379,32 @@ PROMPT;
             } elseif (is_array($value)) {
                 // Check if this is an associative array (object)
                 if ($this->isAssociativeArray($value)) {
-                    // Treat the whole object as a JSON string for normalization
-                    $jsonString = json_encode($value);
-                    if ($jsonString && isset($normalizedMappings[$jsonString])) {
-                        $normalizedJson = $normalizedMappings[$jsonString];
-                        try {
-                            $normalizedObject = json_decode($normalizedJson, true);
-                            if (is_array($normalizedObject)) {
-                                $value     = $normalizedObject;
-                                $updates[] = [
-                                    'original'   => $jsonString,
-                                    'normalized' => $normalizedJson,
-                                ];
-                                static::log("Updated classification object: '$jsonString' => '$normalizedJson'");
-                            }
-                        } catch(\Exception $e) {
-                            static::log("Failed to decode normalized object JSON: " . $e->getMessage());
+                    // Only process objects that have an id or name property
+                    if ($this->shouldDeduplicateObject($value)) {
+                        // Check if we need to update the id
+                        if (isset($value['id']) && $value['id'] !== null && isset($normalizedMappings[$value['id']])) {
+                            $originalId  = $value['id'];
+                            $value['id'] = $normalizedMappings[$value['id']];
+                            $updates[]   = [
+                                'original'   => $originalId,
+                                'normalized' => $value['id'],
+                                'path'       => $key . '.id',
+                            ];
+                            static::log("Updated object id at '$key.id': '$originalId' => '{$value['id']}'");
+                        } // Check if we need to update the name (only if no id was present)
+                        elseif (isset($value['name']) && $value['name'] !== null && isset($normalizedMappings[$value['name']])) {
+                            $originalName  = $value['name'];
+                            $value['name'] = $normalizedMappings[$value['name']];
+                            $updates[]     = [
+                                'original'   => $originalName,
+                                'normalized' => $value['name'],
+                                'path'       => $key . '.name',
+                            ];
+                            static::log("Updated object name at '$key.name': '$originalName' => '{$value['name']}'");
                         }
                     }
+                    // Still recurse into the object for nested values
+                    $this->updateClassificationLabels($value, $normalizedMappings, $updates);
                 } else {
                     // Regular array - recurse into it
                     $this->updateClassificationLabels($value, $normalizedMappings, $updates);

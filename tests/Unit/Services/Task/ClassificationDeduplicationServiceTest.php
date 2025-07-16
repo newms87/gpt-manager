@@ -45,7 +45,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Configure the deduplication agent to use TestAI
         Config::set('ai.classification_deduplication', [
-            'agent_name' => 'Test Classification Deduplication Agent',
+            'agent_name' => 'Test Data Normalization Agent',
             'model'      => 'test-model',
         ]);
     }
@@ -63,35 +63,14 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $service->deduplicateClassificationLabels($artifacts);
 
         // Assert agent was created
-        $agent = Agent::where('name', 'Test Classification Deduplication Agent')
+        $agent = Agent::where('name', 'Test Data Normalization Agent')
             ->where('model', 'test-model')
             ->first();
 
         $this->assertNotNull($agent);
-        $this->assertEquals('Test Classification Deduplication Agent', $agent->name);
+        $this->assertEquals('Test Data Normalization Agent', $agent->name);
         $this->assertEquals('test-model', $agent->model);
         $this->assertEquals(0, $agent->api_options['temperature']);
-    }
-
-    #[Test]
-    public function it_reuses_existing_classification_deduplication_agent()
-    {
-        // Create agent manually
-        $existingAgent = Agent::factory()->create([
-            'team_id' => $this->team->id,
-            'name'    => 'Test Classification Deduplication Agent',
-            'model'   => 'test-model',
-        ]);
-
-        // Create new service instance
-        $newService = app(ClassificationDeduplicationService::class);
-
-        // Assert no new agent was created
-        $agentCount = Agent::where('team_id', $this->team->id)
-            ->where('name', 'Test Classification Deduplication Agent')
-            ->count();
-
-        $this->assertEquals(1, $agentCount);
     }
 
     #[Test]
@@ -101,17 +80,17 @@ class ClassificationDeduplicationServiceTest extends TestCase
             Artifact::factory()->create([
                 'meta' => [
                     'classification' => [
-                        'category'    => 'Healthcare',
-                        'subcategory' => 'Primary Care',
-                        'tags'        => ['medical', 'doctor visit'],
+                        'category'    => 'Technology',
+                        'subcategory' => 'Software',
+                        'tags'        => ['programming', 'development'],
                     ],
                 ],
             ]),
             Artifact::factory()->create([
                 'meta' => [
                     'classification' => [
-                        'category' => 'HEALTHCARE',
-                        'type'     => 'Specialist',
+                        'category' => 'TECHNOLOGY',
+                        'type'     => 'Software',
                     ],
                 ],
             ]),
@@ -127,12 +106,12 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         $labels = $method->invoke($service, $artifacts);
 
-        $this->assertContains('Healthcare', $labels);
-        $this->assertContains('Primary Care', $labels);
-        $this->assertContains('medical', $labels);
-        $this->assertContains('doctor visit', $labels);
-        $this->assertContains('HEALTHCARE', $labels);
-        $this->assertContains('Specialist', $labels);
+        $this->assertContains('Technology', $labels);
+        $this->assertContains('Software', $labels);
+        $this->assertContains('programming', $labels);
+        $this->assertContains('development', $labels);
+        $this->assertContains('TECHNOLOGY', $labels);
+        $this->assertContains('Software', $labels);
     }
 
     #[Test]
@@ -143,9 +122,9 @@ class ClassificationDeduplicationServiceTest extends TestCase
             Artifact::factory()->create([
                 'meta' => [
                     'classification' => [
-                        'category'    => 'HEALTHCARE',
-                        'subcategory' => 'Primary Care',
-                        'food'        => 'Dairy, milk, cream, eggs',
+                        'category'    => 'TECHNOLOGY',
+                        'subcategory' => 'Software Development',
+                        'tags'        => 'JavaScript, React, Node.js',
                     ],
                 ],
             ]),
@@ -160,9 +139,9 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $classification = $artifact->meta['classification'];
 
         // Original values should remain unchanged since TestAI response isn't valid JSON
-        $this->assertEquals('HEALTHCARE', $classification['category']);
-        $this->assertEquals('Primary Care', $classification['subcategory']);
-        $this->assertEquals('Dairy, milk, cream, eggs', $classification['food']);
+        $this->assertEquals('TECHNOLOGY', $classification['category']);
+        $this->assertEquals('Software Development', $classification['subcategory']);
+        $this->assertEquals('JavaScript, React, Node.js', $classification['tags']);
     }
 
     #[Test]
@@ -173,9 +152,9 @@ class ClassificationDeduplicationServiceTest extends TestCase
                 'meta' => [
                     'classification' => [
                         'services' => [
-                            'type'       => 'Medical - Primary Care',
+                            'type'       => 'Web - Frontend Development',
                             'categories' => [
-                                'food' => 'FOOD CATEGORY',
+                                'framework' => 'REACT FRAMEWORK',
                             ],
                         ],
                     ],
@@ -191,8 +170,8 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $classification = $artifact->meta['classification'];
 
         // Original values should remain unchanged
-        $this->assertEquals('Medical - Primary Care', $classification['services']['type']);
-        $this->assertEquals('FOOD CATEGORY', $classification['services']['categories']['food']);
+        $this->assertEquals('Web - Frontend Development', $classification['services']['type']);
+        $this->assertEquals('REACT FRAMEWORK', $classification['services']['categories']['framework']);
     }
 
     #[Test]
@@ -223,8 +202,8 @@ class ClassificationDeduplicationServiceTest extends TestCase
     public function it_handles_service_execution_gracefully()
     {
         $originalClassification = [
-            'category' => 'HEALTHCARE',
-            'type'     => 'Primary Care',
+            'category' => 'TECHNOLOGY',
+            'type'     => 'Software Development',
         ];
 
         $artifacts = collect([
@@ -250,16 +229,16 @@ class ClassificationDeduplicationServiceTest extends TestCase
             Artifact::factory()->create([
                 'meta' => [
                     'classification' => [
-                        'category' => 'HEALTHCARE',
-                        'tag'      => 'medical',
+                        'category' => 'TECHNOLOGY',
+                        'tag'      => 'programming',
                     ],
                 ],
             ]),
             Artifact::factory()->create([
                 'meta' => [
                     'classification' => [
-                        'category' => 'FOOD',
-                        'tag'      => 'nutrition',
+                        'category' => 'EDUCATION',
+                        'tag'      => 'learning',
                     ],
                 ],
             ]),
@@ -269,8 +248,8 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $service->deduplicateClassificationLabels($artifacts);
 
         // Both artifacts should remain unchanged since TestAI returns non-JSON
-        $this->assertEquals('HEALTHCARE', $artifacts->first()->fresh()->meta['classification']['category']);
-        $this->assertEquals('FOOD', $artifacts->last()->fresh()->meta['classification']['category']);
+        $this->assertEquals('TECHNOLOGY', $artifacts->first()->fresh()->meta['classification']['category']);
+        $this->assertEquals('EDUCATION', $artifacts->last()->fresh()->meta['classification']['category']);
     }
 
     #[Test]
@@ -280,11 +259,11 @@ class ClassificationDeduplicationServiceTest extends TestCase
             Artifact::factory()->create([
                 'meta' => [
                     'classification' => [
-                        'category' => 'HEALTHCARE',
+                        'category' => 'TECHNOLOGY',
                         'active'   => true,
                         'count'    => 5,
                         'score'    => 3.14,
-                        'tags'     => ['medical', 'primary'],
+                        'tags'     => ['programming', 'frontend'],
                     ],
                 ],
             ]),
@@ -300,9 +279,9 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $labels = $method->invoke($service, $artifacts);
 
         // Should only include strings from the tags array and category
-        $this->assertContains('HEALTHCARE', $labels);
-        $this->assertContains('medical', $labels);
-        $this->assertContains('primary', $labels);
+        $this->assertContains('TECHNOLOGY', $labels);
+        $this->assertContains('programming', $labels);
+        $this->assertContains('frontend', $labels);
 
         // Should NOT include boolean or numeric values
         $this->assertNotContains(true, $labels);
@@ -311,19 +290,19 @@ class ClassificationDeduplicationServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_handles_nested_objects_as_json_strings()
+    public function it_handles_nested_objects_with_name_property()
     {
         $artifacts = collect([
             Artifact::factory()->create([
                 'meta' => [
                     'classification' => [
-                        'professional' => [
-                            'name' => 'Dan Newman',
-                            'role' => 'Primary',
+                        'developer' => [
+                            'name' => 'John Smith',
+                            'role' => 'Lead',
                         ],
-                        'contact'      => [
-                            'name' => 'Danny Newman',
-                            'role' => 'Main',
+                        'contact'   => [
+                            'name' => 'Johnny Smith',
+                            'role' => 'Primary',
                         ],
                     ],
                 ],
@@ -339,9 +318,126 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         $labels = $method->invoke($service, $artifacts);
 
-        // Should include JSON representations of the objects
-        $this->assertContains('{"name":"Dan Newman","role":"Primary"}', $labels);
-        $this->assertContains('{"name":"Danny Newman","role":"Main"}', $labels);
+        // Should include only the name values from objects with name property
+        $this->assertContains('John Smith', $labels);
+        $this->assertContains('Johnny Smith', $labels);
+    }
+
+    #[Test]
+    public function it_handles_nested_objects_with_id_property()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'developer' => [
+                            'id'   => '123',
+                            'name' => 'John Smith',
+                            'role' => 'Lead',
+                        ],
+                        'contact'   => [
+                            'id'   => '456',
+                            'name' => 'Johnny Smith',
+                            'role' => 'Primary',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $service = app(ClassificationDeduplicationService::class);
+
+        // Use reflection to test label extraction
+        $reflection = new \ReflectionClass($service);
+        $method     = $reflection->getMethod('extractClassificationLabels');
+        $method->setAccessible(true);
+
+        $labels = $method->invoke($service, $artifacts);
+
+        // Should include only the id values from objects with id property (id takes precedence over name)
+        $this->assertContains('123', $labels);
+        $this->assertContains('456', $labels);
+        // Should NOT include the name values when id is present
+        $this->assertNotContains('John Smith', $labels);
+        $this->assertNotContains('Johnny Smith', $labels);
+    }
+
+    #[Test]
+    public function it_ignores_objects_without_id_or_name()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'metadata' => [
+                            'type'  => 'config',
+                            'value' => 'setting',
+                        ],
+                        'contact'  => [
+                            'name' => 'John Smith',
+                            'role' => 'Lead',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $service = app(ClassificationDeduplicationService::class);
+
+        // Use reflection to test label extraction
+        $reflection = new \ReflectionClass($service);
+        $method     = $reflection->getMethod('extractClassificationLabels');
+        $method->setAccessible(true);
+
+        $labels = $method->invoke($service, $artifacts);
+
+        // Should include only the name value from object with name property
+        $this->assertContains('John Smith', $labels);
+
+        // Should NOT include values from objects without id or name
+        $this->assertNotContains('config', $labels);
+        $this->assertNotContains('setting', $labels);
+    }
+
+    #[Test]
+    public function it_ignores_objects_with_null_id_or_name()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'nullName'  => [
+                            'name' => null,
+                            'role' => 'Lead',
+                        ],
+                        'nullId'    => [
+                            'id'   => null,
+                            'role' => 'Support',
+                        ],
+                        'validName' => [
+                            'name' => 'Valid Name',
+                            'role' => 'Primary',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $service = app(ClassificationDeduplicationService::class);
+
+        // Use reflection to test label extraction
+        $reflection = new \ReflectionClass($service);
+        $method     = $reflection->getMethod('extractClassificationLabels');
+        $method->setAccessible(true);
+
+        $labels = $method->invoke($service, $artifacts);
+
+        // Should include only the name value from object with valid name
+        $this->assertContains('Valid Name', $labels);
+
+        // Should NOT include any values from objects with null name or id
+        $this->assertNotContains('Lead', $labels);
+        $this->assertNotContains('Support', $labels);
     }
 
     #[Test]
@@ -351,10 +447,10 @@ class ClassificationDeduplicationServiceTest extends TestCase
             Artifact::factory()->create([
                 'meta' => [
                     'classification' => [
-                        'tags'         => ['medical', 'primary', 'care'], // Indexed array
-                        'professional' => [ // Associative array
-                                            'name' => 'Dr. Smith',
-                                            'role' => 'Primary Care',
+                        'tags'      => ['programming', 'frontend', 'react'], // Indexed array
+                        'developer' => [ // Associative array
+                                         'name' => 'Jane Doe',
+                                         'role' => 'Senior Developer',
                         ],
                     ],
                 ],
@@ -371,15 +467,15 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $labels = $method->invoke($service, $artifacts);
 
         // Should include individual strings from indexed array
-        $this->assertContains('medical', $labels);
-        $this->assertContains('primary', $labels);
-        $this->assertContains('care', $labels);
+        $this->assertContains('programming', $labels);
+        $this->assertContains('frontend', $labels);
+        $this->assertContains('react', $labels);
 
-        // Should include JSON string for associative array
-        $this->assertContains('{"name":"Dr. Smith","role":"Primary Care"}', $labels);
+        // Should include only the name value from associative array (has name property)
+        $this->assertContains('Jane Doe', $labels);
 
         // Should NOT include the indexed array as JSON
-        $this->assertNotContains('["medical","primary","care"]', $labels);
+        $this->assertNotContains('["programming","frontend","react"]', $labels);
     }
 
     #[Test]
@@ -389,14 +485,14 @@ class ClassificationDeduplicationServiceTest extends TestCase
             Artifact::factory()->create([
                 'meta' => [
                     'classification' => [
-                        'category' => 'HEALTHCARE',
+                        'category' => 'TECHNOLOGY',
                         'active'   => true,
                         'priority' => 1,
                         'details'  => [
-                            'provider' => 'Dr. Smith',
-                            'verified' => false,
+                            'developer' => 'Jane Doe',
+                            'verified'  => false,
                         ],
-                        'tags'     => ['medical', 'urgent'],
+                        'tags'     => ['programming', 'react'],
                     ],
                 ],
             ]),
@@ -409,11 +505,134 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $artifact       = $artifacts->first()->fresh();
         $classification = $artifact->meta['classification'];
 
-        $this->assertEquals('HEALTHCARE', $classification['category']);
+        $this->assertEquals('TECHNOLOGY', $classification['category']);
         $this->assertTrue($classification['active']);
         $this->assertEquals(1, $classification['priority']);
-        $this->assertEquals('Dr. Smith', $classification['details']['provider']);
+        $this->assertEquals('Jane Doe', $classification['details']['developer']);
         $this->assertFalse($classification['details']['verified']);
-        $this->assertEquals(['medical', 'urgent'], $classification['tags']);
+        $this->assertEquals(['programming', 'react'], $classification['tags']);
+    }
+
+    #[Test]
+    public function it_tests_shouldDeduplicateObject_method()
+    {
+        $service    = app(ClassificationDeduplicationService::class);
+        $reflection = new \ReflectionClass($service);
+        $method     = $reflection->getMethod('shouldDeduplicateObject');
+        $method->setAccessible(true);
+
+        // Test object with id
+        $objectWithId = ['id' => '123', 'name' => 'Test', 'other' => 'data'];
+        $this->assertTrue($method->invoke($service, $objectWithId));
+
+        // Test object with name only
+        $objectWithName = ['name' => 'Test Name', 'other' => 'data'];
+        $this->assertTrue($method->invoke($service, $objectWithName));
+
+        // Test object with both id and name
+        $objectWithBoth = ['id' => '456', 'name' => 'Test', 'other' => 'data'];
+        $this->assertTrue($method->invoke($service, $objectWithBoth));
+
+        // Test object without id or name
+        $objectWithoutIdOrName = ['type' => 'config', 'value' => 'setting'];
+        $this->assertFalse($method->invoke($service, $objectWithoutIdOrName));
+
+        // Test object with null id
+        $objectWithNullId = ['id' => null, 'name' => 'Test', 'other' => 'data'];
+        $this->assertTrue($method->invoke($service, $objectWithNullId)); // Has valid name
+
+        // Test object with null name
+        $objectWithNullName = ['name' => null, 'other' => 'data'];
+        $this->assertFalse($method->invoke($service, $objectWithNullName));
+
+        // Test object with both null
+        $objectWithBothNull = ['id' => null, 'name' => null, 'other' => 'data'];
+        $this->assertFalse($method->invoke($service, $objectWithBothNull));
+
+        // Test empty object
+        $emptyObject = [];
+        $this->assertFalse($method->invoke($service, $emptyObject));
+    }
+
+    #[Test]
+    public function it_demonstrates_full_object_deduplication_workflow()
+    {
+        // This test demonstrates the expected behavior of the deduplication service
+        // when handling objects with id/name properties
+
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'company'    => 'APPLE',
+                        'developers' => [
+                            [
+                                'id'   => 'dev-123',
+                                'name' => 'John Smith',
+                                'role' => 'Lead Developer',
+                            ],
+                            [
+                                'id'   => 'dev-456',
+                                'name' => 'Jane Doe',
+                                'role' => 'Senior Developer',
+                            ],
+                        ],
+                        'offices'    => [
+                            [
+                                'name'    => 'Main Office',
+                                'address' => '123 main street',
+                            ],
+                            [
+                                'name'    => 'Branch Office',
+                                'address' => '456 Oak Ave',
+                            ],
+                        ],
+                        'metadata'   => [
+                            'type'    => 'config',
+                            'version' => '1.0',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $service = app(ClassificationDeduplicationService::class);
+
+        // Use reflection to test label extraction
+        $reflection = new \ReflectionClass($service);
+        $method     = $reflection->getMethod('extractClassificationLabels');
+        $method->setAccessible(true);
+
+        $labels = $method->invoke($service, $artifacts);
+
+        // Verify that we extract:
+        // - Simple string values (company)
+        $this->assertContains('APPLE', $labels);
+
+        // - ID values from objects with id property (developers have id, so we extract id)
+        $this->assertContains('dev-123', $labels);
+        $this->assertContains('dev-456', $labels);
+
+        // - Name values from objects without id property (offices have name, so we extract name)
+        $this->assertContains('Main Office', $labels);
+        $this->assertContains('Branch Office', $labels);
+
+        // Verify that we DON'T extract:
+        // - Names when ID is present (John Smith, Jane Doe should not be in labels)
+        $this->assertNotContains('John Smith', $labels);
+        $this->assertNotContains('Jane Doe', $labels);
+
+        // - Other properties from objects that have id/name (we only extract the id/name)
+        $this->assertNotContains('Lead Developer', $labels);
+        $this->assertNotContains('Senior Developer', $labels);
+        $this->assertNotContains('123 main street', $labels);
+        $this->assertNotContains('456 Oak Ave', $labels);
+
+        // - Values from objects without id/name properties
+        $this->assertNotContains('config', $labels);
+        $this->assertNotContains('1.0', $labels);
+
+        // The total should be exactly 5 values
+        $this->assertCount(5, $labels);
     }
 }

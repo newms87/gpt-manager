@@ -21,7 +21,7 @@ class TestClassificationDeduplicationCommand extends Command
     /**
      * The console command description.
      */
-    protected $description = 'Test classification deduplication with real AI agent';
+    protected $description = 'Test data normalization/deduplication with real AI agent';
 
     /**
      * Execute the console command.
@@ -118,93 +118,83 @@ class TestClassificationDeduplicationCommand extends Command
         $testData = [
             [
                 'classification' => [
-                    'provider'  => 'CNCC',
-                    'category'  => 'Chiropractic Care',
-                    'specialty' => 'Chiropractic',
-                    'location'  => '123 Main St',
-                    'type'      => 'In-Person Visit',
-                    'urgency'   => 'Routine',
+                    'company'  => 'APPLE',
+                    'category' => 'Technology',
+                    'type'     => 'consumer electronics',
+                    'location' => '123 Main St',
+                    'status'   => 'active',
                 ],
             ],
             [
                 'classification' => [
-                    'provider'  => 'Chiropractic Natural Care Center',
-                    'category'  => 'chiropractic care',
-                    'specialty' => 'CHIROPRACTIC',
-                    'location'  => '123 main street',
-                    'type'      => 'in person visit',
-                    'urgency'   => 'ROUTINE',
+                    'company'  => 'Apple Inc',
+                    'category' => 'technology',
+                    'type'     => 'Consumer Electronics',
+                    'location' => '123 main street',
+                    'status'   => 'ACTIVE',
                 ],
             ],
             [
                 'classification' => [
-                    'provider'  => 'CNCC Chiropractic Natural Care Center',
-                    'category'  => 'CHIROPRACTIC CARE',
-                    'specialty' => 'Chiropractor',
-                    'location'  => '123 Main Street',
-                    'type'      => 'Office Visit',
-                    'urgency'   => 'routine',
+                    'company'  => 'apple inc.',
+                    'category' => 'TECHNOLOGY',
+                    'type'     => 'Electronics',
+                    'location' => '123 Main Street',
+                    'status'   => 'Active',
                 ],
             ],
             [
                 'classification' => [
-                    'provider'  => 'cncc',
-                    'category'  => 'Chiropractic',
-                    'specialty' => 'Chiropractic Medicine',
-                    'location'  => '123 MAIN ST',
-                    'type'      => 'Visit',
-                    'urgency'   => 'Standard',
+                    'company'  => 'Google',
+                    'category' => 'Technology',
+                    'type'     => 'Software',
+                    'location' => '456 Tech Ave',
+                    'status'   => 'operational',
                 ],
             ],
             [
                 'classification' => [
-                    'provider'  => 'NYC General Hospital',
-                    'category'  => 'Emergency Medicine',
-                    'specialty' => 'Emergency',
-                    'location'  => '456 Hospital Way',
-                    'urgency'   => 'urgent',
+                    'company'  => 'GOOGLE',
+                    'category' => 'tech',
+                    'type'     => 'software',
+                    'location' => '456 tech ave',
+                    'status'   => 'OPERATIONAL',
                 ],
             ],
             [
                 'classification' => [
-                    'provider'  => 'NYCGH',
-                    'category'  => 'emergency medicine',
-                    'specialty' => 'Emergency Medicine',
-                    'location'  => '456 Hospital Way',
-                    'urgency'   => 'Urgent',
+                    'company'  => 'Google LLC',
+                    'category' => 'TECH',
+                    'type'     => 'Software Development',
+                    'location' => '456 Tech Avenue',
+                    'status'   => 'Operational',
                 ],
             ],
             [
                 'classification' => [
-                    'provider'  => 'New York City General Hospital',
-                    'category'  => 'EMERGENCY',
-                    'specialty' => 'ER',
-                    'location'  => '456 hospital way',
-                    'urgency'   => 'URGENT',
+                    'company'  => 'Microsoft',
+                    'category' => 'Technology',
+                    'type'     => 'Software',
+                    'location' => '789 Innovation Dr',
+                    'status'   => 'running',
                 ],
             ],
             [
                 'classification' => [
-                    'provider'  => 'Dr. Smith Family Practice',
-                    'category'  => 'Family Medicine',
-                    'specialty' => 'Family Practice',
-                    'location'  => '789 Oak Avenue',
+                    'company'  => 'MICROSOFT',
+                    'category' => 'technology',
+                    'type'     => 'software',
+                    'location' => '789 innovation dr',
+                    'status'   => 'RUNNING',
                 ],
             ],
             [
                 'classification' => [
-                    'provider'  => 'Dr Smith Family Practice',
-                    'category'  => 'family medicine',
-                    'specialty' => 'Family Med',
-                    'location'  => '789 oak ave',
-                ],
-            ],
-            [
-                'classification' => [
-                    'provider'  => 'DR. SMITH FAMILY PRACTICE',
-                    'category'  => 'FAMILY PRACTICE',
-                    'specialty' => 'Family Medicine',
-                    'location'  => '789 Oak Ave.',
+                    'company'  => 'microsoft corp',
+                    'category' => 'TECHNOLOGY',
+                    'type'     => 'Software Development',
+                    'location' => '789 Innovation Drive',
+                    'status'   => 'Running',
                 ],
             ],
         ];
