@@ -14,6 +14,18 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
 
     public function run(): void
     {
+        // Check if this is a classification property deduplication process
+        $classificationProperty = $this->taskProcess->meta['classification_property'] ?? null;
+        if ($classificationProperty) {
+            static::log("Running classification deduplication for property: $classificationProperty");
+            
+            $artifacts = $this->taskRun->outputArtifacts;
+            app(ClassificationDeduplicationService::class)->deduplicateClassificationProperty($artifacts, $classificationProperty);
+            
+            $this->complete($artifacts);
+            return;
+        }
+
         $inputArtifacts = $this->taskProcess->inputArtifacts;
 
         $agentThread = $this->setupAgentThread($inputArtifacts);
@@ -68,28 +80,29 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
 
     /**
      * Called after all parallel processes have completed
-     * Override parent to add classification-specific deduplication
+     * Check if any processes have classification_property meta set - if not, create deduplication processes
      */
     public function afterAllProcessesCompleted(): void
     {
         parent::afterAllProcessesCompleted();
 
-        static::log("Running classification deduplication across all process artifacts");
+        // Check if any TaskProcesses in this TaskRun have classification_property meta set
+        $hasPropertyProcesses = $this->taskRun->taskProcesses()
+            ->whereNotNull('meta->classification_property')
+            ->exists();
 
-        $artifacts = $this->taskRun->outputArtifacts()
-            ->whereNotNull('meta->classification')
-            ->get();
+        if ($hasPropertyProcesses) {
+            static::log("TaskProcess with classification_property meta found - skipping deduplication process creation");
 
-        if ($artifacts->isEmpty()) {
-            static::log("No artifacts with classification metadata found for deduplication");
             return;
         }
 
+        static::log("No classification property processes found - creating deduplication processes");
+
         try {
-            app(ClassificationDeduplicationService::class)->deduplicateClassificationLabels($artifacts);
-            static::log("Classification deduplication completed successfully");
+            app(ClassificationDeduplicationService::class)->createDeduplicationProcessesForTaskRun($this->taskRun);
         } catch(\Exception $e) {
-            static::log("Error during classification deduplication: " . $e->getMessage());
+            static::log("Error creating classification deduplication processes: " . $e->getMessage());
         }
     }
 }

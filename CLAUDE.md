@@ -12,6 +12,9 @@
 - Never use chmod on files to fix permissions!!! Always use `./vendor/bin/sail artisan fix`
 - Never use the rg command, use grep instead
 - When attempting to run PHP files, always use sail php
+- To avoid making mistakes, ALWAYS ALWAYS ALWAYS READ THE COMPONENT / CLASS YOU ARE about to interact with BEFORE YOU
+  use it. Understand the method completely (no abstraction) before assuming its behavior. Never assume you know how
+  something works. Never guess. It is CRITICAL you understand what you are doing before you do it.
 
 ## Laravel Backend Standards
 
@@ -77,6 +80,9 @@ class TeamObjectsController extends ActionController
 - Use traits for shared functionality (AuditableTrait, SoftDeletes)
 - Implement validation via validate() method
 - NO business logic in models
+- Always use consts inside the model they belong to whenever creating statuses or
+  enum values that will be entered into a field for that model. DO NOT HARD CODE STRINGS for enums to set model
+  fields/attributes.
 
 ### API Standards
 

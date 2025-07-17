@@ -5,17 +5,31 @@ namespace Tests\Feature\McpServer;
 use App\Models\Agent\McpServer;
 use App\Models\Team\Team;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class McpServerTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected User $user;
+    protected Team $team;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $this->user = User::factory()->create();
+        $this->team = Team::factory()->create();
+        $this->team->users()->attach($this->user);
+        $this->user->currentTeam = $this->team;
+        $this->user->save();
+        $this->actingAs($this->user);
+        session(['team_id' => $this->team->id]);
+    }
+
     public function test_creates_mcp_server_via_api()
     {
-        $user = User::factory()->create();
-        $team = Team::factory()->create();
-        $team->users()->attach($user);
-        $user->currentTeam = $team;
-        $this->actingAs($user);
 
         $mcpServerData = [
             'name'        => 'Test MCP Server',
@@ -37,18 +51,12 @@ class McpServerTest extends TestCase
         $this->assertDatabaseHas('mcp_servers', [
             'name'       => 'Test MCP Server',
             'server_url' => 'http://localhost:8080',
-            'team_id'    => $team->id,
+            'team_id'    => $this->team->id,
         ]);
     }
 
     public function test_validates_required_fields()
     {
-        $user = User::factory()->create();
-        $team = Team::factory()->create();
-        $team->users()->attach($user);
-        $user->currentTeam = $team;
-        $this->actingAs($user);
-
         $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
             'data' => []
@@ -59,14 +67,8 @@ class McpServerTest extends TestCase
 
     public function test_reads_mcp_server_via_api()
     {
-        $user = User::factory()->create();
-        $team = Team::factory()->create();
-        $team->users()->attach($user);
-        $user->currentTeam = $team;
-        $this->actingAs($user);
-
         $mcpServer = McpServer::factory()->create([
-            'team_id'    => $team->id,
+            'team_id'    => $this->team->id,
             'name'       => 'Test Server',
             'server_url' => 'http://example.com',
         ]);
@@ -83,14 +85,8 @@ class McpServerTest extends TestCase
 
     public function test_updates_mcp_server_via_api()
     {
-        $user = User::factory()->create();
-        $team = Team::factory()->create();
-        $team->users()->attach($user);
-        $user->currentTeam = $team;
-        $this->actingAs($user);
-
         $mcpServer = McpServer::factory()->create([
-            'team_id' => $team->id,
+            'team_id' => $this->team->id,
             'name'    => 'Original Server',
         ]);
 
@@ -115,14 +111,8 @@ class McpServerTest extends TestCase
 
     public function test_deletes_mcp_server_via_api()
     {
-        $user = User::factory()->create();
-        $team = Team::factory()->create();
-        $team->users()->attach($user);
-        $user->currentTeam = $team;
-        $this->actingAs($user);
-
         $mcpServer = McpServer::factory()->create([
-            'team_id' => $team->id,
+            'team_id' => $this->team->id,
         ]);
 
         $response = $this->postJson(route('mcp-servers.apply-action', $mcpServer), [
@@ -135,14 +125,8 @@ class McpServerTest extends TestCase
 
     public function test_duplicates_mcp_server()
     {
-        $user = User::factory()->create();
-        $team = Team::factory()->create();
-        $team->users()->attach($user);
-        $user->currentTeam = $team;
-        $this->actingAs($user);
-
         $originalServer = McpServer::factory()->create([
-            'team_id'     => $team->id,
+            'team_id'     => $this->team->id,
             'name'        => 'original-server',
             'description' => 'Original description',
             'server_url'  => 'http://original.example.com',
@@ -157,7 +141,7 @@ class McpServerTest extends TestCase
             'name'        => 'original-server (1)',
             'description' => 'Original description',
             'server_url'  => 'http://original.example.com',
-            'team_id'     => $team->id,
+            'team_id'     => $this->team->id,
         ]);
 
         $duplicatedServer = McpServer::where('name', 'original-server (1)')->first();
@@ -166,12 +150,6 @@ class McpServerTest extends TestCase
 
     public function test_validates_server_url_format()
     {
-        $user = User::factory()->create();
-        $team = Team::factory()->create();
-        $team->users()->attach($user);
-        $user->currentTeam = $team;
-        $this->actingAs($user);
-
         $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
             'data' => [
@@ -185,12 +163,6 @@ class McpServerTest extends TestCase
 
     public function test_validates_name_is_required()
     {
-        $user = User::factory()->create();
-        $team = Team::factory()->create();
-        $team->users()->attach($user);
-        $user->currentTeam = $team;
-        $this->actingAs($user);
-
         $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
             'data' => [
@@ -203,12 +175,6 @@ class McpServerTest extends TestCase
 
     public function test_validates_server_url_is_required()
     {
-        $user = User::factory()->create();
-        $team = Team::factory()->create();
-        $team->users()->attach($user);
-        $user->currentTeam = $team;
-        $this->actingAs($user);
-
         $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
             'data' => [
@@ -221,16 +187,10 @@ class McpServerTest extends TestCase
 
     public function test_scopes_to_team()
     {
-        $team1 = Team::factory()->create();
         $team2 = Team::factory()->create();
 
-        $server1 = McpServer::factory()->create(['team_id' => $team1->id]);
+        $server1 = McpServer::factory()->create(['team_id' => $this->team->id]);
         McpServer::factory()->create(['team_id' => $team2->id]);
-
-        $user1 = User::factory()->create();
-        $team1->users()->attach($user1);
-        $user1->currentTeam = $team1;
-        $this->actingAs($user1);
 
         $response = $this->postJson(route('mcp-servers.list'), []);
 

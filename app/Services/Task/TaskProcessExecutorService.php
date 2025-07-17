@@ -20,7 +20,6 @@ class TaskProcessExecutorService
     public function runNextTaskProcessForWorkflowRun(WorkflowRun $workflowRun): void
     {
         LockHelper::acquire($workflowRun, 60);
-        $taskProcess = null;
 
         try {
             // Check for timed out running processes first

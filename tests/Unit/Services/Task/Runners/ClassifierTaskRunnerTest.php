@@ -68,25 +68,85 @@ class ClassifierTaskRunnerTest extends TestCase
     }
 
     #[Test]
-    public function it_calls_classification_deduplication_after_all_processes_completed()
+    public function it_runs_classification_property_deduplication_when_meta_is_set()
+    {
+        // Create input artifacts
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'company'  => 'Apple Inc',
+                        'location' => 'Cupertino',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Create task process with classification_property meta
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'meta'        => ['classification_property' => 'company'],
+        ]);
+
+        // Associate artifacts as input artifacts
+        foreach ($artifacts as $artifact) {
+            $taskProcess->inputArtifacts()->attach($artifact->id);
+        }
+
+        // Mock the ClassificationDeduplicationService
+        $mockService = $this->mock(ClassificationDeduplicationService::class);
+        $mockService->shouldReceive('deduplicateClassificationProperty')
+            ->once()
+            ->with(\Mockery::type('Illuminate\Support\Collection'), 'company');
+
+        // Create and run the classifier task runner
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+        $runner->run();
+
+        // Verify the process is completed
+        $this->assertTrue($taskProcess->fresh()->isCompleted());
+    }
+
+    #[Test]
+    public function it_detects_classification_property_from_meta_field()
+    {
+        // Test that the runner correctly identifies the classification property from meta
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'meta'        => ['classification_property' => 'location'],
+        ]);
+
+        // Verify the meta field is properly set
+        $this->assertEquals('location', $taskProcess->meta['classification_property']);
+        
+        // Test another property
+        $taskProcess2 = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'meta'        => ['classification_property' => 'company'],
+        ]);
+
+        $this->assertEquals('company', $taskProcess2->meta['classification_property']);
+    }
+
+    #[Test]
+    public function it_creates_deduplication_processes_when_no_classification_property_processes_exist()
     {
         // Create output artifacts with classification metadata
         $artifact1 = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'meta'        => [
+            'meta' => [
                 'classification' => [
-                    'category'    => 'HEALTHCARE',
-                    'subcategory' => 'Primary Care',
+                    'company'  => 'Apple Inc',
+                    'location' => 'Cupertino',
                 ],
             ],
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'meta'        => [
+            'meta' => [
                 'classification' => [
-                    'category'    => 'healthcare',
-                    'subcategory' => 'primary care',
+                    'company'  => 'Google',
+                    'location' => 'Mountain View',
                 ],
             ],
         ]);
@@ -94,120 +154,181 @@ class ClassifierTaskRunnerTest extends TestCase
         // Associate artifacts as output artifacts
         $this->taskRun->outputArtifacts()->attach([$artifact1->id, $artifact2->id]);
 
-        // Verify artifacts are found before mocking
-        $foundArtifacts = $this->taskRun->outputArtifacts()
-            ->whereNotNull('meta->classification')
-            ->get();
-        $this->assertCount(2, $foundArtifacts, "Should find 2 artifacts with classification metadata");
-
-        // Mock the ClassificationDeduplicationService
-        $mockService = $this->mock(ClassificationDeduplicationService::class);
-        $mockService->shouldReceive('deduplicateClassificationLabels')
-            ->once()
-            ->with(\Mockery::on(function ($artifacts) use ($artifact1, $artifact2) {
-                return $artifacts->count() === 2 &&
-                    $artifacts->contains($artifact1) &&
-                    $artifacts->contains($artifact2);
-            }));
-
-        // Create a task process for the runner
+        // Create a normal task process (no classification_property meta)
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
         ]);
+
+        // Verify no classification property processes exist initially
+        $hasPropertyProcesses = $this->taskRun->taskProcesses()
+            ->whereNotNull('meta->classification_property')
+            ->exists();
+        $this->assertFalse($hasPropertyProcesses);
+
+        // Create real service (not mocked) to test actual behavior
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+        $runner->afterAllProcessesCompleted();
+
+        // Verify that new processes were created
+        $newProcesses = $this->taskRun->taskProcesses()
+            ->whereNotNull('meta->classification_property')
+            ->get();
+        
+        $this->assertGreaterThan(0, $newProcesses->count());
+        
+        // Verify they have the expected properties
+        $properties = $newProcesses->pluck('meta.classification_property')->toArray();
+        $this->assertContains('company', $properties);
+        $this->assertContains('location', $properties);
+    }
+
+    #[Test]
+    public function it_skips_process_creation_when_classification_property_processes_already_exist()
+    {
+        // Create a task process with classification_property meta (simulating existing deduplication process)
+        $existingProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'meta'        => ['classification_property' => 'company'],
+        ]);
+
+        // Create current task process
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+        ]);
+
+        // Count existing processes before
+        $beforeCount = $this->taskRun->taskProcesses()->count();
 
         // Create and run the classifier task runner
         $runner = new ClassifierTaskRunner();
         $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
         $runner->afterAllProcessesCompleted();
+
+        // Count processes after - should be the same (no new processes created)
+        $afterCount = $this->taskRun->taskProcesses()->count();
+        $this->assertEquals($beforeCount, $afterCount);
     }
 
     #[Test]
-    public function it_finds_artifacts_with_classification_metadata()
+    public function it_handles_task_process_without_meta_field()
     {
-        // Create artifacts with different metadata structures
-        $artifactWithClassification = Artifact::factory()->create([
+        // Create task process with no meta field
+        $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
-            'meta'        => [
-                'classification' => [
-                    'category' => 'HEALTHCARE',
-                ],
-            ],
+            'meta'        => null,
         ]);
 
-        $artifactWithoutClassification = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'meta'        => [
-                'other_data' => 'value',
-            ],
-        ]);
+        // Verify meta is null
+        $this->assertNull($taskProcess->meta);
 
-        $artifactWithEmptyMeta = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'meta'        => [],
-        ]);
-
-        // Associate all artifacts as output artifacts
-        $this->taskRun->outputArtifacts()->attach([
-            $artifactWithClassification->id,
-            $artifactWithoutClassification->id,
-            $artifactWithEmptyMeta->id,
-        ]);
-
-        // Test the correct JSON query approach used in the runner
-        $artifacts = $this->taskRun->outputArtifacts()
-            ->whereNotNull('meta->classification')
-            ->get();
-
-        // Should only find the artifact with classification metadata
-        $this->assertCount(1, $artifacts);
-        $this->assertTrue($artifacts->contains($artifactWithClassification));
-        $this->assertFalse($artifacts->contains($artifactWithoutClassification));
-        $this->assertFalse($artifacts->contains($artifactWithEmptyMeta));
+        // Test that runner handles this gracefully in afterAllProcessesCompleted
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+        
+        // Should not throw exception
+        $runner->afterAllProcessesCompleted();
+        $this->assertTrue(true);
     }
 
     #[Test]
-    public function it_handles_empty_classification_results_gracefully()
+    public function it_handles_exception_in_process_creation_gracefully()
     {
-        // Create artifacts without classification metadata
+        // Create output artifacts
         $artifact = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'meta'        => [
-                'other_data' => 'value',
+            'meta' => [
+                'classification' => [
+                    'company' => 'Apple Inc',
+                ],
             ],
         ]);
 
         $this->taskRun->outputArtifacts()->attach($artifact->id);
 
-        // Mock the service - should not be called
-        $mockService = $this->mock(ClassificationDeduplicationService::class);
-        $mockService->shouldNotReceive('deduplicateClassificationLabels');
-
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
         ]);
 
+        // Mock the service to throw an exception
+        $mockService = $this->mock(ClassificationDeduplicationService::class);
+        $mockService->shouldReceive('createDeduplicationProcessesForTaskRun')
+            ->once()
+            ->andThrow(new \Exception('Test exception'));
+
+        // Create and run the classifier task runner
         $runner = new ClassifierTaskRunner();
         $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
-        $runner->afterAllProcessesCompleted();
 
-        // Should not throw any exceptions
-        $this->assertTrue(true);
+        // Should not throw exception, should handle gracefully
+        $runner->afterAllProcessesCompleted();
+        $this->assertTrue(true); // Test passes if no exception is thrown
     }
 
     #[Test]
-    public function it_runs_without_errors_when_no_artifacts_found()
+    public function it_passes_correct_classification_property_to_service_for_company()
     {
-        // Test that the method runs without errors when no artifacts are found
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $runner      = new ClassifierTaskRunner();
+        // Create input artifacts
+        $artifact = Artifact::factory()->create([
+            'meta' => [
+                'classification' => [
+                    'company' => 'Apple Inc',
+                ],
+            ],
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'meta'        => ['classification_property' => 'company'],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($artifact->id);
+
+        // Mock the service to verify correct property is passed
+        $mockService = $this->mock(ClassificationDeduplicationService::class);
+        $mockService->shouldReceive('deduplicateClassificationProperty')
+            ->once()
+            ->with(\Mockery::type('Illuminate\Support\Collection'), 'company');
+
+        // Create and run the classifier task runner
+        $runner = new ClassifierTaskRunner();
         $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+        $runner->run();
 
-        // Mock the service - should not be called since no artifacts exist
-        $this->mock(ClassificationDeduplicationService::class)
-            ->shouldNotReceive('deduplicateClassificationLabels');
+        // Verify the process is completed
+        $this->assertTrue($taskProcess->fresh()->isCompleted());
+    }
 
-        // Should not throw any exceptions
-        $runner->afterAllProcessesCompleted();
-        $this->assertTrue(true);
+    #[Test]
+    public function it_passes_correct_classification_property_to_service_for_location()
+    {
+        // Create input artifacts
+        $artifact = Artifact::factory()->create([
+            'meta' => [
+                'classification' => [
+                    'location' => 'Cupertino',
+                ],
+            ],
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'meta'        => ['classification_property' => 'location'],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($artifact->id);
+
+        // Mock the service to verify correct property is passed
+        $mockService = $this->mock(ClassificationDeduplicationService::class);
+        $mockService->shouldReceive('deduplicateClassificationProperty')
+            ->once()
+            ->with(\Mockery::type('Illuminate\Support\Collection'), 'location');
+
+        // Create and run the classifier task runner
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+        $runner->run();
+
+        // Verify the process is completed
+        $this->assertTrue($taskProcess->fresh()->isCompleted());
     }
 }

@@ -39,6 +39,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         'timeout_at',
         'percent_complete',
         'activity',
+        'meta',
     ];
 
     protected array $keywordFields = [
@@ -59,6 +60,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
             'failed_at'        => 'datetime',
             'incomplete_at'    => 'datetime',
             'timeout_at'       => 'datetime',
+            'meta'             => 'array',
         ];
     }
 

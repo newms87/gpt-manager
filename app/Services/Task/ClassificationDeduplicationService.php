@@ -4,6 +4,8 @@ namespace App\Services\Task;
 
 use App\Models\Agent\Agent;
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskProcess;
+use App\Models\Task\TaskRun;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Traits\HasDebugLogging;
@@ -45,26 +47,22 @@ class ClassificationDeduplicationService
 
 
     /**
-     * Deduplicate classification labels across artifacts
-     *
-     * @param Collection|Artifact[] $artifacts
-     * @return void
+     * Deduplicate a specific classification property across artifacts
      */
-    public function deduplicateClassificationLabels(Collection $artifacts): void
+    public function deduplicateClassificationProperty(Collection $artifacts, string $property): void
     {
-        static::log("Starting classification deduplication for " . $artifacts->count() . " artifacts");
+        static::log("Starting classification deduplication for property '$property' across " . $artifacts->count() . " artifacts");
 
-        $labelsToNormalize = $this->extractClassificationLabels($artifacts);
+        $labelsToNormalize = $this->extractClassificationPropertyLabels($artifacts, $property);
 
         if (empty($labelsToNormalize)) {
-            static::log("No classification labels found for deduplication");
+            static::log("No classification labels found for property '$property'");
 
             return;
         }
 
-        static::log("Found " . count($labelsToNormalize) . " unique values to process");
+        static::log("Found " . count($labelsToNormalize) . " unique values for property '$property'");
 
-        // Log the values for debugging
         foreach($labelsToNormalize as $label) {
             static::log("  - " . (strlen($label) > 80 ? substr($label, 0, 80) . "..." : $label));
         }
@@ -72,12 +70,12 @@ class ClassificationDeduplicationService
         $normalizedMappings = $this->getNormalizedClassificationMappings($labelsToNormalize);
 
         if (empty($normalizedMappings)) {
-            static::log("No normalization mappings generated");
+            static::log("No normalization mappings generated for property '$property'");
 
             return;
         }
 
-        static::log("Generated " . count($normalizedMappings) . " normalization mappings:");
+        static::log("Generated " . count($normalizedMappings) . " normalization mappings for '$property':");
         foreach($normalizedMappings as $original => $normalized) {
             if (strlen($original) > 80) {
                 static::log("  '" . substr($original, 0, 80) . "...' => '" . substr($normalized, 0, 80) . "...'");
@@ -86,108 +84,107 @@ class ClassificationDeduplicationService
             }
         }
 
-        $this->applyNormalizedClassificationsToArtifacts($artifacts, $normalizedMappings);
+        $this->applyNormalizedClassificationsToArtifactsProperty($artifacts, $normalizedMappings, $property);
 
-        // Post-process to ensure array uniqueness and proper formatting
-        $this->postProcessArrays($artifacts);
-
-        static::log("Classification deduplication completed");
+        static::log("Classification deduplication completed for property '$property'");
     }
 
     /**
-     * Extract all classification labels from artifact metadata
+     * Create separate TaskProcesses for each classification property in the TaskRun
+     *
+     * @param TaskRun $taskRun
+     * @return void
+     */
+    public function createDeduplicationProcessesForTaskRun(TaskRun $taskRun): void
+    {
+        static::log("Creating deduplication processes for TaskRun {$taskRun->id}");
+
+        $artifact = $taskRun->outputArtifacts()
+            ->whereNotNull('meta->classification')
+            ->first();
+
+        if (!$artifact) {
+            static::log("No artifacts with classification metadata found");
+
+            return;
+        }
+
+        $classificationProperties = $this->extractClassificationProperties($artifact);
+
+        if (empty($classificationProperties)) {
+            static::log("No classification properties found to deduplicate");
+
+            return;
+        }
+
+        static::log("Found classification properties: " . implode(', ', $classificationProperties));
+
+        foreach($classificationProperties as $property) {
+            $taskProcess = app(TaskProcess::class)->create([
+                'name' => "Classification Deduplication: $property",
+                'meta' => ['classification_property' => $property],
+            ]);
+
+            $taskRun->taskProcesses()->save($taskProcess);
+        }
+
+        static::log("Created " . count($classificationProperties) . " deduplication processes");
+    }
+
+    /**
+     * Extract unique classification property names from artifacts
+     */
+    protected function extractClassificationProperties(Artifact $artifact): array
+    {
+        return array_keys($artifact->meta['classification'] ?? []);
+    }
+
+    /**
+     * Extract classification labels for a specific property from artifact metadata
      *
      * @param Collection $artifacts
+     * @param string     $property
      * @return array
      */
-    protected function extractClassificationLabels(Collection $artifacts): array
+    protected function extractClassificationPropertyLabels(Collection $artifacts, string $property): array
     {
         $labels = [];
 
         foreach($artifacts as $artifact) {
-            $classification = $artifact->meta['classification'] ?? null;
-            if (!$classification) {
+            $propertyValue = $artifact->meta['classification'][$property] ?? null;
+            if (!$propertyValue) {
                 continue;
             }
 
-            $this->extractLabelsFromClassification($classification, $labels);
+            $this->extractLabelsFromValue($propertyValue, $labels);
         }
 
         return array_unique($labels);
     }
 
     /**
-     * Recursively extract labels from classification data
-     *
-     * @param array  $classification
-     * @param array &$labels
-     * @return void
+     * Extract labels from a specific value (string, array, or object)
      */
-    protected function extractLabelsFromClassification(array $classification, array &$labels): void
+    protected function extractLabelsFromValue($value, array &$labels): void
     {
-        foreach($classification as $key => $value) {
-            if (is_string($value)) {
-                $value = trim($value);
-                if ($value && !empty($value)) {
-                    $labels[] = $value;
+        if (is_string($value)) {
+            $value = trim($value);
+            if ($value) {
+                $labels[] = $value;
+            }
+        } elseif (is_array($value)) {
+            if (is_associative_array($value)) {
+                if (!empty($value['id'])) {
+                    $labels[] = $value['id'];
+                } elseif (!empty($value['name'])) {
+                    $labels[] = $value['name'];
                 }
-            } elseif (is_array($value)) {
-                // Check if this is an associative array (object) with mixed types
-                if ($this->isAssociativeArray($value)) {
-                    // Only process objects that have an id or name property
-                    if ($this->shouldDeduplicateObject($value)) {
-                        // Extract the id or name value for deduplication
-                        if (isset($value['id']) && $value['id'] !== null) {
-                            $labels[] = $value['id'];
-                        } elseif (isset($value['name']) && $value['name'] !== null) {
-                            $labels[] = $value['name'];
-                        }
-                    }
-                } else {
-                    // Regular array - recurse into it
-                    $this->extractLabelsFromClassification($value, $labels);
+            } else {
+                foreach($value as $item) {
+                    $this->extractLabelsFromValue($item, $labels);
                 }
             }
-            // Ignore boolean and numeric values
         }
-    }
-
-    /**
-     * Check if array is associative (object-like) vs indexed array
-     *
-     * @param array $array
-     * @return bool
-     */
-    protected function isAssociativeArray(array $array): bool
-    {
-        if (empty($array)) {
-            return false;
-        }
-
-        // If keys are not sequential integers starting from 0, it's associative
-        return array_keys($array) !== range(0, count($array) - 1);
-    }
-
-    /**
-     * Check if an object should be deduplicated based on id/name properties
-     *
-     * @param array $object
-     * @return bool
-     */
-    protected function shouldDeduplicateObject(array $object): bool
-    {
-        // Check for id property first
-        if (isset($object['id']) && $object['id'] !== null) {
-            return true;
-        }
-
-        // Check for name property second
-        if (isset($object['name']) && $object['name'] !== null) {
-            return true;
-        }
-
-        // Object has neither id nor name (or they're null), don't deduplicate
-        return false;
     }
 
     /**
@@ -221,9 +218,9 @@ class ClassificationDeduplicationService
             $content = $threadRun->lastMessage->content;
             static::log("Raw AI response: " . substr($content, 0, 500) . (strlen($content) > 500 ? '...' : ''));
 
-            if (preg_match('/```(?:json)?\s*(\{.*?\})\s*```/s', $content, $matches)) {
+            if (preg_match('/```(?:json)?\s*(\{.*?})\s*```/s', $content, $matches)) {
                 $content = $matches[1];
-            } elseif (preg_match('/\{(?:[^{}]|(?R))*\}/s', $content, $matches)) {
+            } elseif (preg_match('/\{(?:[^{}]|(?R))*}/s', $content, $matches)) {
                 $content = $matches[0];
             }
 
@@ -311,16 +308,17 @@ PROMPT;
     }
 
     /**
-     * Apply normalized classifications to all artifacts
+     * Apply normalized classification mappings to a specific property of artifacts
      *
      * @param Collection $artifacts
      * @param array      $normalizedMappings
+     * @param string     $property
      * @return void
      */
-    protected function applyNormalizedClassificationsToArtifacts(Collection $artifacts, array $normalizedMappings): void
+    protected function applyNormalizedClassificationsToArtifactsProperty(Collection $artifacts, array $normalizedMappings, string $property): void
     {
         if (empty($normalizedMappings)) {
-            static::log("No normalization mappings to apply");
+            static::log("No normalization mappings to apply for property '$property'");
 
             return;
         }
@@ -329,187 +327,65 @@ PROMPT;
 
         foreach($artifacts as $artifact) {
             $classification = $artifact->meta['classification'] ?? null;
-            if (!$classification) {
+            if (!$classification || !isset($classification[$property])) {
                 continue;
             }
 
-            $updates = [];
-            $this->updateClassificationLabels($classification, $normalizedMappings, $updates);
+            $originalValue = $classification[$property];
+            $updatedValue  = $this->updatePropertyValue($originalValue, $normalizedMappings);
 
-            if (!empty($updates)) {
-                $meta                   = $artifact->meta;
-                $meta['classification'] = $classification;
-                $artifact->meta         = $meta;
+            if ($updatedValue !== $originalValue) {
+                $meta                              = $artifact->meta;
+                $meta['classification'][$property] = $updatedValue;
+                $artifact->meta                    = $meta;
                 $artifact->save();
 
-                static::log("=== Updated artifact {$artifact->id} ===");
-                foreach($updates as $update) {
-                    $path = isset($update['path']) ? " at '{$update['path']}'" : "";
-                    static::log("  '{$update['original']}' => '{$update['normalized']}'$path");
-                    $totalUpdates++;
-                }
+                $totalUpdates++;
+                static::log("Updated artifact {$artifact->id} property '$property'");
             }
         }
 
-        static::log("Total classification updates across all artifacts: $totalUpdates");
+        static::log("Applied $totalUpdates updates for property '$property'");
     }
 
     /**
-     * Recursively update classification labels
+     * Update a property value with normalized mappings
      *
-     * @param array &$classification
-     * @param array  $normalizedMappings
-     * @param array &$updates
-     * @return void
+     * @param mixed $value
+     * @param array $normalizedMappings
+     * @return mixed
      */
-    protected function updateClassificationLabels(array &$classification, array $normalizedMappings, array &$updates): void
+    protected function updatePropertyValue($value, array $normalizedMappings)
     {
-        foreach($classification as $key => &$value) {
-            if (is_string($value)) {
-                $trimmedValue = trim($value);
-                if (isset($normalizedMappings[$trimmedValue])) {
-                    $normalizedValue = $normalizedMappings[$trimmedValue];
-                    $value           = $normalizedValue;
-                    $updates[]       = [
-                        'original'   => $trimmedValue,
-                        'normalized' => $normalizedValue,
-                    ];
-                    static::log("Updated classification label: '$trimmedValue' => '$normalizedValue'");
+        if (is_string($value)) {
+            $trimmedValue = trim($value);
+            if (isset($normalizedMappings[$trimmedValue])) {
+                static::log("Updated property value: '$trimmedValue' => '{$normalizedMappings[$trimmedValue]}'");
+
+                return $normalizedMappings[$trimmedValue];
+            }
+
+            return $value;
+        } elseif (is_array($value)) {
+            if (is_associative_array($value)) {
+                if (isset($value['id']) && isset($normalizedMappings[$value['id']])) {
+                    $originalId = $value['id'];
+                    $value['id'] = $normalizedMappings[$originalId];
+                    static::log("Updated object id: '$originalId' => '{$value['id']}'");
+                } elseif (isset($value['name']) && isset($normalizedMappings[$value['name']])) {
+                    $originalName = $value['name'];
+                    $value['name'] = $normalizedMappings[$originalName];
+                    static::log("Updated object name: '$originalName' => '{$value['name']}'");
                 }
-            } elseif (is_array($value)) {
-                // Check if this is an associative array (object)
-                if ($this->isAssociativeArray($value)) {
-                    // Only process objects that have an id or name property
-                    if ($this->shouldDeduplicateObject($value)) {
-                        // Check if we need to update the id
-                        if (isset($value['id']) && $value['id'] !== null && isset($normalizedMappings[$value['id']])) {
-                            $originalId  = $value['id'];
-                            $value['id'] = $normalizedMappings[$value['id']];
-                            $updates[]   = [
-                                'original'   => $originalId,
-                                'normalized' => $value['id'],
-                                'path'       => $key . '.id',
-                            ];
-                            static::log("Updated object id at '$key.id': '$originalId' => '{$value['id']}'");
-                        } // Check if we need to update the name (only if no id was present)
-                        elseif (isset($value['name']) && $value['name'] !== null && isset($normalizedMappings[$value['name']])) {
-                            $originalName  = $value['name'];
-                            $value['name'] = $normalizedMappings[$value['name']];
-                            $updates[]     = [
-                                'original'   => $originalName,
-                                'normalized' => $value['name'],
-                                'path'       => $key . '.name',
-                            ];
-                            static::log("Updated object name at '$key.name': '$originalName' => '{$value['name']}'");
-                        }
-                    }
-                    // Still recurse into the object for nested values
-                    $this->updateClassificationLabels($value, $normalizedMappings, $updates);
-                } else {
-                    // Regular array - recurse into it
-                    $this->updateClassificationLabels($value, $normalizedMappings, $updates);
-                }
-            }
-            // Ignore boolean and numeric values - they don't need normalization
-        }
-    }
 
-    /**
-     * Post-process arrays to ensure uniqueness and proper formatting
-     *
-     * @param Collection $artifacts
-     * @return void
-     */
-    protected function postProcessArrays(Collection $artifacts): void
-    {
-        static::log("Post-processing arrays for uniqueness and proper formatting");
-
-        $totalFixes = 0;
-
-        foreach($artifacts as $artifact) {
-            $classification = $artifact->meta['classification'] ?? null;
-            if (!$classification) {
-                continue;
-            }
-
-            $fixes = [];
-            $this->processArraysInClassification($classification, $fixes);
-
-            if (!empty($fixes)) {
-                $meta                   = $artifact->meta;
-                $meta['classification'] = $classification;
-                $artifact->meta         = $meta;
-                $artifact->save();
-
-                static::log("=== Array fixes for artifact {$artifact->id} ===");
-                foreach($fixes as $fix) {
-                    static::log("  Fixed array at '{$fix['path']}': {$fix['before']} => {$fix['after']}");
-                    $totalFixes++;
-                }
+                return $value;
+            } else {
+                return array_map(function ($item) use ($normalizedMappings) {
+                    return $this->updatePropertyValue($item, $normalizedMappings);
+                }, $value);
             }
         }
 
-        if ($totalFixes > 0) {
-            static::log("Applied $totalFixes array fixes across all artifacts");
-        } else {
-            static::log("No array fixes needed");
-        }
-    }
-
-    /**
-     * Recursively process arrays in classification data
-     *
-     * @param array &$classification
-     * @param array &$fixes
-     * @param string $path
-     * @return void
-     */
-    protected function processArraysInClassification(array &$classification, array &$fixes, string $path = ''): void
-    {
-        foreach($classification as $key => &$value) {
-            $currentPath = $path ? "$path.$key" : $key;
-
-            if (is_array($value)) {
-                // Check if this is an indexed array (list)
-                if (!$this->isAssociativeArray($value)) {
-                    // This is a list - ensure unique values (handle complex values)
-                    $originalArray = $value;
-                    $uniqueArray   = $this->getUniqueArrayValues($value);
-
-                    if (count($originalArray) !== count($uniqueArray) || $originalArray !== $uniqueArray) {
-                        $value   = $uniqueArray;
-                        $fixes[] = [
-                            'path'   => $currentPath,
-                            'before' => json_encode($originalArray),
-                            'after'  => json_encode($uniqueArray),
-                        ];
-                    }
-                } else {
-                    // This is an associative array (object) - recurse into it
-                    $this->processArraysInClassification($value, $fixes, $currentPath);
-                }
-            }
-        }
-    }
-
-    /**
-     * Get unique values from array, handling complex data types
-     */
-    protected function getUniqueArrayValues(array $array): array
-    {
-        $unique = [];
-        $seen   = [];
-
-        foreach($array as $item) {
-            // Serialize complex values for comparison
-            $serialized = is_array($item) || is_object($item) ? json_encode($item) : $item;
-
-            if (!in_array($serialized, $seen, true)) {
-                $seen[]   = $serialized;
-                $unique[] = $item;
-            }
-        }
-
-        return array_values($unique);
+        return $value;
     }
 }

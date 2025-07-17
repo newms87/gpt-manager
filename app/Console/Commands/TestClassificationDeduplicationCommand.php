@@ -15,13 +15,14 @@ class TestClassificationDeduplicationCommand extends Command
      */
     protected $signature = 'test:classification-deduplication
                            {--task-run= : Task run ID to test deduplication on}
+                           {--property= : Specific classification property to deduplicate (e.g., company, location)}
                            {--create-test-data : Create test data for demonstration}
                            {--model= : Model to use for deduplication agent (defaults to config)}';
 
     /**
      * The console command description.
      */
-    protected $description = 'Test data normalization/deduplication with real AI agent';
+    protected $description = 'Test property-specific classification deduplication with real AI agent';
 
     /**
      * Execute the console command.
@@ -29,9 +30,16 @@ class TestClassificationDeduplicationCommand extends Command
     public function handle(): int
     {
         $taskRunId      = $this->option('task-run');
+        $property       = $this->option('property');
         $createTestData = $this->option('create-test-data');
         $model          = $this->option('model');
 
+        if (!$property) {
+            $this->error('Please specify a classification property to deduplicate using --property=PROPERTY_NAME');
+
+            return 1;
+        }
+        
         // Override model in config if specified
         if ($model) {
             config(['ai.classification_deduplication.model' => $model]);
@@ -64,19 +72,20 @@ class TestClassificationDeduplicationCommand extends Command
         $this->info('=== ORIGINAL CLASSIFICATIONS ===');
         foreach($artifacts as $index => $artifact) {
             $this->info("Artifact " . ($index + 1) . ":");
-            $this->line(json_encode($artifact->meta['classification'], JSON_PRETTY_PRINT));
+            $this->line(json_encode($artifact->meta['classification'][$property], JSON_PRETTY_PRINT));
             $this->newLine();
         }
 
-        // Run deduplication
-        $this->info('=== RUNNING DEDUPLICATION ===');
         $service = app(ClassificationDeduplicationService::class);
 
+        // If property is specified, deduplicate only that property
+        $this->info("=== RUNNING DEDUPLICATION FOR PROPERTY: {$property} ===");
+
         try {
-            $service->deduplicateClassificationLabels($artifacts);
-            $this->info('✅ Deduplication completed successfully');
+            $service->deduplicateClassificationProperty($artifacts, $property);
+            $this->info("✅ Property '{$property}' deduplication completed successfully");
         } catch(\Exception $e) {
-            $this->error('❌ Deduplication failed: ' . $e->getMessage());
+            $this->error("❌ Property '{$property}' deduplication failed: " . $e->getMessage());
             $this->error('Stack trace: ' . $e->getTraceAsString());
 
             return 1;
@@ -89,7 +98,7 @@ class TestClassificationDeduplicationCommand extends Command
         foreach($artifacts as $index => $artifact) {
             $artifact->refresh();
             $this->info("Artifact " . ($index + 1) . ":");
-            $this->line(json_encode($artifact->meta['classification'], JSON_PRETTY_PRINT));
+            $this->line(json_encode($artifact->meta['classification'][$property] ?? '', JSON_PRETTY_PRINT));
             $this->newLine();
         }
 

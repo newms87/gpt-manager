@@ -36,3 +36,15 @@ if (!function_exists('team')) {
         return $user->currentTeam;
     }
 }
+
+if (!function_exists('is_associative_array')) {
+    function is_associative_array(array $array): bool
+    {
+        if (empty($array)) {
+            return false;
+        }
+
+        // If keys are not sequential integers starting from 0, it's associative
+        return array_keys($array) !== range(0, count($array) - 1);
+    }
+}
