@@ -13,6 +13,7 @@
         "doctrine/dbal": "^4.0",
         "intervention/image": "^3.6",
         "laravel/framework": "^11.0",
+        "laravel/horizon": "^5.33",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "laravel/vapor-cli": "^1.65",
