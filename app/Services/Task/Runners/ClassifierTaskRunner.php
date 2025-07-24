@@ -18,11 +18,12 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
         $classificationProperty = $this->taskProcess->meta['classification_property'] ?? null;
         if ($classificationProperty) {
             static::log("Running classification deduplication for property: $classificationProperty");
-            
+
             $artifacts = $this->taskRun->outputArtifacts;
             app(ClassificationDeduplicationService::class)->deduplicateClassificationProperty($artifacts, $classificationProperty);
-            
-            $this->complete($artifacts);
+
+            $this->complete();
+
             return;
         }
 

@@ -6,7 +6,6 @@ use App\Events\TaskProcessUpdatedEvent;
 use App\Models\Agent\AgentThread;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Traits\HasUsageTracking;
-use App\Models\Usage\UsageSummary;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Runners\TaskRunnerContract;
 use App\Traits\HasWorkflowStatesTrait;
@@ -228,8 +227,8 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         });
 
         static::saved(function (TaskProcess $taskProcess) {
-            if ($taskProcess->wasChanged('status')) {
-                $taskProcess->taskRun->checkProcesses()->save();
+            if ($taskProcess->wasChanged(['status', 'task_run_id']) || $taskProcess->wasRecentlyCreated) {
+                $taskProcess->taskRun?->checkProcesses()->save();
             }
 
             if ($taskProcess->wasChanged([

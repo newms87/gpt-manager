@@ -4,7 +4,6 @@ namespace Tests\Unit\Services\Task;
 
 use App\Models\Agent\Agent;
 use App\Models\Task\Artifact;
-use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Models\User;
@@ -12,6 +11,7 @@ use App\Services\Task\ClassificationDeduplicationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
 use Tests\Feature\Api\TestAi\TestAiApi;
 use Tests\TestCase;
 
@@ -22,6 +22,32 @@ class ClassificationDeduplicationServiceTest extends TestCase
     protected ClassificationDeduplicationService $service;
     protected Team                               $team;
     protected User                               $user;
+
+    /**
+     * Mock the AI response with the new format
+     */
+    protected function mockAiResponse(array $mappings): void
+    {
+        $response = ['mappings' => []];
+
+        // Convert old format test data to new format
+        $grouped = [];
+        foreach($mappings as $incorrect => $correct) {
+            if (!isset($grouped[$correct])) {
+                $grouped[$correct] = [];
+            }
+            $grouped[$correct][] = $incorrect;
+        }
+
+        foreach($grouped as $correct => $incorrects) {
+            $response['mappings'][] = [
+                'correct'   => $correct,
+                'incorrect' => $incorrects,
+            ];
+        }
+
+        TestAiCompletionResponse::setMockResponse(json_encode($response));
+    }
 
     public function setUp(): void
     {
@@ -132,22 +158,91 @@ class ClassificationDeduplicationServiceTest extends TestCase
                     ],
                 ],
             ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'company'  => 'APPLE',
+                        'location' => 'California',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Mock the AI response with deduplication mappings
+        $this->mockAiResponse([
+            'APPLE' => 'Apple Inc',
         ]);
 
         $service = app(ClassificationDeduplicationService::class);
         $service->deduplicateClassificationProperty($artifacts, 'company');
 
-        // TestAI will return "Test AI Response Content" - so no normalization will occur
-        $artifact = $artifacts->first()->fresh();
-        $this->assertEquals('Apple Inc', $artifact->meta['classification']['company']);
-        $this->assertEquals('Cupertino', $artifact->meta['classification']['location']);
+        // Verify the first artifact remains unchanged
+        $artifact1 = $artifacts->first()->fresh();
+        $this->assertEquals('Apple Inc', $artifact1->meta['classification']['company']);
+        $this->assertEquals('Cupertino', $artifact1->meta['classification']['location']);
+
+        // Verify the second artifact was normalized
+        $artifact2 = $artifacts->last()->fresh();
+        $this->assertEquals('Apple Inc', $artifact2->meta['classification']['company']);
+        $this->assertEquals('California', $artifact2->meta['classification']['location']);
+    }
+
+    #[Test]
+    public function it_handles_new_response_format_correctly()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'provider' => 'University Orthopedic Care, Palm Springs',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'provider' => 'University Orthopedic Care, Tamarac',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'provider' => 'University Ortho Care',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Mock the AI response with the new format
+        TestAiCompletionResponse::setMockResponse(json_encode([
+            'mappings' => [
+                [
+                    'correct'   => 'University Orthopedic Care',
+                    'incorrect' => [
+                        'University Orthopedic Care, Palm Springs',
+                        'University Orthopedic Care, Tamarac',
+                        'University Ortho Care',
+                    ],
+                ],
+            ],
+        ]));
+
+        $service = app(ClassificationDeduplicationService::class);
+        $service->deduplicateClassificationProperty($artifacts, 'provider');
+
+        // Verify all artifacts were normalized
+        foreach($artifacts as $artifact) {
+            $artifact->refresh();
+            $this->assertEquals('University Orthopedic Care', $artifact->meta['classification']['provider']);
+        }
     }
 
     #[Test]
     public function it_creates_deduplication_processes_for_task_run()
     {
         $taskRun = TaskRun::factory()->create();
-        
+
         $artifacts = collect([
             Artifact::factory()->create([
                 'meta' => [
@@ -170,7 +265,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
         ]);
 
         // Associate artifacts as output artifacts
-        foreach ($artifacts as $artifact) {
+        foreach($artifacts as $artifact) {
             $taskRun->outputArtifacts()->attach($artifact->id);
         }
 
@@ -188,7 +283,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $this->assertContains('category', $processProperties);
 
         // Verify processes were created with correct names
-        foreach ($processes as $process) {
+        foreach($processes as $process) {
             $this->assertStringContainsString('Classification Deduplication:', $process->name);
             $this->assertArrayHasKey('classification_property', $process->meta);
         }
@@ -326,13 +421,13 @@ class ClassificationDeduplicationServiceTest extends TestCase
     public function it_skips_artifacts_without_classification_property()
     {
         $taskRun = TaskRun::factory()->create();
-        
+
         $artifacts = collect([
             Artifact::factory()->create(['meta' => []]),
             Artifact::factory()->create(['meta' => ['other' => 'data']]),
         ]);
 
-        foreach ($artifacts as $artifact) {
+        foreach($artifacts as $artifact) {
             $taskRun->outputArtifacts()->attach($artifact->id);
         }
 
@@ -353,7 +448,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
                     'classification' => [
                         'company' => [
                             'name' => 'Apple',
-                            'type' => 'Technology'
+                            'type' => 'Technology',
                         ],
                     ],
                 ],
@@ -363,7 +458,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
                     'classification' => [
                         'company' => [
                             'name' => 'Apple, Inc',
-                            'type' => 'Technology'
+                            'type' => 'Technology',
                         ],
                     ],
                 ],
@@ -373,23 +468,30 @@ class ClassificationDeduplicationServiceTest extends TestCase
                     'classification' => [
                         'company' => [
                             'name' => 'APPLE INC.',
-                            'type' => 'Technology'
+                            'type' => 'Technology',
                         ],
                     ],
                 ],
             ]),
         ]);
 
+        // Mock the AI response with deduplication mappings
+        $this->mockAiResponse([
+            'Apple'      => 'Apple Inc',
+            'Apple, Inc' => 'Apple Inc',
+            'APPLE INC.' => 'Apple Inc',
+        ]);
+
         $service = app(ClassificationDeduplicationService::class);
         $service->deduplicateClassificationProperty($artifacts, 'company');
 
-        // TestAI will return "Test AI Response Content" - no actual normalization
-        // But we can verify the object structure is preserved
-        foreach ($artifacts as $artifact) {
+        // Verify all objects have normalized names
+        foreach($artifacts as $artifact) {
             $artifact->refresh();
             $this->assertArrayHasKey('company', $artifact->meta['classification']);
             $this->assertArrayHasKey('name', $artifact->meta['classification']['company']);
             $this->assertArrayHasKey('type', $artifact->meta['classification']['company']);
+            $this->assertEquals('Apple Inc', $artifact->meta['classification']['company']['name']);
             $this->assertEquals('Technology', $artifact->meta['classification']['company']['type']);
         }
     }
@@ -402,8 +504,8 @@ class ClassificationDeduplicationServiceTest extends TestCase
                 'meta' => [
                     'classification' => [
                         'provider' => [
-                            'id' => 'provider-123',
-                            'category' => 'Healthcare'
+                            'id'       => 'provider-123',
+                            'category' => 'Healthcare',
                         ],
                     ],
                 ],
@@ -412,23 +514,29 @@ class ClassificationDeduplicationServiceTest extends TestCase
                 'meta' => [
                     'classification' => [
                         'provider' => [
-                            'id' => 'PROVIDER-123',
-                            'category' => 'Healthcare'
+                            'id'       => 'PROVIDER-123',
+                            'category' => 'Healthcare',
                         ],
                     ],
                 ],
             ]),
         ]);
 
+        // Mock the AI response with deduplication mappings
+        $this->mockAiResponse([
+            'PROVIDER-123' => 'provider-123',
+        ]);
+
         $service = app(ClassificationDeduplicationService::class);
         $service->deduplicateClassificationProperty($artifacts, 'provider');
 
-        // Verify object structure is preserved
-        foreach ($artifacts as $artifact) {
+        // Verify all objects have normalized ids
+        foreach($artifacts as $artifact) {
             $artifact->refresh();
             $this->assertArrayHasKey('provider', $artifact->meta['classification']);
             $this->assertArrayHasKey('id', $artifact->meta['classification']['provider']);
             $this->assertArrayHasKey('category', $artifact->meta['classification']['provider']);
+            $this->assertEquals('provider-123', $artifact->meta['classification']['provider']['id']);
             $this->assertEquals('Healthcare', $artifact->meta['classification']['provider']['category']);
         }
     }
@@ -441,8 +549,8 @@ class ClassificationDeduplicationServiceTest extends TestCase
                 'meta' => [
                     'classification' => [
                         'company' => [
-                            'name' => 'Apple Inc',
-                            'sector' => 'Technology'
+                            'name'   => 'Apple Inc',
+                            'sector' => 'Technology',
                         ],
                     ],
                 ],
@@ -451,8 +559,8 @@ class ClassificationDeduplicationServiceTest extends TestCase
                 'meta' => [
                     'classification' => [
                         'company' => [
-                            'name' => 'Google LLC',
-                            'sector' => 'Technology'  
+                            'name'   => 'Google LLC',
+                            'sector' => 'Technology',
                         ],
                     ],
                 ],
@@ -463,7 +571,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('extractClassificationPropertyLabels');
+        $method     = $reflection->getMethod('extractClassificationPropertyLabels');
         $method->setAccessible(true);
 
         $labels = $method->invoke($service, $artifacts, 'company');
@@ -481,8 +589,8 @@ class ClassificationDeduplicationServiceTest extends TestCase
                 'meta' => [
                     'classification' => [
                         'user' => [
-                            'id' => 'user-123',
-                            'role' => 'admin'
+                            'id'   => 'user-123',
+                            'role' => 'admin',
                         ],
                     ],
                 ],
@@ -491,8 +599,8 @@ class ClassificationDeduplicationServiceTest extends TestCase
                 'meta' => [
                     'classification' => [
                         'user' => [
-                            'id' => 'user-456',
-                            'role' => 'user'
+                            'id'   => 'user-456',
+                            'role' => 'user',
                         ],
                     ],
                 ],
@@ -503,7 +611,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('extractClassificationPropertyLabels');
+        $method     = $reflection->getMethod('extractClassificationPropertyLabels');
         $method->setAccessible(true);
 
         $labels = $method->invoke($service, $artifacts, 'user');
@@ -522,9 +630,9 @@ class ClassificationDeduplicationServiceTest extends TestCase
                 'meta' => [
                     'classification' => [
                         'entity' => [
-                            'id' => 'entity-123',
-                            'name' => 'Test Entity',
-                            'description' => 'A test entity'
+                            'id'          => 'entity-123',
+                            'name'        => 'Test Entity',
+                            'description' => 'A test entity',
                         ],
                     ],
                 ],
@@ -535,7 +643,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('extractClassificationPropertyLabels');
+        $method     = $reflection->getMethod('extractClassificationPropertyLabels');
         $method->setAccessible(true);
 
         $labels = $method->invoke($service, $artifacts, 'entity');
@@ -560,7 +668,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
                     'classification' => [
                         'provider' => [
                             'name' => 'Complex Provider',
-                            'type' => 'Healthcare'
+                            'type' => 'Healthcare',
                         ],
                     ],
                 ],
@@ -588,7 +696,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
                     'classification' => [
                         'tags' => [
                             ['name' => 'frontend', 'category' => 'technology'],
-                            ['name' => 'backend', 'category' => 'technology']
+                            ['name' => 'backend', 'category' => 'technology'],
                         ],
                     ],
                 ],
@@ -598,7 +706,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
                     'classification' => [
                         'tags' => [
                             ['name' => 'Frontend', 'category' => 'technology'],
-                            ['name' => 'database', 'category' => 'technology']
+                            ['name' => 'database', 'category' => 'technology'],
                         ],
                     ],
                 ],
@@ -609,7 +717,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('extractClassificationPropertyLabels');
+        $method     = $reflection->getMethod('extractClassificationPropertyLabels');
         $method->setAccessible(true);
 
         $labels = $method->invoke($service, $artifacts, 'tags');
@@ -630,8 +738,8 @@ class ClassificationDeduplicationServiceTest extends TestCase
                     'classification' => [
                         'metadata' => [
                             'created_at' => '2024-01-01',
-                            'version' => '1.0',
-                            'status' => 'active'
+                            'version'    => '1.0',
+                            'status'     => 'active',
                         ],
                     ],
                 ],
@@ -642,7 +750,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('extractClassificationPropertyLabels');
+        $method     = $reflection->getMethod('extractClassificationPropertyLabels');
         $method->setAccessible(true);
 
         $labels = $method->invoke($service, $artifacts, 'metadata');
@@ -660,7 +768,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
                     'classification' => [
                         'provider' => [
                             'name' => 'CNCC Chiropractic Natural Care Center',
-                            'type' => 'Healthcare'
+                            'type' => 'Healthcare',
                         ],
                     ],
                 ],
@@ -671,18 +779,18 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method with incomplete mappings
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('updatePropertyValue');
+        $method     = $reflection->getMethod('updatePropertyValue');
         $method->setAccessible(true);
 
         // Simulate AI response that doesn't include mapping for our value
         $incompleteMappings = [
-            'Other Provider' => 'Normalized Provider'
+            'Other Provider' => 'Normalized Provider',
             // Missing mapping for 'CNCC Chiropractic Natural Care Center'
         ];
 
         $originalValue = [
             'name' => 'CNCC Chiropractic Natural Care Center',
-            'type' => 'Healthcare'
+            'type' => 'Healthcare',
         ];
 
         // Should not throw exception when mapping is missing
@@ -703,7 +811,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
                     'classification' => [
                         'provider' => [
                             'name' => 'CNCC Chiropractic Natural Care Center',
-                            'type' => 'Healthcare'
+                            'type' => 'Healthcare',
                         ],
                     ],
                 ],
@@ -714,17 +822,17 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method with mapping that exists
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('updatePropertyValue');
+        $method     = $reflection->getMethod('updatePropertyValue');
         $method->setAccessible(true);
 
         // Simulate AI response that includes mapping for our value
         $mappingsWithCorrectKey = [
-            'CNCC Chiropractic Natural Care Center' => 'Natural Care Center'
+            'CNCC Chiropractic Natural Care Center' => 'Natural Care Center',
         ];
 
         $originalValue = [
             'name' => 'CNCC Chiropractic Natural Care Center',
-            'type' => 'Healthcare'
+            'type' => 'Healthcare',
         ];
 
         // Should successfully update value and not throw exception
@@ -752,12 +860,12 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method with incomplete mappings
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('updatePropertyValue');
+        $method     = $reflection->getMethod('updatePropertyValue');
         $method->setAccessible(true);
 
         // Simulate AI response that doesn't include mapping for our value
         $incompleteMappings = [
-            'Other Provider' => 'Normalized Provider'
+            'Other Provider' => 'Normalized Provider',
             // Missing mapping for 'CNCC Chiropractic Natural Care Center'
         ];
 
@@ -768,5 +876,109 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Should return original value unchanged when no mapping exists
         $this->assertEquals($originalValue, $result);
+    }
+
+    #[Test]
+    public function it_handles_invalid_ai_response_format()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'company' => 'Apple Inc',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Mock an invalid AI response (missing mappings wrapper)
+        TestAiCompletionResponse::setMockResponse(json_encode([
+            ['correct' => 'Apple', 'incorrect' => ['Apple Inc']],
+        ]));
+
+        $service = app(ClassificationDeduplicationService::class);
+        $service->deduplicateClassificationProperty($artifacts, 'company');
+
+        // Artifact should remain unchanged when AI response is invalid
+        $artifact = $artifacts->first()->fresh();
+        $this->assertEquals('Apple Inc', $artifact->meta['classification']['company']);
+    }
+
+    #[Test]
+    public function it_handles_empty_ai_response()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'company' => 'Apple Inc',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Mock an empty AI response (with correct format but no mappings)
+        TestAiCompletionResponse::setMockResponse(json_encode(['mappings' => []]));
+
+        $service = app(ClassificationDeduplicationService::class);
+        $service->deduplicateClassificationProperty($artifacts, 'company');
+
+        // Artifact should remain unchanged when AI response is empty
+        $artifact = $artifacts->first()->fresh();
+        $this->assertEquals('Apple Inc', $artifact->meta['classification']['company']);
+    }
+
+    #[Test]
+    public function it_handles_partial_mappings_in_new_format()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'company' => 'Apple Inc',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'company' => 'APPLE',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'company' => 'Microsoft Corp',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Mock the AI response with only one mapping
+        TestAiCompletionResponse::setMockResponse(json_encode([
+            'mappings' => [
+                [
+                    'correct'   => 'Apple Inc',
+                    'incorrect' => ['APPLE'],
+                ],
+                // No mapping for Microsoft Corp
+            ],
+        ]));
+
+        $service = app(ClassificationDeduplicationService::class);
+        $service->deduplicateClassificationProperty($artifacts, 'company');
+
+        // Verify Apple Inc remains unchanged
+        $artifact1 = $artifacts->first()->fresh();
+        $this->assertEquals('Apple Inc', $artifact1->meta['classification']['company']);
+
+        // Verify APPLE was normalized
+        $artifact2 = $artifacts->get(1)->fresh();
+        $this->assertEquals('Apple Inc', $artifact2->meta['classification']['company']);
+
+        // Verify Microsoft Corp remains unchanged
+        $artifact3 = $artifacts->last()->fresh();
+        $this->assertEquals('Microsoft Corp', $artifact3->meta['classification']['company']);
     }
 }

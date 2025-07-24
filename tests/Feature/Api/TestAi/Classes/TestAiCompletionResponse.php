@@ -14,6 +14,18 @@ use Newms87\Danx\Input\Input;
  */
 class TestAiCompletionResponse extends Input implements AgentCompletionResponseContract
 {
+    protected static ?string $mockResponse = null;
+
+    public static function setMockResponse(?string $response): void
+    {
+        static::$mockResponse = $response;
+    }
+
+    public static function clearMockResponse(): void
+    {
+        static::$mockResponse = null;
+    }
+
     public function isMessageEmpty(): bool
     {
         return false;
@@ -31,6 +43,13 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function getContent(): ?string
     {
+        // Return mock response if set
+        if (static::$mockResponse !== null) {
+            $response = static::$mockResponse;
+            static::$mockResponse = null; // Clear after use
+            return $response;
+        }
+
         // Handle Responses API format
         $output = $this->get('output');
         if (isset($output[0]['content'])) {
