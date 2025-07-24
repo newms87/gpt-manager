@@ -16,10 +16,12 @@ import {
 } from "@/views";
 import { FlashMessages } from "quasar-ui-danx";
 import { createRouter, createWebHistory } from "vue-router";
+import { uiRoutes } from "./uiRoutes";
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
 	routes: [
+		...uiRoutes,
 		{
 			path: "/",
 			name: "home",
@@ -121,12 +123,17 @@ const router = createRouter({
 // Login navigation guard
 router.beforeEach(async (to) => {
 	const isLogin = to.name === "auth.login";
+	const requiresAuth = to.meta.requiresAuth;
 
-	if (!isLogin && !isAuthenticated()) {
+	if (requiresAuth && !isAuthenticated()) {
 		return { name: "auth.login" };
 	}
 
 	if (isLogin && isAuthenticated()) {
+		// Check if coming from UI routes, redirect back to UI
+		if (to.query.redirect && typeof to.query.redirect === 'string' && to.query.redirect.startsWith('/ui')) {
+			return to.query.redirect;
+		}
 		return { name: "home" };
 	}
 });

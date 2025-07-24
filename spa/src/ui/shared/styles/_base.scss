@@ -1,0 +1,185 @@
+// ============================================
+// UI Base Styles
+// ============================================
+// Global styles that apply to the UI root and provide
+// foundation styles for a cohesive design system
+
+.ui-app {
+  // Typography
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: var(--ui-font-size-base);
+  line-height: var(--ui-line-height-normal);
+  color: var(--ui-neutral-900);
+  
+  // Background
+  background: var(--ui-background);
+  min-height: 100vh;
+  
+  // Smooth scrolling
+  scroll-behavior: smooth;
+  
+  // Base spacing rhythm
+  * {
+    box-sizing: border-box;
+  }
+  
+  // Heading styles
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--ui-neutral-900);
+    font-weight: var(--ui-font-weight-semibold);
+    line-height: var(--ui-line-height-tight);
+    margin: 0;
+  }
+  
+  h1 {
+    font-size: var(--ui-font-size-3xl);
+    font-weight: var(--ui-font-weight-bold);
+  }
+  
+  h2 {
+    font-size: var(--ui-font-size-2xl);
+  }
+  
+  h3 {
+    font-size: var(--ui-font-size-xl);
+  }
+  
+  h4 {
+    font-size: var(--ui-font-size-lg);
+  }
+  
+  // Paragraph styles
+  p {
+    margin: 0;
+    color: var(--ui-neutral-700);
+    line-height: var(--ui-line-height-relaxed);
+  }
+  
+  // Link styles
+  a {
+    color: var(--ui-primary-600);
+    text-decoration: none;
+    transition: color var(--ui-transition-fast);
+    
+    &:hover {
+      color: var(--ui-primary-700);
+      text-decoration: underline;
+    }
+    
+    &:focus {
+      outline: 2px solid var(--ui-primary-500);
+      outline-offset: 2px;
+      border-radius: var(--ui-radius-sm);
+    }
+  }
+  
+  // Form element base styles
+  input, textarea, select {
+    font-family: inherit;
+    
+    &:focus {
+      outline: 2px solid var(--ui-primary-500);
+      outline-offset: 0;
+    }
+  }
+  
+  // Button reset
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+  
+  // Utility classes for consistent spacing
+  .ui-space-y-xs > * + * { margin-top: var(--ui-space-xs); }
+  .ui-space-y-sm > * + * { margin-top: var(--ui-space-sm); }
+  .ui-space-y-md > * + * { margin-top: var(--ui-space-md); }
+  .ui-space-y-lg > * + * { margin-top: var(--ui-space-lg); }
+  .ui-space-y-xl > * + * { margin-top: var(--ui-space-xl); }
+  
+  // Text utility classes
+  .ui-text-primary { color: var(--ui-neutral-900); }
+  .ui-text-secondary { color: var(--ui-neutral-600); }
+  .ui-text-muted { color: var(--ui-neutral-500); }
+  .ui-text-success { color: var(--ui-success-600); }
+  .ui-text-warning { color: var(--ui-warning-600); }
+  .ui-text-error { color: var(--ui-error-600); }
+  .ui-text-info { color: var(--ui-info-600); }
+  
+  // Background utility classes
+  .ui-bg-primary { background: var(--ui-primary-600); }
+  .ui-bg-secondary { background: var(--ui-secondary-600); }
+  .ui-bg-surface { background: var(--ui-surface); }
+  .ui-bg-success { background: var(--ui-success-50); }
+  .ui-bg-warning { background: var(--ui-warning-50); }
+  .ui-bg-error { background: var(--ui-error-50); }
+  .ui-bg-info { background: var(--ui-info-50); }
+  
+  // Border utility classes
+  .ui-border { border: 1px solid var(--ui-border); }
+  .ui-border-primary { border-color: var(--ui-primary-300); }
+  .ui-border-success { border-color: var(--ui-success-300); }
+  .ui-border-warning { border-color: var(--ui-warning-300); }
+  .ui-border-error { border-color: var(--ui-error-300); }
+  .ui-border-info { border-color: var(--ui-info-300); }
+  
+  // Shadow utility classes
+  .ui-shadow-sm { box-shadow: var(--ui-shadow-sm); }
+  .ui-shadow-md { box-shadow: var(--ui-shadow-md); }
+  .ui-shadow-lg { box-shadow: var(--ui-shadow-lg); }
+  .ui-shadow-xl { box-shadow: var(--ui-shadow-xl); }
+  
+  // Radius utility classes
+  .ui-rounded-sm { border-radius: var(--ui-radius-sm); }
+  .ui-rounded-md { border-radius: var(--ui-radius-md); }
+  .ui-rounded-lg { border-radius: var(--ui-radius-lg); }
+  .ui-rounded-xl { border-radius: var(--ui-radius-xl); }
+}
+
+// Animation and interaction classes
+.ui-interactive {
+  transition: all var(--ui-transition-fast);
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ui-shadow-md);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.ui-fade-in {
+  animation: uiFadeIn 0.3s ease-out;
+}
+
+.ui-slide-up {
+  animation: uiSlideUp 0.3s ease-out;
+}
+
+// Keyframe animations
+@keyframes uiFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes uiSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

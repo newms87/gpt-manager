@@ -1,0 +1,91 @@
+// ============================================
+// UI Card Component Styles
+// ============================================
+
+.ui-app {
+  .ui-card {
+    background: var(--ui-neutral-50);
+    border: 1px solid var(--ui-neutral-200);
+    border-radius: var(--ui-radius-xl);
+    box-shadow: var(--ui-shadow-sm);
+    transition: all var(--ui-transition-normal);
+    overflow: hidden;
+    
+    &:hover {
+      box-shadow: var(--ui-shadow-md);
+      border-color: var(--ui-neutral-300);
+    }
+    
+    // Card header
+    &__header {
+      padding: var(--ui-space-lg);
+      border-bottom: 1px solid var(--ui-neutral-100);
+      background: linear-gradient(135deg, var(--ui-neutral-50) 0%, var(--ui-neutral-100) 100%);
+      
+      h1, h2, h3, h4, h5, h6 {
+        color: var(--ui-neutral-900);
+        margin: 0;
+      }
+    }
+    
+    // Card content
+    &__content {
+      padding: var(--ui-space-lg);
+    }
+    
+    // Card footer
+    &__footer {
+      padding: var(--ui-space-lg);
+      border-top: 1px solid var(--ui-neutral-100);
+      background: var(--ui-neutral-50);
+    }
+    
+    // Card variants
+    &--interactive {
+      cursor: pointer;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--ui-shadow-lg);
+        border-color: var(--ui-primary-300);
+      }
+      
+      &:active {
+        transform: translateY(-1px);
+      }
+    }
+    
+    &--highlighted {
+      border-color: var(--ui-primary-300);
+      box-shadow: 0 0 0 1px var(--ui-primary-100);
+      
+      .ui-card__header {
+        background: linear-gradient(135deg, var(--ui-primary-50) 0%, var(--ui-primary-100) 100%);
+      }
+    }
+    
+    &--success {
+      border-color: var(--ui-success-300);
+      
+      .ui-card__header {
+        background: linear-gradient(135deg, var(--ui-success-50) 0%, var(--ui-success-100) 100%);
+      }
+    }
+    
+    &--warning {
+      border-color: var(--ui-warning-300);
+      
+      .ui-card__header {
+        background: linear-gradient(135deg, var(--ui-warning-50) 0%, var(--ui-warning-100) 100%);
+      }
+    }
+    
+    &--error {
+      border-color: var(--ui-error-300);
+      
+      .ui-card__header {
+        background: linear-gradient(135deg, var(--ui-error-50) 0%, var(--ui-error-100) 100%);
+      }
+    }
+  }
+}

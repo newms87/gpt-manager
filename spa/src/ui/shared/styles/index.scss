@@ -1,0 +1,19 @@
+// ============================================
+// UI Styles - Main Entry Point
+// ============================================
+// This file imports all UI-specific styles and applies them
+// to override default component styling for a cohesive UI experience
+
+// Import all UI style modules
+@import './variables';
+@import './base';
+@import './components/index';
+@import './overrides/index';
+
+// Apply UI root styles
+.ui-app {
+  // Ensure UI styles take precedence
+  &, * {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+}

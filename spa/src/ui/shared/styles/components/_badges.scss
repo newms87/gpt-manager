@@ -1,0 +1,213 @@
+// ============================================
+// UI Badge Component Styles
+// ============================================
+
+.ui-app {
+  .ui-status-badge {
+    font-weight: var(--ui-font-weight-medium);
+    border-radius: var(--ui-radius-xl);
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    transition: all var(--ui-transition-fast);
+    
+    // Size variants
+    &.ui-status-badge--sm {
+      padding: var(--ui-space-xs) var(--ui-space-sm);
+      font-size: var(--ui-font-size-xs);
+      
+      .status-icon {
+        width: 0.75rem;
+        height: 0.75rem;
+        margin-right: var(--ui-space-xs);
+      }
+    }
+    
+    &.ui-status-badge--md {
+      padding: var(--ui-space-sm) var(--ui-space-md);
+      font-size: var(--ui-font-size-sm);
+      
+      .status-icon {
+        width: 1rem;
+        height: 1rem;
+        margin-right: var(--ui-space-sm);
+      }
+    }
+    
+    &.ui-status-badge--lg {
+      padding: var(--ui-space-md) var(--ui-space-lg);
+      font-size: var(--ui-font-size-base);
+      
+      .status-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-right: var(--ui-space-sm);
+      }
+    }
+    
+    // Status color variants
+    &.bg-slate-100 {
+      background: linear-gradient(135deg, var(--ui-neutral-100) 0%, var(--ui-neutral-200) 100%);
+      color: var(--ui-neutral-700);
+      border-color: var(--ui-neutral-300);
+      
+      .status-icon {
+        color: var(--ui-neutral-600);
+      }
+    }
+    
+    &.bg-blue-100 {
+      background: linear-gradient(135deg, var(--ui-primary-100) 0%, var(--ui-primary-200) 100%);
+      color: var(--ui-primary-800);
+      border-color: var(--ui-primary-300);
+      
+      .status-icon {
+        color: var(--ui-primary-600);
+      }
+    }
+    
+    &.bg-amber-100 {
+      background: linear-gradient(135deg, var(--ui-warning-100) 0%, var(--ui-warning-200) 100%);
+      color: var(--ui-warning-800);
+      border-color: var(--ui-warning-300);
+      
+      .status-icon {
+        color: var(--ui-warning-600);
+        
+        &.fa-spinner {
+          animation: spin 1s linear infinite;
+        }
+      }
+    }
+    
+    &.bg-green-100 {
+      background: linear-gradient(135deg, var(--ui-success-100) 0%, var(--ui-success-200) 100%);
+      color: var(--ui-success-800);
+      border-color: var(--ui-success-300);
+      
+      .status-icon {
+        color: var(--ui-success-600);
+      }
+    }
+    
+    &.bg-red-100 {
+      background: linear-gradient(135deg, var(--ui-error-100) 0%, var(--ui-error-200) 100%);
+      color: var(--ui-error-800);
+      border-color: var(--ui-error-300);
+      
+      .status-icon {
+        color: var(--ui-error-600);
+      }
+    }
+    
+    // Interactive badges
+    &.ui-status-badge--interactive {
+      cursor: pointer;
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--ui-shadow-sm);
+        filter: brightness(1.05);
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+    }
+    
+    // Animated icons
+    .status-icon {
+      transition: all var(--ui-transition-fast);
+      
+      &.fa-spinner {
+        animation: spin 1s linear infinite;
+      }
+    }
+  }
+  
+  // Generic badge styles
+  .ui-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--ui-space-xs) var(--ui-space-sm);
+    border-radius: var(--ui-radius-xl);
+    font-size: var(--ui-font-size-xs);
+    font-weight: var(--ui-font-weight-medium);
+    
+    &--primary {
+      background: var(--ui-primary-600);
+      color: white;
+    }
+    
+    &--secondary {
+      background: var(--ui-secondary-600);
+      color: white;
+    }
+    
+    &--success {
+      background: var(--ui-success-600);
+      color: white;
+    }
+    
+    &--warning {
+      background: var(--ui-warning-600);
+      color: white;
+    }
+    
+    &--error {
+      background: var(--ui-error-600);
+      color: white;
+    }
+    
+    &--neutral {
+      background: var(--ui-neutral-600);
+      color: white;
+    }
+    
+    // Outline variants
+    &--outline {
+      background: transparent;
+      border: 1px solid currentColor;
+      
+      &.ui-badge--primary {
+        color: var(--ui-primary-600);
+        border-color: var(--ui-primary-600);
+      }
+      
+      &.ui-badge--secondary {
+        color: var(--ui-secondary-600);
+        border-color: var(--ui-secondary-600);
+      }
+      
+      &.ui-badge--success {
+        color: var(--ui-success-600);
+        border-color: var(--ui-success-600);
+      }
+      
+      &.ui-badge--warning {
+        color: var(--ui-warning-600);
+        border-color: var(--ui-warning-600);
+      }
+      
+      &.ui-badge--error {
+        color: var(--ui-error-600);
+        border-color: var(--ui-error-600);
+      }
+      
+      &.ui-badge--neutral {
+        color: var(--ui-neutral-600);
+        border-color: var(--ui-neutral-600);
+      }
+    }
+  }
+}
+
+// Keyframe for spinning animation
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

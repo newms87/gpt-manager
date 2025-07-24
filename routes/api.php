@@ -26,6 +26,7 @@ use App\Http\Controllers\Assistant\UniversalAssistantController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
 use App\Http\Controllers\Team\TeamsController;
+use App\Http\Controllers\UiDemandsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Newms87\Danx\Http\Routes\ActionRoute;
@@ -114,6 +115,12 @@ ActionRoute::routes('team-objects', new TeamObjectsController, function () {
 
 // Audits
 ActionRoute::routes('audit-requests', new AuditRequestsController);
+
+// UI Demands
+ActionRoute::routes('ui-demands', new UiDemandsController, function () {
+    Route::post('{uiDemand}/submit', [UiDemandsController::class, 'submit'])->name('ui-demands.submit');
+    Route::post('{uiDemand}/run-workflow', [UiDemandsController::class, 'runWorkflow'])->name('ui-demands.run-workflow');
+});
 
 // Websockets Pusher Broadcasting
 Route::post('broadcasting/auth', function (Request $request) {

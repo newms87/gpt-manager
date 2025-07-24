@@ -1,0 +1,292 @@
+// ============================================
+// Danx Component Overrides
+// ============================================
+// Override quasar-ui-danx components for UI consistency
+
+.ui-app {
+  // Minimal ActionButton overrides - let the component work as intended
+  .dx-action-button {
+    // Just basic consistency with our border radius
+    border-radius: var(--ui-radius-lg);
+  }
+  
+  // MultiFileField overrides
+  .dx-multi-file-field {
+    border: 2px dashed var(--ui-neutral-300);
+    border-radius: var(--ui-radius-xl);
+    background: var(--ui-neutral-50);
+    transition: all var(--ui-transition-normal);
+    
+    &:hover {
+      border-color: var(--ui-primary-400);
+      background: var(--ui-primary-50);
+    }
+    
+    &.dx-multi-file-field--dragover {
+      border-color: var(--ui-primary-500);
+      background: var(--ui-primary-100);
+      transform: scale(1.02);
+    }
+    
+    .dx-multi-file-field__dropzone {
+      padding: var(--ui-space-xl);
+      text-align: center;
+      
+      .dx-multi-file-field__icon {
+        color: var(--ui-primary-500);
+        font-size: 3rem;
+        margin-bottom: var(--ui-space-md);
+      }
+      
+      .dx-multi-file-field__text {
+        color: var(--ui-neutral-700);
+        font-size: var(--ui-font-size-lg);
+        font-weight: var(--ui-font-weight-medium);
+        margin-bottom: var(--ui-space-sm);
+      }
+      
+      .dx-multi-file-field__hint {
+        color: var(--ui-neutral-500);
+        font-size: var(--ui-font-size-sm);
+      }
+    }
+    
+    .dx-multi-file-field__files {
+      .dx-multi-file-field__file {
+        background: white;
+        border: 1px solid var(--ui-neutral-200);
+        border-radius: var(--ui-radius-lg);
+        padding: var(--ui-space-md);
+        margin-bottom: var(--ui-space-sm);
+        transition: all var(--ui-transition-fast);
+        
+        &:hover {
+          border-color: var(--ui-neutral-300);
+          box-shadow: var(--ui-shadow-sm);
+        }
+        
+        .dx-multi-file-field__file-info {
+          .dx-multi-file-field__file-name {
+            color: var(--ui-neutral-900);
+            font-weight: var(--ui-font-weight-medium);
+          }
+          
+          .dx-multi-file-field__file-size {
+            color: var(--ui-neutral-500);
+            font-size: var(--ui-font-size-sm);
+          }
+        }
+        
+        .dx-multi-file-field__file-actions {
+          .dx-multi-file-field__file-remove {
+            color: var(--ui-error-500);
+            border-radius: var(--ui-radius-md);
+            padding: var(--ui-space-xs);
+            transition: all var(--ui-transition-fast);
+            
+            &:hover {
+              background: var(--ui-error-50);
+              color: var(--ui-error-600);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // ActionTable overrides
+  .dx-action-table {
+    .q-table {
+      border-radius: var(--ui-radius-xl);
+      overflow: hidden;
+      box-shadow: var(--ui-shadow-sm);
+      border: 1px solid var(--ui-neutral-200);
+      
+      .q-table__top {
+        background: var(--ui-neutral-50);
+        border-bottom: 1px solid var(--ui-neutral-200);
+        padding: var(--ui-space-lg);
+      }
+      
+      .q-table__middle {
+        .q-table thead {
+          background: var(--ui-neutral-100);
+          
+          th {
+            color: var(--ui-neutral-800);
+            font-weight: var(--ui-font-weight-semibold);
+            border-bottom: 1px solid var(--ui-neutral-300);
+            padding: var(--ui-space-md) var(--ui-space-lg);
+          }
+        }
+        
+        .q-table tbody {
+          td {
+            border-bottom: 1px solid var(--ui-neutral-200);
+            padding: var(--ui-space-md) var(--ui-space-lg);
+            color: var(--ui-neutral-700);
+          }
+          
+          tr {
+            transition: background var(--ui-transition-fast);
+            
+            &:hover {
+              background: var(--ui-neutral-50);
+            }
+            
+            &.q-table__row--selected {
+              background: var(--ui-primary-50);
+            }
+          }
+        }
+      }
+      
+      .q-table__bottom {
+        background: var(--ui-neutral-50);
+        border-top: 1px solid var(--ui-neutral-200);
+        padding: var(--ui-space-lg);
+      }
+    }
+  }
+  
+  // SearchBox overrides
+  .dx-search-box {
+    .q-field__control {
+      background: white;
+      border: 1px solid var(--ui-neutral-300);
+      border-radius: var(--ui-radius-xl);
+      
+      &:hover {
+        border-color: var(--ui-neutral-400);
+      }
+      
+      &.q-field__control--focused {
+        border-color: var(--ui-primary-500);
+        box-shadow: 0 0 0 3px var(--ui-primary-100);
+      }
+    }
+    
+    .q-field__append {
+      .q-icon {
+        color: var(--ui-neutral-500);
+      }
+    }
+  }
+  
+  // LabelPillWidget overrides
+  .dx-label-pill {
+    border-radius: var(--ui-radius-xl);
+    font-weight: var(--ui-font-weight-medium);
+    padding: var(--ui-space-xs) var(--ui-space-md);
+    
+    &.dx-label-pill--primary {
+      background: var(--ui-primary-100);
+      color: var(--ui-primary-800);
+    }
+    
+    &.dx-label-pill--success {
+      background: var(--ui-success-100);
+      color: var(--ui-success-800);
+    }
+    
+    &.dx-label-pill--warning {
+      background: var(--ui-warning-100);
+      color: var(--ui-warning-800);
+    }
+    
+    &.dx-label-pill--error {
+      background: var(--ui-error-100);
+      color: var(--ui-error-800);
+    }
+  }
+  
+  // ShowHideButton overrides
+  .dx-show-hide-button {
+    .q-btn {
+      border-radius: var(--ui-radius-lg);
+      color: var(--ui-neutral-600);
+      
+      &:hover {
+        color: var(--ui-primary-600);
+        background: var(--ui-primary-50);
+      }
+    }
+  }
+  
+  // EditableDiv overrides
+  .dx-editable-div {
+    border-radius: var(--ui-radius-md);
+    transition: all var(--ui-transition-fast);
+    
+    &:hover {
+      background: var(--ui-neutral-50);
+    }
+    
+    &.dx-editable-div--editing {
+      background: white;
+      border: 1px solid var(--ui-primary-500);
+      box-shadow: 0 0 0 3px var(--ui-primary-100);
+    }
+  }
+  
+  // SaveStateIndicator overrides
+  .dx-save-state-indicator {
+    &.dx-save-state-indicator--saving {
+      color: var(--ui-warning-600);
+    }
+    
+    &.dx-save-state-indicator--saved {
+      color: var(--ui-success-600);
+    }
+    
+    &.dx-save-state-indicator--error {
+      color: var(--ui-error-600);
+    }
+  }
+  
+  // ListTransition overrides
+  .dx-list-transition {
+    .dx-list-transition__item {
+      transition: all var(--ui-transition-normal);
+      
+      &.dx-list-transition__item--enter {
+        animation: uiSlideUp 0.3s ease-out;
+      }
+      
+      &.dx-list-transition__item--leave {
+        animation: uiFadeIn 0.2s ease-out reverse;
+      }
+    }
+  }
+  
+  // LoadingOverlay overrides
+  .dx-loading-overlay {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
+    border-radius: inherit;
+    
+    .q-spinner {
+      color: var(--ui-primary-500);
+    }
+  }
+  
+  // PaginationNavigator overrides
+  .dx-pagination-navigator {
+    .q-pagination {
+      .q-btn {
+        border-radius: var(--ui-radius-lg);
+        color: var(--ui-neutral-600);
+        
+        &:hover {
+          background: var(--ui-neutral-100);
+          color: var(--ui-neutral-800);
+        }
+        
+        &.q-btn--active {
+          background: var(--ui-primary-500);
+          color: white;
+        }
+      }
+    }
+  }
+}

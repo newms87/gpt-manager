@@ -1,0 +1,151 @@
+// ============================================
+// UI Design System Variables
+// ============================================
+// Define colors, spacing, typography, and other design tokens
+// for a cohesive and beautiful UI experience
+
+// Color Palette - Vibrant and High Contrast
+:root {
+  // Primary Colors (Insurance Blue Theme)
+  --ui-primary-50: #eff6ff;
+  --ui-primary-100: #dbeafe;
+  --ui-primary-200: #bfdbfe;
+  --ui-primary-300: #93c5fd;
+  --ui-primary-400: #60a5fa;
+  --ui-primary-500: #3b82f6;
+  --ui-primary-600: #2563eb;
+  --ui-primary-700: #1d4ed8;
+  --ui-primary-800: #1e40af;
+  --ui-primary-900: #1e3a8a;
+
+  // Secondary Colors (Emerald Accent)
+  --ui-secondary-50: #ecfdf5;
+  --ui-secondary-100: #d1fae5;
+  --ui-secondary-200: #a7f3d0;
+  --ui-secondary-300: #6ee7b7;
+  --ui-secondary-400: #34d399;
+  --ui-secondary-500: #10b981;
+  --ui-secondary-600: #059669;
+  --ui-secondary-700: #047857;
+  --ui-secondary-800: #065f46;
+  --ui-secondary-900: #064e3b;
+
+  // Neutral Colors (Warm Grays)
+  --ui-neutral-50: #fafaf9;
+  --ui-neutral-100: #f5f5f4;
+  --ui-neutral-200: #e7e5e4;
+  --ui-neutral-300: #d6d3d1;
+  --ui-neutral-400: #a8a29e;
+  --ui-neutral-500: #78716c;
+  --ui-neutral-600: #57534e;
+  --ui-neutral-700: #44403c;
+  --ui-neutral-800: #292524;
+  --ui-neutral-900: #1c1917;
+
+  // Status Colors
+  --ui-success-50: #f0fdf4;
+  --ui-success-500: #22c55e;
+  --ui-success-600: #16a34a;
+  --ui-success-700: #15803d;
+
+  --ui-warning-50: #fffbeb;
+  --ui-warning-500: #f59e0b;
+  --ui-warning-600: #d97706;
+  --ui-warning-700: #b45309;
+
+  --ui-error-50: #fef2f2;
+  --ui-error-500: #ef4444;
+  --ui-error-600: #dc2626;
+  --ui-error-700: #b91c1c;
+
+  --ui-info-50: #f0f9ff;
+  --ui-info-500: #06b6d4;
+  --ui-info-600: #0891b2;
+  --ui-info-700: #0e7490;
+
+  // Gradients
+  --ui-gradient-primary: linear-gradient(135deg, var(--ui-primary-500) 0%, var(--ui-primary-700) 100%);
+  --ui-gradient-secondary: linear-gradient(135deg, var(--ui-secondary-500) 0%, var(--ui-secondary-700) 100%);
+  --ui-gradient-surface: linear-gradient(135deg, var(--ui-neutral-50) 0%, var(--ui-neutral-100) 100%);
+
+  // Shadows
+  --ui-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --ui-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --ui-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --ui-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --ui-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+
+  // Spacing Scale
+  --ui-space-xs: 0.25rem;   // 4px
+  --ui-space-sm: 0.5rem;    // 8px
+  --ui-space-md: 1rem;      // 16px
+  --ui-space-lg: 1.5rem;    // 24px
+  --ui-space-xl: 2rem;      // 32px
+  --ui-space-2xl: 3rem;     // 48px
+  --ui-space-3xl: 4rem;     // 64px
+
+  // Border Radius
+  --ui-radius-sm: 0.375rem;  // 6px
+  --ui-radius-md: 0.5rem;    // 8px
+  --ui-radius-lg: 0.75rem;   // 12px
+  --ui-radius-xl: 1rem;      // 16px
+  --ui-radius-2xl: 1.5rem;   // 24px
+
+  // Typography
+  --ui-font-size-xs: 0.75rem;    // 12px
+  --ui-font-size-sm: 0.875rem;   // 14px
+  --ui-font-size-base: 1rem;     // 16px
+  --ui-font-size-lg: 1.125rem;   // 18px
+  --ui-font-size-xl: 1.25rem;    // 20px
+  --ui-font-size-2xl: 1.5rem;    // 24px
+  --ui-font-size-3xl: 1.875rem;  // 30px
+  --ui-font-size-4xl: 2.25rem;   // 36px
+
+  --ui-font-weight-normal: 400;
+  --ui-font-weight-medium: 500;
+  --ui-font-weight-semibold: 600;
+  --ui-font-weight-bold: 700;
+
+  --ui-line-height-tight: 1.25;
+  --ui-line-height-normal: 1.5;
+  --ui-line-height-relaxed: 1.75;
+
+  // Transitions
+  --ui-transition-fast: 150ms ease-in-out;
+  --ui-transition-normal: 250ms ease-in-out;
+  --ui-transition-slow: 350ms ease-in-out;
+
+  // Z-Index Scale
+  --ui-z-dropdown: 1000;
+  --ui-z-sticky: 1020;
+  --ui-z-fixed: 1030;
+  --ui-z-modal-backdrop: 1040;
+  --ui-z-modal: 1050;
+  --ui-z-popover: 1060;
+  --ui-z-tooltip: 1070;
+  --ui-z-toast: 1080;
+}
+
+// SCSS Variables for easier usage
+$ui-primary: var(--ui-primary-600);
+$ui-primary-light: var(--ui-primary-500);
+$ui-primary-dark: var(--ui-primary-700);
+
+$ui-secondary: var(--ui-secondary-600);
+$ui-secondary-light: var(--ui-secondary-500);
+$ui-secondary-dark: var(--ui-secondary-700);
+
+$ui-text-primary: var(--ui-neutral-900);
+$ui-text-secondary: var(--ui-neutral-600);
+$ui-text-muted: var(--ui-neutral-500);
+
+$ui-background: var(--ui-neutral-50);
+$ui-surface: var(--ui-neutral-100);
+$ui-border: var(--ui-neutral-200);
+
+// Breakpoints
+$ui-breakpoint-sm: 640px;
+$ui-breakpoint-md: 768px;
+$ui-breakpoint-lg: 1024px;
+$ui-breakpoint-xl: 1280px;
+$ui-breakpoint-2xl: 1536px;

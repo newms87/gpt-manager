@@ -27,11 +27,19 @@
 	}
 
 	.dx-dialog-button-cancel {
-		@apply flex-grow bg-slate-300 text-slate-600;
+		@apply flex-grow;
+		
+		.q-btn.dx-dialog-button {
+			@apply bg-slate-300 text-slate-600
+		}
 	}
 
 	.dx-dialog-button-confirm {
-		@apply flex-grow bg-sky-800 text-slate-200;
+		@apply flex-grow;
+
+		.q-btn.dx-dialog-button {
+			@apply bg-sky-800 text-slate-200;
+		}
 	}
 
 	.dx-close-button {
