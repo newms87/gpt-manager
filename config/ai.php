@@ -14,7 +14,13 @@ return [
     // Data deduplication agent configuration
     'classification_deduplication' => [
         'agent_name' => 'Data Normalization Agent',
-        'model'      => env('AI_CLASSIFICATION_DEDUP_MODEL', 'o4-mini'),
+        'model'      => env('AI_CLASSIFICATION_DEDUP_MODEL', 'o3'),
+    ],
+
+    // Classification verification agent configuration
+    'classification_verification'  => [
+        'agent_name' => 'Classification Verification Agent',
+        'model'      => env('AI_CLASSIFICATION_VERIFICATION_MODEL', 'o3'),
     ],
     'models'                       => [
         'gpt-4o'                            => [

@@ -41,11 +41,19 @@
 						/>
 
 						<ActionButton
-							v-if="demand.status === DEMAND_STATUS.READY"
+							v-if="demand.can_extract_data"
 							type="play"
-							:loading="processing"
+							:loading="extractingData || demand.is_extract_data_running"
+							label="Extract Data"
+							@click="handleExtractData"
+						/>
+
+						<ActionButton
+							v-if="demand.can_write_demand"
+							type="play"
+							:loading="writingDemand || demand.is_write_demand_running"
 							label="Write Demand"
-							@click="handleRunWorkflow"
+							@click="handleWriteDemand"
 						/>
 					</div>
 				</div>
@@ -209,6 +217,24 @@
 						/>
 
 						<ActionButton
+							v-if="demand.can_extract_data"
+							type="play"
+							class="w-full justify-start"
+							:loading="extractingData || demand.is_extract_data_running"
+							label="Extract Data"
+							@click="handleExtractData"
+						/>
+
+						<ActionButton
+							v-if="demand.can_write_demand"
+							type="play"
+							class="w-full justify-start"
+							:loading="writingDemand || demand.is_write_demand_running"
+							label="Write Demand"
+							@click="handleWriteDemand"
+						/>
+
+						<ActionButton
 							type="copy"
 							class="w-full justify-start"
 							label="Duplicate Demand"
@@ -245,7 +271,8 @@ const router = useRouter();
 const {
 	updateDemand,
 	submitDemand,
-	runWorkflow,
+	extractData,
+	writeDemand,
 	deleteDemand: deleteDemandAction
 } = useDemands();
 
@@ -255,7 +282,8 @@ const isLoading = ref(false);
 const error = ref<string | null>(null);
 const editMode = ref(false);
 const submitting = ref(false);
-const processing = ref(false);
+const extractingData = ref(false);
+const writingDemand = ref(false);
 const workflowError = ref<string | null>(null);
 
 const demandId = computed(() => {
@@ -363,18 +391,33 @@ const handleSubmit = async () => {
 	}
 };
 
-const handleRunWorkflow = async () => {
+const handleExtractData = async () => {
 	if (!demand.value) return;
 
 	try {
-		processing.value = true;
+		extractingData.value = true;
 		workflowError.value = null;
-		const updatedDemand = await runWorkflow(demand.value.id);
+		const updatedDemand = await extractData(demand.value.id);
 		demand.value = updatedDemand;
 	} catch (err: any) {
-		workflowError.value = err.message || "Failed to run workflow";
+		workflowError.value = err.message || "Failed to extract data";
 	} finally {
-		processing.value = false;
+		extractingData.value = false;
+	}
+};
+
+const handleWriteDemand = async () => {
+	if (!demand.value) return;
+
+	try {
+		writingDemand.value = true;
+		workflowError.value = null;
+		const updatedDemand = await writeDemand(demand.value.id);
+		demand.value = updatedDemand;
+	} catch (err: any) {
+		workflowError.value = err.message || "Failed to write demand";
+	} finally {
+		writingDemand.value = false;
 	}
 };
 

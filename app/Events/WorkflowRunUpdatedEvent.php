@@ -14,6 +14,11 @@ class WorkflowRunUpdatedEvent extends ModelSavedEvent
         parent::__construct($workflowRun, $event);
     }
 
+    public function getWorkflowRun(): WorkflowRun
+    {
+        return $this->workflowRun;
+    }
+
     public function broadcastOn()
     {
         return new PrivateChannel('WorkflowRun.' . $this->workflowRun->workflowDefinition->team_id);

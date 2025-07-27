@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Models\Team\Team;
+use App\Models\TeamObject\TeamObject;
+use App\Models\Workflow\WorkflowListener;
+use App\Traits\HasWorkflowListeners;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,7 +19,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class UiDemand extends Model implements Auditable
 {
-    use HasFactory, SoftDeletes, ActionModelTrait, AuditableTrait;
+    use HasFactory, SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowListeners;
 
     // Status constants following platform pattern
     const string
@@ -33,6 +36,7 @@ class UiDemand extends Model implements Auditable
         'description',
         'status',
         'metadata',
+        'team_object_id',
         'submitted_at',
         'completed_at',
     ];
@@ -74,6 +78,11 @@ class UiDemand extends Model implements Auditable
             ->withTimestamps();
     }
 
+    public function teamObject(): BelongsTo
+    {
+        return $this->belongsTo(TeamObject::class);
+    }
+
     public function canBeSubmitted(): bool
     {
         return $this->status === self::STATUS_DRAFT && $this->storedFiles()->count() > 0;
@@ -85,5 +94,29 @@ class UiDemand extends Model implements Auditable
             'status'       => self::STATUS_READY,
             'submitted_at' => now(),
         ]);
+    }
+
+    // Specific workflow type helpers
+    public function canExtractData(): bool
+    {
+        return $this->status === self::STATUS_READY && 
+            !$this->hasWorkflowOfType(WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA);
+    }
+
+    public function canWriteDemand(): bool
+    {
+        return $this->team_object_id && 
+            $this->isWorkflowCompleted(WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA) &&
+            !$this->hasWorkflowOfType(WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND);
+    }
+
+    public function isExtractDataRunning(): bool
+    {
+        return $this->isWorkflowRunning(WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA);
+    }
+
+    public function isWriteDemandRunning(): bool
+    {
+        return $this->isWorkflowRunning(WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND);
     }
 }

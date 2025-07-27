@@ -12,7 +12,9 @@ class UiDemandFactory extends Factory
     public function definition(): array
     {
         return [
-
+            'title' => $this->faker->sentence(3),
+            'description' => $this->faker->paragraph(),
+            'status' => UiDemand::STATUS_DRAFT,
         ];
     }
 }

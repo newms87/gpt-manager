@@ -14,6 +14,7 @@ use App\Services\Workflow\WorkflowRunnerService;
 use App\Traits\HasDebugLogging;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,7 +31,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowRun extends Model implements WorkflowStatesContract, AuditableContract
 {
-    use SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowStatesTrait, HasDebugLogging, HasUsageTracking;
+    use HasFactory, SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowStatesTrait, HasDebugLogging, HasUsageTracking;
 
     protected $fillable = [
         'name',

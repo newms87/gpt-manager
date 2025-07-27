@@ -98,9 +98,9 @@ export function useDemands() {
     }
   };
 
-  const runWorkflow = async (id: number) => {
+  const extractData = async (id: number) => {
     try {
-      const response = await demandRoutes.applyAction("run-workflow", { id });
+      const response = await demandRoutes.applyAction("extract-data", { id });
       const updatedDemand = response.item;
       const index = demands.value.findIndex(d => d.id === id);
       if (index !== -1) {
@@ -108,7 +108,22 @@ export function useDemands() {
       }
       return updatedDemand;
     } catch (err: any) {
-      error.value = err.message || 'Failed to run workflow';
+      error.value = err.message || 'Failed to extract data';
+      throw err;
+    }
+  };
+
+  const writeDemand = async (id: number) => {
+    try {
+      const response = await demandRoutes.applyAction("write-demand", { id });
+      const updatedDemand = response.item;
+      const index = demands.value.findIndex(d => d.id === id);
+      if (index !== -1) {
+        demands.value[index] = updatedDemand;
+      }
+      return updatedDemand;
+    } catch (err: any) {
+      error.value = err.message || 'Failed to write demand';
       throw err;
     }
   };
@@ -125,6 +140,7 @@ export function useDemands() {
     updateDemand,
     deleteDemand,
     submitDemand,
-    runWorkflow,
+    extractData,
+    writeDemand,
   };
 }

@@ -3,8 +3,11 @@
 namespace App\Providers;
 
 use App\Events\JobDispatchUpdatedEvent;
+use App\Events\WorkflowRunUpdatedEvent;
+use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Workflow\WorkflowRun;
 use DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Models\Job\JobDispatch;
@@ -18,6 +21,12 @@ class EventServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        // Register event listeners
+        Event::listen(
+            WorkflowRunUpdatedEvent::class,
+            [WorkflowListenerCompletedListener::class, 'handle']
+        );
+
         // Dispatch the jobs w/ team info
         JobDispatch::creating(function (JobDispatch $jobDispatch) {
             $jobDispatch->data = ['team_id' => team()?->id];

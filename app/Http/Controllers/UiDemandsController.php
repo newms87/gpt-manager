@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\UiDemand;
 use App\Repositories\UiDemandRepository;
 use App\Resources\UiDemandResource;
+use App\Services\UiDemand\UiDemandWorkflowService;
 use Illuminate\Http\Request;
 use Newms87\Danx\Http\Controllers\ActionController;
 
@@ -29,21 +30,29 @@ class UiDemandsController extends ActionController
         return UiDemandResource::make($uiDemand->fresh(['storedFiles']));
     }
 
-    public function runWorkflow(UiDemand $uiDemand)
+    public function extractData(UiDemand $uiDemand)
     {
         try {
-            // TODO: Integrate with workflow system
-            // Find "Write Demand" workflow and execute it with the demand's files
+            $workflowRun = app(UiDemandWorkflowService::class)->extractData($uiDemand);
             
-            $uiDemand->update(['status' => UiDemand::STATUS_PROCESSING]);
-            
-            // Simulate workflow execution for now
-            // In real implementation, this would trigger the actual workflow
-            
-            return UiDemandResource::make($uiDemand->fresh(['storedFiles']));
+            return UiDemandResource::make($uiDemand->fresh(['storedFiles', 'teamObject', 'workflowRun']));
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Write Demand workflow not found or failed to start.',
+                'message' => 'Failed to start extract data workflow.',
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function writeDemand(UiDemand $uiDemand)
+    {
+        try {
+            $workflowRun = app(UiDemandWorkflowService::class)->writeDemand($uiDemand);
+            
+            return UiDemandResource::make($uiDemand->fresh(['storedFiles', 'teamObject', 'workflowRun']));
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to start write demand workflow.',
                 'error' => $e->getMessage(),
             ], 400);
         }

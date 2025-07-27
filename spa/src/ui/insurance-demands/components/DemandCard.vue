@@ -60,12 +60,21 @@
           />
           
           <ActionButton
-            v-if="demand.status === DEMAND_STATUS.READY"
+            v-if="demand.can_extract_data"
             type="play"
             size="sm"
-            :loading="processing"
+            :loading="extractingData || demand.is_extract_data_running"
+            label="Extract Data"
+            @click.stop="handleExtractData"
+          />
+          
+          <ActionButton
+            v-if="demand.can_write_demand"
+            type="play"
+            size="sm"
+            :loading="writingDemand || demand.is_write_demand_running"
             label="Write Demand"
-            @click.stop="handleRunWorkflow"
+            @click.stop="handleWriteDemand"
           />
         </div>
         
@@ -105,10 +114,11 @@ defineEmits<{
   view: [];
 }>();
 
-const { submitDemand, runWorkflow } = useDemands();
+const { submitDemand, extractData, writeDemand } = useDemands();
 
 const submitting = ref(false);
-const processing = ref(false);
+const extractingData = ref(false);
+const writingDemand = ref(false);
 
 const progressColor = computed(() => getDemandStatusColor(props.demand.status));
 const progressPercentage = computed(() => getDemandProgressPercentage(props.demand.status));
@@ -132,14 +142,25 @@ const handleSubmit = async () => {
   }
 };
 
-const handleRunWorkflow = async () => {
+const handleExtractData = async () => {
   try {
-    processing.value = true;
-    await runWorkflow(props.demand.id);
+    extractingData.value = true;
+    await extractData(props.demand.id);
   } catch (error) {
-    console.error('Error running workflow:', error);
+    console.error('Error extracting data:', error);
   } finally {
-    processing.value = false;
+    extractingData.value = false;
+  }
+};
+
+const handleWriteDemand = async () => {
+  try {
+    writingDemand.value = true;
+    await writeDemand(props.demand.id);
+  } catch (error) {
+    console.error('Error writing demand:', error);
+  } finally {
+    writingDemand.value = false;
   }
 };
 </script>
