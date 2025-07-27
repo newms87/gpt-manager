@@ -4,6 +4,7 @@ namespace App\Services\Task\Runners;
 
 use App\Repositories\ThreadRepository;
 use App\Services\Task\ClassificationDeduplicationService;
+use App\Services\Task\ClassificationVerificationService;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class ClassifierTaskRunner extends AgentThreadTaskRunner
@@ -21,6 +22,19 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
 
             $artifacts = $this->taskRun->outputArtifacts;
             app(ClassificationDeduplicationService::class)->deduplicateClassificationProperty($artifacts, $classificationProperty);
+
+            $this->complete();
+
+            return;
+        }
+
+        // Check if this is a classification property verification process
+        $verificationProperty = $this->taskProcess->meta['classification_verification_property'] ?? null;
+        if ($verificationProperty) {
+            static::log("Running classification verification for property: $verificationProperty");
+
+            $artifacts = $this->taskRun->outputArtifacts;
+            app(ClassificationVerificationService::class)->verifyClassificationProperty($artifacts, $verificationProperty);
 
             $this->complete();
 
@@ -81,19 +95,34 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
 
     /**
      * Called after all parallel processes have completed
-     * Check if any processes have classification_property meta set - if not, create deduplication processes
+     * Check the phase: create deduplication processes first, then verification processes
      */
     public function afterAllProcessesCompleted(): void
     {
         parent::afterAllProcessesCompleted();
 
-        // Check if any TaskProcesses in this TaskRun have classification_property meta set
+        // Check if any TaskProcesses in this TaskRun have classification_property or verification meta set
         $hasPropertyProcesses = $this->taskRun->taskProcesses()
             ->whereNotNull('meta->classification_property')
             ->exists();
 
+        $hasVerificationProcesses = $this->taskRun->taskProcesses()
+            ->whereNotNull('meta->classification_verification_property')
+            ->exists();
+
+        if ($hasVerificationProcesses) {
+            static::log("TaskProcess with classification_verification_property meta found - verification phase completed");
+            return;
+        }
+
         if ($hasPropertyProcesses) {
-            static::log("TaskProcess with classification_property meta found - skipping deduplication process creation");
+            static::log("TaskProcess with classification_property meta found - creating verification processes");
+
+            try {
+                app(ClassificationVerificationService::class)->createVerificationProcessesForTaskRun($this->taskRun);
+            } catch(\Exception $e) {
+                static::log("Error creating classification verification processes: " . $e->getMessage());
+            }
 
             return;
         }
