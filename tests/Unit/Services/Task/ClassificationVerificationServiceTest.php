@@ -627,4 +627,264 @@ class ClassificationVerificationServiceTest extends TestCase
         $this->assertEquals('company', $process->meta['classification_verification_property']);
         $this->assertStringContainsString('Classification Verification: company', $process->name);
     }
+
+    #[Test]
+    public function it_can_correct_previous_artifacts_in_context()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create(['meta' => ['classification' => ['company' => 'APPLE']]]), // Previous - should be corrected
+            Artifact::factory()->create(['meta' => ['classification' => ['company' => 'Apple Inc']]]), // Current
+            Artifact::factory()->create(['meta' => ['classification' => ['company' => 'Apple Inc']]]), // Next
+        ]);
+
+        // Mock verification response correcting the previous artifact
+        $this->mockVerificationResponse([
+            $artifacts[0]->id => [
+                'value' => 'Apple Inc',
+                'reason' => 'Previous artifact classification was incorrect based on context',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'company');
+
+        // Verify previous artifact was corrected
+        $previousArtifact = $artifacts[0]->fresh();
+        $this->assertEquals('Apple Inc', $previousArtifact->meta['classification']['company']);
+    }
+
+    #[Test]
+    public function it_can_correct_next_artifacts_in_context()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create(['meta' => ['classification' => ['company' => 'Apple Inc']]]), // Previous
+            Artifact::factory()->create(['meta' => ['classification' => ['company' => 'Apple Inc']]]), // Current
+            Artifact::factory()->create(['meta' => ['classification' => ['company' => 'APPLE']]]), // Next - should be corrected
+        ]);
+
+        // Mock verification response correcting the next artifact
+        $this->mockVerificationResponse([
+            $artifacts[2]->id => [
+                'value' => 'Apple Inc',
+                'reason' => 'Next artifact classification was incorrect based on context',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'company');
+
+        // Verify next artifact was corrected
+        $nextArtifact = $artifacts[2]->fresh();
+        $this->assertEquals('Apple Inc', $nextArtifact->meta['classification']['company']);
+    }
+
+    #[Test]
+    public function it_can_correct_multiple_artifacts_in_single_verification()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create(['meta' => ['classification' => ['company' => 'Apple Inc']]]), // Previous
+            Artifact::factory()->create(['meta' => ['classification' => ['company' => 'Apple Inc']]]), // Previous 2
+            Artifact::factory()->create(['meta' => ['classification' => ['company' => 'APPLE']]]), // Current - outlier (neighbors agree)
+            Artifact::factory()->create(['meta' => ['classification' => ['company' => 'Apple Inc']]]), // Next
+        ]);
+
+        // Mock verification response correcting the current artifact and also finding issue with first artifact
+        $this->mockVerificationResponse([
+            $artifacts[0]->id => [
+                'value' => 'Apple, Inc.',
+                'reason' => 'With full context, proper formal name includes comma',
+            ],
+            $artifacts[2]->id => [
+                'value' => 'Apple, Inc.',
+                'reason' => 'Incorrect format based on context',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'company');
+
+        // Verify both artifacts were corrected
+        $artifact0 = $artifacts[0]->fresh();
+        $artifact2 = $artifacts[2]->fresh();
+
+        $this->assertEquals('Apple, Inc.', $artifact0->meta['classification']['company']);
+        $this->assertEquals('Apple, Inc.', $artifact2->meta['classification']['company']);
+    }
+
+    #[Test]
+    public function it_creates_recursive_verification_process_when_previous_artifact_corrected()
+    {
+        $taskRun = TaskRun::factory()->create();
+        
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'Apple Inc']]
+            ]), // Previous 
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'APPLE']]
+            ]), // Current - outlier (neighbors agree)
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'Apple Inc']]
+            ]), // Next
+        ]);
+
+        // Mock verification response correcting current and also the previous artifact
+        $this->mockVerificationResponse([
+            $artifacts[0]->id => [
+                'value' => 'Apple, Inc.',
+                'reason' => 'Previous artifact needs proper formatting with comma',
+            ],
+            $artifacts[1]->id => [
+                'value' => 'Apple, Inc.',
+                'reason' => 'Current artifact was incorrect',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'company');
+
+        // Verify recursive process was created
+        $processes = $taskRun->taskProcesses()->get();
+        $this->assertCount(1, $processes);
+
+        $recursiveProcess = $processes->first();
+        $this->assertStringContainsString('Recursive Classification Verification', $recursiveProcess->name);
+        $this->assertStringContainsString('company', $recursiveProcess->name);
+        $this->assertStringContainsString("Artifact {$artifacts[0]->id}", $recursiveProcess->name);
+        $this->assertEquals('company', $recursiveProcess->meta['classification_verification_property']);
+        $this->assertEquals($artifacts[0]->id, $recursiveProcess->meta['recursive_verification_artifact_id']);
+        $this->assertTrue($recursiveProcess->meta['is_recursive']);
+    }
+
+    #[Test]
+    public function it_does_not_create_recursive_process_when_current_artifact_corrected()
+    {
+        $taskRun = TaskRun::factory()->create();
+        
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'Apple Inc']]
+            ]), // Previous
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'APPLE']]
+            ]), // Current - will be corrected
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'Apple Inc']]
+            ]), // Next
+        ]);
+
+        // Mock verification response correcting the current artifact
+        $this->mockVerificationResponse([
+            $artifacts[1]->id => [
+                'value' => 'Apple Inc',
+                'reason' => 'Current artifact was incorrect',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'company');
+
+        // Verify NO recursive process was created
+        $processes = $taskRun->taskProcesses()->get();
+        $this->assertCount(0, $processes);
+    }
+
+    #[Test]
+    public function it_does_not_create_recursive_process_when_next_artifact_corrected()
+    {
+        $taskRun = TaskRun::factory()->create();
+        
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'Apple Inc']]
+            ]), // Previous
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'Apple Inc']]
+            ]), // Current
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'APPLE']]
+            ]), // Next - will be corrected
+        ]);
+
+        // Mock verification response correcting the next artifact
+        $this->mockVerificationResponse([
+            $artifacts[2]->id => [
+                'value' => 'Apple Inc',
+                'reason' => 'Next artifact was incorrect',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'company');
+
+        // Verify NO recursive process was created
+        $processes = $taskRun->taskProcesses()->get();
+        $this->assertCount(0, $processes);
+    }
+
+    #[Test]
+    public function it_creates_multiple_recursive_processes_when_multiple_previous_artifacts_corrected()
+    {
+        $taskRun = TaskRun::factory()->create();
+        
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'Apple Inc']]
+            ]), // Previous 1
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'Apple Inc']]
+            ]), // Previous 2
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'APPLE']]
+            ]), // Current - outlier (neighbors agree)
+            Artifact::factory()->create([
+                'task_run_id' => $taskRun->id,
+                'meta' => ['classification' => ['company' => 'Apple Inc']]
+            ]), // Next
+        ]);
+
+        // Mock verification response correcting both previous artifacts and current
+        $this->mockVerificationResponse([
+            $artifacts[0]->id => [
+                'value' => 'Apple, Inc.',
+                'reason' => 'Previous artifact 1 needs proper format',
+            ],
+            $artifacts[1]->id => [
+                'value' => 'Apple, Inc.',
+                'reason' => 'Previous artifact 2 needs proper format',
+            ],
+            $artifacts[2]->id => [
+                'value' => 'Apple, Inc.',
+                'reason' => 'Current artifact was incorrect',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'company');
+
+        // Verify recursive processes were created for both previous artifacts
+        $processes = $taskRun->taskProcesses()->get();
+        $this->assertCount(2, $processes);
+
+        $recursiveArtifactIds = $processes->pluck('meta.recursive_verification_artifact_id')->toArray();
+        $this->assertContains($artifacts[0]->id, $recursiveArtifactIds);
+        $this->assertContains($artifacts[1]->id, $recursiveArtifactIds);
+
+        foreach ($processes as $process) {
+            $this->assertStringContainsString('Recursive Classification Verification', $process->name);
+            $this->assertTrue($process->meta['is_recursive']);
+        }
+    }
 }
