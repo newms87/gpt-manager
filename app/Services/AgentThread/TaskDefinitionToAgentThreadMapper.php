@@ -23,6 +23,8 @@ class TaskDefinitionToAgentThreadMapper
     protected TaskDefinition $taskDefinition;
     /** @var array|Collection|EloquentCollection|Artifact[] */
     protected array|Collection|EloquentCollection $artifacts = [];
+    /** @var array|Collection|EloquentCollection|Artifact[] */
+    protected array|Collection|EloquentCollection $contextArtifacts = [];
 
     protected bool  $includePageNumbers = false;
     protected array $messages           = [];
@@ -51,6 +53,13 @@ class TaskDefinitionToAgentThreadMapper
     public function setArtifacts(array|Collection|EloquentCollection $artifacts): static
     {
         $this->artifacts = $artifacts;
+
+        return $this;
+    }
+
+    public function setContextArtifacts(array|Collection|EloquentCollection $contextArtifacts = []): static
+    {
+        $this->contextArtifacts = $contextArtifacts;
 
         return $this;
     }
@@ -123,22 +132,54 @@ class TaskDefinitionToAgentThreadMapper
      */
     protected function addArtifacts(AgentThread $agentThread): void
     {
-        static::log("\tAdding " . count($this->artifacts) . " input artifacts");
-
-        foreach($this->artifacts as $artifact) {
-            $artifactFilterService = $this->resolveArtifactFilterService($artifact);
-            $filteredMessage       = $artifactFilterService->setArtifact($artifact)->filter();
-
-            if ($filteredMessage) {
-                if ($this->includePageNumbers) {
-                    $filteredMessage = $this->injectPageNumber($artifact->position ?: 0, $filteredMessage);
+        static::log("\tAdding " . count($this->artifacts) . " primary artifacts");
+        
+        // Add context before if available
+        if (!empty($this->contextArtifacts)) {
+            $contextBefore = collect($this->contextArtifacts)->filter(fn($a) => $a->position < collect($this->artifacts)->min('position'))->sortBy('position');
+            if ($contextBefore->isNotEmpty()) {
+                app(ThreadRepository::class)->addMessageToThread($agentThread, "\n--- CONTEXT BEFORE ---\n");
+                foreach ($contextBefore as $artifact) {
+                    $this->addSingleArtifact($agentThread, $artifact, true);
                 }
-
-                app(ThreadRepository::class)->addMessageToThread($agentThread, $filteredMessage);
-                static::log("\tAdded artifact " . $artifact->id);
-            } else {
-                static::log("\tSkipped artifact (was empty) " . $artifact->id);
             }
+        }
+        
+        // Add primary artifacts
+        app(ThreadRepository::class)->addMessageToThread($agentThread, "\n--- PRIMARY ARTIFACTS ---\n");
+        foreach($this->artifacts as $artifact) {
+            $this->addSingleArtifact($agentThread, $artifact, false);
+        }
+        
+        // Add context after if available
+        if (!empty($this->contextArtifacts)) {
+            $contextAfter = collect($this->contextArtifacts)->filter(fn($a) => $a->position > collect($this->artifacts)->max('position'))->sortBy('position');
+            if ($contextAfter->isNotEmpty()) {
+                app(ThreadRepository::class)->addMessageToThread($agentThread, "\n--- CONTEXT AFTER ---\n");
+                foreach ($contextAfter as $artifact) {
+                    $this->addSingleArtifact($agentThread, $artifact, true);
+                }
+            }
+        }
+    }
+
+    /**
+     * Add a single artifact to the thread
+     */
+    protected function addSingleArtifact(AgentThread $agentThread, Artifact $artifact, bool $isContext = false): void
+    {
+        $artifactFilterService = $this->resolveArtifactFilterService($artifact);
+        $filteredMessage       = $artifactFilterService->setArtifact($artifact)->filter();
+
+        if ($filteredMessage) {
+            if ($this->includePageNumbers) {
+                $filteredMessage = $this->injectPageNumber($artifact->position ?: 0, $filteredMessage);
+            }
+
+            app(ThreadRepository::class)->addMessageToThread($agentThread, $filteredMessage);
+            static::log("\tAdded " . ($isContext ? "context" : "primary") . " artifact " . $artifact->id);
+        } else {
+            static::log("\tSkipped " . ($isContext ? "context" : "primary") . " artifact (was empty) " . $artifact->id);
         }
     }
 

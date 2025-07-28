@@ -1,6 +1,7 @@
 export { default as AgentConfigField } from "./AgentConfigField.vue";
 export { default as AndOrConditionTabs } from "./AndOrConditionTabs.vue";
 export { default as ConditionGroupField } from "./ConditionGroupField.vue";
+export { default as ContextWindowConfigField } from "./ContextWindowConfigField.vue";
 export { default as DeduplicationConfigField } from "./DeduplicationConfigField.vue";
 export { default as FilterConditionsField } from "./FilterConditionsField.vue";
 export { default as FragmentSelectorConfigField } from "./FragmentSelectorConfigField.vue";

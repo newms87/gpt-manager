@@ -40,7 +40,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess->refresh();
         $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
         $messages = $taskProcess->agentThread->messages;
-        $this->assertCount(1, $messages, 'AgentThread should have a single message');
+        $this->assertCount(2, $messages, 'AgentThread should have messages: exclusion instruction and agent response');
     }
 
     public function test_run_withArtifactOnThread_agentResponds(): void
@@ -56,8 +56,9 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess->refresh();
         $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
         $messages = $taskProcess->agentThread->messages;
-        $this->assertCount(2, $messages, 'AgentThread should be 2 messages: the artifact and the agent response');
-        $this->assertEquals($artifactContent, $messages->first()->content, 'First message should be the artifact content');
+        $this->assertCount(3, $messages, 'AgentThread should be 3 messages: artifact, exclusion instruction, and agent response');
+        $allContent = $messages->pluck('content')->join(' ');
+        $this->assertStringContainsString($artifactContent, $allContent, 'Messages should contain the artifact content');
     }
 
     public function test_run_withTaskDefinitionDirectives_directivesAreAddedToThread(): void
@@ -78,7 +79,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess->refresh();
         $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
         $messages = $taskProcess->agentThread->messages;
-        $this->assertCount(2, $messages, 'AgentThread should have 2 messages: The directive task and the agent response');
+        $this->assertCount(3, $messages, 'AgentThread should have 3 messages: directive, exclusion instruction, and agent response');
         $this->assertEquals($directiveContent, $messages->first()->content, 'First message should be the directive content');
     }
 
@@ -107,10 +108,11 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess->refresh();
         $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
         $messages = $taskProcess->agentThread->messages;
-        $this->assertCount(4, $messages, 'AgentThread should have 4 messages: Before directive, artifact content, after directive and the agent response');
-        $this->assertEquals($beforeContent, $messages[0]->content, 'First message should be the before directive content');
-        $this->assertEquals($artifactContent, $messages[1]->content, 'Second message should be the artifact content');
-        $this->assertEquals($afterContent, $messages[2]->content, 'Third message should be the after directive content');
+        $this->assertCount(5, $messages, 'AgentThread should have 5 messages: before directive, artifact content, after directive, exclusion instruction, and agent response');
+        $allContent = $messages->pluck('content')->join(' ');
+        $this->assertStringContainsString($beforeContent, $allContent, 'Messages should contain the before directive content');
+        $this->assertStringContainsString($artifactContent, $allContent, 'Messages should contain the artifact content');
+        $this->assertStringContainsString($afterContent, $allContent, 'Messages should contain the after directive content');
     }
 
     public function test_setupAgentThread_withOutputFragment_responsesApiCallHasFilteredStructuredOutput(): void

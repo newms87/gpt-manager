@@ -331,4 +331,334 @@ class ClassifierTaskRunnerTest extends TestCase
         // Verify the process is completed
         $this->assertTrue($taskProcess->fresh()->isCompleted());
     }
+
+    #[Test]
+    public function it_returns_empty_collection_when_no_context_configured()
+    {
+        // Create input artifacts
+        $artifacts = collect([
+            Artifact::factory()->create(['position' => 5]),
+            Artifact::factory()->create(['position' => 6]),
+        ]);
+
+        // Create task process with no context configuration
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+        ]);
+
+        // Set task definition with no context config
+        $this->taskDefinition->task_runner_config = [];
+        $this->taskDefinition->save();
+
+        foreach ($artifacts as $artifact) {
+            $taskProcess->inputArtifacts()->attach($artifact->id);
+        }
+
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+
+        // Use reflection to test the protected method
+        $reflection = new \ReflectionClass($runner);
+        $method = $reflection->getMethod('getContextArtifacts');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($runner, $artifacts);
+
+        $this->assertTrue($result->isEmpty());
+    }
+
+    #[Test]
+    public function it_fetches_context_before_artifacts()
+    {
+        // Create artifacts with positions
+        // Input artifacts at positions 5-6, so context_before=3 should fetch positions 2,3,4
+        $contextArtifacts = collect([
+            Artifact::factory()->create(['position' => 2]),
+            Artifact::factory()->create(['position' => 3]),
+            Artifact::factory()->create(['position' => 4]),
+        ]);
+
+        $inputArtifacts = collect([
+            Artifact::factory()->create(['position' => 5]),
+            Artifact::factory()->create(['position' => 6]),
+        ]);
+
+        // Add all artifacts to task run as input artifacts
+        foreach ($contextArtifacts->merge($inputArtifacts) as $artifact) {
+            $this->taskRun->inputArtifacts()->attach($artifact->id);
+        }
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+        ]);
+
+        // Set task definition with context_before = 3
+        $this->taskDefinition->task_runner_config = ['context_before' => 3];
+        $this->taskDefinition->save();
+
+        foreach ($inputArtifacts as $artifact) {
+            $taskProcess->inputArtifacts()->attach($artifact->id);
+        }
+
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+
+        // Use reflection to test the protected method
+        $reflection = new \ReflectionClass($runner);
+        $method = $reflection->getMethod('getContextArtifacts');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($runner, $inputArtifacts);
+
+        $this->assertCount(3, $result);
+        $this->assertEquals([2, 3, 4], $result->pluck('position')->sort()->values()->toArray());
+    }
+
+    #[Test]
+    public function it_fetches_context_after_artifacts()
+    {
+        // Create artifacts with positions
+        $inputArtifacts = collect([
+            Artifact::factory()->create(['position' => 5]),
+            Artifact::factory()->create(['position' => 6]),
+        ]);
+
+        $contextArtifacts = collect([
+            Artifact::factory()->create(['position' => 8]),
+            Artifact::factory()->create(['position' => 9]),
+        ]);
+
+        // Add all artifacts to task run as input artifacts
+        foreach ($inputArtifacts->merge($contextArtifacts) as $artifact) {
+            $this->taskRun->inputArtifacts()->attach($artifact->id);
+        }
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+        ]);
+
+        // Set task definition with context_after = 3
+        $this->taskDefinition->task_runner_config = ['context_after' => 3];
+        $this->taskDefinition->save();
+
+        foreach ($inputArtifacts as $artifact) {
+            $taskProcess->inputArtifacts()->attach($artifact->id);
+        }
+
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+
+        // Use reflection to test the protected method
+        $reflection = new \ReflectionClass($runner);
+        $method = $reflection->getMethod('getContextArtifacts');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($runner, $inputArtifacts);
+
+        $this->assertCount(2, $result);
+        $this->assertEquals([8, 9], $result->pluck('position')->sort()->values()->toArray());
+    }
+
+    #[Test]
+    public function it_fetches_both_context_before_and_after_artifacts()
+    {
+        // Create artifacts with positions
+        // Input artifacts at positions 5-6
+        // context_before=2 should fetch positions 3,4
+        // context_after=2 should fetch positions 7,8
+        $contextBefore = collect([
+            Artifact::factory()->create(['position' => 3]),
+            Artifact::factory()->create(['position' => 4]),
+        ]);
+
+        $inputArtifacts = collect([
+            Artifact::factory()->create(['position' => 5]),
+            Artifact::factory()->create(['position' => 6]),
+        ]);
+
+        $contextAfter = collect([
+            Artifact::factory()->create(['position' => 7]),
+            Artifact::factory()->create(['position' => 8]),
+        ]);
+
+        // Add all artifacts to task run as input artifacts
+        foreach ($contextBefore->merge($inputArtifacts)->merge($contextAfter) as $artifact) {
+            $this->taskRun->inputArtifacts()->attach($artifact->id);
+        }
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+        ]);
+
+        // Set task definition with both context_before and context_after
+        $this->taskDefinition->task_runner_config = [
+            'context_before' => 2,
+            'context_after' => 2,
+        ];
+        $this->taskDefinition->save();
+
+        foreach ($inputArtifacts as $artifact) {
+            $taskProcess->inputArtifacts()->attach($artifact->id);
+        }
+
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+
+        // Use reflection to test the protected method
+        $reflection = new \ReflectionClass($runner);
+        $method = $reflection->getMethod('getContextArtifacts');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($runner, $inputArtifacts);
+
+        // Should have 2 before + 2 after = 4 context artifacts
+        $this->assertCount(4, $result);
+        $this->assertEquals([3, 4, 7, 8], $result->pluck('position')->sort()->values()->toArray());
+    }
+
+    #[Test]
+    public function it_limits_context_artifacts_to_available_range()
+    {
+        // Create only a few artifacts
+        $inputArtifacts = collect([
+            Artifact::factory()->create(['position' => 5]),
+        ]);
+
+        // Add artifacts to task run as input artifacts
+        foreach ($inputArtifacts as $artifact) {
+            $this->taskRun->inputArtifacts()->attach($artifact->id);
+        }
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+        ]);
+
+        // Set very high context values
+        $this->taskDefinition->task_runner_config = [
+            'context_before' => 10,
+            'context_after' => 10,
+        ];
+        $this->taskDefinition->save();
+
+        foreach ($inputArtifacts as $artifact) {
+            $taskProcess->inputArtifacts()->attach($artifact->id);
+        }
+
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+
+        // Use reflection to test the protected method
+        $reflection = new \ReflectionClass($runner);
+        $method = $reflection->getMethod('getContextArtifacts');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($runner, $inputArtifacts);
+
+        // Should return empty since no artifacts exist in the requested ranges
+        $this->assertTrue($result->isEmpty());
+    }
+
+    #[Test]
+    public function it_orders_context_artifacts_by_position()
+    {
+        // Create artifacts with mixed positions
+        // Input artifact at position 5
+        // context_before=3 should fetch positions 2,3,4
+        // context_after=3 should fetch positions 6,7,8
+        $contextArtifacts = collect([
+            Artifact::factory()->create(['position' => 3]),
+            Artifact::factory()->create(['position' => 2]),
+            Artifact::factory()->create(['position' => 4]),
+            Artifact::factory()->create(['position' => 8]),
+            Artifact::factory()->create(['position' => 6]),
+            Artifact::factory()->create(['position' => 7]),
+        ]);
+
+        $inputArtifacts = collect([
+            Artifact::factory()->create(['position' => 5]),
+        ]);
+
+        // Add all artifacts to task run as input artifacts
+        foreach ($contextArtifacts->merge($inputArtifacts) as $artifact) {
+            $this->taskRun->inputArtifacts()->attach($artifact->id);
+        }
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+        ]);
+
+        // Set context configuration
+        $this->taskDefinition->task_runner_config = [
+            'context_before' => 3,
+            'context_after' => 3,
+        ];
+        $this->taskDefinition->save();
+
+        foreach ($inputArtifacts as $artifact) {
+            $taskProcess->inputArtifacts()->attach($artifact->id);
+        }
+
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+
+        // Use reflection to test the protected method
+        $reflection = new \ReflectionClass($runner);
+        $method = $reflection->getMethod('getContextArtifacts');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($runner, $inputArtifacts);
+
+        // Should be ordered by position: [2, 3, 4, 6, 7, 8]
+        $this->assertEquals([2, 3, 4, 6, 7, 8], $result->pluck('position')->toArray());
+    }
+
+    #[Test]
+    public function it_excludes_input_artifacts_from_context()
+    {
+        // Create artifacts including some that will be input artifacts
+        $allArtifacts = collect([
+            Artifact::factory()->create(['position' => 3]),
+            Artifact::factory()->create(['position' => 4]),
+            Artifact::factory()->create(['position' => 5]), // This will be input artifact
+            Artifact::factory()->create(['position' => 6]), // This will be input artifact  
+            Artifact::factory()->create(['position' => 7]),
+            Artifact::factory()->create(['position' => 8]),
+        ]);
+
+        $inputArtifacts = $allArtifacts->where('position', '>=', 5)->where('position', '<=', 6);
+
+        // Add all artifacts to task run as input artifacts
+        foreach ($allArtifacts as $artifact) {
+            $this->taskRun->inputArtifacts()->attach($artifact->id);
+        }
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+        ]);
+
+        // Set context configuration
+        $this->taskDefinition->task_runner_config = [
+            'context_before' => 3,
+            'context_after' => 3,
+        ];
+        $this->taskDefinition->save();
+
+        foreach ($inputArtifacts as $artifact) {
+            $taskProcess->inputArtifacts()->attach($artifact->id);
+        }
+
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+
+        // Use reflection to test the protected method
+        $reflection = new \ReflectionClass($runner);
+        $method = $reflection->getMethod('getContextArtifacts');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($runner, $inputArtifacts);
+
+        // Should have artifacts at positions 3, 4, 7, 8 (excluding input artifacts at 5, 6)
+        $this->assertEquals([3, 4, 7, 8], $result->pluck('position')->toArray());
+        $this->assertCount(4, $result);
+    }
 }

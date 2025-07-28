@@ -94,7 +94,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
      * Setup the agent thread with the input artifacts.
      * Associate the thread to the TaskProcess so it has everything it needs to run in an independent job
      */
-    public function setupAgentThread($artifacts = []): AgentThread
+    public function setupAgentThread($artifacts = [], $contextArtifacts = []): AgentThread
     {
         if ($this->taskProcess->agentThread) {
             return $this->taskProcess->agentThread;
@@ -112,6 +112,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
             ->setTaskRun($this->taskRun)
             ->setTaskDefinition($this->taskRun->taskDefinition)
             ->setArtifacts($artifacts)
+            ->setContextArtifacts($contextArtifacts)
             ->includePageNumbers($this->includePageNumbersInThread)
             ->map();
 

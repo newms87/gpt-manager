@@ -5,6 +5,7 @@ namespace App\Services\Task\Runners;
 use App\Repositories\ThreadRepository;
 use App\Services\Task\ClassificationDeduplicationService;
 use App\Services\Task\ClassificationVerificationService;
+use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class ClassifierTaskRunner extends AgentThreadTaskRunner
@@ -41,9 +42,24 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
             return;
         }
 
+
         $inputArtifacts = $this->taskProcess->inputArtifacts;
 
-        $agentThread = $this->setupAgentThread($inputArtifacts);
+        // Get context artifacts if configured
+        $contextArtifacts = $this->getContextArtifacts($inputArtifacts);
+
+        $agentThread = $this->setupAgentThread($inputArtifacts, $contextArtifacts);
+
+        // Add classification-specific instructions for actual classification tasks
+        if (!$contextArtifacts->isEmpty()) {
+            app(ThreadRepository::class)->addMessageToThread($agentThread,
+                "IMPORTANT CLASSIFICATION RULES:\n" .
+                "1. You are classifying ONLY the PRIMARY ARTIFACTS section\n" .
+                "2. Context artifacts are provided to help determine if content flows between pages\n" .
+                "3. ONLY use context artifacts for classification if they appear to be part of the same document/flow as the primary artifacts\n" .
+                "4. If context appears unrelated, IGNORE it for classification purposes"
+            );
+        }
 
         app(ThreadRepository::class)->addMessageToThread($agentThread, "If the only content in the artifact is 'Excluded...' or is very obviously all redacted content and there is no other content of interest, then set the category values to __exclude so the artifacts will be ignored entirely");
 
@@ -135,5 +151,31 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
         } catch(\Exception $e) {
             static::log("Error creating classification deduplication processes: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Get context artifacts based on configuration
+     */
+    protected function getContextArtifacts($inputArtifacts): Collection
+    {
+        $contextBefore = $this->config('context_before', 0);
+        $contextAfter  = $this->config('context_after', 0);
+
+        if ($contextBefore === 0 && $contextAfter === 0) {
+            return collect();
+        }
+
+        // Get position range of current batch
+        $minPosition = $inputArtifacts->min('position');
+        $maxPosition = $inputArtifacts->max('position');
+
+        // Fetch additional context artifacts from the full taskRun
+        return $this->taskRun->inputArtifacts()
+            ->where(function ($query) use ($minPosition, $maxPosition, $contextBefore, $contextAfter) {
+                $query->whereBetween('position', [$minPosition - $contextBefore, $minPosition - 1])
+                    ->orWhereBetween('position', [$maxPosition + 1, $maxPosition + $contextAfter]);
+            })
+            ->orderBy('position')
+            ->get();
     }
 }

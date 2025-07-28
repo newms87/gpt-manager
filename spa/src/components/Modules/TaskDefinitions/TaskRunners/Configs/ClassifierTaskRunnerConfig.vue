@@ -6,6 +6,7 @@
 		/>
 		<TaskDefinitionDirectivesConfigField :task-definition="taskDefinition" class="mt-6" />
 		<SchemaAndFragmentsConfigField :task-definition="taskDefinition" class="mt-6" :max-fragments="1" force-schema />
+		<ContextWindowConfigField :task-definition="taskDefinition" class="mt-6" />
 		<VerificationConfigField :task-definition="taskDefinition" class="mt-6" />
 	</BaseTaskRunnerConfig>
 </template>
@@ -13,7 +14,7 @@
 import { SchemaAndFragmentsConfigField } from "@/components/Modules/TaskDefinitions/TaskRunners/Configs/Fields";
 import { TaskDefinition } from "@/types";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
-import { TaskDefinitionAgentConfigField, TaskDefinitionDirectivesConfigField, VerificationConfigField } from "./Fields";
+import { ContextWindowConfigField, TaskDefinitionAgentConfigField, TaskDefinitionDirectivesConfigField, VerificationConfigField } from "./Fields";
 
 defineProps<{
 	taskDefinition: TaskDefinition;
