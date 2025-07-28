@@ -50,6 +50,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
 
         // Service should have been called once
         $mockService->shouldHaveReceived('handleUiDemandWorkflowComplete')->once();
+        $this->assertTrue(true);
     }
 
     public function test_handles_workflow_run_updated_event_for_non_ui_demand()
@@ -75,6 +76,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
 
         // Service should not have been called
         $mockService->shouldNotHaveReceived('handleUiDemandWorkflowComplete');
+        $this->assertTrue(true);
     }
 
     public function test_handles_workflow_run_updated_event_only_for_completed_or_failed_runs()
@@ -135,6 +137,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
 
         // Service should have been called for completed workflow
         $mockService2->shouldHaveReceived('handleUiDemandWorkflowComplete')->once();
+        $this->assertTrue(true);
     }
 
     public function test_listener_is_registered_for_workflow_run_updated_event()

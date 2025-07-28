@@ -29,7 +29,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
 
     public function test_extract_data_creates_workflow_listener_and_runs_workflow()
     {
-        $workflowDefinition = WorkflowDefinition::factory()->create([
+        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name' => 'test-extract-workflow',
         ]);
@@ -49,14 +49,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
         $uiDemand->storedFiles()->attach($storedFile->id);
 
-        // Mock the WorkflowRunnerService::start method
-        $mockWorkflowRun = WorkflowRun::factory()->make();
-
-        $this->mock(WorkflowRunnerService::class, function ($mock) use ($mockWorkflowRun) {
-            $mock->shouldReceive('start')
-                ->once()
-                ->andReturn($mockWorkflowRun);
-        });
+        // Use integration approach instead of mocking static methods
 
         $workflowRun = $this->service->extractData($uiDemand);
 
@@ -93,7 +86,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
 
     public function test_write_demand_creates_workflow_listener_and_runs_workflow()
     {
-        $workflowDefinition = WorkflowDefinition::factory()->create([
+        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name' => 'test-write-workflow',
         ]);
@@ -120,14 +113,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         );
         $extractListener->markAsCompleted();
 
-        // Mock the WorkflowRunnerService::start method
-        $mockWorkflowRun = WorkflowRun::factory()->make();
-
-        $this->mock(WorkflowRunnerService::class, function ($mock) use ($mockWorkflowRun) {
-            $mock->shouldReceive('start')
-                ->once()
-                ->andReturn($mockWorkflowRun);
-        });
+        // Use integration approach instead of mocking static methods
 
         $workflowRun = $this->service->writeDemand($uiDemand);
 
@@ -254,7 +240,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'user_id' => $this->user->id,
             'url' => $googleDocsUrl,
             'disk' => 'external',
-            'mimetype' => 'application/vnd.google-apps.document',
+            'mime' => 'application/vnd.google-apps.document',
         ]);
 
         // Assert metadata was updated
@@ -272,7 +258,6 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
             'status' => 'failed',
         ]);
 
