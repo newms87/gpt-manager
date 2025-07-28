@@ -10,6 +10,7 @@ use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
+use Newms87\Danx\Helpers\LockHelper;
 
 class ClassificationDeduplicationService
 {
@@ -95,17 +96,17 @@ class ClassificationDeduplicationService
     {
         static::log("Creating deduplication processes for TaskRun {$taskRun->id}");
 
-        $artifact = $taskRun->outputArtifacts()
+        $artifacts = $taskRun->outputArtifacts()
             ->whereNotNull('meta->classification')
-            ->first();
+            ->get();
 
-        if (!$artifact) {
+        if ($artifacts->isEmpty()) {
             static::log('No artifacts with classification metadata found');
 
             return;
         }
 
-        $classificationProperties = $this->extractClassificationProperties($artifact);
+        $classificationProperties = $this->extractClassificationProperties($artifacts->first());
 
         if (empty($classificationProperties)) {
             static::log('No classification properties found to deduplicate');
@@ -115,16 +116,31 @@ class ClassificationDeduplicationService
 
         static::log('Found classification properties: ' . implode(', ', $classificationProperties));
 
+        $processesCreated = 0;
         foreach($classificationProperties as $property) {
+            // Check if this property actually has labels to deduplicate
+            $labels = $this->extractClassificationPropertyLabels($artifacts, $property);
+            
+            if (empty($labels)) {
+                static::log("Skipping property '$property' - no classification labels found");
+                continue;
+            }
+
+            static::log("Property '$property' has " . count($labels) . " labels - creating deduplication process");
+            
             $taskRun->taskProcesses()->create([
                 'name' => "Classification Deduplication: $property",
                 'meta' => ['classification_property' => $property],
             ]);
+            
+            $processesCreated++;
         }
 
-        $taskRun->updateRelationCounter('taskProcesses');
+        if ($processesCreated > 0) {
+            $taskRun->updateRelationCounter('taskProcesses');
+        }
 
-        static::log('Created ' . count($classificationProperties) . ' deduplication processes');
+        static::log("Created $processesCreated deduplication processes");
     }
 
     /**
@@ -320,13 +336,18 @@ PROMPT;
             }
 
             $originalValue = $classification[$property];
-            $updatedValue  = $this->updatePropertyValue($originalValue, $normalizedMappings);
+            $updatedValue  = $this->getPropertyValueUpdate($originalValue, $normalizedMappings);
 
             if ($updatedValue !== $originalValue) {
-                $meta                              = $artifact->meta;
-                $meta['classification'][$property] = $updatedValue;
-                $artifact->meta                    = $meta;
-                $artifact->save();
+                LockHelper::acquire($artifact);
+                try {
+                    $meta                              = $artifact->meta;
+                    $meta['classification'][$property] = $updatedValue;
+                    $artifact->meta                    = $meta;
+                    $artifact->save();
+                } finally {
+                    LockHelper::release($artifact);
+                }
 
                 $totalUpdates++;
                 static::log("Updated artifact {$artifact->id} property '$property'");
@@ -338,11 +359,8 @@ PROMPT;
 
     /**
      * Update a property value with normalized mappings
-     *
-     * @param mixed $value
-     * @return mixed
      */
-    protected function updatePropertyValue($value, array $normalizedMappings)
+    protected function getPropertyValueUpdate($value, array $normalizedMappings)
     {
         if (is_string($value)) {
             $trimmedValue = trim($value);
@@ -368,7 +386,7 @@ PROMPT;
                 return $value;
             } else {
                 return array_map(function ($item) use ($normalizedMappings) {
-                    return $this->updatePropertyValue($item, $normalizedMappings);
+                    return $this->getPropertyValueUpdate($item, $normalizedMappings);
                 }, $value);
             }
         }

@@ -779,7 +779,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method with incomplete mappings
         $reflection = new \ReflectionClass($service);
-        $method     = $reflection->getMethod('updatePropertyValue');
+        $method     = $reflection->getMethod('getPropertyValueUpdate');
         $method->setAccessible(true);
 
         // Simulate AI response that doesn't include mapping for our value
@@ -822,7 +822,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method with mapping that exists
         $reflection = new \ReflectionClass($service);
-        $method     = $reflection->getMethod('updatePropertyValue');
+        $method     = $reflection->getMethod('getPropertyValueUpdate');
         $method->setAccessible(true);
 
         // Simulate AI response that includes mapping for our value
@@ -860,7 +860,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Use reflection to test protected method with incomplete mappings
         $reflection = new \ReflectionClass($service);
-        $method     = $reflection->getMethod('updatePropertyValue');
+        $method     = $reflection->getMethod('getPropertyValueUpdate');
         $method->setAccessible(true);
 
         // Simulate AI response that doesn't include mapping for our value

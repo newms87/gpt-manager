@@ -285,10 +285,31 @@ class ClassificationVerificationServiceTest extends TestCase
 
         $artifacts = collect([
             Artifact::factory()->create([
+                'position' => 1,
                 'meta' => [
                     'classification' => [
                         'company' => 'Apple Inc',
                         'location' => 'Cupertino',
+                        'category' => 'Technology',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'position' => 2,
+                'meta' => [
+                    'classification' => [
+                        'company' => 'Google Inc', // Different company (outlier)
+                        'location' => 'Mountain View', // Different location (outlier)
+                        'category' => 'Technology',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'position' => 3,
+                'meta' => [
+                    'classification' => [
+                        'company' => 'Apple Inc', // Back to Apple
+                        'location' => 'Cupertino', // Back to Cupertino
                         'category' => 'Technology',
                     ],
                 ],
@@ -560,10 +581,31 @@ class ClassificationVerificationServiceTest extends TestCase
 
         $artifacts = collect([
             Artifact::factory()->create([
+                'position' => 1,
                 'meta' => [
                     'classification' => [
                         'company' => 'Apple Inc',
                         'location' => 'Cupertino',
+                        'category' => 'Technology',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'position' => 2,
+                'meta' => [
+                    'classification' => [
+                        'company' => 'Google Inc', // Different company (outlier to test)
+                        'location' => 'Mountain View', // Different location (but not in verify config)
+                        'category' => 'Technology',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'position' => 3,
+                'meta' => [
+                    'classification' => [
+                        'company' => 'Apple Inc', // Back to Apple
+                        'location' => 'Cupertino', // Back to Cupertino
                         'category' => 'Technology',
                     ],
                 ],

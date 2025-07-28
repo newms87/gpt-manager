@@ -95,16 +95,16 @@ class ClassificationVerificationService
         static::log('Found verify config for properties: ' . implode(', ', $verifyConfig));
 
         // Check if artifacts with classification metadata exist
-        $artifact = $taskRun->outputArtifacts()
+        $artifacts = $taskRun->outputArtifacts()
             ->whereNotNull('meta->classification')
-            ->first();
+            ->get();
 
-        if (!$artifact) {
+        if ($artifacts->isEmpty()) {
             static::log('No artifacts with classification metadata found');
             return;
         }
 
-        $availableProperties = array_keys($artifact->meta['classification'] ?? []);
+        $availableProperties = array_keys($artifacts->first()->meta['classification'] ?? []);
         $propertiesToVerify = array_intersect($verifyConfig, $availableProperties);
 
         if (empty($propertiesToVerify)) {
@@ -112,16 +112,31 @@ class ClassificationVerificationService
             return;
         }
 
+        $processesCreated = 0;
         foreach ($propertiesToVerify as $property) {
+            // Check if this property actually has outliers that need verification
+            $verificationGroups = $this->buildVerificationGroups($artifacts, $property);
+            
+            if (empty($verificationGroups)) {
+                static::log("Skipping property '$property' - no outliers detected that need verification");
+                continue;
+            }
+
+            static::log("Property '$property' has " . count($verificationGroups) . " outlier groups - creating verification process");
+            
             $taskRun->taskProcesses()->create([
                 'name' => "Classification Verification: $property",
                 'meta' => ['classification_verification_property' => $property],
             ]);
+            
+            $processesCreated++;
         }
 
-        $taskRun->updateRelationCounter('taskProcesses');
+        if ($processesCreated > 0) {
+            $taskRun->updateRelationCounter('taskProcesses');
+        }
 
-        static::log('Created ' . count($propertiesToVerify) . ' verification processes');
+        static::log("Created $processesCreated verification processes");
     }
 
     /**
