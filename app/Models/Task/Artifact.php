@@ -30,6 +30,7 @@ class Artifact extends Model implements AuditableContract
     ];
 
     protected array $keywordFields = [
+        'id',
         'name',
         'text_content',
         'json_content',

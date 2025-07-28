@@ -25,25 +25,18 @@ class ClassificationDeduplicationService
         $agentName = $config['agent_name'];
         $model     = $config['model'];
 
-        // Find existing agent by name and model (no team context needed)
-        $agent = Agent::whereNull('team_id')
-            ->where('name', $agentName)
-            ->first();
-
-        if (!$agent) {
-            // Create agent directly with explicit null team_id
-            $agent = Agent::create([
-                'name'        => $agentName,
+        return Agent::updateOrCreate(
+            [
+                'team_id' => null, // System-level agent, not team-specific
+                'name'    => $agentName,
+            ],
+            [
                 'model'       => $model,
                 'description' => 'Automated agent for data value deduplication and normalization',
                 'api_options' => ['temperature' => 0],
-                'team_id'     => null,
                 'retry_count' => 2,
-            ]);
-            static::log("Created new classification deduplication agent: $agent->name (ID: $agent->id)");
-        }
-
-        return $agent;
+            ]
+        );
     }
 
     /**
@@ -120,19 +113,19 @@ class ClassificationDeduplicationService
         foreach($classificationProperties as $property) {
             // Check if this property actually has labels to deduplicate
             $labels = $this->extractClassificationPropertyLabels($artifacts, $property);
-            
+
             if (empty($labels)) {
                 static::log("Skipping property '$property' - no classification labels found");
                 continue;
             }
 
             static::log("Property '$property' has " . count($labels) . " labels - creating deduplication process");
-            
+
             $taskRun->taskProcesses()->create([
                 'name' => "Classification Deduplication: $property",
                 'meta' => ['classification_property' => $property],
             ]);
-            
+
             $processesCreated++;
         }
 

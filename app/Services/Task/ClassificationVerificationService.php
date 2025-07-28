@@ -5,6 +5,7 @@ namespace App\Services\Task;
 use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
@@ -24,25 +25,18 @@ class ClassificationVerificationService
         $agentName = $config['agent_name'];
         $model     = $config['model'];
 
-        // Find existing agent by name and model (no team context needed)
-        $agent = Agent::whereNull('team_id')
-            ->where('name', $agentName)
-            ->first();
-
-        if (!$agent) {
-            // Create agent directly with explicit null team_id
-            $agent = Agent::create([
-                'name'        => $agentName,
+        return Agent::updateOrCreate(
+            [
+                'team_id' => null, // System-level agent, no team context
+                'name'    => $agentName,
+            ],
+            [
                 'model'       => $model,
                 'description' => 'Automated agent for classification verification and correction',
                 'api_options' => ['temperature' => 0],
-                'team_id'     => null,
                 'retry_count' => 2,
-            ]);
-            static::log("Created new classification verification agent: $agent->name (ID: $agent->id)");
-        }
-
-        return $agent;
+            ]
+        );
     }
 
     /**
@@ -56,6 +50,7 @@ class ClassificationVerificationService
 
         if (empty($verificationGroups)) {
             static::log("No verification groups found for property '$property'");
+
             return;
         }
 
@@ -64,7 +59,7 @@ class ClassificationVerificationService
         // Ensure agent is created by calling getOrCreateClassificationVerificationAgent
         $this->getOrCreateClassificationVerificationAgent();
 
-        foreach ($verificationGroups as $groupIndex => $group) {
+        foreach($verificationGroups as $groupIndex => $group) {
             static::log("Processing verification group " . ($groupIndex + 1) . " of " . count($verificationGroups));
             $this->verifyClassificationGroup($group, $property);
         }
@@ -80,15 +75,17 @@ class ClassificationVerificationService
         static::log("Creating verification processes for TaskRun {$taskRun->id}");
 
         $taskDefinition = $taskRun->taskDefinition;
-        $verifyConfig = $taskDefinition->task_runner_config['verify'] ?? [];
+        $verifyConfig   = $taskDefinition->task_runner_config['verify'] ?? [];
 
         if (empty($verifyConfig)) {
             static::log('No verify config found in task_runner_config');
+
             return;
         }
 
         if (!is_array($verifyConfig)) {
             static::log('Invalid verify config - must be an array of property names');
+
             return;
         }
 
@@ -101,34 +98,36 @@ class ClassificationVerificationService
 
         if ($artifacts->isEmpty()) {
             static::log('No artifacts with classification metadata found');
+
             return;
         }
 
         $availableProperties = array_keys($artifacts->first()->meta['classification'] ?? []);
-        $propertiesToVerify = array_intersect($verifyConfig, $availableProperties);
+        $propertiesToVerify  = array_intersect($verifyConfig, $availableProperties);
 
         if (empty($propertiesToVerify)) {
             static::log('No matching properties found between verify config and classification metadata');
+
             return;
         }
 
         $processesCreated = 0;
-        foreach ($propertiesToVerify as $property) {
+        foreach($propertiesToVerify as $property) {
             // Check if this property actually has outliers that need verification
             $verificationGroups = $this->buildVerificationGroups($artifacts, $property);
-            
+
             if (empty($verificationGroups)) {
                 static::log("Skipping property '$property' - no outliers detected that need verification");
                 continue;
             }
 
             static::log("Property '$property' has " . count($verificationGroups) . " outlier groups - creating verification process");
-            
+
             $taskRun->taskProcesses()->create([
                 'name' => "Classification Verification: $property",
                 'meta' => ['classification_verification_property' => $property],
             ]);
-            
+
             $processesCreated++;
         }
 
@@ -145,13 +144,13 @@ class ClassificationVerificationService
      */
     protected function buildVerificationGroups(Collection $artifacts, string $property): array
     {
-        $groups = [];
+        $groups         = [];
         $artifactsArray = $artifacts->values()->all();
-        $count = count($artifactsArray);
+        $count          = count($artifactsArray);
 
-        for ($i = 0; $i < $count; $i++) {
+        for($i = 0; $i < $count; $i++) {
             $currentArtifact = $artifactsArray[$i];
-            $currentValue = $this->getPropertyValue($currentArtifact, $property);
+            $currentValue    = $this->getPropertyValue($currentArtifact, $property);
 
             if ($currentValue === null) {
                 continue;
@@ -184,8 +183,8 @@ class ClassificationVerificationService
                 if ($i >= 2) {
                     $prevPrevValue = $this->getPropertyValue($artifactsArray[$i - 2], $property);
                 }
-                $isOutlier = ($currentValue !== $prevValue) && 
-                            ($prevPrevValue === null || $prevValue === $prevPrevValue);
+                $isOutlier = ($currentValue !== $prevValue) &&
+                    ($prevPrevValue === null || $prevValue === $prevPrevValue);
             } elseif ($nextValue !== null) {
                 // First artifact: only consider outlier if we have enough context to be confident
                 // Look at the pattern - if next artifact also differs from its next, less likely to be outlier
@@ -193,8 +192,8 @@ class ClassificationVerificationService
                 if ($i + 2 < $count) {
                     $nextNextValue = $this->getPropertyValue($artifactsArray[$i + 2], $property);
                 }
-                $isOutlier = ($currentValue !== $nextValue) && 
-                            ($nextNextValue === null || $nextValue === $nextNextValue);
+                $isOutlier = ($currentValue !== $nextValue) &&
+                    ($nextNextValue === null || $nextValue === $nextNextValue);
             }
 
             if (!$isOutlier) {
@@ -205,11 +204,11 @@ class ClassificationVerificationService
             $contextArtifacts = [];
 
             // Add previous 2 artifacts
-            for ($j = max(0, $i - 2); $j < $i; $j++) {
+            for($j = max(0, $i - 2); $j < $i; $j++) {
                 $contextArtifacts[] = [
                     'artifact' => $artifactsArray[$j],
                     'position' => 'previous',
-                    'value' => $this->getPropertyValue($artifactsArray[$j], $property),
+                    'value'    => $this->getPropertyValue($artifactsArray[$j], $property),
                 ];
             }
 
@@ -217,7 +216,7 @@ class ClassificationVerificationService
             $contextArtifacts[] = [
                 'artifact' => $currentArtifact,
                 'position' => 'current',
-                'value' => $currentValue,
+                'value'    => $currentValue,
             ];
 
             // Add next 1 artifact
@@ -225,14 +224,14 @@ class ClassificationVerificationService
                 $contextArtifacts[] = [
                     'artifact' => $artifactsArray[$i + 1],
                     'position' => 'next',
-                    'value' => $this->getPropertyValue($artifactsArray[$i + 1], $property),
+                    'value'    => $this->getPropertyValue($artifactsArray[$i + 1], $property),
                 ];
             }
 
             $groups[] = [
                 'focus_artifact_id' => $currentArtifact->id,
-                'focus_position' => $i,
-                'context' => $contextArtifacts,
+                'focus_position'    => $i,
+                'context'           => $contextArtifacts,
             ];
         }
 
@@ -245,7 +244,7 @@ class ClassificationVerificationService
     protected function getPropertyValue(Artifact $artifact, string $property): ?string
     {
         $classification = $artifact->meta['classification'] ?? [];
-        $value = $classification[$property] ?? null;
+        $value          = $classification[$property] ?? null;
 
         if (is_string($value)) {
             return trim($value) ?: null;
@@ -272,10 +271,10 @@ class ClassificationVerificationService
         static::log("Verifying classification group for artifact $focusArtifactId, property '$property'");
 
         $prompt = $this->buildVerificationPrompt($group, $property);
-        
+
         $threadRepository = app(ThreadRepository::class);
-        $agent = $this->getOrCreateClassificationVerificationAgent();
-        $agentThread = $threadRepository->create($agent, 'Classification Verification');
+        $agent            = $this->getOrCreateClassificationVerificationAgent();
+        $agentThread      = $threadRepository->create($agent, 'Classification Verification');
 
         $systemMessage = 'You are a classification verification assistant. Your job is to review classification values in context and determine if any need correction for consistency and accuracy.';
         $threadRepository->addMessageToThread($agentThread, $systemMessage);
@@ -291,6 +290,7 @@ class ClassificationVerificationService
 
         if (!$threadRun->lastMessage || !$threadRun->lastMessage->content) {
             static::log('Failed to get response from AI agent for classification verification');
+
             return;
         }
 
@@ -299,12 +299,13 @@ class ClassificationVerificationService
 
             if (!isset($jsonContent['corrections']) || !is_array($jsonContent['corrections'])) {
                 static::log("No corrections provided in verification response");
+
                 return;
             }
 
             $this->applyVerificationCorrections($group, $jsonContent['corrections'], $property);
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             static::log('Error parsing verification response: ' . $e->getMessage());
         }
     }
@@ -316,55 +317,60 @@ class ClassificationVerificationService
     {
         $contextData = [];
 
-        foreach ($group['context'] as $contextItem) {
+        /** @var TaskDefinition $taskDefinition */
+        $taskDefinition = $group['context'][0]['artifact']?->taskDefinition;
+
+        foreach($group['context'] as $contextItem) {
+            /** @var Artifact $artifact */
             $artifact = $contextItem['artifact'];
             $position = $contextItem['position'];
-            $value = $contextItem['value'];
-
-            // Include some content context for better verification
-            $content = $artifact->content;
-            if (strlen($content) > 500) {
-                $content = substr($content, 0, 500) . '...';
-            }
+            $value    = $contextItem['value'];
 
             $contextData[] = [
-                'position' => $position,
+                'position'    => $position,
                 'artifact_id' => $artifact->id,
-                'value' => $value,
-                'content_sample' => $content,
+                'value'       => $value,
+                'content'     => $artifact->text_content ?: $artifact->json_content,
             ];
         }
 
         $contextJson = json_encode($contextData, JSON_PRETTY_PRINT);
 
+        $propertyRule = $taskDefinition->schemaDefinition->schema['properties'][$property]['description'] ?? '(Property rule not found)';
+
         return <<<PROMPT
-I need you to verify the classification value for the property "$property" in the context of adjacent artifacts.
+I need you to verify if the CORRECT classification values were given for the property "$property" based on the full context of adjacent artifacts.
 
-You are reviewing a sequence of artifacts where the CURRENT artifact's classification may need correction based on the context of previous and next artifacts.
-
-The goal is to ensure consistency and accuracy in classification values. Look for:
-1. **Inconsistent formatting** - Same entity with different formats
-2. **Incorrect classifications** - Wrong value based on content
-3. **Missing context** - Value should be more/less specific based on adjacent artifacts
-4. **Typos or errors** - Clear mistakes in the classification
+**CRITICAL**: This is NOT about formatting or consistency - it's about correctness. Classifications may have been ambiguous when processed in isolation, but with the full context, you can now determine if BETTER or MORE ACCURATE classifications should have been given.
 
 **Context Window:**
+
 $contextJson
 
-**Instructions:**
-- Focus on the artifact marked as "current"
-- Review its classification value in context of the "previous" and "next" artifacts
-- Only suggest corrections if there are clear issues
-- Maintain consistency with the pattern established by adjacent artifacts
-- Consider the content sample to verify the classification accuracy
+**Classification Rule for "$property":**
 
-**Important Rules:**
-1. Only correct if there's a clear issue - don't change correct values
-2. Prefer consistency with adjacent artifacts when reasonable
-3. Base corrections on both content and context
-4. If no correction is needed, return an empty corrections array
+$propertyRule
 
-Provide corrections only for artifacts that clearly need them.
+**Your Task:**
+1. Review ALL artifacts in the context window (previous, current, and next)
+2. Examine each artifact's content and current classification value
+3. Determine if ANY of the artifacts have incorrect classifications based on the full context
+4. The context may reveal information that makes ANY artifact's classification clearly incorrect
+
+**Key Scenarios to Look For:**
+- Any artifact's classification was made without knowing the broader context
+- The full context reveals information that changes how any artifact should be classified
+- Adjacent artifacts provide clarifying information that affects interpretation
+- The classification rule, when applied with full context, points to different values
+
+**Important Guidelines:**
+- You can correct ANY artifact in the context window (previous, current, or next)
+- ONLY suggest corrections if the context reveals the classification is actually WRONG according to the rule
+- Ignore minor formatting differences - focus on semantic correctness
+- Context should provide evidence that a different classification value is more accurate
+- If all classifications are correct given the context, return empty corrections array
+
+The goal is accuracy based on context. You may correct multiple artifacts if needed.
 PROMPT;
     }
 
@@ -375,26 +381,31 @@ PROMPT;
     {
         if (empty($corrections)) {
             static::log("No corrections to apply for property '$property'");
+
             return;
         }
 
         static::log('Applying ' . count($corrections) . " corrections for property '$property'");
 
-        foreach ($corrections as $correction) {
+        $previousArtifactsCorrected = [];
+
+        foreach($corrections as $correction) {
             if (!isset($correction['artifact_id']) || !isset($correction['corrected_value'])) {
                 static::log('Invalid correction format - missing artifact_id or corrected_value');
                 continue;
             }
 
-            $artifactId = $correction['artifact_id'];
+            $artifactId     = $correction['artifact_id'];
             $correctedValue = $correction['corrected_value'];
-            $reason = $correction['reason'] ?? 'No reason provided';
+            $reason         = $correction['reason'] ?? 'No reason provided';
 
-            // Find the artifact in the context
+            // Find the artifact and its position in the context
             $artifact = null;
-            foreach ($group['context'] as $contextItem) {
+            $artifactPosition = null;
+            foreach($group['context'] as $contextItem) {
                 if ($contextItem['artifact']->id == $artifactId) {
                     $artifact = $contextItem['artifact'];
+                    $artifactPosition = $contextItem['position'];
                     break;
                 }
             }
@@ -405,19 +416,61 @@ PROMPT;
             }
 
             $originalValue = $this->getPropertyValue($artifact, $property);
-            
+
             if ($originalValue === $correctedValue) {
                 static::log("Artifact $artifactId already has correct value '$correctedValue'");
                 continue;
             }
 
             // Update the artifact's classification
-            $meta = $artifact->meta;
+            $meta                              = $artifact->meta;
             $meta['classification'][$property] = $correctedValue;
-            $artifact->meta = $meta;
+            $artifact->meta                    = $meta;
             $artifact->save();
 
             static::log("Updated artifact $artifactId property '$property': '$originalValue' => '$correctedValue' (Reason: $reason)");
+
+            // Track if we corrected a previous artifact
+            if ($artifactPosition === 'previous') {
+                $previousArtifactsCorrected[] = $artifact;
+            }
+        }
+
+        // If we corrected any previous artifacts, create new verification processes for them
+        if (!empty($previousArtifactsCorrected)) {
+            $this->createRecursiveVerificationProcesses($previousArtifactsCorrected, $property);
+        }
+    }
+
+    /**
+     * Create recursive verification processes for corrected previous artifacts
+     */
+    protected function createRecursiveVerificationProcesses(array $correctedArtifacts, string $property): void
+    {
+        static::log('Creating recursive verification processes for ' . count($correctedArtifacts) . ' corrected previous artifacts');
+
+        foreach ($correctedArtifacts as $artifact) {
+            // Get the TaskRun this artifact belongs to
+            $taskRun = $artifact->taskRun;
+            if (!$taskRun) {
+                static::log("No TaskRun found for artifact {$artifact->id}");
+                continue;
+            }
+
+            // Create a new task process for recursive verification
+            $taskProcess = $taskRun->taskProcesses()->create([
+                'name' => "Recursive Classification Verification: $property (Artifact {$artifact->id})",
+                'meta' => [
+                    'classification_verification_property' => $property,
+                    'recursive_verification_artifact_id' => $artifact->id,
+                    'is_recursive' => true
+                ],
+            ]);
+
+            static::log("Created recursive verification process {$taskProcess->id} for artifact {$artifact->id}");
+
+            // Update the TaskRun's process counter
+            $taskRun->updateRelationCounter('taskProcesses');
         }
     }
 
@@ -427,42 +480,42 @@ PROMPT;
     protected function getVerificationResponseSchema(): SchemaDefinition
     {
         $schema = [
-            'type' => 'object',
-            'properties' => [
+            'type'                 => 'object',
+            'properties'           => [
                 'corrections' => [
-                    'type' => 'array',
-                    'items' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'artifact_id' => [
-                                'type' => 'integer',
+                    'type'        => 'array',
+                    'items'       => [
+                        'type'                 => 'object',
+                        'properties'           => [
+                            'artifact_id'     => [
+                                'type'        => 'integer',
                                 'description' => 'The ID of the artifact to correct',
                             ],
                             'corrected_value' => [
-                                'type' => 'string',
+                                'type'        => 'string',
                                 'description' => 'The corrected classification value',
                             ],
-                            'reason' => [
-                                'type' => 'string',
+                            'reason'          => [
+                                'type'        => 'string',
                                 'description' => 'Brief explanation of why the correction was made',
                             ],
                         ],
-                        'required' => ['artifact_id', 'corrected_value', 'reason'],
+                        'required'             => ['artifact_id', 'corrected_value', 'reason'],
                         'additionalProperties' => false,
                     ],
                     'description' => 'Array of classification corrections to apply',
                 ],
             ],
-            'required' => ['corrections'],
+            'required'             => ['corrections'],
             'additionalProperties' => false,
         ];
 
         return SchemaDefinition::firstOrCreate([
             'team_id' => null, // System-level schema, not team-specific
-            'name' => 'Classification Verification Response',
+            'name'    => 'Classification Verification Response',
         ], [
             'description' => 'JSON schema for classification verification responses',
-            'schema' => $schema,
+            'schema'      => $schema,
         ]);
     }
 }

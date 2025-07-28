@@ -37,3 +37,6 @@ dump:
 
 work:
 	vendor/bin/sail artisan queue:work
+
+horizon-restart:
+	./horizon-restart.sh

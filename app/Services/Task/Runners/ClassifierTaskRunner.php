@@ -112,6 +112,7 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
 
         if ($hasVerificationProcesses) {
             static::log("TaskProcess with classification_verification_property meta found - verification phase completed");
+
             return;
         }
 
