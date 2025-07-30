@@ -17,7 +17,7 @@
 				</div>
 				<EditableDiv
 					:readonly="readonly && !isEditing"
-					color="slate-700"
+					color="slate-700 max-w-72"
 					:model-value="workflowInput.description"
 					placeholder="Enter Description..."
 					@update:model-value="description => updateAction.trigger(workflowInput, { description })"

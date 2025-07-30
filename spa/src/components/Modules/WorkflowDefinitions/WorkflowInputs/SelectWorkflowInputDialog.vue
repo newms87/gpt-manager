@@ -27,7 +27,6 @@
 						selectable
 						editable-team-objects
 						editing
-						readonly
 						removable
 						@select="$emit('confirm', workflowInput)"
 						@remove="deleteAction.trigger(workflowInput)"

@@ -21,13 +21,19 @@ class TaskDefinitionToAgentThreadMapper
 
     protected ?TaskRun       $taskRun = null;
     protected TaskDefinition $taskDefinition;
-    /** @var array|Collection|EloquentCollection|Artifact[] */
-    protected array|Collection|EloquentCollection $artifacts = [];
-    /** @var array|Collection|EloquentCollection|Artifact[] */
-    protected array|Collection|EloquentCollection $contextArtifacts = [];
+    /** @var Collection|EloquentCollection|Artifact[] */
+    protected Collection|EloquentCollection $artifacts;
+    /** @var Collection|EloquentCollection|Artifact[] */
+    protected Collection|EloquentCollection $contextArtifacts;
 
     protected bool  $includePageNumbers = false;
     protected array $messages           = [];
+
+    public function __construct()
+    {
+        $this->artifacts        = collect();
+        $this->contextArtifacts = collect();
+    }
 
     public function includePageNumbers(bool $included = true): static
     {
@@ -52,14 +58,14 @@ class TaskDefinitionToAgentThreadMapper
 
     public function setArtifacts(array|Collection|EloquentCollection $artifacts): static
     {
-        $this->artifacts = $artifacts;
+        $this->artifacts = collect($artifacts);
 
         return $this;
     }
 
     public function setContextArtifacts(array|Collection|EloquentCollection $contextArtifacts = []): static
     {
-        $this->contextArtifacts = $contextArtifacts;
+        $this->contextArtifacts = collect($contextArtifacts);
 
         return $this;
     }
@@ -99,8 +105,8 @@ class TaskDefinitionToAgentThreadMapper
         $totalFiles = 0;
         foreach($this->artifacts as $artifact) {
             $artifactFilterService = $this->resolveArtifactFilterService($artifact);
-            $filteredMessage = $artifactFilterService->setArtifact($artifact)->filter();
-            
+            $filteredMessage       = $artifactFilterService->setArtifact($artifact)->filter();
+
             // Only count files if the filtered artifact will actually be sent (not null)
             // and the filter includes files
             if ($filteredMessage !== null && $artifactFilterService->hasFiles()) {
@@ -132,33 +138,34 @@ class TaskDefinitionToAgentThreadMapper
      */
     protected function addArtifacts(AgentThread $agentThread): void
     {
-        static::log("\tAdding " . count($this->artifacts) . " primary artifacts");
-        
+        static::log("\tAdding " . $this->artifacts->count() . " primary artifacts");
+
+        $minPosition            = $this->artifacts->min('position');
+        $maxPosition            = $this->artifacts->max('position');
+        $contextBeforeArtifacts = $this->contextArtifacts->filter(fn(Artifact $a) => $a->position < $minPosition)->sortBy('position');
+        $contextAfterArtifacts  = $this->contextArtifacts->filter(fn(Artifact $a) => $a->position > $maxPosition)->sortBy('position');
+
         // Add context before if available
-        if (!empty($this->contextArtifacts)) {
-            $contextBefore = collect($this->contextArtifacts)->filter(fn($a) => $a->position < collect($this->artifacts)->min('position'))->sortBy('position');
-            if ($contextBefore->isNotEmpty()) {
-                app(ThreadRepository::class)->addMessageToThread($agentThread, "\n--- CONTEXT BEFORE ---\n");
-                foreach ($contextBefore as $artifact) {
-                    $this->addSingleArtifact($agentThread, $artifact, true);
-                }
+        if ($contextBeforeArtifacts->isNotEmpty()) {
+            app(ThreadRepository::class)->addMessageToThread($agentThread, "\n--- CONTEXT BEFORE ---\n");
+            foreach($contextBeforeArtifacts as $artifact) {
+                $this->addSingleArtifact($agentThread, $artifact, true);
             }
         }
-        
+
         // Add primary artifacts
-        app(ThreadRepository::class)->addMessageToThread($agentThread, "\n--- PRIMARY ARTIFACTS ---\n");
-        foreach($this->artifacts as $artifact) {
-            $this->addSingleArtifact($agentThread, $artifact, false);
+        if ($this->artifacts->isNotEmpty()) {
+            app(ThreadRepository::class)->addMessageToThread($agentThread, "\n--- PRIMARY ARTIFACTS ---\n");
+            foreach($this->artifacts as $artifact) {
+                $this->addSingleArtifact($agentThread, $artifact, false);
+            }
         }
-        
+
         // Add context after if available
-        if (!empty($this->contextArtifacts)) {
-            $contextAfter = collect($this->contextArtifacts)->filter(fn($a) => $a->position > collect($this->artifacts)->max('position'))->sortBy('position');
-            if ($contextAfter->isNotEmpty()) {
-                app(ThreadRepository::class)->addMessageToThread($agentThread, "\n--- CONTEXT AFTER ---\n");
-                foreach ($contextAfter as $artifact) {
-                    $this->addSingleArtifact($agentThread, $artifact, true);
-                }
+        if ($contextAfterArtifacts->isNotEmpty()) {
+            app(ThreadRepository::class)->addMessageToThread($agentThread, "\n--- CONTEXT AFTER ---\n");
+            foreach($contextAfterArtifacts as $artifact) {
+                $this->addSingleArtifact($agentThread, $artifact, true);
             }
         }
     }

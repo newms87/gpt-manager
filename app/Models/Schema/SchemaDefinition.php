@@ -95,10 +95,6 @@ class SchemaDefinition extends Model implements AuditableContract, ResourcePacka
 
     public static function booted(): void
     {
-        static::creating(function (SchemaDefinition $schemaDefinition) {
-            $schemaDefinition->team_id = $schemaDefinition->team_id ?? team()->id ?? null;
-        });
-
         static::updated(function (SchemaDefinition $schemaDefinition) {
             // Track Schema History if it was changed and there was a previous version
             if ($schemaDefinition->wasChanged('schema')) {
