@@ -16,181 +16,83 @@
   use it. Understand the method completely (no abstraction) before assuming its behavior. Never assume you know how
   something works. Never guess. It is CRITICAL you understand what you are doing before you do it.
 
-## Laravel Backend Standards
+**CRITICALLY IMPORTANT: Before each code change, make a TODO list with the FIRST STEP stating:**
+*"I will follow the best practices and standards: DRY Principles, no Legacy/backwards compatibility, and use the correct patterns."*
 
-### Architecture Patterns
+## Specialized Agent Usage
 
-**Service Layer Pattern**
+**MANDATORY: For Vue.js/Frontend Work**
 
-```php
-// Services contain ALL business logic
-class TeamObjectMergeService
-{
-    public function merge(TeamObject $sourceObject, TeamObject $targetObject): TeamObject
-    {
-        $this->validateMerge($sourceObject, $targetObject);
-        
-        return DB::transaction(function () use ($sourceObject, $targetObject) {
-            $this->mergeAttributes($sourceObject, $targetObject);
-            $this->mergeRelationships($sourceObject, $targetObject);
-            $sourceObject->delete();
-            return $targetObject->fresh(['attributes', 'relationships']);
-        });
-    }
-}
-```
+You MUST use the specialized Vue agents for any frontend work:
 
-**Repository Pattern**
+1. **vue-architect-planner** - REQUIRED for:
+   - Planning new features affecting multiple components
+   - Medium to large changes impacting multiple files
+   - Component organization and architectural decisions
 
-```php
-// Repositories handle data access ONLY
-// Except for the action() method which contains ALL endpoint actions for the given model
-class AgentRepository extends ActionRepository
-{
-    public static string $model = Agent::class;
+2. **vue-tailwind-engineer** - REQUIRED for:
+   - Creating any new Vue components
+   - Implementing Vue features or functionality
+   - Refactoring existing Vue code
+   - Any non-trivial changes (more than a few lines of code)
 
-    public function query(): Builder
-    {
-        return parent::query()->where('team_id', team()->id);
-    }
-}
-```
+3. **vue-tailwind-reviewer** - REQUIRED for:
+   - Reviewing Vue components after creation or modification
+   - Ensuring adherence to project patterns and quality standards
+   - Quality assurance of all Vue/Tailwind code
 
-**Controller Pattern**
+**DO NOT** attempt to write Vue components or frontend code directly. Always delegate to the appropriate specialized agent to ensure consistency, quality, and adherence to project standards.
 
-```php
-// Controllers are THIN - validation and delegation only
-class TeamObjectsController extends ActionController
-{
-    public static string $repo = TeamObjectRepository::class;
-    public static ?string $resource = TeamObjectResource::class;
+**MANDATORY: For Laravel Backend Work**
 
-    // Use app() helper for service resolution (ActionRoute compatibility)
-    public function merge(TeamObject $sourceObject, TeamObject $targetObject)
-    {
-        $mergedObject = app(TeamObjectMergeService::class)->merge($sourceObject, $targetObject);
-        return new TeamObjectResource($mergedObject);
-    }
-}
-```
+You MUST use the specialized Laravel agents for any backend work:
 
-### Model Best Practices
+1. **laravel-system-architect** - REQUIRED for:
+   - Planning complex backend features involving multiple classes/models/services
+   - System architecture decisions affecting multiple components
+   - Database schema design and migration planning
+   - API endpoint organization and integration planning
 
-- Models contain ONLY: relationships, scopes, casts, attributes, simple queries
-- Use traits for shared functionality (AuditableTrait, SoftDeletes)
-- Implement validation via validate() method
-- NO business logic in models
-- Always use consts inside the model they belong to whenever creating statuses or
-  enum values that will be entered into a field for that model. DO NOT HARD CODE STRINGS for enums to set model
-  fields/attributes.
+2. **laravel-backend-architect** - REQUIRED for:
+   - Creating any new services, repositories, controllers, or models
+   - Implementing backend features or functionality
+   - Refactoring existing Laravel code
+   - Any non-trivial backend changes (more than a Simple getter/setter)
 
-### API Standards
+3. **laravel-qa-tester** - REQUIRED for:
+   - Reviewing Laravel backend code after creation or modification
+   - Ensuring comprehensive test coverage and quality standards
+   - Quality assurance of all Laravel backend code
 
-- Use ActionRoute::routes() for CRUD endpoints
-- RESTful resource routing
-- Resources handle API transformation
-- Form requests for validation
+**DO NOT** attempt to write Laravel services, repositories, controllers, or models directly. Always delegate to the appropriate specialized agent to ensure consistency, quality, and adherence to the established Service-Repository-Controller pattern with danx integration.
 
-### Database Standards
+## Laravel Backend Standards (High-Level)
 
-- Use `./vendor/bin/sail artisan make:migration` for migrations
-- ALWAYS run `./vendor/bin/sail artisan fix` after creating migrations to fix permissions
-- Anonymous class migrations (Laravel 9+ style)
-- Proper foreign key constraints
-- Composite indexes for performance
+### Core Architecture - Service-Repository-Controller Pattern
+- **Services**: ALL business logic with validation and DB transactions
+- **Repositories**: Data access ONLY, extend ActionRepository with team scoping
+- **Controllers**: THIN delegation only, extend ActionController with app() helper
+- **Models**: Relationships and validation ONLY, use danx traits
+
+### Key Requirements
+- **Team-based access control**: ALL data scoped to teams automatically
+- **danx library integration**: ActionController, ActionRepository, ActionResource, ActionRoute
+- **Database transactions**: Multi-step operations must use DB::transaction()
+- **Anonymous class migrations**: Laravel 9+ style with team_id fields
+- **Comprehensive testing**: AuthenticatedTestCase with team setup
+
+**For detailed implementation patterns, see `LARAVEL_BACKEND_PATTERNS_GUIDE.md` or use the Laravel specialized agents.**
 
 ## Vue.js Frontend Standards
 
-### Component Architecture
-
-**Single File Components**
-
-```vue
-
-<template>
-    <!-- Keep templates clean and semantic -->
-    <div class="component-root">
-        <ChildComponent v-if="condition" />
-    </div>
-</template>
-
-<script setup lang="ts">
-    // ALWAYS use <script setup> with TypeScript
-    import { computed, ref } from "vue";
-
-    // Props with defaults
-    const props = withDefaults(defineProps<{
-        object: TeamObject;
-        level?: number;
-    }>(), {
-        level: 0
-    });
-
-    // Emits typed
-    const emit = defineEmits<{
-        'update': [value: string];
-    }>();
-
-    // Reactive state
-    const isLoading = ref(false);
-
-    // Computed properties
-    const displayName = computed(() => props.object.name || 'Untitled');
-
-    // Functions
-    async function handleAction() {
-        isLoading.value = true;
-        try {
-            // Logic here
-        } finally {
-            isLoading.value = false;
-        }
-    }
-</script>
-
-<style lang="scss" scoped>
-    // Minimal scoped styles only when necessary
-</style>
-```
-
-### Component Guidelines
-
-- KEEP COMPONENTS SMALL - extract to child components early
-- One component = one responsibility
-- Extract complex logic to composables
-- Use TypeScript for all props, emits, and functions
-
-### State Management
-
-- Use reactive refs and custom stores (no Vuex/Pinia needed)
-- Leverage quasar-ui-danx storeObjects for normalized data
-- Real-time updates via Pusher
-
-### Styling Standards
-
-- Tailwind CSS utility classes ONLY
-- NO inline styles
-- Complex utility combinations should move to `<style scoped lang="scss">` sections
-- Global styles use `@apply` directive in `spa/src/assets/*.scss` files
-- Use Quasar components with Tailwind classes
-
-### File Organization
-
-```
-spa/src/
-├── components/
-│   ├── Modules/         # Domain-specific modules
-│   │   └── [Module]/
-│   │       ├── config/  # Module configuration
-│   │       ├── types.ts # TypeScript interfaces
-│   │       ├── routes.ts # API routes
-│   │       └── *.vue    # Components
-│   ├── Layouts/         # Page layouts
-│   └── Shared/          # Reusable components
-├── helpers/             # Composables and utilities
-├── types/               # Global TypeScript types
-└── views/               # Top-level route views
-```
+- **Component Architecture**: Use Vue 3 Composition API with `<script setup lang="ts">`
+- **State Management**: Use quasar-ui-danx storeObjects pattern (NO Vuex/Pinia)
+- **Styling**: Tailwind CSS utility classes only, NO inline styles
+- **Components**: Use quasar-ui-danx components (ActionTableLayout, TextField, etc.)
+- **Icons**: Use danx-icon library imports
+- **API**: ALWAYS use `request` from quasar-ui-danx (NEVER axios)
+- **TypeScript**: Full TypeScript, no 'any' types, interface definitions for all data structures
+- **Logic**: Composables for reusable logic, props validation with TypeScript
 
 ## Coding Style Rules
 
@@ -209,12 +111,6 @@ spa/src/
 - Team-based data scoping automatic
 - Type declarations for all parameters and returns
 
-### TypeScript/Vue
-
-- Full TypeScript - no 'any' types
-- Interface definitions for all data structures
-- Composables for reusable logic
-- Props validation with TypeScript
 
 ### Naming Conventions
 
@@ -246,61 +142,21 @@ spa/src/
 - Check for proper error handling
 - Ensure proper loading states
 
-## Common Patterns to Use
-
-### API Integration
-
-```typescript
-// ALWAYS use request from quasar-ui-danx - NEVER use axios directly
-import { request } from "quasar-ui-danx";
-
-// Make API calls with automatic authentication
-const response = await request.post('/api/endpoint', data);
-const response = await request.get('/api/endpoint');
-
-// Use configured routes
-const { list, details, update } = dxAgent.routes;
-
-// With loading states
-const action = getAction('update');
-await action.trigger(object, data);
-```
-
-### Form Handling
-
-```vue
-
-<EditableDiv
-    :model-value="object.name"
-    @update:model-value="name => updateAction.trigger(object, {name})"
-/>
-```
-
-### Conditional Rendering
-
-```vue
-<!-- Use v-if for conditional rendering -->
-<div v-if="hasPermission">...</div>
-
-<!-- Use v-show for visibility toggle -->
-<div v-show="isExpanded">...</div>
-```
-
 ## Anti-Patterns to Avoid
 
 ### Backend
-
-- Business logic in controllers or models
-- Direct DB queries in controllers
-- Mixed concerns in services
-- Synchronous heavy operations
+- Business logic in controllers or models (use Services)
+- Direct DB queries in controllers (use Repositories)
+- Missing team-based access control
+- Not using danx patterns (ActionController, ActionRepository, etc.)
 
 ### Frontend
+- Large monolithic components (extract to smaller components)
+- Direct API calls in components (use storeObjects)
+- Local state management instead of storeObjects
+- Raw HTML inputs instead of quasar-ui-danx components
 
-- Large monolithic components
-- Direct API calls in components
-- State management in components
-- Inline styles or style attributes
+**When you encounter these anti-patterns, immediately delegate to the appropriate specialized agent for refactoring.**
 
 ## Migration Strategy
 
@@ -315,143 +171,16 @@ When encountering legacy code:
 ## Custom Libraries (quasar-ui-danx & danx-icon)
 
 ### quasar-ui-danx Library
-
-**Core Philosophy**: Comprehensive UI component library that replaces Vuex/Pinia with `storeObjects` pattern.
-
-**Key Components**:
-
-- **Forms**: `TextField`, `NumberField`, `SelectField`, `DateField`, `MultiFileField`
-- **Actions**: `ActionButton`, `ActionTableLayout`, `ActionForm`, `ActionMenu`
-- **Layout**: `PanelsDrawer`, `CollapsableSidebar`, `EditableDiv`, `ShowHideButton`
-- **Display**: `LabelPillWidget`, `FilePreview`, `ListTransition`, `SaveStateIndicator`
-- **Dialogs**: `ConfirmDialog`, `RenderedFormDialog`, `FullScreenDialog`
-
-**State Management with storeObjects**:
-
-```typescript
-// storeObjects - Reactive normalized data storage (replaces Vuex/Pinia)
-import { storeObjects, storeObject } from "quasar-ui-danx";
-
-// Store array of objects with reactive updates
-workflowDefinitions.value = storeObjects((await dxWorkflowDefinition.routes.list()).data);
-
-// Store single object (auto-updates across all components)
-storeObject(updatedObject);
-
-// Real-time updates via Pusher automatically call storeObject
-channel.bind(event, function(data) {
-    storeObject(data); // Updates all components using this object
-});
-```
-
-**Controller Pattern**:
-
-```typescript
-// Each module uses a DanxController for CRUD operations
-const dxAgent = new DanxController("agents", {
-    routes: useActionRoutes("agents"),
-    actions: {
-        create: { optimistic: true },
-        update: { immediate: true },
-        delete: { confirm: true }
-    }
-});
-
-// Usage in components
-const updateAction = dxAgent.getAction("update");
-await updateAction.trigger(object, data);
-```
-
-**Common Patterns**:
-
-- Use `ActionTableLayout` for complete CRUD tables
-- Use `PanelsDrawer` for detail panels
-- Use formatting functions: `fDate`, `fNumber`, `fCurrency`, `fPercent`
-- Use `ActionButton` with semantic types: "create", "trash", "edit"
+- Comprehensive UI component library that replaces Vuex/Pinia with `storeObjects` pattern
+- Provides ActionTableLayout, form fields, action buttons, panels, and dialogs
+- Use `storeObjects()` and `storeObject()` for reactive state management
+- Each module uses DanxController pattern for CRUD operations
 
 ### danx-icon Library
+- Use `FaSolid*` imports for most icons (EditIcon, DeleteIcon, etc.)
+- All icons use Tailwind width classes (`class="w-3"`)
 
-**Available Icon Types**:
-
-- `FaSolid*` - Solid/filled icons (most common, 1500+ icons)
-- `FaRegular*` - Outline/regular icons (~200 icons)
-- `FaBrands*` - Brand/company logos
-
-**Usage Pattern**:
-
-```typescript
-import {
-    FaSolidPencil as EditIcon,
-    FaSolidTrash as DeleteIcon,
-    FaRegularUser as UserIcon
-} from "danx-icon";
-
-// In template
-<QBtn><EditIcon class = "w-3" / > </QBtn>
-    < ShowHideButton
-:
-show - icon = "EditIcon" / >
-```
-
-**Icon Categories**:
-
-- Actions: Edit, Delete, Create, Save, Merge
-- Navigation: Chevron, Arrow directions
-- Status: Check, X, Warning, Info
-- Content: File, Image, Text, Database
-- UI: User, Settings, Search, Filter
-
-### Tailwind CSS Best Practices
-
-**When to use different approaches**:
-
-1. **Simple utilities** - Use Tailwind classes directly:
-
-```vue
-
-<div class="bg-slate-900 text-white p-4 rounded-lg">
-```
-
-2. **Complex combinations** - Move to scoped styles:
-
-```vue
-
-<style lang="scss" scoped>
-    .team-object-header {
-        .edit-button {
-            transition: all 0.3s;
-            opacity: 0;
-        }
-
-        &:hover .edit-button {
-            opacity: 1;
-        }
-    }
-</style>
-```
-
-3. **Global patterns** - Use `@apply` in `/spa/src/assets/*.scss`:
-
-```scss
-// In general.scss
-.flex-x {
-    @apply flex items-center flex-nowrap;
-}
-
-body {
-    @apply bg-slate-600 text-slate-200;
-}
-
-@layer utilities {
-    .bg-skipped {
-        background-image: repeating-linear-gradient(
-                135deg,
-                theme("colors.yellow.700") 0 10px,
-                theme("colors.gray.700") 10px 20px
-        );
-    }
-}
-```
+**Note**: Detailed component usage is available in the specialized Vue agents. Use those agents for specific implementation guidance.
 
 ## Authentication & API Testing
 
@@ -501,22 +230,6 @@ curl -X POST \
 - Run `./vendor/bin/sail artisan fix` for permission issues
 - Never modify git state without explicit instruction
 
-## Summary
+---
+**Remember: ONE RIGHT WAY - NO EXCEPTIONS!**
 
-Write production-ready code that is:
-
-- Clean and maintainable
-- Following established patterns
-- Type-safe and properly validated
-- Refactored on sight if not meeting standards
-- Free of legacy patterns or dead code
-- Using quasar-ui-danx components and storeObjects for state
-- Using danx-icon for all iconography needs
-
-Remember: ONE RIGHT WAY - NO EXCEPTIONS!
-
-# CRITICALLY IMPORTANT RULE:
-
-* Before each code change, make a TODO list and the FIRST STEP IN THAT TODO LIST should state:
-* "I will follow the best practices and standards: DRY Principles, no Legacy / backwards compatibility, and use the
-  correct patterns."
