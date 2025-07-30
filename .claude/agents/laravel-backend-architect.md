@@ -167,6 +167,7 @@ abstract class TeamObjectResource extends ActionResource
 ### Database Patterns
 - **Anonymous class migrations**: `return new class extends Migration`
 - **Team-based scoping**: ALL user data tables have `team_id` with foreign key constraints
+- **NEVER use `->comment()`**: Doesn't work with PostgreSQL - use self-documenting code
 - **Proper indexes**: `$table->index(['team_id', 'status']);`
 - **Soft deletes**: `$table->softDeletes();` for audit trails
 

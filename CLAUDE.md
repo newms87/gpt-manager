@@ -80,6 +80,7 @@ You MUST use the specialized Laravel agents for any backend work:
 - **Database transactions**: Multi-step operations must use DB::transaction()
 - **Anonymous class migrations**: Laravel 9+ style with team_id fields
 - **Comprehensive testing**: AuthenticatedTestCase with team setup
+- **Unit tests for non-trivial changes**: ALL new functionality must include comprehensive unit tests covering happy path, validation errors, edge cases, and boundary conditions
 
 **For detailed implementation patterns, see `LARAVEL_BACKEND_PATTERNS_GUIDE.md` or use the Laravel specialized agents.**
 
@@ -110,6 +111,24 @@ You MUST use the specialized Laravel agents for any backend work:
 - Custom exceptions with proper HTTP codes
 - Team-based data scoping automatic
 - Type declarations for all parameters and returns
+
+### Testing Requirements
+
+**MANDATORY for all non-trivial changes:**
+- **Unit tests**: Test individual methods/classes in isolation using mocks
+- **Integration tests**: Test complete workflows end-to-end
+- **Edge case coverage**: Test boundary conditions, validation limits, error scenarios
+- **Team-based access control tests**: Verify security constraints work properly
+- **Service layer tests**: All public service methods must have comprehensive tests
+- **Repository tests**: Test data access patterns and team scoping
+
+**Test Structure Standards:**
+- Use AuthenticatedTestCase with SetUpTeamTrait for feature tests
+- Use TestCase for pure unit tests with mocking
+- Follow Given-When-Then test structure with clear comments
+- Test method names should describe the scenario: `test_methodName_withCondition_expectedResult`
+- Each test should verify one specific behavior
+- Mock external dependencies to ensure isolated testing
 
 
 ### Naming Conventions

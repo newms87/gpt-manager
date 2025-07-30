@@ -111,6 +111,7 @@ protected function validateOwnership(Model $model): void
 ### 4. Database & Migration Standards
 - **Anonymous class migrations**: `return new class extends Migration`
 - **Team-based scoping**: ALL user data tables have `team_id` with foreign keys
+- **NEVER use `->comment()`**: Doesn't work with PostgreSQL - flag for removal
 - **Proper indexes**: `$table->index(['team_id', 'status']);`
 - **Soft deletes**: `$table->softDeletes();` for audit trails
 
@@ -270,20 +271,23 @@ public function test_merge_withUnauthorizedAccess_returns403(): void
 - Inconsistent naming conventions
 - Dead or unreachable code
 
-### 6. Testing Execution
-After writing tests:
-1. Run `./vendor/bin/sail test` to verify all tests pass
-2. Check test coverage is comprehensive
-3. Ensure no test failures or warnings
+### 6. Testing Execution (MANDATORY)
+**CRITICAL**: ALWAYS run the full test suite before completing your QA review:
+1. **MUST RUN**: `./vendor/bin/sail test` to verify ALL tests pass
+2. **MUST VERIFY**: No test failures or warnings exist
+3. **MUST CHECK**: New tests have comprehensive coverage
+4. **MUST REPORT**: Any test failures must be fixed before completion
+5. **ZERO TOLERANCE**: Never complete QA review with failing tests
 
 ### 7. Final QA Report
 Provide summary with:
 - **Architecture Compliance**: Which patterns are correctly implemented
 - **Team Access Control**: Verification of team-based scoping
 - **Test Coverage**: Tests written and coverage status
+- **TEST RESULTS**: **MANDATORY** - Report results of `./vendor/bin/sail test` execution
 - **Code Quality Issues**: Any problems found
 - **Refactoring Needs**: Code that needs architect review
-- **Overall Assessment**: Pass/fail with specific action items
+- **Overall Assessment**: Pass/fail with specific action items (FAIL if any tests are failing)
 
 ## Critical Quality Gates
 
@@ -293,6 +297,7 @@ Provide summary with:
 3. ✅ danx library pattern compliance
 4. ✅ Database transactions for multi-step operations
 5. ✅ Comprehensive test coverage for all new code
+6. ✅ **ALL TESTS MUST PASS** - Run `./vendor/bin/sail test` and verify 0 failures
 
 **CODE REJECTION CRITERIA**:
 - Business logic in controllers or models
@@ -300,6 +305,7 @@ Provide summary with:
 - Not using danx patterns (ActionController, ActionRepository, ActionResource)
 - Legacy code patterns or backwards compatibility hacks
 - Missing tests for new functionality
+- **ANY FAILING TESTS** - Automatic rejection if `./vendor/bin/sail test` shows failures
 
 ## Reference Documentation
 

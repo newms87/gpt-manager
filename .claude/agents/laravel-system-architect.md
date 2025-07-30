@@ -153,6 +153,8 @@ abstract class TeamObjectResource extends ActionResource
 5. **Database Design Standards**:
    - ALL user data tables MUST have `team_id` with foreign key constraints
    - Use anonymous class migrations: `return new class extends Migration`
+   - NO COMMENTS in migrations - code should be self-documenting
+   - NEVER use `->comment()` - it doesn't work with PostgreSQL
    - Proper indexes: `$table->index(['team_id', 'status']);`
    - Soft deletes for audit trails: `$table->softDeletes();`
 
@@ -274,7 +276,7 @@ Brief summary of what's being built and why, identifying the primary domain(s) a
 
 ### 4. Implementation Roadmap
 **Phase 1: Database Foundation**
-1. Create migrations using anonymous class pattern
+1. Create migrations using anonymous class pattern (NO COMMENTS and NEVER use ->comment() method)
 2. Run `./vendor/bin/sail artisan fix` after creating migrations
 
 **Phase 2: Models and Relationships**
