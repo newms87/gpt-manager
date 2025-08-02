@@ -102,7 +102,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
         $property = $reflection->getProperty('contextArtifacts');
         $property->setAccessible(true);
 
-        $this->assertEquals([], $property->getValue($mapper));
+        $this->assertEquals(collect(), $property->getValue($mapper));
     }
 
     #[Test]

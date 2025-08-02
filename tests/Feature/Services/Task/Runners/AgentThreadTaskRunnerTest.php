@@ -40,7 +40,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess->refresh();
         $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
         $messages = $taskProcess->agentThread->messages;
-        $this->assertCount(2, $messages, 'AgentThread should have messages: exclusion instruction and agent response');
+        $this->assertCount(1, $messages, 'AgentThread should have agent response only');
     }
 
     public function test_run_withArtifactOnThread_agentResponds(): void
@@ -56,7 +56,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess->refresh();
         $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
         $messages = $taskProcess->agentThread->messages;
-        $this->assertCount(3, $messages, 'AgentThread should be 3 messages: artifact, exclusion instruction, and agent response');
+        $this->assertCount(3, $messages, 'AgentThread should be 3 messages: artifacts header, artifact content, and agent response');
         $allContent = $messages->pluck('content')->join(' ');
         $this->assertStringContainsString($artifactContent, $allContent, 'Messages should contain the artifact content');
     }
@@ -79,7 +79,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess->refresh();
         $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
         $messages = $taskProcess->agentThread->messages;
-        $this->assertCount(3, $messages, 'AgentThread should have 3 messages: directive, exclusion instruction, and agent response');
+        $this->assertCount(2, $messages, 'AgentThread should have 2 messages: directive and agent response');
         $this->assertEquals($directiveContent, $messages->first()->content, 'First message should be the directive content');
     }
 
@@ -108,7 +108,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess->refresh();
         $this->assertNotNull($taskProcess->agentThread, 'TaskProcess thread should have been created');
         $messages = $taskProcess->agentThread->messages;
-        $this->assertCount(5, $messages, 'AgentThread should have 5 messages: before directive, artifact content, after directive, exclusion instruction, and agent response');
+        $this->assertCount(5, $messages, 'AgentThread should have 5 messages: before directive, artifacts header, artifact content, after directive, and agent response');
         $allContent = $messages->pluck('content')->join(' ');
         $this->assertStringContainsString($beforeContent, $allContent, 'Messages should contain the before directive content');
         $this->assertStringContainsString($artifactContent, $allContent, 'Messages should contain the artifact content');
@@ -211,4 +211,160 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
         $this->assertNotNull($agentThreadRun->mcpServer, 'AgentThreadRun should have MCP server relationship');
         $this->assertEquals($mcpServer->id, $agentThreadRun->mcpServer->id, 'AgentThreadRun MCP server should match');
     }
+
+    public function test_run_withNoTimeoutConfig_usesNullApiTimeout(): void
+    {
+        // Given
+        $taskProcess = TaskProcess::factory()->withAgent()->create();
+
+        $capturedOptions = null;
+
+        // Mock the API to capture the options
+        $this->partialMock(TestAiApi::class)
+            ->shouldReceive('responses')->withArgs(function ($model, $messages, $options) use (&$capturedOptions) {
+                $capturedOptions = $options->toArray();
+                return true;
+            })->once()->andReturn(new TestAiCompletionResponse());
+
+        // When
+        AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
+
+        // Then
+        $taskProcess->refresh();
+        $agentThreadRun = $taskProcess->agentThread->runs()->latest()->first();
+        $this->assertNotNull($agentThreadRun, 'AgentThreadRun should exist');
+        $this->assertNull($agentThreadRun->timeout, 'Default API timeout should be null (uses default HTTP timeout)');
+        
+        // Verify timeout is not passed to API when null
+        $this->assertNull($capturedOptions['timeout'] ?? null, 'API options should not include timeout when null');
+    }
+
+    public function test_run_withValidTimeoutConfig_setsApiTimeoutCorrectly(): void
+    {
+        // Given
+        $taskProcess = TaskProcess::factory()->withAgent()->create();
+        $taskProcess->taskRun->taskDefinition->update([
+            'task_runner_config' => ['timeout' => 120],
+        ]);
+        $taskProcess->taskRun->taskDefinition->refresh();
+
+        $capturedOptions = null;
+
+        // Mock the API to capture the options
+        $this->partialMock(TestAiApi::class)
+            ->shouldReceive('responses')->withArgs(function ($model, $messages, $options) use (&$capturedOptions) {
+                $capturedOptions = $options->toArray();
+                return true;
+            })->once()->andReturn(new TestAiCompletionResponse());
+
+        // When
+        AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
+
+        // Then
+        $taskProcess->refresh();
+        $agentThreadRun = $taskProcess->agentThread->runs()->latest()->first();
+        $this->assertNotNull($agentThreadRun, 'AgentThreadRun should exist');
+        $this->assertEquals(120, $agentThreadRun->timeout, 'AgentThreadRun timeout should match configured value');
+        
+        // Verify timeout flows to API options for HTTP client timeout
+        $this->assertEquals(120, $capturedOptions['timeout'] ?? null, 'API options should include timeout for HTTP client');
+    }
+
+    public function test_run_withTimeoutBelowMinimum_clampsApiTimeoutToMinimum(): void
+    {
+        // Given
+        $taskProcess = TaskProcess::factory()->withAgent()->create();
+        $taskProcess->taskRun->taskDefinition->update([
+            'task_runner_config' => ['timeout' => 0],
+        ]);
+        $taskProcess->taskRun->taskDefinition->refresh();
+
+        $capturedOptions = null;
+
+        // Mock the API to capture the options
+        $this->partialMock(TestAiApi::class)
+            ->shouldReceive('responses')->withArgs(function ($model, $messages, $options) use (&$capturedOptions) {
+                $capturedOptions = $options->toArray();
+                return true;
+            })->once()->andReturn(new TestAiCompletionResponse());
+
+        // When
+        AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
+
+        // Then
+        $taskProcess->refresh();
+        $agentThreadRun = $taskProcess->agentThread->runs()->latest()->first();
+        $this->assertNotNull($agentThreadRun, 'AgentThreadRun should exist');
+        $this->assertEquals(1, $agentThreadRun->timeout, 'AgentThreadRun API timeout should be clamped to minimum (1 second)');
+        
+        // Verify clamped timeout flows to API options
+        $this->assertEquals(1, $capturedOptions['timeout'] ?? null, 'API options should include clamped timeout');
+    }
+
+    public function test_run_withTimeoutAboveMaximum_clampsApiTimeoutToMaximum(): void
+    {
+        // Given
+        $taskProcess = TaskProcess::factory()->withAgent()->create();
+        $taskProcess->taskRun->taskDefinition->update([
+            'task_runner_config' => ['timeout' => 1000],
+        ]);
+        $taskProcess->taskRun->taskDefinition->refresh();
+
+        $capturedOptions = null;
+
+        // Mock the API to capture the options
+        $this->partialMock(TestAiApi::class)
+            ->shouldReceive('responses')->withArgs(function ($model, $messages, $options) use (&$capturedOptions) {
+                $capturedOptions = $options->toArray();
+                return true;
+            })->once()->andReturn(new TestAiCompletionResponse());
+
+        // When
+        AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
+
+        // Then
+        $taskProcess->refresh();
+        $agentThreadRun = $taskProcess->agentThread->runs()->latest()->first();
+        $this->assertNotNull($agentThreadRun, 'AgentThreadRun should exist');
+        $this->assertEquals(600, $agentThreadRun->timeout, 'AgentThreadRun API timeout should be clamped to maximum (600 seconds)');
+        
+        // Verify clamped timeout flows to API options
+        $this->assertEquals(600, $capturedOptions['timeout'] ?? null, 'API options should include clamped timeout');
+    }
+
+    public function test_run_withValidTimeoutRange_passesApiTimeoutCorrectly(): void
+    {
+        $testTimeouts = [1, 30, 60, 300, 600];
+
+        foreach ($testTimeouts as $timeout) {
+            $capturedOptions = null;
+
+            // Mock the API to capture the options
+            $this->partialMock(TestAiApi::class)
+                ->shouldReceive('responses')->withArgs(function ($model, $messages, $options) use (&$capturedOptions) {
+                    $capturedOptions = $options->toArray();
+                    return true;
+                })->once()->andReturn(new TestAiCompletionResponse());
+
+            // Given
+            $taskProcess = TaskProcess::factory()->withAgent()->create();
+            $taskProcess->taskRun->taskDefinition->update([
+                'task_runner_config' => ['timeout' => $timeout],
+            ]);
+            $taskProcess->taskRun->taskDefinition->refresh();
+
+            // When
+            AgentThreadTaskRunner::make()->setTaskRun($taskProcess->taskRun)->setTaskProcess($taskProcess)->run();
+
+            // Then
+            $taskProcess->refresh();
+            $agentThreadRun = $taskProcess->agentThread->runs()->latest()->first();
+            $this->assertNotNull($agentThreadRun, "AgentThreadRun should exist for API timeout {$timeout}");
+            $this->assertEquals($timeout, $agentThreadRun->timeout, "AgentThreadRun API timeout should match configured value: {$timeout}");
+            
+            // Verify timeout flows to API options for HTTP client timeout
+            $this->assertEquals($timeout, $capturedOptions['timeout'] ?? null, "API options should include timeout for HTTP client: {$timeout}");
+        }
+    }
+
 }

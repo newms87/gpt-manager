@@ -12,6 +12,7 @@ class StoredFileFactory extends Factory
 	public function definition(): array
 	{
 		return [
+			'id'                      => \Illuminate\Support\Str::orderedUuid()->toString(),
 			'disk'                    => 'local',
 			'filepath'                => fake()->file('public/storage', 'storage/app/public', false),
 			'filename'                => fake()->unique()->word . '.jpg',
