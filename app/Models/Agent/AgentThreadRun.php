@@ -47,6 +47,7 @@ class AgentThreadRun extends Model implements AuditableContract
         'response_json_schema',
         'started_at',
         'status',
+        'timeout',
     ];
 
     public function casts(): array

@@ -52,10 +52,16 @@ class PerplexityAiApi extends BearerTokenApi implements AgentApiContract
             ]);
         }
 
+        // Set HTTP client timeout from options
+        $httpOptions = [];
+        if ($options->getTimeout()) {
+            $httpOptions['timeout'] = $options->getTimeout();
+        }
+
         $response = $this->post('chat/completions', [
                 'model'    => $model,
                 'messages' => $messages,
-            ] + $completionOptions)->json();
+            ] + $completionOptions, $httpOptions)->json();
 
         return PerplexityAiResponsesResponse::make($response);
     }

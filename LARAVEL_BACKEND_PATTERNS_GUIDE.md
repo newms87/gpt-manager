@@ -468,6 +468,17 @@ class [Service]Test extends AuthenticatedTestCase
 - **Exception testing**: Verify error conditions
 - **RefreshDatabase**: Fresh database per test
 
+### Troubleshooting Test Failures
+
+If tests are failing unexpectedly (especially with dependency errors or missing methods from the danx library):
+- Run `make danx-core` to update the danx library and re-establish local symlinks
+- This ensures your local danx library is properly synced with the latest changes
+- Common symptoms that indicate danx sync issues:
+  - Method not found errors in danx components/traits/classes
+  - Unexpected test failures after updating danx-related code
+  - Import errors for danx modules
+  - Tests that were passing suddenly failing after pulling changes
+
 ---
 
 ## 8. Background Processing Patterns

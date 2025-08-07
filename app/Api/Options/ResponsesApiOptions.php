@@ -29,6 +29,7 @@ class ResponsesApiOptions
     protected ?string $previousResponseId = null;
     protected ?float  $temperature        = null;
     protected ?array  $mcpServers         = null;
+    protected ?int    $timeout            = null;
 
     public function __construct(array $options = [])
     {
@@ -64,6 +65,9 @@ class ResponsesApiOptions
             $this->setMcpServers($options['mcp_servers']);
         }
 
+        if (isset($options['timeout'])) {
+            $this->setTimeout($options['timeout']);
+        }
     }
 
     public function setReasoning(?array $reasoning): self
@@ -169,6 +173,13 @@ class ResponsesApiOptions
         return $this;
     }
 
+    public function setTimeout(?int $timeout): self
+    {
+        $this->timeout = $timeout;
+
+        return $this;
+    }
+
 
     public function getReasoning(): ?array
     {
@@ -210,6 +221,11 @@ class ResponsesApiOptions
         return $this->mcpServers;
     }
 
+    public function getTimeout(): ?int
+    {
+        return $this->timeout;
+    }
+
 
     /**
      * Convert to array for API request
@@ -247,6 +263,10 @@ class ResponsesApiOptions
 
         if ($this->mcpServers) {
             $options['tools'] = $this->mcpServers;
+        }
+
+        if ($this->timeout !== null) {
+            $options['timeout'] = $this->timeout;
         }
 
         return $options;

@@ -129,10 +129,18 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         // Get MCP server from task definition
         $mcpServer = $this->taskDefinition->getMcpServer();
 
+        // Get timeout from task_runner_config, with default of 60 seconds and maximum of 600 seconds
+        $timeout = $this->config('timeout');
+        if ($timeout !== null) {
+            $timeout = (int) $timeout;
+            $timeout = max(1, min($timeout, 600)); // Ensure between 1 and 600 seconds
+        }
+
         // Run the thread synchronously (ie: dispatch = false)
         $threadRun = (new AgentThreadService)
             ->withResponseFormat($schemaDefinition, $schemaFragment, $jsonSchemaService)
             ->withMcpServer($mcpServer)
+            ->withTimeout($timeout)
             ->run($agentThread);
 
         // Create the artifact and associate it with the task process

@@ -28,6 +28,7 @@ class AgentThreadService
     protected ?SchemaFragment    $responseFragment  = null;
     protected ?JsonSchemaService $jsonSchemaService = null;
     protected ?McpServer         $mcpServer         = null;
+    protected ?int               $timeout           = null;
 
     protected int $currentTotalRetries = 0;
 
@@ -50,6 +51,16 @@ class AgentThreadService
     public function withMcpServer(McpServer $mcpServer = null): static
     {
         $this->mcpServer = $mcpServer;
+
+        return $this;
+    }
+
+    /**
+     * Set the timeout in seconds for this thread run
+     */
+    public function withTimeout(int $timeout = null): static
+    {
+        $this->timeout = $timeout;
 
         return $this;
     }
@@ -78,6 +89,7 @@ class AgentThreadService
                 'response_fragment_id' => $this->responseFragment?->id,
                 'json_schema_config'   => $this->jsonSchemaService?->getConfig(),
                 'mcp_server_id'        => $this->mcpServer?->id,
+                'timeout'              => $this->timeout,
             ]);
 
             // Save a snapshot of the resolved JSON Schema to use as the agent's response schema,
@@ -395,6 +407,11 @@ STR;
 
         // Get API options from the thread run (source of truth) or use defaults
         $apiOptions = ResponsesApiOptions::fromArray($agentThreadRun->api_options ?? []);
+        
+        // Set timeout from the thread run for HTTP API calls
+        if ($agentThreadRun->timeout) {
+            $apiOptions->setTimeout($agentThreadRun->timeout);
+        }
 
 
         // Build system instructions and always prepend them

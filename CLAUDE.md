@@ -161,6 +161,16 @@ You MUST use the specialized Laravel agents for any backend work:
 - Check for proper error handling
 - Ensure proper loading states
 
+### Troubleshooting Test Failures
+
+If tests are failing unexpectedly (especially with dependency errors or missing methods from the danx library):
+- Run `make danx-core` to update the danx library and re-establish local symlinks
+- This ensures your local danx library is properly synced with the latest changes
+- Common symptoms that indicate danx sync issues:
+  - Method not found errors in danx components
+  - Unexpected test failures after updating danx-related code
+  - Import errors for danx modules
+
 ## Anti-Patterns to Avoid
 
 ### Backend

@@ -55,8 +55,14 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         // Convert messages to proper Responses API input format
         $requestBody['input'] = $this->formatter()->convertRawMessagesToResponsesApiInput($messages);
 
+        // Set HTTP client timeout from options
+        $httpOptions = [];
+        if ($options->getTimeout()) {
+            $httpOptions['timeout'] = $options->getTimeout();
+        }
+
         // Regular request (no streaming in this method)
-        $response = $this->post('responses', $requestBody)->json();
+        $response = $this->post('responses', $requestBody, $httpOptions)->json();
 
         return OpenAiResponsesResponse::make($response);
     }
@@ -75,8 +81,8 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         // Convert messages to proper Responses API input format
         $requestBody['input'] = $this->formatter()->convertRawMessagesToResponsesApiInput($messages);
 
-        // Use streaming request with callback
-        $response = $this->post('responses', $requestBody, [
+        // Build HTTP options with streaming and optional timeout
+        $httpOptions = [
             'stream'          => true,
             'stream_callback' => function ($chunk) use ($streamMessage) {
                 // Parse Server-Sent Events format for Responses API
@@ -106,7 +112,15 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
                     }
                 }
             },
-        ]);
+        ];
+        
+        // Set HTTP client timeout from options
+        if ($options->getTimeout()) {
+            $httpOptions['timeout'] = $options->getTimeout();
+        }
+
+        // Use streaming request with callback
+        $response = $this->post('responses', $requestBody, $httpOptions);
 
         // Broadcast completion event
         broadcast(new AgentThreadMessageStreamEvent(

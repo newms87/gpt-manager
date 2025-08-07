@@ -10,6 +10,7 @@
 		/>
 		<TaskDefinitionDirectivesConfigField :task-definition="taskDefinition" class="mt-6" />
 		<McpServerConfigField class="mt-6" :task-definition="taskDefinition" />
+		<TimeoutConfigField class="mt-6" :task-definition="taskDefinition" />
 		<SchemaAndFragmentsConfigField class="mt-6" :task-definition="taskDefinition" />
 		<DeduplicationConfigField :task-definition="taskDefinition" />
 	</BaseTaskRunnerConfig>
@@ -23,7 +24,8 @@ import {
 	McpServerConfigField,
 	SchemaAndFragmentsConfigField,
 	TaskDefinitionAgentConfigField,
-	TaskDefinitionDirectivesConfigField
+	TaskDefinitionDirectivesConfigField,
+	TimeoutConfigField
 } from "./Fields";
 import { AgentThreadInstructions } from "./Instructions";
 
