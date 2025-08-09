@@ -3,18 +3,23 @@
 namespace Tests\Unit\Services\Task\Runners;
 
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskDefinition;
+use App\Models\Task\TaskProcess;
+use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\LoadCsvTaskRunner;
 use Mockery;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
-use Tests\TestCase;
+use Tests\AuthenticatedTestCase;
 
-class LoadCsvTaskRunnerTest extends TestCase
+class LoadCsvTaskRunnerTest extends AuthenticatedTestCase
 {
+    protected TaskDefinition     $taskDefinition;
+    protected TaskRun           $taskRun;
+    protected TaskProcess       $taskProcess;
     protected LoadCsvTaskRunner $taskRunner;
     protected array             $testCsvData;
-    protected array             $mockFiles;
 
     public function setUp(): void
     {
@@ -28,36 +33,47 @@ class LoadCsvTaskRunnerTest extends TestCase
             ['name' => 'Alice Brown', 'age' => '42', 'email' => 'alice.brown@example.com', 'department' => 'HR'],
         ];
 
-        // Create mock task runner with mocked methods
-        $this->taskRunner = Mockery::mock(LoadCsvTaskRunner::class)->makePartial()->shouldAllowMockingProtectedMethods();
-        
-        // Mock the taskProcess to prevent validation errors
-        $mockTaskProcess = Mockery::mock('App\Models\Task\TaskProcess');
-        $mockTaskProcess->shouldReceive('update')->withAnyArgs()->andReturnSelf();
-        $mockTaskProcess->shouldReceive('getAttribute')->withAnyArgs()->andReturn(null);
-        
-        // Use reflection to set the taskProcess property
-        $reflection = new \ReflectionClass($this->taskRunner);
-        $property = $reflection->getProperty('taskProcess');
-        $property->setAccessible(true);
-        $property->setValue($this->taskRunner, $mockTaskProcess);
+        // Create test task definition
+        $this->taskDefinition = TaskDefinition::factory()->create([
+            'name'             => 'Test Load CSV Task',
+            'task_runner_name' => LoadCsvTaskRunner::RUNNER_NAME,
+            'task_runner_config' => [
+                'batch_size' => 1,
+                'selected_columns' => []
+            ]
+        ]);
+
+        // Create task run
+        $this->taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'name'               => 'Test Load CSV Run',
+        ]);
+
+        // Create task process
+        $this->taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'activity'    => 'Testing CSV loading',
+        ]);
+
+        // Get the actual task runner instance - it will be properly initialized via the chain:
+        // TaskProcess::getRunner() -> TaskRun::getRunner()->setTaskProcess() -> TaskDefinition::getRunner()->setTaskRun()
+        $this->taskRunner = $this->taskProcess->getRunner();
     }
 
 
     /**
-     * Helper to create a mock StoredFile for testing
+     * Helper to create a real StoredFile for testing
      *
-     * @param string $filename The filename for the mock file
+     * @param string $filename The filename for the test file
      * @return StoredFile
      */
-    protected function createMockStoredFile(string $filename = 'test.csv'): StoredFile
+    protected function createTestStoredFile(string $filename = 'test.csv'): StoredFile
     {
-        $storedFile = Mockery::mock(StoredFile::class);
-        $storedFile->shouldReceive('getAttribute')->with('filename')->andReturn($filename);
-        $storedFile->shouldReceive('getAttribute')->with('id')->andReturn(1);
-        $storedFile->shouldReceive('setAttribute')->withAnyArgs()->andReturnSelf();
-
-        return $storedFile;
+        return StoredFile::factory()->create([
+            'filename' => $filename,
+            'url' => 'path/to/' . $filename,
+            'mime' => 'text/csv'
+        ]);
     }
 
     /**
@@ -86,360 +102,297 @@ class LoadCsvTaskRunnerTest extends TestCase
         return $filteredData;
     }
 
-    /**
-     * Test splitIntoBatches with batch size 1 (flat arrays)
-     */
-    public function testSplitIntoBatchesWithBatchSizeOne()
-    {
-        // Call the splitIntoBatches method with batch size 1
-        $result = $this->taskRunner->splitIntoBatches($this->testCsvData, 1);
-
-        // Verify the structure and content
-        $this->assertIsArray($result);
-        $this->assertCount(4, $result);
-
-        // Each batch should contain exactly one row
-        foreach($result as $batch) {
-            $this->assertCount(1, $batch);
-        }
-
-        // Verify specific data elements in each batch
-        $this->assertEquals('John Doe', $result[0][0]['name']);
-        $this->assertEquals('jane.smith@example.com', $result[1][0]['email']);
-        $this->assertEquals('Finance', $result[2][0]['department']);
-        $this->assertEquals('42', $result[3][0]['age']);
-    }
-
-    /**
-     * Test splitIntoBatches with batch size 2
-     */
-    public function testSplitIntoBatchesWithBatchSizeTwo()
-    {
-        // Call the splitIntoBatches method with batch size 2
-        $result = $this->taskRunner->splitIntoBatches($this->testCsvData, 2);
-
-        // Verify the structure and content
-        $this->assertIsArray($result);
-        $this->assertCount(2, $result); // Should have 2 batches
-
-        // Each batch should contain the right number of rows
-        $this->assertCount(2, $result[0]); // First batch has 2 rows
-        $this->assertCount(2, $result[1]); // Second batch has 2 rows
-
-        // Verify specific data elements in each batch
-        $this->assertEquals('John Doe', $result[0][0]['name']);
-        $this->assertEquals('Jane Smith', $result[0][1]['name']);
-        $this->assertEquals('Bob Johnson', $result[1][0]['name']);
-        $this->assertEquals('Alice Brown', $result[1][1]['name']);
-    }
-
-    /**
-     * Test splitIntoBatches with batch size 0 (all rows in one batch)
-     */
-    public function testSplitIntoBatchesWithBatchSizeZero()
-    {
-        // Call the splitIntoBatches method with batch size 0
-        $result = $this->taskRunner->splitIntoBatches($this->testCsvData, 0);
-
-        // Verify the structure and content
-        $this->assertIsArray($result);
-        $this->assertCount(1, $result); // Should have 1 batch with all rows
-        $this->assertCount(4, $result[0]); // The batch should have 4 rows
-
-        // Verify all rows are in the single batch with correct order
-        $this->assertEquals('John Doe', $result[0][0]['name']);
-        $this->assertEquals('Jane Smith', $result[0][1]['name']);
-        $this->assertEquals('Bob Johnson', $result[0][2]['name']);
-        $this->assertEquals('Alice Brown', $result[0][3]['name']);
-    }
-
-    /**
-     * Test splitIntoBatches with batch size 3 (uneven distribution)
-     */
-    public function testSplitIntoBatchesWithBatchSizeThree()
-    {
-        // Call the splitIntoBatches method with batch size 3
-        $result = $this->taskRunner->splitIntoBatches($this->testCsvData, 3);
-
-        // Verify the structure and content
-        $this->assertIsArray($result);
-        $this->assertCount(2, $result); // Should have 2 batches
-
-        // First batch should have 3 rows, second batch should have 1 row
-        $this->assertCount(3, $result[0]);
-        $this->assertCount(1, $result[1]);
-
-        // Verify specific data elements
-        $this->assertEquals('John Doe', $result[0][0]['name']);
-        $this->assertEquals('Jane Smith', $result[0][1]['name']);
-        $this->assertEquals('Bob Johnson', $result[0][2]['name']);
-        $this->assertEquals('Alice Brown', $result[1][0]['name']);
-    }
 
     /**
      * Test the run method with empty CSV files
      */
-    public function testRunWithNoFiles()
+    public function test_run_withNoFiles_completesWithEmptyResult()
     {
-        // Setup mockTaskRunner for the run method test
-        $this->taskRunner->shouldReceive('config')->with('batch_size', 1)->andReturn(1);
-        $this->taskRunner->shouldReceive('config')->with('selected_columns', [])->andReturn([]);
-        $this->taskRunner->shouldReceive('activity')->with('Starting CSV loading process w/ batch size 1: []', 10)->once();
-        $this->taskRunner->shouldReceive('activity')->with('No CSV file provided', 100)->once();
-        $this->taskRunner->shouldReceive('getAllFiles')->with(['csv'])->andReturn([]);
-        $this->taskRunner->shouldReceive('complete')->once()->with([]);
+        // Given no CSV files are attached to the task process
+        // (task process already created with no input artifacts)
 
-        // Run the process
+        // When we run the CSV loading task
         $this->taskRunner->run();
 
-        // Assert that the mock received the expected method calls
-        $this->assertTrue(true, 'Run method completed successfully with no files');
+        // Then the task should complete with no output artifacts
+        $this->taskProcess->refresh();
+        $outputArtifacts = $this->taskProcess->outputArtifacts;
+        $this->assertCount(0, $outputArtifacts);
+        // Check that the process finished (status will be updated during completion)
+        $this->assertNotNull($this->taskProcess->completed_at);
     }
 
     /**
      * Test the run method with one CSV file and batch size 1
      */
-    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
-    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
-    public function testRunWithOneCsvFileBatchSizeOne()
+    public function test_run_withOneCsvFileBatchSizeOne_createsSeparateArtifacts()
     {
-        // Create a mock StoredFile for testing
-        $mockFile = $this->createMockStoredFile();
+        // Given we have a CSV file attached to the task process
+        $csvFile = $this->createTestStoredFile('employees.csv');
+        $artifact = Artifact::factory()->create();
+        $artifact->storedFiles()->attach($csvFile->id);
+        $this->taskProcess->inputArtifacts()->attach($artifact->id);
 
-        // We need to set properties directly rather than using dynamic properties
-        $mockFile->shouldReceive('getAttribute')->with('url')->andReturn('path/to/test.csv');
-        $mockFile->shouldReceive('getAttribute')->with('filename')->andReturn('test.csv');
-
-        // Setup mockTaskRunner for the run method test
-        $this->taskRunner->shouldReceive('config')->with('batch_size', 1)->andReturn(1);
-        $this->taskRunner->shouldReceive('config')->with('selected_columns', [])->andReturn([]);
-        $this->taskRunner->shouldReceive('activity')->with('Starting CSV loading process w/ batch size 1: []', 10)->once();
-        $this->taskRunner->shouldReceive('activity')->with('Processing CSV files with batch size: 1')->once();
-        $this->taskRunner->shouldReceive('activity')->with('Processing file test.csv')->once();
-        $this->taskRunner->shouldReceive('activity')->with('Finished processing file test.csv', Mockery::any())->once();
-        $this->taskRunner->shouldReceive('getAllFiles')->with(['csv'])->andReturn([$mockFile]);
-
-        // Mock FileHelper
+        // Mock FileHelper (3rd party dependency) to return our test data
         $fileHelperMock = Mockery::mock('alias:' . FileHelper::class);
         $fileHelperMock->shouldReceive('parseCsvFile')
             ->once()
-            ->with('path/to/test.csv', 0, 1, [])
+            ->with($csvFile->url, 0, 1, [])
             ->andReturn($this->testCsvData);
 
-        // Mock the splitIntoBatches method to return individual rows as batches
-        $this->taskRunner->shouldReceive('splitIntoBatches')
-            ->once()
-            ->with($this->testCsvData, 1)
-            ->andReturn([[$this->testCsvData[0]], [$this->testCsvData[1]], [$this->testCsvData[2]], [$this->testCsvData[3]]]);
-
-        // Mock artifact creation - should be called for each row
-        $mockArtifact1 = Mockery::mock(Artifact::class);
-        $mockArtifact2 = Mockery::mock(Artifact::class);
-        $mockArtifact3 = Mockery::mock(Artifact::class);
-        $mockArtifact4 = Mockery::mock(Artifact::class);
-
-        $this->taskRunner->shouldReceive('createArtifactWithCsvData')
-            ->once()
-            ->with(0, 1, [$this->testCsvData[0]], $mockFile)
-            ->andReturn($mockArtifact1);
-
-        $this->taskRunner->shouldReceive('createArtifactWithCsvData')
-            ->once()
-            ->with(1, 1, [$this->testCsvData[1]], $mockFile)
-            ->andReturn($mockArtifact2);
-
-        $this->taskRunner->shouldReceive('createArtifactWithCsvData')
-            ->once()
-            ->with(2, 1, [$this->testCsvData[2]], $mockFile)
-            ->andReturn($mockArtifact3);
-
-        $this->taskRunner->shouldReceive('createArtifactWithCsvData')
-            ->once()
-            ->with(3, 1, [$this->testCsvData[3]], $mockFile)
-            ->andReturn($mockArtifact4);
-
-        $this->taskRunner->shouldReceive('complete')
-            ->once()
-            ->with([$mockArtifact1, $mockArtifact2, $mockArtifact3, $mockArtifact4]);
-
-        // Run the process
+        // When we run the CSV loading task
         $this->taskRunner->run();
 
-        // Add an assertion to make PHPUnit happy
-        $this->assertTrue(true, 'Run method completed successfully');
+        // Then we should have 4 output artifacts (one per CSV row)
+        $this->taskProcess->refresh();
+        $outputArtifacts = $this->taskProcess->outputArtifacts;
+        $this->assertCount(4, $outputArtifacts);
+
+        // Verify artifact content matches CSV data
+        $this->assertEquals([$this->testCsvData[0]], $outputArtifacts[0]->json_content);
+        $this->assertEquals([$this->testCsvData[1]], $outputArtifacts[1]->json_content);
+        $this->assertEquals([$this->testCsvData[2]], $outputArtifacts[2]->json_content);
+        $this->assertEquals([$this->testCsvData[3]], $outputArtifacts[3]->json_content);
+
+        // Verify meta data
+        $this->assertEquals(1, $outputArtifacts[0]->meta['batch_size']);
+        $this->assertEquals(0, $outputArtifacts[0]->meta['batch_index']);
+        $this->assertEquals(1, $outputArtifacts[1]->meta['batch_index']);
+        $this->assertEquals(2, $outputArtifacts[2]->meta['batch_index']);
+        $this->assertEquals(3, $outputArtifacts[3]->meta['batch_index']);
+
+        // Verify artifact names
+        $this->assertEquals('employees - Batch 0', $outputArtifacts[0]->name);
+        $this->assertEquals('employees - Batch 1', $outputArtifacts[1]->name);
+        $this->assertEquals('employees - Batch 2', $outputArtifacts[2]->name);
+        $this->assertEquals('employees - Batch 3', $outputArtifacts[3]->name);
     }
 
     /**
      * Test the run method with one CSV file and batch size 0 (all in one batch)
      */
-    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
-    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
-    public function testRunWithOneCsvFileBatchSizeZero()
+    public function test_run_withOneCsvFileBatchSizeZero_createsOneArtifact()
     {
-        // Create a mock StoredFile for testing
-        $mockFile = $this->createMockStoredFile();
-        $mockFile->shouldReceive('getAttribute')->with('url')->andReturn('path/to/test.csv');
-        $mockFile->shouldReceive('getAttribute')->with('filename')->andReturn('test.csv');
+        // Given we have a new task definition with batch size 0 configuration
+        $taskDef = TaskDefinition::factory()->create([
+            'name'             => 'Test Load CSV Task - Batch 0',
+            'task_runner_name' => LoadCsvTaskRunner::RUNNER_NAME,
+            'task_runner_config' => [
+                'batch_size' => 0,
+                'selected_columns' => []
+            ]
+        ]);
+        
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $taskDef->id,
+            'name'               => 'Test Load CSV Run - Batch 0',
+        ]);
+        
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'activity'    => 'Testing CSV loading - Batch 0',
+        ]);
+        
+        $taskRunner = $taskProcess->getRunner();
+        
+        $csvFile = $this->createTestStoredFile('all_employees.csv');
+        $artifact = Artifact::factory()->create();
+        $artifact->storedFiles()->attach($csvFile->id);
+        $taskProcess->inputArtifacts()->attach($artifact->id);
 
-        // Setup mockTaskRunner for the run method test
-        $this->taskRunner->shouldReceive('config')->with('batch_size', 1)->andReturn(0);
-        $this->taskRunner->shouldReceive('config')->with('selected_columns', [])->andReturn([]);
-        $this->taskRunner->shouldReceive('activity')->with('Starting CSV loading process w/ batch size 0: []', 10)->once();
-        $this->taskRunner->shouldReceive('activity')->with('Processing CSV files with batch size: 0')->once();
-        $this->taskRunner->shouldReceive('activity')->with('Processing file test.csv')->once();
-        $this->taskRunner->shouldReceive('activity')->with('Finished processing file test.csv', Mockery::any())->once();
-        $this->taskRunner->shouldReceive('getAllFiles')->with(['csv'])->andReturn([$mockFile]);
-
-        // Mock FileHelper
+        // Mock FileHelper (3rd party dependency)
         $fileHelperMock = Mockery::mock('alias:' . FileHelper::class);
         $fileHelperMock->shouldReceive('parseCsvFile')
             ->once()
-            ->with('path/to/test.csv', 0, 1, [])
+            ->with($csvFile->url, 0, 1, [])
             ->andReturn($this->testCsvData);
 
-        // Mock the splitIntoBatches method to return a single batch with all rows
-        $this->taskRunner->shouldReceive('splitIntoBatches')
-            ->once()
-            ->with($this->testCsvData, 0)
-            ->andReturn([$this->testCsvData]);
+        // When we run the CSV loading task
+        $taskRunner->run();
 
-        // Mock artifact creation - should be called once for all rows
-        $mockArtifact = Mockery::mock(Artifact::class);
+        // Then we should have 1 output artifact containing all CSV data
+        $taskProcess->refresh();
+        $outputArtifacts = $taskProcess->outputArtifacts;
+        $this->assertCount(1, $outputArtifacts);
 
-        $this->taskRunner->shouldReceive('createArtifactWithCsvData')
-            ->once()
-            ->with(0, 0, $this->testCsvData, $mockFile)
-            ->andReturn($mockArtifact);
-
-        $this->taskRunner->shouldReceive('complete')
-            ->once()
-            ->with([$mockArtifact]);
-
-        // Run the process
-        $this->taskRunner->run();
-
-        // Add an assertion to make PHPUnit happy
-        $this->assertTrue(true, 'Run method completed successfully with batch size 0');
+        $artifact = $outputArtifacts->first();
+        $this->assertEquals($this->testCsvData, $artifact->json_content);
+        $this->assertEquals(0, $artifact->meta['batch_size']);
+        $this->assertEquals(0, $artifact->meta['batch_index']);
+        $this->assertEquals('all_employees', $artifact->name);
     }
 
     /**
      * Test the run method with selected columns
      */
-    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
-    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
-    public function testRunWithSelectedColumns()
+    public function test_run_withSelectedColumns_filtersColumns()
     {
-        // Create a mock StoredFile for testing
-        $mockFile = $this->createMockStoredFile();
-        $mockFile->shouldReceive('getAttribute')->with('url')->andReturn('path/to/test.csv');
-        $mockFile->shouldReceive('getAttribute')->with('filename')->andReturn('test.csv');
-
-        // Define selected columns
+        // Given we have a new task definition with selected columns configuration
         $selectedColumns = ['name', 'email'];
+        $taskDef = TaskDefinition::factory()->create([
+            'name'             => 'Test Load CSV Task - Selected Columns',
+            'task_runner_name' => LoadCsvTaskRunner::RUNNER_NAME,
+            'task_runner_config' => [
+                'batch_size' => 1,
+                'selected_columns' => $selectedColumns
+            ]
+        ]);
+        
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $taskDef->id,
+            'name'               => 'Test Load CSV Run - Selected Columns',
+        ]);
+        
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'activity'    => 'Testing CSV loading - Selected Columns',
+        ]);
+        
+        $taskRunner = $taskProcess->getRunner();
+        
+        $csvFile = $this->createTestStoredFile('filtered_employees.csv');
+        $artifact = Artifact::factory()->create();
+        $artifact->storedFiles()->attach($csvFile->id);
+        $taskProcess->inputArtifacts()->attach($artifact->id);
 
-        // Create filtered data with only selected columns
+        // Create expected filtered data
         $filteredData = $this->createFilteredCsvData($selectedColumns);
 
-        // Setup mockTaskRunner for the run method test
-        $this->taskRunner->shouldReceive('config')->with('batch_size', 1)->andReturn(1);
-        $this->taskRunner->shouldReceive('config')->with('selected_columns', [])->andReturn($selectedColumns);
-        $this->taskRunner->shouldReceive('activity')->with('Starting CSV loading process w/ batch size 1: ["name","email"]', 10)->once();
-        $this->taskRunner->shouldReceive('activity')->with('Processing CSV files with batch size: 1')->once();
-        $this->taskRunner->shouldReceive('activity')->with('Processing file test.csv')->once();
-        $this->taskRunner->shouldReceive('activity')->with('Finished processing file test.csv', Mockery::any())->once();
-        $this->taskRunner->shouldReceive('getAllFiles')->with(['csv'])->andReturn([$mockFile]);
-
-        // Mock FileHelper
+        // Mock FileHelper (3rd party dependency) to return filtered data
         $fileHelperMock = Mockery::mock('alias:' . FileHelper::class);
         $fileHelperMock->shouldReceive('parseCsvFile')
             ->once()
-            ->with('path/to/test.csv', 0, 1, $selectedColumns)
+            ->with($csvFile->url, 0, 1, $selectedColumns)
             ->andReturn($filteredData);
 
-        // Mock the splitIntoBatches method to return individual rows as batches
-        $batchedData = [];
-        foreach($filteredData as $row) {
-            $batchedData[] = [$row];
+        // When we run the CSV loading task
+        $taskRunner->run();
+
+        // Then we should have artifacts with only selected columns
+        $taskProcess->refresh();
+        $outputArtifacts = $taskProcess->outputArtifacts;
+        $this->assertCount(4, $outputArtifacts);
+
+        // Verify that artifacts contain only the selected columns
+        foreach($outputArtifacts as $index => $artifact) {
+            $this->assertEquals([$filteredData[$index]], $artifact->json_content);
+            $rowData = $artifact->json_content[0];
+            $this->assertArrayHasKey('name', $rowData);
+            $this->assertArrayHasKey('email', $rowData);
+            $this->assertArrayNotHasKey('age', $rowData);
+            $this->assertArrayNotHasKey('department', $rowData);
         }
-        $this->taskRunner->shouldReceive('splitIntoBatches')
-            ->once()
-            ->with($filteredData, 1)
-            ->andReturn($batchedData);
-
-        // Mock artifact creation - should be called for each row
-        $mockArtifacts = [];
-
-        for($i = 0; $i < count($filteredData); $i++) {
-            $mockArtifact    = Mockery::mock(Artifact::class);
-            $mockArtifacts[] = $mockArtifact;
-
-            $this->taskRunner->shouldReceive('createArtifactWithCsvData')
-                ->once()
-                ->with($i, 1, [$filteredData[$i]], $mockFile)
-                ->andReturn($mockArtifact);
-        }
-
-        $this->taskRunner->shouldReceive('complete')
-            ->once()
-            ->with($mockArtifacts);
-
-        // Run the process
-        $this->taskRunner->run();
-
-        // Add an assertion to make PHPUnit happy
-        $this->assertTrue(true, 'Run method completed successfully with selected columns');
     }
 
     /**
      * Test the run method with nonexistent columns
      */
-    #[\PHPUnit\Framework\Attributes\RunInSeparateProcess]
-    #[\PHPUnit\Framework\Attributes\PreserveGlobalState(false)]
-    public function testRunWithNonexistentColumns()
+    public function test_run_withNonexistentColumns_handlesError()
     {
-        // Create a mock StoredFile for testing
-        $mockFile = $this->createMockStoredFile();
-        $mockFile->shouldReceive('getAttribute')->with('url')->andReturn('path/to/test.csv');
-        $mockFile->shouldReceive('getAttribute')->with('filename')->andReturn('test.csv');
-
-        // Define selected columns with a nonexistent one
+        // Given we have a new task definition with nonexistent columns configuration
         $selectedColumns = ['name', 'nonexistent_column'];
+        $taskDef = TaskDefinition::factory()->create([
+            'name'             => 'Test Load CSV Task - Bad Columns',
+            'task_runner_name' => LoadCsvTaskRunner::RUNNER_NAME,
+            'task_runner_config' => [
+                'batch_size' => 1,
+                'selected_columns' => $selectedColumns
+            ]
+        ]);
+        
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $taskDef->id,
+            'name'               => 'Test Load CSV Run - Bad Columns',
+        ]);
+        
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'activity'    => 'Testing CSV loading - Bad Columns',
+        ]);
+        
+        $taskRunner = $taskProcess->getRunner();
+        
+        $csvFile = $this->createTestStoredFile('bad_columns.csv');
+        $artifact = Artifact::factory()->create();
+        $artifact->storedFiles()->attach($csvFile->id);
+        $taskProcess->inputArtifacts()->attach($artifact->id);
 
-        // Setup mockTaskRunner for the run method test
-        $this->taskRunner->shouldReceive('config')->with('batch_size', 1)->andReturn(1);
-        $this->taskRunner->shouldReceive('config')->with('selected_columns', [])->andReturn($selectedColumns);
-        $this->taskRunner->shouldReceive('activity')->with('Starting CSV loading process w/ batch size 1: ["name","nonexistent_column"]', 10)->once();
-        $this->taskRunner->shouldReceive('activity')->with('Processing CSV files with batch size: 1')->once();
-        $this->taskRunner->shouldReceive('activity')->with('Processing file test.csv')->once();
-        $this->taskRunner->shouldReceive('getAllFiles')->with(['csv'])->andReturn([$mockFile]);
-
-        // Mock FileHelper to throw a ValidationError
+        // Mock FileHelper (3rd party dependency) to throw validation error
         $fileHelperMock = Mockery::mock('alias:' . FileHelper::class);
         $fileHelperMock->shouldReceive('parseCsvFile')
             ->once()
-            ->with('path/to/test.csv', 0, 1, $selectedColumns)
+            ->with($csvFile->url, 0, 1, $selectedColumns)
             ->andThrow(new ValidationError('Column nonexistent_column not found in CSV file'));
 
-        $this->taskRunner->shouldReceive('activity')
-            ->once()
-            ->with('Error processing CSV file: Column nonexistent_column not found in CSV file');
+        // When we run the CSV loading task
+        $taskRunner->run();
 
-        $this->taskRunner->shouldReceive('activity')
-            ->once()
-            ->with('Finished processing file test.csv', Mockery::any());
-
-        $this->taskRunner->shouldReceive('complete')
-            ->once()
-            ->with([]);
-
-        // Run the process
-        $this->taskRunner->run();
-
-        // Add an assertion to make PHPUnit happy
-        $this->assertTrue(true, 'Run method handles nonexistent columns correctly');
+        // Then the task should complete with no artifacts due to the error
+        $taskProcess->refresh();
+        $outputArtifacts = $taskProcess->outputArtifacts;
+        $this->assertCount(0, $outputArtifacts);
+        // Check that the process finished (status will be updated during completion)
+        $this->assertNotNull($taskProcess->completed_at);
     }
 
     /**
-     * Clean up after tests
+     * Test the run method with batch size 2
      */
+    public function test_run_withBatchSizeTwo_createsBatchedArtifacts()
+    {
+        // Given we have a new task definition with batch size 2 configuration
+        $taskDef = TaskDefinition::factory()->create([
+            'name'             => 'Test Load CSV Task - Batch 2',
+            'task_runner_name' => LoadCsvTaskRunner::RUNNER_NAME,
+            'task_runner_config' => [
+                'batch_size' => 2,
+                'selected_columns' => []
+            ]
+        ]);
+        
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $taskDef->id,
+            'name'               => 'Test Load CSV Run - Batch 2',
+        ]);
+        
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'activity'    => 'Testing CSV loading - Batch 2',
+        ]);
+        
+        $taskRunner = $taskProcess->getRunner();
+        
+        $csvFile = $this->createTestStoredFile('batched_employees.csv');
+        $artifact = Artifact::factory()->create();
+        $artifact->storedFiles()->attach($csvFile->id);
+        $taskProcess->inputArtifacts()->attach($artifact->id);
+
+        // Mock FileHelper (3rd party dependency)
+        $fileHelperMock = Mockery::mock('alias:' . FileHelper::class);
+        $fileHelperMock->shouldReceive('parseCsvFile')
+            ->once()
+            ->with($csvFile->url, 0, 1, [])
+            ->andReturn($this->testCsvData);
+
+        // When we run the CSV loading task
+        $taskRunner->run();
+
+        // Then we should have 2 output artifacts (4 rows / 2 per batch)
+        $taskProcess->refresh();
+        $outputArtifacts = $taskProcess->outputArtifacts;
+        $this->assertCount(2, $outputArtifacts);
+
+        // First batch should contain first 2 rows
+        $expectedFirstBatch = [$this->testCsvData[0], $this->testCsvData[1]];
+        $this->assertEquals($expectedFirstBatch, $outputArtifacts[0]->json_content);
+        $this->assertEquals(2, $outputArtifacts[0]->meta['batch_size']);
+        $this->assertEquals(0, $outputArtifacts[0]->meta['batch_index']);
+
+        // Second batch should contain last 2 rows
+        $expectedSecondBatch = [$this->testCsvData[2], $this->testCsvData[3]];
+        $this->assertEquals($expectedSecondBatch, $outputArtifacts[1]->json_content);
+        $this->assertEquals(2, $outputArtifacts[1]->meta['batch_size']);
+        $this->assertEquals(1, $outputArtifacts[1]->meta['batch_index']);
+    }
+
 }

@@ -50,6 +50,8 @@ services:
         depends_on:
             - redis
             - pgsql
+            - meilisearch
+            - mailpit
 
     redis:
         image: 'redis:alpine'

@@ -9,20 +9,107 @@ $thousand = 1_000;
 return [
     // The seed to use for AI completions to ensure consistent results
     'seed'                         => env('AI_SEED', 11181987),
-    'default_model'                => 'o4-mini',
+    'default_model'                => 'gpt-5-mini',
 
     // Data deduplication agent configuration
     'classification_deduplication' => [
         'agent_name' => 'Data Normalization Agent',
-        'model'      => env('AI_CLASSIFICATION_DEDUP_MODEL', 'o3'),
+        'model'      => env('AI_CLASSIFICATION_DEDUP_MODEL', 'gpt-5'),
     ],
 
     // Classification verification agent configuration
     'classification_verification'  => [
         'agent_name' => 'Classification Verification Agent',
-        'model'      => env('AI_CLASSIFICATION_VERIFICATION_MODEL', 'o3'),
+        'model'      => env('AI_CLASSIFICATION_VERIFICATION_MODEL', 'gpt-5'),
     ],
     'models'                       => [
+        'gpt-5'                             => [
+            'api'          => OpenAiApi::class,
+            'name'         => 'GPT 5',
+            'context'      => 400_000,
+            'input'        => 1.25 / $million,
+            'cached_input' => 0.125 / $million,
+            'output'       => 10.00 / $million,
+            'features'     => [
+                'streaming'          => true,
+                'function_calling'   => true,
+                'structured_outputs' => true,
+                'fine_tuning'        => true,
+                'distillation'       => true,
+                'predicted_outputs'  => true,
+                'image_input'        => true,
+                'audio_input'        => true,
+                'reasoning'          => true,
+                'temperature'        => false,
+            ],
+            'rate_limits'  => [
+                'tokens_per_minute'   => 800_000,
+                'requests_per_minute' => 900,
+            ],
+            'image'        => [
+                'tokens' => 170,
+                'base'   => 85,
+                'tile'   => '512x512',
+            ],
+        ],
+        'gpt-5-mini'                        => [
+            'api'          => OpenAiApi::class,
+            'name'         => 'GPT 5 Mini',
+            'context'      => 400_000,
+            'input'        => 0.25 / $million,
+            'cached_input' => 0.025 / $million,
+            'output'       => 2.00 / $million,
+            'features'     => [
+                'streaming'          => true,
+                'function_calling'   => true,
+                'structured_outputs' => true,
+                'fine_tuning'        => true,
+                'distillation'       => false,
+                'predicted_outputs'  => false,
+                'image_input'        => true,
+                'audio_input'        => true,
+                'reasoning'          => true,
+                'temperature'        => false,
+            ],
+            'rate_limits'  => [
+                'tokens_per_minute'   => 4_000_000,
+                'requests_per_minute' => 900,
+            ],
+            'image'        => [
+                'tokens' => 170,
+                'base'   => 85,
+                'tile'   => '512x512',
+            ],
+        ],
+        'gpt-5-nano'                        => [
+            'api'          => OpenAiApi::class,
+            'name'         => 'GPT 5 Nano',
+            'context'      => 400_000,
+            'input'        => 0.05 / $million,
+            'cached_input' => 0.01 / $million,
+            'output'       => 0.40 / $million,
+            'features'     => [
+                'streaming'          => true,
+                'function_calling'   => true,
+                'structured_outputs' => true,
+                'fine_tuning'        => true,
+                'distillation'       => false,
+                'predicted_outputs'  => false,
+                'image_input'        => true,
+                'audio_input'        => true,
+                'reasoning'          => true,
+                'temperature'        => false,
+            ],
+            'rate_limits'  => [
+                'tokens_per_minute'   => 4_000_000,
+                'requests_per_minute' => 900,
+            ],
+            'image'        => [
+                'tokens' => 170,
+                'base'   => 85,
+                'tile'   => '512x512',
+            ],
+        ],
         'gpt-4o'                            => [
             'api'          => OpenAiApi::class,
             'name'         => 'GPT‑4o',
