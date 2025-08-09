@@ -36,7 +36,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
         );
 
         // Mock the UiDemandWorkflowService
-        $mockService = Mockery::mock(UiDemandWorkflowService::class);
+        $mockService = $this->mock(UiDemandWorkflowService::class);
         $mockService->shouldReceive('handleUiDemandWorkflowComplete')
             ->once()
             ->with($workflowRun);
@@ -63,7 +63,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
         ]);
 
         // No workflow listener exists - should not call service
-        $mockService = Mockery::mock(UiDemandWorkflowService::class);
+        $mockService = $this->mock(UiDemandWorkflowService::class);
         $mockService->shouldReceive('handleUiDemandWorkflowComplete')
             ->never();
 
@@ -100,7 +100,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
             WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA
         );
 
-        $mockService = Mockery::mock(UiDemandWorkflowService::class);
+        $mockService = $this->mock(UiDemandWorkflowService::class);
         $mockService->shouldReceive('handleUiDemandWorkflowComplete')->never();
 
         $this->app->instance(UiDemandWorkflowService::class, $mockService);
@@ -125,7 +125,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
             WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
         );
 
-        $mockService2 = Mockery::mock(UiDemandWorkflowService::class);
+        $mockService2 = $this->mock(UiDemandWorkflowService::class);
         $mockService2->shouldReceive('handleUiDemandWorkflowComplete')
             ->once()
             ->with($completedWorkflowRun);
@@ -149,9 +149,4 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
         $this->assertNotEmpty($listeners, 'WorkflowRunUpdatedEvent should have listeners registered');
     }
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
 }

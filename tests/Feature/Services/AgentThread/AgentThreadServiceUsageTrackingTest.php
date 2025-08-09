@@ -37,7 +37,7 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
         ]);
 
         // Mock the response
-        $response = Mockery::mock(AgentCompletionResponseContract::class);
+        $response = $this->mock(AgentCompletionResponseContract::class);
         $response->shouldReceive('inputTokens')->andReturn(200);
         $response->shouldReceive('outputTokens')->andReturn(100);
         $response->shouldReceive('getContent')->andReturn('Test response');
@@ -80,7 +80,7 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
         $threadRun = AgentThreadRun::factory()->create(['agent_thread_id' => $thread->id]);
 
         // Mock response with zero tokens
-        $response = Mockery::mock(AgentCompletionResponseContract::class);
+        $response = $this->mock(AgentCompletionResponseContract::class);
         $response->shouldReceive('inputTokens')->andReturn(0);
         $response->shouldReceive('outputTokens')->andReturn(0);
         $response->shouldReceive('getContent')->andReturn('');
@@ -119,7 +119,7 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
         $threadRun = AgentThreadRun::factory()->create(['agent_thread_id' => $thread->id]);
 
         // Mock response
-        $response = Mockery::mock(AgentCompletionResponseContract::class);
+        $response = $this->mock(AgentCompletionResponseContract::class);
         $response->shouldReceive('inputTokens')->andReturn(1000);
         $response->shouldReceive('outputTokens')->andReturn(500);
         $response->shouldReceive('getContent')->andReturn('Test response');
@@ -156,7 +156,7 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
         ];
 
         // Mock response
-        $response = Mockery::mock(AgentCompletionResponseContract::class);
+        $response = $this->mock(AgentCompletionResponseContract::class);
         $response->shouldReceive('inputTokens')->andReturn(200);
         $response->shouldReceive('outputTokens')->andReturn(100);
         $response->shouldReceive('getContent')->andReturn('Test response');
@@ -175,9 +175,4 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
         $this->assertEquals($apiResponseData, $usageEvent->metadata['api_response']);
     }
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
 }

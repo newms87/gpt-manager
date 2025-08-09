@@ -177,7 +177,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         // Mock workflow run to return the artifact
-        $workflowRun = Mockery::mock($workflowRun);
+        $workflowRun = $this->mock($workflowRun);
         $workflowRun->shouldReceive('isCompleted')->andReturn(true);
         $workflowRun->shouldReceive('collectFinalOutputArtifacts')->andReturn(collect([$artifact]));
 
@@ -221,7 +221,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         // Mock workflow run to return the artifact
-        $workflowRun = Mockery::mock($workflowRun);
+        $workflowRun = $this->mock($workflowRun);
         $workflowRun->shouldReceive('isCompleted')->andReturn(true);
         $workflowRun->shouldReceive('collectFinalOutputArtifacts')->andReturn(collect([$artifact]));
 
@@ -268,7 +268,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         );
 
         // Mock workflow run as failed
-        $workflowRun = Mockery::mock($workflowRun);
+        $workflowRun = $this->mock($workflowRun);
         $workflowRun->shouldReceive('isCompleted')->andReturn(false);
         $workflowRun->status = 'failed';
 
@@ -286,9 +286,4 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $this->assertEquals('failed', $updatedListener->metadata['error']);
     }
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
 }

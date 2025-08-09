@@ -17,11 +17,6 @@ abstract class TestCase extends BaseTestCase
         Job::enableAll();
     }
 
-    protected function tearDown(): void
-    {
-        \Mockery::close();
-        parent::tearDown();
-    }
     
     /**
      * Disable automatic seeding for tests to avoid performance issues

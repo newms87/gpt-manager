@@ -34,7 +34,7 @@ class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
         ]);
 
         // Mock the OCR API
-        $mockApi = Mockery::mock(ImageToTextOcrApi::class);
+        $mockApi = $this->mock(ImageToTextOcrApi::class);
         $mockApi->shouldReceive('convert')
             ->with($storedFile->url)
             ->andReturn('This is the extracted text from the image.');
@@ -111,7 +111,7 @@ class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
         $storedFile  = StoredFile::factory()->create();
 
         // Mock API to throw exception
-        $mockApi = Mockery::mock(ImageToTextOcrApi::class);
+        $mockApi = $this->mock(ImageToTextOcrApi::class);
         $mockApi->shouldReceive('convert')
             ->andThrow(new \Exception('API Error'));
 
@@ -133,9 +133,4 @@ class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
         $this->assertNull($usageEvent);
     }
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
 }

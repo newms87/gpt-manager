@@ -96,7 +96,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         // Given
         $thread  = AgentThread::factory()->withMessages(1)->create();
-        $service = Mockery::mock(AgentThreadService::class)->makePartial();
+        $service = $this->mock(AgentThreadService::class)->makePartial();
         $service->shouldReceive('executeThreadRun')->once();
 
         // When
