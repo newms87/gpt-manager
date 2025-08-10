@@ -36,7 +36,7 @@ const updateTaskDefinitionAction = dxTaskDefinition.getAction("update", {
 });
 
 async function setAgent(agent) {
-	if (agent?.id === props.taskDefinition.agent.id) return storeObject(agent);
+	if (agent?.id === props.taskDefinition.agent?.id) return storeObject(agent);
 
 	if (agent) {
 		await updateTaskDefinitionAction.trigger(props.taskDefinition, { agent_id: agent.id });

@@ -20,7 +20,7 @@ class TestGoogleDocsTemplateCommand extends Command
     protected $signature = 'test:google-docs-template
                            {--google-doc-id= : Google Doc template ID to use}
                            {--create-test-data : Create test data for demonstration}
-                           {--model=gpt-4o : AI model to use}
+                           {--model=gpt-5-mini : AI model to use}
                            {--mcp-server=zapier : MCP server to use for Google Docs access}';
 
     /**
