@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Stripe Webhooks (no auth)
+Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
+
 
 // Imports
 require __DIR__ . '/auth.php';

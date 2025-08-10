@@ -21,14 +21,13 @@ use App\Http\Controllers\Ai\WorkflowDefinitionsController;
 use App\Http\Controllers\Ai\WorkflowInputsController;
 use App\Http\Controllers\Ai\WorkflowNodesController;
 use App\Http\Controllers\Ai\WorkflowRunsController;
+use App\Http\Controllers\Api\BillingController;
+use App\Http\Controllers\Api\SubscriptionPlansController;
+use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Assistant\AssistantActionsController;
 use App\Http\Controllers\Assistant\UniversalAssistantController;
-use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Audit\AuditRequestsController;
 use App\Http\Controllers\Team\TeamsController;
-use App\Http\Controllers\Api\BillingController;
-use App\Http\Controllers\Api\StripeWebhookController;
-use App\Http\Controllers\Api\SubscriptionPlansController;
 use App\Http\Controllers\UiDemandsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -131,14 +130,14 @@ Route::prefix('billing')->group(function () {
     Route::get('subscription', [BillingController::class, 'getSubscription']);
     Route::post('subscription', [BillingController::class, 'createSubscription']);
     Route::delete('subscription', [BillingController::class, 'cancelSubscription']);
-    
+
     Route::get('payment-methods', [BillingController::class, 'listPaymentMethods']);
     Route::post('payment-methods', [BillingController::class, 'addPaymentMethod']);
     Route::delete('payment-methods/{paymentMethod}', [BillingController::class, 'removePaymentMethod']);
-    
+
     Route::post('setup-intent', [BillingController::class, 'createSetupIntent']);
     Route::post('confirm-setup', [BillingController::class, 'confirmSetup']);
-    
+
     Route::get('history', [BillingController::class, 'getBillingHistory']);
     Route::get('usage', [BillingController::class, 'getUsageStats']);
 });
@@ -149,10 +148,6 @@ Route::prefix('subscription-plans')->withoutMiddleware('auth:sanctum')->group(fu
     Route::get('compare', [SubscriptionPlansController::class, 'compare']);
     Route::get('{plan}', [SubscriptionPlansController::class, 'show']);
 });
-
-// Stripe Webhooks (no auth)
-Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
-    ->withoutMiddleware('auth:sanctum');
 
 // Websockets Pusher Broadcasting
 Route::post('broadcasting/auth', function (Request $request) {

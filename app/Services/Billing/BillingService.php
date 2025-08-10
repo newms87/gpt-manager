@@ -456,7 +456,7 @@ class BillingService
         if ($subscription) {
             $subscription->update([
                 'status' => 'canceled',
-                'cancelled_at' => now(),
+                'canceled_at' => now(),
             ]);
         }
     }
@@ -473,16 +473,23 @@ class BillingService
         }
 
         $amount = $invoice['amount_paid'] / 100;
+        $totalAmount = ($invoice['amount_due'] ?? $invoice['amount_paid']) / 100;
+        
+        // For failed payments, use the amount due instead of amount paid
+        if ($status !== 'succeeded' && $amount <= 0) {
+            $amount = $totalAmount;
+        }
+        
         $billingHistory = new BillingHistory([
             'team_id' => $team->id,
-            'type' => 'subscription_payment',
+            'type' => 'invoice', // Use 'invoice' instead of 'subscription_payment'
             'description' => $invoice['description'] ?? 'Subscription payment',
             'amount' => $amount,
-            'total_amount' => $amount,
+            'total_amount' => $totalAmount,
             'currency' => strtoupper($invoice['currency']),
-            'status' => $status === 'succeeded' ? 'paid' : 'failed',
+            'status' => $status === 'succeeded' ? 'paid' : 'open', // Use 'open' for failed instead of 'failed'
             'stripe_invoice_id' => $invoice['id'],
-            'invoice_url' => $invoice['invoice_pdf'],
+            'invoice_url' => $invoice['invoice_pdf'] ?? null,
             'billing_date' => Carbon::createFromTimestamp($invoice['created']),
             'metadata' => [
                 'invoice_number' => $invoice['number'],
