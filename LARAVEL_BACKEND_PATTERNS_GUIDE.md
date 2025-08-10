@@ -409,12 +409,23 @@ return new class extends Migration
 
 ## 7. Testing Patterns
 
-### Test Structure Template
+**❌ CRITICAL: NEVER TEST CONTROLLERS DIRECTLY**
+
+Due to Laravel configuration issues causing 503 errors in controller tests, **ALL CONTROLLER TESTING IS PROHIBITED**. Controllers are thin delegation layers that should not contain business logic to test.
+
+### What To Test Instead:
+
+- **Services**: Test ALL business logic methods with real database interactions
+- **Repositories**: Test data access patterns and team scoping
+- **Models**: Test relationships, scopes, and validation methods
+- **Resources**: Test data transformation logic
+
+### Service Testing Template
 
 ```php
 <?php
 
-namespace Tests\Feature\[Domain];
+namespace Tests\Unit\Services\[Domain];
 
 use App\Models\[Domain]\[Model];
 use App\Services\[Domain]\[Service];
@@ -434,7 +445,7 @@ class [Service]Test extends AuthenticatedTestCase
     public function test_[action]_with[Condition]_[expectedResult](): void
     {
         // Given
-        $model = [Model]::factory()->create();
+        $model = [Model]::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $data = ['key' => 'value'];
 
         // When
@@ -443,12 +454,16 @@ class [Service]Test extends AuthenticatedTestCase
         // Then
         $this->assertInstanceOf([Model]::class, $result);
         $this->assertEquals('expected_value', $result->field);
+        $this->assertDatabaseHas('[table_name]', [
+            'id' => $model->id,
+            'key' => 'value'
+        ]);
     }
 
     public function test_[action]_with[InvalidCondition]_throwsException(): void
     {
         // Given
-        $model = [Model]::factory()->create();
+        $model = [Model]::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $invalidData = ['invalid' => 'data'];
 
         // Then
@@ -460,8 +475,71 @@ class [Service]Test extends AuthenticatedTestCase
 }
 ```
 
+### Repository Testing Template
+
+```php
+<?php
+
+namespace Tests\Unit\Repositories;
+
+use App\Models\[Domain]\[Model];
+use App\Repositories\[Model]Repository;
+use Tests\AuthenticatedTestCase;
+use Tests\Traits\SetUpTeamTrait;
+
+class [Model]RepositoryTest extends AuthenticatedTestCase
+{
+    use SetUpTeamTrait;
+
+    protected [Model]Repository $repository;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->setUpTeam();
+        $this->repository = app([Model]Repository::class);
+    }
+
+    public function test_query_scopesToCurrentTeam(): void
+    {
+        // Given
+        $teamModel = [Model]::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $otherTeamModel = [Model]::factory()->create(); // Different team
+
+        // When
+        $results = $this->repository->query()->get();
+
+        // Then
+        $this->assertCount(1, $results);
+        $this->assertEquals($teamModel->id, $results->first()->id);
+    }
+
+    public function test_applyAction_create_createsModelWithTeamId(): void
+    {
+        // Given
+        $data = ['name' => 'Test Model', 'description' => 'Test Description'];
+
+        // When
+        $result = $this->repository->applyAction('create', null, $data);
+
+        // Then
+        $this->assertInstanceOf([Model]::class, $result);
+        $this->assertEquals($this->user->currentTeam->id, $result->team_id);
+        $this->assertEquals('Test Model', $result->name);
+        $this->assertDatabaseHas('[table_name]', [
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Test Model'
+        ]);
+    }
+}
+```
+
 ### Testing Best Practices
 
+- **NEVER test controllers**: Controllers should be thin delegation only
+- **Test services comprehensively**: ALL business logic must have tests
+- **Test repositories for team scoping**: Verify security constraints
+- **Use real database interactions**: Only mock 3rd party APIs
 - **AuthenticatedTestCase**: Base class with team setup
 - **Factory usage**: All test data via factories
 - **Given-When-Then**: Clear test structure

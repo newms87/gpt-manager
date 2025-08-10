@@ -26,18 +26,18 @@ patterns."*
 
 You MUST use the specialized Vue agents for any frontend work:
 
-1. **vue-architect-planner** - REQUIRED for:
+1. **vue-spa-architect** - REQUIRED for:
     - Planning new features affecting multiple components
     - Medium to large changes impacting multiple files
     - Component organization and architectural decisions
 
-2. **vue-tailwind-engineer** - REQUIRED for:
+2. **vue-spa-engineer** - REQUIRED for:
     - Creating any new Vue components
     - Implementing Vue features or functionality
     - Refactoring existing Vue code
     - Any non-trivial changes (more than a few lines of code)
 
-3. **vue-tailwind-reviewer** - REQUIRED for:
+3. **vue-spa-reviewer** - REQUIRED for:
     - Reviewing Vue components after creation or modification
     - Ensuring adherence to project patterns and quality standards
     - Quality assurance of all Vue/Tailwind code
@@ -49,19 +49,19 @@ agent to ensure consistency, quality, and adherence to project standards.
 
 You MUST use the specialized Laravel agents for any backend work:
 
-1. **laravel-system-architect** - REQUIRED for:
+1. **laravel-backend-architect** - REQUIRED for:
     - Planning complex backend features involving multiple classes/models/services
     - System architecture decisions affecting multiple components
     - Database schema design and migration planning
     - API endpoint organization and integration planning
 
-2. **laravel-backend-architect** - REQUIRED for:
+2. **laravel-backend-engineer** - REQUIRED for:
     - Creating any new services, repositories, controllers, or models
     - Implementing backend features or functionality
     - Refactoring existing Laravel code
     - Any non-trivial backend changes (more than a Simple getter/setter)
 
-3. **laravel-qa-tester** - REQUIRED for:
+3. **laravel-backend-qa-tester** - REQUIRED for:
     - Reviewing Laravel backend code after creation or modification
     - Ensuring comprehensive test coverage and quality standards
     - Quality assurance of all Laravel backend code
@@ -123,6 +123,8 @@ Service-Repository-Controller pattern with danx integration.
 
 **CRITICAL TESTING PRINCIPLES:**
 
+- **NEVER TEST CONTROLLERS DIRECTLY** - Due to Laravel config issues causing 503 errors, ALL controller testing is
+  PROHIBITED. Controllers are thin delegation layers.
 - **NEVER use Mockery::mock(...)** - ALWAYS use `$this->mock(...)`
 - **NEVER mock database interactions** - USE THE DATABASE! This is what we want to test!
 - **ONLY mock 3rd party API calls** - Everything else should use real implementations

@@ -3,6 +3,9 @@
 namespace App\Models\Team;
 
 use App\Models\Agent\Agent;
+use App\Models\Billing\BillingHistory;
+use App\Models\Billing\PaymentMethod;
+use App\Models\Billing\Subscription;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\TaskDefinition;
 use App\Models\User;
@@ -57,6 +60,21 @@ class Team extends Model implements AuditableContract
     public function workflowInputs(): HasMany|WorkflowInput
     {
         return $this->hasMany(WorkflowInput::class);
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(PaymentMethod::class);
+    }
+
+    public function billingHistory(): HasMany
+    {
+        return $this->hasMany(BillingHistory::class);
     }
 
     public function __toString()

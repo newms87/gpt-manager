@@ -52,6 +52,7 @@ services:
             - pgsql
             - meilisearch
             - mailpit
+            - laravel.test
 
     redis:
         image: 'redis:alpine'
