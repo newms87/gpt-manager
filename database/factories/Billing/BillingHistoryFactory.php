@@ -15,7 +15,7 @@ class BillingHistoryFactory extends Factory
     {
         return [
             'team_id' => Team::factory(),
-            'type' => $this->faker->randomElement(['subscription_payment', 'usage_charge', 'refund', 'chargeback']),
+            'type' => $this->faker->randomElement(['invoice', 'payment', 'refund', 'usage_charge']),
             'description' => $this->faker->sentence(),
             'amount' => $this->faker->randomFloat(2, 1.00, 999.99),
             'total_amount' => function (array $attributes) {
@@ -37,7 +37,7 @@ class BillingHistoryFactory extends Factory
     public function subscriptionPayment(): static
     {
         return $this->state(fn (array $attributes) => [
-            'type' => 'subscription_payment',
+            'type' => 'invoice',
             'description' => 'Monthly subscription payment',
         ]);
     }

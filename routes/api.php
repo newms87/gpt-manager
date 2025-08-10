@@ -142,8 +142,8 @@ Route::prefix('billing')->group(function () {
     Route::get('usage', [BillingController::class, 'getUsageStats']);
 });
 
-// Subscription Plans (public - no auth required)
-Route::prefix('subscription-plans')->withoutMiddleware('auth:sanctum')->group(function () {
+// Subscription Plans (require authentication)
+Route::prefix('subscription-plans')->group(function () {
     Route::get('/', [SubscriptionPlansController::class, 'index']);
     Route::get('compare', [SubscriptionPlansController::class, 'compare']);
     Route::get('{plan}', [SubscriptionPlansController::class, 'show']);

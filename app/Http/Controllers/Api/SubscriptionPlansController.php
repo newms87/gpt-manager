@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Resources\Billing\SubscriptionPlanResource;
+use App\Resources\Billing\SubscriptionPlanResource;
 use App\Models\Billing\SubscriptionPlan;
 use App\Repositories\Billing\SubscriptionPlanRepository;
 use Illuminate\Http\JsonResponse;
@@ -13,6 +13,7 @@ class SubscriptionPlansController extends ActionController
 {
     static ?string $repo = SubscriptionPlanRepository::class;
     static ?string $resource = SubscriptionPlanResource::class;
+
     /**
      * List all active subscription plans
      */
@@ -37,7 +38,7 @@ class SubscriptionPlansController extends ActionController
     public function show(SubscriptionPlan $plan): JsonResponse
     {
         return response()->json([
-            'plan' => new SubscriptionPlanResource($plan),
+            'plan' => SubscriptionPlanResource::make($plan),
         ]);
     }
 

@@ -568,7 +568,7 @@ class BillingServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertDatabaseHas('billing_history', [
             'team_id' => $this->team->id,
-            'type' => 'subscription_payment',
+            'type' => 'invoice',
             'amount' => 29.99,
             'status' => 'paid',
             'stripe_invoice_id' => 'in_test123'

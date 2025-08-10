@@ -481,7 +481,7 @@ class BillingWorkflowIntegrationTest extends AuthenticatedTestCase
         // Then - Verify invoice payment is recorded
         $billingHistory = BillingHistory::where('team_id', $this->team->id)->first();
         $this->assertInstanceOf(BillingHistory::class, $billingHistory);
-        $this->assertEquals('subscription_payment', $billingHistory->type);
+        $this->assertEquals('invoice', $billingHistory->type);
         $this->assertEquals('paid', $billingHistory->status);
         $this->assertEquals(29.99, $billingHistory->amount);
         $this->assertEquals('in_test123', $billingHistory->stripe_invoice_id);
@@ -495,7 +495,7 @@ class BillingWorkflowIntegrationTest extends AuthenticatedTestCase
         // Verify database record
         $this->assertDatabaseHas('billing_history', [
             'team_id' => $this->team->id,
-            'type' => 'subscription_payment',
+            'type' => 'invoice',
             'status' => 'paid',
             'amount' => 29.99,
             'stripe_invoice_id' => 'in_test123',

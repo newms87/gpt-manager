@@ -24,6 +24,7 @@ import {
 	ClassifierTaskRunnerConfig,
 	ClaudeTaskRunnerConfig,
 	FilterArtifactsTaskRunnerConfig,
+	GoogleDocsTemplateTaskRunnerConfig,
 	ImageToTextTranscoderTaskRunnerConfig,
 	LoadCsvTaskRunnerConfig,
 	MergeArtifactsTaskRunnerConfig,
@@ -75,7 +76,7 @@ export const TaskRunnerClasses = {
 	"Artifact Level Projection": {
 		name: "Artifact Level Projection",
 		description: "Project content between different artifact levels while respecting hierarchy relationships",
-		lottie: ArtifactLevelProjectionLottie, 
+		lottie: ArtifactLevelProjectionLottie,
 		config: ArtifactLevelProjectionTaskRunnerConfig
 	},
 	"Image To Text Transcoder": {
@@ -153,6 +154,12 @@ export const TaskRunnerClasses = {
 		lottie: WorkflowInputLottie,
 		node: { is: WorkflowInputTaskRunnerNode },
 		config: BaseTaskRunnerConfig
+	},
+	"Google Docs Template": {
+		name: "Google Docs Template",
+		description: "Create a Google Docs document from a template with dynamic content.",
+		lottie: AgentThreadRunnerLottie,
+		config: GoogleDocsTemplateTaskRunnerConfig
 	},
 	"Load Csv": {
 		name: "Load Csv",

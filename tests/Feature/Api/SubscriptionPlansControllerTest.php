@@ -41,6 +41,9 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
         $response = $this->get('/api/subscription-plans');
 
         // Then
+        if ($response->status() !== 200) {
+            $this->fail('Expected 200 status but got ' . $response->status() . '. Response: ' . $response->getContent());
+        }
         $response->assertOk();
         $response->assertJsonCount(2, 'plans');
         $response->assertJsonStructure([
@@ -82,9 +85,12 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $response = $this->get('/api/subscription-plans?include_inactive=true');
+        $response = $this->get('/api/subscription-plans?include_inactive=1');
 
         // Then
+        if ($response->status() !== 200) {
+            $this->fail('Expected 200 status but got ' . $response->status() . '. Response: ' . $response->getContent());
+        }
         $response->assertOk();
         $response->assertJsonCount(2, 'plans');
 
@@ -276,9 +282,12 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
     public function test_compare_withInvalidPlanIds_returnsValidationError(): void
     {
         // When
-        $response = $this->get('/api/subscription-plans/compare?plan_ids[]=999999');
+        $response = $this->getJson('/api/subscription-plans/compare?plan_ids[]=999999');
 
         // Then
+        if ($response->status() !== 422) {
+            $this->fail('Expected 422 status but got ' . $response->status() . '. Response: ' . $response->getContent());
+        }
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['plan_ids.0']);
     }
@@ -360,7 +369,10 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
         ];
 
         foreach ($endpoints as [$method, $endpoint]) {
-            $response = $this->call($method, $endpoint);
+            $response = $this->json($method, $endpoint);
+            if ($response->getStatusCode() !== 401) {
+                $this->fail("Endpoint $method $endpoint should require authentication. Got {$response->getStatusCode()}: " . $response->getContent());
+            }
             $this->assertEquals(401, $response->getStatusCode(), "Endpoint $method $endpoint should require authentication");
         }
     }
