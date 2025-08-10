@@ -1,6 +1,6 @@
 <template>
   <div class="demand-form">
-    <form @submit.prevent="handleSubmit" class="space-y-6">
+    <form class="space-y-6" @submit.prevent="handleSubmit">
       <!-- Title Field -->
       <UiInput
         v-model="formData.title"

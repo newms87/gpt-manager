@@ -787,4 +787,52 @@ class GoodService
 3. Verify no console errors
 4. Check for proper error handling
 
+---
+
+## Testing Patterns & Requirements
+
+### CRITICAL TESTING PRINCIPLES
+
+**NEVER:**
+- Use `Mockery::mock(...)` - ALWAYS use `$this->mock(...)`
+- Mock database interactions - USE THE DATABASE!
+- Mock internal service/repository methods
+- Avoid database writes in tests
+
+**ALWAYS:**
+- Use real database interactions with factories
+- Only mock 3rd party API calls and external services
+- Test the complete system behavior, not isolated functions
+- Use RefreshDatabase trait (all tests reset database)
+- Verify database state changes
+
+### Test Structure Standards
+
+```php
+<?php
+class ServiceTest extends AuthenticatedTestCase
+{
+    protected SomeService $service;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->service = app(SomeService::class);
+    }
+
+    public function test_methodName_withCondition_expectedResult()
+    {
+        // Given: Setup test data with factories
+        $model = Model::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        
+        // When: Execute the method
+        $result = $this->service->performAction($model, $data);
+        
+        // Then: Assert database changes AND return values
+        $this->assertDatabaseHas('models', ['id' => $model->id, 'status' => 'updated']);
+        $this->assertEquals('expected', $result->property);
+    }
+}
+```
+
 This guide ensures consistent, maintainable, and scalable Laravel backend code following the GPT Manager application patterns.

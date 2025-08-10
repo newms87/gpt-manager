@@ -9,8 +9,8 @@
             <!-- Toggle button for details -->
             <button
                 v-if="hasDetails"
-                @click="showDetails = !showDetails"
                 class="mt-1 text-xs text-red-600 hover:text-red-800 underline focus:outline-none"
+                @click="showDetails = !showDetails"
             >
                 {{ showDetails ? 'Hide details' : 'Show details' }}
             </button>

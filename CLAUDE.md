@@ -17,7 +17,8 @@
   something works. Never guess. It is CRITICAL you understand what you are doing before you do it.
 
 **CRITICALLY IMPORTANT: Before each code change, make a TODO list with the FIRST STEP stating:**
-*"I will follow the best practices and standards: DRY Principles, no Legacy/backwards compatibility, and use the correct patterns."*
+*"I will follow the best practices and standards: DRY Principles, no Legacy/backwards compatibility, and use the correct
+patterns."*
 
 ## Specialized Agent Usage
 
@@ -26,61 +27,67 @@
 You MUST use the specialized Vue agents for any frontend work:
 
 1. **vue-architect-planner** - REQUIRED for:
-   - Planning new features affecting multiple components
-   - Medium to large changes impacting multiple files
-   - Component organization and architectural decisions
+    - Planning new features affecting multiple components
+    - Medium to large changes impacting multiple files
+    - Component organization and architectural decisions
 
 2. **vue-tailwind-engineer** - REQUIRED for:
-   - Creating any new Vue components
-   - Implementing Vue features or functionality
-   - Refactoring existing Vue code
-   - Any non-trivial changes (more than a few lines of code)
+    - Creating any new Vue components
+    - Implementing Vue features or functionality
+    - Refactoring existing Vue code
+    - Any non-trivial changes (more than a few lines of code)
 
 3. **vue-tailwind-reviewer** - REQUIRED for:
-   - Reviewing Vue components after creation or modification
-   - Ensuring adherence to project patterns and quality standards
-   - Quality assurance of all Vue/Tailwind code
+    - Reviewing Vue components after creation or modification
+    - Ensuring adherence to project patterns and quality standards
+    - Quality assurance of all Vue/Tailwind code
 
-**DO NOT** attempt to write Vue components or frontend code directly. Always delegate to the appropriate specialized agent to ensure consistency, quality, and adherence to project standards.
+**DO NOT** attempt to write Vue components or frontend code directly. Always delegate to the appropriate specialized
+agent to ensure consistency, quality, and adherence to project standards.
 
 **MANDATORY: For Laravel Backend Work**
 
 You MUST use the specialized Laravel agents for any backend work:
 
 1. **laravel-system-architect** - REQUIRED for:
-   - Planning complex backend features involving multiple classes/models/services
-   - System architecture decisions affecting multiple components
-   - Database schema design and migration planning
-   - API endpoint organization and integration planning
+    - Planning complex backend features involving multiple classes/models/services
+    - System architecture decisions affecting multiple components
+    - Database schema design and migration planning
+    - API endpoint organization and integration planning
 
 2. **laravel-backend-architect** - REQUIRED for:
-   - Creating any new services, repositories, controllers, or models
-   - Implementing backend features or functionality
-   - Refactoring existing Laravel code
-   - Any non-trivial backend changes (more than a Simple getter/setter)
+    - Creating any new services, repositories, controllers, or models
+    - Implementing backend features or functionality
+    - Refactoring existing Laravel code
+    - Any non-trivial backend changes (more than a Simple getter/setter)
 
 3. **laravel-qa-tester** - REQUIRED for:
-   - Reviewing Laravel backend code after creation or modification
-   - Ensuring comprehensive test coverage and quality standards
-   - Quality assurance of all Laravel backend code
+    - Reviewing Laravel backend code after creation or modification
+    - Ensuring comprehensive test coverage and quality standards
+    - Quality assurance of all Laravel backend code
 
-**DO NOT** attempt to write Laravel services, repositories, controllers, or models directly. Always delegate to the appropriate specialized agent to ensure consistency, quality, and adherence to the established Service-Repository-Controller pattern with danx integration.
+**DO NOT** attempt to write Laravel services, repositories, controllers, or models directly. Always delegate to the
+appropriate specialized agent to ensure consistency, quality, and adherence to the established
+Service-Repository-Controller pattern with danx integration.
 
 ## Laravel Backend Standards (High-Level)
 
 ### Core Architecture - Service-Repository-Controller Pattern
+
 - **Services**: ALL business logic with validation and DB transactions
 - **Repositories**: Data access ONLY, extend ActionRepository with team scoping
 - **Controllers**: THIN delegation only, extend ActionController with app() helper
 - **Models**: Relationships and validation ONLY, use danx traits
 
 ### Key Requirements
+
 - **Team-based access control**: ALL data scoped to teams automatically
 - **danx library integration**: ActionController, ActionRepository, ActionResource, ActionRoute
 - **Database transactions**: Multi-step operations must use DB::transaction()
 - **Anonymous class migrations**: Laravel 9+ style with team_id fields
 - **Comprehensive testing**: AuthenticatedTestCase with team setup
-- **Unit tests for non-trivial changes**: ALL new functionality must include comprehensive unit tests covering happy path, validation errors, edge cases, and boundary conditions
+- **Unit tests for non-trivial changes**: ALL new functionality must include comprehensive unit tests covering happy
+  path, validation errors, edge cases, and boundary conditions
 
 **For detailed implementation patterns, see `LARAVEL_BACKEND_PATTERNS_GUIDE.md` or use the Laravel specialized agents.**
 
@@ -114,8 +121,19 @@ You MUST use the specialized Laravel agents for any backend work:
 
 ### Testing Requirements
 
+**CRITICAL TESTING PRINCIPLES:**
+
+- **NEVER use Mockery::mock(...)** - ALWAYS use `$this->mock(...)`
+- **NEVER mock database interactions** - USE THE DATABASE! This is what we want to test!
+- **ONLY mock 3rd party API calls** - Everything else should use real implementations
+- **Tests should verify the entire system works** - Not just isolated functions
+- **Use factories and extend TestCase or AuthenticatedTestCase (read the full code for these base classes)** - All tests
+  reset the database between runs
+- **Database writes are GOOD in tests** - They verify the complete behavior
+
 **MANDATORY for all non-trivial changes:**
-- **Unit tests**: Test individual methods/classes in isolation using mocks
+
+- **Unit tests**: Test individual methods/classes with REAL database interactions
 - **Integration tests**: Test complete workflows end-to-end
 - **Edge case coverage**: Test boundary conditions, validation limits, error scenarios
 - **Team-based access control tests**: Verify security constraints work properly
@@ -123,13 +141,13 @@ You MUST use the specialized Laravel agents for any backend work:
 - **Repository tests**: Test data access patterns and team scoping
 
 **Test Structure Standards:**
+
 - Use AuthenticatedTestCase with SetUpTeamTrait for feature tests
-- Use TestCase for pure unit tests with mocking
+- Use TestCase for pure unit tests with real database interactions
 - Follow Given-When-Then test structure with clear comments
 - Test method names should describe the scenario: `test_methodName_withCondition_expectedResult`
 - Each test should verify one specific behavior
-- Mock external dependencies to ensure isolated testing
-
+- Only mock external 3rd party dependencies (APIs, external services)
 
 ### Naming Conventions
 
@@ -156,7 +174,8 @@ You MUST use the specialized Laravel agents for any backend work:
 
 ### Testing & Validation
 
-- Run lint/typecheck commands if provided
+- **MANDATORY for non-trivial frontend changes**: Always run `yarn build` from the spa directory to ensure build passes
+- **Linting**: DO NOT use command-line linting tools - linting is handled manually via the IDE
 - Verify no console errors
 - Check for proper error handling
 - Ensure proper loading states
@@ -164,22 +183,25 @@ You MUST use the specialized Laravel agents for any backend work:
 ### Troubleshooting Test Failures
 
 If tests are failing unexpectedly (especially with dependency errors or missing methods from the danx library):
+
 - Run `make danx-core` to update the danx library and re-establish local symlinks
 - This ensures your local danx library is properly synced with the latest changes
 - Common symptoms that indicate danx sync issues:
-  - Method not found errors in danx components
-  - Unexpected test failures after updating danx-related code
-  - Import errors for danx modules
+    - Method not found errors in danx components
+    - Unexpected test failures after updating danx-related code
+    - Import errors for danx modules
 
 ## Anti-Patterns to Avoid
 
 ### Backend
+
 - Business logic in controllers or models (use Services)
 - Direct DB queries in controllers (use Repositories)
 - Missing team-based access control
 - Not using danx patterns (ActionController, ActionRepository, etc.)
 
 ### Frontend
+
 - Large monolithic components (extract to smaller components)
 - Direct API calls in components (use storeObjects)
 - Local state management instead of storeObjects
@@ -200,16 +222,19 @@ When encountering legacy code:
 ## Custom Libraries (quasar-ui-danx & danx-icon)
 
 ### quasar-ui-danx Library
+
 - Comprehensive UI component library that replaces Vuex/Pinia with `storeObjects` pattern
 - Provides ActionTableLayout, form fields, action buttons, panels, and dialogs
 - Use `storeObjects()` and `storeObject()` for reactive state management
 - Each module uses DanxController pattern for CRUD operations
 
 ### danx-icon Library
+
 - Use `FaSolid*` imports for most icons (EditIcon, DeleteIcon, etc.)
 - All icons use Tailwind width classes (`class="w-3"`)
 
-**Note**: Detailed component usage is available in the specialized Vue agents. Use those agents for specific implementation guidance.
+**Note**: Detailed component usage is available in the specialized Vue agents. Use those agents for specific
+implementation guidance.
 
 ## Authentication & API Testing
 

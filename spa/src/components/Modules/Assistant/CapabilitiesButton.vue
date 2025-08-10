@@ -2,9 +2,9 @@
     <div class="capabilities-button">
         <!-- Capabilities Button -->
         <button
-            @click="handleButtonClick"
             class="bg-blue-500 hover:bg-blue-400 text-white rounded-full p-1.5 transition-all duration-200 hover:scale-110"
             title="View my capabilities"
+            @click="handleButtonClick"
         >
             <FaSolidGear class="w-3 h-3" />
         </button>
@@ -33,8 +33,8 @@
                             </div>
                         </div>
                         <button
-                            @click="showCapabilitiesMenu = false"
                             class="bg-white/20 hover:bg-white/30 rounded-lg p-2 transition-colors"
+                            @click="showCapabilitiesMenu = false"
                         >
                             <FaSolidX class="w-4 h-4" />
                         </button>

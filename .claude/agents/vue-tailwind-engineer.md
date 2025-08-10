@@ -198,6 +198,13 @@ async function handleAction() {
 </style>
 ```
 
+## Testing & Validation Requirements
+
+### MANDATORY for non-trivial frontend changes:
+- **Build Validation**: ALWAYS run `yarn build` from the spa directory to ensure build passes
+- **Linting**: DO NOT use command-line linting tools - linting is handled manually via the IDE
+- Check for proper error handling and loading states
+
 ## CRITICAL PROJECT RULE
 Before EVERY code change, remember:
 "I will follow best practices: DRY Principles, no Legacy/backwards compatibility, use correct patterns."

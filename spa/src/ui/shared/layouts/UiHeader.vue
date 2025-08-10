@@ -4,8 +4,8 @@
       <div class="flex items-center space-x-4">
         <button 
           v-if="config.showSidebar"
-          @click="toggleSidebar"
           class="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+          @click="toggleSidebar"
         >
           <FaSolidBars class="w-5 h-5 text-slate-600" />
         </button>

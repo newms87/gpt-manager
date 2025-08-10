@@ -6,8 +6,8 @@
             class="mb-3 flex justify-center"
         >
             <button
-                @click="startNewChat"
                 class="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg transition-colors text-sm"
+                @click="startNewChat"
             >
                 <FaSolidPlus class="w-3 h-3" />
                 <span>New Chat</span>

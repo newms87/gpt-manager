@@ -3,11 +3,13 @@
 namespace Tests\Unit\Services\UiDemand;
 
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowListener;
+use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\UiDemand\UiDemandWorkflowService;
 use App\Services\Workflow\WorkflowRunnerService;
@@ -160,26 +162,36 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'title' => 'Test Demand',
         ]);
 
+        // Create real artifact with team object
+        $artifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'meta' => ['team_object_id' => $teamObject->id],
+        ]);
+
+        // Create real completed workflow run
         $workflowRun = WorkflowRun::factory()->create([
+            'started_at' => now()->subMinutes(5),
+            'completed_at' => now(),
             'status' => 'completed',
         ]);
+
+        // Create a workflow node for the task run
+        $workflowNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowRun->workflowDefinition->id,
+        ]);
+
+        // Create a task run with the artifact for the workflow
+        $taskRun = TaskRun::factory()->create([
+            'workflow_run_id' => $workflowRun->id,
+            'workflow_node_id' => $workflowNode->id,
+        ]);
+        $taskRun->outputArtifacts()->attach($artifact->id);
 
         $workflowListener = WorkflowListener::createForListener(
             $uiDemand,
             $workflowRun,
             WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA
         );
-
-        // Mock artifact with team object
-        $artifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['team_object_id' => $teamObject->id],
-        ]);
-
-        // Mock workflow run to return the artifact
-        $workflowRun = $this->mock($workflowRun);
-        $workflowRun->shouldReceive('isCompleted')->andReturn(true);
-        $workflowRun->shouldReceive('collectFinalOutputArtifacts')->andReturn(collect([$artifact]));
 
         $this->service->handleUiDemandWorkflowComplete($workflowRun);
 
@@ -203,27 +215,37 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'title' => 'Test Demand',
         ]);
 
-        $workflowRun = WorkflowRun::factory()->create([
-            'status' => 'completed',
-        ]);
-
-        $workflowListener = WorkflowListener::createForListener(
-            $uiDemand,
-            $workflowRun,
-            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
-        );
-
-        // Mock artifact with Google Docs URL
+        // Create real artifact with Google Docs URL
         $googleDocsUrl = 'https://docs.google.com/document/d/test123/edit';
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'text_content' => "Generated document: {$googleDocsUrl}",
         ]);
 
-        // Mock workflow run to return the artifact
-        $workflowRun = $this->mock($workflowRun);
-        $workflowRun->shouldReceive('isCompleted')->andReturn(true);
-        $workflowRun->shouldReceive('collectFinalOutputArtifacts')->andReturn(collect([$artifact]));
+        // Create real completed workflow run
+        $workflowRun = WorkflowRun::factory()->create([
+            'started_at' => now()->subMinutes(5),
+            'completed_at' => now(),
+            'status' => 'completed',
+        ]);
+
+        // Create a workflow node for the task run
+        $workflowNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowRun->workflowDefinition->id,
+        ]);
+
+        // Create a task run with the artifact for the workflow
+        $taskRun = TaskRun::factory()->create([
+            'workflow_run_id' => $workflowRun->id,
+            'workflow_node_id' => $workflowNode->id,
+        ]);
+        $taskRun->outputArtifacts()->attach($artifact->id);
+
+        $workflowListener = WorkflowListener::createForListener(
+            $uiDemand,
+            $workflowRun,
+            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
+        );
 
         $this->service->handleUiDemandWorkflowComplete($workflowRun);
 
@@ -257,7 +279,10 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'title' => 'Test Demand',
         ]);
 
+        // Create real failed workflow run
         $workflowRun = WorkflowRun::factory()->create([
+            'started_at' => now()->subMinutes(5),
+            'failed_at' => now(),
             'status' => 'failed',
         ]);
 
@@ -266,11 +291,6 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             $workflowRun,
             WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA
         );
-
-        // Mock workflow run as failed
-        $workflowRun = $this->mock($workflowRun);
-        $workflowRun->shouldReceive('isCompleted')->andReturn(false);
-        $workflowRun->status = 'failed';
 
         $this->service->handleUiDemandWorkflowComplete($workflowRun);
 
@@ -283,7 +303,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Assert metadata was updated with error
         $updatedListener = $workflowListener->fresh();
         $this->assertArrayHasKey('error', $updatedListener->metadata);
-        $this->assertEquals('failed', $updatedListener->metadata['error']);
+        $this->assertEquals('Failed', $updatedListener->metadata['error']);
     }
 
 }

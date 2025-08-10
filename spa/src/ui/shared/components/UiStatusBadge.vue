@@ -4,8 +4,8 @@
     :class="[statusClasses, sizeClasses]"
   >
     <component 
-      v-if="showIcon" 
       :is="statusIcon" 
+      v-if="showIcon" 
       class="status-icon"
     />
     

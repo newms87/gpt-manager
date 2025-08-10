@@ -197,9 +197,24 @@ Verify each module has:
 9. **Large components** → Extract to smaller components
 10. **Business logic in components** → Move to services/composables
 
+## Testing & Build Validation Requirements
+
+### MANDATORY Build Validation:
+- **Always verify build passes**: Run `yarn build` from spa directory after any non-trivial changes
+- **Include build status in review**: Flag if changes will break the build
+- **DO NOT use command-line linting**: Linting is handled manually via IDE
+
+### Testing Requirements in Reviews:
+- **Manual testing instructions**: Provide clear steps for user to verify changes work
+- **Error handling**: Ensure proper loading states and error boundaries
+
 ## Example Review Output
 
 ```
+BUILD VALIDATION:
+- ✅ Changes should pass yarn build
+- ❌ Missing import will cause build failure (line 23)
+
 CRITICAL: 
 - Using axios instead of quasar-ui-danx request (line 45)
 - Custom table implementation instead of ActionTableLayout (line 23-89)

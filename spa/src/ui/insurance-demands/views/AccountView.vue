@@ -31,7 +31,7 @@
             </div>
           </template>
 
-          <form v-if="editingProfile" @submit.prevent="updateProfile" class="space-y-4">
+          <form v-if="editingProfile" class="space-y-4" @submit.prevent="updateProfile">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <UiInput
                 v-model="profileForm.firstName"
@@ -112,7 +112,7 @@
             </h3>
           </template>
 
-          <form @submit.prevent="updatePassword" class="space-y-4">
+          <form class="space-y-4" @submit.prevent="updatePassword">
             <UiInput
               v-model="passwordForm.currentPassword"
               label="Current Password"
