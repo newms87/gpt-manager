@@ -157,6 +157,7 @@
       <path value="$PROJECT_DIR$/vendor/newms87/danx" />
       <path value="$PROJECT_DIR$/vendor/spatie/fork" />
       <path value="$PROJECT_DIR$/vendor/laravel/horizon" />
+      <path value="$PROJECT_DIR$/vendor/firebase/php-jwt" />
     </include_path>
   </component>
   <component name="PhpInterpreters">

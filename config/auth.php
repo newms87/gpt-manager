@@ -112,4 +112,78 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | OAuth Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for OAuth providers. Each service can have its own
+    | OAuth settings including endpoints and scopes.
+    |
+    */
+
+    'oauth' => [
+        'google' => [
+            'client_id' => env('GOOGLE_OAUTH_CLIENT_ID'),
+            'client_secret' => env('GOOGLE_OAUTH_CLIENT_SECRET'),
+            'redirect_uri' => env('APP_URL') . '/api/oauth/callback',
+            'auth_url' => 'https://accounts.google.com/o/oauth2/v2/auth',
+            'token_url' => 'https://oauth2.googleapis.com/token',
+            'revoke_url' => 'https://oauth2.googleapis.com/revoke',
+            'scopes' => [
+                'https://www.googleapis.com/auth/documents',
+                'https://www.googleapis.com/auth/drive',
+            ],
+            'access_type' => 'offline',
+            'approval_prompt' => 'force',
+        ],
+
+        // Example configuration for other services
+        'stripe' => [
+            'client_id' => env('STRIPE_OAUTH_CLIENT_ID'),
+            'client_secret' => env('STRIPE_OAUTH_CLIENT_SECRET'),
+            'redirect_uri' => env('APP_URL') . '/api/oauth/callback',
+            'auth_url' => 'https://connect.stripe.com/oauth/authorize',
+            'token_url' => 'https://connect.stripe.com/oauth/token',
+            'scopes' => ['read_write'], // Stripe uses different scope format
+        ],
+
+        'github' => [
+            'client_id' => env('GITHUB_OAUTH_CLIENT_ID'),
+            'client_secret' => env('GITHUB_OAUTH_CLIENT_SECRET'),
+            'redirect_uri' => env('APP_URL') . '/api/oauth/callback',
+            'auth_url' => 'https://github.com/login/oauth/authorize',
+            'token_url' => 'https://github.com/login/oauth/access_token',
+            'scopes' => ['repo', 'user'],
+        ],
+
+        // Add more services as needed...
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Key Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for services that use API keys instead of OAuth.
+    | This is mainly for documentation and validation purposes.
+    |
+    */
+
+    'api_keys' => [
+        'openai' => [
+            'name' => 'OpenAI API Key',
+            'description' => 'API key for OpenAI services',
+            'url' => 'https://platform.openai.com/api-keys',
+        ],
+
+        'anthropic' => [
+            'name' => 'Anthropic API Key', 
+            'description' => 'API key for Claude AI services',
+            'url' => 'https://console.anthropic.com/',
+        ],
+
+        // Add more API key services as needed...
+    ],
+
 ];

@@ -11,6 +11,7 @@
         "php": "^8.3",
         "aws/aws-sdk-php": "^3.305",
         "doctrine/dbal": "^4.0",
+        "firebase/php-jwt": "^6.11",
         "intervention/image": "^3.6",
         "laravel/framework": "^11.0",
         "laravel/horizon": "^5.33",

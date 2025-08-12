@@ -22,6 +22,7 @@ use App\Http\Controllers\Ai\WorkflowInputsController;
 use App\Http\Controllers\Ai\WorkflowNodesController;
 use App\Http\Controllers\Ai\WorkflowRunsController;
 use App\Http\Controllers\Api\BillingController;
+use App\Http\Controllers\Api\Auth\OAuthController;
 use App\Http\Controllers\Api\SubscriptionPlansController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Assistant\AssistantActionsController;
@@ -108,6 +109,21 @@ Route::prefix('assistant')->group(function () {
     Route::post('start-chat', [UniversalAssistantController::class, 'startChat']);
     Route::post('threads/{agentThread}/chat', [UniversalAssistantController::class, 'chat']);
     Route::get('capabilities', [UniversalAssistantController::class, 'getContextCapabilities']);
+});
+
+// Generic OAuth for all services
+Route::prefix('oauth')->group(function () {
+    // Generic OAuth endpoints that work with any service
+    Route::get('{service}/authorize', [OAuthController::class, 'authorize']);
+    Route::get('callback', [OAuthController::class, 'callback'])->withoutMiddleware('auth:sanctum');
+    Route::get('{service}/status', [OAuthController::class, 'status']);
+    Route::post('{service}/refresh', [OAuthController::class, 'refresh']);
+    Route::delete('{service}/revoke', [OAuthController::class, 'revoke']);
+    
+    // Auth token management
+    Route::get('tokens', [OAuthController::class, 'index']);
+    Route::post('api-keys', [OAuthController::class, 'storeApiKey']);
+    Route::delete('tokens/{authToken}', [OAuthController::class, 'destroy']);
 });
 
 // Team Objects

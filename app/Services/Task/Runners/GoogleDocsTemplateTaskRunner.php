@@ -2,8 +2,10 @@
 
 namespace App\Services\Task\Runners;
 
+use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\Agent\AgentThread;
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskDefinition;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
 use Exception;
@@ -24,25 +26,29 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
             throw new Exception("No google_doc_file_id found in any input artifact");
         }
         
-        // Extract all variables from artifacts
-        $templateVariables = $this->extractTemplateVariables($inputArtifacts);
+        // Step 1: Extract variables from the Google Doc template using direct API
+        $googleDocsApi = app(GoogleDocsApi::class);
+        $templateVariables = $googleDocsApi->extractTemplateVariables($googleDocFileId);
         
-        // Setup agent thread with special instructions
+        // Step 2: Collect all data from artifacts to use for template variable replacement
+        $templateData = $this->collectTemplateData($inputArtifacts);
+        
+        // Step 3: Map the template data to the extracted variables
+        $mappedData = $this->mapDataToVariables($templateVariables, $templateData);
+        
+        // Step 4: Ask agent for variable mapping refinement and document naming
         $agentThread = $this->setupAgentThread($inputArtifacts);
+        $refinedMapping = $this->refineVariableMappingWithAgent($agentThread, $templateVariables, $mappedData, $templateData);
         
-        // Add instructions to use the Google Docs MCP tool
-        $instructions = $this->buildInstructions($googleDocFileId, $templateVariables);
-        app(ThreadRepository::class)->addMessageToThread($agentThread, $instructions);
+        // Step 5: Create document directly using GoogleDocsApi
+        $newDocument = $googleDocsApi->createDocumentFromTemplate(
+            $googleDocFileId, 
+            $refinedMapping['variables'], 
+            $refinedMapping['title']
+        );
         
-        // Run the agent thread
-        $artifact = $this->runAgentThread($agentThread);
-        
-        if (!$artifact) {
-            throw new Exception("Failed to create document from template");
-        }
-        
-        // Store the Google Doc URL in the artifact meta
-        $this->storeGoogleDocUrl($artifact, $agentThread);
+        // Create output artifact with document information
+        $artifact = $this->createOutputArtifact($newDocument, $refinedMapping);
         
         $this->complete([$artifact]);
     }
@@ -74,118 +80,163 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
     }
     
     /**
-     * Extract all template variables from artifacts
+     * Extract template variables using GoogleDocsApi (for backward compatibility)
      */
-    protected function extractTemplateVariables($artifacts): array
+    public static function extractTemplateVariablesStatic(string $googleDocFileId, TaskDefinition $taskDefinition): array
     {
-        $variables = [];
+        return app(GoogleDocsApi::class)->extractTemplateVariables($googleDocFileId);
+    }
+    
+    /**
+     * Instance method to extract template variables
+     */
+    public function extractTemplateVariables(string $googleDocFileId): array
+    {
+        return app(GoogleDocsApi::class)->extractTemplateVariables($googleDocFileId);
+    }
+    
+    /**
+     * Collect all data from artifacts to use as template data
+     */
+    protected function collectTemplateData($artifacts): array
+    {
+        $data = [];
         
         foreach ($artifacts as $artifact) {
-            // Extract from json_content
+            // Collect from json_content (excluding google_doc_file_id)
             if ($artifact->json_content) {
-                $variables = array_merge($variables, $this->flattenArray($artifact->json_content));
+                foreach ($artifact->json_content as $key => $value) {
+                    if ($key !== 'google_doc_file_id') {
+                        $data[$key] = $value;
+                    }
+                }
             }
             
-            // Extract from meta (excluding google_doc_file_id)
+            // Collect from meta (excluding google_doc_file_id)
             if ($artifact->meta) {
-                $metaVars = $this->flattenArray($artifact->meta);
-                unset($metaVars['google_doc_file_id']);
-                $variables = array_merge($variables, $metaVars);
+                foreach ($artifact->meta as $key => $value) {
+                    if ($key !== 'google_doc_file_id') {
+                        $data[$key] = $value;
+                    }
+                }
+            }
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Map the collected data to the extracted template variables
+     */
+    protected function mapDataToVariables(array $templateVariables, array $templateData): array
+    {
+        $mappedData = [];
+        
+        foreach ($templateVariables as $variable) {
+            // Direct match
+            if (isset($templateData[$variable])) {
+                $mappedData[$variable] = $templateData[$variable];
+            }
+            // Try case-insensitive match
+            else {
+                $lowerVariable = strtolower($variable);
+                foreach ($templateData as $key => $value) {
+                    if (strtolower($key) === $lowerVariable) {
+                        $mappedData[$variable] = $value;
+                        break;
+                    }
+                }
             }
             
-            // Extract from text_content if it contains key-value pairs
-            if ($artifact->text_content) {
-                $textVars = $this->parseTextContentVariables($artifact->text_content);
-                $variables = array_merge($variables, $textVars);
+            // If still not found, leave empty
+            if (!isset($mappedData[$variable])) {
+                $mappedData[$variable] = '';
             }
         }
         
-        return $variables;
+        return $mappedData;
     }
     
     /**
-     * Flatten nested array to dot notation
+     * Refine variable mapping and get document title using agent
      */
-    protected function flattenArray(array $array, string $prefix = ''): array
+    protected function refineVariableMappingWithAgent(AgentThread $agentThread, array $templateVariables, array $mappedData, array $availableData): array
     {
-        $result = [];
+        $templateVariablesList = implode(', ', array_map(fn($v) => "{{$v}}", $templateVariables));
+        $mappedDataJson = json_encode($mappedData, JSON_PRETTY_PRINT);
+        $availableDataJson = json_encode($availableData, JSON_PRETTY_PRINT);
         
-        foreach ($array as $key => $value) {
-            $newKey = $prefix ? "{$prefix}.{$key}" : $key;
-            
-            if (is_array($value) && !empty($value)) {
-                $result = array_merge($result, $this->flattenArray($value, $newKey));
-            } else {
-                $result[$newKey] = $value;
-            }
-        }
-        
-        return $result;
-    }
-    
-    /**
-     * Parse text content for key-value pairs
-     */
-    protected function parseTextContentVariables(string $text): array
-    {
-        $variables = [];
-        
-        // Look for patterns like "key: value" or "key = value"
-        preg_match_all('/^([a-zA-Z0-9_][a-zA-Z0-9_]*)\s*[:=]\s*(.+)$/m', $text, $matches, PREG_SET_ORDER);
-        
-        foreach ($matches as $match) {
-            $key = trim($match[1]);
-            $value = trim($match[2]);
-            $variables[$key] = $value;
-        }
-        
-        return $variables;
-    }
-    
-    /**
-     * Build instructions for the agent to use Google Docs MCP tool
-     */
-    protected function buildInstructions(string $googleDocFileId, array $templateVariables): string
-    {
-        $variablesJson = json_encode($templateVariables, JSON_PRETTY_PRINT);
-        
-        return <<<INSTRUCTIONS
-Use the Google Docs MCP tool to create a new document from the template.
+        $instructions = <<<INSTRUCTIONS
+You are helping to populate a Google Docs template with data. Please review the template variables and suggest the best mapping and document title.
 
-Template Document ID: {$googleDocFileId}
+Template Variables Found: {$templateVariablesList}
 
-Template Variables:
-{$variablesJson}
+Current Automatic Mapping:
+{$mappedDataJson}
 
-Instructions:
-1. Use the google_docs_create_document_from_template MCP tool
-2. Pass the template document ID
-3. Fill in all {{variable}} placeholders with the corresponding values from the template variables
-4. Create a new document with all variables replaced
-5. Return the URL of the newly created document
+All Available Data:
+{$availableDataJson}
 
-IMPORTANT: Make sure to replace ALL template variables found in the document.
+Please provide your response in the following JSON format:
+{
+    "title": "Suggested document title based on the data",
+    "variables": {
+        "variable1": "mapped_value1",
+        "variable2": "mapped_value2"
+    },
+    "reasoning": "Brief explanation of your mapping choices"
+}
+
+Requirements:
+1. Suggest an appropriate document title based on the available data
+2. Map each template variable to the most appropriate value from the available data
+3. If no good mapping exists for a variable, use an empty string ""
+4. Provide brief reasoning for your choices
+
+IMPORTANT: Return ONLY valid JSON in the exact format shown above.
 INSTRUCTIONS;
+        
+        app(ThreadRepository::class)->addMessageToThread($agentThread, $instructions);
+        
+        // Run the agent thread to get refined mapping
+        $artifact = $this->runAgentThread($agentThread);
+        
+        if (!$artifact || !$artifact->text_content) {
+            throw new Exception("Agent failed to provide variable mapping refinement");
+        }
+        
+        // Parse JSON response
+        $response = json_decode($artifact->text_content, true);
+        if (!$response || !isset($response['title']) || !isset($response['variables'])) {
+            throw new Exception("Agent response was not in the expected JSON format");
+        }
+        
+        return $response;
     }
     
     /**
-     * Extract Google Doc URL from agent thread messages and store in artifact
+     * Create output artifact with Google Docs information
      */
-    protected function storeGoogleDocUrl(Artifact $artifact, AgentThread $agentThread): void
+    protected function createOutputArtifact(array $newDocument, array $refinedMapping): Artifact
     {
-        // Get the last message from the thread
-        $lastMessage = $agentThread->messages()->latest()->first();
+        $artifact = Artifact::create([
+            'team_id' => $this->taskDefinition->team_id,
+            'name' => 'Generated Google Doc: ' . $newDocument['title'],
+            'text_content' => "Successfully created Google Docs document from template.\n\nDocument Title: {$newDocument['title']}\nDocument URL: {$newDocument['url']}\n\nVariable Mapping:\n" . json_encode($refinedMapping['variables'], JSON_PRETTY_PRINT),
+            'meta' => [
+                'google_doc_url' => $newDocument['url'],
+                'google_doc_id' => $newDocument['document_id'],
+                'document_title' => $newDocument['title'],
+                'created_at' => $newDocument['created_at'],
+                'variable_mapping' => $refinedMapping['variables'],
+                'reasoning' => $refinedMapping['reasoning'] ?? null,
+            ],
+            'json_content' => [
+                'document' => $newDocument,
+                'mapping' => $refinedMapping,
+            ]
+        ]);
         
-        if ($lastMessage && $lastMessage->content) {
-            // Look for Google Docs URL in the message
-            preg_match('/(https:\/\/docs\.google\.com\/document\/d\/[a-zA-Z0-9-_]+[\/\w\?=#&]*)/i', $lastMessage->content, $matches);
-            
-            if (!empty($matches[1])) {
-                $meta = $artifact->meta ?? [];
-                $meta['google_doc_url'] = $matches[1];
-                $artifact->meta = $meta;
-                $artifact->save();
-            }
-        }
+        return $artifact;
     }
 }

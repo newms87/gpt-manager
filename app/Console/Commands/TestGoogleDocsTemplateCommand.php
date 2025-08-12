@@ -2,13 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\Agent\Agent;
-use App\Models\Agent\McpServer;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
-use App\Models\Team\Team;
-use App\Models\User;
+use App\Models\TeamObject\TeamObject;
 use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;
 use Illuminate\Console\Command;
 
@@ -18,99 +17,206 @@ class TestGoogleDocsTemplateCommand extends Command
      * The name and signature of the console command.
      */
     protected $signature = 'test:google-docs-template
-                           {--google-doc-id= : Google Doc template ID to use}
-                           {--create-test-data : Create test data for demonstration}
+                           {team-id : Team ID for OAuth authentication}
+                           {google-doc-id : Google Doc template ID to use}
+                           {team-object-id : TeamObject ID to use for template data}
                            {--model=gpt-5-mini : AI model to use}
-                           {--mcp-server=zapier : MCP server to use for Google Docs access}';
+                           {--auto-accept : Auto-accept all confirmations for testing}';
 
     /**
      * The console command description.
      */
-    protected $description = 'Test Google Docs template task runner with MCP integration';
+    protected $description = 'Test Google Docs template task runner - extracts variables and populates with team data';
 
     /**
      * Execute the console command.
      */
     public function handle(): int
     {
-        $googleDocId    = $this->option('google-doc-id');
-        $createTestData = $this->option('create-test-data');
-        $model          = $this->option('model');
-        $mcpServerSlug  = $this->option('mcp-server');
+        $teamId       = $this->argument('team-id');
+        $googleDocId  = $this->argument('google-doc-id');
+        $teamObjectId = $this->argument('team-object-id');
+        $model        = $this->option('model');
 
-        if (!$googleDocId && !$createTestData) {
-            $this->error('Please specify either --google-doc-id=ID or --create-test-data');
+        $this->info("=== Google Docs Template Task Runner ===");
+        $this->info("Team ID: $teamId");
+        $this->info("Google Doc ID: $googleDocId");
+        $this->info("TeamObject ID: $teamObjectId");
+        $this->info("Model: $model");
+        $this->newLine();
+        
+        // Set the team context using the provided team ID
+        // (Team and TeamObject are unrelated - Team is for auth/organization, TeamObject is data)
+        $team = \App\Models\Team\Team::find($teamId);
+        if (!$team) {
+            $this->error("Team with ID $teamId not found");
+            return 1;
+        }
+        
+        // Set authentication context for OAuth to work
+        $user = \App\Models\User::first(); // Get any user for console commands
+        if ($user) {
+            auth()->guard()->setUser($user);
+        }
+        
+        // Set team context for the current session
+        app()->instance('team', $team);
+
+        // Check OAuth status
+        $this->info("=== Authentication Status ===");
+        $oauthService = app(\App\Services\Auth\OAuthService::class);
+        $requiredScopes = [
+            'https://www.googleapis.com/auth/documents',
+            'https://www.googleapis.com/auth/drive',
+        ];
+        
+        if ($oauthService->hasValidTokenWithScopes('google', $requiredScopes, $team)) {
+            $this->info("✅ OAuth token available with required scopes for team: {$team->name}");
+        } else {
+            $hasToken = $oauthService->hasValidToken('google', $team);
+            if ($hasToken) {
+                $this->warn("❌ OAuth token exists but lacks required scopes - Google Docs template copying requires full drive access");
+                $this->info("Current token may only have drive.file scope, but we need drive scope to copy existing documents");
+            } else {
+                $this->warn("❌ No valid OAuth token available - Google Docs API requires OAuth");
+            }
+            $this->newLine();
+            
+            if (!$oauthService->isConfigured('google')) {
+                $this->error("Google OAuth is not configured!");
+                $this->info("Please add GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET to .env");
+                $this->info("Get credentials from: https://console.cloud.google.com/apis/credentials");
+                return 1;
+            }
+            
+            $promptMessage = $hasToken 
+                ? 'Would you like to re-authorize Google Docs with the required scopes now?' 
+                : 'Would you like to authorize Google Docs access now?';
+                
+            if (!$this->option('auto-accept') && !$this->confirm($promptMessage)) {
+                $this->info('Operation cancelled.');
+                return 0;
+            }
+            
+            try {
+                $authUrl = $oauthService->getAuthorizationUrl('google', null, $team);
+                
+                $this->info("🔗 Please visit this URL to authorize Google Docs access:");
+                $this->newLine();
+                $this->line($authUrl);
+                $this->newLine();
+                
+                $this->info("Instructions:");
+                $this->info("1. Copy the URL above");
+                $this->info("2. Open it in your browser");
+                $this->info("3. Sign in with Google and authorize the application");
+                $this->info("4. After authorization, run this command again");
+                $this->newLine();
+                
+                return 0;
+                
+            } catch (\Exception $e) {
+                $this->error("Failed to generate authorization URL: " . $e->getMessage());
+                return 1;
+            }
+        }
+        $this->newLine();
+
+        // Load and validate team object
+        $teamObject = TeamObject::find($teamObjectId);
+        if (!$teamObject) {
+            $this->error("TeamObject not found: $teamObjectId");
+            return 1;
+        }
+
+        // Display team object preview
+        $this->info("=== TeamObject Preview ===");
+        $this->info("Name: {$teamObject->name}");
+        $this->info("Type: {$teamObject->type}");
+        $this->info("Created: {$teamObject->created_at->format('Y-m-d H:i:s')}");
+        $this->newLine();
+
+        // Extract template variables using the GoogleDocsApi directly
+        $this->info("=== Extracting Template Variables ===");
+        $this->info("Connecting to Google Docs API to extract template variables...");
+
+        try {
+            $googleDocsApi     = app(GoogleDocsApi::class);
+            $templateVariables = $googleDocsApi->extractTemplateVariables($googleDocId);
+        } catch(\Exception $e) {
+            $this->error("Failed to extract template variables: " . $e->getMessage());
 
             return 1;
         }
 
-        $this->info("=== Google Docs Template Task Runner Test ===");
-        $this->info("Model: $model");
-        $this->info("MCP Server: $mcpServerSlug");
+        if (empty($templateVariables)) {
+            $this->info("No {{variable}} placeholders found in the template.");
+        } else {
+            $this->info("=== Template Variables Found ===");
+            foreach($templateVariables as $variable) {
+                $this->info("  {{$variable}}");
+            }
+        }
         $this->newLine();
 
-        // Get or create test user and team
-        $user = User::first() ?? User::factory()->create();
-        $team = $user->teams()->first() ?? Team::factory()->create();
+        // Show available data from TeamObject
+        $this->info("=== Available Data from TeamObject ===");
+        $availableData = $this->createTeamObjectDataMapping($teamObject);
+        foreach($availableData as $key => $value) {
+            $displayValue = is_string($value) ? (strlen($value) > 50 ? substr($value, 0, 50) . '...' : $value) : $value;
+            $this->info("  $key: $displayValue");
+        }
+        $this->newLine();
 
-        if (!$user->teams->contains($team)) {
-            $team->users()->attach($user);
+        // Create team object data mapping
+        $teamObjectData = $this->createTeamObjectDataMapping($teamObject);
+
+        // Final confirmation
+        if (!$this->option('auto-accept') && !$this->confirm('Proceed to populate the template with this team object data?')) {
+            $this->info('Operation cancelled.');
+
+            return 0;
         }
 
-        // Create or find MCP server
-        $mcpServer = McpServer::where('team_id', $team->id)
-            ->where('name', 'Zapier_MCP_Server')
-            ->first();
-
-        if (!$mcpServer) {
-            $this->info("Creating MCP server: Zapier");
-            $mcpServer          = new McpServer([
-                'name'       => 'Zapier MCP Server',
-                'server_url' => 'https://mcp.zapier.com/api/mcp/s/MWI3OTQyYmItYjVmZS00MGZjLWI5NWEtYmI2M2MyNjVmNjJiOjdhYTUxZGZmLTJmZjctNDE0Yi05MjZkLWU2ZmY5ZmYyNWI1Mg==/mcp',
-            ]);
-            $mcpServer->team_id = $team->id;
-            $mcpServer->save();
-        }
-
-        // Create agent
-        $agent = Agent::factory()->create([
-            'team_id' => $team->id,
+        // Create new agent for document creation
+        $documentAgent = Agent::factory()->create([
+            'team_id' => $teamObject->team_id ?? 1,
             'name'    => 'Google Docs Template Agent',
-            'model'   => $model,
+            'model'   => $this->option('model'),
         ]);
 
-        // Create task definition
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id'            => $team->id,
-            'name'               => 'Google Docs Template Test',
-            'agent_id'           => $agent->id,
+        // Create task definition for document creation
+        $documentTaskDef = TaskDefinition::factory()->create([
+            'team_id'            => $teamObject->team_id ?? 1,
+            'name'               => 'Google Docs Template Processing',
+            'agent_id'           => $documentAgent->id,
             'task_runner_name'   => GoogleDocsTemplateTaskRunner::RUNNER_NAME,
-            'task_runner_config' => [
-                'mcp_server_id' => $mcpServer->id,
-            ],
+            'task_runner_config' => [],
         ]);
 
         // Create task run
         $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
+            'task_definition_id' => $documentTaskDef->id,
         ]);
 
-        // Create input artifacts
-        $artifacts = $createTestData ?
-            $this->createTestArtifacts($team, $taskRun) :
-            $this->createArtifactsWithDocId($team, $taskRun, $googleDocId);
+        // Create artifact with team object data
+        $artifact = Artifact::create([
+            'team_id'      => $teamObject->team_id ?? 1,
+            'name'         => 'TeamObject Template Data',
+            'meta'         => [
+                'google_doc_file_id' => $googleDocId,
+            ],
+            'json_content' => $teamObjectData,
+        ]);
 
-        $this->info("Created " . count($artifacts) . " input artifacts");
-        $this->newLine();
-
-        // Create task process using the proper method
+        // Create task process
         $taskProcess = $taskRun->taskProcesses()->create([
-            'name'   => 'Test Google Docs Template Process',
+            'name'   => 'Google Docs Template Process',
             'status' => 'pending',
         ]);
 
-        // Attach input artifacts
-        $taskProcess->inputArtifacts()->attach($artifacts->pluck('id'));
+        // Attach input artifact
+        $taskProcess->inputArtifacts()->attach($artifact->id);
 
         $this->info("Running Google Docs Template Task Runner...");
 
@@ -145,82 +251,21 @@ class TestGoogleDocsTemplateCommand extends Command
     }
 
     /**
-     * Create test artifacts with sample data
+     * Create team object data mapping for template variables
      */
-    protected function createTestArtifacts(Team $team, TaskRun $taskRun): \Illuminate\Support\Collection
+    protected function createTeamObjectDataMapping(TeamObject $teamObject): array
     {
-        // Sample Google Doc template ID
-        $googleDocId = '1UzdN0ltymmcSjD964cOxjz8RfyuCakC9z3Y70Dftxoc';
-
-        $artifacts = collect();
-
-        // Artifact with google_doc_file_id in meta and template variables
-        $artifact1 = Artifact::create([
-            'team_id'      => $team->id,
-            'name'         => 'Template Configuration',
-            'meta'         => [
-                'google_doc_file_id' => $googleDocId,
-            ],
-            'json_content' => [
-                'patient_name'        => 'John Doe',
-                'injury_date'         => '2024-01-15',
-                'injury_description'  => 'Slip and fall accident at grocery store',
-                'medical_provider'    => 'City General Hospital',
-                'treatment_summary'   => 'Emergency room visit, X-rays, physical therapy',
-                'total_medical_bills' => '$12,500',
-                'lost_wages'          => '$3,000',
-                'pain_and_suffering'  => 'Severe back pain, limited mobility for 6 weeks',
-            ],
-        ]);
-
-        // Additional artifact with more variables
-        $artifact2 = Artifact::create([
-            'team_id'      => $team->id,
-            'name'         => 'Additional Information',
-            'json_content' => [
-                'attorney_name'        => 'Jane Smith, Esq.',
-                'attorney_firm'        => 'Smith & Associates',
-                'defendant_name'       => 'ABC Grocery Store',
-                'incident_location'    => '123 Main Street, Anytown, USA',
-                'witnesses'            => 'Mary Johnson, Store Manager',
-                'police_report_number' => '2024-12345',
-            ],
-            'text_content' => "demand_amount: $50,000\nsettle_by_date: 2024-12-31\ncase_number: PI-2024-001",
-        ]);
-
-        $artifacts->push($artifact1);
-        $artifacts->push($artifact2);
-
-        // Attach to task run
-        $taskRun->inputArtifacts()->attach($artifacts->pluck('id'));
-
-        return $artifacts;
-    }
-
-    /**
-     * Create artifacts with specified Google Doc ID
-     */
-    protected function createArtifactsWithDocId(Team $team, TaskRun $taskRun, string $googleDocId): \Illuminate\Support\Collection
-    {
-        $artifacts = collect();
-
-        $artifact = Artifact::create([
-            'team_id'      => $team->id,
-            'name'         => 'Google Doc Template',
-            'json_content' => [
-                'google_doc_file_id' => $googleDocId,
-                'name'               => 'Test User',
-                'date'               => date('Y-m-d'),
-                'title'              => 'Test Document',
-                'content'            => 'This is test content for the template.',
-            ],
-        ]);
-
-        $artifacts->push($artifact);
-
-        // Attach to task run
-        $taskRun->inputArtifacts()->attach($artifacts->pluck('id'));
-
-        return $artifacts;
+        return [
+            'name'             => $teamObject->name,
+            'type'             => $teamObject->type,
+            'created_date'     => $teamObject->created_at->format('Y-m-d'),
+            'created_datetime' => $teamObject->created_at->format('Y-m-d H:i:s'),
+            'team_object_id'   => $teamObject->id,
+            'current_date'     => now()->format('Y-m-d'),
+            'current_datetime' => now()->format('Y-m-d H:i:s'),
+            'current_year'     => now()->format('Y'),
+            'current_month'    => now()->format('m'),
+            'current_day'      => now()->format('d'),
+        ];
     }
 }
