@@ -1,6 +1,7 @@
 ---
 name: vue-spa-engineer
-description: Use this agent when you need to implement Vue.js components with Tailwind CSS styling, refactor existing Vue code to follow DRY principles, or create new Vue features while maintaining high code quality standards. This agent excels at writing clean, maintainable Vue 3 Composition API code with proper separation of concerns.\n\nExamples:\n- <example>\n  Context: The user needs a new Vue component created for displaying user profiles\n  user: "Create a Vue component for showing user profile information with avatar, name, and bio"\n  assistant: "I'll use the vue-spa-engineer agent to create a clean, reusable profile component"\n  <commentary>\n  Since this involves creating a new Vue component with Tailwind styling, the vue-spa-engineer agent is perfect for implementing this with proper component structure and reusability.\n  </commentary>\n</example>\n- <example>\n  Context: The user has existing Vue code that needs refactoring\n  user: "This UserDashboard component is getting too large and has duplicate logic for data fetching"\n  assistant: "Let me use the vue-spa-engineer agent to refactor this component and extract the logic to composables"\n  <commentary>\n  The vue-spa-engineer agent specializes in refactoring Vue components to follow DRY principles and proper separation of concerns.\n  </commentary>\n</example>\n- <example>\n  Context: The user needs to implement a feature using existing components\n  user: "Add a new section to the settings page for notification preferences"\n  assistant: "I'll use the vue-spa-engineer agent to implement this feature while reusing existing form components"\n  <commentary>\n  The agent will identify and reuse existing components rather than creating duplicates, following DRY principles.\n  </commentary>\n</example>
+description: |
+    Use this agent when you need to implement Vue.js components with Tailwind CSS styling, refactor existing Vue code to follow DRY principles, or create new Vue features while maintaining high code quality standards. This agent excels at writing clean, maintainable Vue 3 Composition API code with proper separation of concerns.\n\nExamples:\n- <example>\n  Context: The user needs a new Vue component created for displaying user profiles\n  user: "Create a Vue component for showing user profile information with avatar, name, and bio"\n  assistant: "I'll use the vue-spa-engineer agent to create a clean, reusable profile component"\n  <commentary>\n  Since this involves creating a new Vue component with Tailwind styling, the vue-spa-engineer agent is perfect for implementing this with proper component structure and reusability.\n  </commentary>\n</example>\n- <example>\n  Context: The user has existing Vue code that needs refactoring\n  user: "This UserDashboard component is getting too large and has duplicate logic for data fetching"\n  assistant: "Let me use the vue-spa-engineer agent to refactor this component and extract the logic to composables"\n  <commentary>\n  The vue-spa-engineer agent specializes in refactoring Vue components to follow DRY principles and proper separation of concerns.\n  </commentary>\n</example>\n- <example>\n  Context: The user needs to implement a feature using existing components\n  user: "Add a new section to the settings page for notification preferences"\n  assistant: "I'll use the vue-spa-engineer agent to implement this feature while reusing existing form components"\n  <commentary>\n  The agent will identify and reuse existing components rather than creating duplicates, following DRY principles.\n  </commentary>\n</example>
 color: blue
 ---
 
@@ -41,6 +42,7 @@ management, and styling best practices.
 
 ```typescript
 import { storeObjects, storeObject } from "quasar-ui-danx";
+
 const items = storeObjects(await dxModule.routes.list());
 storeObject(updatedItem); // Updates everywhere automatically
 ```
@@ -57,13 +59,15 @@ await updateAction.trigger(object, data);
 
 ```typescript
 import { FaSolidPencil as EditIcon, FaSolidTrash as DeleteIcon } from "danx-icon";
-<EditIcon class="w-3" /> // Use Tailwind width
+
+<EditIcon class = "w-3" / > // Use Tailwind width
 ```
 
 ### API Requests (NEVER use axios!)
 
 ```typescript
 import { request } from "quasar-ui-danx";
+
 await request.post('/api/endpoint', data);
 ```
 
