@@ -8,6 +8,9 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
+use App\Services\ContentSearch\ContentSearchRequest;
+use App\Services\ContentSearch\ContentSearchResult;
+use App\Services\ContentSearch\ContentSearchService;
 use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;
 use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,6 +70,14 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         $this->taskProcess->inputArtifacts()->attach($artifact->id);
         $this->taskProcess->refresh();
 
+        // Mock ContentSearchService to return the file ID
+        $successResult = ContentSearchResult::fieldPathFound('test-doc-id-123', $artifact, 'json_content.google_doc_file_id');
+        $mockSearchService = $this->mock(ContentSearchService::class);
+        $mockSearchService->shouldReceive('search')
+            ->once()
+            ->with(\Mockery::type(ContentSearchRequest::class))
+            ->andReturn($successResult);
+
         // When
         $fileId = $this->invokeMethod($this->runner, 'findGoogleDocFileId', [$this->taskProcess->inputArtifacts]);
 
@@ -87,6 +98,14 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
 
         $this->taskProcess->inputArtifacts()->attach($artifact->id);
         $this->taskProcess->refresh();
+
+        // Mock ContentSearchService to return the file ID from meta
+        $successResult = ContentSearchResult::fieldPathFound('test-doc-meta-456', $artifact, 'meta.google_doc_file_id');
+        $mockSearchService = $this->mock(ContentSearchService::class);
+        $mockSearchService->shouldReceive('search')
+            ->once()
+            ->with(\Mockery::type(ContentSearchRequest::class))
+            ->andReturn($successResult);
         
         // When
         $fileId = $this->invokeMethod($this->runner, 'findGoogleDocFileId', [$this->taskProcess->inputArtifacts]);
@@ -102,16 +121,50 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
             'team_id'      => $this->user->currentTeam->id,
             'json_content' => ['other_data' => 'value'],
             'meta'         => ['other_meta' => 'value'],
+            'text_content' => 'Some text without any file ID',
         ]);
 
         $this->taskProcess->inputArtifacts()->attach($artifact->id);
         $this->taskProcess->refresh();
+
+        // Mock ContentSearchService to return no results
+        $mockSearchService = $this->mock(ContentSearchService::class);
+        $mockSearchService->shouldReceive('search')
+            ->twice() // Once for artifacts, once for directives
+            ->andReturn(ContentSearchResult::notFound('No file ID found'));
 
         // When
         $fileId = $this->invokeMethod($this->runner, 'findGoogleDocFileId', [$this->taskProcess->inputArtifacts]);
 
         // Then
         $this->assertNull($fileId);
+    }
+
+    public function test_findGoogleDocFileId_withFileIdFromContentSearchService_returnsFileId(): void
+    {
+        // Given
+        $artifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'text_content' => 'Please use this Google Doc: https://docs.google.com/document/d/1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg/edit',
+        ]);
+
+        $this->taskProcess->inputArtifacts()->attach($artifact->id);
+        $this->taskProcess->refresh();
+
+        // Mock ContentSearchService to return the file ID via regex/LLM extraction
+        $successResult = ContentSearchResult::regexFound('1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg', $artifact, '/(?:docs\.google\.com\/document\/d\/|drive\.google\.com\/file\/d\/)?([a-zA-Z0-9_-]{25,60})/')
+            ->setValidated(true);
+        $mockSearchService = $this->mock(ContentSearchService::class);
+        $mockSearchService->shouldReceive('search')
+            ->once()
+            ->with(\Mockery::type(ContentSearchRequest::class))
+            ->andReturn($successResult);
+        
+        // When
+        $fileId = $this->invokeMethod($this->runner, 'findGoogleDocFileId', [$this->taskProcess->inputArtifacts]);
+
+        // Then
+        $this->assertEquals('1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg', $fileId);
     }
 
     public function test_collectTemplateData_withMultipleArtifacts_combinesAllData(): void
@@ -229,43 +282,6 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         $this->assertEquals($expected, $mappedData);
     }
 
-    public function test_extractTemplateVariablesStatic_usesGoogleDocsApi(): void
-    {
-        // Given
-        $googleDocId       = 'test-doc-id';
-        $expectedVariables = ['name', 'email', 'order_id'];
-
-        $mockApi = $this->mock(GoogleDocsApi::class);
-        $mockApi->shouldReceive('extractTemplateVariables')
-            ->with($googleDocId)
-            ->once()
-            ->andReturn($expectedVariables);
-
-        // When
-        $variables = GoogleDocsTemplateTaskRunner::extractTemplateVariablesStatic($googleDocId, $this->taskDefinition);
-
-        // Then
-        $this->assertEquals($expectedVariables, $variables);
-    }
-
-    public function test_extractTemplateVariables_usesGoogleDocsApi(): void
-    {
-        // Given
-        $googleDocId       = 'test-doc-id';
-        $expectedVariables = ['name', 'email', 'order_id'];
-
-        $mockApi = $this->mock(GoogleDocsApi::class);
-        $mockApi->shouldReceive('extractTemplateVariables')
-            ->with($googleDocId)
-            ->once()
-            ->andReturn($expectedVariables);
-
-        // When
-        $variables = $this->runner->extractTemplateVariables($googleDocId);
-
-        // Then
-        $this->assertEquals($expectedVariables, $variables);
-    }
 
     public function test_createOutputArtifact_withValidData_createsArtifactWithCorrectStructure(): void
     {
@@ -321,6 +337,12 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         ]);
         $this->taskProcess->inputArtifacts()->attach($artifact->id);
         $this->taskProcess->load('inputArtifacts');
+
+        // Mock ContentSearchService to return unsuccessful results
+        $notFoundResult = ContentSearchResult::notFound('No file ID found');
+        $mockSearchService = $this->mock(ContentSearchService::class);
+        $mockSearchService->shouldReceive('search')
+            ->andReturn($notFoundResult);
 
         // Then
         $this->expectException(Exception::class);

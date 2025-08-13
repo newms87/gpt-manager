@@ -8,7 +8,6 @@ use App\Models\Workflow\WorkflowListener;
 use App\Models\Workflow\WorkflowRun;
 use App\Repositories\WorkflowInputRepository;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class WorkflowListenerService
@@ -17,69 +16,62 @@ class WorkflowListenerService
      * Run a workflow for a model that uses HasWorkflowListeners trait
      */
     public function runWorkflow(
-        Model $listener,
-        string $workflowType,
-        string $configKey,
-        string $envVarName,
-        callable $createWorkflowInput,
+        Model     $listener,
+        string    $workflowType,
+        string    $configKey,
+        string    $envVarName,
+        callable  $createWorkflowInput,
         ?callable $preRunCallback = null,
         ?callable $postRunCallback = null
-    ): WorkflowRun {
+    ): WorkflowRun
+    {
         // Get workflow definition
         $workflowDefinition = $this->getWorkflowDefinition($configKey, $envVarName);
 
-        return DB::transaction(function () use (
+        // Execute pre-run callback if provided
+        if ($preRunCallback) {
+            $preRunCallback($listener);
+        }
+
+        $workflowInput = $createWorkflowInput();
+
+        $artifacts   = [$workflowInput->toArtifact()];
+        $workflowRun = WorkflowRunnerService::start($workflowDefinition, $artifacts);
+
+        // Create workflow listener
+        $workflowListener = WorkflowListener::createForListener(
             $listener,
-            $workflowDefinition,
+            $workflowRun,
             $workflowType,
-            $createWorkflowInput,
-            $preRunCallback,
-            $postRunCallback
-        ) {
-            // Execute pre-run callback if provided
-            if ($preRunCallback) {
-                $preRunCallback($listener);
-            }
+            ['workflow_input_id' => $workflowInput->id]
+        );
 
-            $workflowInput = $createWorkflowInput();
-            
-            $artifacts = [$workflowInput->toArtifact()];
-            $workflowRun = WorkflowRunnerService::start($workflowDefinition, $artifacts);
-            
-            // Create workflow listener
-            $workflowListener = WorkflowListener::createForListener(
-                $listener,
-                $workflowRun,
-                $workflowType,
-                ['workflow_input_id' => $workflowInput->id]
-            );
-            
-            $workflowListener->markAsRunning();
+        $workflowListener->markAsRunning();
 
-            // Execute post-run callback if provided
-            if ($postRunCallback) {
-                $postRunCallback($listener, $workflowRun, $workflowListener);
-            }
+        // Execute post-run callback if provided
+        if ($postRunCallback) {
+            $postRunCallback($listener, $workflowRun, $workflowListener);
+        }
 
-            return $workflowRun;
-        });
+        return $workflowRun;
     }
 
     /**
      * Create a workflow input from a model
      */
     public function createWorkflowInput(
-        Model $model,
+        Model  $model,
         string $name,
-        array $additionalData = []
-    ): WorkflowInput {
+        array  $additionalData = []
+    ): WorkflowInput
+    {
         $workflowInputRepo = app(WorkflowInputRepository::class);
-        
+
         $data = array_merge([
-            'name' => $name,
+            'name'    => $name,
             'content' => json_encode(array_merge([
                 'model_type' => get_class($model),
-                'model_id' => $model->id,
+                'model_id'   => $model->id,
             ], $additionalData)),
         ], $additionalData);
 
@@ -92,7 +84,7 @@ class WorkflowListenerService
     protected function getWorkflowDefinition(string $configKey, string $envVarName): WorkflowDefinition
     {
         $workflowDefinitionName = config($configKey, '');
-        
+
         if (empty($workflowDefinitionName)) {
             throw new ValidationError("Workflow not configured. Please set $envVarName environment variable.");
         }
@@ -100,7 +92,7 @@ class WorkflowListenerService
         $workflowDefinition = WorkflowDefinition::where('team_id', team()->id)
             ->where('name', $workflowDefinitionName)
             ->first();
-        
+
         if (!$workflowDefinition) {
             throw new ValidationError("Workflow '$workflowDefinitionName' not found");
         }
@@ -113,9 +105,10 @@ class WorkflowListenerService
      */
     public function onWorkflowComplete(
         WorkflowRun $workflowRun,
-        callable $successCallback,
-        callable $failureCallback
-    ): void {
+        callable    $successCallback,
+        callable    $failureCallback
+    ): void
+    {
         $workflowListener = WorkflowListener::findForWorkflowRun($workflowRun);
 
         if (!$workflowListener) {

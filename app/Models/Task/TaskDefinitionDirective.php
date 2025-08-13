@@ -21,6 +21,7 @@ class TaskDefinitionDirective extends Model implements AuditableContract, Resour
         SECTION_BOTTOM = 'Bottom';
 
     protected $fillable = [
+        'task_definition_id',
         'prompt_directive_id',
         'section',
         'position',

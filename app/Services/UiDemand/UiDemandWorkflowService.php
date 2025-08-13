@@ -121,12 +121,10 @@ class UiDemandWorkflowService extends WorkflowListenerService
 
     protected function handleWorkflowFailure(UiDemand $uiDemand, WorkflowRun $workflowRun, WorkflowListener $workflowListener): void
     {
-        $workflowType = $workflowListener->workflow_type;
-
         // Update workflow listener metadata
         $workflowListener->update([
             'metadata' => array_merge($workflowListener->metadata ?? [], [
-                'failed_at' => now()->toIso8601String(),
+                'failed_at' => now(),
                 'error'     => $workflowRun->status,
             ]),
         ]);
@@ -139,7 +137,7 @@ class UiDemandWorkflowService extends WorkflowListenerService
         $workflowInputRepo = app(WorkflowInputRepository::class);
 
         $workflowInput = $workflowInputRepo->createWorkflowInput([
-            'name'        => "{$workflowType}: {$uiDemand->title}",
+            'name'        => "$workflowType: $uiDemand->title",
             'description' => $uiDemand->description,
             'content'     => json_encode([
                 'demand_id'   => $uiDemand->id,
@@ -149,9 +147,7 @@ class UiDemandWorkflowService extends WorkflowListenerService
         ]);
 
         $fileIds = $uiDemand->storedFiles()->pluck('stored_files.id')->toArray();
-        if (!empty($fileIds)) {
-            $workflowInputRepo->syncStoredFiles($workflowInput, ['files' => $fileIds]);
-        }
+        $workflowInput->storedFiles()->sync($fileIds);
 
         return $workflowInput;
     }
