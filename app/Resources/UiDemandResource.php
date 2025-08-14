@@ -5,7 +5,7 @@ namespace App\Resources;
 use App\Models\UiDemand;
 use App\Resources\Auth\UserResource;
 use App\Resources\TeamObject\TeamObjectResource;
-use App\Resources\Workflow\WorkflowListenerResource;
+use App\Resources\Workflow\WorkflowRunResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 use Newms87\Danx\Resources\StoredFileResource;
@@ -21,11 +21,9 @@ class UiDemandResource extends ActionResource
             'status'                  => $demand->status,
             'metadata'                => $demand->metadata,
             'team_object_id'          => $demand->team_object_id,
-            'submitted_at'            => $demand->submitted_at,
             'completed_at'            => $demand->completed_at,
             'created_at'              => $demand->created_at,
             'updated_at'              => $demand->updated_at,
-            'can_be_submitted'        => $demand->canBeSubmitted(),
 
             // Workflow state helpers
             'can_extract_data'        => $demand->canExtractData(),
@@ -33,22 +31,26 @@ class UiDemandResource extends ActionResource
             'is_extract_data_running' => $demand->isExtractDataRunning(),
             'is_write_demand_running' => $demand->isWriteDemandRunning(),
 
+            // Workflow run relationships with progress data
+            'extract_data_workflow_run' => fn($fields) => WorkflowRunResource::make($demand->getLatestExtractDataWorkflowRun(), $fields),
+            'write_demand_workflow_run' => fn($fields) => WorkflowRunResource::make($demand->getLatestWriteDemandWorkflowRun(), $fields),
+
             // Relationships
             'user'                    => fn($fields) => UserResource::make($demand->user, $fields),
             'files'                   => fn($fields) => StoredFileResource::collection($demand->storedFiles, $fields),
             'files_count'             => fn($fields) => $demand->storedFiles()->count(),
             'team_object'             => fn($fields) => TeamObjectResource::make($demand->teamObject, $fields),
-            'workflow_listeners'      => fn($fields) => WorkflowListenerResource::collection($demand->workflowListeners, $fields),
         ];
     }
 
     public static function details(Model $model, ?array $includeFields = null): array
     {
         return static::make($model, $includeFields ?? [
-            'user'               => true,
-            'files'              => true,
-            'team_object'        => true,
-            'workflow_listeners' => true,
+            'user'                       => true,
+            'files'                      => ['thumb' => true],
+            'team_object'                => true,
+            'extract_data_workflow_run'  => true,
+            'write_demand_workflow_run'  => true,
         ]);
     }
 

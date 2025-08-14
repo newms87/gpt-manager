@@ -270,6 +270,135 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         $this->aggregateChildUsage('taskRuns');
     }
 
+    /**
+     * Calculate the progress percentage of this workflow run
+     * Progress is based on completed, failed, and skipped task runs vs total workflow nodes
+     * Also includes unreachable nodes that will never run due to skipped/failed dependencies
+     */
+    public function calculateProgress(): float
+    {
+        // If the workflow run itself is marked as completed/failed/stopped, it's 100% done
+        if ($this->completed_at || $this->failed_at || $this->stopped_at) {
+            return 100.0;
+        }
+        
+        $totalNodes = $this->workflowDefinition->workflowNodes()->count();
+        
+        $finishedTaskRuns = $this->taskRuns()
+            ->whereIn('status', [
+                WorkflowStatesContract::STATUS_COMPLETED,
+                WorkflowStatesContract::STATUS_FAILED,
+                WorkflowStatesContract::STATUS_SKIPPED
+            ])
+            ->count();
+
+        // If there are no workflow nodes defined, fall back to task run based calculation
+        if ($totalNodes === 0) {
+            $totalTaskRuns = $this->taskRuns()->count();
+            if ($totalTaskRuns === 0) {
+                return 0.0;
+            }
+            return round(($finishedTaskRuns / $totalTaskRuns) * 100);
+        }
+
+        // Find nodes that are unreachable due to failed/skipped dependencies
+        $unreachableNodesCount = $this->findUnreachableNodes();
+
+        $effectivelyCompleted = $finishedTaskRuns + $unreachableNodesCount;
+
+        return round(($effectivelyCompleted / $totalNodes) * 100);
+    }
+
+    /**
+     * Find workflow nodes that are unreachable due to failed/skipped dependencies
+     * These nodes will never get TaskRuns created because their upstream dependencies failed/skipped
+     */
+    private function findUnreachableNodes(): int
+    {
+        // Get all workflow nodes for this workflow
+        $allNodes = $this->workflowDefinition->workflowNodes()->get();
+        
+        // Get nodes that have TaskRuns (reachable nodes)
+        $nodesWithTaskRuns = $this->taskRuns()->with('workflowNode')->get()->pluck('workflowNode')->keyBy('id');
+        
+        // Find nodes that don't have TaskRuns yet
+        $nodesWithoutTaskRuns = $allNodes->whereNotIn('id', $nodesWithTaskRuns->keys());
+        
+        if ($nodesWithoutTaskRuns->isEmpty()) {
+            return 0;
+        }
+        
+        // Get TaskRuns that are failed or skipped (blocking nodes)
+        $blockingTaskRuns = $this->taskRuns()
+            ->whereIn('status', [
+                WorkflowStatesContract::STATUS_FAILED,
+                WorkflowStatesContract::STATUS_SKIPPED
+            ])
+            ->with('workflowNode')
+            ->get();
+            
+        // If there are no failed/skipped tasks, no nodes are unreachable due to blocking
+        if ($blockingTaskRuns->isEmpty()) {
+            return 0;
+        }
+        
+        $blockingNodeIds = $blockingTaskRuns->pluck('workflowNode.id')->unique();
+        $unreachableNodes = collect();
+        
+        // For each node without a TaskRun, check if it's unreachable due to blocking dependencies
+        foreach ($nodesWithoutTaskRuns as $node) {
+            if ($this->isNodeUnreachableDueToBlockingDependencies($node, $blockingNodeIds, $allNodes)) {
+                $unreachableNodes->push($node);
+            }
+        }
+        
+        return $unreachableNodes->count();
+    }
+
+    /**
+     * Check if a node is unreachable due to blocking dependencies
+     * A node is unreachable if any of its upstream dependencies (directly or indirectly) failed/skipped
+     */
+    private function isNodeUnreachableDueToBlockingDependencies(WorkflowNode $node, Collection $blockingNodeIds, Collection $allNodes): bool
+    {
+        $visited = collect();
+        $toCheck = collect([$node->id]);
+        
+        while ($toCheck->isNotEmpty()) {
+            $currentNodeId = $toCheck->shift();
+            
+            if ($visited->contains($currentNodeId)) {
+                continue;
+            }
+            
+            $visited->push($currentNodeId);
+            
+            // If this node is directly blocked, the target is unreachable
+            if ($blockingNodeIds->contains($currentNodeId)) {
+                return true;
+            }
+            
+            // Get all direct dependencies (source nodes) of the current node
+            $currentNode = $allNodes->firstWhere('id', $currentNodeId);
+            if (!$currentNode) {
+                continue;
+            }
+            
+            $sourceConnections = WorkflowConnection::where('workflow_definition_id', $this->workflowDefinition->id)
+                ->where('target_node_id', $currentNodeId)
+                ->get();
+                
+            // Add all source nodes to check queue
+            foreach ($sourceConnections as $connection) {
+                if (!$visited->contains($connection->source_node_id)) {
+                    $toCheck->push($connection->source_node_id);
+                }
+            }
+        }
+        
+        return false;
+    }
+
     public static function booted(): void
     {
         static::saving(function (WorkflowRun $workflowRun) {

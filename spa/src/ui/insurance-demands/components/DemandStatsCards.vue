@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
     <div
       v-for="stat in statsCards"
       :key="stat.key"
@@ -47,8 +47,6 @@ import { computed } from 'vue';
 import { 
   FaSolidFile, 
   FaSolidClock, 
-  FaSolidPlay, 
-  FaSolidSpinner, 
   FaSolidCheck, 
   FaSolidXmark 
 } from 'danx-icon';
@@ -90,20 +88,6 @@ const statsCards = computed(() => [
     value: stats.value.draft,
     icon: FaSolidClock,
     bgColor: 'bg-gradient-to-r from-slate-400 to-slate-500',
-  },
-  {
-    key: 'ready',
-    label: 'Ready',
-    value: stats.value.ready,
-    icon: FaSolidPlay,
-    bgColor: 'bg-gradient-to-r from-blue-500 to-blue-600',
-  },
-  {
-    key: 'processing',
-    label: 'Processing',
-    value: stats.value.processing,
-    icon: FaSolidSpinner,
-    bgColor: 'bg-gradient-to-r from-amber-500 to-amber-600',
   },
   {
     key: 'completed',

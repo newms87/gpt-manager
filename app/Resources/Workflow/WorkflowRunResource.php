@@ -3,6 +3,7 @@
 namespace App\Resources\Workflow;
 
 use App\Models\Workflow\WorkflowRun;
+use App\Models\Workflow\WorkflowStatesContract;
 use App\Resources\TaskDefinition\TaskRunResource;
 use Newms87\Danx\Resources\ActionResource;
 
@@ -15,6 +16,15 @@ class WorkflowRunResource extends ActionResource
             'name'                 => $workflowRun->name,
             'status'               => $workflowRun->status,
             'active_workers_count' => $workflowRun->active_workers_count,
+            'progress_percent'     => $workflowRun->calculateProgress(),
+            'total_nodes'          => $workflowRun->workflowDefinition->workflowNodes()->count(),
+            'completed_tasks'      => $workflowRun->taskRuns()
+                ->whereIn('status', [
+                    WorkflowStatesContract::STATUS_COMPLETED,
+                    WorkflowStatesContract::STATUS_FAILED,
+                    WorkflowStatesContract::STATUS_SKIPPED
+                ])
+                ->count(),
             'started_at'           => $workflowRun->started_at,
             'stopped_at'           => $workflowRun->stopped_at,
             'failed_at'            => $workflowRun->failed_at,

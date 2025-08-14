@@ -136,7 +136,6 @@ ActionRoute::routes('audit-requests', new AuditRequestsController);
 
 // UI Demands
 ActionRoute::routes('ui-demands', new UiDemandsController, function () {
-    Route::post('{uiDemand}/submit', [UiDemandsController::class, 'submit'])->name('ui-demands.submit');
     Route::post('{uiDemand}/extract-data', [UiDemandsController::class, 'extractData'])->name('ui-demands.extract-data');
     Route::post('{uiDemand}/write-demand', [UiDemandsController::class, 'writeDemand'])->name('ui-demands.write-demand');
 });

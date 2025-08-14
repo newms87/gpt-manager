@@ -8,40 +8,51 @@ use App\Models\TeamObject\TeamObject;
 use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
-use App\Models\Workflow\WorkflowListener;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
+use App\Repositories\WorkflowInputRepository;
 use App\Services\UiDemand\UiDemandWorkflowService;
 use App\Services\Workflow\WorkflowRunnerService;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
-use Mockery;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
+use Tests\Traits\SetUpTeamTrait;
 
 class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
 {
+    use RefreshDatabase, SetUpTeamTrait;
+
     protected UiDemandWorkflowService $service;
 
     public function setUp(): void
     {
         parent::setUp();
+        $this->setUpTeam();
         $this->service = app(UiDemandWorkflowService::class);
+
+        // Set up workflow configuration
+        Config::set('ui-demands.workflows.extract_data', 'Extract Service Dates');
+        Config::set('ui-demands.workflows.write_demand', 'Write Demand Summary');
+        
+        // Mock queue to prevent actual job dispatching
+        Queue::fake();
     }
 
-    public function test_extract_data_creates_workflow_listener_and_runs_workflow()
+    public function test_extractData_withValidDemand_startsWorkflowCorrectly(): void
     {
+        // Given
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'test-extract-workflow',
+            'name' => 'Extract Service Dates',
         ]);
-
-        Config::set('app.demand_workflow_extract_data', 'test-extract-workflow');
 
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_READY,
+            'status' => UiDemand::STATUS_DRAFT,
             'title' => 'Test Demand',
         ]);
 
@@ -51,49 +62,109 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
         $uiDemand->storedFiles()->attach($storedFile->id);
 
-        // Use integration approach instead of mocking static methods
+        // Since Queue is faked, WorkflowRunnerService will create real WorkflowRun but without job dispatch
 
+        // When
         $workflowRun = $this->service->extractData($uiDemand);
 
-        // Assert workflow run was returned
+        // Then
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
-
-        // Assert workflow listener was created
-        $this->assertDatabaseHas('workflow_listeners', [
-            'listener_type' => UiDemand::class,
-            'listener_id' => $uiDemand->id,
-            'workflow_type' => WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA,
-            'workflow_run_id' => $workflowRun->id,
-            'status' => WorkflowListener::STATUS_RUNNING,
-        ]);
-
-        // Assert UI demand status was updated
-        $this->assertEquals(UiDemand::STATUS_PROCESSING, $uiDemand->fresh()->status);
+        $this->assertEquals(UiDemand::STATUS_DRAFT, $uiDemand->fresh()->status);
+        $this->assertTrue($uiDemand->fresh()->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->exists());
+        $this->assertEquals(UiDemand::WORKFLOW_TYPE_EXTRACT_DATA, $uiDemand->fresh()->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->first()->pivot->workflow_type);
     }
 
-    public function test_extract_data_throws_validation_error_when_cannot_extract()
+    public function test_extractData_withInvalidStatus_throwsValidationError(): void
     {
+        // Given
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT, // Wrong status
+            'status' => UiDemand::STATUS_COMPLETED, // Invalid status
             'title' => 'Test Demand',
         ]);
 
+        // Then
         $this->expectException(ValidationError::class);
         $this->expectExceptionMessage('Cannot extract data for this demand. Check status and existing workflows.');
 
+        // When
         $this->service->extractData($uiDemand);
     }
 
-    public function test_write_demand_creates_workflow_listener_and_runs_workflow()
+    public function test_extractData_withExistingWorkflowRun_throwsValidationError(): void
     {
+        // Given
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'test-write-workflow',
+            'name' => 'Extract Service Dates',
+        ]);
+        
+        $existingWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'status' => 'running'
+        ]);
+        
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
+            'title' => 'Test Demand',
+        ]);
+        
+        // Create a running extract data workflow in the pivot table
+        $uiDemand->workflowRuns()->attach($existingWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
+
+        $storedFile = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+        $uiDemand->storedFiles()->attach($storedFile->id);
+
+        // Verify that the demand can't extract data due to running workflow
+        $this->assertFalse($uiDemand->canExtractData(), 'Should not be able to extract data when a workflow is running');
+
+        // Then
+        $this->expectException(ValidationError::class);
+        $this->expectExceptionMessage('Cannot extract data for this demand. Check status and existing workflows.');
+
+        // When
+        $this->service->extractData($uiDemand);
+    }
+
+    public function test_extractData_withMissingWorkflowDefinition_throwsValidationError(): void
+    {
+        // Given
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
+            'title' => 'Test Demand',
         ]);
 
-        Config::set('app.demand_workflow_write_demand', 'test-write-workflow');
+        $storedFile = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+        $uiDemand->storedFiles()->attach($storedFile->id);
+
+        // No workflow definition exists
+
+        // Then
+        $this->expectException(ValidationError::class);
+        $this->expectExceptionMessage("Workflow 'Extract Service Dates' not found");
+
+        // When
+        $this->service->extractData($uiDemand);
+    }
+
+    public function test_writeDemand_withValidDemand_startsWorkflowCorrectly(): void
+    {
+        // Given
+        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Write Demand Summary',
+        ]);
 
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
@@ -102,56 +173,46 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
+            'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
             'title' => 'Test Demand',
         ]);
 
-        // Create completed extract data workflow listener
-        $extractWorkflowRun = WorkflowRun::factory()->create();
-        $extractListener = WorkflowListener::createForListener(
-            $uiDemand,
-            $extractWorkflowRun,
-            WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA
-        );
-        $extractListener->markAsCompleted();
+        // Since Queue is faked, WorkflowRunnerService will create real WorkflowRun but without job dispatch
 
-        // Use integration approach instead of mocking static methods
-
+        // When
         $workflowRun = $this->service->writeDemand($uiDemand);
 
-        // Assert workflow run was returned
+        // Then
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
-
-        // Assert workflow listener was created
-        $this->assertDatabaseHas('workflow_listeners', [
-            'listener_type' => UiDemand::class,
-            'listener_id' => $uiDemand->id,
-            'workflow_type' => WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND,
-            'workflow_run_id' => $workflowRun->id,
-            'status' => WorkflowListener::STATUS_RUNNING,
-        ]);
-
-        // Assert UI demand status was updated
-        $this->assertEquals(UiDemand::STATUS_PROCESSING, $uiDemand->fresh()->status);
+        $this->assertEquals(UiDemand::STATUS_DRAFT, $uiDemand->fresh()->status);
+        $this->assertTrue($uiDemand->fresh()->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->exists());
+        $this->assertEquals(UiDemand::WORKFLOW_TYPE_WRITE_DEMAND, $uiDemand->fresh()->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->first()->pivot->workflow_type);
     }
 
-    public function test_write_demand_throws_validation_error_when_cannot_write()
+    public function test_writeDemand_withNoTeamObject_throwsValidationError(): void
     {
+        // Given
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
             'team_object_id' => null, // No team object
             'title' => 'Test Demand',
         ]);
 
+        // Then
         $this->expectException(ValidationError::class);
         $this->expectExceptionMessage('Cannot write demand. Check if extract data is completed and team object exists.');
 
+        // When
         $this->service->writeDemand($uiDemand);
     }
 
-    public function test_on_workflow_complete_handles_extract_data_success()
+    public function test_writeDemand_withoutExtractDataCompleted_throwsValidationError(): void
     {
+        // Given
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
@@ -159,151 +220,339 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
+            'team_object_id' => $teamObject->id,
+            'metadata' => [], // No extract data completed metadata
             'title' => 'Test Demand',
         ]);
 
-        // Create real artifact with team object
+        // Then
+        $this->expectException(ValidationError::class);
+        $this->expectExceptionMessage('Cannot write demand. Check if extract data is completed and team object exists.');
+
+        // When
+        $this->service->writeDemand($uiDemand);
+    }
+
+    public function test_handleUiDemandWorkflowComplete_withSuccessfulExtractDataWorkflow_updatesCorrectly(): void
+    {
+        // Given
+        $workflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
+        $workflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+        
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
+            'metadata' => ['existing_key' => 'existing_value'],
+            'title' => 'Test Demand',
+        ]);
+        
+        // Connect via pivot table
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
+
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'meta' => ['team_object_id' => $teamObject->id],
         ]);
 
-        // Create real completed workflow run
-        $workflowRun = WorkflowRun::factory()->create([
-            'started_at' => now()->subMinutes(5),
-            'completed_at' => now(),
-            'status' => 'completed',
-        ]);
-
-        // Create a workflow node for the task run
         $workflowNode = WorkflowNode::factory()->create([
-            'workflow_definition_id' => $workflowRun->workflowDefinition->id,
+            'workflow_definition_id' => $workflowDefinition->id,
         ]);
 
-        // Create a task run with the artifact for the workflow
         $taskRun = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
             'workflow_node_id' => $workflowNode->id,
         ]);
         $taskRun->outputArtifacts()->attach($artifact->id);
 
-        $workflowListener = WorkflowListener::createForListener(
-            $uiDemand,
-            $workflowRun,
-            WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA
-        );
-
+        // When
         $this->service->handleUiDemandWorkflowComplete($workflowRun);
 
-        // Assert workflow listener was marked as completed
-        $this->assertEquals(WorkflowListener::STATUS_COMPLETED, $workflowListener->fresh()->status);
-
-        // Assert team object was associated with UI demand
-        $this->assertEquals($teamObject->id, $uiDemand->fresh()->team_object_id);
-
-        // Assert metadata was updated
-        $updatedListener = $workflowListener->fresh();
-        $this->assertArrayHasKey('team_object_id', $updatedListener->metadata);
-        $this->assertEquals($teamObject->id, $updatedListener->metadata['team_object_id']);
+        // Then
+        $updatedDemand = $uiDemand->fresh();
+        $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
+        $this->assertArrayHasKey('existing_key', $updatedDemand->metadata);
+        $this->assertArrayHasKey('extract_data_completed_at', $updatedDemand->metadata);
+        $this->assertArrayHasKey('workflow_run_id', $updatedDemand->metadata);
+        $this->assertEquals($workflowRun->id, $updatedDemand->metadata['workflow_run_id']);
+        // Verify workflow is still tracked in pivot table
+        $this->assertTrue($updatedDemand->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->exists());
     }
 
-    public function test_on_workflow_complete_handles_write_demand_success()
+    public function test_handleUiDemandWorkflowComplete_withSuccessfulWriteDemandWorkflow_updatesCorrectly(): void
     {
+        // Given
+        $workflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Write Demand Summary',
+        ]);
+
+        $workflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+        
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
+            'metadata' => ['existing_key' => 'existing_value'],
             'title' => 'Test Demand',
         ]);
+        
+        // Connect via pivot table
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
 
-        // Create real artifact with Google Docs URL
         $googleDocsUrl = 'https://docs.google.com/document/d/test123/edit';
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'text_content' => "Generated document: {$googleDocsUrl}",
         ]);
 
-        // Create real completed workflow run
-        $workflowRun = WorkflowRun::factory()->create([
-            'started_at' => now()->subMinutes(5),
-            'completed_at' => now(),
-            'status' => 'completed',
-        ]);
-
-        // Create a workflow node for the task run
         $workflowNode = WorkflowNode::factory()->create([
-            'workflow_definition_id' => $workflowRun->workflowDefinition->id,
+            'workflow_definition_id' => $workflowDefinition->id,
         ]);
 
-        // Create a task run with the artifact for the workflow
         $taskRun = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
             'workflow_node_id' => $workflowNode->id,
         ]);
         $taskRun->outputArtifacts()->attach($artifact->id);
 
-        $workflowListener = WorkflowListener::createForListener(
-            $uiDemand,
-            $workflowRun,
-            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
-        );
-
+        // When
         $this->service->handleUiDemandWorkflowComplete($workflowRun);
 
-        // Assert workflow listener was marked as completed
-        $this->assertEquals(WorkflowListener::STATUS_COMPLETED, $workflowListener->fresh()->status);
+        // Then
+        $updatedDemand = $uiDemand->fresh();
+        $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
+        $this->assertNull($updatedDemand->completed_at);
+        $this->assertArrayHasKey('existing_key', $updatedDemand->metadata);
+        $this->assertArrayHasKey('write_demand_completed_at', $updatedDemand->metadata);
+        $this->assertArrayHasKey('workflow_run_id', $updatedDemand->metadata);
+        $this->assertArrayHasKey('google_docs_url', $updatedDemand->metadata);
+        $this->assertEquals($googleDocsUrl, $updatedDemand->metadata['google_docs_url']);
+        $this->assertEquals($workflowRun->id, $updatedDemand->metadata['workflow_run_id']);
+        // Verify workflow is still tracked in pivot table
+        $this->assertTrue($updatedDemand->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->exists());
 
-        // Assert UI demand status was updated to completed
-        $this->assertEquals(UiDemand::STATUS_COMPLETED, $uiDemand->fresh()->status);
-        $this->assertNotNull($uiDemand->fresh()->completed_at);
-
-        // Assert Google Docs stored file was created and associated
+        // Verify Google Docs stored file was created
         $this->assertDatabaseHas('stored_files', [
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
             'url' => $googleDocsUrl,
             'disk' => 'external',
+            'filename' => 'Demand Output - Test Demand.gdoc',
             'mime' => 'application/vnd.google-apps.document',
         ]);
-
-        // Assert metadata was updated
-        $updatedListener = $workflowListener->fresh();
-        $this->assertArrayHasKey('google_docs_url', $updatedListener->metadata);
-        $this->assertEquals($googleDocsUrl, $updatedListener->metadata['google_docs_url']);
     }
 
-    public function test_on_workflow_complete_handles_failure()
+    public function test_handleUiDemandWorkflowComplete_withSuccessfulWriteDemandWorkflowFromJson_updatesCorrectly(): void
     {
+        // Given
+        $workflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Write Demand Summary',
+        ]);
+
+        $workflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+        
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
+            'metadata' => ['existing_key' => 'existing_value'],
+            'title' => 'Test Demand',
+        ]);
+        
+        // Connect via pivot table
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
+
+        $googleDocsUrl = 'https://docs.google.com/document/d/test456/edit';
+        $artifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'json_content' => ['google_docs_url' => $googleDocsUrl],
+        ]);
+
+        $workflowNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+
+        $taskRun = TaskRun::factory()->create([
+            'workflow_run_id' => $workflowRun->id,
+            'workflow_node_id' => $workflowNode->id,
+        ]);
+        $taskRun->outputArtifacts()->attach($artifact->id);
+
+        // When
+        $this->service->handleUiDemandWorkflowComplete($workflowRun);
+
+        // Then
+        $updatedDemand = $uiDemand->fresh();
+        $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
+        $this->assertArrayHasKey('google_docs_url', $updatedDemand->metadata);
+        $this->assertEquals($googleDocsUrl, $updatedDemand->metadata['google_docs_url']);
+    }
+
+    public function test_handleUiDemandWorkflowComplete_withFailedWorkflow_updatesCorrectly(): void
+    {
+        // Given
+        $workflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
+        $workflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'status' => 'failed',
+            'failed_at' => now(),
+        ]);
+        
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
+            'metadata' => ['existing_key' => 'existing_value'],
+            'title' => 'Test Demand',
+        ]);
+        
+        // Connect via pivot table
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
+
+        // When
+        $this->service->handleUiDemandWorkflowComplete($workflowRun);
+
+        // Then
+        $updatedDemand = $uiDemand->fresh();
+        $this->assertEquals(UiDemand::STATUS_FAILED, $updatedDemand->status);
+        $this->assertArrayHasKey('existing_key', $updatedDemand->metadata);
+        $this->assertArrayHasKey('failed_at', $updatedDemand->metadata);
+        $this->assertArrayHasKey('error', $updatedDemand->metadata);
+        $this->assertArrayHasKey('workflow_run_id', $updatedDemand->metadata);
+        $this->assertEquals('Failed', $updatedDemand->metadata['error']);
+        $this->assertEquals($workflowRun->id, $updatedDemand->metadata['workflow_run_id']);
+        // Verify workflow is still tracked in pivot table
+        $this->assertTrue($updatedDemand->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->exists());
+    }
+
+    public function test_handleUiDemandWorkflowComplete_withNoMatchingDemand_doesNothing(): void
+    {
+        // Given
+        $workflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
+        $workflowRun = WorkflowRun::factory()->create([
+            'id' => 999,
+            'workflow_definition_id' => $workflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        // No UiDemand with workflow_run_id = 999
+
+        // When - should not throw any exceptions
+        $this->service->handleUiDemandWorkflowComplete($workflowRun);
+
+        // Then - verify no database changes occurred
+        $this->assertDatabaseMissing('ui_demand_workflow_runs', [
+            'workflow_run_id' => 999,
+        ]);
+    }
+
+    public function test_handleUiDemandWorkflowComplete_withWriteDemandWorkflowNoGoogleDocs_updatesWithoutUrl(): void
+    {
+        // Given
+        $workflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Write Demand Summary',
+        ]);
+
+        $workflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+        
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
+            'title' => 'Test Demand',
+        ]);
+        
+        // Connect via pivot table
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
+
+        $artifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'text_content' => 'Some content without Google Docs URL',
+        ]);
+
+        $workflowNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+
+        $taskRun = TaskRun::factory()->create([
+            'workflow_run_id' => $workflowRun->id,
+            'workflow_node_id' => $workflowNode->id,
+        ]);
+        $taskRun->outputArtifacts()->attach($artifact->id);
+
+        // When
+        $this->service->handleUiDemandWorkflowComplete($workflowRun);
+
+        // Then
+        $updatedDemand = $uiDemand->fresh();
+        $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
+        $this->assertArrayNotHasKey('google_docs_url', $updatedDemand->metadata);
+        $this->assertArrayHasKey('write_demand_completed_at', $updatedDemand->metadata);
+        $this->assertArrayHasKey('workflow_run_id', $updatedDemand->metadata);
+        $this->assertEquals($workflowRun->id, $updatedDemand->metadata['workflow_run_id']);
+
+        // Verify no stored file was created
+        $this->assertDatabaseMissing('stored_files', [
+            'team_id' => $this->user->currentTeam->id,
+            'disk' => 'external',
+        ]);
+    }
+
+    public function test_config_workflowTypeNotFound_throwsValidationError(): void
+    {
+        // Given
+        Config::set('ui-demands.workflows.extract_data', null);
+
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'status' => UiDemand::STATUS_DRAFT,
             'title' => 'Test Demand',
         ]);
 
-        // Create real failed workflow run
-        $workflowRun = WorkflowRun::factory()->create([
-            'started_at' => now()->subMinutes(5),
-            'failed_at' => now(),
-            'status' => 'failed',
+        $storedFile = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
         ]);
+        $uiDemand->storedFiles()->attach($storedFile->id);
 
-        $workflowListener = WorkflowListener::createForListener(
-            $uiDemand,
-            $workflowRun,
-            WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA
-        );
+        // Then
+        $this->expectException(ValidationError::class);
+        $this->expectExceptionMessage('Workflow configuration not found for type: extract_data');
 
-        $this->service->handleUiDemandWorkflowComplete($workflowRun);
-
-        // Assert workflow listener was marked as failed
-        $this->assertEquals(WorkflowListener::STATUS_FAILED, $workflowListener->fresh()->status);
-
-        // Assert UI demand status was updated to failed
-        $this->assertEquals(UiDemand::STATUS_FAILED, $uiDemand->fresh()->status);
-
-        // Assert metadata was updated with error
-        $updatedListener = $workflowListener->fresh();
-        $this->assertArrayHasKey('error', $updatedListener->metadata);
-        $this->assertEquals('Failed', $updatedListener->metadata['error']);
+        // When
+        $this->service->extractData($uiDemand);
     }
-
 }

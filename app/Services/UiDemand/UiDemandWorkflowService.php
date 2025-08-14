@@ -4,15 +4,15 @@ namespace App\Services\UiDemand;
 
 use App\Models\TeamObject\TeamObject;
 use App\Models\UiDemand;
+use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
-use App\Models\Workflow\WorkflowListener;
 use App\Models\Workflow\WorkflowRun;
 use App\Repositories\WorkflowInputRepository;
-use App\Services\Workflow\WorkflowListenerService;
+use App\Services\Workflow\WorkflowRunnerService;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
-class UiDemandWorkflowService extends WorkflowListenerService
+class UiDemandWorkflowService
 {
     public function extractData(UiDemand $uiDemand): WorkflowRun
     {
@@ -20,18 +20,14 @@ class UiDemandWorkflowService extends WorkflowListenerService
             throw new ValidationError('Cannot extract data for this demand. Check status and existing workflows.');
         }
 
-        return parent::runWorkflow(
-            $uiDemand,
-            WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA,
-            'app.demand_workflow_extract_data',
-            'DEMAND_WORKFLOW_EXTRACT_DATA',
-            function () use ($uiDemand) {
-                return $this->createWorkflowInputFromDemand($uiDemand, 'Extract Data');
-            },
-            function ($uiDemand) {
-                $uiDemand->update(['status' => UiDemand::STATUS_PROCESSING]);
-            }
-        );
+        $workflowDefinition = $this->getWorkflowDefinition('extract_data');
+        $workflowInput = $this->createWorkflowInputFromDemand($uiDemand, 'Extract Data');
+        
+        $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$workflowInput->toArtifact()]);
+        
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
+        
+        return $workflowRun;
     }
 
     public function writeDemand(UiDemand $uiDemand): WorkflowRun
@@ -40,106 +36,113 @@ class UiDemandWorkflowService extends WorkflowListenerService
             throw new ValidationError('Cannot write demand. Check if extract data is completed and team object exists.');
         }
 
-        return parent::runWorkflow(
-            $uiDemand,
-            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND,
-            'app.demand_workflow_write_demand',
-            'DEMAND_WORKFLOW_WRITE_DEMAND',
-            function () use ($uiDemand) {
-                return $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand');
-            },
-            function ($uiDemand) {
-                $uiDemand->update(['status' => UiDemand::STATUS_PROCESSING]);
-            }
-        );
+        $workflowDefinition = $this->getWorkflowDefinition('write_demand');
+        $workflowInput = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand');
+        
+        $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$workflowInput->toArtifact()]);
+        
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
+        
+        return $workflowRun;
     }
 
     public function handleUiDemandWorkflowComplete(WorkflowRun $workflowRun): void
     {
-        parent::onWorkflowComplete(
-            $workflowRun,
-            function ($listener, $workflowRun, $workflowListener) {
-                if ($listener instanceof UiDemand) {
-                    $this->handleWorkflowSuccess($listener, $workflowRun, $workflowListener);
-                }
-            },
-            function ($listener, $workflowRun, $workflowListener) {
-                if ($listener instanceof UiDemand) {
-                    $this->handleWorkflowFailure($listener, $workflowRun, $workflowListener);
-                }
-            }
-        );
+        $uiDemand = UiDemand::whereHas('workflowRuns', function ($query) use ($workflowRun) {
+            $query->where('workflow_runs.id', $workflowRun->id);
+        })->first();
+        
+        if (!$uiDemand) {
+            return;
+        }
+        
+        if ($workflowRun->isCompleted()) {
+            $this->handleWorkflowSuccess($uiDemand, $workflowRun);
+        } else {
+            $this->handleWorkflowFailure($uiDemand, $workflowRun);
+        }
     }
 
-    protected function handleWorkflowSuccess(UiDemand $uiDemand, WorkflowRun $workflowRun, WorkflowListener $workflowListener): void
+    protected function handleWorkflowSuccess(UiDemand $uiDemand, WorkflowRun $workflowRun): void
     {
-        $workflowType = $workflowListener->workflow_type;
-
-        if ($workflowType === WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA) {
-            $outputArtifacts = $workflowRun->collectFinalOutputArtifacts();
-            $teamObject      = $this->findTeamObjectFromArtifacts($outputArtifacts);
-
-            if ($teamObject) {
-                $uiDemand->update(['team_object_id' => $teamObject->id]);
-
-                // Update workflow listener metadata
-                $workflowListener->update([
-                    'metadata' => array_merge($workflowListener->metadata ?? [], [
-                        'team_object_id' => $teamObject->id,
-                        'completed_at'   => now()->toIso8601String(),
-                    ]),
-                ]);
-            }
-
-            // Check if we should auto-run write demand
-            if ($workflowListener->metadata['auto_write_demand'] ?? false) {
-                $this->writeDemand($uiDemand);
-            }
-        } elseif ($workflowType === WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND) {
-            $outputArtifacts = $workflowRun->collectFinalOutputArtifacts();
-            $googleDocsUrl   = $this->extractGoogleDocsUrl($outputArtifacts);
-
+        $workflowName = $workflowRun->workflowDefinition->name;
+        $outputArtifacts = $workflowRun->collectFinalOutputArtifacts();
+        
+        if ($workflowName === config('ui-demands.workflows.extract_data')) {
+            $metadata = [
+                'extract_data_completed_at' => now()->toIso8601String(),
+                'workflow_run_id' => $workflowRun->id,
+            ];
+            
+            $uiDemand->update([
+                'status' => UiDemand::STATUS_DRAFT,
+                'metadata' => array_merge($uiDemand->metadata ?? [], $metadata),
+            ]);
+            
+        } elseif ($workflowName === config('ui-demands.workflows.write_demand')) {
+            $googleDocsUrl = $this->extractGoogleDocsUrl($outputArtifacts);
+            
+            $metadata = [
+                'write_demand_completed_at' => now()->toIso8601String(),
+                'workflow_run_id' => $workflowRun->id,
+            ];
+            
             if ($googleDocsUrl) {
                 $storedFile = $this->createStoredFileForGoogleDocs($googleDocsUrl, $uiDemand);
                 $uiDemand->storedFiles()->attach($storedFile->id, ['category' => 'demand_output']);
-
-                // Update workflow listener metadata
-                $workflowListener->update([
-                    'metadata' => array_merge($workflowListener->metadata ?? [], [
-                        'google_docs_url' => $googleDocsUrl,
-                        'completed_at'    => now()->toIso8601String(),
-                    ]),
-                ]);
+                $metadata['google_docs_url'] = $googleDocsUrl;
             }
-
+            
             $uiDemand->update([
-                'status'       => UiDemand::STATUS_COMPLETED,
-                'completed_at' => now(),
+                'status' => UiDemand::STATUS_DRAFT, // Stay as Draft until manually published
+                'metadata' => array_merge($uiDemand->metadata ?? [], $metadata),
             ]);
         }
     }
 
-    protected function handleWorkflowFailure(UiDemand $uiDemand, WorkflowRun $workflowRun, WorkflowListener $workflowListener): void
+    protected function handleWorkflowFailure(UiDemand $uiDemand, WorkflowRun $workflowRun): void
     {
-        // Update workflow listener metadata
-        $workflowListener->update([
-            'metadata' => array_merge($workflowListener->metadata ?? [], [
-                'failed_at' => now(),
-                'error'     => $workflowRun->status,
-            ]),
+        $metadata = array_merge($uiDemand->metadata ?? [], [
+            'failed_at' => now()->toIso8601String(),
+            'error' => $workflowRun->status,
+            'workflow_run_id' => $workflowRun->id,
         ]);
-
-        $uiDemand->update(['status' => UiDemand::STATUS_FAILED]);
+        
+        $uiDemand->update([
+            'status' => UiDemand::STATUS_FAILED,
+            'metadata' => $metadata,
+        ]);
     }
 
+    protected function getWorkflowDefinition(string $workflowType): WorkflowDefinition
+    {
+        $workflowName = config("ui-demands.workflows.{$workflowType}");
+        
+        if (!$workflowName) {
+            throw new ValidationError("Workflow configuration not found for type: {$workflowType}");
+        }
+        
+        $workflowDefinition = WorkflowDefinition::where('team_id', team()->id)
+            ->where('name', $workflowName)
+            ->first();
+            
+        if (!$workflowDefinition) {
+            throw new ValidationError("Workflow '{$workflowName}' not found");
+        }
+        
+        return $workflowDefinition;
+    }
+    
     protected function createWorkflowInputFromDemand(UiDemand $uiDemand, string $workflowType): WorkflowInput
     {
         $workflowInputRepo = app(WorkflowInputRepository::class);
 
         $workflowInput = $workflowInputRepo->createWorkflowInput([
-            'name'        => "$workflowType: $uiDemand->title",
-            'description' => $uiDemand->description,
-            'content'     => json_encode([
+            'name'             => "$workflowType: $uiDemand->title",
+            'description'      => $uiDemand->description,
+            'team_object_id'   => $uiDemand->team_object_id,
+            'team_object_type' => 'demand',
+            'content'          => json_encode([
                 'demand_id'   => $uiDemand->id,
                 'title'       => $uiDemand->title,
                 'description' => $uiDemand->description,
@@ -170,16 +173,6 @@ class UiDemandWorkflowService extends WorkflowListenerService
     }
 
 
-    protected function findTeamObjectFromArtifacts($artifacts): ?TeamObject
-    {
-        foreach($artifacts as $artifact) {
-            if ($artifact->meta && isset($artifact->meta['team_object_id'])) {
-                return TeamObject::find($artifact->meta['team_object_id']);
-            }
-        }
-
-        return null;
-    }
 
     protected function extractGoogleDocsUrl($artifacts): ?string
     {

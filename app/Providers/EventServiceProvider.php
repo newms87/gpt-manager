@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Events\JobDispatchUpdatedEvent;
+use App\Events\UiDemandUpdatedEvent;
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Workflow\WorkflowRun;

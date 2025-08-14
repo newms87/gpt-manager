@@ -27,8 +27,6 @@ export function useDemands() {
   const stats = computed(() => ({
     total: demands.value.length,
     draft: demands.value.filter(d => d.status === DEMAND_STATUS.DRAFT).length,
-    ready: demands.value.filter(d => d.status === DEMAND_STATUS.READY).length,
-    processing: demands.value.filter(d => d.status === DEMAND_STATUS.PROCESSING).length,
     completed: demands.value.filter(d => d.status === DEMAND_STATUS.COMPLETED).length,
     failed: demands.value.filter(d => d.status === DEMAND_STATUS.FAILED).length,
   }));
@@ -83,29 +81,29 @@ export function useDemands() {
     }
   };
 
-  const submitDemand = async (id: number) => {
-    try {
-      const response = await demandRoutes.applyAction("submit", { id });
-      const updatedDemand = response.item;
-      const index = demands.value.findIndex(d => d.id === id);
-      if (index !== -1) {
-        demands.value[index] = updatedDemand;
-      }
-      return updatedDemand;
-    } catch (err: any) {
-      error.value = err.message || 'Failed to submit demand';
-      throw err;
-    }
-  };
 
-  const extractData = async (id: number) => {
+  const extractData = async (idOrDemand: number | UiDemand) => {
     try {
-      const response = await demandRoutes.applyAction("extract-data", { id });
-      const updatedDemand = response.item;
-      const index = demands.value.findIndex(d => d.id === id);
+      let demand: UiDemand;
+      if (typeof idOrDemand === 'number') {
+        const foundDemand = demands.value.find(d => d.id === idOrDemand);
+        if (!foundDemand) {
+          throw new Error('Demand not found');
+        }
+        demand = foundDemand;
+      } else {
+        demand = idOrDemand;
+      }
+      
+      const response = await demandRoutes.extractData(demand);
+      const updatedDemand = storeObject(response);
+      
+      // Update the demand in the array if it exists
+      const index = demands.value.findIndex(d => d.id === demand.id);
       if (index !== -1) {
         demands.value[index] = updatedDemand;
       }
+      
       return updatedDemand;
     } catch (err: any) {
       error.value = err.message || 'Failed to extract data';
@@ -113,14 +111,28 @@ export function useDemands() {
     }
   };
 
-  const writeDemand = async (id: number) => {
+  const writeDemand = async (idOrDemand: number | UiDemand) => {
     try {
-      const response = await demandRoutes.applyAction("write-demand", { id });
-      const updatedDemand = response.item;
-      const index = demands.value.findIndex(d => d.id === id);
+      let demand: UiDemand;
+      if (typeof idOrDemand === 'number') {
+        const foundDemand = demands.value.find(d => d.id === idOrDemand);
+        if (!foundDemand) {
+          throw new Error('Demand not found');
+        }
+        demand = foundDemand;
+      } else {
+        demand = idOrDemand;
+      }
+      
+      const response = await demandRoutes.writeDemand(demand);
+      const updatedDemand = storeObject(response);
+      
+      // Update the demand in the array if it exists
+      const index = demands.value.findIndex(d => d.id === demand.id);
       if (index !== -1) {
         demands.value[index] = updatedDemand;
       }
+      
       return updatedDemand;
     } catch (err: any) {
       error.value = err.message || 'Failed to write demand';
@@ -139,7 +151,6 @@ export function useDemands() {
     createDemand,
     updateDemand,
     deleteDemand,
-    submitDemand,
     extractData,
     writeDemand,
   };
