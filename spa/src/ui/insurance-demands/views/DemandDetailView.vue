@@ -1,63 +1,21 @@
 <template>
 	<UiMainLayout>
 		<template #header>
-			<div class="px-6 py-4">
-				<div class="flex items-center justify-between">
-					<div class="flex items-center space-x-4">
-						<ActionButton
-							type="back"
-							size="sm"
-							label="Back"
-							@click="router.back()"
-						/>
-
-						<div>
-							<h1 class="text-2xl font-bold text-slate-800">
-								{{ demand?.title || "Loading..." }}
-							</h1>
-							<div v-if="demand?.status" class="flex items-center space-x-4 mt-1">
-								<UiStatusBadge :status="demand.status" />
-								<span v-if="demand.created_at" class="text-sm text-slate-500">
-                  Created {{ formatDate(demand.created_at) }}
-                </span>
-							</div>
-						</div>
-					</div>
-
-					<div v-if="demand" class="flex items-center space-x-3">
-						<ActionButton
-							v-if="demand.status === DEMAND_STATUS.DRAFT"
-							:type="editMode ? 'cancel' : 'edit'"
-							:label="editMode ? 'Cancel Edit' : 'Edit'"
-							@click="editMode = !editMode"
-						/>
-
-						<ActionButton
-							v-if="demand.status === DEMAND_STATUS.DRAFT && demand.can_be_submitted"
-							type="save"
-							:loading="submitting"
-							label="Submit Demand"
-							@click="handleSubmit"
-						/>
-
-						<ActionButton
-							v-if="demand.can_extract_data"
-							type="play"
-							:loading="extractingData || demand.is_extract_data_running"
-							label="Extract Data"
-							@click="handleExtractData"
-						/>
-
-						<ActionButton
-							v-if="demand.can_write_demand"
-							type="play"
-							:loading="writingDemand || demand.is_write_demand_running"
-							label="Write Demand"
-							@click="handleWriteDemand"
-						/>
-					</div>
-				</div>
-			</div>
+			<DemandDetailHeader
+				:demand="demand"
+				@back="router.back()"
+			>
+				<template #actions>
+					<DemandDetailActions
+						:demand="demand"
+						:edit-mode="editMode"
+						:loading-states="loadingStates"
+						@toggle-edit="editMode = !editMode"
+						@extract-data="handleExtractData"
+						@write-demand="handleWriteDemand"
+					/>
+				</template>
+			</DemandDetailHeader>
 		</template>
 
 		<!-- Loading State -->
@@ -77,77 +35,19 @@
 			<!-- Main Content -->
 			<div class="lg:col-span-2 space-y-6">
 				<!-- Demand Details -->
-				<UiCard>
-					<template #header>
-						<h3 class="text-lg font-semibold text-slate-800">
-							Demand Details
-						</h3>
-					</template>
-
-					<div v-if="editMode" class="space-y-4">
-						<DemandForm
-							mode="edit"
-							:initial-data="demand"
-							@submit="handleUpdate"
-							@cancel="editMode = false"
-						/>
-					</div>
-
-					<div v-else class="space-y-4">
-						<div>
-							<label class="text-sm font-medium text-slate-700">Title</label>
-							<p class="mt-1 text-slate-800">{{ demand.title }}</p>
-						</div>
-
-						<div v-if="demand.description">
-							<label class="text-sm font-medium text-slate-700">Description</label>
-							<p class="mt-1 text-slate-800 whitespace-pre-wrap">{{ demand.description }}</p>
-						</div>
-
-						<div class="grid grid-cols-2 gap-4">
-							<div>
-								<label class="text-sm font-medium text-slate-700">Status</label>
-								<div class="mt-1">
-									<UiStatusBadge :status="demand.status" />
-								</div>
-							</div>
-
-							<div>
-								<label class="text-sm font-medium text-slate-700">Progress</label>
-								<div class="mt-1">
-									<UiProgressBar
-										:value="progressPercentage"
-										:color="progressColor"
-										size="sm"
-										:animated="demand.status === DEMAND_STATUS.PROCESSING"
-									/>
-								</div>
-							</div>
-						</div>
-					</div>
-				</UiCard>
+				<DemandDetailInfo
+					:demand="demand"
+					:edit-mode="editMode"
+					@update="handleUpdate"
+					@cancel-edit="editMode = false"
+				/>
 
 				<!-- Files Section -->
-				<UiCard>
-					<template #header>
-						<h3 class="text-lg font-semibold text-slate-800">
-							Documents
-						</h3>
-					</template>
-
-					<MultiFileField
-						v-model="demandFiles"
-						:readonly="demand.status !== DEMAND_STATUS.DRAFT"
-						:disabled="demand.status !== DEMAND_STATUS.DRAFT"
-						:width="70"
-						:height="60"
-						add-icon-class="w-5"
-						show-transcodes
-						file-preview-class="rounded-lg"
-						file-preview-btn-size="xs"
-						@update:model-value="handleFilesUpdate"
-					/>
-				</UiCard>
+				<DemandDetailFiles
+					:demand="demand"
+					:files="demandFiles"
+					@update:files="handleFilesUpdate"
+				/>
 
 				<!-- Workflow Error Display -->
 				<UiCard v-if="workflowError" class="border-red-200 bg-red-50">
@@ -164,113 +64,47 @@
 			<!-- Sidebar -->
 			<div class="space-y-6">
 				<!-- Status Timeline -->
-				<UiCard>
-					<template #header>
-						<h3 class="text-lg font-semibold text-slate-800">
-							Status Timeline
-						</h3>
-					</template>
-
-					<div class="space-y-3">
-						<div
-							v-for="status in statusTimeline"
-							:key="status.status"
-							class="flex items-center space-x-3"
-							:class="{ 'opacity-50': !status.completed }"
-						>
-							<div
-								class="w-8 h-8 rounded-full flex items-center justify-center"
-								:class="status.completed ? status.bgColor : 'bg-slate-200'"
-							>
-								<component
-									:is="status.icon"
-									class="w-4 h-4"
-									:class="status.completed ? 'text-white' : 'text-slate-400'"
-								/>
-							</div>
-
-							<div class="flex-1">
-								<p class="font-medium text-slate-800">{{ status.label }}</p>
-								<p v-if="status.date" class="text-sm text-slate-500">
-									{{ formatDate(status.date) }}
-								</p>
-							</div>
-						</div>
-					</div>
-				</UiCard>
+				<DemandStatusTimeline :demand="demand" />
 
 				<!-- Quick Actions -->
-				<UiCard>
-					<template #header>
-						<h3 class="text-lg font-semibold text-slate-800">
-							Quick Actions
-						</h3>
-					</template>
-
-					<div class="space-y-2">
-						<ActionButton
-							v-if="demand.status === DEMAND_STATUS.DRAFT"
-							type="edit"
-							class="w-full justify-start"
-							label="Edit Details"
-							@click="editMode = true"
-						/>
-
-						<ActionButton
-							v-if="demand.can_extract_data"
-							type="play"
-							class="w-full justify-start"
-							:loading="extractingData || demand.is_extract_data_running"
-							label="Extract Data"
-							@click="handleExtractData"
-						/>
-
-						<ActionButton
-							v-if="demand.can_write_demand"
-							type="play"
-							class="w-full justify-start"
-							:loading="writingDemand || demand.is_write_demand_running"
-							label="Write Demand"
-							@click="handleWriteDemand"
-						/>
-
-						<ActionButton
-							type="copy"
-							class="w-full justify-start"
-							label="Duplicate Demand"
-							@click="duplicateDemand"
-						/>
-
-						<ActionButton
-							type="trash"
-							class="w-full justify-start"
-							label="Delete Demand"
-							@click="deleteDemand"
-						/>
-					</div>
-				</UiCard>
+				<DemandQuickActions
+					:demand="demand"
+					:loading-states="loadingStates"
+					@edit="editMode = true"
+					@extract-data="handleExtractData"
+					@write-demand="handleWriteDemand"
+					@delete="deleteDemand"
+				/>
 			</div>
 		</div>
 	</UiMainLayout>
 </template>
 
 <script setup lang="ts">
-import { FaSolidCheck, FaSolidClock, FaSolidExclamation, FaSolidSpinner } from "danx-icon";
-import { ActionButton, MultiFileField } from "quasar-ui-danx";
-import { computed, ref, watch } from "vue";
+import { FaSolidExclamation } from "danx-icon";
+import { computed, onUnmounted, ref, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { UiCard, UiLoadingSpinner, UiMainLayout, UiProgressBar, UiStatusBadge } from "../../shared";
+import { storeObject } from "quasar-ui-danx";
+import { usePusher } from "@/helpers/pusher";
+import { WorkflowRun } from "@/types";
+import { UiCard, UiLoadingSpinner, UiMainLayout } from "../../shared";
 import type { UiDemand } from "../../shared/types";
-import { DemandForm } from "../components";
+import {
+	DemandDetailActions,
+	DemandDetailFiles,
+	DemandDetailHeader,
+	DemandDetailInfo,
+	DemandQuickActions,
+	DemandStatusTimeline
+} from "../components/Detail";
 import { useDemands } from "../composables";
-import { DEMAND_STATUS, demandRoutes, getDemandProgressPercentage, getDemandStatusColor } from "../config";
+import { demandRoutes } from "../config";
 
 const route = useRoute();
 const router = useRouter();
 
 const {
 	updateDemand,
-	submitDemand,
 	extractData,
 	writeDemand,
 	deleteDemand: deleteDemandAction
@@ -281,7 +115,6 @@ const demandFiles = ref([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 const editMode = ref(false);
-const submitting = ref(false);
 const extractingData = ref(false);
 const writingDemand = ref(false);
 const workflowError = ref<string | null>(null);
@@ -291,64 +124,91 @@ const demandId = computed(() => {
 	return typeof id === "string" ? parseInt(id, 10) : null;
 });
 
-const progressColor = computed(() => {
-	if (!demand.value) return "blue";
-	return getDemandStatusColor(demand.value.status);
-});
+const loadingStates = computed(() => ({
+	extractData: extractingData.value,
+	writeDemand: writingDemand.value
+}));
 
-const progressPercentage = computed(() => {
-	if (!demand.value) return 0;
-	return getDemandProgressPercentage(demand.value.status);
-});
+// WebSocket subscriptions for real-time WorkflowRun updates
+const pusher = usePusher();
 
-const statusTimeline = computed(() => {
-	if (!demand.value) return [];
-
-	return [
-		{
-			status: "draft",
-			label: "Created",
-			icon: FaSolidClock,
-			bgColor: "bg-slate-500",
-			completed: true,
-			date: demand.value.created_at
-		},
-		{
-			status: "ready",
-			label: "Submitted",
-			icon: FaSolidCheck,
-			bgColor: "bg-blue-500",
-			completed: demand.value.submitted_at !== null,
-			date: demand.value.submitted_at
-		},
-		{
-			status: "processing",
-			label: "Processing",
-			icon: FaSolidSpinner,
-			bgColor: "bg-amber-500",
-			completed: demand.value.status === DEMAND_STATUS.PROCESSING || demand.value.status === DEMAND_STATUS.COMPLETED,
-			date: demand.value.status === DEMAND_STATUS.PROCESSING ? demand.value.updated_at : null
-		},
-		{
-			status: "completed",
-			label: "Completed",
-			icon: FaSolidCheck,
-			bgColor: "bg-green-500",
-			completed: demand.value.status === DEMAND_STATUS.COMPLETED,
-			date: demand.value.completed_at
-		}
-	];
-});
-
-const formatDate = (dateString: string) => {
-	return new Date(dateString).toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "long",
-		day: "numeric",
-		hour: "numeric",
-		minute: "2-digit"
-	});
+const subscribeToWorkflowRunUpdates = () => {
+	if (!pusher || !demand.value) {
+		console.log('WebSocket subscription not available - pusher:', !!pusher, 'demand:', !!demand.value);
+		return;
+	}
+	
+	console.log('Setting up real-time WorkflowRun subscriptions for demand:', demand.value.id);
+	
+	// Subscribe to WorkflowRun updates - the pusher automatically calls storeObject() 
+	// which will update the workflow runs via their reactive references
+	if (demand.value.extract_data_workflow_run?.id) {
+		console.log('Subscribing to extract data workflow run updates:', demand.value.extract_data_workflow_run.id);
+		
+		pusher.onModelEvent(
+			demand.value.extract_data_workflow_run,
+			"updated",
+			(updatedWorkflowRun: WorkflowRun) => {
+				console.log('Extract data workflow run updated via WebSocket:', {
+					id: updatedWorkflowRun.id,
+					progress: updatedWorkflowRun.progress_percent,
+					status: updatedWorkflowRun.status
+				});
+				
+				// The storeObject call in pusher already updated the workflow run,
+				// but we need to ensure the demand object is also updated
+				if (demand.value && demand.value.extract_data_workflow_run?.id === updatedWorkflowRun.id) {
+					const wasCompleted = demand.value.extract_data_workflow_run.status === 'completed';
+					const isNowCompleted = updatedWorkflowRun.status === 'completed';
+					
+					demand.value.extract_data_workflow_run = updatedWorkflowRun;
+					demand.value = storeObject({ ...demand.value });
+					console.log('🔄 Demand extract workflow run updated locally:', {
+						id: updatedWorkflowRun.id,
+						status: updatedWorkflowRun.status,
+						progress: updatedWorkflowRun.progress_percent,
+						wasCompleted,
+						isNowCompleted,
+						justCompleted: !wasCompleted && isNowCompleted
+					});
+					
+					// Check if extract data just completed and log demand state
+					if (!wasCompleted && isNowCompleted) {
+						console.log('🎉 Extract Data JUST COMPLETED! Checking demand state:');
+						console.log('  - can_write_demand (should be true now):', demand.value.can_write_demand);
+						console.log('  - metadata:', demand.value.metadata);
+						console.log('  - extract_data_completed_at:', demand.value.metadata?.extract_data_completed_at);
+					}
+				}
+			}
+		);
+	}
+	
+	if (demand.value.write_demand_workflow_run?.id) {
+		console.log('Subscribing to write demand workflow run updates:', demand.value.write_demand_workflow_run.id);
+		
+		pusher.onModelEvent(
+			demand.value.write_demand_workflow_run,
+			"updated",
+			(updatedWorkflowRun: WorkflowRun) => {
+				console.log('Write demand workflow run updated via WebSocket:', {
+					id: updatedWorkflowRun.id,
+					progress: updatedWorkflowRun.progress_percent,
+					status: updatedWorkflowRun.status
+				});
+				
+				// The storeObject call in pusher already updated the workflow run,
+				// but we need to ensure the demand object is also updated
+				if (demand.value && demand.value.write_demand_workflow_run?.id === updatedWorkflowRun.id) {
+					demand.value.write_demand_workflow_run = updatedWorkflowRun;
+					demand.value = storeObject({ ...demand.value });
+					console.log('Demand write workflow run updated locally');
+				}
+			}
+		);
+	}
 };
+
 
 const loadDemand = async () => {
 	if (!demandId.value) return;
@@ -356,7 +216,24 @@ const loadDemand = async () => {
 	try {
 		isLoading.value = true;
 		error.value = null;
-		demand.value = await demandRoutes.details({ id: demandId.value });
+		const demandData = await demandRoutes.details({ id: demandId.value });
+		
+		// Store the demand using storeObject for reactive updates
+		demand.value = storeObject(demandData);
+		console.log('📥 Demand loaded and stored:', demand.value.id, {
+			can_extract_data: demand.value.can_extract_data,
+			can_write_demand: demand.value.can_write_demand,
+			is_extract_data_running: demand.value.is_extract_data_running,
+			is_write_demand_running: demand.value.is_write_demand_running,
+			metadata: demand.value.metadata,
+			extract_data_completed_at: demand.value.metadata?.extract_data_completed_at,
+			team_object_id: demand.value.team_object_id,
+			extract_data_workflow_run: demand.value.extract_data_workflow_run,
+			write_demand_workflow_run: demand.value.write_demand_workflow_run
+		});
+		
+		// Subscribe to workflow run updates after demand is loaded
+		subscribeToWorkflowRunUpdates();
 	} catch (err: any) {
 		error.value = err.message || "Failed to load demand";
 	} finally {
@@ -369,7 +246,8 @@ const handleUpdate = async (data: { title: string; description: string; files?: 
 
 	try {
 		const updatedDemand = await updateDemand(demand.value.id, data);
-		demand.value = updatedDemand;
+		// Store the updated demand using storeObject for reactive updates
+		demand.value = storeObject(updatedDemand);
 		demandFiles.value = updatedDemand.files || [];
 		editMode.value = false;
 	} catch (err: any) {
@@ -377,19 +255,6 @@ const handleUpdate = async (data: { title: string; description: string; files?: 
 	}
 };
 
-const handleSubmit = async () => {
-	if (!demand.value) return;
-
-	try {
-		submitting.value = true;
-		const updatedDemand = await submitDemand(demand.value.id);
-		demand.value = updatedDemand;
-	} catch (err: any) {
-		error.value = err.message || "Failed to submit demand";
-	} finally {
-		submitting.value = false;
-	}
-};
 
 const handleExtractData = async () => {
 	if (!demand.value) return;
@@ -397,8 +262,21 @@ const handleExtractData = async () => {
 	try {
 		extractingData.value = true;
 		workflowError.value = null;
-		const updatedDemand = await extractData(demand.value.id);
-		demand.value = updatedDemand;
+		const updatedDemand = await extractData(demand.value);
+		
+		// Store the updated demand using storeObject for reactive updates
+		demand.value = storeObject(updatedDemand);
+		console.log('🚀 Extract data started, demand updated:', {
+			id: demand.value.id,
+			can_extract_data: demand.value.can_extract_data,
+			can_write_demand: demand.value.can_write_demand,
+			extract_data_workflow_run: demand.value.extract_data_workflow_run,
+			is_extract_data_running: demand.value.is_extract_data_running,
+			metadata: demand.value.metadata
+		});
+		
+		// Re-subscribe to workflow run updates after starting extract data
+		subscribeToWorkflowRunUpdates();
 	} catch (err: any) {
 		workflowError.value = err.message || "Failed to extract data";
 	} finally {
@@ -412,8 +290,18 @@ const handleWriteDemand = async () => {
 	try {
 		writingDemand.value = true;
 		workflowError.value = null;
-		const updatedDemand = await writeDemand(demand.value.id);
-		demand.value = updatedDemand;
+		const updatedDemand = await writeDemand(demand.value);
+		
+		// Store the updated demand using storeObject for reactive updates
+		demand.value = storeObject(updatedDemand);
+		console.log('Write demand started, demand updated:', {
+			id: demand.value.id,
+			write_demand_workflow_run: demand.value.write_demand_workflow_run,
+			is_write_demand_running: demand.value.is_write_demand_running
+		});
+		
+		// Re-subscribe to workflow run updates after starting write demand
+		subscribeToWorkflowRunUpdates();
 	} catch (err: any) {
 		workflowError.value = err.message || "Failed to write demand";
 	} finally {
@@ -426,16 +314,12 @@ const handleFilesUpdate = async (files: any[]) => {
 
 	try {
 		const updatedDemand = await updateDemand(demand.value.id, { files });
-		demand.value = updatedDemand;
+		// Store the updated demand using storeObject for reactive updates
+		demand.value = storeObject(updatedDemand);
 		demandFiles.value = files;
 	} catch (err: any) {
 		error.value = err.message || "Failed to update files";
 	}
-};
-
-const duplicateDemand = () => {
-	// TODO: Implement duplicate functionality
-	console.log("Duplicate demand");
 };
 
 const deleteDemand = async () => {
@@ -458,4 +342,45 @@ watch(demandId, loadDemand, { immediate: true });
 watch(() => demand.value?.files, (files) => {
 	demandFiles.value = files || [];
 }, { immediate: true });
+
+// Debug logging for demand state changes
+watchEffect(() => {
+	if (demand.value) {
+		console.log('🔍 DemandDetailView - Demand State Changed:', {
+			demand_id: demand.value.id,
+			can_extract_data: demand.value.can_extract_data,
+			can_write_demand: demand.value.can_write_demand,
+			is_extract_data_running: demand.value.is_extract_data_running,
+			is_write_demand_running: demand.value.is_write_demand_running,
+			metadata: demand.value.metadata,
+			extract_data_completed_at: demand.value.metadata?.extract_data_completed_at,
+			team_object_id: demand.value.team_object_id,
+			extract_workflow_run: demand.value.extract_data_workflow_run ? {
+				id: demand.value.extract_data_workflow_run.id,
+				status: demand.value.extract_data_workflow_run.status,
+				progress: demand.value.extract_data_workflow_run.progress_percent,
+				completed_at: demand.value.extract_data_workflow_run.completed_at
+			} : null,
+			write_workflow_run: demand.value.write_demand_workflow_run ? {
+				id: demand.value.write_demand_workflow_run.id,
+				status: demand.value.write_demand_workflow_run.status,
+				progress: demand.value.write_demand_workflow_run.progress_percent,
+				completed_at: demand.value.write_demand_workflow_run.completed_at
+			} : null
+		});
+		
+		if (!demand.value.can_write_demand) {
+			console.log('❌ DemandDetailView - Write Demand NOT AVAILABLE. Checking conditions:');
+			console.log('  - extract_data_completed_at:', demand.value.metadata?.extract_data_completed_at);
+			console.log('  - team_object_id:', demand.value.team_object_id);
+			console.log('  - is_write_demand_running:', demand.value.is_write_demand_running);
+			console.log('  - extract_data_workflow_run status:', demand.value.extract_data_workflow_run?.status);
+			console.log('  - extract_data_workflow_run completed_at:', demand.value.extract_data_workflow_run?.completed_at);
+		} else {
+			console.log('✅ DemandDetailView - Write Demand AVAILABLE');
+		}
+	}
+});
+
+// Note: WebSocket subscriptions are automatically managed by the pusher helper
 </script>

@@ -43,26 +43,26 @@ class WorkflowListener extends Model implements AuditableContract
     ];
 
     protected $casts = [
-        'metadata' => 'array',
-        'started_at' => 'datetime',
+        'metadata'     => 'array',
+        'started_at'   => 'datetime',
         'completed_at' => 'datetime',
-        'failed_at' => 'datetime',
+        'failed_at'    => 'datetime',
     ];
 
     public function validate(array $data = null): \Illuminate\Contracts\Validation\Validator
     {
         return Validator::make($data ?: $this->toArray(), [
-            'team_id' => 'required|exists:teams,id',
+            'team_id'         => 'required|exists:teams,id',
             'workflow_run_id' => 'required|exists:workflow_runs,id',
-            'listener_type' => 'required|string',
-            'listener_id' => 'required|integer',
-            'workflow_type' => 'required|string|max:255',
-            'status' => 'required|in:' . implode(',', [
-                self::STATUS_PENDING,
-                self::STATUS_RUNNING,
-                self::STATUS_COMPLETED,
-                self::STATUS_FAILED,
-            ]),
+            'listener_type'   => 'required|string',
+            'listener_id'     => 'required|integer',
+            'workflow_type'   => 'required|string|max:255',
+            'status'          => 'required|in:' . implode(',', [
+                    self::STATUS_PENDING,
+                    self::STATUS_RUNNING,
+                    self::STATUS_COMPLETED,
+                    self::STATUS_FAILED,
+                ]),
         ]);
     }
 
@@ -111,10 +111,10 @@ class WorkflowListener extends Model implements AuditableContract
     public function markAsRunning(): self
     {
         $this->update([
-            'status' => self::STATUS_RUNNING,
-            'started_at' => now(),
+            'status'       => self::STATUS_RUNNING,
+            'started_at'   => now(),
             'completed_at' => null,
-            'failed_at' => null,
+            'failed_at'    => null,
         ]);
 
         return $this;
@@ -123,9 +123,9 @@ class WorkflowListener extends Model implements AuditableContract
     public function markAsCompleted(): self
     {
         $this->update([
-            'status' => self::STATUS_COMPLETED,
+            'status'       => self::STATUS_COMPLETED,
             'completed_at' => now(),
-            'failed_at' => null,
+            'failed_at'    => null,
         ]);
 
         return $this;
@@ -134,8 +134,8 @@ class WorkflowListener extends Model implements AuditableContract
     public function markAsFailed(): self
     {
         $this->update([
-            'status' => self::STATUS_FAILED,
-            'failed_at' => now(),
+            'status'       => self::STATUS_FAILED,
+            'failed_at'    => now(),
             'completed_at' => null,
         ]);
 
@@ -186,19 +186,20 @@ class WorkflowListener extends Model implements AuditableContract
 
     // Static helper methods
     public static function createForListener(
-        Model $listener,
+        Model       $listener,
         WorkflowRun $workflowRun,
-        string $workflowType,
-        array $metadata = []
-    ): self {
+        string      $workflowType,
+        array       $metadata = []
+    ): self
+    {
         return static::create([
-            'team_id' => $listener->team_id,
+            'team_id'         => $listener->team_id,
             'workflow_run_id' => $workflowRun->id,
-            'listener_type' => get_class($listener),
-            'listener_id' => $listener->id,
-            'workflow_type' => $workflowType,
-            'status' => self::STATUS_PENDING,
-            'metadata' => $metadata,
+            'listener_type'   => get_class($listener),
+            'listener_id'     => $listener->id,
+            'workflow_type'   => $workflowType,
+            'status'          => self::STATUS_PENDING,
+            'metadata'        => $metadata,
         ]);
     }
 

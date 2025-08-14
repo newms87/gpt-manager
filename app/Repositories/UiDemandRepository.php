@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\UiDemand;
+use App\Repositories\TeamObjectRepository;
 use App\Resources\UiDemandResource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -39,7 +40,21 @@ class UiDemandRepository extends ActionRepository
         $demand = UiDemand::create($data);
         $this->syncStoredFiles($demand, $data);
         
-        return $demand->fresh(['storedFiles']);
+        // Create team object immediately
+        $teamObjectRepo = app(TeamObjectRepository::class);
+        $teamObject = $teamObjectRepo->createTeamObject(
+            'demand',
+            $demand->title,
+            [
+                'demand_id' => $demand->id,
+                'title' => $demand->title,
+                'description' => $demand->description,
+            ]
+        );
+        
+        $demand->update(['team_object_id' => $teamObject->id]);
+        
+        return $demand->fresh(['storedFiles', 'teamObject']);
     }
 
     protected function updateDemand(UiDemand $demand, array $data): UiDemand

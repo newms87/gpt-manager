@@ -1,5 +1,6 @@
 import type { StoredFile, User } from 'quasar-ui-danx';
 import type { DEMAND_STATUS } from '../../../insurance-demands/config';
+import type { WorkflowRun } from '../../../types';
 
 export interface UiDemand {
   id: number;
@@ -7,11 +8,15 @@ export interface UiDemand {
   description?: string;
   status: typeof DEMAND_STATUS[keyof typeof DEMAND_STATUS];
   metadata?: any;
-  submitted_at?: string;
   completed_at?: string;
   created_at: string;
   updated_at: string;
-  can_be_submitted: boolean;
+  can_extract_data?: boolean;
+  can_write_demand?: boolean;
+  is_extract_data_running?: boolean;
+  is_write_demand_running?: boolean;
+  extract_data_workflow_run?: WorkflowRun;
+  write_demand_workflow_run?: WorkflowRun;
   user?: User;
   files?: StoredFile[];
   files_count?: number;
