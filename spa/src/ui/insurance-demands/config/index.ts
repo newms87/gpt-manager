@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL + "/ui-demands";
 
 export const demandRoutes = useActionRoutes(API_URL, {
   extractData: async (demand: UiDemand) => request.post(`${API_URL}/${demand.id}/extract-data`),
-  writeDemand: async (demand: UiDemand) => request.post(`${API_URL}/${demand.id}/write-demand`)
+  writeDemand: async (demand: UiDemand, data?: any) => request.post(`${API_URL}/${demand.id}/write-demand`, data || {})
 });
 
 // Status constants matching backend UiDemand::STATUS_* constants

@@ -30,14 +30,14 @@ class UiDemandWorkflowService
         return $workflowRun;
     }
 
-    public function writeDemand(UiDemand $uiDemand): WorkflowRun
+    public function writeDemand(UiDemand $uiDemand, ?int $templateId = null, ?string $additionalInstructions = null): WorkflowRun
     {
         if (!$uiDemand->canWriteDemand()) {
             throw new ValidationError('Cannot write demand. Check if extract data is completed and team object exists.');
         }
 
         $workflowDefinition = $this->getWorkflowDefinition('write_demand');
-        $workflowInput = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand');
+        $workflowInput = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand', $templateId, $additionalInstructions);
         
         $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$workflowInput->toArtifact()]);
         
@@ -155,20 +155,32 @@ class UiDemandWorkflowService
         return $workflowInput;
     }
 
-    protected function createWorkflowInputFromTeamObject(UiDemand $uiDemand, TeamObject $teamObject, string $workflowType): WorkflowInput
+    protected function createWorkflowInputFromTeamObject(UiDemand $uiDemand, TeamObject $teamObject, string $workflowType, ?int $templateId = null, ?string $additionalInstructions = null): WorkflowInput
     {
         $workflowInputRepo = app(WorkflowInputRepository::class);
+
+        $contentData = [
+            'demand_id'   => $uiDemand->id,
+            'title'       => $uiDemand->title,
+            'description' => $uiDemand->description,
+        ];
+
+        // Add template stored file ID if provided
+        if ($templateId) {
+            $contentData['template_stored_file_id'] = $templateId;
+        }
+
+        // Add additional instructions if provided
+        if ($additionalInstructions) {
+            $contentData['additional_instructions'] = $additionalInstructions;
+        }
 
         return $workflowInputRepo->createWorkflowInput([
             'name'             => "{$workflowType}: {$uiDemand->title}",
             'description'      => $uiDemand->description,
             'team_object_id'   => $teamObject->id,
             'team_object_type' => $teamObject->type,
-            'content'          => json_encode([
-                'demand_id'   => $uiDemand->id,
-                'title'       => $uiDemand->title,
-                'description' => $uiDemand->description,
-            ]),
+            'content'          => json_encode($contentData),
         ]);
     }
 

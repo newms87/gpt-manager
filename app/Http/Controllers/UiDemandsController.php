@@ -41,7 +41,10 @@ class UiDemandsController extends ActionController
     public function writeDemand(UiDemand $uiDemand)
     {
         try {
-            $workflowRun = app(UiDemandWorkflowService::class)->writeDemand($uiDemand);
+            $templateId = request()->input('template_id');
+            $additionalInstructions = request()->input('additional_instructions');
+            
+            $workflowRun = app(UiDemandWorkflowService::class)->writeDemand($uiDemand, $templateId, $additionalInstructions);
 
             return UiDemandResource::make($uiDemand->fresh([
                 'storedFiles', 

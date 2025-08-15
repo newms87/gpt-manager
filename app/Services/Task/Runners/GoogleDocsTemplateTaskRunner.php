@@ -10,6 +10,7 @@ use App\Repositories\ThreadRepository;
 use App\Services\ContentSearch\ContentSearchRequest;
 use App\Services\ContentSearch\ContentSearchService;
 use Exception;
+use Newms87\Danx\Models\Utilities\StoredFile;
 
 class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
 {
@@ -26,7 +27,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
         // Step 1: Find the Google Doc template ID
         $googleDocFileId = $this->findGoogleDocFileId($inputArtifacts);
         if (!$googleDocFileId) {
-            throw new Exception("No google_doc_file_id found in any input artifact");
+            throw new Exception("No Google Docs file ID found in any input artifact. Expected either 'template_stored_file_id' with StoredFile containing Google Docs URL, or 'google_doc_file_id' with direct file ID.");
         }
 
         // Step 2: Extract variables from the template
@@ -71,6 +72,38 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
             'total_artifacts' => $artifacts->count(),
         ]);
 
+        // First check for template_stored_file_id in json_content
+        foreach($artifacts as $artifact) {
+            if ($artifact->json_content && isset($artifact->json_content['template_stored_file_id'])) {
+                $storedFileId = $artifact->json_content['template_stored_file_id'];
+                static::log('GoogleDocsTemplateTaskRunner: Found template_stored_file_id', [
+                    'stored_file_id' => $storedFileId,
+                ]);
+                
+                // Retrieve the StoredFile and extract Google Doc ID from URL
+                $storedFile = StoredFile::find($storedFileId);
+                if ($storedFile && $storedFile->url) {
+                    // Extract Google Doc ID from URL
+                    if (preg_match('/\/document\/d\/([a-zA-Z0-9_-]+)/', $storedFile->url, $matches)) {
+                        static::log('GoogleDocsTemplateTaskRunner: Extracted Google Doc ID from StoredFile URL', [
+                            'file_id' => $matches[1],
+                            'url' => $storedFile->url,
+                        ]);
+                        return $matches[1];
+                    }
+                    
+                    // If URL is already just the ID
+                    if (preg_match('/^[a-zA-Z0-9_-]{25,60}$/', $storedFile->url)) {
+                        static::log('GoogleDocsTemplateTaskRunner: StoredFile URL is already a Google Doc ID', [
+                            'file_id' => $storedFile->url,
+                        ]);
+                        return $storedFile->url;
+                    }
+                }
+            }
+        }
+
+        // Fall back to existing search logic
         $searchService = app(ContentSearchService::class);
         
         // Build base search request that will be reused

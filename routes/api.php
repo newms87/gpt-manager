@@ -29,6 +29,7 @@ use App\Http\Controllers\Assistant\AssistantActionsController;
 use App\Http\Controllers\Assistant\UniversalAssistantController;
 use App\Http\Controllers\Audit\AuditRequestsController;
 use App\Http\Controllers\Team\TeamsController;
+use App\Http\Controllers\DemandTemplatesController;
 use App\Http\Controllers\UiDemandsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -138,6 +139,12 @@ ActionRoute::routes('audit-requests', new AuditRequestsController);
 ActionRoute::routes('ui-demands', new UiDemandsController, function () {
     Route::post('{uiDemand}/extract-data', [UiDemandsController::class, 'extractData'])->name('ui-demands.extract-data');
     Route::post('{uiDemand}/write-demand', [UiDemandsController::class, 'writeDemand'])->name('ui-demands.write-demand');
+});
+
+// Demand Templates
+ActionRoute::routes('demand-templates', new DemandTemplatesController, function () {
+    Route::get('active', [DemandTemplatesController::class, 'listActive'])->name('demand-templates.active');
+    Route::post('{demandTemplate}/toggle-active', [DemandTemplatesController::class, 'toggleActive'])->name('demand-templates.toggle-active');
 });
 
 // Billing & Subscriptions

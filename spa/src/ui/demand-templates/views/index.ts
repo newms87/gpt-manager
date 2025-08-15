@@ -1,0 +1,1 @@
+export { default as DemandTemplatesView } from './DemandTemplatesView.vue';

@@ -77,6 +77,12 @@
 				/>
 			</div>
 		</div>
+		
+		<!-- Template Selector Dialog -->
+		<DemandTemplateSelector
+			v-model="showTemplateSelector"
+			@confirm="handleWriteDemandWithTemplate"
+		/>
 	</UiMainLayout>
 </template>
 
@@ -99,6 +105,7 @@ import {
 } from "../components/Detail";
 import { useDemands } from "../composables";
 import { demandRoutes } from "../config";
+import { DemandTemplateSelector } from "../../demand-templates/components";
 
 const route = useRoute();
 const router = useRouter();
@@ -118,6 +125,7 @@ const editMode = ref(false);
 const extractingData = ref(false);
 const writingDemand = ref(false);
 const workflowError = ref<string | null>(null);
+const showTemplateSelector = ref(false);
 
 const demandId = computed(() => {
 	const id = route.params.id;
@@ -286,15 +294,22 @@ const handleExtractData = async () => {
 
 const handleWriteDemand = async () => {
 	if (!demand.value) return;
+	
+	// Show template selector dialog
+	showTemplateSelector.value = true;
+};
+
+const handleWriteDemandWithTemplate = async (template: any, instructions: string) => {
+	if (!demand.value) return;
 
 	try {
 		writingDemand.value = true;
 		workflowError.value = null;
-		const updatedDemand = await writeDemand(demand.value);
+		const updatedDemand = await writeDemand(demand.value, template.stored_file?.id || template.stored_file_id, instructions);
 		
 		// Store the updated demand using storeObject for reactive updates
 		demand.value = storeObject(updatedDemand);
-		console.log('Write demand started, demand updated:', {
+		console.log('Write demand started with template, demand updated:', {
 			id: demand.value.id,
 			write_demand_workflow_run: demand.value.write_demand_workflow_run,
 			is_write_demand_running: demand.value.is_write_demand_running

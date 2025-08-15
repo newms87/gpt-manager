@@ -28,6 +28,23 @@ class WorkflowInputToArtifactMapper
             ];
         }
 
+        // Parse content JSON to extract template_stored_file_id and additional_instructions
+        $contentData = json_decode($this->workflowInput->content, true);
+        
+        if ($contentData) {
+            // Add template_stored_file_id to json_content if present
+            if (isset($contentData['template_stored_file_id'])) {
+                $jsonContent = $jsonContent ?? [];
+                $jsonContent['template_stored_file_id'] = $contentData['template_stored_file_id'];
+            }
+            
+            // Add additional_instructions to json_content if present
+            if (isset($contentData['additional_instructions'])) {
+                $jsonContent = $jsonContent ?? [];
+                $jsonContent['additional_instructions'] = $contentData['additional_instructions'];
+            }
+        }
+
         // Produce the artifact
         $artifact = Artifact::create([
             'name'         => $this->workflowInput->name,

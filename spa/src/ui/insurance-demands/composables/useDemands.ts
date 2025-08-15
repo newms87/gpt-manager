@@ -111,7 +111,7 @@ export function useDemands() {
     }
   };
 
-  const writeDemand = async (idOrDemand: number | UiDemand) => {
+  const writeDemand = async (idOrDemand: number | UiDemand, templateId?: string, additionalInstructions?: string) => {
     try {
       let demand: UiDemand;
       if (typeof idOrDemand === 'number') {
@@ -124,7 +124,15 @@ export function useDemands() {
         demand = idOrDemand;
       }
       
-      const response = await demandRoutes.writeDemand(demand);
+      const data: any = {};
+      if (templateId) {
+        data.template_id = templateId;
+      }
+      if (additionalInstructions) {
+        data.additional_instructions = additionalInstructions;
+      }
+      
+      const response = await demandRoutes.writeDemand(demand, data);
       const updatedDemand = storeObject(response);
       
       // Update the demand in the array if it exists
