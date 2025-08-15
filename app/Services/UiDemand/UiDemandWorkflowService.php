@@ -21,12 +21,12 @@ class UiDemandWorkflowService
         }
 
         $workflowDefinition = $this->getWorkflowDefinition('extract_data');
-        $workflowInput = $this->createWorkflowInputFromDemand($uiDemand, 'Extract Data');
-        
+        $workflowInput      = $this->createWorkflowInputFromDemand($uiDemand, 'Extract Data');
+
         $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$workflowInput->toArtifact()]);
-        
+
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
-        
+
         return $workflowRun;
     }
 
@@ -37,12 +37,12 @@ class UiDemandWorkflowService
         }
 
         $workflowDefinition = $this->getWorkflowDefinition('write_demand');
-        $workflowInput = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand', $templateId, $additionalInstructions);
-        
+        $workflowInput      = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand', $templateId, $additionalInstructions);
+
         $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$workflowInput->toArtifact()]);
-        
+
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
-        
+
         return $workflowRun;
     }
 
@@ -51,11 +51,11 @@ class UiDemandWorkflowService
         $uiDemand = UiDemand::whereHas('workflowRuns', function ($query) use ($workflowRun) {
             $query->where('workflow_runs.id', $workflowRun->id);
         })->first();
-        
+
         if (!$uiDemand) {
             return;
         }
-        
+
         if ($workflowRun->isCompleted()) {
             $this->handleWorkflowSuccess($uiDemand, $workflowRun);
         } else {
@@ -65,36 +65,36 @@ class UiDemandWorkflowService
 
     protected function handleWorkflowSuccess(UiDemand $uiDemand, WorkflowRun $workflowRun): void
     {
-        $workflowName = $workflowRun->workflowDefinition->name;
+        $workflowName    = $workflowRun->workflowDefinition->name;
         $outputArtifacts = $workflowRun->collectFinalOutputArtifacts();
-        
+
         if ($workflowName === config('ui-demands.workflows.extract_data')) {
             $metadata = [
                 'extract_data_completed_at' => now()->toIso8601String(),
-                'workflow_run_id' => $workflowRun->id,
+                'workflow_run_id'           => $workflowRun->id,
             ];
-            
+
             $uiDemand->update([
-                'status' => UiDemand::STATUS_DRAFT,
+                'status'   => UiDemand::STATUS_DRAFT,
                 'metadata' => array_merge($uiDemand->metadata ?? [], $metadata),
             ]);
-            
+
         } elseif ($workflowName === config('ui-demands.workflows.write_demand')) {
             $googleDocsUrl = $this->extractGoogleDocsUrl($outputArtifacts);
-            
+
             $metadata = [
                 'write_demand_completed_at' => now()->toIso8601String(),
-                'workflow_run_id' => $workflowRun->id,
+                'workflow_run_id'           => $workflowRun->id,
             ];
-            
+
             if ($googleDocsUrl) {
                 $storedFile = $this->createStoredFileForGoogleDocs($googleDocsUrl, $uiDemand);
                 $uiDemand->storedFiles()->attach($storedFile->id, ['category' => 'demand_output']);
                 $metadata['google_docs_url'] = $googleDocsUrl;
             }
-            
+
             $uiDemand->update([
-                'status' => UiDemand::STATUS_DRAFT, // Stay as Draft until manually published
+                'status'   => UiDemand::STATUS_DRAFT, // Stay as Draft until manually published
                 'metadata' => array_merge($uiDemand->metadata ?? [], $metadata),
             ]);
         }
@@ -103,13 +103,13 @@ class UiDemandWorkflowService
     protected function handleWorkflowFailure(UiDemand $uiDemand, WorkflowRun $workflowRun): void
     {
         $metadata = array_merge($uiDemand->metadata ?? [], [
-            'failed_at' => now()->toIso8601String(),
-            'error' => $workflowRun->status,
+            'failed_at'       => now()->toIso8601String(),
+            'error'           => $workflowRun->status,
             'workflow_run_id' => $workflowRun->id,
         ]);
-        
+
         $uiDemand->update([
-            'status' => UiDemand::STATUS_FAILED,
+            'status'   => UiDemand::STATUS_FAILED,
             'metadata' => $metadata,
         ]);
     }
@@ -117,22 +117,22 @@ class UiDemandWorkflowService
     protected function getWorkflowDefinition(string $workflowType): WorkflowDefinition
     {
         $workflowName = config("ui-demands.workflows.{$workflowType}");
-        
+
         if (!$workflowName) {
             throw new ValidationError("Workflow configuration not found for type: {$workflowType}");
         }
-        
+
         $workflowDefinition = WorkflowDefinition::where('team_id', team()->id)
             ->where('name', $workflowName)
             ->first();
-            
+
         if (!$workflowDefinition) {
             throw new ValidationError("Workflow '{$workflowName}' not found");
         }
-        
+
         return $workflowDefinition;
     }
-    
+
     protected function createWorkflowInputFromDemand(UiDemand $uiDemand, string $workflowType): WorkflowInput
     {
         $workflowInputRepo = app(WorkflowInputRepository::class);
@@ -141,7 +141,7 @@ class UiDemandWorkflowService
             'name'             => "$workflowType: $uiDemand->title",
             'description'      => $uiDemand->description,
             'team_object_id'   => $uiDemand->team_object_id,
-            'team_object_type' => 'demand',
+            'team_object_type' => 'Demand',
             'content'          => json_encode([
                 'demand_id'   => $uiDemand->id,
                 'title'       => $uiDemand->title,
@@ -167,7 +167,10 @@ class UiDemandWorkflowService
 
         // Add template stored file ID if provided
         if ($templateId) {
-            $contentData['template_stored_file_id'] = $templateId;
+            $template = \App\Models\DemandTemplate::find($templateId);
+            if ($template && $template->stored_file_id) {
+                $contentData['template_stored_file_id'] = $template->stored_file_id;
+            }
         }
 
         // Add additional instructions if provided
@@ -183,7 +186,6 @@ class UiDemandWorkflowService
             'content'          => json_encode($contentData),
         ]);
     }
-
 
 
     protected function extractGoogleDocsUrl($artifacts): ?string

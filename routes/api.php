@@ -21,15 +21,15 @@ use App\Http\Controllers\Ai\WorkflowDefinitionsController;
 use App\Http\Controllers\Ai\WorkflowInputsController;
 use App\Http\Controllers\Ai\WorkflowNodesController;
 use App\Http\Controllers\Ai\WorkflowRunsController;
-use App\Http\Controllers\Api\BillingController;
 use App\Http\Controllers\Api\Auth\OAuthController;
+use App\Http\Controllers\Api\BillingController;
 use App\Http\Controllers\Api\SubscriptionPlansController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Assistant\AssistantActionsController;
 use App\Http\Controllers\Assistant\UniversalAssistantController;
 use App\Http\Controllers\Audit\AuditRequestsController;
-use App\Http\Controllers\Team\TeamsController;
 use App\Http\Controllers\DemandTemplatesController;
+use App\Http\Controllers\Team\TeamsController;
 use App\Http\Controllers\UiDemandsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -120,7 +120,7 @@ Route::prefix('oauth')->group(function () {
     Route::get('{service}/status', [OAuthController::class, 'status']);
     Route::post('{service}/refresh', [OAuthController::class, 'refresh']);
     Route::delete('{service}/revoke', [OAuthController::class, 'revoke']);
-    
+
     // Auth token management
     Route::get('tokens', [OAuthController::class, 'index']);
     Route::post('api-keys', [OAuthController::class, 'storeApiKey']);
@@ -142,10 +142,7 @@ ActionRoute::routes('ui-demands', new UiDemandsController, function () {
 });
 
 // Demand Templates
-ActionRoute::routes('demand-templates', new DemandTemplatesController, function () {
-    Route::get('active', [DemandTemplatesController::class, 'listActive'])->name('demand-templates.active');
-    Route::post('{demandTemplate}/toggle-active', [DemandTemplatesController::class, 'toggleActive'])->name('demand-templates.toggle-active');
-});
+ActionRoute::routes('demand-templates', new DemandTemplatesController);
 
 // Billing & Subscriptions
 Route::prefix('billing')->group(function () {

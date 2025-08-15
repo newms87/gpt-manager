@@ -22,7 +22,7 @@
             <component
               :is="status.icon"
               class="w-4 h-4"
-              :class="status.completed || status.isActive ? 'text-white' : 'text-slate-400'"
+              :class="status.failed ? 'text-white' : status.completed || status.isActive ? 'text-white' : 'text-slate-400'"
             />
           </div>
           
@@ -61,7 +61,7 @@
 
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
-            <p class="font-medium text-slate-800">{{ status.label }}</p>
+            <p class="font-medium" :class="status.failed ? 'text-red-700' : 'text-slate-800'">{{ status.label }}</p>
             <span 
               v-if="status.isActive && status.progress != null"
               class="text-xs font-semibold text-blue-600 ml-2"
@@ -92,7 +92,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { FaSolidCheck, FaSolidClock, FaSolidSpinner } from "danx-icon";
+import { FaSolidCheck, FaSolidClock, FaSolidSpinner, FaSolidTriangleExclamation } from "danx-icon";
 import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
 import { DEMAND_STATUS } from "../../config";
@@ -124,9 +124,15 @@ const statusTimeline = computed(() => {
                              props.demand.write_demand_workflow_run.progress_percent > 0 && 
                              props.demand.write_demand_workflow_run.progress_percent < 100;
 
-  // Determine completion states
-  const extractDataCompleted = props.demand.extract_data_workflow_run?.progress_percent === 100;
-  const writeDemandCompleted = props.demand.write_demand_workflow_run?.progress_percent === 100;
+  // Determine completion states - must have 100% progress AND status "Completed"
+  const extractDataCompleted = props.demand.extract_data_workflow_run?.progress_percent === 100 && 
+                               props.demand.extract_data_workflow_run?.status === "Completed";
+  const writeDemandCompleted = props.demand.write_demand_workflow_run?.progress_percent === 100 && 
+                              props.demand.write_demand_workflow_run?.status === "Completed";
+                              
+  // Determine if workflows have failed
+  const extractDataFailed = props.demand.extract_data_workflow_run?.status === "Failed";
+  const writeDemandFailed = props.demand.write_demand_workflow_run?.status === "Failed";
   const hasFiles = props.demand.files && props.demand.files.length > 0;
   
   // Determine if steps should be grayed out
@@ -139,6 +145,8 @@ const statusTimeline = computed(() => {
     isWriteDemandActive,
     extractDataCompleted,
     writeDemandCompleted,
+    extractDataFailed,
+    writeDemandFailed,
     extractDataGrayed,
     writeDemandGrayed
   });
@@ -152,6 +160,7 @@ const statusTimeline = computed(() => {
       bgColor: "bg-slate-500",
       activeBgColor: "bg-slate-400",
       completed: true,
+      failed: false,
       isActive: false,
       progress: null,
       date: props.demand.created_at,
@@ -159,26 +168,28 @@ const statusTimeline = computed(() => {
     },
     {
       status: "extract-data",
-      label: "Extract Data",
-      icon: extractDataCompleted ? FaSolidCheck : FaSolidSpinner,
-      bgColor: "bg-blue-500",
-      activeBgColor: "bg-blue-400",
+      label: extractDataFailed ? "Extract Data (Failed)" : "Extract Data",
+      icon: extractDataCompleted ? FaSolidCheck : extractDataFailed ? FaSolidTriangleExclamation : FaSolidSpinner,
+      bgColor: extractDataFailed ? "bg-red-500" : "bg-blue-500",
+      activeBgColor: extractDataFailed ? "bg-red-400" : "bg-blue-400",
       completed: extractDataCompleted,
+      failed: extractDataFailed,
       isActive: isExtractDataActive,
       progress: isExtractDataActive ? props.demand.extract_data_workflow_run?.progress_percent : null,
-      date: extractDataCompleted ? props.demand.extract_data_workflow_run?.completed_at : null,
+      date: extractDataCompleted ? props.demand.extract_data_workflow_run?.completed_at : extractDataFailed ? props.demand.extract_data_workflow_run?.failed_at : null,
       grayed: extractDataGrayed
     },
     {
       status: "write-demand",
-      label: "Write Demand",
-      icon: writeDemandCompleted ? FaSolidCheck : FaSolidSpinner,
-      bgColor: "bg-green-500", 
-      activeBgColor: "bg-green-400",
+      label: writeDemandFailed ? "Write Demand (Failed)" : "Write Demand",
+      icon: writeDemandCompleted ? FaSolidCheck : writeDemandFailed ? FaSolidTriangleExclamation : FaSolidSpinner,
+      bgColor: writeDemandFailed ? "bg-red-500" : "bg-green-500", 
+      activeBgColor: writeDemandFailed ? "bg-red-400" : "bg-green-400",
       completed: writeDemandCompleted,
+      failed: writeDemandFailed,
       isActive: isWriteDemandActive,
       progress: isWriteDemandActive ? props.demand.write_demand_workflow_run?.progress_percent : null,
-      date: writeDemandCompleted ? props.demand.write_demand_workflow_run?.completed_at : null,
+      date: writeDemandCompleted ? props.demand.write_demand_workflow_run?.completed_at : writeDemandFailed ? props.demand.write_demand_workflow_run?.failed_at : null,
       grayed: writeDemandGrayed
     },
     {
@@ -188,6 +199,7 @@ const statusTimeline = computed(() => {
       bgColor: "bg-green-500",
       activeBgColor: "bg-green-400",
       completed: props.demand.status === DEMAND_STATUS.COMPLETED,
+      failed: false,
       isActive: false,
       progress: null,
       date: props.demand.completed_at,

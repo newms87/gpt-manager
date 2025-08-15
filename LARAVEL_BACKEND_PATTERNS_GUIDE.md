@@ -913,4 +913,61 @@ class ServiceTest extends AuthenticatedTestCase
 }
 ```
 
+---
+
+## 🚨 CRITICAL TESTING STANDARDS
+
+### PROHIBITED PRACTICES
+
+#### ❌ **NEVER USE STATIC MOCKING**
+```php
+// ❌ NEVER DO THIS - BREAKS TEST ISOLATION
+$mock = Mockery::mock('alias:' . SomeStaticService::class);
+$mock->shouldReceive('method')->andReturn('value');
+```
+
+**Why this is forbidden:**
+- **Breaks test isolation** - affects other tests when run in batch
+- **Global state pollution** - static mocks persist across tests  
+- **Non-standard** - other tests use real services or proper DI
+- **Hard to debug** - causes mysterious failures in test suites
+
+#### ✅ **STANDARD ALTERNATIVES**
+
+**For Integration Testing:**
+```php
+// ✅ Use real services - this is an integration test
+$result = SomeStaticService::method($data);
+$this->assertEquals('expected', $result);
+```
+
+**For Unit Testing:**
+```php
+// ✅ Use dependency injection and mock the dependency
+$mockService = $this->mock(SomeService::class);
+$mockService->shouldReceive('method')->andReturn('value');
+
+$systemUnderTest = new ClassUnderTest($mockService);
+```
+
+**For Refactoring Static Dependencies:**
+```php
+// ✅ Inject dependencies instead of using static calls
+class SomeService {
+    public function __construct(private WorkflowRunner $workflowRunner) {}
+    
+    public function doWork() {
+        return $this->workflowRunner->start(); // Not static
+    }
+}
+```
+
+### TEST ISOLATION REQUIREMENTS
+
+- **Each test must run independently** - order should not matter
+- **Use real database** - don't mock database interactions 
+- **Only mock external APIs** - everything else should be real
+- **Use factories extensively** - for consistent test data
+- **Follow Given-When-Then** - clear test structure
+
 This guide ensures consistent, maintainable, and scalable Laravel backend code following the GPT Manager application patterns.

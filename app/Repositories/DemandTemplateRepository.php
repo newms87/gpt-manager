@@ -13,9 +13,7 @@ class DemandTemplateRepository extends ActionRepository
 
     public function query(): Builder
     {
-        return parent::query()
-            ->with(['storedFile', 'user'])
-            ->where('team_id', team()->id);
+        return parent::query()->where('team_id', team()?->id ?: 0)->with(['storedFile', 'user']);
     }
 
     /**
@@ -24,25 +22,11 @@ class DemandTemplateRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         $service = app(DemandTemplateService::class);
-        
+
         return match ($action) {
             'create' => $service->createTemplate($data ?? []),
             'update' => $service->updateTemplate($model, $data ?? []),
-            'delete' => $model->delete(),
             default => parent::applyAction($action, $model, $data)
         };
-    }
-
-    public function getActiveTemplates()
-    {
-        return $this->query()
-            ->active()
-            ->orderBy('name')
-            ->get();
-    }
-
-    public function toggleActive(DemandTemplate $template): DemandTemplate
-    {
-        return app(DemandTemplateService::class)->toggleActive($template);
     }
 }

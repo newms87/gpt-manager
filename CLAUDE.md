@@ -182,6 +182,16 @@ Service-Repository-Controller pattern with danx integration.
 - Check for proper error handling
 - Ensure proper loading states
 
+#### 🚨 **CRITICAL: NEVER USE STATIC MOCKING**
+```php
+// ❌ FORBIDDEN - Breaks test isolation and causes mysterious failures
+$mock = Mockery::mock('alias:' . StaticService::class);
+```
+- **Breaks test isolation** - tests fail when run in batch but pass individually
+- **Global state pollution** - affects other tests unpredictably
+- **Use real services instead** - for integration testing
+- **Use dependency injection** - for proper unit testing
+
 ### Troubleshooting Test Failures
 
 If tests are failing unexpectedly (especially with dependency errors or missing methods from the danx library):

@@ -110,13 +110,12 @@ class UiDemand extends Model implements Auditable
 
     public function canWriteDemand(): bool
     {
-        // Check if extract data workflow is completed (either via metadata or WorkflowRun completion)
-        $extractDataCompleted = isset($this->metadata['extract_data_completed_at']) ||
-                               $this->getLatestExtractDataWorkflowRun()?->isCompleted();
-        
-        return $this->team_object_id &&
-            $extractDataCompleted &&
-            !$this->isWriteDemandRunning();
+        // Must have team_object_id and no write demand workflow running
+        if (!$this->team_object_id || $this->isWriteDemandRunning()) {
+            return false;
+        }
+
+        return $this->getLatestExtractDataWorkflowRun()?->isCompleted() ?? false;
     }
 
     public function isExtractDataRunning(): bool
@@ -179,22 +178,22 @@ class UiDemand extends Model implements Auditable
     public function getExtractDataProgress(): float
     {
         $latestWorkflow = $this->getLatestExtractDataWorkflowRun();
-        
+
         if (!$latestWorkflow) {
             return 0.0;
         }
-        
+
         return $latestWorkflow->calculateProgress();
     }
 
     public function getWriteDemandProgress(): float
     {
         $latestWorkflow = $this->getLatestWriteDemandWorkflowRun();
-        
+
         if (!$latestWorkflow) {
             return 0.0;
         }
-        
+
         return $latestWorkflow->calculateProgress();
     }
 

@@ -3,7 +3,6 @@
 namespace App\Repositories;
 
 use App\Models\UiDemand;
-use App\Repositories\TeamObjectRepository;
 use App\Resources\UiDemandResource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -21,7 +20,7 @@ class UiDemandRepository extends ActionRepository
 
     public function applyAction(string $action, Model|null|array $model = null, ?array $data = null)
     {
-        switch ($action) {
+        switch($action) {
             case 'create':
                 return UiDemandResource::make($this->createDemand($data));
             case 'update':
@@ -35,25 +34,25 @@ class UiDemandRepository extends ActionRepository
     {
         $data['team_id'] = team()->id;
         $data['user_id'] = auth()->id();
-        $data['status'] = UiDemand::STATUS_DRAFT;
+        $data['status']  = UiDemand::STATUS_DRAFT;
 
         $demand = UiDemand::create($data);
         $this->syncStoredFiles($demand, $data);
-        
+
         // Create team object immediately
         $teamObjectRepo = app(TeamObjectRepository::class);
-        $teamObject = $teamObjectRepo->createTeamObject(
-            'demand',
+        $teamObject     = $teamObjectRepo->createTeamObject(
+            'Demand',
             $demand->title,
             [
-                'demand_id' => $demand->id,
-                'title' => $demand->title,
+                'demand_id'   => $demand->id,
+                'title'       => $demand->title,
                 'description' => $demand->description,
             ]
         );
-        
+
         $demand->update(['team_object_id' => $teamObject->id]);
-        
+
         return $demand->fresh(['storedFiles', 'teamObject']);
     }
 
@@ -61,6 +60,7 @@ class UiDemandRepository extends ActionRepository
     {
         $demand->update($data);
         $this->syncStoredFiles($demand, $data);
+
         return $demand->fresh(['storedFiles']);
     }
 

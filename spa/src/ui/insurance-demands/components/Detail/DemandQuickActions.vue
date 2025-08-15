@@ -6,11 +6,9 @@
 			</h3>
 		</template>
 
-		<div class="space-y-2">
+		<div class="flex flex-col space-y-2">
 			<ActionButton
-				v-if="demand?.status === DEMAND_STATUS.DRAFT"
 				type="edit"
-				class="w-full justify-start"
 				label="Edit Details"
 				@click="$emit('edit')"
 			/>
@@ -19,16 +17,15 @@
 				v-if="demand"
 				:demand="demand"
 				size="md"
-				button-class="flex-col space-y-2 space-x-0"
-				button-item-class="w-full justify-start"
 				:loading-states="loadingStates"
+				class="w-full flex flex-col space-y-2"
 				@extract-data="$emit('extract-data')"
 				@write-demand="$emit('write-demand')"
 			/>
 
 			<ActionButton
 				type="trash"
-				class="w-full justify-start"
+				color="red"
 				label="Delete Demand"
 				@click="$emit('delete')"
 			/>
@@ -37,8 +34,8 @@
 </template>
 
 <script setup lang="ts">
-import { watchEffect } from "vue";
 import { ActionButton } from "quasar-ui-danx";
+import { watchEffect } from "vue";
 import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
 import { DEMAND_STATUS } from "../../config";
@@ -64,7 +61,7 @@ defineEmits<{
 
 // Debug logging for DemandQuickActions state
 watchEffect(() => {
-	console.log('🔍 DemandQuickActions - Demand State Debug:', {
+	console.log("🔍 DemandQuickActions - Demand State Debug:", {
 		demand_exists: !!props.demand,
 		demand_id: props.demand?.id,
 		demand_status: props.demand?.status,
@@ -73,9 +70,9 @@ watchEffect(() => {
 		loading_states: props.loadingStates,
 		full_demand: props.demand
 	});
-	
+
 	if (props.demand) {
-		console.log('🔍 DemandQuickActions - Demand Object Details:', {
+		console.log("🔍 DemandQuickActions - Demand Object Details:", {
 			can_extract_data: props.demand.can_extract_data,
 			can_write_demand: props.demand.can_write_demand,
 			metadata: props.demand.metadata,

@@ -11,7 +11,9 @@ class DemandTemplateService
 {
     public function __construct(
         private readonly GoogleDocsFileService $googleDocsFileService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Create a new demand template
@@ -24,10 +26,10 @@ class DemandTemplateService
         return DB::transaction(function () use ($data) {
             // Handle Google Docs template URL if provided
             if (isset($data['template_url']) && !empty($data['template_url'])) {
-                $storedFileId = $this->googleDocsFileService->createFromUrl($data['template_url'], $data['name']);
+                $storedFileId           = $this->googleDocsFileService->createFromUrl($data['template_url'], $data['name']);
                 $data['stored_file_id'] = $storedFileId;
             }
-            
+
             unset($data['template_url']);
 
             $template = new DemandTemplate($data);
@@ -48,30 +50,15 @@ class DemandTemplateService
         return DB::transaction(function () use ($template, $data) {
             // Handle template_url by creating StoredFile if provided
             if (isset($data['template_url']) && !empty($data['template_url'])) {
-                $name = $data['name'] ?? $template->name;
-                $storedFileId = $this->googleDocsFileService->createFromUrl($data['template_url'], $name);
+                $name                   = $data['name'] ?? $template->name;
+                $storedFileId           = $this->googleDocsFileService->createFromUrl($data['template_url'], $name);
                 $data['stored_file_id'] = $storedFileId;
             }
-            
+
             unset($data['template_url']);
 
             $template->fill($data);
             $template->validate();
-            $template->save();
-
-            return $template;
-        });
-    }
-
-    /**
-     * Toggle the active status of a demand template
-     */
-    public function toggleActive(DemandTemplate $template): DemandTemplate
-    {
-        $this->validateOwnership($template);
-
-        return DB::transaction(function () use ($template) {
-            $template->is_active = !$template->is_active;
             $template->save();
 
             return $template;

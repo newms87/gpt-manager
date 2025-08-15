@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue';
-import { storeObjects, storeObject } from 'quasar-ui-danx';
+import { storeObjects, storeObject, FlashMessages } from 'quasar-ui-danx';
 import { demandRoutes, DEMAND_STATUS } from '../config';
 import type { UiDemand } from '../../shared/types';
 
@@ -96,6 +96,14 @@ export function useDemands() {
       }
       
       const response = await demandRoutes.extractData(demand);
+      
+      // Check if response is an error (has error or message fields indicating failure)
+      if (response?.error || response?.message?.includes('Failed')) {
+        const errorMessage = response?.error || response?.message || 'Failed to extract data';
+        FlashMessages.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+      
       const updatedDemand = storeObject(response);
       
       // Update the demand in the array if it exists
@@ -106,7 +114,11 @@ export function useDemands() {
       
       return updatedDemand;
     } catch (err: any) {
-      error.value = err.message || 'Failed to extract data';
+      const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || 'Failed to extract data';
+      error.value = errorMessage;
+      FlashMessages.error(errorMessage);
+      
+      // Don't update the demand object with error response - just throw the error
       throw err;
     }
   };
@@ -133,6 +145,14 @@ export function useDemands() {
       }
       
       const response = await demandRoutes.writeDemand(demand, data);
+      
+      // Check if response is an error (has error or message fields indicating failure)
+      if (response?.error || response?.message?.includes('Failed')) {
+        const errorMessage = response?.error || response?.message || 'Failed to write demand';
+        FlashMessages.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+      
       const updatedDemand = storeObject(response);
       
       // Update the demand in the array if it exists
@@ -143,7 +163,11 @@ export function useDemands() {
       
       return updatedDemand;
     } catch (err: any) {
-      error.value = err.message || 'Failed to write demand';
+      const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || 'Failed to write demand';
+      error.value = errorMessage;
+      FlashMessages.error(errorMessage);
+      
+      // Don't update the demand object with error response - just throw the error
       throw err;
     }
   };

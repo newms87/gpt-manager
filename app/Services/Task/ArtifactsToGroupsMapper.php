@@ -298,12 +298,31 @@ class ArtifactsToGroupsMapper
             if ($childSelector['type'] === 'object') {
                 $childGroups[$propertyName] = $this->resolveGroupsByFragment($childData, $childSelector);
             } elseif ($childSelector['type'] === 'array') {
-                foreach($childData as $item) {
-                    if (is_scalar($item)) {
+                // Check if this is an associative array that should be treated as a single-element array
+                // This happens when an array with one element gets converted to an object
+                if ($this->isAssociativeArray($childData) && isset($childSelector['children'])) {
+                    // Treat this associative array as a single-element array
+                    $item = $childData;
+                    if (!$item || is_scalar($item)) {
                         $childGroups[$propertyName][static::getGroupKey($item)] = $item;
                     } else {
                         $resolvedGroups             = $this->resolveGroupsByFragment($item, $childSelector);
                         $childGroups[$propertyName] = ArrayHelper::mergeArraysRecursivelyUnique($resolvedGroups, $childGroups[$propertyName] ?? []);
+                    }
+                } else {
+                    // Normal array processing
+                    foreach($childData as $item) {
+                        if ($item === null) {
+                            // Skip null items entirely
+                            continue;
+                        }
+                        
+                        if (!$item || is_scalar($item)) {
+                            $childGroups[$propertyName][static::getGroupKey($item)] = $item;
+                        } else {
+                            $resolvedGroups             = $this->resolveGroupsByFragment($item, $childSelector);
+                            $childGroups[$propertyName] = ArrayHelper::mergeArraysRecursivelyUnique($resolvedGroups, $childGroups[$propertyName] ?? []);
+                        }
                     }
                 }
             } else {
@@ -348,6 +367,19 @@ class ArtifactsToGroupsMapper
         }
 
         return $groups;
+    }
+
+    /**
+     * Check if an array is associative (has string keys and looks like an object that should be treated as a single-element array)
+     */
+    protected function isAssociativeArray(array $data): bool
+    {
+        if (empty($data)) {
+            return false;
+        }
+        
+        // If it has non-numeric keys, it's associative
+        return array_keys($data) !== range(0, count($data) - 1);
     }
 
     /**
