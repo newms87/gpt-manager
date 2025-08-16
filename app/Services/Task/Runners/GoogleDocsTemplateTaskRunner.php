@@ -6,8 +6,6 @@ use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\Agent\AgentThread;
 use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
-use App\Services\ContentSearch\ContentSearchRequest;
-use App\Services\ContentSearch\ContentSearchService;
 use Exception;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
@@ -17,10 +15,6 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
 
     public function run(): void
     {
-        static::log('GoogleDocsTemplateTaskRunner: Starting', [
-            'task_process_id' => $this->taskProcess->id,
-        ]);
-
         // Step 1: Find the Google Doc template stored file
         $storedFile = $this->findGoogleDocStoredFile();
         if (!$storedFile) {
@@ -37,27 +31,27 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
         $googleDocsApi     = app(GoogleDocsApi::class);
         $templateVariables = $googleDocsApi->extractTemplateVariables($googleDocFileId);
 
-        static::log('GoogleDocsTemplateTaskRunner: Template variables extracted', [
+        static::log('Template variables extracted', [
             'variables' => $templateVariables,
         ]);
 
-        $agentThread    = $this->setupAgentThread($inputArtifacts);
-        $refinedMapping = $this->refineVariableMappingWithAgent($agentThread, $templateVariables);
+        $agentThread     = $this->setupAgentThread($this->taskProcess->inputArtifacts);
+        $variableMapping = $this->executeVariableMappingWithAgent($agentThread, $templateVariables);
 
         // Step 6: Create document from template
         $newDocument = $googleDocsApi->createDocumentFromTemplate(
             $googleDocFileId,
-            $refinedMapping['variables'],
-            $refinedMapping['title']
+            $variableMapping['variables'],
+            $variableMapping['title']
         );
 
-        static::log('GoogleDocsTemplateTaskRunner: Document created', [
+        static::log('Document created', [
             'document_id' => $newDocument['document_id'],
             'url'         => $newDocument['url'],
         ]);
 
         // Create output artifact
-        $artifact = $this->createOutputArtifact($newDocument, $refinedMapping);
+        $artifact = $this->createOutputArtifact($newDocument, $variableMapping);
         $this->complete([$artifact]);
     }
 
@@ -75,74 +69,9 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Find Google Doc template as StoredFile from artifacts, text content, or directives
-     */
-    protected function findGoogleDocStoredFile(): ?StoredFile
-    {
-        $artifacts = $this->taskProcess->inputArtifacts;
-        static::log('GoogleDocsTemplateTaskRunner: Starting template search', [
-            'total_artifacts' => $artifacts->count(),
-        ]);
-
-        $contentSearchRequest = ContentSearchRequest::create()
-            ->withLlmModel(config('google-docs.file_id_detection_model'))
-            ->withFieldPath('template_stored_file_id')
-            ->withNaturalLanguageQuery('Given the context, identify the Google Doc ID if it exists in the context, otherwise do not respond with a google doc ID')
-            ->withRegexPattern("/[a-zA-Z0-9_-]{25,60}/")
-            ->withTaskDefinition($this->taskDefinition)
-            ->searchArtifacts($artifacts);
-
-        $templateStoredFileId = app(ContentSearchService::class)->search($contentSearchRequest);
-
-        // Step 1: Check artifacts for template_stored_file_id
-        foreach($artifacts as $artifact) {
-            $storedFileId = $artifact->json_content['template_stored_file_id'] ?? $artifact->meta['template_stored_file_id'] ?? null;
-
-            if ($storedFileId) {
-                static::log('GoogleDocsTemplateTaskRunner: Found template_stored_file_id: ' . $storedFileId);
-
-                $storedFile = StoredFile::find($storedFileId);
-                if ($storedFile) {
-                    static::log('GoogleDocsTemplateTaskRunner: Retrieved StoredFile', [
-                        'filename' => $storedFile->filename,
-                        'url'      => $storedFile->url,
-                    ]);
-
-                    return $storedFile;
-                }
-            }
-        }
-
-        // Step 2: Search for Google Doc ID in text_content using regex
-        $googleDocId = $this->searchForGoogleDocIdInArtifacts($artifacts);
-        if ($googleDocId) {
-            // Validate with agent that this is the template we're looking for
-            if ($this->checkForGoogleDocIdInContext($googleDocId, $artifacts, 'artifacts')) {
-                return $this->findOrCreateStoredFileForGoogleDoc($googleDocId);
-            }
-        }
-
-        // Step 3: Check directives for Google Doc ID
-        $directives = $this->taskDefinition->taskDefinitionDirectives()->with('directive')->get();
-        if ($directives->isNotEmpty()) {
-            $googleDocId = $this->searchForGoogleDocIdInDirectives($directives);
-            if ($googleDocId) {
-                // Validate with agent that this is the template we're looking for
-                if ($this->checkForGoogleDocIdInContext($googleDocId, $directives, 'directives')) {
-                    return $this->findOrCreateStoredFileForGoogleDoc($googleDocId);
-                }
-            }
-        }
-
-        static::log('GoogleDocsTemplateTaskRunner: No template found');
-
-        return null;
-    }
-
-    /**
      * Refine variable mapping and get document title using agent
      */
-    protected function refineVariableMappingWithAgent(AgentThread $agentThread, array $templateVariables): array
+    protected function executeVariableMappingWithAgent(AgentThread $agentThread, array $templateVariables): array
     {
         $templateVariablesList = implode(', ', array_map(fn($v) => "{{$v}}", $templateVariables));
 
@@ -186,7 +115,7 @@ INSTRUCTIONS;
             throw new Exception("Agent response was not in the expected JSON format");
         }
 
-        static::log('GoogleDocsTemplateTaskRunner: Agent refinement completed', [
+        static::log('Agent refinement completed', [
             'title'           => $response['title'],
             'variables_count' => count($response['variables']),
         ]);
@@ -216,139 +145,5 @@ INSTRUCTIONS;
                 'mapping'  => $refinedMapping,
             ],
         ]);
-    }
-
-    protected function hasGoogleDocIdMatch($text): bool
-    {
-        return preg_match('/[a-zA-Z0-9_-]{25,60}/', $text);
-    }
-
-    /**
-     * Search for Google Doc ID in artifacts text_content using regex
-     */
-    protected function searchForGoogleDocIdInArtifacts($artifacts): ?string
-    {
-        /** @var Artifact $artifact */
-        foreach($artifacts as $artifact) {
-            if ($artifact->text_content && $this->hasGoogleDocIdMatch($artifact->text_content)) {
-                // Validate with agent that this is the template we're looking for
-                if ($this->checkForGoogleDocIdInContext($artifact->text_content 'artifacts')) {
-                    return $this->findOrCreateStoredFileForGoogleDoc($googleDocId);
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Search for Google Doc ID in directives using regex
-     */
-    protected function searchForGoogleDocIdInDirectives($directives): ?string
-    {
-        foreach($directives as $taskDirective) {
-            $directive = $taskDirective->directive;
-            if ($directive && $directive->directive_text) {
-                // Search for Google Doc ID pattern in directive content
-                if (preg_match('/(?:docs\.google\.com\/document\/d\/|drive\.google\.com\/file\/d\/)?([a-zA-Z0-9_-]{25,60})/', $directive->directive_text, $matches)) {
-                    $potentialId = $matches[1];
-                    // Validate it's a proper Google Doc ID format
-                    if (preg_match('/^[a-zA-Z0-9_-]{25,60}$/', $potentialId)) {
-                        static::log('GoogleDocsTemplateTaskRunner: Found potential Google Doc ID in directive', [
-                            'doc_id'       => $potentialId,
-                            'directive_id' => $directive->id,
-                        ]);
-
-                        return $potentialId;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Validate with agent that the text contains a Google Doc ID
-     */
-    protected function checkForGoogleDocIdInContext(string $context): bool
-    {
-        // Setup a simple agent thread for validation
-        $agent = $this->taskDefinition->agent;
-
-        $agentThread = app(ThreadRepository::class)->create($agent, 'Validate Google Doc Template ID');
-
-        $instructions = <<<INSTRUCTIONS
-We are searching for a Google Doc ID that would be explicitly stated as a google doc ID or it would be in the format:
-https://docs.google.com/document/d/{google_doc_id}/edit?tab=t.0
-
-Here is the context:
-
-{$context}
-
-Does this context contain a google doc ID? Return the google doc ID if it does.
-INSTRUCTIONS;
-
-        app(ThreadRepository::class)->addMessageToThread($agentThread, $instructions);
-
-        try {
-            $artifact = $this->runAgentThread($agentThread);
-            if ($artifact && $artifact->text_content) {
-                $response = strtoupper(trim($artifact->text_content));
-                $isValid  = str_contains($response, 'YES');
-
-                static::log('GoogleDocsTemplateTaskRunner: Agent validation result', [
-                    'doc_id'   => $googleDocId,
-                    'valid'    => $isValid,
-                    'response' => $response,
-                ]);
-
-                return $isValid;
-            }
-        } catch(Exception $e) {
-            static::log('GoogleDocsTemplateTaskRunner: Agent validation failed', [
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        // Default to true if agent fails
-        return true;
-    }
-
-    /**
-     * Find or create a StoredFile for the Google Doc ID
-     */
-    protected function findOrCreateStoredFileForGoogleDoc(string $googleDocId): StoredFile
-    {
-        $filename = "Google Doc Template: {$googleDocId}";
-        $url      = "https://docs.google.com/document/d/{$googleDocId}/edit";
-
-        // Try to find existing stored file with this filename
-        $storedFile = StoredFile::where('filename', $filename)->first();
-
-        if (!$storedFile) {
-            // Create new stored file
-            $storedFile = StoredFile::create([
-                'team_id'  => $this->taskDefinition->team_id,
-                'disk'     => 'google',
-                'filename' => $filename,
-                'url'      => $url,
-                'mime'     => 'application/vnd.google-apps.document',
-                'size'     => 0,
-            ]);
-
-            static::log('GoogleDocsTemplateTaskRunner: Created StoredFile for Google Doc', [
-                'stored_file_id' => $storedFile->id,
-                'filename'       => $filename,
-                'url'            => $url,
-            ]);
-        } else {
-            static::log('GoogleDocsTemplateTaskRunner: Found existing StoredFile for Google Doc', [
-                'stored_file_id' => $storedFile->id,
-                'filename'       => $filename,
-            ]);
-        }
-
-        return $storedFile;
     }
 }

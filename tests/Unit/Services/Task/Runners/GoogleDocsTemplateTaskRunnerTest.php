@@ -4,16 +4,18 @@ namespace Tests\Unit\Services\Task\Runners;
 
 use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\Agent\Agent;
+use App\Models\Agent\AgentThread;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Services\ContentSearch\ContentSearchRequest;
-use App\Services\ContentSearch\ContentSearchResult;
-use App\Services\ContentSearch\ContentSearchService;
+use App\Models\Task\TaskDefinitionDirective;
+use App\Models\Prompt\PromptDirective;
+use App\Repositories\ThreadRepository;
 use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;
 use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -25,17 +27,18 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
     protected TaskRun                      $taskRun;
     protected TaskProcess                  $taskProcess;
     protected GoogleDocsTemplateTaskRunner $runner;
+    protected Agent                        $agent;
 
     public function setUp(): void
     {
         parent::setUp();
         $this->setUpTeam();
 
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $this->agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
 
         $this->taskDefinition = TaskDefinition::factory()->create([
             'team_id'          => $this->user->currentTeam->id,
-            'agent_id'         => $agent->id,
+            'agent_id'         => $this->agent->id,
             'task_runner_name' => GoogleDocsTemplateTaskRunner::RUNNER_NAME,
         ]);
 
@@ -56,161 +59,486 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
             ->setTaskProcess($this->taskProcess);
     }
 
-    public function test_findGoogleDocFileId_withFileIdInJsonContent_returnsFileId(): void
+    public function test_findGoogleDocStoredFile_withTemplateStoredFileIdInJsonContent_returnsFileId(): void
+    {
+        // Given
+        $storedFile = StoredFile::create([
+            'team_id'  => $this->user->currentTeam->id,
+            'disk'     => 'google',
+            'filename' => 'Test Template',
+            'url'      => 'https://docs.google.com/document/d/test-doc-id-123/edit',
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+        ]);
+
+        $artifact = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'json_content' => [
+                'template_stored_file_id' => $storedFile->id,
+                'other_data'              => 'some value',
+            ],
+        ]);
+
+        $this->taskProcess->inputArtifacts()->attach($artifact->id);
+        $this->taskProcess->refresh();
+
+        // When
+        $result = $this->invokeMethod($this->runner, 'findGoogleDocStoredFile', [$this->taskProcess->inputArtifacts]);
+
+        // Then
+        $this->assertInstanceOf(StoredFile::class, $result);
+        $this->assertEquals($storedFile->id, $result->id);
+    }
+
+    public function test_findGoogleDocStoredFile_withTemplateStoredFileIdInMeta_returnsFileId(): void
+    {
+        // Given
+        $storedFile = StoredFile::create([
+            'team_id'  => $this->user->currentTeam->id,
+            'disk'     => 'google',
+            'filename' => 'Test Template',
+            'url'      => 'https://docs.google.com/document/d/test-doc-meta-456/edit',
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+        ]);
+
+        $artifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'meta'    => [
+                'template_stored_file_id' => $storedFile->id,
+                'other_meta'              => 'some value',
+            ],
+        ]);
+
+        $this->taskProcess->inputArtifacts()->attach($artifact->id);
+        $this->taskProcess->refresh();
+
+        // When
+        $result = $this->invokeMethod($this->runner, 'findGoogleDocStoredFile', [$this->taskProcess->inputArtifacts]);
+
+        // Then
+        $this->assertInstanceOf(StoredFile::class, $result);
+        $this->assertEquals($storedFile->id, $result->id);
+    }
+
+    public function test_findGoogleDocStoredFile_withStoredFileUrlAsDirectId_returnsFileId(): void
+    {
+        // Given
+        $storedFile = StoredFile::create([
+            'team_id'  => $this->user->currentTeam->id,
+            'disk'     => 'google',
+            'filename' => 'Test Template',
+            'url'      => '1234567890abcdefghijklmnopqrstuvwxyzABCDEF', // 25+ characters for valid Google Doc ID
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+        ]);
+
+        $artifact = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'json_content' => [
+                'template_stored_file_id' => $storedFile->id,
+            ],
+        ]);
+
+        $this->taskProcess->inputArtifacts()->attach($artifact->id);
+        $this->taskProcess->refresh();
+
+        // When
+        $result = $this->invokeMethod($this->runner, 'findGoogleDocStoredFile', [$this->taskProcess->inputArtifacts]);
+
+        // Then
+        $this->assertInstanceOf(StoredFile::class, $result);
+        $this->assertEquals($storedFile->id, $result->id);
+    }
+
+    public function test_findGoogleDocStoredFile_withInvalidStoredFileId_fallsBackToTextSearch(): void
     {
         // Given
         $artifact = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'json_content' => [
-                'google_doc_file_id' => 'test-doc-id-123',
-                'other_data'         => 'some value',
+                'template_stored_file_id' => 99999, // Non-existent ID
             ],
+            'text_content' => 'Please use this template: https://docs.google.com/document/d/1AbCdEf2GhIjKlMnOpQrStUvWxYz1234567890/edit',
         ]);
 
         $this->taskProcess->inputArtifacts()->attach($artifact->id);
         $this->taskProcess->refresh();
 
-        // Mock ContentSearchService to return the file ID
-        $successResult = ContentSearchResult::fieldPathFound('test-doc-id-123', $artifact, 'json_content.google_doc_file_id');
-        $mockSearchService = $this->mock(ContentSearchService::class);
-        $mockSearchService->shouldReceive('search')
-            ->once()
-            ->with(\Mockery::type(ContentSearchRequest::class))
-            ->andReturn($successResult);
-
-        // When
-        $fileId = $this->invokeMethod($this->runner, 'findGoogleDocFileId', [$this->taskProcess->inputArtifacts]);
+        // When - should fallback to text search without agent validation for this test
+        $fileId = $this->invokeMethod($this->runner, 'searchForGoogleDocIdInArtifacts', [$this->taskProcess->inputArtifacts]);
 
         // Then
-        $this->assertEquals('test-doc-id-123', $fileId);
+        $this->assertEquals('1AbCdEf2GhIjKlMnOpQrStUvWxYz1234567890', $fileId);
     }
 
-    public function test_findGoogleDocFileId_withFileIdInMeta_returnsFileId(): void
+    public function test_extractGoogleDocIdFromStoredFile_withValidUrl_returnsDocId(): void
     {
         // Given
-        $artifact = Artifact::factory()->create([
+        $storedFile = StoredFile::create([
+            'team_id'  => $this->user->currentTeam->id,
+            'disk'     => 'google',
+            'filename' => 'Test Template',
+            'url'      => 'https://docs.google.com/document/d/1BxCtQqrAQXYZ2345abcdefghijklmnop/edit',
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+        ]);
+
+        // When
+        $docId = $this->invokeMethod($this->runner, 'extractGoogleDocIdFromStoredFile', [$storedFile]);
+
+        // Then
+        $this->assertEquals('1BxCtQqrAQXYZ2345abcdefghijklmnop', $docId);
+    }
+
+    public function test_extractGoogleDocIdFromStoredFile_withDirectId_returnsDocId(): void
+    {
+        // Given
+        $storedFile = StoredFile::create([
+            'team_id'  => $this->user->currentTeam->id,
+            'disk'     => 'google',
+            'filename' => 'Test Template',
+            'url'      => '1BxCtQqrAQXYZ2345abcdefghijklmnop', // Direct Google Doc ID
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+        ]);
+
+        // When
+        $docId = $this->invokeMethod($this->runner, 'extractGoogleDocIdFromStoredFile', [$storedFile]);
+
+        // Then
+        $this->assertEquals('1BxCtQqrAQXYZ2345abcdefghijklmnop', $docId);
+    }
+
+    public function test_extractGoogleDocIdFromStoredFile_withInvalidUrl_returnsNull(): void
+    {
+        // Given
+        $storedFile = StoredFile::create([
+            'team_id'  => $this->user->currentTeam->id,
+            'disk'     => 'google',
+            'filename' => 'Test Template',
+            'url'      => 'https://example.com/not-a-google-doc',
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+        ]);
+
+        // When
+        $docId = $this->invokeMethod($this->runner, 'extractGoogleDocIdFromStoredFile', [$storedFile]);
+
+        // Then
+        $this->assertNull($docId);
+    }
+
+    public function test_searchForGoogleDocIdInArtifacts_withValidGoogleDocUrl_returnsDocId(): void
+    {
+        // Given
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'team_id'      => $this->user->currentTeam->id,
+                'text_content' => 'Please use this Google Doc: https://docs.google.com/document/d/1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg/edit',
+            ]),
+        ]);
+
+        // When
+        $docId = $this->invokeMethod($this->runner, 'searchForGoogleDocIdInArtifacts', [$artifacts]);
+
+        // Then
+        $this->assertEquals('1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg', $docId);
+    }
+
+    public function test_searchForGoogleDocIdInArtifacts_withDriveUrl_returnsDocId(): void
+    {
+        // Given
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'team_id'      => $this->user->currentTeam->id,
+                'text_content' => 'Template: https://drive.google.com/file/d/2AbCdEf3GhIjKlMnOpQrStUvWxYz1234567890/view',
+            ]),
+        ]);
+
+        // When
+        $docId = $this->invokeMethod($this->runner, 'searchForGoogleDocIdInArtifacts', [$artifacts]);
+
+        // Then
+        $this->assertEquals('2AbCdEf3GhIjKlMnOpQrStUvWxYz1234567890', $docId);
+    }
+
+    public function test_searchForGoogleDocIdInArtifacts_withNoValidId_returnsNull(): void
+    {
+        // Given
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'team_id'      => $this->user->currentTeam->id,
+                'text_content' => 'Some text without any valid Google Doc ID',
+            ]),
+        ]);
+
+        // When
+        $docId = $this->invokeMethod($this->runner, 'searchForGoogleDocIdInArtifacts', [$artifacts]);
+
+        // Then
+        $this->assertNull($docId);
+    }
+
+    public function test_searchForGoogleDocIdInDirectives_withValidGoogleDocUrl_returnsDocId(): void
+    {
+        // Given
+        $directive = PromptDirective::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'meta'    => [
-                'google_doc_file_id' => 'test-doc-meta-456',
-                'other_meta'         => 'some value',
-            ],
+            'directive_text' => 'Use this template: https://docs.google.com/document/d/1DirectiveDocId456789ABCDEF1234567890/edit for all documents',
         ]);
 
-        $this->taskProcess->inputArtifacts()->attach($artifact->id);
-        $this->taskProcess->refresh();
+        $taskDirective = TaskDefinitionDirective::create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'prompt_directive_id' => $directive->id,
+            'section' => TaskDefinitionDirective::SECTION_TOP,
+            'position' => 1,
+        ]);
 
-        // Mock ContentSearchService to return the file ID from meta
-        $successResult = ContentSearchResult::fieldPathFound('test-doc-meta-456', $artifact, 'meta.google_doc_file_id');
-        $mockSearchService = $this->mock(ContentSearchService::class);
-        $mockSearchService->shouldReceive('search')
-            ->once()
-            ->with(\Mockery::type(ContentSearchRequest::class))
-            ->andReturn($successResult);
-        
+        $taskDirective->load('directive');
+        $directives = collect([$taskDirective]);
+
         // When
-        $fileId = $this->invokeMethod($this->runner, 'findGoogleDocFileId', [$this->taskProcess->inputArtifacts]);
+        $docId = $this->invokeMethod($this->runner, 'searchForGoogleDocIdInDirectives', [$directives]);
 
         // Then
-        $this->assertEquals('test-doc-meta-456', $fileId);
+        $this->assertEquals('1DirectiveDocId456789ABCDEF1234567890', $docId);
     }
 
-    public function test_findGoogleDocFileId_withNoFileId_returnsNull(): void
+    public function test_searchForGoogleDocIdInDirectives_withNoValidId_returnsNull(): void
     {
         // Given
-        $artifact = Artifact::factory()->create([
+        $directive = PromptDirective::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'directive_text' => 'Some directive without any Google Doc ID',
+        ]);
+
+        $taskDirective = TaskDefinitionDirective::create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'prompt_directive_id' => $directive->id,
+            'section' => TaskDefinitionDirective::SECTION_TOP,
+            'position' => 1,
+        ]);
+
+        $taskDirective->load('directive');
+        $directives = collect([$taskDirective]);
+
+        // When
+        $docId = $this->invokeMethod($this->runner, 'searchForGoogleDocIdInDirectives', [$directives]);
+
+        // Then
+        $this->assertNull($docId);
+    }
+
+    public function test_validateGoogleDocIdWithAgent_withValidAgent_returnsAgentResponse(): void
+    {
+        // Given
+        $googleDocId = 'test-doc-id-123';
+        $artifacts   = collect();
+
+        // Mock ThreadRepository and agent response
+        $agentThread = AgentThread::factory()->create([
+            'team_id'  => $this->user->currentTeam->id,
+            'agent_id' => $this->agent->id,
+        ]);
+
+        $responseArtifact = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
-            'json_content' => ['other_data' => 'value'],
-            'meta'         => ['other_meta' => 'value'],
-            'text_content' => 'Some text without any file ID',
+            'text_content' => 'YES',
         ]);
 
-        $this->taskProcess->inputArtifacts()->attach($artifact->id);
-        $this->taskProcess->refresh();
+        $mockThreadRepo = $this->mock(ThreadRepository::class);
+        $mockThreadRepo->shouldReceive('create')
+            ->once()
+            ->andReturn($agentThread);
 
-        // Mock ContentSearchService to return no results
-        $mockSearchService = $this->mock(ContentSearchService::class);
-        $mockSearchService->shouldReceive('search')
-            ->twice() // Once for artifacts, once for directives
-            ->andReturn(ContentSearchResult::notFound('No file ID found'));
+        $mockThreadRepo->shouldReceive('addMessageToThread')
+            ->once();
+
+        // Mock the runAgentThread method to return our response artifact
+        $runner = $this->getMockBuilder(GoogleDocsTemplateTaskRunner::class)
+            ->onlyMethods(['runAgentThread'])
+            ->getMock();
+
+        $runner->expects($this->once())
+            ->method('runAgentThread')
+            ->with($agentThread)
+            ->willReturn($responseArtifact);
+
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($this->taskProcess);
 
         // When
-        $fileId = $this->invokeMethod($this->runner, 'findGoogleDocFileId', [$this->taskProcess->inputArtifacts]);
+        $isValid = $this->invokeMethod($runner, 'validateGoogleDocIdWithAgent', [$googleDocId, $artifacts, 'artifacts']);
 
         // Then
-        $this->assertNull($fileId);
+        $this->assertTrue($isValid);
     }
 
-    public function test_findGoogleDocFileId_withFileIdFromContentSearchService_returnsFileId(): void
+    public function test_validateGoogleDocIdWithAgent_withNoResponse_returnsTrue(): void
     {
         // Given
-        $artifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'text_content' => 'Please use this Google Doc: https://docs.google.com/document/d/1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg/edit',
+        $googleDocId = 'test-doc-id-123';
+        $artifacts   = collect();
+
+        // Mock agent response failure
+        $agentThread = AgentThread::factory()->create([
+            'team_id'  => $this->user->currentTeam->id,
+            'agent_id' => $this->agent->id,
         ]);
 
-        $this->taskProcess->inputArtifacts()->attach($artifact->id);
-        $this->taskProcess->refresh();
-
-        // Mock ContentSearchService to return the file ID via regex/LLM extraction
-        $successResult = ContentSearchResult::regexFound('1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg', $artifact, '/(?:docs\.google\.com\/document\/d\/|drive\.google\.com\/file\/d\/)?([a-zA-Z0-9_-]{25,60})/')
-            ->setValidated(true);
-        $mockSearchService = $this->mock(ContentSearchService::class);
-        $mockSearchService->shouldReceive('search')
+        $mockThreadRepo = $this->mock(ThreadRepository::class);
+        $mockThreadRepo->shouldReceive('create')
             ->once()
-            ->with(\Mockery::type(ContentSearchRequest::class))
-            ->andReturn($successResult);
-        
+            ->andReturn($agentThread);
+
+        $mockThreadRepo->shouldReceive('addMessageToThread')
+            ->once();
+
+        // Mock the runAgentThread method to return null (failure)
+        $runner = $this->getMockBuilder(GoogleDocsTemplateTaskRunner::class)
+            ->onlyMethods(['runAgentThread'])
+            ->getMock();
+
+        $runner->expects($this->once())
+            ->method('runAgentThread')
+            ->willReturn(null);
+
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($this->taskProcess);
+
         // When
-        $fileId = $this->invokeMethod($this->runner, 'findGoogleDocFileId', [$this->taskProcess->inputArtifacts]);
+        $isValid = $this->invokeMethod($runner, 'validateGoogleDocIdWithAgent', [$googleDocId, $artifacts, 'artifacts']);
 
         // Then
-        $this->assertEquals('1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg', $fileId);
+        $this->assertTrue($isValid); // Should default to true on failure
     }
 
-    public function test_collectTemplateData_withMultipleArtifacts_combinesAllData(): void
+    public function test_validateGoogleDocIdWithAgent_withNoAgentConfigured_returnsTrue(): void
+    {
+        // Given
+        $googleDocId = 'test-doc-id-123';
+        $artifacts   = collect();
+
+        // Create task definition without agent
+        $taskDefinitionWithoutAgent = TaskDefinition::factory()->create([
+            'team_id'          => $this->user->currentTeam->id,
+            'agent_id'         => null,
+            'task_runner_name' => GoogleDocsTemplateTaskRunner::RUNNER_NAME,
+        ]);
+
+        $runner = (new GoogleDocsTemplateTaskRunner())
+            ->setTaskRun($this->taskRun)
+            ->setTaskProcess($this->taskProcess);
+
+        // Override the task definition
+        $this->setProperty($runner, 'taskDefinition', $taskDefinitionWithoutAgent);
+
+        // When
+        $isValid = $this->invokeMethod($runner, 'validateGoogleDocIdWithAgent', [$googleDocId, $artifacts, 'artifacts']);
+
+        // Then
+        $this->assertTrue($isValid);
+    }
+
+    public function test_findOrCreateStoredFileForGoogleDoc_createsNewStoredFile(): void
+    {
+        // Given
+        $googleDocId = 'new-doc-id-123';
+
+        // When
+        $storedFile = $this->invokeMethod($this->runner, 'findOrCreateStoredFileForGoogleDoc', [$googleDocId]);
+
+        // Then
+        $this->assertInstanceOf(StoredFile::class, $storedFile);
+        $this->assertEquals('google', $storedFile->disk);
+        $this->assertEquals("Google Doc Template: {$googleDocId}", $storedFile->filename);
+        $this->assertEquals("https://docs.google.com/document/d/{$googleDocId}/edit", $storedFile->url);
+        $this->assertEquals('application/vnd.google-apps.document', $storedFile->mime);
+        $this->assertEquals(0, $storedFile->size);
+    }
+
+    public function test_findOrCreateStoredFileForGoogleDoc_findsExistingStoredFile(): void
+    {
+        // Given
+        $googleDocId = 'existing-doc-id-123';
+        $filename    = "Google Doc Template: {$googleDocId}";
+
+        $existingStoredFile = StoredFile::create([
+            'team_id'  => $this->user->currentTeam->id,
+            'disk'     => 'google',
+            'filename' => $filename,
+            'url'      => "https://docs.google.com/document/d/{$googleDocId}/edit",
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+        ]);
+
+        // When
+        $storedFile = $this->invokeMethod($this->runner, 'findOrCreateStoredFileForGoogleDoc', [$googleDocId]);
+
+        // Then
+        $this->assertEquals($existingStoredFile->id, $storedFile->id);
+        $this->assertEquals($existingStoredFile->filename, $storedFile->filename);
+    }
+
+    public function test_collectDataFromArtifacts_withMultipleArtifacts_combinesAllData(): void
     {
         // Given
         $artifact1 = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
+            'name'         => 'Customer Data',
             'json_content' => [
-                'name'               => 'John Doe',
-                'email'              => 'john@example.com',
-                'google_doc_file_id' => 'should-be-excluded',
+                'name'  => 'John Doe',
+                'email' => 'john@example.com',
             ],
             'meta'         => [
-                'created_date'       => '2023-01-01',
-                'google_doc_file_id' => 'should-also-be-excluded',
+                'created_date' => '2023-01-01',
+                'priority'     => 'high',
             ],
+            'text_content' => 'Customer information for processing',
         ]);
 
         $artifact2 = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
+            'name'         => 'Order Data',
             'json_content' => [
                 'order_id' => '12345',
                 'amount'   => 99.99,
             ],
             'meta'         => [
-                'priority' => 'high',
+                'status' => 'pending',
             ],
         ]);
 
         $artifacts = collect([$artifact1, $artifact2]);
 
         // When
-        $templateData = $this->invokeMethod($this->runner, 'collectTemplateData', [$artifacts]);
+        $templateData = $this->invokeMethod($this->runner, 'collectDataFromArtifacts', [$artifacts]);
 
         // Then
         $expected = [
             'name'         => 'John Doe',
             'email'        => 'john@example.com',
             'created_date' => '2023-01-01',
+            'priority'     => 'high',
+            'content'      => 'Customer information for processing',
+            'artifact_name' => 'Order Data', // Last one wins
             'order_id'     => '12345',
             'amount'       => 99.99,
-            'priority'     => 'high',
+            'status'       => 'pending',
         ];
 
         $this->assertEquals($expected, $templateData);
-        $this->assertArrayNotHasKey('google_doc_file_id', $templateData);
+    }
+
+    public function test_collectDataFromArtifacts_withEmptyArtifacts_returnsEmptyArray(): void
+    {
+        // Given
+        $artifacts = collect();
+
+        // When
+        $templateData = $this->invokeMethod($this->runner, 'collectDataFromArtifacts', [$artifacts]);
+
+        // Then
+        $this->assertEquals([], $templateData);
     }
 
     public function test_mapDataToVariables_withDirectMatches_mapsPerfectly(): void
@@ -282,7 +610,6 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         $this->assertEquals($expected, $mappedData);
     }
 
-
     public function test_createOutputArtifact_withValidData_createsArtifactWithCorrectStructure(): void
     {
         // Given
@@ -328,25 +655,49 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         $this->assertStringContainsString('John Doe', $artifact->text_content);
     }
 
-    public function test_run_withoutGoogleDocFileId_throwsException(): void
+    public function test_run_withoutTemplateFound_throwsException(): void
     {
-        // Given - no artifacts with google_doc_file_id
+        // Given - no artifacts with template_stored_file_id or valid Google Doc URLs
         $artifact = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'json_content' => ['other_data' => 'value'],
+            'text_content' => 'Some text without any Google Doc references',
         ]);
         $this->taskProcess->inputArtifacts()->attach($artifact->id);
         $this->taskProcess->load('inputArtifacts');
 
-        // Mock ContentSearchService to return unsuccessful results
-        $notFoundResult = ContentSearchResult::notFound('No file ID found');
-        $mockSearchService = $this->mock(ContentSearchService::class);
-        $mockSearchService->shouldReceive('search')
-            ->andReturn($notFoundResult);
+        // Then
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Template could not be resolved. No Google Docs template found in artifacts, text content, or directives.');
+
+        // When
+        $this->runner->run();
+    }
+
+    public function test_run_withInvalidStoredFileUrl_throwsException(): void
+    {
+        // Given
+        $storedFile = StoredFile::create([
+            'team_id'  => $this->user->currentTeam->id,
+            'disk'     => 'google',
+            'filename' => 'Test Template',
+            'url'      => 'invalid-url-format',
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+        ]);
+
+        $artifact = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'json_content' => [
+                'template_stored_file_id' => $storedFile->id,
+            ],
+        ]);
+        $this->taskProcess->inputArtifacts()->attach($artifact->id);
+        $this->taskProcess->load('inputArtifacts');
 
         // Then
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage('No google_doc_file_id found in any input artifact');
+        $this->expectExceptionMessage('Could not extract Google Doc ID from StoredFile URL: invalid-url-format');
 
         // When
         $this->runner->run();
@@ -362,5 +713,49 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         $method->setAccessible(true);
 
         return $method->invokeArgs($object, $parameters);
+    }
+
+    /**
+     * Helper method to set protected/private properties for testing
+     */
+    protected function setProperty(object $object, string $propertyName, $value): void
+    {
+        $reflection = new \ReflectionClass(get_class($object));
+        $property   = $reflection->getProperty($propertyName);
+        $property->setAccessible(true);
+        $property->setValue($object, $value);
+    }
+
+    /**
+     * Helper method to mock agent validation
+     */
+    protected function mockAgentValidation(bool $isValid): void
+    {
+        $agentThread = AgentThread::factory()->create([
+            'team_id'  => $this->user->currentTeam->id,
+            'agent_id' => $this->agent->id,
+        ]);
+
+        $responseArtifact = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'text_content' => $isValid ? 'YES' : 'NO',
+        ]);
+
+        $mockThreadRepo = $this->mock(ThreadRepository::class);
+        $mockThreadRepo->shouldReceive('create')
+            ->andReturn($agentThread);
+
+        $mockThreadRepo->shouldReceive('addMessageToThread');
+
+        // Override the runner to mock runAgentThread
+        $this->runner = $this->getMockBuilder(GoogleDocsTemplateTaskRunner::class)
+            ->onlyMethods(['runAgentThread'])
+            ->getMock();
+
+        $this->runner->expects($this->any())
+            ->method('runAgentThread')
+            ->willReturn($responseArtifact);
+
+        $this->runner->setTaskRun($this->taskRun)->setTaskProcess($this->taskProcess);
     }
 }
