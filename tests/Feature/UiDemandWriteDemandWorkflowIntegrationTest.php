@@ -178,6 +178,11 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
     public function test_api_endpoints_return_correct_canWriteDemand_flag(): void
     {
         // Given - Set up demand with extract data completed
+        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
@@ -189,6 +194,17 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
             'title' => 'Test API Response',
+        ]);
+
+        // Create completed extract data workflow run
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
         ]);
 
         // When - Get demand via API
@@ -210,6 +226,11 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
     public function test_list_endpoint_includes_write_demand_flags(): void
     {
         // Given - Create demands in different states
+        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
@@ -240,6 +261,17 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             'title' => 'Ready for Write Demand',
         ]);
 
+        // Create completed extract data workflow run for ready demand
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $readyDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+        ]);
+
         // Demand 3: Completed demand (cannot do anything)
         $completedDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
@@ -252,6 +284,17 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             ],
             'completed_at' => now(),
             'title' => 'Completed Demand',
+        ]);
+
+        // Create completed extract data workflow run for completed demand
+        $completedExtractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now()->subHour(),
+        ]);
+
+        $completedDemand->workflowRuns()->attach($completedExtractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
         ]);
 
         // When - Get demands list

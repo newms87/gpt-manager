@@ -35,7 +35,12 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
     public function test_multiple_write_demand_attempts_blocked_when_workflow_running(): void
     {
         // Given - Set up demand with extract data completed
-        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
+        $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name' => 'Write Demand Summary',
         ]);
@@ -51,6 +56,17 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
             'title' => 'Test Concurrent Demand',
+        ]);
+
+        // Create completed extract data workflow run
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
         ]);
 
         $service = app(UiDemandWorkflowService::class);
@@ -74,7 +90,12 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
     public function test_write_demand_can_be_run_multiple_times_after_completion(): void
     {
         // Given - Set up demand with extract data completed
-        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
+        $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name' => 'Write Demand Summary',
         ]);
@@ -90,6 +111,17 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
             'title' => 'Test Repeated Demand',
+        ]);
+
+        // Create completed extract data workflow run
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
         ]);
 
         $service = app(UiDemandWorkflowService::class);
@@ -122,7 +154,12 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
     public function test_write_demand_can_be_retried_after_failure(): void
     {
         // Given - Set up demand with extract data completed
-        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
+        $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name' => 'Write Demand Summary',
         ]);
@@ -138,6 +175,17 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
             'title' => 'Test Failed Workflow Retry',
+        ]);
+
+        // Create completed extract data workflow run
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
         ]);
 
         $service = app(UiDemandWorkflowService::class);
@@ -170,6 +218,16 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
     public function test_write_demand_without_team_object_relationship_loaded(): void
     {
         // Given - Create demand without loading teamObject relationship
+        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
+        $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Write Demand Summary',
+        ]);
+
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
@@ -183,13 +241,19 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
             'title' => 'Test Unloaded TeamObject',
         ]);
 
+        // Create completed extract data workflow run
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+        ]);
+
         // Verify teamObject relationship is not loaded
         $this->assertFalse($uiDemand->relationLoaded('teamObject'));
-
-        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
-        ]);
 
         $service = app(UiDemandWorkflowService::class);
 
@@ -223,8 +287,18 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
             'user_id' => $this->user->id,
             'status' => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
             'title' => 'Test Concurrent Workflows',
+        ]);
+
+        // Create completed extract data workflow run so write demand can start
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflow->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
         ]);
 
         $storedFile = StoredFile::factory()->create([

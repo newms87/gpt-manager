@@ -50,13 +50,13 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'json_content' => [
-                'google_doc_file_id' => 'test-file-id-123',
+                'template_stored_file_id' => 'test-file-id-123',
                 'other_data' => 'value',
             ],
         ]);
 
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts(collect([$artifact]));
 
@@ -106,11 +106,11 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         // Given - artifact from different team
         $otherTeamArtifact = Artifact::factory()->create([
             'team_id' => 999999, // Different team ID
-            'json_content' => ['google_doc_file_id' => 'test-id'],
+            'json_content' => ['template_stored_file_id' => 'test-id'],
         ]);
 
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts(collect([$otherTeamArtifact]));
 
@@ -127,11 +127,11 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         // Test 1: Optional validation (validation fails but result still returned)
         $artifactShort = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'json_content' => ['google_doc_file_id' => 'short'],
+            'json_content' => ['template_stored_file_id' => 'short'],
         ]);
 
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withValidation(function($value) {
                 return strlen($value) > 10; // Should fail for 'short'
             }, false) // Optional validation
@@ -149,11 +149,11 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         // Test 2: Required validation (validation fails and result marked as failed)
         $artifactInvalid = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'json_content' => ['google_doc_file_id' => 'invalid'],
+            'json_content' => ['template_stored_file_id' => 'invalid'],
         ]);
 
         $requestRequired = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withValidation(function($value) {
                 return strlen($value) > 10;
             }, true) // Required validation
@@ -174,12 +174,12 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         // Given - artifact with file ID in both json_content and meta
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'json_content' => ['google_doc_file_id' => 'json-file-id'],
-            'meta' => ['google_doc_file_id' => 'meta-file-id'],
+            'json_content' => ['template_stored_file_id' => 'json-file-id'],
+            'meta' => ['template_stored_file_id' => 'meta-file-id'],
         ]);
 
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts(collect([$artifact]));
 
@@ -189,7 +189,7 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertTrue($result->isFound());
         $this->assertEquals('json-file-id', $result->getValue()); // Should prefer json_content
-        $this->assertEquals('json_content.google_doc_file_id', $result->getSourceLocation());
+        $this->assertEquals('json_content.template_stored_file_id', $result->getSourceLocation());
     }
 
     public function test_searchArtifacts_withFieldPath_fallsBackToMeta(): void
@@ -198,11 +198,11 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'json_content' => ['other_data' => 'value'],
-            'meta' => ['google_doc_file_id' => 'meta-file-id'],
+            'meta' => ['template_stored_file_id' => 'meta-file-id'],
         ]);
 
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts(collect([$artifact]));
 
@@ -212,7 +212,7 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertTrue($result->isFound());
         $this->assertEquals('meta-file-id', $result->getValue());
-        $this->assertEquals('meta.google_doc_file_id', $result->getSourceLocation());
+        $this->assertEquals('meta.template_stored_file_id', $result->getSourceLocation());
     }
 
 
@@ -221,12 +221,12 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         // Given - artifact with data in both structured and text content
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'json_content' => ['google_doc_file_id' => 'structured-file-id'],
+            'json_content' => ['template_stored_file_id' => 'structured-file-id'],
             'text_content' => 'URL: https://docs.google.com/document/d/text-extracted-file-id/edit',
         ]);
 
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id') // Should be used first
+            ->withFieldPath('template_stored_file_id') // Should be used first
             ->withRegexPattern('/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts(collect([$artifact]));
@@ -250,7 +250,7 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         ]);
 
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withRegexPattern('/([a-zA-Z0-9_-]{25,60})/')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts(collect([$artifact]));
@@ -309,12 +309,12 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         // Given - artifact that will require validation
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'json_content' => ['google_doc_file_id' => 'valid-file-id-123'],
+            'json_content' => ['template_stored_file_id' => 'valid-file-id-123'],
         ]);
 
         $attemptCount = 0;
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withValidation(function($value) use (&$attemptCount) {
                 $attemptCount++;
                 return $attemptCount > 2; // Fail first 2 attempts
@@ -351,7 +351,7 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
     {
         // Given - request to search artifacts but no artifacts provided
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withTaskDefinition($this->taskDefinition);
         // Not calling searchArtifacts()
 
@@ -421,13 +421,13 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'text_content' => 'Document: https://docs.google.com/document/d/text-extracted-id/edit',
-            'json_content' => ['google_doc_file_id' => 'structured-data-id'],
+            'json_content' => ['template_stored_file_id' => 'structured-data-id'],
         ]);
 
         // Test that field path has priority over other methods
         // (We skip LLM testing in unit tests due to complexity - would need integration tests)
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id') // Should be used first
+            ->withFieldPath('template_stored_file_id') // Should be used first
             ->withRegexPattern('/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts(collect([$artifact]));
@@ -488,7 +488,7 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
 
         // Test without LLM to keep unit test simple
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id') // Will fail - no such field
+            ->withFieldPath('template_stored_file_id') // Will fail - no such field
             ->withRegexPattern('/([a-zA-Z0-9_-]{25,60})/') // Will fail - no match
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts(collect([$artifact]));
@@ -508,11 +508,11 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'text_content' => 'Document: https://docs.google.com/document/d/regex-extracted-id-123456789/edit',
-            'json_content' => ['other_field' => 'value'], // No google_doc_file_id
+            'json_content' => ['other_field' => 'value'], // No template_stored_file_id
         ]);
 
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id') // Will fail - no such field
+            ->withFieldPath('template_stored_file_id') // Will fail - no such field
             ->withRegexPattern('/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts(collect([$artifact]));
@@ -533,11 +533,11 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         // Given - artifact with valid data but problematic validation callback
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'json_content' => ['google_doc_file_id' => 'test-file-id'],
+            'json_content' => ['template_stored_file_id' => 'test-file-id'],
         ]);
 
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withValidation(function($value) {
                 throw new \Exception('Validation callback failed');
             }, false) // Optional validation - should continue despite exception

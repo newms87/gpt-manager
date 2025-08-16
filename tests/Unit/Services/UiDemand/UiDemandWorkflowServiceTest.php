@@ -166,6 +166,11 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'name' => 'Write Demand Summary',
         ]);
 
+        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Data',
+        ]);
+
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
@@ -177,6 +182,17 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
             'title' => 'Test Demand',
+        ]);
+
+        // Create a completed extract data workflow run
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'completed_at' => now(),
+        ]);
+
+        // Attach the completed extract data workflow to the ui demand
+        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
         ]);
 
         // Since Queue is faked, WorkflowRunnerService will create real WorkflowRun but without job dispatch

@@ -42,7 +42,7 @@ class ContentSearchRequest
     }
 
     /**
-     * Set field path for direct field extraction (e.g., 'google_doc_file_id')
+     * Set field path for direct field extraction (e.g., 'template_stored_file_id')
      */
     public function withFieldPath(string $fieldPath): self
     {

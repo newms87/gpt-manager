@@ -10,6 +10,7 @@ use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;
 use Illuminate\Console\Command;
+use Newms87\Danx\Models\Utilities\StoredFile;
 
 class TestGoogleDocsTemplateCommand extends Command
 {
@@ -44,32 +45,33 @@ class TestGoogleDocsTemplateCommand extends Command
         $this->info("TeamObject ID: $teamObjectId");
         $this->info("Model: $model");
         $this->newLine();
-        
+
         // Set the team context using the provided team ID
         // (Team and TeamObject are unrelated - Team is for auth/organization, TeamObject is data)
         $team = \App\Models\Team\Team::find($teamId);
         if (!$team) {
             $this->error("Team with ID $teamId not found");
+
             return 1;
         }
-        
+
         // Set authentication context for OAuth to work
         $user = \App\Models\User::first(); // Get any user for console commands
         if ($user) {
             auth()->guard()->setUser($user);
         }
-        
+
         // Set team context for the current session
         app()->instance('team', $team);
 
         // Check OAuth status
         $this->info("=== Authentication Status ===");
-        $oauthService = app(\App\Services\Auth\OAuthService::class);
+        $oauthService   = app(\App\Services\Auth\OAuthService::class);
         $requiredScopes = [
             'https://www.googleapis.com/auth/documents',
             'https://www.googleapis.com/auth/drive',
         ];
-        
+
         if ($oauthService->hasValidTokenWithScopes('google', $requiredScopes, $team)) {
             $this->info("✅ OAuth token available with required scopes for team: {$team->name}");
         } else {
@@ -81,42 +83,45 @@ class TestGoogleDocsTemplateCommand extends Command
                 $this->warn("❌ No valid OAuth token available - Google Docs API requires OAuth");
             }
             $this->newLine();
-            
+
             if (!$oauthService->isConfigured('google')) {
                 $this->error("Google OAuth is not configured!");
                 $this->info("Please add GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET to .env");
                 $this->info("Get credentials from: https://console.cloud.google.com/apis/credentials");
+
                 return 1;
             }
-            
-            $promptMessage = $hasToken 
-                ? 'Would you like to re-authorize Google Docs with the required scopes now?' 
+
+            $promptMessage = $hasToken
+                ? 'Would you like to re-authorize Google Docs with the required scopes now?'
                 : 'Would you like to authorize Google Docs access now?';
-                
+
             if (!$this->option('auto-accept') && !$this->confirm($promptMessage)) {
                 $this->info('Operation cancelled.');
+
                 return 0;
             }
-            
+
             try {
                 $authUrl = $oauthService->getAuthorizationUrl('google', null, $team);
-                
+
                 $this->info("🔗 Please visit this URL to authorize Google Docs access:");
                 $this->newLine();
                 $this->line($authUrl);
                 $this->newLine();
-                
+
                 $this->info("Instructions:");
                 $this->info("1. Copy the URL above");
                 $this->info("2. Open it in your browser");
                 $this->info("3. Sign in with Google and authorize the application");
                 $this->info("4. After authorization, run this command again");
                 $this->newLine();
-                
+
                 return 0;
-                
-            } catch (\Exception $e) {
+
+            } catch(\Exception $e) {
                 $this->error("Failed to generate authorization URL: " . $e->getMessage());
+
                 return 1;
             }
         }
@@ -126,6 +131,7 @@ class TestGoogleDocsTemplateCommand extends Command
         $teamObject = TeamObject::find($teamObjectId);
         if (!$teamObject) {
             $this->error("TeamObject not found: $teamObjectId");
+
             return 1;
         }
 
@@ -199,12 +205,21 @@ class TestGoogleDocsTemplateCommand extends Command
             'task_definition_id' => $documentTaskDef->id,
         ]);
 
+        // Create StoredFile for the Google Doc template
+        $storedFile = StoredFile::firstOrCreate(['filename' => "Google Doc Template: {$googleDocId}"], [
+            'disk'     => 'google',
+            'filename' => "Google Doc Template: {$googleDocId}",
+            'url'      => "https://docs.google.com/document/d/{$googleDocId}/edit",
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+        ]);
+
         // Create artifact with team object data
         $artifact = Artifact::create([
             'team_id'      => $teamObject->team_id ?? 1,
             'name'         => 'TeamObject Template Data',
             'meta'         => [
-                'google_doc_file_id' => $googleDocId,
+                'template_stored_file_id' => $storedFile->id,
             ],
             'json_content' => $teamObjectData,
         ]);

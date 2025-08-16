@@ -101,7 +101,12 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
     public function test_writeDemand_withValidRequest_returnsSuccessResponse(): void
     {
         // Given
-        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
+        $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name' => 'Write Demand Summary',
         ]);
@@ -117,6 +122,17 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
             'title' => 'Test Demand',
+        ]);
+
+        // Create completed extract data workflow run
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
         ]);
 
         // When
@@ -242,7 +258,12 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
     public function test_writeDemand_endpoint_loadsCorrectRelationships(): void
     {
         // Given
-        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
+        $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name' => 'Write Demand Summary',
         ]);
@@ -258,6 +279,17 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
             'title' => 'Test Demand',
+        ]);
+
+        // Create completed extract data workflow run
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
         ]);
 
         // When
@@ -302,6 +334,21 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $this->assertFalse($data['can_write_demand']);
 
         // Now complete extract data and verify can_write_demand becomes true
+        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Extract Service Dates',
+        ]);
+
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+        ]);
+
         $uiDemand->update([
             'metadata' => ['extract_data_completed_at' => now()->toIso8601String()]
         ]);
@@ -342,8 +389,8 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         // Connect via pivot table
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 
-        // Initially should not be able to write demand
-        $this->assertFalse($uiDemand->canWriteDemand());
+        // Should be able to write demand since extract data workflow is completed
+        $this->assertTrue($uiDemand->canWriteDemand());
 
         // When - Handle workflow completion
         $service = app(UiDemandWorkflowService::class);

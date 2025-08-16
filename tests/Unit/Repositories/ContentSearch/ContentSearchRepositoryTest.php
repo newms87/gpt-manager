@@ -252,12 +252,12 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
         // Given
         $artifactWithJsonField = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'json_content' => ['google_doc_file_id' => 'json-file-id'],
+            'json_content' => ['template_stored_file_id' => 'json-file-id'],
         ]);
 
         $artifactWithMetaField = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'meta' => ['google_doc_file_id' => 'meta-file-id'],
+            'meta' => ['template_stored_file_id' => 'meta-file-id'],
         ]);
 
         $artifactWithoutField = Artifact::factory()->create([
@@ -268,7 +268,7 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
         // When
         $artifacts = $this->repository->searchArtifactsByFieldPath(
             $this->user->currentTeam->id,
-            'google_doc_file_id'
+            'template_stored_file_id'
         );
 
         // Then

@@ -63,7 +63,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     public function test_withFieldPath_setsFieldPath(): void
     {
         // Given
-        $fieldPath = 'google_doc_file_id';
+        $fieldPath = 'template_stored_file_id';
         $request = ContentSearchRequest::create();
 
         // When
@@ -270,7 +270,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         // Given
         $artifacts = collect([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts($artifacts);
 
@@ -327,7 +327,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     {
         // Given
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withTaskDefinition($this->taskDefinition);
         // Not calling searchArtifacts() - defaults to artifacts target
 
@@ -343,7 +343,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     {
         // Given
         $request = ContentSearchRequest::create()
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withTaskDefinition($this->taskDefinition)
             ->searchDirectives(collect([])); // Empty directives collection
 
@@ -398,7 +398,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         // When
         $request = ContentSearchRequest::create()
             ->withNaturalLanguageQuery('Find the Google Docs file ID')
-            ->withFieldPath('google_doc_file_id')
+            ->withFieldPath('template_stored_file_id')
             ->withRegexPattern('/[a-zA-Z0-9_-]{25,60}/')
             ->withValidation($validationCallback, true)
             ->withLlmModel('gpt-4o-mini')
@@ -410,7 +410,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
 
         // Then
         $this->assertEquals('Find the Google Docs file ID', $request->getNaturalLanguageQuery());
-        $this->assertEquals('google_doc_file_id', $request->getFieldPath());
+        $this->assertEquals('template_stored_file_id', $request->getFieldPath());
         $this->assertEquals('/[a-zA-Z0-9_-]{25,60}/', $request->getRegexPattern());
         $this->assertEquals($validationCallback, $request->getValidationCallback());
         $this->assertTrue($request->isValidationRequired());

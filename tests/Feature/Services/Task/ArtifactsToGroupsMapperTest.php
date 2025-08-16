@@ -608,4 +608,98 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         $this->assertEquals('Microsoft', $thirdData['jobs']['company'], 'The 3rd job should be Microsoft');
         $this->assertEquals('Redmond', $thirdData['jobs']['addresses']['city'], 'The 3rd job address should be Redmond');
     }
+
+    public function test_map_withArrayContainingNullValues_doesNotThrowTypeError(): void
+    {
+        // Given - Recreating the scenario from the bug report where we have an array with null values
+        $jsonContent = [
+            'provider' => [
+                ['name' => 'Provider A'],
+                null, // This null value was causing the TypeError
+                ['name' => 'Provider B'],
+            ],
+        ];
+        $artifacts = [
+            new Artifact(['json_content' => $jsonContent]),
+        ];
+        $groupingKeys = [
+            [
+                'type' => 'object',
+                'create' => false,
+                'update' => false,
+                'children' => [
+                    'provider' => [
+                        'type' => 'array',
+                        'create' => false,
+                        'update' => false,
+                        'children' => [
+                            'name' => [
+                                'type' => 'string'
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        // When & Then - This should not throw a TypeError
+        $groups = (new ArtifactsToGroupsMapper)->useSplitMode()->setGroupingKeys($groupingKeys)->map($artifacts);
+        
+        // Verify we get some groups (the exact structure doesn't matter as much as not crashing)
+        $this->assertNotEmpty($groups, 'Should produce at least one group without throwing TypeError');
+        
+        // Verify each group contains proper artifacts
+        foreach ($groups as $group) {
+            $this->assertNotEmpty($group, 'Each group should contain at least one artifact');
+            foreach ($group as $artifact) {
+                $this->assertInstanceOf(Artifact::class, $artifact, 'Each group item should be an Artifact');
+            }
+        }
+    }
+
+    public function test_map_withAssociativeArrayTreatedAsSingleElementArray_groupsCorrectly(): void
+    {
+        // Given - Recreating the scenario where provider was originally an array but got converted to an object
+        $jsonContent = [
+            'provider' => [
+                'name' => 'Synergy Chiropractic Clinics',
+                'id' => 305,
+                'care_summary' => ['name' => 'Initial chiropractic evaluation'],
+            ],
+        ];
+        $artifacts = [
+            new Artifact(['json_content' => $jsonContent]),
+            new Artifact(['json_content' => $jsonContent]), // Same provider - should be grouped together
+        ];
+        $groupingKeys = [
+            [
+                'type' => 'object',
+                'children' => [
+                    'provider' => [
+                        'type' => 'array', // This expects array but we have an associative array (object)
+                        'children' => [
+                            'name' => [
+                                'type' => 'string'
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        // When - This should detect the associative array and treat it as a single-element array
+        $groups = (new ArtifactsToGroupsMapper)->useConcatenateMode()->setGroupingKeys($groupingKeys)->map($artifacts);
+
+        // Then - Should produce 1 group since both artifacts have the same provider.name
+        /** @var Artifact[][] $groups */
+        $groups = array_values($groups);
+        $this->assertCount(1, $groups, 'Should produce 1 group since both artifacts have the same provider name');
+        
+        // Verify the group contains both artifacts
+        $this->assertCount(2, $groups[0], 'The single group should contain both artifacts');
+        
+        // Verify the provider data is correctly structured
+        $firstArtifact = $groups[0][0];
+        $this->assertEquals('Synergy Chiropractic Clinics', $firstArtifact->json_content['provider']['name']);
+    }
 }

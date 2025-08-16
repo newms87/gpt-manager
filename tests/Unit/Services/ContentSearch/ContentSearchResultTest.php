@@ -70,7 +70,7 @@ class ContentSearchResultTest extends AuthenticatedTestCase
         // Given
         $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $result = ContentSearchResult::create();
-        $location = 'json_content.google_doc_file_id';
+        $location = 'json_content.template_stored_file_id';
 
         // When
         $returnedResult = $result->setSourceArtifact($artifact, $location);
@@ -356,7 +356,7 @@ class ContentSearchResultTest extends AuthenticatedTestCase
         // Given
         $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $value = 'test-file-id';
-        $fieldPath = 'json_content.google_doc_file_id';
+        $fieldPath = 'json_content.template_stored_file_id';
 
         // When
         $result = ContentSearchResult::fieldPathFound($value, $artifact, $fieldPath);
