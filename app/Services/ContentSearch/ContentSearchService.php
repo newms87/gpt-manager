@@ -5,21 +5,18 @@ namespace App\Services\ContentSearch;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Task\Artifact;
-use App\Models\Task\TaskDefinitionDirective;
 use App\Repositories\ContentSearch\ContentSearchRepository;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
-use App\Services\ContentSearch\Exceptions\ContentExtractionException;
 use App\Services\ContentSearch\Exceptions\InvalidSearchParametersException;
 use App\Traits\HasDebugLogging;
 use Exception;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection as SupportCollection;
 
 class ContentSearchService
 {
     use HasDebugLogging;
-
+    
     /**
      * Main search method - handles all search types based on request configuration
      */
@@ -52,13 +49,14 @@ class ContentSearchService
     public function searchArtifacts(ContentSearchRequest $request): ContentSearchResult
     {
         $artifacts = $request->getArtifacts();
-        
+
         // Handle null or empty artifacts
         if (!$artifacts || $artifacts->isEmpty()) {
             static::log('No artifacts to search');
+
             return ContentSearchResult::notFound('No artifacts provided for searching');
         }
-        
+
         static::log('Searching artifacts', [
             'artifact_count' => $artifacts->count(),
         ]);
@@ -111,11 +109,11 @@ class ContentSearchService
     private function getPotentialArtifacts(ContentSearchRequest $request)
     {
         $artifacts = $request->getArtifacts();
-        
+
         if (!$artifacts) {
             return collect();
         }
-        
+
         $artifacts = $artifacts->filter(fn($artifact) => !empty($artifact->text_content));
 
         if ($request->usesRegexPattern()) {
@@ -164,7 +162,7 @@ class ContentSearchService
     private function searchDirectivesWithLlm(ContentSearchRequest $request): ContentSearchResult
     {
         $directives = $request->getDirectives();
-        
+
         if (!$directives || (is_countable($directives) && count($directives) === 0)) {
             return ContentSearchResult::notFound('No directives to search');
         }
@@ -207,6 +205,7 @@ class ContentSearchService
             static::log('LLM extraction failed for directives', [
                 'error' => $e->getMessage(),
             ]);
+
             // Don't throw, just return not found for unit tests
             return ContentSearchResult::notFound('LLM extraction failed: ' . $e->getMessage());
         }
@@ -374,10 +373,10 @@ INSTRUCTIONS;
         if (!$directives) {
             return null;
         }
-        
+
         foreach($directives as $directive) {
             $directiveText = null;
-            
+
             // Handle different directive structures
             if (is_object($directive)) {
                 if (property_exists($directive, 'directive_text')) {
@@ -388,7 +387,7 @@ INSTRUCTIONS;
                     }
                 }
             }
-            
+
             if ($directiveText && stripos($directiveText, $extractedValue) !== false) {
                 return $directive;
             }
@@ -405,17 +404,17 @@ INSTRUCTIONS;
         // Search in artifacts if provided
         if ($request->getArtifacts() !== null) {
             $result = $this->searchArtifacts($request);
-            
+
             if ($result->isFound()) {
                 $this->validateResult($result, $request);
-                
+
                 static::log('Search completed with artifact result', [
                     'found'             => $result->isFound(),
                     'value'             => $result->getValue(),
                     'source'            => $result->getSourceIdentifier(),
                     'extraction_method' => $result->getExtractionMethod(),
                 ]);
-                
+
                 return $result;
             }
         }
@@ -423,7 +422,7 @@ INSTRUCTIONS;
         // Fall back to searching directives if artifacts not found or not provided
         if ($request->usesLlmExtraction() && $request->getDirectives()) {
             $result = $this->searchDirectivesWithLlm($request);
-            
+
             if ($result->isFound()) {
                 $this->validateResult($result, $request);
             }

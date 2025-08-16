@@ -8,5 +8,6 @@ export { default as UiStatusBadge } from './UiStatusBadge.vue';
 export { default as UiProgressBar } from './UiProgressBar.vue';
 export { default as UiEmptyState } from './UiEmptyState.vue';
 export { default as UiLoadingSpinner } from './UiLoadingSpinner.vue';
+export { default as GoogleDocsAuth } from './GoogleDocsAuth.vue';
 
 export type { SelectOption } from './UiSelect.vue';

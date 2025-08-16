@@ -6,6 +6,8 @@ use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\Agent\AgentThread;
 use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
+use App\Services\ContentSearch\ContentSearchRequest;
+use App\Services\ContentSearch\ContentSearchService;
 use Exception;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
@@ -53,6 +55,34 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
         // Create output artifact
         $artifact = $this->createOutputArtifact($newDocument, $variableMapping);
         $this->complete([$artifact]);
+    }
+
+    /**
+     * Find the Google Doc template stored file from artifacts or text content
+     */
+    protected function findGoogleDocStoredFile(): StoredFile
+    {
+        $request = ContentSearchRequest::create()
+            ->searchArtifacts($this->taskProcess->inputArtifacts)
+            ->withFieldPath('template_stored_file_id')
+            ->withRegexPattern("/[a-zA-Z0-9_-]{25,}/")
+            ->withTaskDefinition($this->taskDefinition)
+            ->withNaturalLanguageQuery("Your job is to find a Google Doc ID that would be used in a URL or in the API to identify a google doc. An example URL is https://docs.google.com/document/d/1eXaMpLeGOOglEDocUrlEhhhh_qJNDkElfmxEKMMDMKEddmiAa. Try to find the real google doc ID in the context given. If you no ID is found then DO NOT return a google doc ID.");
+
+        $result = app(ContentSearchService::class)->search($request);
+
+        if (!$result->isFound()) {
+            throw new Exception("No Google Doc template found in artifacts or text content.");
+        }
+
+        $storedFileId = $result->getValue();
+
+        $storedFile = StoredFile::find($storedFileId);
+        if (!$storedFile) {
+            throw new Exception("StoredFile with ID $storedFileId not found.");
+        }
+
+        return $storedFile;
     }
 
     /**
