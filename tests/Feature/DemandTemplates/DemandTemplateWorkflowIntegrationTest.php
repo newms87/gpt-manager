@@ -3,8 +3,8 @@
 namespace Tests\Feature\DemandTemplates;
 
 use App\Models\DemandTemplate;
-use App\Models\UiDemand;
 use App\Models\TeamObject\TeamObject;
+use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\UiDemand\UiDemandWorkflowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,36 +36,36 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Given
         $extractDataWorkflowDefinition = \App\Models\Workflow\WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $writeDemandWorkflowDefinition = \App\Models\Workflow\WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $storedFile = StoredFile::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'url' => 'https://docs.google.com/document/d/test123/edit',
+            'url'     => 'https://docs.google.com/document/d/test123/edit',
         ]);
 
         $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile->id,
-            'name' => 'Test Template',
+            'name'           => 'Test Template',
         ]);
 
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'insurance_demand',
+            'type'    => 'insurance_demand',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'team_object_id' => $teamObject->id,
-            'status' => UiDemand::STATUS_COMPLETED,
-            'metadata' => [
+            'status'         => UiDemand::STATUS_COMPLETED,
+            'metadata'       => [
                 'extract_data_completed_at' => now()->toIso8601String(),
             ],
         ]);
@@ -73,8 +73,8 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Create completed extract data workflow run
         $extractDataWorkflowRun = \App\Models\Workflow\WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
@@ -93,13 +93,13 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Verify the workflow was created with template data
         $this->assertDatabaseHas('ui_demand_workflow_runs', [
-            'ui_demand_id' => $uiDemand->id,
+            'ui_demand_id'    => $uiDemand->id,
             'workflow_run_id' => $workflowRun->id,
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
         ]);
 
         // Verify workflow input contains template information
-        $startingNode = $workflowRun->workflowDefinition->startingWorkflowNodes->first();
+        $startingNode   = $workflowRun->workflowDefinition->startingWorkflowNodes->first();
         $inputArtifacts = $workflowRun->collectInputArtifactsForNode($startingNode);
         $this->assertCount(1, $inputArtifacts);
 
@@ -114,25 +114,25 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Given
         $extractDataWorkflowDefinition = \App\Models\Workflow\WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $writeDemandWorkflowDefinition = \App\Models\Workflow\WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'insurance_demand',
+            'type'    => 'insurance_demand',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'team_object_id' => $teamObject->id,
-            'status' => UiDemand::STATUS_COMPLETED,
-            'metadata' => [
+            'status'         => UiDemand::STATUS_COMPLETED,
+            'metadata'       => [
                 'extract_data_completed_at' => now()->toIso8601String(),
             ],
         ]);
@@ -140,8 +140,8 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Create completed extract data workflow run
         $extractDataWorkflowRun = \App\Models\Workflow\WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
@@ -155,7 +155,7 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
 
         // Verify workflow input does not contain template information
-        $startingNode = $workflowRun->workflowDefinition->startingWorkflowNodes->first();
+        $startingNode   = $workflowRun->workflowDefinition->startingWorkflowNodes->first();
         $inputArtifacts = $workflowRun->collectInputArtifactsForNode($startingNode);
         $this->assertCount(1, $inputArtifacts);
 
@@ -169,25 +169,25 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Given
         $extractDataWorkflowDefinition = \App\Models\Workflow\WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $writeDemandWorkflowDefinition = \App\Models\Workflow\WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'insurance_demand',
+            'type'    => 'insurance_demand',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'team_object_id' => $teamObject->id,
-            'status' => UiDemand::STATUS_COMPLETED,
-            'metadata' => [
+            'status'         => UiDemand::STATUS_COMPLETED,
+            'metadata'       => [
                 'extract_data_completed_at' => now()->toIso8601String(),
             ],
         ]);
@@ -195,8 +195,8 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Create completed extract data workflow run
         $extractDataWorkflowRun = \App\Models\Workflow\WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
@@ -214,7 +214,7 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
 
         // Verify workflow input contains instructions but no template
-        $startingNode = $workflowRun->workflowDefinition->startingWorkflowNodes->first();
+        $startingNode   = $workflowRun->workflowDefinition->startingWorkflowNodes->first();
         $inputArtifacts = $workflowRun->collectInputArtifactsForNode($startingNode);
         $this->assertCount(1, $inputArtifacts);
 
@@ -228,36 +228,36 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Given
         $storedFile = StoredFile::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'url' => 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
+            'url'     => 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
         ]);
 
         // Create artifact with template_stored_file_id
         $artifactData = [
             'template_stored_file_id' => $storedFile->id,
             'additional_instructions' => 'Test instructions',
-            'other_data' => 'Some other data',
+            'other_data'              => 'Some other data',
         ];
 
         // When - Mock the extraction process
         $taskDefinition = \App\Models\Task\TaskDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
-        $taskRun = \App\Models\Task\TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-        $taskProcess = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
+        $taskRun        = \App\Models\Task\TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+        $taskProcess    = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
 
-        $runner = \App\Services\Task\Runners\GoogleDocsTemplateTaskRunner::make()
+        $runner    = \App\Services\Task\Runners\GoogleDocsTemplateTaskRunner::make()
             ->setTaskRun($taskRun)
             ->setTaskProcess($taskProcess);
         $artifacts = collect([
-            (object) [
+            (object)[
                 'json_content' => $artifactData,
-                'meta' => [],
-            ]
+                'meta'         => [],
+            ],
         ]);
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('findGoogleDocFileId');
+        $method     = $reflection->getMethod('findGoogleDocFileId');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $artifacts);
@@ -271,7 +271,7 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Given
         $storedFile = StoredFile::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'url' => '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+            'url'     => '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
         ]);
 
         // Create artifact with template_stored_file_id
@@ -283,22 +283,22 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $taskDefinition = \App\Models\Task\TaskDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
-        $taskRun = \App\Models\Task\TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-        $taskProcess = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
+        $taskRun        = \App\Models\Task\TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+        $taskProcess    = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
 
-        $runner = \App\Services\Task\Runners\GoogleDocsTemplateTaskRunner::make()
+        $runner    = \App\Services\Task\Runners\GoogleDocsTemplateTaskRunner::make()
             ->setTaskRun($taskRun)
             ->setTaskProcess($taskProcess);
         $artifacts = collect([
-            (object) [
+            (object)[
                 'json_content' => $artifactData,
-                'meta' => [],
-            ]
+                'meta'         => [],
+            ],
         ]);
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('findGoogleDocFileId');
+        $method     = $reflection->getMethod('findGoogleDocFileId');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $artifacts);
@@ -318,24 +318,24 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $taskDefinition = \App\Models\Task\TaskDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
-        $taskRun = \App\Models\Task\TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-        $taskProcess = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
+        $taskRun        = \App\Models\Task\TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+        $taskProcess    = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
 
         $runner = \App\Services\Task\Runners\GoogleDocsTemplateTaskRunner::make()
             ->setTaskRun($taskRun)
             ->setTaskProcess($taskProcess);
 
         // Create a real artifact instead of mock object
-        $artifact = \App\Models\Task\Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+        $artifact  = \App\Models\Task\Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
             'json_content' => $artifactData,
-            'meta' => [],
+            'meta'         => [],
         ]);
         $artifacts = collect([$artifact]);
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('findGoogleDocFileId');
+        $method     = $reflection->getMethod('findGoogleDocFileId');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $artifacts);
@@ -350,29 +350,30 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $taskDefinition = \App\Models\Task\TaskDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
-        $taskRun = \App\Models\Task\TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-        $taskProcess = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
+        $taskRun        = \App\Models\Task\TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+        $taskProcess    = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
 
-        $runner = \App\Services\Task\Runners\GoogleDocsTemplateTaskRunner::make()
+        $runner    = \App\Services\Task\Runners\GoogleDocsTemplateTaskRunner::make()
             ->setTaskRun($taskRun)
             ->setTaskProcess($taskProcess);
         $artifacts = collect([
-            (object) [
+            (object)[
                 'json_content' => [
                     'template_stored_file_id' => 'file-123',
                     'additional_instructions' => 'Test instructions',
-                    'demand_id' => 456,
-                    'title' => 'Test Demand',
+                    'demand_id'               => 456,
+                    'title'                   => 'Test Demand',
                 ],
-                'meta' => [
+                'meta'         => [
                     'category' => 'insurance',
                     'priority' => 'high',
                 ],
-            ]
+            ],
         ]);
 
         // When - Use reflection to test the protected method
-        $reflection = new \ReflectionClass($runhreartifacts');
+        $reflection = new \ReflectionClass($runner);
+        $method     = $reflection->getMethod('collectDataFromArtifacts');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $artifacts);
@@ -380,10 +381,10 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Then
         $expectedData = [
             'additional_instructions' => 'Test instructions',
-            'demand_id' => 456,
-            'title' => 'Test Demand',
-            'category' => 'insurance',
-            'priority' => 'high',
+            'demand_id'               => 456,
+            'title'                   => 'Test Demand',
+            'category'                => 'insurance',
+            'priority'                => 'high',
         ];
 
         // Verify the data exists but exclude the template_stored_file_id that should be filtered out
