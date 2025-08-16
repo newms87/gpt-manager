@@ -2,6 +2,8 @@
 
 namespace App\Services\ContentSearch;
 
+use App\Models\Prompt\PromptDirective;
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Services\ContentSearch\Exceptions\InvalidSearchParametersException;
 use Illuminate\Database\Eloquent\Collection;
@@ -9,23 +11,17 @@ use Illuminate\Support\Collection as SupportCollection;
 
 class ContentSearchRequest
 {
-    private ?string $naturalLanguageQuery = null;
-    private ?string $fieldPath = null;
-    private ?string $regexPattern = null;
-    private $validationCallback = null;
-    private ?string $llmModel = null;
-    private ?TaskDefinition $taskDefinition = null;
-    private $artifacts = null;  // Can be Collection or SupportCollection
-    private $directives = null;  // Can be Collection or SupportCollection
-    private string $searchTarget = 'artifacts';
-    private bool $requireValidation = false;
-    private int $maxAttempts = 3;
-    private array $searchOptions = [];
-
-    public function __construct()
-    {
-        //
-    }
+    private ?string         $naturalLanguageQuery = null;
+    private ?string         $fieldPath            = null;
+    private ?string         $regexPattern         = null;
+    private                 $validationCallback   = null;
+    private ?string         $llmModel             = null;
+    private ?TaskDefinition $taskDefinition       = null;
+    private                 $artifacts            = null;  // Can be Collection or SupportCollection
+    private                 $directives           = null;  // Can be Collection or SupportCollection
+    private bool            $requireValidation    = false;
+    private int             $maxAttempts          = 3;
+    private array           $searchOptions        = [];
 
     public static function create(): self
     {
@@ -38,6 +34,7 @@ class ContentSearchRequest
     public function withNaturalLanguageQuery(string $query): self
     {
         $this->naturalLanguageQuery = $query;
+
         return $this;
     }
 
@@ -47,6 +44,7 @@ class ContentSearchRequest
     public function withFieldPath(string $fieldPath): self
     {
         $this->fieldPath = $fieldPath;
+
         return $this;
     }
 
@@ -56,6 +54,7 @@ class ContentSearchRequest
     public function withRegexPattern(string $pattern): self
     {
         $this->regexPattern = $pattern;
+
         return $this;
     }
 
@@ -65,7 +64,8 @@ class ContentSearchRequest
     public function withValidation(callable $callback, bool $required = true): self
     {
         $this->validationCallback = $callback;
-        $this->requireValidation = $required;
+        $this->requireValidation  = $required;
+
         return $this;
     }
 
@@ -75,6 +75,7 @@ class ContentSearchRequest
     public function withLlmModel(string $model): self
     {
         $this->llmModel = $model;
+
         return $this;
     }
 
@@ -84,6 +85,12 @@ class ContentSearchRequest
     public function withTaskDefinition(TaskDefinition $taskDefinition): self
     {
         $this->taskDefinition = $taskDefinition;
+
+        $this->directives = [];
+        foreach($taskDefinition->taskDefinitionDirectives as $taskDefinitionDirective) {
+            $this->directives[] = $taskDefinitionDirective->directive;
+        }
+
         return $this;
     }
 
@@ -94,7 +101,7 @@ class ContentSearchRequest
     public function searchArtifacts($artifacts): self
     {
         $this->artifacts = $artifacts;
-        $this->searchTarget = 'artifacts';
+
         return $this;
     }
 
@@ -105,7 +112,7 @@ class ContentSearchRequest
     public function searchDirectives($directives): self
     {
         $this->directives = $directives;
-        $this->searchTarget = 'directives';
+
         return $this;
     }
 
@@ -117,8 +124,9 @@ class ContentSearchRequest
         if ($attempts < 1) {
             throw new InvalidSearchParametersException('maxAttempts', 'Must be at least 1');
         }
-        
+
         $this->maxAttempts = $attempts;
+
         return $this;
     }
 
@@ -128,6 +136,7 @@ class ContentSearchRequest
     public function withOptions(array $options): self
     {
         $this->searchOptions = array_merge($this->searchOptions, $options);
+
         return $this;
     }
 
@@ -137,6 +146,7 @@ class ContentSearchRequest
     public function withOption(string $key, mixed $value): self
     {
         $this->searchOptions[$key] = $value;
+
         return $this;
     }
 
@@ -163,7 +173,7 @@ class ContentSearchRequest
 
     public function getLlmModel(): ?string
     {
-        return $this->llmModel;
+        return $this->llmModel ?: config('google-docs.file_id_detection_model');
     }
 
     public function getTaskDefinition(): ?TaskDefinition
@@ -172,7 +182,7 @@ class ContentSearchRequest
     }
 
     /**
-     * @return Collection|SupportCollection|null
+     * @return Artifact[]|Collection|SupportCollection|null
      */
     public function getArtifacts()
     {
@@ -180,16 +190,11 @@ class ContentSearchRequest
     }
 
     /**
-     * @return Collection|SupportCollection|null
+     * @return PromptDirective[]|Collection|SupportCollection|null
      */
     public function getDirectives()
     {
         return $this->directives;
-    }
-
-    public function getSearchTarget(): string
-    {
-        return $this->searchTarget;
     }
 
     public function isValidationRequired(): bool
@@ -220,25 +225,8 @@ class ContentSearchRequest
         // Must have at least one search method
         if (!$this->naturalLanguageQuery && !$this->fieldPath && !$this->regexPattern) {
             throw new InvalidSearchParametersException(
-                'searchMethod', 
+                'searchMethod',
                 'Must specify at least one search method: naturalLanguageQuery, fieldPath, or regexPattern'
-            );
-        }
-
-        // Must have search target
-        if ($this->searchTarget === 'artifacts' && (!$this->artifacts || $this->artifacts->isEmpty())) {
-            throw new InvalidSearchParametersException('artifacts', 'Artifacts collection is required when searching artifacts');
-        }
-
-        if ($this->searchTarget === 'directives' && (!$this->directives || $this->directives->isEmpty())) {
-            throw new InvalidSearchParametersException('directives', 'Directives collection is required when searching directives');
-        }
-
-        // Task definition required for LLM operations
-        if ($this->naturalLanguageQuery && !$this->taskDefinition) {
-            throw new InvalidSearchParametersException(
-                'taskDefinition', 
-                'TaskDefinition is required for natural language queries (LLM operations)'
             );
         }
 
@@ -246,7 +234,7 @@ class ContentSearchRequest
         if ($this->regexPattern) {
             if (@preg_match($this->regexPattern, '') === false) {
                 throw new InvalidSearchParametersException(
-                    'regexPattern', 
+                    'regexPattern',
                     'Invalid regex pattern: ' . preg_last_error_msg()
                 );
             }
