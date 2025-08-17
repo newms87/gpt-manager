@@ -42,11 +42,10 @@
 					@cancel-edit="editMode = false"
 				/>
 
-				<!-- Files Section -->
-				<DemandDetailFiles
+				<!-- Documents Section -->
+				<DemandDetailDocuments
 					:demand="demand"
-					:files="demandFiles"
-					@update:files="handleFilesUpdate"
+					@update:input-files="handleInputFilesUpdate"
 				/>
 
 				<!-- Workflow Error Display -->
@@ -91,7 +90,7 @@
 import { usePusher } from "@/helpers/pusher";
 import { WorkflowRun } from "@/types";
 import { FaSolidExclamation } from "danx-icon";
-import { storeObject } from "quasar-ui-danx";
+import { storeObject, type StoredFile } from "quasar-ui-danx";
 import { computed, ref, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { DemandTemplateSelector } from "../../demand-templates/components";
@@ -99,7 +98,7 @@ import { UiCard, UiLoadingSpinner, UiMainLayout } from "../../shared";
 import type { UiDemand } from "../../shared/types";
 import {
 	DemandDetailActions,
-	DemandDetailFiles,
+	DemandDetailDocuments,
 	DemandDetailHeader,
 	DemandDetailInfo,
 	DemandQuickActions,
@@ -119,7 +118,6 @@ const {
 } = useDemands();
 
 const demand = ref<UiDemand | null>(null);
-const demandFiles = ref([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 const editMode = ref(false);
@@ -250,14 +248,13 @@ const loadDemand = async () => {
 	}
 };
 
-const handleUpdate = async (data: { title: string; description: string; files?: any[] }) => {
+const handleUpdate = async (data: { title: string; description: string; input_files?: StoredFile[] }) => {
 	if (!demand.value) return;
 
 	try {
 		const updatedDemand = await updateDemand(demand.value.id, data);
 		// Store the updated demand using storeObject for reactive updates
 		demand.value = storeObject(updatedDemand);
-		demandFiles.value = updatedDemand.files || [];
 		editMode.value = false;
 	} catch (err: any) {
 		error.value = err.message || "Failed to update demand";
@@ -335,16 +332,15 @@ const handleWriteDemandWithTemplate = async (template: any, instructions: string
 	}
 };
 
-const handleFilesUpdate = async (files: any[]) => {
+const handleInputFilesUpdate = async (inputFiles: StoredFile[]) => {
 	if (!demand.value) return;
 
 	try {
-		const updatedDemand = await updateDemand(demand.value.id, { files });
+		const updatedDemand = await updateDemand(demand.value.id, { input_files: inputFiles });
 		// Store the updated demand using storeObject for reactive updates
 		demand.value = storeObject(updatedDemand);
-		demandFiles.value = files;
 	} catch (err: any) {
-		error.value = err.message || "Failed to update files";
+		error.value = err.message || "Failed to update input files";
 	}
 };
 
@@ -364,10 +360,6 @@ const deleteDemand = async () => {
 // Watch for route changes and load demand
 watch(demandId, loadDemand, { immediate: true });
 
-// Sync demandFiles with demand.files
-watch(() => demand.value?.files, (files) => {
-	demandFiles.value = files || [];
-}, { immediate: true });
 
 // Debug logging for demand state changes
 watchEffect(() => {

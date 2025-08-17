@@ -20,13 +20,15 @@ class UiDemandsController extends ActionController
             app(UiDemandWorkflowService::class)->extractData($uiDemand);
 
             return UiDemandResource::make($uiDemand->fresh([
-                'storedFiles', 
+                'inputFiles', 
+                'outputFiles',
                 'teamObject', 
                 'workflowRuns.workflowDefinition.workflowNodes',
                 'workflowRuns.taskRuns'
             ]), [
                 'team_object' => true,
-                'files' => true,
+                'input_files' => true,
+                'output_files' => true,
                 'extract_data_workflow_run' => true,
                 'write_demand_workflow_run' => true,
             ]);
@@ -47,13 +49,15 @@ class UiDemandsController extends ActionController
             $workflowRun = app(UiDemandWorkflowService::class)->writeDemand($uiDemand, $templateId, $additionalInstructions);
 
             return UiDemandResource::make($uiDemand->fresh([
-                'storedFiles', 
+                'inputFiles', 
+                'outputFiles',
                 'teamObject', 
                 'workflowRuns.workflowDefinition.workflowNodes',
                 'workflowRuns.taskRuns'
             ]), [
                 'team_object' => true,
-                'files' => true,
+                'input_files' => true,
+                'output_files' => true,
                 'extract_data_workflow_run' => true,
                 'write_demand_workflow_run' => true,
             ]);

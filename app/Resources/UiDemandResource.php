@@ -37,8 +37,10 @@ class UiDemandResource extends ActionResource
 
             // Relationships
             'user'                    => fn($fields) => UserResource::make($demand->user, $fields),
-            'files'                   => fn($fields) => StoredFileResource::collection($demand->storedFiles, $fields),
-            'files_count'             => fn($fields) => $demand->storedFiles()->count(),
+            'input_files'             => fn($fields) => StoredFileResource::collection($demand->inputFiles, $fields),
+            'output_files'            => fn($fields) => StoredFileResource::collection($demand->outputFiles, $fields),
+            'input_files_count'       => fn($fields) => $demand->inputFiles()->count(),
+            'output_files_count'      => fn($fields) => $demand->outputFiles()->count(),
             'team_object'             => fn($fields) => TeamObjectResource::make($demand->teamObject, $fields),
         ];
     }
@@ -47,7 +49,8 @@ class UiDemandResource extends ActionResource
     {
         return static::make($model, $includeFields ?? [
             'user'                       => true,
-            'files'                      => ['thumb' => true],
+            'input_files'                => ['thumb' => true],
+            'output_files'               => ['thumb' => true],
             'team_object'                => true,
             'extract_data_workflow_run'  => true,
             'write_demand_workflow_run'  => true,

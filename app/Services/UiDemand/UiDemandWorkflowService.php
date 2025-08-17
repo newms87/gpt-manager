@@ -80,18 +80,13 @@ class UiDemandWorkflowService
             ]);
 
         } elseif ($workflowName === config('ui-demands.workflows.write_demand')) {
-            $googleDocsUrl = $this->extractGoogleDocsUrl($outputArtifacts);
-
             $metadata = [
                 'write_demand_completed_at' => now()->toIso8601String(),
                 'workflow_run_id'           => $workflowRun->id,
             ];
 
-            if ($googleDocsUrl) {
-                $storedFile = $this->createStoredFileForGoogleDocs($googleDocsUrl, $uiDemand);
-                $uiDemand->storedFiles()->attach($storedFile->id, ['category' => 'demand_output']);
-                $metadata['google_docs_url'] = $googleDocsUrl;
-            }
+            // Attach output files from workflow artifacts
+            $this->attachOutputFilesFromWorkflow($uiDemand, $outputArtifacts);
 
             $uiDemand->update([
                 'status'   => UiDemand::STATUS_DRAFT, // Stay as Draft until manually published
@@ -149,7 +144,7 @@ class UiDemandWorkflowService
             ]),
         ]);
 
-        $fileIds = $uiDemand->storedFiles()->pluck('stored_files.id')->toArray();
+        $fileIds = $uiDemand->inputFiles()->pluck('stored_files.id')->toArray();
         $workflowInput->storedFiles()->sync($fileIds);
 
         return $workflowInput;
@@ -188,42 +183,19 @@ class UiDemandWorkflowService
     }
 
 
-    protected function extractGoogleDocsUrl($artifacts): ?string
+    /**
+     * Attach output files from workflow artifacts to UiDemand
+     */
+    protected function attachOutputFilesFromWorkflow(UiDemand $uiDemand, $outputArtifacts): void
     {
-        foreach($artifacts as $artifact) {
-            if ($artifact->text_content && str_contains($artifact->text_content, 'docs.google.com')) {
-                preg_match('/https:\/\/docs\.google\.com\/[^\s]+/', $artifact->text_content, $matches);
-                if (!empty($matches)) {
-                    return $matches[0];
-                }
-            }
-
-            if ($artifact->json_content && isset($artifact->json_content['google_docs_url'])) {
-                return $artifact->json_content['google_docs_url'];
+        foreach ($outputArtifacts as $artifact) {
+            // Get all StoredFiles attached to this artifact
+            $artifactStoredFiles = $artifact->storedFiles;
+            
+            foreach ($artifactStoredFiles as $storedFile) {
+                // Reuse the StoredFile from artifact and attach to UiDemand as output
+                $uiDemand->outputFiles()->syncWithoutDetaching([$storedFile->id => ['category' => 'output']]);
             }
         }
-
-        return null;
-    }
-
-    protected function createStoredFileForGoogleDocs(string $url, UiDemand $uiDemand): StoredFile
-    {
-        $storedFile = StoredFile::make()->forceFill([
-            'team_id'  => $uiDemand->team_id,
-            'user_id'  => $uiDemand->user_id,
-            'disk'     => 'external',
-            'filepath' => $url,
-            'filename' => "Demand Output - {$uiDemand->title}.gdoc",
-            'mime'     => 'application/vnd.google-apps.document',
-            'size'     => 0,
-            'url'      => $url,
-            'meta'     => [
-                'type'      => 'google_docs',
-                'demand_id' => $uiDemand->id,
-            ],
-        ]);
-        $storedFile->save();
-
-        return $storedFile;
     }
 }

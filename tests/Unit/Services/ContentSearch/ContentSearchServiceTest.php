@@ -11,7 +11,9 @@ use App\Services\ContentSearch\ContentSearchRequest;
 use App\Services\ContentSearch\ContentSearchService;
 use App\Services\ContentSearch\Exceptions\InvalidSearchParametersException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Tests\AuthenticatedTestCase;
+use Tests\Feature\Api\TestAi\TestAiApi;
 use Tests\Traits\SetUpTeamTrait;
 
 class ContentSearchServiceTest extends AuthenticatedTestCase
@@ -26,6 +28,19 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
     {
         parent::setUp();
         $this->setUpTeam();
+
+        // Configure test models for testing
+        Config::set('ai.models.test-model', [
+            'api'     => TestAiApi::class,
+            'name'    => 'Test Model',
+            'context' => 4096,
+        ]);
+        
+        Config::set('ai.models.gpt-4o-mini', [
+            'api'     => TestAiApi::class,
+            'name'    => 'GPT-4o Mini',
+            'context' => 128000,
+        ]);
 
         $this->service = app(ContentSearchService::class);
 

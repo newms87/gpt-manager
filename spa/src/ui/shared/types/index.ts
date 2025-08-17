@@ -18,8 +18,10 @@ export interface UiDemand {
   extract_data_workflow_run?: WorkflowRun;
   write_demand_workflow_run?: WorkflowRun;
   user?: User;
-  files?: StoredFile[];
-  files_count?: number;
+  input_files?: StoredFile[];
+  output_files?: StoredFile[];
+  input_files_count?: number;
+  output_files_count?: number;
 }
 
 export interface UiNavigation {

@@ -5,10 +5,12 @@
 **ZERO TECH DEBT POLICY**
 
 - NO legacy code - remove or refactor immediately
-- NO backwards compatibility - always update to the right way
+- **ABSOLUTE ZERO BACKWARDS COMPATIBILITY** - NEVER EVER maintain old patterns, even temporarily
+- **IMMEDIATE REPLACEMENT ONLY** - Replace old code completely, no compatibility layers
 - ONE way to do everything - the correct, modern way
 - Remove dead code on sight
 - Refactor any code that doesn't meet standards
+- **ZERO TOLERANCE POLICY** - No exceptions, no matter how small or temporary
 - Never use chmod on files to fix permissions!!! Always use `./vendor/bin/sail artisan fix`
 - Never use the rg command, use grep instead
 - When attempting to run PHP files, always use sail php
@@ -225,11 +227,11 @@ If tests are failing unexpectedly (especially with dependency errors or missing 
 
 When encountering legacy code:
 
-1. Identify the correct pattern
-2. Refactor immediately - don't work around it
-3. Update all related code to match
-4. Remove dead code paths
-5. Test the refactored solution
+1. **IMMEDIATE REPLACEMENT** - Never work around legacy patterns
+2. **COMPLETE REMOVAL** - Delete old code entirely, no compatibility layers
+3. **ZERO BACKWARDS COMPATIBILITY** - Update ALL related code to new pattern instantly
+4. **NO GRADUAL MIGRATION** - Replace everything in one atomic change
+5. **COMPREHENSIVE TESTING** - Ensure complete replacement works correctly
 
 ## Custom Libraries (quasar-ui-danx & danx-icon)
 

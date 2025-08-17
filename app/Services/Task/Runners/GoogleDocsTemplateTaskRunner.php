@@ -158,7 +158,7 @@ INSTRUCTIONS;
      */
     protected function createOutputArtifact(array $newDocument, array $refinedMapping): Artifact
     {
-        return Artifact::create([
+        $artifact = Artifact::create([
             'team_id'      => $this->taskDefinition->team_id,
             'name'         => 'Generated Google Doc: ' . $newDocument['title'],
             'text_content' => "Successfully created Google Docs document from template.\n\nDocument Title: {$newDocument['title']}\nDocument URL: {$newDocument['url']}\n\nVariable Mapping:\n" . json_encode($refinedMapping['variables'], JSON_PRETTY_PRINT),
@@ -175,5 +175,38 @@ INSTRUCTIONS;
                 'mapping'  => $refinedMapping,
             ],
         ]);
+
+        // Create and attach StoredFile for the generated Google Doc
+        $storedFile = $this->createGoogleDocsStoredFile($newDocument);
+        $artifact->storedFiles()->attach($storedFile->id);
+
+        return $artifact;
+    }
+
+    /**
+     * Create StoredFile for Google Docs output
+     */
+    protected function createGoogleDocsStoredFile(array $newDocument): StoredFile
+    {
+        $storedFile = new StoredFile([
+            'disk'     => 'external',
+            'filepath' => $newDocument['url'],
+            'filename' => $newDocument['title'] . '.gdoc',
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+            'url'      => $newDocument['url'],
+            'meta'     => [
+                'type'        => 'google_docs',
+                'document_id' => $newDocument['document_id'],
+                'created_at'  => $newDocument['created_at'],
+            ],
+        ]);
+
+        // Set team_id and user_id separately since they're not fillable
+        $storedFile->team_id = $this->taskDefinition->team_id;
+        $storedFile->user_id = user()?->id;
+        $storedFile->save();
+
+        return $storedFile;
     }
 }

@@ -6,12 +6,13 @@ use App\Events\WorkflowRunUpdatedEvent;
 use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowListener;
 use App\Services\UiDemand\UiDemandWorkflowService;
+use App\Traits\HasDebugLogging;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
 class WorkflowListenerCompletedListener implements ShouldQueue
 {
-    use InteractsWithQueue;
+    use InteractsWithQueue, HasDebugLogging;
 
     public function handle(WorkflowRunUpdatedEvent $event): void
     {
@@ -22,7 +23,12 @@ class WorkflowListenerCompletedListener implements ShouldQueue
         }
 
         $workflowListener = WorkflowListener::findForWorkflowRun($workflowRun);
-        
+
+        static::log('triggered', [
+            'workflow_run_id' => $workflowRun->id,
+            'listener_type'   => $workflowListener?->listener_type,
+        ]);
+
         if (!$workflowListener) {
             return;
         }

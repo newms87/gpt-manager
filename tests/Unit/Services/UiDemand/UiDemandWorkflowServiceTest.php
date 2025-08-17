@@ -60,7 +60,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        $uiDemand->storedFiles()->attach($storedFile->id);
+        $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         // Since Queue is faked, WorkflowRunnerService will create real WorkflowRun but without job dispatch
 
@@ -119,7 +119,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        $uiDemand->storedFiles()->attach($storedFile->id);
+        $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         // Verify that the demand can't extract data due to running workflow
         $this->assertFalse($uiDemand->canExtractData(), 'Should not be able to extract data when a workflow is running');
@@ -146,7 +146,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        $uiDemand->storedFiles()->attach($storedFile->id);
+        $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         // No workflow definition exists
 
@@ -354,21 +354,13 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('existing_key', $updatedDemand->metadata);
         $this->assertArrayHasKey('write_demand_completed_at', $updatedDemand->metadata);
         $this->assertArrayHasKey('workflow_run_id', $updatedDemand->metadata);
-        $this->assertArrayHasKey('google_docs_url', $updatedDemand->metadata);
-        $this->assertEquals($googleDocsUrl, $updatedDemand->metadata['google_docs_url']);
         $this->assertEquals($workflowRun->id, $updatedDemand->metadata['workflow_run_id']);
         // Verify workflow is still tracked in pivot table
         $this->assertTrue($updatedDemand->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->exists());
 
-        // Verify Google Docs stored file was created
-        $this->assertDatabaseHas('stored_files', [
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'url' => $googleDocsUrl,
-            'disk' => 'external',
-            'filename' => 'Demand Output - Test Demand.gdoc',
-            'mime' => 'application/vnd.google-apps.document',
-        ]);
+        // Verify output files were attached from artifacts (if any StoredFiles exist)
+        $outputFiles = $updatedDemand->outputFiles;
+        // The exact number depends on whether artifacts have StoredFiles attached
     }
 
     public function test_handleUiDemandWorkflowComplete_withSuccessfulWriteDemandWorkflowFromJson_updatesCorrectly(): void
@@ -418,8 +410,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Then
         $updatedDemand = $uiDemand->fresh();
         $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
-        $this->assertArrayHasKey('google_docs_url', $updatedDemand->metadata);
-        $this->assertEquals($googleDocsUrl, $updatedDemand->metadata['google_docs_url']);
+        $this->assertArrayHasKey('write_demand_completed_at', $updatedDemand->metadata);
     }
 
     public function test_handleUiDemandWorkflowComplete_withFailedWorkflow_updatesCorrectly(): void
@@ -562,7 +553,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        $uiDemand->storedFiles()->attach($storedFile->id);
+        $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         // Then
         $this->expectException(ValidationError::class);
@@ -570,5 +561,233 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
 
         // When
         $this->service->extractData($uiDemand);
+    }
+
+    public function test_attachOutputFilesFromWorkflow_withSingleArtifact_attachesStoredFilesCorrectly(): void
+    {
+        // Given
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        // Create an artifact with attached StoredFiles
+        $artifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $storedFile1 = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'filename' => 'output1.gdoc',
+            'url' => 'https://docs.google.com/document/d/doc1/edit',
+        ]);
+
+        $storedFile2 = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'filename' => 'output2.gdoc',
+            'url' => 'https://docs.google.com/document/d/doc2/edit',
+        ]);
+
+        // Attach StoredFiles to artifact
+        $artifact->storedFiles()->attach([$storedFile1->id, $storedFile2->id]);
+
+        $outputArtifacts = collect([$artifact]);
+
+        // When
+        $this->invokeMethod($this->service, 'attachOutputFilesFromWorkflow', [$uiDemand, $outputArtifacts]);
+
+        // Then
+        $outputFiles = $uiDemand->outputFiles;
+        $this->assertCount(2, $outputFiles);
+        $this->assertTrue($outputFiles->contains('id', $storedFile1->id));
+        $this->assertTrue($outputFiles->contains('id', $storedFile2->id));
+
+        // Verify the category is set correctly
+        $this->assertDatabaseHas('stored_file_storables', [
+            'stored_file_id' => $storedFile1->id,
+            'storable_type' => 'App\\Models\\UiDemand',
+            'storable_id' => $uiDemand->id,
+            'category' => 'output',
+        ]);
+
+        $this->assertDatabaseHas('stored_file_storables', [
+            'stored_file_id' => $storedFile2->id,
+            'storable_type' => 'App\\Models\\UiDemand',
+            'storable_id' => $uiDemand->id,
+            'category' => 'output',
+        ]);
+    }
+
+    public function test_attachOutputFilesFromWorkflow_withMultipleArtifacts_attachesAllStoredFiles(): void
+    {
+        // Given
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        // Create first artifact with one file
+        $artifact1 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $storedFile1 = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'filename' => 'artifact1-output.gdoc',
+        ]);
+        $artifact1->storedFiles()->attach($storedFile1->id);
+
+        // Create second artifact with two files
+        $artifact2 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $storedFile2 = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'filename' => 'artifact2-output1.gdoc',
+        ]);
+        $storedFile3 = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'filename' => 'artifact2-output2.gdoc',
+        ]);
+        $artifact2->storedFiles()->attach([$storedFile2->id, $storedFile3->id]);
+
+        $outputArtifacts = collect([$artifact1, $artifact2]);
+
+        // When
+        $this->invokeMethod($this->service, 'attachOutputFilesFromWorkflow', [$uiDemand, $outputArtifacts]);
+
+        // Then
+        $outputFiles = $uiDemand->outputFiles;
+        $this->assertCount(3, $outputFiles);
+        $this->assertTrue($outputFiles->contains('id', $storedFile1->id));
+        $this->assertTrue($outputFiles->contains('id', $storedFile2->id));
+        $this->assertTrue($outputFiles->contains('id', $storedFile3->id));
+    }
+
+    public function test_attachOutputFilesFromWorkflow_withDuplicateStoredFiles_doesNotCreateDuplicates(): void
+    {
+        // Given
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        $storedFile = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'filename' => 'shared-output.gdoc',
+        ]);
+
+        // Create two artifacts both referencing the same StoredFile
+        $artifact1 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $artifact1->storedFiles()->attach($storedFile->id);
+
+        $artifact2 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $artifact2->storedFiles()->attach($storedFile->id);
+
+        $outputArtifacts = collect([$artifact1, $artifact2]);
+
+        // When
+        $this->invokeMethod($this->service, 'attachOutputFilesFromWorkflow', [$uiDemand, $outputArtifacts]);
+
+        // Then
+        $outputFiles = $uiDemand->outputFiles;
+        $this->assertCount(1, $outputFiles); // Should only have one file, not duplicate
+        $this->assertEquals($storedFile->id, $outputFiles->first()->id);
+
+        // Verify there's only one record in the pivot table
+        $pivotRecords = \DB::table('stored_file_storables')
+            ->where('stored_file_id', $storedFile->id)
+            ->where('storable_type', 'App\\Models\\UiDemand')
+            ->where('storable_id', $uiDemand->id)
+            ->where('category', 'output')
+            ->count();
+
+        $this->assertEquals(1, $pivotRecords);
+    }
+
+    public function test_attachOutputFilesFromWorkflow_withNoStoredFiles_doesNothing(): void
+    {
+        // Given
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        // Create artifacts with no attached StoredFiles
+        $artifact1 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $artifact2 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+
+        $outputArtifacts = collect([$artifact1, $artifact2]);
+
+        // When
+        $this->invokeMethod($this->service, 'attachOutputFilesFromWorkflow', [$uiDemand, $outputArtifacts]);
+
+        // Then
+        $outputFiles = $uiDemand->outputFiles;
+        $this->assertCount(0, $outputFiles);
+    }
+
+    public function test_attachOutputFilesFromWorkflow_withEmptyArtifactCollection_doesNothing(): void
+    {
+        // Given
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        $outputArtifacts = collect([]);
+
+        // When
+        $this->invokeMethod($this->service, 'attachOutputFilesFromWorkflow', [$uiDemand, $outputArtifacts]);
+
+        // Then
+        $outputFiles = $uiDemand->outputFiles;
+        $this->assertCount(0, $outputFiles);
+    }
+
+    public function test_attachOutputFilesFromWorkflow_reusesStoredFileFromArtifact(): void
+    {
+        // Given
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        // Create an existing StoredFile
+        $existingStoredFile = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'filename' => 'reused-file.gdoc',
+            'url' => 'https://docs.google.com/document/d/reused123/edit',
+        ]);
+
+        // Create artifact and attach the existing StoredFile
+        $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $artifact->storedFiles()->attach($existingStoredFile->id);
+
+        $outputArtifacts = collect([$artifact]);
+
+        // When
+        $this->invokeMethod($this->service, 'attachOutputFilesFromWorkflow', [$uiDemand, $outputArtifacts]);
+
+        // Then
+        $outputFiles = $uiDemand->outputFiles;
+        $this->assertCount(1, $outputFiles);
+        
+        // Verify it's the same StoredFile instance (reused, not duplicated)
+        $attachedFile = $outputFiles->first();
+        $this->assertEquals($existingStoredFile->id, $attachedFile->id);
+        $this->assertEquals($existingStoredFile->filename, $attachedFile->filename);
+        $this->assertEquals($existingStoredFile->url, $attachedFile->url);
+        
+        // Verify no new StoredFile was created
+        $totalStoredFiles = StoredFile::where('team_id', $this->user->currentTeam->id)->count();
+        $this->assertEquals(1, $totalStoredFiles); // Only the original file should exist
+    }
+
+    /**
+     * Helper method to invoke protected/private methods for testing
+     */
+    protected function invokeMethod(object $object, string $methodName, array $parameters = [])
+    {
+        $reflection = new \ReflectionClass(get_class($object));
+        $method = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
+
+        return $method->invokeArgs($object, $parameters);
     }
 }

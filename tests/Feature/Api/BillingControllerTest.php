@@ -31,13 +31,6 @@ class BillingControllerTest extends AuthenticatedTestCase
         // When
         $response = $this->get('/api/billing/subscription');
 
-        // Debug output for 503 error
-        if ($response->getStatusCode() !== 200) {
-            dump("Status: {$response->getStatusCode()}");
-            dump("Headers: " . json_encode($response->headers->all()));
-            dump("Content: " . $response->getContent());
-        }
-
         // Then
         $response->assertOk();
         $response->assertJson([

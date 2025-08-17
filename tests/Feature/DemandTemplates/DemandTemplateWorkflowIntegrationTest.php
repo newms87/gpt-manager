@@ -228,7 +228,7 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertEquals('Custom instructions without template', $inputArtifact->json_content['additional_instructions']);
     }
 
-    public function test_googleDocsTemplateTaskRunner_findsStoredFileId(): void
+    public function test_googleDocsTemplateTaskRunner_extractsGoogleDocIdFromStoredFile(): void
     {
         // Given
         $storedFile = StoredFile::factory()->create([
@@ -236,90 +236,6 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'url'     => 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
         ]);
 
-        // Create artifact with template_stored_file_id
-        $artifactData = [
-            'template_stored_file_id' => $storedFile->id,
-            'additional_instructions' => 'Test instructions',
-            'other_data'              => 'Some other data',
-        ];
-
-        // When - Mock the extraction process
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-        $taskProcess    = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
-
-        $runner    = GoogleDocsTemplateTaskRunner::make()
-            ->setTaskRun($taskRun)
-            ->setTaskProcess($taskProcess);
-        $artifacts = collect([
-            (object)[
-                'json_content' => $artifactData,
-                'meta'         => [],
-            ],
-        ]);
-
-        // Use reflection to test the protected method
-        $reflection = new \ReflectionClass($runner);
-        $method     = $reflection->getMethod('findGoogleDocFileId');
-        $method->setAccessible(true);
-
-        $result = $method->invoke($runner, $artifacts);
-
-        // Then
-        $this->assertEquals('1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', $result);
-    }
-
-    public function test_googleDocsTemplateTaskRunner_extractsIdFromJustId(): void
-    {
-        // Given
-        $storedFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'url'     => '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-        ]);
-
-        // Create artifact with template_stored_file_id
-        $artifactData = [
-            'template_stored_file_id' => $storedFile->id,
-        ];
-
-        // When - Mock the extraction process
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-        $taskProcess    = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
-
-        $runner    = GoogleDocsTemplateTaskRunner::make()
-            ->setTaskRun($taskRun)
-            ->setTaskProcess($taskProcess);
-        $artifacts = collect([
-            (object)[
-                'json_content' => $artifactData,
-                'meta'         => [],
-            ],
-        ]);
-
-        // Use reflection to test the protected method
-        $reflection = new \ReflectionClass($runner);
-        $method     = $reflection->getMethod('findGoogleDocFileId');
-        $method->setAccessible(true);
-
-        $result = $method->invoke($runner, $artifacts);
-
-        // Then
-        $this->assertEquals('1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', $result);
-    }
-
-    public function test_googleDocsTemplateTaskRunner_withNonExistentStoredFile_returnsNull(): void
-    {
-        // Given
-        $artifactData = [
-            'template_stored_file_id' => 'non-existent-uuid',
-        ];
-
-        // When - Mock the extraction process
         $taskDefinition = TaskDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
@@ -330,26 +246,79 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             ->setTaskRun($taskRun)
             ->setTaskProcess($taskProcess);
 
-        // Create a real artifact instead of mock object
-        $artifact  = Artifact::factory()->create([
-            'team_id'      => $this->user->currentTeam->id,
-            'json_content' => $artifactData,
-            'meta'         => [],
+        // Use reflection to test the protected method
+        $reflection = new \ReflectionClass($runner);
+        $method     = $reflection->getMethod('extractGoogleDocIdFromStoredFile');
+        $method->setAccessible(true);
+
+        // When
+        $result = $method->invoke($runner, $storedFile);
+
+        // Then
+        $this->assertEquals('1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', $result);
+    }
+
+    public function test_googleDocsTemplateTaskRunner_extractsIdFromPlainUrl(): void
+    {
+        // Given
+        $storedFile = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'url'     => 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
         ]);
-        $artifacts = collect([$artifact]);
+
+        $taskDefinition = TaskDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+        $taskProcess    = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
+
+        $runner = GoogleDocsTemplateTaskRunner::make()
+            ->setTaskRun($taskRun)
+            ->setTaskProcess($taskProcess);
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method     = $reflection->getMethod('findGoogleDocFileId');
+        $method     = $reflection->getMethod('extractGoogleDocIdFromStoredFile');
         $method->setAccessible(true);
 
-        $result = $method->invoke($runner, $artifacts);
+        // When
+        $result = $method->invoke($runner, $storedFile);
+
+        // Then
+        $this->assertEquals('1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', $result);
+    }
+
+    public function test_googleDocsTemplateTaskRunner_withInvalidUrl_returnsNull(): void
+    {
+        // Given
+        $storedFile = StoredFile::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'url'     => 'https://example.com/not-a-google-doc',
+        ]);
+
+        $taskDefinition = TaskDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+        $taskProcess    = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
+
+        $runner = GoogleDocsTemplateTaskRunner::make()
+            ->setTaskRun($taskRun)
+            ->setTaskProcess($taskProcess);
+
+        // Use reflection to test the protected method
+        $reflection = new \ReflectionClass($runner);
+        $method     = $reflection->getMethod('extractGoogleDocIdFromStoredFile');
+        $method->setAccessible(true);
+
+        // When
+        $result = $method->invoke($runner, $storedFile);
 
         // Then
         $this->assertNull($result);
     }
 
-    public function test_googleDocsTemplateTaskRunner_collectsTemplateData(): void
+    public function test_googleDocsTemplateTaskRunner_createsOutputArtifact(): void
     {
         // Given
         $taskDefinition = TaskDefinition::factory()->create([
@@ -358,38 +327,39 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
         $taskProcess    = $taskRun->taskProcesses()->create(['name' => 'Test Process', 'status' => 'pending']);
 
-        $runner    = GoogleDocsTemplateTaskRunner::make()
+        $runner = GoogleDocsTemplateTaskRunner::make()
             ->setTaskRun($taskRun)
             ->setTaskProcess($taskProcess);
-        $artifacts = collect([
-            (object)[
-                'json_content' => [
-                    'template_stored_file_id' => 'file-123',
-                    'additional_instructions' => 'Test instructions',
-                    'demand_id'               => 456,
-                    'title'                   => 'Test Demand',
-                ],
-                'meta'         => [
-                    'category' => 'insurance',
-                    'priority' => 'high',
-                ],
+
+        $newDocument = [
+            'document_id' => 'test-doc-id',
+            'url'         => 'https://docs.google.com/document/d/test-doc-id/edit',
+            'title'       => 'Test Document',
+            'created_at'  => now()->toIsoString(),
+        ];
+
+        $refinedMapping = [
+            'title'     => 'Test Document',
+            'variables' => [
+                'client_name' => 'John Doe',
+                'date'        => '2024-01-01',
             ],
-        ]);
+            'reasoning' => 'Mapped based on available data',
+        ];
 
         // When - Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method     = $reflection->getMethod('collectDataFromArtifacts');
+        $method     = $reflection->getMethod('createOutputArtifact');
         $method->setAccessible(true);
 
-        $result = $method->invoke($runner, $artifacts);
+        $result = $method->invoke($runner, $newDocument, $refinedMapping);
 
         // Then
-        // Verify the data exists but exclude the template_stored_file_id that should be filtered out
-        $this->assertEquals('Test instructions', $result['additional_instructions']);
-        $this->assertEquals(456, $result['demand_id']);
-        $this->assertEquals('Test Demand', $result['title']);
-        $this->assertEquals('insurance', $result['category']);
-        $this->assertEquals('high', $result['priority']);
-        $this->assertArrayNotHasKey('template_stored_file_id', $result);
+        $this->assertInstanceOf(Artifact::class, $result);
+        $this->assertStringContainsString('Generated Google Doc: Test Document', $result->name);
+        $this->assertStringContainsString('Successfully created Google Docs document', $result->text_content);
+        $this->assertEquals($newDocument['url'], $result->meta['google_doc_url']);
+        $this->assertEquals($newDocument['document_id'], $result->meta['google_doc_id']);
+        $this->assertEquals($refinedMapping['variables'], $result->meta['variable_mapping']);
     }
 }

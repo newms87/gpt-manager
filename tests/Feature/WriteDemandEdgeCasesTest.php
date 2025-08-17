@@ -305,7 +305,7 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        $uiDemand->storedFiles()->attach($storedFile->id);
+        $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         $service = app(UiDemandWorkflowService::class);
 

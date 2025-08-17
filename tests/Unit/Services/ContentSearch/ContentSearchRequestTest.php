@@ -147,7 +147,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         $this->assertEquals($this->taskDefinition->team_id, $request->getTeamId());
     }
 
-    public function test_searchArtifacts_setsArtifactsAndSearchTarget(): void
+    public function test_searchArtifacts_setsArtifacts(): void
     {
         // Given
         $artifacts = collect([
@@ -162,10 +162,9 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         // Then
         $this->assertSame($request, $result);
         $this->assertEquals($artifacts, $request->getArtifacts());
-        $this->assertEquals('artifacts', $request->getSearchTarget());
     }
 
-    public function test_searchDirectives_setsDirectivesAndSearchTarget(): void
+    public function test_searchDirectives_setsDirectives(): void
     {
         // Given
         $directives = collect([
@@ -179,7 +178,6 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         // Then
         $this->assertSame($request, $result);
         $this->assertEquals($directives, $request->getDirectives());
-        $this->assertEquals('directives', $request->getSearchTarget());
     }
 
     public function test_withMaxAttempts_setsMaxAttempts(): void
@@ -323,37 +321,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         $request->validate();
     }
 
-    public function test_validate_withArtifactsTargetButNoArtifacts_throwsException(): void
-    {
-        // Given
-        $request = ContentSearchRequest::create()
-            ->withFieldPath('template_stored_file_id')
-            ->withTaskDefinition($this->taskDefinition);
-        // Not calling searchArtifacts() - defaults to artifacts target
 
-        // Then
-        $this->expectException(InvalidSearchParametersException::class);
-        $this->expectExceptionMessage('Artifacts collection is required when searching artifacts');
-
-        // When
-        $request->validate();
-    }
-
-    public function test_validate_withDirectivesTargetButNoDirectives_throwsException(): void
-    {
-        // Given
-        $request = ContentSearchRequest::create()
-            ->withFieldPath('template_stored_file_id')
-            ->withTaskDefinition($this->taskDefinition)
-            ->searchDirectives(collect([])); // Empty directives collection
-
-        // Then
-        $this->expectException(InvalidSearchParametersException::class);
-        $this->expectExceptionMessage('Directives collection is required when searching directives');
-
-        // When
-        $request->validate();
-    }
 
     public function test_validate_withNaturalLanguageQueryButNoTaskDefinition_throwsException(): void
     {
@@ -417,7 +385,6 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         $this->assertEquals('gpt-4o-mini', $request->getLlmModel());
         $this->assertEquals($this->taskDefinition, $request->getTaskDefinition());
         $this->assertEquals($artifacts, $request->getArtifacts());
-        $this->assertEquals('artifacts', $request->getSearchTarget());
         $this->assertEquals(3, $request->getMaxAttempts());
         $this->assertTrue($request->getOption('debug'));
         $this->assertEquals(30, $request->getOption('timeout'));
@@ -477,11 +444,10 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         $this->assertNull($request->getFieldPath());
         $this->assertNull($request->getRegexPattern());
         $this->assertNull($request->getValidationCallback());
-        $this->assertNull($request->getLlmModel());
+        $this->assertEquals('gpt-5-nano', $request->getLlmModel()); // Default from config
         $this->assertNull($request->getTaskDefinition());
         $this->assertNull($request->getArtifacts());
         $this->assertNull($request->getDirectives());
-        $this->assertEquals('artifacts', $request->getSearchTarget()); // Default target
         $this->assertFalse($request->isValidationRequired());
         $this->assertEquals(3, $request->getMaxAttempts()); // Default max attempts
         $this->assertEquals([], $request->getSearchOptions());

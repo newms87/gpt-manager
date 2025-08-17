@@ -82,9 +82,17 @@ class UiDemand extends Model implements Auditable
         return $this->belongsTo(User::class);
     }
 
-    public function storedFiles(): MorphToMany
+    public function inputFiles(): MorphToMany
     {
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')
+            ->wherePivot('category', 'input')
+            ->withTimestamps();
+    }
+
+    public function outputFiles(): MorphToMany
+    {
+        return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')
+            ->wherePivot('category', 'output')
             ->withTimestamps();
     }
 
@@ -104,7 +112,7 @@ class UiDemand extends Model implements Auditable
     public function canExtractData(): bool
     {
         return $this->status === self::STATUS_DRAFT &&
-            $this->storedFiles()->count() > 0 &&
+            $this->inputFiles()->count() > 0 &&
             !$this->isExtractDataRunning();
     }
 

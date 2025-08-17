@@ -23,6 +23,11 @@ class ContentSearchRequest
     private int             $maxAttempts          = 3;
     private array           $searchOptions        = [];
 
+    public function __construct()
+    {
+        $this->llmModel = config('google-docs.file_id_detection_model');
+    }
+
     public static function create(): self
     {
         return new self();
@@ -173,7 +178,7 @@ class ContentSearchRequest
 
     public function getLlmModel(): ?string
     {
-        return $this->llmModel ?: config('google-docs.file_id_detection_model');
+        return $this->llmModel;
     }
 
     public function getTaskDefinition(): ?TaskDefinition
@@ -217,6 +222,7 @@ class ContentSearchRequest
         return $this->searchOptions[$key] ?? $default;
     }
 
+
     /**
      * Validate the request configuration
      */
@@ -227,6 +233,27 @@ class ContentSearchRequest
             throw new InvalidSearchParametersException(
                 'searchMethod',
                 'Must specify at least one search method: naturalLanguageQuery, fieldPath, or regexPattern'
+            );
+        }
+
+        // Validate that we have something to search
+        $hasArtifacts = $this->artifacts !== null && (!is_countable($this->artifacts) || count($this->artifacts) > 0);
+        $hasDirectives = $this->directives !== null && (!is_countable($this->directives) || count($this->directives) > 0);
+        $hasTaskDefinitionForDirectives = $this->taskDefinition !== null;
+        
+        // Check if we have at least one search source
+        if (!$hasArtifacts && !$hasDirectives && !$hasTaskDefinitionForDirectives) {
+            throw new InvalidSearchParametersException(
+                'searchSources',
+                'Must provide at least one search source: artifacts, directives, or task definition for directive resolution'
+            );
+        }
+
+        // Check if task definition is required for natural language queries
+        if ($this->naturalLanguageQuery && $this->taskDefinition === null) {
+            throw new InvalidSearchParametersException(
+                'taskDefinition',
+                'TaskDefinition is required for natural language queries'
             );
         }
 

@@ -40,10 +40,15 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'name' => 'Extract Service Dates',
         ]);
 
+        $teamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
             'status' => UiDemand::STATUS_DRAFT,
+            'team_object_id' => $teamObject->id,
             'title' => 'Test Demand',
         ]);
 
@@ -51,7 +56,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        $uiDemand->storedFiles()->attach($storedFile->id);
+        $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         // When
         $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/extract-data");
@@ -235,7 +240,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        $uiDemand->storedFiles()->attach($storedFile->id);
+        $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         // When
         $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/extract-data");
@@ -245,7 +250,8 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
 
         $data = $response->json();
         $this->assertArrayHasKey('team_object', $data);
-        $this->assertArrayHasKey('files', $data);
+        $this->assertArrayHasKey('input_files', $data);
+        $this->assertArrayHasKey('output_files', $data);
         $this->assertArrayHasKey('extract_data_workflow_run', $data);
         
         // Verify workflow run has necessary data
