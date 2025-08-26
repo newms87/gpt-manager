@@ -26,6 +26,7 @@ class DemandTemplateRepository extends ActionRepository
         return match ($action) {
             'create' => $service->createTemplate($data ?? []),
             'update' => $service->updateTemplate($model, $data ?? []),
+            'fetch-template-variables' => $service->fetchTemplateVariables($model),
             default => parent::applyAction($action, $model, $data)
         };
     }

@@ -18,6 +18,7 @@ class DemandTemplateResource extends ActionResource
             'category' => $demandTemplate->category,
             'is_active' => $demandTemplate->is_active,
             'metadata' => $demandTemplate->metadata,
+            'template_variables' => $demandTemplate->template_variables,
             'template_url' => $demandTemplate->getTemplateUrl(),
             'google_doc_id' => $demandTemplate->extractGoogleDocId(),
             'created_at' => $demandTemplate->created_at,

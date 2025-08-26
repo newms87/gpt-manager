@@ -6,6 +6,7 @@ use App\Models\TeamObject\TeamObject;
 use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
+use App\Models\Workflow\WorkflowListener;
 use App\Models\Workflow\WorkflowRun;
 use App\Repositories\WorkflowInputRepository;
 use App\Services\Workflow\WorkflowRunnerService;
@@ -25,6 +26,13 @@ class UiDemandWorkflowService
 
         $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$workflowInput->toArtifact()]);
 
+        // Create WorkflowListener for callbacks
+        WorkflowListener::createForListener(
+            $uiDemand,
+            $workflowRun,
+            WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA
+        );
+
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 
         return $workflowRun;
@@ -40,6 +48,13 @@ class UiDemandWorkflowService
         $workflowInput      = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand', $templateId, $additionalInstructions);
 
         $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$workflowInput->toArtifact()]);
+
+        // Create WorkflowListener for callbacks
+        WorkflowListener::createForListener(
+            $uiDemand,
+            $workflowRun,
+            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
+        );
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
 

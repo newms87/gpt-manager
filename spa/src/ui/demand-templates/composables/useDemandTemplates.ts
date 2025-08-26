@@ -7,11 +7,11 @@ export function useDemandTemplates() {
 	const createAction = dxDemandTemplate.getAction("create");
 	const updateAction = dxDemandTemplate.getAction("update");
 	const deleteAction = dxDemandTemplate.getAction("delete");
+	const fetchTemplateVariablesAction = dxDemandTemplate.getAction("fetch-template-variables");
 
 	// Computed properties
 	const templates = computed(() => {
-		const pagedData = dxDemandTemplate.pagedItems.value;
-		return pagedData?.data || [];
+		return dxDemandTemplate.pagedItems.value?.data || [];
 	});
 
 	const activeTemplates = computed(() =>
@@ -53,6 +53,26 @@ export function useDemandTemplates() {
 		return updateAction.trigger(template, { is_active: !template.is_active });
 	};
 
+	const fetchTemplateVariables = async (templateId: number) => {
+		return fetchTemplateVariablesAction.trigger(templateId, {});
+	};
+
+	const mergeTemplateVariables = (
+			existingVariables: Record<string, string> = {},
+			fetchedVariables: Record<string, string> = {}
+	): Record<string, string> => {
+		const merged: Record<string, string> = { ...existingVariables };
+
+		// Add new variables from fetched data, preserving existing descriptions
+		Object.keys(fetchedVariables).forEach(key => {
+			if (!(key in merged)) {
+				merged[key] = fetchedVariables[key] || "";
+			}
+		});
+
+		return merged;
+	};
+
 	return {
 		templates: sortedTemplates,
 		activeTemplates,
@@ -62,6 +82,8 @@ export function useDemandTemplates() {
 		createTemplate,
 		updateTemplate,
 		deleteTemplate,
-		toggleActive
+		toggleActive,
+		fetchTemplateVariables,
+		mergeTemplateVariables
 	};
 }

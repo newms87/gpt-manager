@@ -29,18 +29,19 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
             throw new Exception("Could not extract Google Doc ID from StoredFile URL: {$storedFile->url}");
         }
 
-        // Step 2: Extract variables from the template
-        $googleDocsApi     = app(GoogleDocsApi::class);
-        $templateVariables = $googleDocsApi->extractTemplateVariables($googleDocFileId);
+        // Step 2: Get pre-resolved template variables from StoredFile meta
+        $templateVariables = $this->getTemplateVariablesFromStoredFile($storedFile, $googleDocFileId);
 
-        static::log('Template variables extracted', [
-            'variables' => $templateVariables,
+        static::log('Template variables retrieved', [
+            'variables' => array_keys($templateVariables),
+            'source' => $storedFile->meta['template_variables'] ?? null ? 'pre_resolved' : 'dynamic_extraction',
         ]);
 
         $agentThread     = $this->setupAgentThread($this->taskProcess->inputArtifacts);
         $variableMapping = $this->executeVariableMappingWithAgent($agentThread, $templateVariables);
 
         // Step 6: Create document from template
+        $googleDocsApi = app(GoogleDocsApi::class);
         $newDocument = $googleDocsApi->createDocumentFromTemplate(
             $googleDocFileId,
             $variableMapping['variables'],
@@ -86,6 +87,46 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
+     * Get template variables from StoredFile meta or extract dynamically as fallback
+     */
+    protected function getTemplateVariablesFromStoredFile(StoredFile $storedFile, string $googleDocFileId): array
+    {
+        $meta = $storedFile->meta ?? [];
+        
+        if (isset($meta['template_variables']) && is_array($meta['template_variables']) && !empty($meta['template_variables'])) {
+            return $meta['template_variables'];
+        }
+
+        $googleDocsApi = app(GoogleDocsApi::class);
+        $variables = $googleDocsApi->extractTemplateVariables($googleDocFileId);
+        
+        $templateVariables = [];
+        foreach ($variables as $variable) {
+            $templateVariables[$variable] = '';
+        }
+        
+        return $templateVariables;
+    }
+
+    /**
+     * Format template variables with descriptions for agent instructions
+     */
+    protected function formatTemplateVariablesForAgent(array $templateVariables): string
+    {
+        $formattedVariables = [];
+        
+        foreach ($templateVariables as $variable => $description) {
+            if (!empty($description)) {
+                $formattedVariables[] = "{{$variable}}: $description";
+            } else {
+                $formattedVariables[] = "{{$variable}}";
+            }
+        }
+        
+        return implode(', ', $formattedVariables);
+    }
+
+    /**
      * Extract Google Doc ID from StoredFile URL
      */
     protected function extractGoogleDocIdFromStoredFile(StoredFile $storedFile): ?string
@@ -103,7 +144,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
      */
     protected function executeVariableMappingWithAgent(AgentThread $agentThread, array $templateVariables): array
     {
-        $templateVariablesList = implode(', ', array_map(fn($v) => "{{$v}}", $templateVariables));
+        $templateVariablesList = $this->formatTemplateVariablesForAgent($templateVariables);
 
         $instructions = <<<INSTRUCTIONS
 You are helping to populate a Google Docs template with data. Please review the template variables and suggest the best mapping and document title.
@@ -123,8 +164,9 @@ Please provide your response in the following JSON format:
 Requirements:
 1. Suggest an appropriate document title based on the available data
 2. Map each template variable to the most appropriate value from the available data
-3. If no good mapping exists for a variable, use an empty string ""
-4. Provide brief reasoning for your choices
+3. Use the variable descriptions provided to understand what each variable should contain
+4. If no good mapping exists for a variable, use an empty string ""
+5. Provide brief reasoning for your choices
 
 IMPORTANT: Return ONLY valid JSON in the exact format shown above.
 INSTRUCTIONS;

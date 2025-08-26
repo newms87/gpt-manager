@@ -25,11 +25,13 @@ class DemandTemplate extends Model implements AuditableContract
         'description',
         'category',
         'metadata',
+        'template_variables',
         'is_active',
     ];
 
     protected $casts = [
         'metadata' => 'array',
+        'template_variables' => 'array',
         'is_active' => 'boolean',
     ];
 
@@ -73,6 +75,7 @@ class DemandTemplate extends Model implements AuditableContract
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:255'],
             'metadata' => ['nullable', 'array'],
+            'template_variables' => ['nullable', 'array'],
             'is_active' => ['boolean'],
         ])->validate();
 

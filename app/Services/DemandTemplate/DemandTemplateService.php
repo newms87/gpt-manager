@@ -2,15 +2,18 @@
 
 namespace App\Services\DemandTemplate;
 
+use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\DemandTemplate;
 use App\Services\GoogleDocs\GoogleDocsFileService;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class DemandTemplateService
 {
     public function __construct(
-        private readonly GoogleDocsFileService $googleDocsFileService
+        private readonly GoogleDocsFileService $googleDocsFileService,
+        private readonly GoogleDocsApi         $googleDocsApi
     )
     {
     }
@@ -61,6 +64,11 @@ class DemandTemplateService
             $template->validate();
             $template->save();
 
+            // Sync template variables to StoredFile if they were updated
+            if (isset($data['template_variables'])) {
+                $this->syncVariablesToStoredFile($template);
+            }
+
             return $template;
         });
     }
@@ -74,5 +82,47 @@ class DemandTemplateService
         if (!$currentTeam || $template->team_id !== $currentTeam->id) {
             throw new ValidationError('You do not have permission to access this demand template', 403);
         }
+    }
+
+    /**
+     * Fetch template variables from Google Docs and update the template
+     */
+    public function fetchTemplateVariables(DemandTemplate $template): DemandTemplate
+    {
+        $this->validateOwnership($template);
+
+        $googleDocId = $template->extractGoogleDocId();
+        if (!$googleDocId) {
+            throw new ValidationError('Template does not have a valid Google Docs URL', 400);
+        }
+
+        return DB::transaction(function () use ($template, $googleDocId) {
+            $templateVariables = $this->googleDocsApi->extractTemplateVariables($googleDocId);
+
+            $template->template_variables = $templateVariables;
+            $template->save();
+
+            // Sync to StoredFile meta for TaskRunner consumption
+            $this->syncVariablesToStoredFile($template);
+
+            return $template->fresh();
+        });
+    }
+
+    /**
+     * Sync template variables to StoredFile meta field
+     */
+    public function syncVariablesToStoredFile(DemandTemplate $template): void
+    {
+        if (!$template->storedFile || !$template->template_variables) {
+            throw new Exception('Template does not have a stored file or template variables are empty: ' . $template->storedFile?->url . ' - ' . json_encode($template->template_variables), 400);
+        }
+
+        $storedFile                 = $template->storedFile;
+        $meta                       = $storedFile->meta ?? [];
+        $meta['template_variables'] = $template->template_variables;
+
+        $storedFile->meta = $meta;
+        $storedFile->save();
     }
 }

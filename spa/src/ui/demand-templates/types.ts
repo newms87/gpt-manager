@@ -7,6 +7,7 @@ export interface DemandTemplate {
   metadata?: Record<string, any>;
   template_url?: string;
   google_doc_id?: string;
+  template_variables?: Record<string, string>;
   stored_file?: {
     id: string;
     url: string;
