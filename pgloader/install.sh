@@ -21,4 +21,4 @@ make clean
 make pgloader
 make save  # THIS STEP IS CRUCIAL
 
-mv build/bin/pgloader /usr/local/bin/pgloader --force
+sudo mv build/bin/pgloader /usr/local/bin/pgloader --force
