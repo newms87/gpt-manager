@@ -37,7 +37,7 @@ class UiDemandRepository extends ActionRepository
         $data['status']  = UiDemand::STATUS_DRAFT;
 
         $demand = UiDemand::create($data);
-        $this->syncStoredFiles($demand, $data);
+        $this->syncInputFiles($demand, $data);
 
         // Create team object immediately
         $teamObjectRepo = app(TeamObjectRepository::class);
@@ -53,22 +53,22 @@ class UiDemandRepository extends ActionRepository
 
         $demand->update(['team_object_id' => $teamObject->id]);
 
-        return $demand->fresh(['storedFiles', 'teamObject']);
+        return $demand;
     }
 
     protected function updateDemand(UiDemand $demand, array $data): UiDemand
     {
         $demand->update($data);
-        $this->syncStoredFiles($demand, $data);
+        $this->syncInputFiles($demand, $data);
 
-        return $demand->fresh(['storedFiles']);
+        return $demand;
     }
 
-    public function syncStoredFiles(UiDemand $demand, array $data): void
+    public function syncInputFiles(UiDemand $demand, array $data): void
     {
         if (isset($data['files'])) {
             $files = StoredFile::whereIn('id', collect($data['files'])->pluck('id'))->get();
-            $demand->storedFiles()->sync($files);
+            $demand->inputFiles()->sync($files);
         }
     }
 }
