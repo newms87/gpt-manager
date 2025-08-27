@@ -7,15 +7,11 @@ use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
-use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
-use App\Repositories\WorkflowInputRepository;
 use App\Services\UiDemand\UiDemandWorkflowService;
-use App\Services\Workflow\WorkflowRunnerService;
-use Illuminate\Support\Facades\Queue;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
@@ -23,7 +19,7 @@ use Tests\Traits\SetUpTeamTrait;
 
 class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     protected UiDemandWorkflowService $service;
 
@@ -36,7 +32,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Set up workflow configuration
         Config::set('ui-demands.workflows.extract_data', 'Extract Service Dates');
         Config::set('ui-demands.workflows.write_demand', 'Write Demand Summary');
-        
+
         // Mock queue to prevent actual job dispatching
         Queue::fake();
     }
@@ -46,14 +42,14 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test Demand',
+            'status'  => UiDemand::STATUS_DRAFT,
+            'title'   => 'Test Demand',
         ]);
 
         $storedFile = StoredFile::factory()->create([
@@ -80,8 +76,8 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_COMPLETED, // Invalid status
-            'title' => 'Test Demand',
+            'status'  => UiDemand::STATUS_COMPLETED, // Invalid status
+            'title'   => 'Test Demand',
         ]);
 
         // Then
@@ -97,21 +93,21 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
-        
+
         $existingWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'running'
+            'status'                 => 'running',
         ]);
-        
+
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test Demand',
+            'status'  => UiDemand::STATUS_DRAFT,
+            'title'   => 'Test Demand',
         ]);
-        
+
         // Create a running extract data workflow in the pivot table
         $uiDemand->workflowRuns()->attach($existingWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 
@@ -138,8 +134,8 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test Demand',
+            'status'  => UiDemand::STATUS_DRAFT,
+            'title'   => 'Test Demand',
         ]);
 
         $storedFile = StoredFile::factory()->create([
@@ -163,12 +159,12 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Data',
+            'name'    => 'Extract Data',
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -176,18 +172,18 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
-            'title' => 'Test Demand',
+            'metadata'       => ['extract_data_completed_at' => now()->toIso8601String()],
+            'title'          => 'Test Demand',
         ]);
 
         // Create a completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'completed_at' => now(),
+            'completed_at'           => now(),
         ]);
 
         // Attach the completed extract data workflow to the ui demand
@@ -211,11 +207,11 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
     {
         // Given
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => null, // No team object
-            'title' => 'Test Demand',
+            'title'          => 'Test Demand',
         ]);
 
         // Then
@@ -234,12 +230,12 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'metadata' => [], // No extract data completed metadata
-            'title' => 'Test Demand',
+            'metadata'       => [], // No extract data completed metadata
+            'title'          => 'Test Demand',
         ]);
 
         // Then
@@ -255,23 +251,23 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
-        
+
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
+            'status'   => UiDemand::STATUS_DRAFT,
             'metadata' => ['existing_key' => 'existing_value'],
-            'title' => 'Test Demand',
+            'title'    => 'Test Demand',
         ]);
-        
+
         // Connect via pivot table
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 
@@ -284,7 +280,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         $taskRun = TaskRun::factory()->create([
-            'workflow_run_id' => $workflowRun->id,
+            'workflow_run_id'  => $workflowRun->id,
             'workflow_node_id' => $workflowNode->id,
         ]);
         $taskRun->outputArtifacts()->attach($artifact->id);
@@ -308,29 +304,29 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
-        
+
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
+            'status'   => UiDemand::STATUS_DRAFT,
             'metadata' => ['existing_key' => 'existing_value'],
-            'title' => 'Test Demand',
+            'title'    => 'Test Demand',
         ]);
-        
+
         // Connect via pivot table
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
 
         $googleDocsUrl = 'https://docs.google.com/document/d/test123/edit';
-        $artifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+        $artifact      = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => "Generated document: {$googleDocsUrl}",
         ]);
 
@@ -339,7 +335,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         $taskRun = TaskRun::factory()->create([
-            'workflow_run_id' => $workflowRun->id,
+            'workflow_run_id'  => $workflowRun->id,
             'workflow_node_id' => $workflowNode->id,
         ]);
         $taskRun->outputArtifacts()->attach($artifact->id);
@@ -368,29 +364,29 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
-        
+
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
+            'status'   => UiDemand::STATUS_DRAFT,
             'metadata' => ['existing_key' => 'existing_value'],
-            'title' => 'Test Demand',
+            'title'    => 'Test Demand',
         ]);
-        
+
         // Connect via pivot table
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
 
         $googleDocsUrl = 'https://docs.google.com/document/d/test456/edit';
-        $artifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+        $artifact      = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
             'json_content' => ['google_docs_url' => $googleDocsUrl],
         ]);
 
@@ -399,7 +395,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         $taskRun = TaskRun::factory()->create([
-            'workflow_run_id' => $workflowRun->id,
+            'workflow_run_id'  => $workflowRun->id,
             'workflow_node_id' => $workflowNode->id,
         ]);
         $taskRun->outputArtifacts()->attach($artifact->id);
@@ -418,23 +414,23 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'failed',
-            'failed_at' => now(),
+            'status'                 => 'failed',
+            'failed_at'              => now(),
         ]);
-        
+
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
+            'status'   => UiDemand::STATUS_DRAFT,
             'metadata' => ['existing_key' => 'existing_value'],
-            'title' => 'Test Demand',
+            'title'    => 'Test Demand',
         ]);
-        
+
         // Connect via pivot table
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 
@@ -459,14 +455,14 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
-            'id' => 999,
+            'id'                     => 999,
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
 
         // No UiDemand with workflow_run_id = 999
@@ -485,27 +481,27 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
-        
+
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test Demand',
+            'status'  => UiDemand::STATUS_DRAFT,
+            'title'   => 'Test Demand',
         ]);
-        
+
         // Connect via pivot table
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
 
         $artifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Some content without Google Docs URL',
         ]);
 
@@ -514,7 +510,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         $taskRun = TaskRun::factory()->create([
-            'workflow_run_id' => $workflowRun->id,
+            'workflow_run_id'  => $workflowRun->id,
             'workflow_node_id' => $workflowNode->id,
         ]);
         $taskRun->outputArtifacts()->attach($artifact->id);
@@ -533,7 +529,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Verify no stored file was created
         $this->assertDatabaseMissing('stored_files', [
             'team_id' => $this->user->currentTeam->id,
-            'disk' => 'external',
+            'disk'    => 'external',
         ]);
     }
 
@@ -545,8 +541,8 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test Demand',
+            'status'  => UiDemand::STATUS_DRAFT,
+            'title'   => 'Test Demand',
         ]);
 
         $storedFile = StoredFile::factory()->create([
@@ -577,15 +573,15 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         $storedFile1 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filename' => 'output1.gdoc',
-            'url' => 'https://docs.google.com/document/d/doc1/edit',
+            'url'      => 'https://docs.google.com/document/d/doc1/edit',
         ]);
 
         $storedFile2 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filename' => 'output2.gdoc',
-            'url' => 'https://docs.google.com/document/d/doc2/edit',
+            'url'      => 'https://docs.google.com/document/d/doc2/edit',
         ]);
 
         // Attach StoredFiles to artifact
@@ -605,16 +601,16 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Verify the category is set correctly
         $this->assertDatabaseHas('stored_file_storables', [
             'stored_file_id' => $storedFile1->id,
-            'storable_type' => 'App\\Models\\UiDemand',
-            'storable_id' => $uiDemand->id,
-            'category' => 'output',
+            'storable_type'  => 'App\\Models\\UiDemand',
+            'storable_id'    => $uiDemand->id,
+            'category'       => 'output',
         ]);
 
         $this->assertDatabaseHas('stored_file_storables', [
             'stored_file_id' => $storedFile2->id,
-            'storable_type' => 'App\\Models\\UiDemand',
-            'storable_id' => $uiDemand->id,
-            'category' => 'output',
+            'storable_type'  => 'App\\Models\\UiDemand',
+            'storable_id'    => $uiDemand->id,
+            'category'       => 'output',
         ]);
     }
 
@@ -627,21 +623,21 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         // Create first artifact with one file
-        $artifact1 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $artifact1   = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $storedFile1 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filename' => 'artifact1-output.gdoc',
         ]);
         $artifact1->storedFiles()->attach($storedFile1->id);
 
         // Create second artifact with two files
-        $artifact2 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $artifact2   = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $storedFile2 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filename' => 'artifact2-output1.gdoc',
         ]);
         $storedFile3 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filename' => 'artifact2-output2.gdoc',
         ]);
         $artifact2->storedFiles()->attach([$storedFile2->id, $storedFile3->id]);
@@ -668,7 +664,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
 
         $storedFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filename' => 'shared-output.gdoc',
         ]);
 
@@ -750,9 +746,9 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
 
         // Create an existing StoredFile
         $existingStoredFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filename' => 'reused-file.gdoc',
-            'url' => 'https://docs.google.com/document/d/reused123/edit',
+            'url'      => 'https://docs.google.com/document/d/reused123/edit',
         ]);
 
         // Create artifact and attach the existing StoredFile
@@ -767,13 +763,13 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Then
         $outputFiles = $uiDemand->outputFiles;
         $this->assertCount(1, $outputFiles);
-        
+
         // Verify it's the same StoredFile instance (reused, not duplicated)
         $attachedFile = $outputFiles->first();
         $this->assertEquals($existingStoredFile->id, $attachedFile->id);
         $this->assertEquals($existingStoredFile->filename, $attachedFile->filename);
         $this->assertEquals($existingStoredFile->url, $attachedFile->url);
-        
+
         // Verify no new StoredFile was created
         $totalStoredFiles = StoredFile::where('team_id', $this->user->currentTeam->id)->count();
         $this->assertEquals(1, $totalStoredFiles); // Only the original file should exist
@@ -785,7 +781,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
     protected function invokeMethod(object $object, string $methodName, array $parameters = [])
     {
         $reflection = new \ReflectionClass(get_class($object));
-        $method = $reflection->getMethod($methodName);
+        $method     = $reflection->getMethod($methodName);
         $method->setAccessible(true);
 
         return $method->invokeArgs($object, $parameters);

@@ -3,15 +3,13 @@
 namespace Tests\Unit\Services\ContentSearch;
 
 use App\Models\Task\Artifact;
-use App\Models\Task\TaskDefinitionDirective;
 use App\Services\ContentSearch\ContentSearchResult;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
 class ContentSearchResultTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     public function setUp(): void
     {
@@ -33,9 +31,9 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_setFound_marksAsFoundWithValue(): void
     {
         // Given
-        $result = ContentSearchResult::create();
-        $value = 'test-file-id-123';
-        $method = 'field_path';
+        $result     = ContentSearchResult::create();
+        $value      = 'test-file-id-123';
+        $method     = 'field_path';
         $confidence = 0.95;
 
         // When
@@ -69,7 +67,7 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     {
         // Given
         $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $result = ContentSearchResult::create();
+        $result   = ContentSearchResult::create();
         $location = 'json_content.template_stored_file_id';
 
         // When
@@ -86,11 +84,11 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_setSourceDirective_setsDirectiveAsSource(): void
     {
         // Given
-        $directive = new \stdClass();
-        $directive->id = 1;
+        $directive                 = new \stdClass();
+        $directive->id             = 1;
         $directive->directive_text = 'Test directive text';
-        $result = ContentSearchResult::create();
-        $location = 'directive_text';
+        $result                    = ContentSearchResult::create();
+        $location                  = 'directive_text';
 
         // When
         $returnedResult = $result->setSourceDirective($directive, $location);
@@ -150,7 +148,7 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_setMetadata_setsMetadata(): void
     {
         // Given
-        $result = ContentSearchResult::create();
+        $result   = ContentSearchResult::create();
         $metadata = ['key1' => 'value1', 'key2' => 'value2'];
 
         // When
@@ -192,7 +190,7 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_setAllMatches_setsMatches(): void
     {
         // Given
-        $result = ContentSearchResult::create();
+        $result  = ContentSearchResult::create();
         $matches = ['match1', 'match2', 'match3'];
 
         // When
@@ -219,7 +217,7 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_setDebugInfo_mergesDebugInformation(): void
     {
         // Given
-        $result = ContentSearchResult::create()
+        $result       = ContentSearchResult::create()
             ->addDebugInfo('existing', 'value');
         $newDebugInfo = ['new_key' => 'new_value', 'existing' => 'overridden'];
 
@@ -286,9 +284,9 @@ class ContentSearchResultTest extends AuthenticatedTestCase
         // Given
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Test Artifact',
+            'name'    => 'Test Artifact',
         ]);
-        $result = ContentSearchResult::create()
+        $result   = ContentSearchResult::create()
             ->setSourceArtifact($artifact, 'json_content.field');
 
         // When
@@ -304,10 +302,10 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_getSourceDescription_withDirective_returnsDescriptiveText(): void
     {
         // Given
-        $directive = new \stdClass();
-        $directive->id = 1;
+        $directive                 = new \stdClass();
+        $directive->id             = 1;
         $directive->directive_text = 'Test directive text';
-        $result = ContentSearchResult::create()
+        $result                    = ContentSearchResult::create()
             ->setSourceDirective($directive, 'directive_text');
 
         // When
@@ -323,7 +321,7 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     {
         // Given
         $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $result = ContentSearchResult::create()
+        $result   = ContentSearchResult::create()
             ->setFound('test-value', 'field_path', 0.95)
             ->setSourceArtifact($artifact, 'json_content.field')
             ->setValidated(true)
@@ -354,8 +352,8 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_fieldPathFound_createsCorrectResult(): void
     {
         // Given
-        $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $value = 'test-file-id';
+        $artifact  = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $value     = 'test-file-id';
         $fieldPath = 'json_content.template_stored_file_id';
 
         // When
@@ -375,9 +373,9 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_regexFound_withArtifact_createsCorrectResult(): void
     {
         // Given
-        $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $value = 'extracted-value';
-        $pattern = '/pattern/';
+        $artifact   = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $value      = 'extracted-value';
+        $pattern    = '/pattern/';
         $allMatches = ['extracted-value', 'another-match'];
 
         // When
@@ -398,11 +396,11 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_regexFound_withDirective_createsCorrectResult(): void
     {
         // Given
-        $directive = new \stdClass();
-        $directive->id = 1;
+        $directive                 = new \stdClass();
+        $directive->id             = 1;
         $directive->directive_text = 'Test directive text';
-        $value = 'extracted-value';
-        $pattern = '/pattern/';
+        $value                     = 'extracted-value';
+        $pattern                   = '/pattern/';
 
         // When
         $result = ContentSearchResult::regexFound($value, $directive, $pattern);
@@ -417,9 +415,9 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_llmFound_withArtifact_createsCorrectResult(): void
     {
         // Given
-        $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $value = 'llm-extracted-value';
-        $model = 'gpt-4o-mini';
+        $artifact   = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $value      = 'llm-extracted-value';
+        $model      = 'gpt-4o-mini';
         $confidence = 0.85;
 
         // When
@@ -439,11 +437,11 @@ class ContentSearchResultTest extends AuthenticatedTestCase
     public function test_llmFound_withDirective_createsCorrectResult(): void
     {
         // Given
-        $directive = new \stdClass();
-        $directive->id = 1;
+        $directive                 = new \stdClass();
+        $directive->id             = 1;
         $directive->directive_text = 'Test directive text';
-        $value = 'llm-extracted-value';
-        $model = 'gpt-4o-mini';
+        $value                     = 'llm-extracted-value';
+        $model                     = 'gpt-4o-mini';
 
         // When
         $result = ContentSearchResult::llmFound($value, $directive, $model);

@@ -13,30 +13,27 @@ use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Models\User;
 use App\Services\AgentThread\AgentThreadService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AgentThreadMcpIntegrationTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected User $user;
-    protected Team $team;
-    protected Agent $agent;
+    protected User               $user;
+    protected Team               $team;
+    protected Agent              $agent;
     protected AgentThreadService $service;
 
     public function setUp(): void
     {
         parent::setUp();
-        
+
         $this->user = User::factory()->create();
         $this->team = Team::factory()->create();
         $this->user->teams()->attach($this->team);
-        
+
         $this->actingAs($this->user);
         session(['team_id' => $this->team->id]);
-        
-        $this->agent = Agent::factory()->create(['team_id' => $this->team->id]);
+
+        $this->agent   = Agent::factory()->create(['team_id' => $this->team->id]);
         $this->service = app(AgentThreadService::class);
     }
 
@@ -44,13 +41,13 @@ class AgentThreadMcpIntegrationTest extends TestCase
     {
         $mcpServers = [
             [
-                'type' => 'mcp',
-                'server_url' => 'https://api.example.com/mcp',
-                'server_label' => 'test-server',
-                'allowed_tools' => ['search', 'create'],
+                'type'             => 'mcp',
+                'server_url'       => 'https://api.example.com/mcp',
+                'server_label'     => 'test-server',
+                'allowed_tools'    => ['search', 'create'],
                 'require_approval' => 'never',
-                'headers' => ['Authorization' => 'Bearer token'],
-            ]
+                'headers'          => ['Authorization' => 'Bearer token'],
+            ],
         ];
 
         $options = new ResponsesApiOptions();
@@ -63,10 +60,10 @@ class AgentThreadMcpIntegrationTest extends TestCase
     {
         $mcpServers = [
             [
-                'type' => 'mcp',
-                'server_url' => 'https://api.example.com/mcp',
+                'type'         => 'mcp',
+                'server_url'   => 'https://api.example.com/mcp',
                 'server_label' => 'test-server',
-            ]
+            ],
         ];
 
         $options = new ResponsesApiOptions();
@@ -84,11 +81,11 @@ class AgentThreadMcpIntegrationTest extends TestCase
             'temperature' => 0.7,
             'mcp_servers' => [
                 [
-                    'type' => 'mcp',
-                    'server_url' => 'https://api.example.com/mcp',
+                    'type'         => 'mcp',
+                    'server_url'   => 'https://api.example.com/mcp',
                     'server_label' => 'test-server',
-                ]
-            ]
+                ],
+            ],
         ];
 
         $options = ResponsesApiOptions::fromArray($data);
@@ -101,21 +98,21 @@ class AgentThreadMcpIntegrationTest extends TestCase
     {
         // Create MCP servers
         $mcpServer1 = McpServer::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'server-1',
+            'team_id'    => $this->team->id,
+            'name'       => 'server-1',
             'server_url' => 'https://api1.example.com/mcp',
         ]);
 
         $mcpServer2 = McpServer::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'server-2',
+            'team_id'    => $this->team->id,
+            'name'       => 'server-2',
             'server_url' => 'https://api2.example.com/mcp',
         ]);
 
         // Create task definition with MCP server configuration
         $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->team->id,
-            'agent_id' => $this->agent->id,
+            'team_id'            => $this->team->id,
+            'agent_id'           => $this->agent->id,
             'task_runner_config' => [
                 'mcp_server_ids' => [$mcpServer1->id, $mcpServer2->id],
             ],
@@ -131,7 +128,7 @@ class AgentThreadMcpIntegrationTest extends TestCase
         ]);
 
         $taskProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
+            'task_run_id'     => $taskRun->id,
             'agent_thread_id' => $agentThread->id,
         ]);
 
@@ -145,7 +142,7 @@ class AgentThreadMcpIntegrationTest extends TestCase
 
         // Test that MCP servers are accessible
         $mcpServers = McpServer::where('team_id', $this->team->id)->get();
-        
+
         $this->assertCount(2, $mcpServers);
         $this->assertEquals('server-1', $mcpServers[0]->name);
         $this->assertEquals('server-2', $mcpServers[1]->name);
@@ -160,10 +157,10 @@ class AgentThreadMcpIntegrationTest extends TestCase
         $agentThreadRun = AgentThreadRun::factory()->create([
             'agent_thread_id' => $agentThread->id,
         ]);
-        
+
         // Test that task definition without mcp config doesn't cause errors
         $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'            => $this->team->id,
             'task_runner_config' => null,
         ]);
 
@@ -173,18 +170,18 @@ class AgentThreadMcpIntegrationTest extends TestCase
     public function test_mcp_servers_are_formatted_correctly_for_openai_api()
     {
         $mcpServer = McpServer::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'Test MCP Server',
-            'server_url' => 'https://api.example.com/mcp',
-            'headers' => [
-                'Authorization' => 'Bearer test-token',
+            'team_id'       => $this->team->id,
+            'name'          => 'Test MCP Server',
+            'server_url'    => 'https://api.example.com/mcp',
+            'headers'       => [
+                'Authorization'   => 'Bearer test-token',
                 'X-Custom-Header' => 'custom-value',
             ],
             'allowed_tools' => ['search_products', 'create_order'],
         ]);
 
         $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'            => $this->team->id,
             'task_runner_config' => ['mcp_server_ids' => [$mcpServer->id]],
         ]);
 
@@ -193,7 +190,7 @@ class AgentThreadMcpIntegrationTest extends TestCase
         $this->assertEquals('https://api.example.com/mcp', $mcpServer->server_url);
         $this->assertEquals(['search_products', 'create_order'], $mcpServer->allowed_tools);
         $this->assertEquals([
-            'Authorization' => 'Bearer test-token',
+            'Authorization'   => 'Bearer test-token',
             'X-Custom-Header' => 'custom-value',
         ], $mcpServer->headers);
     }

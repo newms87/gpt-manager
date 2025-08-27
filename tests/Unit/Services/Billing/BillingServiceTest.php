@@ -10,29 +10,26 @@ use App\Models\Team\Team;
 use App\Services\Billing\BillingService;
 use App\Services\Billing\StripePaymentServiceInterface;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
-use Mockery;
 use Newms87\Danx\Exceptions\ValidationError;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
 class BillingServiceTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
-    private BillingService $billingService;
+    private BillingService                $billingService;
     private StripePaymentServiceInterface $mockStripeService;
-    private Team $team;
+    private Team                          $team;
 
     public function setUp(): void
     {
         parent::setUp();
         $this->setUpTeam();
-        
+
         $this->mockStripeService = $this->mock(StripePaymentServiceInterface::class);
-        $this->billingService = new BillingService($this->mockStripeService);
-        
+        $this->billingService    = new BillingService($this->mockStripeService);
+
         // Use the team from AuthenticatedTestCase
         $this->team = $this->user->currentTeam;
     }
@@ -40,11 +37,11 @@ class BillingServiceTest extends AuthenticatedTestCase
     public function test_setupTeamBilling_withValidTeam_createsCustomerAndUpdatesTeam(): void
     {
         // Given
-        $customerData = ['email' => 'test@example.com', 'name' => 'Test Team'];
+        $customerData   = ['email' => 'test@example.com', 'name' => 'Test Team'];
         $stripeCustomer = [
-            'id' => 'cus_test123',
+            'id'    => 'cus_test123',
             'email' => 'test@example.com',
-            'name' => 'Test Team'
+            'name'  => 'Test Team',
         ];
 
         $this->mockStripeService
@@ -59,8 +56,8 @@ class BillingServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertEquals('cus_test123', $result->stripe_customer_id);
         $this->assertDatabaseHas('teams', [
-            'id' => $this->team->id,
-            'stripe_customer_id' => 'cus_test123'
+            'id'                 => $this->team->id,
+            'stripe_customer_id' => 'cus_test123',
         ]);
     }
 
@@ -95,9 +92,9 @@ class BillingServiceTest extends AuthenticatedTestCase
         // Given
         $this->team->update(['stripe_customer_id' => 'cus_test123']);
         $setupIntent = [
-            'id' => 'seti_test123',
+            'id'            => 'seti_test123',
             'client_secret' => 'seti_test123_secret',
-            'status' => 'requires_payment_method'
+            'status'        => 'requires_payment_method',
         ];
 
         $this->mockStripeService
@@ -127,16 +124,16 @@ class BillingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $this->team->update(['stripe_customer_id' => 'cus_test123']);
-        $paymentMethodId = 'pm_test123';
+        $paymentMethodId     = 'pm_test123';
         $stripePaymentMethod = [
-            'id' => $paymentMethodId,
+            'id'   => $paymentMethodId,
             'type' => 'card',
             'card' => [
-                'brand' => 'visa',
-                'last4' => '4242',
+                'brand'     => 'visa',
+                'last4'     => '4242',
                 'exp_month' => 12,
-                'exp_year' => 2025
-            ]
+                'exp_year'  => 2025,
+            ],
         ];
 
         $this->mockStripeService
@@ -172,14 +169,14 @@ class BillingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $paymentMethod1 = PaymentMethod::factory()->create([
-            'team_id' => $this->team->id,
-            'is_default' => true,
-            'stripe_payment_method_id' => 'pm_test1'
+            'team_id'                  => $this->team->id,
+            'is_default'               => true,
+            'stripe_payment_method_id' => 'pm_test1',
         ]);
         $paymentMethod2 = PaymentMethod::factory()->create([
-            'team_id' => $this->team->id,
-            'is_default' => false,
-            'stripe_payment_method_id' => 'pm_test2'
+            'team_id'                  => $this->team->id,
+            'is_default'               => false,
+            'stripe_payment_method_id' => 'pm_test2',
         ]);
 
         $this->mockStripeService
@@ -194,7 +191,7 @@ class BillingServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertTrue($result);
         $this->assertSoftDeleted('payment_methods', ['id' => $paymentMethod1->id]);
-        
+
         // Check that the other payment method became default
         $paymentMethod2->refresh();
         $this->assertTrue($paymentMethod2->is_default);
@@ -219,18 +216,18 @@ class BillingServiceTest extends AuthenticatedTestCase
         // Given
         $this->team->update(['stripe_customer_id' => 'cus_test123']);
         $plan = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+            'is_active'       => true,
             'stripe_price_id' => 'price_test123',
-            'monthly_price' => 29.99,
-            'yearly_price' => 299.99
+            'monthly_price'   => 29.99,
+            'yearly_price'    => 299.99,
         ]);
 
         $stripeSubscription = [
-            'id' => 'sub_test123',
-            'status' => 'active',
+            'id'                   => 'sub_test123',
+            'status'               => 'active',
             'current_period_start' => Carbon::now()->timestamp,
-            'current_period_end' => Carbon::now()->addMonth()->timestamp,
-            'trial_end' => null
+            'current_period_end'   => Carbon::now()->addMonth()->timestamp,
+            'trial_end'            => null,
         ];
 
         $this->mockStripeService
@@ -271,7 +268,7 @@ class BillingServiceTest extends AuthenticatedTestCase
         $plan = SubscriptionPlan::factory()->create(['is_active' => true]);
         Subscription::factory()->create([
             'team_id' => $this->team->id,
-            'status' => 'active'
+            'status'  => 'active',
         ]);
 
         // Then
@@ -285,23 +282,23 @@ class BillingServiceTest extends AuthenticatedTestCase
     public function test_changeSubscriptionPlan_withValidData_updatesSubscription(): void
     {
         // Given
-        $oldPlan = SubscriptionPlan::factory()->create(['is_active' => true]);
-        $newPlan = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+        $oldPlan      = SubscriptionPlan::factory()->create(['is_active' => true]);
+        $newPlan      = SubscriptionPlan::factory()->create([
+            'is_active'       => true,
             'stripe_price_id' => 'price_new123',
-            'monthly_price' => 49.99,
-            'yearly_price' => 499.99
+            'monthly_price'   => 49.99,
+            'yearly_price'    => 499.99,
         ]);
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
-            'subscription_plan_id' => $oldPlan->id,
-            'stripe_subscription_id' => 'sub_test123'
+            'team_id'                => $this->team->id,
+            'subscription_plan_id'   => $oldPlan->id,
+            'stripe_subscription_id' => 'sub_test123',
         ]);
 
         $stripeSubscription = [
-            'id' => 'sub_test123',
+            'id'                   => 'sub_test123',
             'current_period_start' => Carbon::now()->timestamp,
-            'current_period_end' => Carbon::now()->addMonth()->timestamp
+            'current_period_end'   => Carbon::now()->addMonth()->timestamp,
         ];
 
         $this->mockStripeService
@@ -323,17 +320,17 @@ class BillingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'                => $this->team->id,
             'stripe_subscription_id' => 'sub_test123',
-            'status' => 'active',
-            'canceled_at' => null
+            'status'                 => 'active',
+            'canceled_at'            => null,
         ]);
 
         $stripeSubscription = [
-            'id' => 'sub_test123',
-            'status' => 'canceled',
-            'canceled_at' => Carbon::now()->timestamp,
-            'current_period_end' => Carbon::now()->addMonth()->timestamp
+            'id'                 => 'sub_test123',
+            'status'             => 'canceled',
+            'canceled_at'        => Carbon::now()->timestamp,
+            'current_period_end' => Carbon::now()->addMonth()->timestamp,
         ];
 
         $this->mockStripeService
@@ -355,8 +352,8 @@ class BillingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
-            'canceled_at' => Carbon::now()
+            'team_id'     => $this->team->id,
+            'canceled_at' => Carbon::now(),
         ]);
 
         // Then
@@ -371,9 +368,9 @@ class BillingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
-            'status' => 'active',
-            'stripe_subscription_id' => 'sub_test123'
+            'team_id'                => $this->team->id,
+            'status'                 => 'active',
+            'stripe_subscription_id' => 'sub_test123',
         ]);
 
         $this->mockStripeService
@@ -405,22 +402,22 @@ class BillingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $this->team->update(['stripe_customer_id' => 'cus_test123']);
-        $amount = 15.50;
+        $amount      = 15.50;
         $description = 'API usage charges';
-        $metadata = ['usage_type' => 'api_calls'];
+        $metadata    = ['usage_type' => 'api_calls'];
 
         $invoiceItem = [
-            'id' => 'ii_test123',
-            'customer' => 'cus_test123',
-            'amount' => 1550,
-            'description' => $description
+            'id'          => 'ii_test123',
+            'customer'    => 'cus_test123',
+            'amount'      => 1550,
+            'description' => $description,
         ];
 
         $this->mockStripeService
             ->shouldReceive('createInvoiceItem')
             ->with('cus_test123', $amount, 'USD', [
                 'description' => $description,
-                'metadata' => $metadata
+                'metadata'    => $metadata,
             ])
             ->once()
             ->andReturn($invoiceItem);
@@ -453,21 +450,21 @@ class BillingServiceTest extends AuthenticatedTestCase
     public function test_confirmSetupIntent_withSuccessfulIntent_addsPaymentMethod(): void
     {
         // Given
-        $setupIntentId = 'seti_test123';
+        $setupIntentId     = 'seti_test123';
         $setupIntentResult = [
-            'status' => 'succeeded',
-            'payment_method' => 'pm_test123'
+            'status'         => 'succeeded',
+            'payment_method' => 'pm_test123',
         ];
 
         $stripePaymentMethod = [
-            'id' => 'pm_test123',
+            'id'   => 'pm_test123',
             'type' => 'card',
             'card' => [
-                'brand' => 'visa',
-                'last4' => '4242',
+                'brand'     => 'visa',
+                'last4'     => '4242',
                 'exp_month' => 12,
-                'exp_year' => 2025
-            ]
+                'exp_year'  => 2025,
+            ],
         ];
 
         $this->team->update(['stripe_customer_id' => 'cus_test123']);
@@ -495,8 +492,8 @@ class BillingServiceTest extends AuthenticatedTestCase
     public function test_validateWebhookSignature_withValidSignature_returnsEvent(): void
     {
         // Given
-        $payload = '{"type": "invoice.payment_succeeded"}';
-        $signature = 'test_signature';
+        $payload       = '{"type": "invoice.payment_succeeded"}';
+        $signature     = 'test_signature';
         $expectedEvent = ['type' => 'invoice.payment_succeeded'];
 
         $this->mockStripeService
@@ -526,16 +523,16 @@ class BillingServiceTest extends AuthenticatedTestCase
         // Given
         $this->team->update(['stripe_customer_id' => 'cus_test123']);
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
-            'stripe_subscription_id' => 'sub_test123'
+            'team_id'                => $this->team->id,
+            'stripe_subscription_id' => 'sub_test123',
         ]);
 
         $stripeSubscription = [
-            'id' => 'sub_test123',
-            'customer' => 'cus_test123',
-            'status' => 'past_due',
+            'id'                   => 'sub_test123',
+            'customer'             => 'cus_test123',
+            'status'               => 'past_due',
             'current_period_start' => Carbon::now()->timestamp,
-            'current_period_end' => Carbon::now()->addMonth()->timestamp
+            'current_period_end'   => Carbon::now()->addMonth()->timestamp,
         ];
 
         // When
@@ -551,15 +548,15 @@ class BillingServiceTest extends AuthenticatedTestCase
         // Given
         $this->team->update(['stripe_customer_id' => 'cus_test123']);
         $invoice = [
-            'id' => 'in_test123',
-            'customer' => 'cus_test123',
-            'description' => 'Subscription payment',
-            'amount_paid' => 2999, // $29.99 in cents
-            'currency' => 'usd',
-            'created' => Carbon::now()->timestamp,
-            'invoice_pdf' => 'https://invoice.pdf',
-            'number' => 'INV-001',
-            'subscription' => 'sub_test123'
+            'id'           => 'in_test123',
+            'customer'     => 'cus_test123',
+            'description'  => 'Subscription payment',
+            'amount_paid'  => 2999, // $29.99 in cents
+            'currency'     => 'usd',
+            'created'      => Carbon::now()->timestamp,
+            'invoice_pdf'  => 'https://invoice.pdf',
+            'number'       => 'INV-001',
+            'subscription' => 'sub_test123',
         ];
 
         // When
@@ -567,11 +564,11 @@ class BillingServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertDatabaseHas('billing_history', [
-            'team_id' => $this->team->id,
-            'type' => 'invoice',
-            'amount' => 29.99,
-            'status' => 'paid',
-            'stripe_invoice_id' => 'in_test123'
+            'team_id'           => $this->team->id,
+            'type'              => 'invoice',
+            'amount'            => 29.99,
+            'status'            => 'paid',
+            'stripe_invoice_id' => 'in_test123',
         ]);
     }
 

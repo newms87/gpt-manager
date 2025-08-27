@@ -6,16 +6,13 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\Usage\UsageEvent;
 use App\Models\Usage\UsageSummary;
-use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowDefinition;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Workflow\WorkflowRun;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class HasUsageTrackingTest extends TestCase
 {
-    use RefreshDatabase;
-
     #[Test]
     public function it_has_usage_events_relationship()
     {
@@ -23,14 +20,14 @@ class HasUsageTrackingTest extends TestCase
 
         // Create usage events
         $event1 = UsageEvent::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
         ]);
 
         $event2 = UsageEvent::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
         ]);
 
@@ -47,8 +44,8 @@ class HasUsageTrackingTest extends TestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $summary = UsageSummary::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
         ]);
 
@@ -64,18 +61,18 @@ class HasUsageTrackingTest extends TestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $summary = UsageSummary::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'count' => 5,
-            'run_time_ms' => 5000,
-            'input_tokens' => 1000,
+            'count'         => 5,
+            'run_time_ms'   => 5000,
+            'input_tokens'  => 1000,
             'output_tokens' => 500,
-            'input_cost' => 2.5,
-            'output_cost' => 5.0,
-            'total_cost' => 7.5,
+            'input_cost'    => 2.5,
+            'output_cost'   => 5.0,
+            'total_cost'    => 7.5,
             'request_count' => 10,
-            'data_volume' => 2048,
+            'data_volume'   => 2048,
         ]);
 
         $taskProcess->refresh();
@@ -111,13 +108,13 @@ class HasUsageTrackingTest extends TestCase
 
         // Create usage events
         UsageEvent::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'input_tokens' => 100,
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.0005,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.0005,
         ]);
 
         // Refresh summary
@@ -147,39 +144,39 @@ class HasUsageTrackingTest extends TestCase
     #[Test]
     public function it_aggregates_child_usage_for_task_runs()
     {
-        $taskRun = TaskRun::factory()->create();
+        $taskRun  = TaskRun::factory()->create();
         $process1 = TaskProcess::factory()->create(['task_run_id' => $taskRun->id]);
         $process2 = TaskProcess::factory()->create(['task_run_id' => $taskRun->id]);
 
         // Create summaries for processes
         UsageSummary::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $process1->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $process1->id,
             'object_id_int' => $process1->id,
-            'count' => 2,
-            'input_tokens' => 100,
+            'count'         => 2,
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.0005,
-            'total_cost' => 0.0015,
-            'run_time_ms' => 1000,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.0005,
+            'total_cost'    => 0.0015,
+            'run_time_ms'   => 1000,
             'request_count' => 1,
-            'data_volume' => 1024,
+            'data_volume'   => 1024,
         ]);
 
         UsageSummary::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $process2->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $process2->id,
             'object_id_int' => $process2->id,
-            'count' => 3,
-            'input_tokens' => 200,
+            'count'         => 3,
+            'input_tokens'  => 200,
             'output_tokens' => 100,
-            'input_cost' => 0.002,
-            'output_cost' => 0.001,
-            'total_cost' => 0.003,
-            'run_time_ms' => 2000,
+            'input_cost'    => 0.002,
+            'output_cost'   => 0.001,
+            'total_cost'    => 0.003,
+            'run_time_ms'   => 2000,
             'request_count' => 2,
-            'data_volume' => 2048,
+            'data_volume'   => 2048,
         ]);
 
         // Aggregate usage
@@ -201,32 +198,32 @@ class HasUsageTrackingTest extends TestCase
     public function it_aggregates_child_usage_for_workflow_runs()
     {
         $workflowDefinition = WorkflowDefinition::factory()->create();
-        $workflowRun = WorkflowRun::create([
-            'name' => 'Test Workflow',
+        $workflowRun        = WorkflowRun::create([
+            'name'                   => 'Test Workflow',
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
-        $taskRun1 = TaskRun::factory()->create(['workflow_run_id' => $workflowRun->id]);
-        $taskRun2 = TaskRun::factory()->create(['workflow_run_id' => $workflowRun->id]);
+        $taskRun1           = TaskRun::factory()->create(['workflow_run_id' => $workflowRun->id]);
+        $taskRun2           = TaskRun::factory()->create(['workflow_run_id' => $workflowRun->id]);
 
         // Create summaries for task runs
         UsageSummary::factory()->create([
-            'object_type' => TaskRun::class,
-            'object_id' => $taskRun1->id,
+            'object_type'   => TaskRun::class,
+            'object_id'     => $taskRun1->id,
             'object_id_int' => $taskRun1->id,
-            'count' => 5,
-            'input_tokens' => 500,
+            'count'         => 5,
+            'input_tokens'  => 500,
             'output_tokens' => 250,
-            'total_cost' => 5.0,
+            'total_cost'    => 5.0,
         ]);
 
         UsageSummary::factory()->create([
-            'object_type' => TaskRun::class,
-            'object_id' => $taskRun2->id,
+            'object_type'   => TaskRun::class,
+            'object_id'     => $taskRun2->id,
             'object_id_int' => $taskRun2->id,
-            'count' => 3,
-            'input_tokens' => 300,
+            'count'         => 3,
+            'input_tokens'  => 300,
             'output_tokens' => 150,
-            'total_cost' => 3.0,
+            'total_cost'    => 3.0,
         ]);
 
         // Aggregate usage
@@ -260,12 +257,12 @@ class HasUsageTrackingTest extends TestCase
         $process = TaskProcess::factory()->create(['task_run_id' => $taskRun->id]);
 
         UsageSummary::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $process->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $process->id,
             'object_id_int' => $process->id,
-            'input_cost' => 0.6,
-            'output_cost' => 0.4,
-            'total_cost' => 1.0,
+            'input_cost'    => 0.6,
+            'output_cost'   => 0.4,
+            'total_cost'    => 1.0,
         ]);
 
         $this->assertNull($taskRun->usageSummary);

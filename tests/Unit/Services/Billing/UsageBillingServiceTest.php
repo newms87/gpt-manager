@@ -10,15 +10,12 @@ use App\Models\Usage\UsageEvent;
 use App\Services\Billing\StripePaymentServiceInterface;
 use App\Services\Billing\UsageBillingService;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Mockery;
 use Tests\TestCase;
 
 class UsageBillingServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     private UsageBillingService           $usageBillingService;
     private StripePaymentServiceInterface $mockStripeService;
     private Team                          $team;

@@ -4,13 +4,10 @@ namespace Tests\Unit\Repositories\Billing;
 
 use App\Models\Billing\SubscriptionPlan;
 use App\Repositories\Billing\SubscriptionPlanRepository;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class SubscriptionPlanRepositoryTest extends TestCase
 {
-    use RefreshDatabase;
-
     private SubscriptionPlanRepository $subscriptionPlanRepository;
 
     public function setUp(): void
@@ -41,16 +38,16 @@ class SubscriptionPlanRepositoryTest extends TestCase
     {
         // Given
         $data = [
-            'name' => 'Professional Plan',
-            'slug' => 'professional',
-            'description' => 'For professional users',
-            'monthly_price' => 49.99,
-            'yearly_price' => 499.99,
+            'name'            => 'Professional Plan',
+            'slug'            => 'professional',
+            'description'     => 'For professional users',
+            'monthly_price'   => 49.99,
+            'yearly_price'    => 499.99,
             'stripe_price_id' => 'price_test123',
-            'features' => ['feature1', 'feature2'],
-            'usage_limits' => ['api_calls' => 10000],
-            'is_active' => true,
-            'sort_order' => 20,
+            'features'        => ['feature1', 'feature2'],
+            'usage_limits'    => ['api_calls' => 10000],
+            'is_active'       => true,
+            'sort_order'      => 20,
         ];
 
         // When
@@ -66,28 +63,28 @@ class SubscriptionPlanRepositoryTest extends TestCase
         $this->assertTrue($result->is_active);
         $this->assertEquals(['feature1', 'feature2'], $result->features);
         $this->assertEquals(['api_calls' => 10000], $result->usage_limits);
-        
+
         // Verify database record
         $this->assertDatabaseHas('subscription_plans', [
-            'name' => 'Professional Plan',
-            'slug' => 'professional',
+            'name'          => 'Professional Plan',
+            'slug'          => 'professional',
             'monthly_price' => 49.99,
-            'yearly_price' => 499.99,
+            'yearly_price'  => 499.99,
         ]);
     }
 
     public function test_applyAction_update_withValidPlan_updatesPlan(): void
     {
         // Given
-        $plan = SubscriptionPlan::factory()->create([
-            'name' => 'Basic Plan',
+        $plan       = SubscriptionPlan::factory()->create([
+            'name'          => 'Basic Plan',
             'monthly_price' => 19.99,
-            'is_active' => true,
+            'is_active'     => true,
         ]);
         $updateData = [
-            'name' => 'Updated Basic Plan',
+            'name'          => 'Updated Basic Plan',
             'monthly_price' => 24.99,
-            'description' => 'Updated description',
+            'description'   => 'Updated description',
         ];
 
         // When
@@ -97,13 +94,13 @@ class SubscriptionPlanRepositoryTest extends TestCase
         $this->assertEquals('Updated Basic Plan', $result->name);
         $this->assertEquals(24.99, $result->monthly_price);
         $this->assertEquals('Updated description', $result->description);
-        
+
         // Verify database was updated
         $this->assertDatabaseHas('subscription_plans', [
-            'id' => $plan->id,
-            'name' => 'Updated Basic Plan',
+            'id'            => $plan->id,
+            'name'          => 'Updated Basic Plan',
             'monthly_price' => 24.99,
-            'description' => 'Updated description',
+            'description'   => 'Updated description',
         ]);
     }
 
@@ -117,10 +114,10 @@ class SubscriptionPlanRepositoryTest extends TestCase
 
         // Then
         $this->assertTrue($result->is_active);
-        
+
         // Verify database was updated
         $this->assertDatabaseHas('subscription_plans', [
-            'id' => $plan->id,
+            'id'        => $plan->id,
             'is_active' => true,
         ]);
     }
@@ -147,10 +144,10 @@ class SubscriptionPlanRepositoryTest extends TestCase
 
         // Then
         $this->assertFalse($result->is_active);
-        
+
         // Verify database was updated
         $this->assertDatabaseHas('subscription_plans', [
-            'id' => $plan->id,
+            'id'        => $plan->id,
             'is_active' => false,
         ]);
     }
@@ -170,16 +167,16 @@ class SubscriptionPlanRepositoryTest extends TestCase
     public function test_getActivePlans_returnsOnlyActivePlans(): void
     {
         // Given
-        $activePlan1 = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+        $activePlan1  = SubscriptionPlan::factory()->create([
+            'is_active'  => true,
             'sort_order' => 10,
         ]);
-        $activePlan2 = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+        $activePlan2  = SubscriptionPlan::factory()->create([
+            'is_active'  => true,
             'sort_order' => 20,
         ]);
         $inactivePlan = SubscriptionPlan::factory()->create([
-            'is_active' => false,
+            'is_active'  => false,
             'sort_order' => 15,
         ]);
 
@@ -189,7 +186,7 @@ class SubscriptionPlanRepositoryTest extends TestCase
         // Then
         $this->assertIsArray($result);
         $this->assertCount(2, $result);
-        
+
         // Verify only active plans are returned
         $planIds = array_column($result, 'id');
         $this->assertContains($activePlan1->id, $planIds);
@@ -200,12 +197,12 @@ class SubscriptionPlanRepositoryTest extends TestCase
     public function test_getAvailablePlans_withIncludeInactiveTrue_returnsAllPlans(): void
     {
         // Given
-        $activePlan = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+        $activePlan   = SubscriptionPlan::factory()->create([
+            'is_active'  => true,
             'sort_order' => 10,
         ]);
         $inactivePlan = SubscriptionPlan::factory()->create([
-            'is_active' => false,
+            'is_active'  => false,
             'sort_order' => 20,
         ]);
 
@@ -222,12 +219,12 @@ class SubscriptionPlanRepositoryTest extends TestCase
     public function test_getAvailablePlans_withIncludeInactiveFalse_returnsOnlyActivePlans(): void
     {
         // Given
-        $activePlan = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+        $activePlan   = SubscriptionPlan::factory()->create([
+            'is_active'  => true,
             'sort_order' => 10,
         ]);
         $inactivePlan = SubscriptionPlan::factory()->create([
-            'is_active' => false,
+            'is_active'  => false,
             'sort_order' => 20,
         ]);
 
@@ -242,12 +239,12 @@ class SubscriptionPlanRepositoryTest extends TestCase
     public function test_getAvailablePlans_withDefaultParameter_returnsOnlyActivePlans(): void
     {
         // Given
-        $activePlan = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+        $activePlan   = SubscriptionPlan::factory()->create([
+            'is_active'  => true,
             'sort_order' => 10,
         ]);
         $inactivePlan = SubscriptionPlan::factory()->create([
-            'is_active' => false,
+            'is_active'  => false,
             'sort_order' => 20,
         ]);
 
@@ -263,19 +260,19 @@ class SubscriptionPlanRepositoryTest extends TestCase
     {
         // Given
         $plan3 = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+            'is_active'  => true,
             'sort_order' => 30,
-            'name' => 'Plan C',
+            'name'       => 'Plan C',
         ]);
         $plan1 = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+            'is_active'  => true,
             'sort_order' => 10,
-            'name' => 'Plan A',
+            'name'       => 'Plan A',
         ]);
         $plan2 = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+            'is_active'  => true,
             'sort_order' => 20,
-            'name' => 'Plan B',
+            'name'       => 'Plan B',
         ]);
 
         // When
@@ -292,26 +289,26 @@ class SubscriptionPlanRepositoryTest extends TestCase
     {
         // Given
         $data = [
-            'name' => 'Enterprise Plan',
-            'slug' => 'enterprise',
-            'description' => 'For large organizations',
-            'monthly_price' => 199.99,
-            'yearly_price' => 1999.99,
+            'name'            => 'Enterprise Plan',
+            'slug'            => 'enterprise',
+            'description'     => 'For large organizations',
+            'monthly_price'   => 199.99,
+            'yearly_price'    => 1999.99,
             'stripe_price_id' => 'price_enterprise123',
-            'features' => [
+            'features'        => [
                 'unlimited_api_calls',
                 'priority_support',
                 'custom_integrations',
-                'dedicated_account_manager'
+                'dedicated_account_manager',
             ],
-            'usage_limits' => [
-                'api_calls' => -1, // Unlimited
-                'storage' => 1000000, // 1TB
-                'users' => 100,
-                'usage_based_billing' => true
+            'usage_limits'    => [
+                'api_calls'           => -1, // Unlimited
+                'storage'             => 1000000, // 1TB
+                'users'               => 100,
+                'usage_based_billing' => true,
             ],
-            'is_active' => true,
-            'sort_order' => 100,
+            'is_active'       => true,
+            'sort_order'      => 100,
         ];
 
         // Use reflection to access protected method
@@ -329,10 +326,10 @@ class SubscriptionPlanRepositoryTest extends TestCase
         $this->assertEquals(1999.99, $result->yearly_price);
         $this->assertEquals(['unlimited_api_calls', 'priority_support', 'custom_integrations', 'dedicated_account_manager'], $result->features);
         $this->assertEquals([
-            'api_calls' => -1,
-            'storage' => 1000000,
-            'users' => 100,
-            'usage_based_billing' => true
+            'api_calls'           => -1,
+            'storage'             => 1000000,
+            'users'               => 100,
+            'usage_based_billing' => true,
         ], $result->usage_limits);
         $this->assertTrue($result->is_active);
         $this->assertEquals(100, $result->sort_order);
@@ -341,13 +338,13 @@ class SubscriptionPlanRepositoryTest extends TestCase
     public function test_updatePlan_preservesExistingData_whenNotUpdated(): void
     {
         // Given
-        $plan = SubscriptionPlan::factory()->create([
-            'name' => 'Basic Plan',
+        $plan              = SubscriptionPlan::factory()->create([
+            'name'          => 'Basic Plan',
             'monthly_price' => 19.99,
-            'yearly_price' => 199.99,
-            'features' => ['basic_feature'],
-            'usage_limits' => ['api_calls' => 1000],
-            'is_active' => true,
+            'yearly_price'  => 199.99,
+            'features'      => ['basic_feature'],
+            'usage_limits'  => ['api_calls' => 1000],
+            'is_active'     => true,
         ]);
         $partialUpdateData = [
             'monthly_price' => 24.99, // Only update monthly price
@@ -384,7 +381,7 @@ class SubscriptionPlanRepositoryTest extends TestCase
         // Then
         $this->assertInstanceOf(SubscriptionPlan::class, $result);
         $this->assertTrue($result->is_active);
-        
+
         // Verify it's a fresh model (not the same instance)
         $this->assertNotSame($plan, $result);
     }
@@ -404,7 +401,7 @@ class SubscriptionPlanRepositoryTest extends TestCase
         // Then
         $this->assertInstanceOf(SubscriptionPlan::class, $result);
         $this->assertFalse($result->is_active);
-        
+
         // Verify it's a fresh model (not the same instance)
         $this->assertNotSame($plan, $result);
     }

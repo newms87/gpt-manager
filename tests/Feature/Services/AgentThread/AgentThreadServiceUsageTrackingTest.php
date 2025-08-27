@@ -9,15 +9,11 @@ use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadRun;
 use App\Models\Usage\UsageEvent;
 use App\Services\AgentThread\AgentThreadService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class AgentThreadServiceUsageTrackingTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected AgentThreadService $service;
 
     public function setUp(): void

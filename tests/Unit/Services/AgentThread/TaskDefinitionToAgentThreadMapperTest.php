@@ -9,7 +9,6 @@ use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Models\User;
 use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
@@ -18,8 +17,6 @@ use Tests\TestCase;
 
 class TaskDefinitionToAgentThreadMapperTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected Team           $team;
     protected User           $user;
     protected TaskRun        $taskRun;
@@ -70,7 +67,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
     public function it_can_set_context_artifacts()
     {
         $mapper = new TaskDefinitionToAgentThreadMapper();
-        
+
         $contextArtifacts = collect([
             Artifact::factory()->create(['position' => 1]),
             Artifact::factory()->create(['position' => 2]),
@@ -79,10 +76,10 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
         $result = $mapper->setContextArtifacts($contextArtifacts);
 
         $this->assertInstanceOf(TaskDefinitionToAgentThreadMapper::class, $result);
-        
+
         // Use reflection to verify the context artifacts were set
         $reflection = new \ReflectionClass($mapper);
-        $property = $reflection->getProperty('contextArtifacts');
+        $property   = $reflection->getProperty('contextArtifacts');
         $property->setAccessible(true);
 
         $this->assertEquals($contextArtifacts, $property->getValue($mapper));
@@ -92,14 +89,14 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
     public function it_can_set_empty_context_artifacts()
     {
         $mapper = new TaskDefinitionToAgentThreadMapper();
-        
+
         $result = $mapper->setContextArtifacts([]);
 
         $this->assertInstanceOf(TaskDefinitionToAgentThreadMapper::class, $result);
-        
+
         // Use reflection to verify empty context artifacts were set
         $reflection = new \ReflectionClass($mapper);
-        $property = $reflection->getProperty('contextArtifacts');
+        $property   = $reflection->getProperty('contextArtifacts');
         $property->setAccessible(true);
 
         $this->assertEquals(collect(), $property->getValue($mapper));
@@ -109,7 +106,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
     public function it_can_set_context_artifacts_as_collection()
     {
         $mapper = new TaskDefinitionToAgentThreadMapper();
-        
+
         $contextArtifacts = new Collection([
             Artifact::factory()->create(['position' => 3]),
             Artifact::factory()->create(['position' => 4]),
@@ -118,10 +115,10 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
         $result = $mapper->setContextArtifacts($contextArtifacts);
 
         $this->assertInstanceOf(TaskDefinitionToAgentThreadMapper::class, $result);
-        
+
         // Use reflection to verify the context artifacts were set
         $reflection = new \ReflectionClass($mapper);
-        $property = $reflection->getProperty('contextArtifacts');
+        $property   = $reflection->getProperty('contextArtifacts');
         $property->setAccessible(true);
 
         $this->assertEquals($contextArtifacts, $property->getValue($mapper));
@@ -147,7 +144,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
 
         $allContextArtifacts = $contextBefore->merge($contextAfter);
 
-        $mapper = new TaskDefinitionToAgentThreadMapper();
+        $mapper      = new TaskDefinitionToAgentThreadMapper();
         $agentThread = $mapper
             ->setTaskRun($this->taskRun)
             ->setTaskDefinition($this->taskDefinition)
@@ -159,7 +156,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
         $this->assertEquals($this->agent->id, $agentThread->agent_id);
 
         // Verify that messages contain context sections
-        $messages = $agentThread->messages;
+        $messages     = $agentThread->messages;
         $messageTexts = $messages->pluck('content')->join(' ');
 
         $this->assertStringContainsString('--- CONTEXT BEFORE ---', $messageTexts);
@@ -178,7 +175,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
             Artifact::factory()->create(['position' => 5, 'text_content' => 'Primary artifact']),
         ]);
 
-        $mapper = new TaskDefinitionToAgentThreadMapper();
+        $mapper      = new TaskDefinitionToAgentThreadMapper();
         $agentThread = $mapper
             ->setTaskRun($this->taskRun)
             ->setTaskDefinition($this->taskDefinition)
@@ -186,7 +183,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
             ->setContextArtifacts($contextBefore)
             ->map();
 
-        $messages = $agentThread->messages;
+        $messages     = $agentThread->messages;
         $messageTexts = $messages->pluck('content')->join(' ');
 
         $this->assertStringContainsString('--- CONTEXT BEFORE ---', $messageTexts);
@@ -205,7 +202,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
             Artifact::factory()->create(['position' => 8, 'text_content' => 'Context after content']),
         ]);
 
-        $mapper = new TaskDefinitionToAgentThreadMapper();
+        $mapper      = new TaskDefinitionToAgentThreadMapper();
         $agentThread = $mapper
             ->setTaskRun($this->taskRun)
             ->setTaskDefinition($this->taskDefinition)
@@ -213,7 +210,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
             ->setContextArtifacts($contextAfter)
             ->map();
 
-        $messages = $agentThread->messages;
+        $messages     = $agentThread->messages;
         $messageTexts = $messages->pluck('content')->join(' ');
 
         $this->assertStringNotContainsString('--- CONTEXT BEFORE ---', $messageTexts);
@@ -228,7 +225,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
             Artifact::factory()->create(['position' => 5, 'text_content' => 'Primary artifact']),
         ]);
 
-        $mapper = new TaskDefinitionToAgentThreadMapper();
+        $mapper      = new TaskDefinitionToAgentThreadMapper();
         $agentThread = $mapper
             ->setTaskRun($this->taskRun)
             ->setTaskDefinition($this->taskDefinition)
@@ -236,7 +233,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
             ->setContextArtifacts([])
             ->map();
 
-        $messages = $agentThread->messages;
+        $messages     = $agentThread->messages;
         $messageTexts = $messages->pluck('content')->join(' ');
 
         $this->assertStringNotContainsString('--- CONTEXT BEFORE ---', $messageTexts);
@@ -264,7 +261,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
 
         $allContextArtifacts = $contextBefore->merge($contextAfter);
 
-        $mapper = new TaskDefinitionToAgentThreadMapper();
+        $mapper      = new TaskDefinitionToAgentThreadMapper();
         $agentThread = $mapper
             ->setTaskRun($this->taskRun)
             ->setTaskDefinition($this->taskDefinition)
@@ -272,15 +269,15 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
             ->setContextArtifacts($allContextArtifacts)
             ->map();
 
-        $messages = $agentThread->messages;
+        $messages     = $agentThread->messages;
         $messageTexts = $messages->pluck('content')->toArray();
 
         // Find the indices of context sections
         $contextBeforeIndex = null;
-        $primaryIndex = null;
-        $contextAfterIndex = null;
+        $primaryIndex       = null;
+        $contextAfterIndex  = null;
 
-        foreach ($messageTexts as $index => $text) {
+        foreach($messageTexts as $index => $text) {
             if (str_contains($text, '--- CONTEXT BEFORE ---')) {
                 $contextBeforeIndex = $index;
             } elseif (str_contains($text, '--- PRIMARY ARTIFACTS ---')) {
@@ -298,11 +295,11 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
         $this->assertLessThan($contextAfterIndex, $primaryIndex);
 
         // Verify context artifacts are ordered by position within their sections
-        $allText = join(' ', $messageTexts);
+        $allText    = join(' ', $messageTexts);
         $beforePos1 = strpos($allText, 'Before position 1');
         $beforePos2 = strpos($allText, 'Before position 2');
-        $afterPos8 = strpos($allText, 'After position 8');
-        $afterPos9 = strpos($allText, 'After position 9');
+        $afterPos8  = strpos($allText, 'After position 8');
+        $afterPos9  = strpos($allText, 'After position 9');
 
         // Position 1 should come before position 2
         $this->assertLessThan($beforePos2, $beforePos1);
@@ -317,7 +314,7 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
             Artifact::factory()->create(['position' => 5, 'text_content' => 'Primary artifact']),
         ]);
 
-        $mapper = new TaskDefinitionToAgentThreadMapper();
+        $mapper      = new TaskDefinitionToAgentThreadMapper();
         $agentThread = $mapper
             ->setTaskRun($this->taskRun)
             ->setTaskDefinition($this->taskDefinition)
@@ -326,8 +323,8 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
             ->map();
 
         $this->assertNotNull($agentThread);
-        
-        $messages = $agentThread->messages;
+
+        $messages     = $agentThread->messages;
         $messageTexts = $messages->pluck('content')->join(' ');
 
         // Should only contain primary artifacts section

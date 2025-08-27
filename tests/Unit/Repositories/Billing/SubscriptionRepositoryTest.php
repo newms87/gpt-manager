@@ -7,33 +7,32 @@ use App\Models\Billing\SubscriptionPlan;
 use App\Models\Team\Team;
 use App\Repositories\Billing\SubscriptionRepository;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Newms87\Danx\Exceptions\ValidationError;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
 class SubscriptionRepositoryTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     private SubscriptionRepository $subscriptionRepository;
-    private Team $team;
-    private Team $differentTeam;
+    private Team                   $team;
+    private Team                   $differentTeam;
 
     public function setUp(): void
     {
         parent::setUp();
         $this->setUpTeam();
-        
+
         $this->subscriptionRepository = new SubscriptionRepository();
-        $this->team = $this->user->currentTeam;
-        $this->differentTeam = Team::factory()->create();
+        $this->team                   = $this->user->currentTeam;
+        $this->differentTeam          = Team::factory()->create();
     }
 
     public function test_query_withAuthenticatedUser_returnsOnlyTeamSubscriptions(): void
     {
         // Given
-        $teamSubscription = Subscription::factory()->create([
+        $teamSubscription      = Subscription::factory()->create([
             'team_id' => $this->team->id,
         ]);
         $otherTeamSubscription = Subscription::factory()->create([
@@ -47,7 +46,7 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         $this->assertCount(1, $results);
         $this->assertEquals($teamSubscription->id, $results->first()->id);
         $this->assertFalse($results->contains('id', $otherTeamSubscription->id));
-        
+
         // Verify relationships are loaded
         $this->assertTrue($results->first()->relationLoaded('subscriptionPlan'));
         $this->assertTrue($results->first()->relationLoaded('team'));
@@ -58,14 +57,14 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         // Given
         $plan = SubscriptionPlan::factory()->create();
         $data = [
-            'subscription_plan_id' => $plan->id,
+            'subscription_plan_id'   => $plan->id,
             'stripe_subscription_id' => 'sub_test123',
-            'status' => 'active',
-            'billing_cycle' => 'monthly',
-            'monthly_amount' => 29.99,
-            'yearly_amount' => 299.99,
-            'current_period_start' => Carbon::now(),
-            'current_period_end' => Carbon::now()->addMonth(),
+            'status'                 => 'active',
+            'billing_cycle'          => 'monthly',
+            'monthly_amount'         => 29.99,
+            'yearly_amount'          => 299.99,
+            'current_period_start'   => Carbon::now(),
+            'current_period_end'     => Carbon::now()->addMonth(),
         ];
 
         // When
@@ -77,15 +76,15 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         $this->assertEquals($plan->id, $result->subscription_plan_id);
         $this->assertEquals('sub_test123', $result->stripe_subscription_id);
         $this->assertEquals('active', $result->status);
-        
+
         // Verify relationships are loaded
         $this->assertTrue($result->relationLoaded('subscriptionPlan'));
         $this->assertTrue($result->relationLoaded('team'));
-        
+
         // Verify database record
         $this->assertDatabaseHas('subscriptions', [
-            'team_id' => $this->team->id,
-            'subscription_plan_id' => $plan->id,
+            'team_id'                => $this->team->id,
+            'subscription_plan_id'   => $plan->id,
             'stripe_subscription_id' => 'sub_test123',
         ]);
     }
@@ -97,7 +96,7 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         $this->user->teams()->detach();
         $this->user->currentTeam = null;
         $this->user->save();
-        
+
         // Re-authenticate the user without teams
         $this->actingAs($this->user->fresh());
 
@@ -116,10 +115,10 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         // Given
         $subscription = Subscription::factory()->create([
             'team_id' => $this->team->id,
-            'status' => 'active',
+            'status'  => 'active',
         ]);
-        $updateData = [
-            'status' => 'past_due',
+        $updateData   = [
+            'status'             => 'past_due',
             'current_period_end' => Carbon::now()->addMonth()->startOfSecond(),
         ];
 
@@ -129,10 +128,10 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         // Then
         $this->assertEquals('past_due', $result->status);
         $this->assertEquals($updateData['current_period_end']->format('Y-m-d H:i:s'), $result->current_period_end->format('Y-m-d H:i:s'));
-        
+
         // Verify database was updated
         $this->assertDatabaseHas('subscriptions', [
-            'id' => $subscription->id,
+            'id'     => $subscription->id,
             'status' => 'past_due',
         ]);
     }
@@ -143,7 +142,7 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         $subscription = Subscription::factory()->create([
             'team_id' => $this->differentTeam->id,
         ]);
-        $updateData = ['status' => 'canceled'];
+        $updateData   = ['status' => 'canceled'];
 
         // Then
         $this->expectException(ValidationError::class);
@@ -156,21 +155,21 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     public function test_applyAction_changePlan_withValidData_updatesSubscriptionPlan(): void
     {
         // Given
-        $oldPlan = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+        $oldPlan      = SubscriptionPlan::factory()->create([
+            'is_active'     => true,
             'monthly_price' => 29.99,
-            'yearly_price' => 299.99,
+            'yearly_price'  => 299.99,
         ]);
-        $newPlan = SubscriptionPlan::factory()->create([
-            'is_active' => true,
+        $newPlan      = SubscriptionPlan::factory()->create([
+            'is_active'     => true,
             'monthly_price' => 49.99,
-            'yearly_price' => 499.99,
+            'yearly_price'  => 499.99,
         ]);
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'              => $this->team->id,
             'subscription_plan_id' => $oldPlan->id,
         ]);
-        $data = ['subscription_plan_id' => $newPlan->id];
+        $data         = ['subscription_plan_id' => $newPlan->id];
 
         // When
         $result = $this->subscriptionRepository->applyAction('change-plan', $subscription, $data);
@@ -179,26 +178,26 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         $this->assertEquals($newPlan->id, $result->subscription_plan_id);
         $this->assertEquals(49.99, $result->monthly_amount);
         $this->assertEquals(499.99, $result->yearly_amount);
-        
+
         // Verify database was updated
         $this->assertDatabaseHas('subscriptions', [
-            'id' => $subscription->id,
+            'id'                   => $subscription->id,
             'subscription_plan_id' => $newPlan->id,
-            'monthly_amount' => 49.99,
-            'yearly_amount' => 499.99,
+            'monthly_amount'       => 49.99,
+            'yearly_amount'        => 499.99,
         ]);
     }
 
     public function test_applyAction_changePlan_withInactivePlan_throwsValidationError(): void
     {
         // Given
-        $activePlan = SubscriptionPlan::factory()->create(['is_active' => true]);
+        $activePlan   = SubscriptionPlan::factory()->create(['is_active' => true]);
         $inactivePlan = SubscriptionPlan::factory()->create(['is_active' => false]);
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'              => $this->team->id,
             'subscription_plan_id' => $activePlan->id,
         ]);
-        $data = ['subscription_plan_id' => $inactivePlan->id];
+        $data         = ['subscription_plan_id' => $inactivePlan->id];
 
         // Then
         $this->expectException(ValidationError::class);
@@ -212,7 +211,7 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create(['team_id' => $this->team->id]);
-        $data = []; // Missing subscription_plan_id
+        $data         = []; // Missing subscription_plan_id
 
         // Then
         $this->expectException(ValidationError::class);
@@ -226,12 +225,12 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
-            'status' => 'active',
+            'team_id'     => $this->team->id,
+            'status'      => 'active',
             'canceled_at' => null,
         ]);
-        $endsAt = Carbon::now()->addMonth()->startOfSecond();
-        $data = ['ends_at' => $endsAt];
+        $endsAt       = Carbon::now()->addMonth()->startOfSecond();
+        $data         = ['ends_at' => $endsAt];
 
         // When
         $result = $this->subscriptionRepository->applyAction('cancel', $subscription, $data);
@@ -240,10 +239,10 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         $this->assertEquals('canceled', $result->status);
         $this->assertNotNull($result->canceled_at);
         $this->assertEquals($endsAt->format('Y-m-d H:i:s'), $result->ends_at->format('Y-m-d H:i:s'));
-        
+
         // Verify database was updated
         $this->assertDatabaseHas('subscriptions', [
-            'id' => $subscription->id,
+            'id'     => $subscription->id,
             'status' => 'canceled',
         ]);
     }
@@ -252,7 +251,7 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'     => $this->team->id,
             'canceled_at' => Carbon::now(),
         ]);
 
@@ -268,10 +267,10 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
-            'status' => 'canceled',
+            'team_id'     => $this->team->id,
+            'status'      => 'canceled',
             'canceled_at' => Carbon::now()->subDays(5),
-            'ends_at' => Carbon::now()->addDays(25), // Not yet expired
+            'ends_at'     => Carbon::now()->addDays(25), // Not yet expired
         ]);
 
         // When
@@ -281,13 +280,13 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         $this->assertEquals('active', $result->status);
         $this->assertNull($result->canceled_at);
         $this->assertNull($result->ends_at);
-        
+
         // Verify database was updated
         $this->assertDatabaseHas('subscriptions', [
-            'id' => $subscription->id,
-            'status' => 'active',
+            'id'          => $subscription->id,
+            'status'      => 'active',
             'canceled_at' => null,
-            'ends_at' => null,
+            'ends_at'     => null,
         ]);
     }
 
@@ -295,8 +294,8 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
-            'status' => 'active',
+            'team_id'     => $this->team->id,
+            'status'      => 'active',
             'canceled_at' => null,
         ]);
 
@@ -312,10 +311,10 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create([
-            'team_id' => $this->team->id,
-            'status' => 'canceled',
+            'team_id'     => $this->team->id,
+            'status'      => 'canceled',
             'canceled_at' => Carbon::now()->subMonths(2),
-            'ends_at' => Carbon::now()->subMonth(), // Already expired
+            'ends_at'     => Carbon::now()->subMonth(), // Already expired
         ]);
 
         // Then
@@ -329,13 +328,13 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     public function test_getActiveSubscriptionForTeam_withActiveSubscription_returnsSubscription(): void
     {
         // Given
-        $activeSubscription = Subscription::factory()->create([
+        $activeSubscription   = Subscription::factory()->create([
             'team_id' => $this->team->id,
-            'status' => 'active',
+            'status'  => 'active',
         ]);
         $canceledSubscription = Subscription::factory()->create([
             'team_id' => $this->team->id,
-            'status' => 'canceled',
+            'status'  => 'canceled',
         ]);
 
         // When
@@ -352,7 +351,7 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         // Given
         Subscription::factory()->create([
             'team_id' => $this->team->id,
-            'status' => 'canceled',
+            'status'  => 'canceled',
         ]);
 
         // When
@@ -367,7 +366,7 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         // Given
         $subscription = Subscription::factory()->create([
             'team_id' => $this->differentTeam->id,
-            'status' => 'active',
+            'status'  => 'active',
         ]);
 
         // When
@@ -383,13 +382,13 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create(['team_id' => $this->team->id]);
-        $repository = new SubscriptionRepository();
+        $repository   = new SubscriptionRepository();
 
         // When & Then - Should not throw exception
         $method = new \ReflectionMethod($repository, 'validateOwnership');
         $method->setAccessible(true);
         $method->invoke($repository, $subscription);
-        
+
         // If we reach here, no exception was thrown
         $this->assertTrue(true);
     }
@@ -398,7 +397,7 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $subscription = Subscription::factory()->create(['team_id' => $this->differentTeam->id]);
-        $repository = new SubscriptionRepository();
+        $repository   = new SubscriptionRepository();
 
         // Then
         $this->expectException(ValidationError::class);
@@ -419,7 +418,7 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         $method = new \ReflectionMethod($repository, 'validateTeamOwnership');
         $method->setAccessible(true);
         $method->invoke($repository);
-        
+
         // If we reach here, no exception was thrown
         $this->assertTrue(true);
     }
@@ -431,10 +430,10 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
         $this->user->teams()->detach();
         $this->user->currentTeam = null;
         $this->user->save();
-        
+
         // Re-authenticate the user without teams
         $this->actingAs($this->user->fresh());
-        
+
         $repository = new SubscriptionRepository();
 
         // Then

@@ -6,11 +6,9 @@ use App\Models\Agent\Agent;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskDefinitionDirective;
-use App\Repositories\ThreadRepository;
 use App\Services\ContentSearch\ContentSearchRequest;
 use App\Services\ContentSearch\ContentSearchService;
 use App\Services\ContentSearch\Exceptions\InvalidSearchParametersException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\AuthenticatedTestCase;
 use Tests\Feature\Api\TestAi\TestAiApi;
@@ -18,7 +16,7 @@ use Tests\Traits\SetUpTeamTrait;
 
 class ContentSearchServiceTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     protected ContentSearchService $service;
     protected TaskDefinition       $taskDefinition;
@@ -35,7 +33,7 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
             'name'    => 'Test Model',
             'context' => 4096,
         ]);
-        
+
         Config::set('ai.models.gpt-4o-mini', [
             'api'     => TestAiApi::class,
             'name'    => 'GPT-4o Mini',
@@ -96,7 +94,7 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
             'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'The Google Doc file ID is: 1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg',
         ]);
-        
+
         // For unit testing, we'll skip actual LLM calls
         // The service will attempt LLM but we focus on field path for unit tests
         $artifact3 = Artifact::factory()->create([
@@ -294,18 +292,18 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
 
         // Create task definition directives
         $promptDirective = \App\Models\Prompt\PromptDirective::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'Test Directive',
+            'team_id'        => $this->user->currentTeam->id,
+            'name'           => 'Test Directive',
             'directive_text' => 'Use this template file ID: 1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg for all documents',
         ]);
-        
+
         $taskDefDirective = TaskDefinitionDirective::create([
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'  => $this->taskDefinition->id,
             'prompt_directive_id' => $promptDirective->id,
-            'section' => TaskDefinitionDirective::SECTION_TOP,
-            'position' => 1,
+            'section'             => TaskDefinitionDirective::SECTION_TOP,
+            'position'            => 1,
         ]);
-        
+
         // Reload task definition with directives
         $this->taskDefinition->load('taskDefinitionDirectives.directive');
 
@@ -456,29 +454,29 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
     {
         // Given - create directives attached to task definition
         $promptDirective1 = \App\Models\Prompt\PromptDirective::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'Basic Template Directive',
+            'team_id'        => $this->user->currentTeam->id,
+            'name'           => 'Basic Template Directive',
             'directive_text' => 'Use the template for basic documents',
         ]);
 
         $promptDirective2 = \App\Models\Prompt\PromptDirective::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'Report Template Directive',  
+            'team_id'        => $this->user->currentTeam->id,
+            'name'           => 'Report Template Directive',
             'directive_text' => 'For reports, use file ID: directive-file-id-12345',
         ]);
 
         TaskDefinitionDirective::create([
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'  => $this->taskDefinition->id,
             'prompt_directive_id' => $promptDirective1->id,
-            'section' => TaskDefinitionDirective::SECTION_TOP,
-            'position' => 1,
+            'section'             => TaskDefinitionDirective::SECTION_TOP,
+            'position'            => 1,
         ]);
-        
+
         TaskDefinitionDirective::create([
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'  => $this->taskDefinition->id,
             'prompt_directive_id' => $promptDirective2->id,
-            'section' => TaskDefinitionDirective::SECTION_TOP,
-            'position' => 2,
+            'section'             => TaskDefinitionDirective::SECTION_TOP,
+            'position'            => 2,
         ]);
 
         // Reload task definition with directives

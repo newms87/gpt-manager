@@ -8,14 +8,13 @@ use App\Models\User;
 use App\Repositories\DemandTemplateRepository;
 use App\Services\DemandTemplate\DemandTemplateService;
 use App\Services\GoogleDocs\GoogleDocsFileService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
 class DemandTemplateRepositoryTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     protected DemandTemplateRepository $repository;
     protected DemandTemplateService    $service;

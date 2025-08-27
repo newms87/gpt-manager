@@ -2,23 +2,22 @@
 
 namespace Tests\Unit\Repositories\ContentSearch;
 
+use App\Models\Agent\Agent;
+use App\Models\Prompt\PromptDirective;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskDefinitionDirective;
-use App\Models\Agent\Agent;
-use App\Models\Prompt\PromptDirective;
 use App\Repositories\ContentSearch\ContentSearchRepository;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
 class ContentSearchRepositoryTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     protected ContentSearchRepository $repository;
-    protected TaskDefinition $taskDefinition;
-    protected Agent $agent;
+    protected TaskDefinition          $taskDefinition;
+    protected Agent                   $agent;
 
     public function setUp(): void
     {
@@ -26,16 +25,16 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
         $this->setUpTeam();
 
         $this->repository = new ContentSearchRepository();
-        
+
         $this->agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Test Agent',
+            'name'    => 'Test Agent',
         ]);
 
         $this->taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $this->agent->id,
-            'name' => 'Test Task Definition',
+            'name'     => 'Test Task Definition',
         ]);
     }
 
@@ -44,17 +43,17 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
         // Given - artifacts from different teams
         $teamArtifact1 = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Team Artifact 1',
+            'name'    => 'Team Artifact 1',
         ]);
 
         $teamArtifact2 = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Team Artifact 2',
+            'name'    => 'Team Artifact 2',
         ]);
 
         $otherTeamArtifact = Artifact::factory()->create([
             'team_id' => 999999,
-            'name' => 'Other Team Artifact',
+            'name'    => 'Other Team Artifact',
         ]);
 
         // When
@@ -72,17 +71,17 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
         // Given
         $artifact1 = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Artifact 1',
+            'name'    => 'Artifact 1',
         ]);
 
         $artifact2 = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Artifact 2',
+            'name'    => 'Artifact 2',
         ]);
 
         $artifact3 = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Artifact 3',
+            'name'    => 'Artifact 3',
         ]);
 
         // When - only request specific artifacts
@@ -102,17 +101,17 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $artifactWithText = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'This has text content',
         ]);
 
         $artifactWithEmptyText = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => '',
         ]);
 
         $artifactWithNullText = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => null,
         ]);
 
@@ -130,26 +129,26 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $artifactWithMeta = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['key' => 'value'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['key' => 'value'],
             'json_content' => null,
         ]);
 
         $artifactWithJsonContent = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => null,
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => null,
             'json_content' => ['data' => 'value'],
         ]);
 
         $artifactWithBoth = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['meta_key' => 'meta_value'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['meta_key' => 'meta_value'],
             'json_content' => ['json_key' => 'json_value'],
         ]);
 
         $artifactWithNeither = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => null,
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => null,
             'json_content' => null,
         ]);
 
@@ -168,27 +167,27 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $directive1 = PromptDirective::factory()->create([
-            'name' => 'Test Directive 1',
+            'name'           => 'Test Directive 1',
             'directive_text' => 'Use this Google Doc: https://docs.google.com/document/d/test1/edit',
         ]);
 
         $directive2 = PromptDirective::factory()->create([
-            'name' => 'Test Directive 2',
+            'name'           => 'Test Directive 2',
             'directive_text' => 'Another directive text',
         ]);
 
         $taskDirective1 = TaskDefinitionDirective::create([
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'  => $this->taskDefinition->id,
             'prompt_directive_id' => $directive1->id,
-            'section' => TaskDefinitionDirective::SECTION_TOP,
-            'position' => 1,
+            'section'             => TaskDefinitionDirective::SECTION_TOP,
+            'position'            => 1,
         ]);
 
         $taskDirective2 = TaskDefinitionDirective::create([
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'  => $this->taskDefinition->id,
             'prompt_directive_id' => $directive2->id,
-            'section' => TaskDefinitionDirective::SECTION_TOP,
-            'position' => 2,
+            'section'             => TaskDefinitionDirective::SECTION_TOP,
+            'position'            => 2,
         ]);
 
         // When
@@ -204,39 +203,39 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $directiveWithText = PromptDirective::factory()->create([
-            'name' => 'Directive With Text',
+            'name'           => 'Directive With Text',
             'directive_text' => 'This directive has text content',
         ]);
 
         $directiveWithEmptyText = PromptDirective::factory()->create([
-            'name' => 'Empty Directive',
+            'name'           => 'Empty Directive',
             'directive_text' => '',
         ]);
 
         $directiveWithNullText = PromptDirective::factory()->create([
-            'name' => 'Null Directive',
+            'name'           => 'Null Directive',
             'directive_text' => null,
         ]);
 
         TaskDefinitionDirective::create([
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'  => $this->taskDefinition->id,
             'prompt_directive_id' => $directiveWithText->id,
-            'section' => TaskDefinitionDirective::SECTION_TOP,
-            'position' => 1,
+            'section'             => TaskDefinitionDirective::SECTION_TOP,
+            'position'            => 1,
         ]);
 
         TaskDefinitionDirective::create([
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'  => $this->taskDefinition->id,
             'prompt_directive_id' => $directiveWithEmptyText->id,
-            'section' => TaskDefinitionDirective::SECTION_TOP,
-            'position' => 2,
+            'section'             => TaskDefinitionDirective::SECTION_TOP,
+            'position'            => 2,
         ]);
 
         TaskDefinitionDirective::create([
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'  => $this->taskDefinition->id,
             'prompt_directive_id' => $directiveWithNullText->id,
-            'section' => TaskDefinitionDirective::SECTION_TOP,
-            'position' => 3,
+            'section'             => TaskDefinitionDirective::SECTION_TOP,
+            'position'            => 3,
         ]);
 
         // When
@@ -251,17 +250,17 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $artifactWithJsonField = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'json_content' => ['template_stored_file_id' => 'json-file-id'],
         ]);
 
         $artifactWithMetaField = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'meta' => ['template_stored_file_id' => 'meta-file-id'],
+            'meta'    => ['template_stored_file_id' => 'meta-file-id'],
         ]);
 
         $artifactWithoutField = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'json_content' => ['other_field' => 'value'],
         ]);
 
@@ -283,7 +282,7 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
         // Given
         $artifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Team Artifact',
+            'name'    => 'Team Artifact',
         ]);
 
         // When
@@ -300,7 +299,7 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
         // Given
         $artifact = Artifact::factory()->create([
             'team_id' => 999999,
-            'name' => 'Other Team Artifact',
+            'name'    => 'Other Team Artifact',
         ]);
 
         // When
@@ -328,7 +327,7 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     {
         // Given - task definition for different team
         $otherTaskDefinition = TaskDefinition::factory()->create([
-            'team_id' => 999999,
+            'team_id'  => 999999,
             'agent_id' => $this->agent->id,
         ]);
 
@@ -346,30 +345,30 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Has text',
-            'meta' => null,
+            'meta'         => null,
             'json_content' => null,
         ]);
 
         Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => null,
-            'meta' => ['key' => 'value'],
+            'meta'         => ['key' => 'value'],
             'json_content' => null,
         ]);
 
         Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => null,
-            'meta' => null,
+            'meta'         => null,
             'json_content' => ['data' => 'value'],
         ]);
 
         Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Has everything',
-            'meta' => ['meta_key' => 'meta_value'],
+            'meta'         => ['meta_key' => 'meta_value'],
             'json_content' => ['json_key' => 'json_value'],
         ]);
 
@@ -389,15 +388,15 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
         // Given
         $artifacts = collect([
             Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
+                'team_id'      => $this->user->currentTeam->id,
                 'text_content' => 'Short text',
-                'meta' => ['key' => 'value'],
+                'meta'         => ['key' => 'value'],
                 'json_content' => null,
             ]),
             Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
+                'team_id'      => $this->user->currentTeam->id,
                 'text_content' => 'This is a much longer text content for testing',
-                'meta' => null,
+                'meta'         => null,
                 'json_content' => ['data' => 'value'],
             ]),
         ]);
@@ -410,7 +409,7 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
         $this->assertEquals(10, $lengths[0]['text_length']); // "Short text"
         $this->assertTrue($lengths[0]['has_meta']);
         $this->assertFalse($lengths[0]['has_json_content']);
-        
+
         $this->assertEquals(46, $lengths[1]['text_length']); // Longer text
         $this->assertFalse($lengths[1]['has_meta']);
         $this->assertTrue($lengths[1]['has_json_content']);
@@ -420,21 +419,21 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $shortArtifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Short',
-            'name' => 'Short Artifact',
+            'name'         => 'Short Artifact',
         ]);
 
         $longArtifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'This is a much longer text content',
-            'name' => 'Long Artifact',
+            'name'         => 'Long Artifact',
         ]);
 
         $mediumArtifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Medium length text',
-            'name' => 'Medium Artifact',
+            'name'         => 'Medium Artifact',
         ]);
 
         $artifacts = collect([$longArtifact, $shortArtifact, $mediumArtifact]);
@@ -504,7 +503,7 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     {
         // Given - task definition from different team
         $wrongTaskDefinition = TaskDefinition::factory()->create([
-            'team_id' => 999999,
+            'team_id'  => 999999,
             'agent_id' => $this->agent->id,
         ]);
 
@@ -551,12 +550,12 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $matchingArtifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'This contains a google document link',
         ]);
 
         $nonMatchingArtifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'This is just regular text',
         ]);
 

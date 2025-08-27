@@ -3,13 +3,16 @@
 namespace App\Api\GoogleDocs;
 
 use App\Services\Auth\OAuthService;
-use Illuminate\Support\Facades\Log;
+use App\Traits\HasDebugLogging;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Api\Api;
 use Newms87\Danx\Exceptions\ApiException;
 
 class GoogleDocsApi extends Api
 {
+    use HasDebugLogging;
+
     public static string $serviceName = 'Google Docs';
 
     protected array $rateLimits = [
@@ -17,8 +20,8 @@ class GoogleDocsApi extends Api
         ['limit' => 100, 'interval' => 100, 'waitPerAttempt' => 1],
     ];
 
-    protected ?string $accessToken = null;
-    protected bool $isInitialized = false;
+    protected ?string $accessToken   = null;
+    protected bool    $isInitialized = false;
 
     public function __construct()
     {
@@ -36,10 +39,10 @@ class GoogleDocsApi extends Api
             $this->initializeAuthentication();
             $this->isInitialized = true;
         }
-        
+
         return [
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
+            'Content-Type'  => 'application/json',
+            'Accept'        => 'application/json',
             'Authorization' => 'Bearer ' . $this->accessToken,
         ];
     }
@@ -51,34 +54,34 @@ class GoogleDocsApi extends Api
     {
         try {
             Log::info("GoogleDocsApi: Reading document", ['document_id' => $documentId]);
-            
+
             $response = $this->get("documents/{$documentId}");
             $document = $response->json();
-            
+
             if (!$document) {
                 throw new ApiException("Invalid response from Google Docs API");
             }
-            
+
             $content = $this->extractTextContent($document);
-            
+
             Log::info("GoogleDocsApi: Document read successfully", [
-                'document_id' => $documentId,
-                'content_length' => strlen($content)
+                'document_id'    => $documentId,
+                'content_length' => strlen($content),
             ]);
 
             return [
                 'document_id' => $documentId,
-                'title' => $document['title'] ?? 'Untitled',
-                'content' => $content,
+                'title'       => $document['title'] ?? 'Untitled',
+                'content'     => $content,
                 'revision_id' => $document['revisionId'] ?? null,
             ];
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             Log::error("GoogleDocsApi: Failed to read document", [
                 'document_id' => $documentId,
-                'error' => $e->getMessage()
+                'error'       => $e->getMessage(),
             ]);
-            
+
             throw new ApiException('Failed to read Google Docs document: ' . $e->getMessage());
         }
     }
@@ -89,14 +92,14 @@ class GoogleDocsApi extends Api
     protected function extractTextContent(array $document): string
     {
         $content = '';
-        $body = $document['body'] ?? null;
-        
+        $body    = $document['body'] ?? null;
+
         if ($body && isset($body['content']) && is_array($body['content'])) {
-            foreach ($body['content'] as $element) {
+            foreach($body['content'] as $element) {
                 if (isset($element['paragraph'])) {
                     $paragraph = $element['paragraph'];
                     if (isset($paragraph['elements']) && is_array($paragraph['elements'])) {
-                        foreach ($paragraph['elements'] as $paragraphElement) {
+                        foreach($paragraph['elements'] as $paragraphElement) {
                             if (isset($paragraphElement['textRun']['content'])) {
                                 $content .= $paragraphElement['textRun']['content'];
                             }
@@ -115,12 +118,12 @@ class GoogleDocsApi extends Api
     public function parseTemplateVariables(string $content): array
     {
         preg_match_all('/\{\{(\w+)\}\}/', $content, $matches);
-        
+
         $variables = array_unique($matches[1] ?? []);
-        
+
         Log::info("GoogleDocsApi: Parsed template variables", [
             'variables_found' => count($variables),
-            'variables' => $variables
+            'variables'       => $variables,
         ]);
 
         return $variables;
@@ -131,19 +134,19 @@ class GoogleDocsApi extends Api
      */
     public function replaceVariables(string $content, array $mappings): string
     {
-        foreach ($mappings as $variable => $value) {
+        foreach($mappings as $variable => $value) {
             // Handle arrays and objects by converting to JSON
             if (is_array($value) || is_object($value)) {
                 $stringValue = json_encode($value);
             } else {
-                $stringValue = (string) $value;
+                $stringValue = (string)$value;
             }
             $content = str_replace("{{" . $variable . "}}", $stringValue, $content);
         }
 
         Log::info("GoogleDocsApi: Variables replaced", [
             'mappings_count' => count($mappings),
-            'content_length' => strlen($content)
+            'content_length' => strlen($content),
         ]);
 
         return $content;
@@ -156,39 +159,39 @@ class GoogleDocsApi extends Api
     {
         try {
             Log::info("GoogleDocsApi: Creating document", [
-                'title' => $title,
+                'title'            => $title,
                 'parent_folder_id' => $parentFolderId,
-                'content_length' => strlen($content)
+                'content_length'   => strlen($content),
             ]);
 
             // Step 1: Create empty Google Docs document using Drive API
             // Note: Google Docs don't count against storage quota, only uploaded files do
             $driveMetadata = [
-                'name' => $title,
-                'mimeType' => 'application/vnd.google-apps.document'
+                'name'     => $title,
+                'mimeType' => 'application/vnd.google-apps.document',
             ];
-            
+
             // Only set parent folder if explicitly provided (not default)
             if ($parentFolderId && $parentFolderId !== config('google-docs.default_folder_id')) {
                 $driveMetadata['parents'] = [$parentFolderId];
             }
 
             $response = $this->postToDriveApi('files', $driveMetadata);
-            
+
             $documentData = $response->json();
-            
+
             // Log the response to debug
             Log::info("GoogleDocsApi: Drive API response", [
-                'status' => $response->status(),
-                'response' => $documentData
+                'status'   => $response->status(),
+                'response' => $documentData,
             ]);
-            
+
             if (!$response->successful()) {
                 throw new ApiException('Drive API request failed: ' . ($documentData['error']['message'] ?? 'Unknown error'));
             }
-            
+
             $documentId = $documentData['id'] ?? null;
-            
+
             if (!$documentId) {
                 throw new ApiException('Failed to get document ID from Drive API response');
             }
@@ -198,7 +201,7 @@ class GoogleDocsApi extends Api
                 $this->insertContentIntoDocument($documentId, $content);
             }
 
-            // Step 3: Set permissions if configured  
+            // Step 3: Set permissions if configured
             $permissions = config('google-docs.default_permissions');
             if ($permissions) {
                 $this->setDocumentPermissions($documentId, $permissions);
@@ -207,23 +210,23 @@ class GoogleDocsApi extends Api
             $documentUrl = "https://docs.google.com/document/d/{$documentId}/edit";
 
             Log::info("GoogleDocsApi: Document created successfully", [
-                'document_id' => $documentId,
-                'document_url' => $documentUrl
+                'document_id'  => $documentId,
+                'document_url' => $documentUrl,
             ]);
 
             return [
                 'document_id' => $documentId,
-                'title' => $title,
-                'url' => $documentUrl,
-                'created_at' => now()->toISOString(),
+                'title'       => $title,
+                'url'         => $documentUrl,
+                'created_at'  => now()->toISOString(),
             ];
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             Log::error("GoogleDocsApi: Failed to create document", [
                 'title' => $title,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             throw new ApiException('Failed to create Google Docs document: ' . $e->getMessage());
         }
     }
@@ -238,28 +241,28 @@ class GoogleDocsApi extends Api
 
             // Split content into paragraphs and build requests
             $paragraphs = explode("\n", $content);
-            
-            foreach ($paragraphs as $paragraph) {
+
+            foreach($paragraphs as $paragraph) {
                 if (trim($paragraph) !== '') {
                     $requests[] = [
                         'insertText' => [
                             'location' => ['index' => 1],
-                            'text' => $paragraph . "\n"
-                        ]
+                            'text'     => $paragraph . "\n",
+                        ],
                     ];
                 }
             }
 
             if (!empty($requests)) {
                 $this->post("documents/{$documentId}:batchUpdate", [
-                    'requests' => $requests
+                    'requests' => $requests,
                 ]);
             }
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             Log::warning("GoogleDocsApi: Failed to insert content", [
                 'document_id' => $documentId,
-                'error' => $e->getMessage()
+                'error'       => $e->getMessage(),
             ]);
         }
     }
@@ -274,14 +277,14 @@ class GoogleDocsApi extends Api
             // For now, just log that we would do this
             Log::info("GoogleDocsApi: Would move document to folder", [
                 'document_id' => $documentId,
-                'folder_id' => $folderId
+                'folder_id'   => $folderId,
             ]);
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             Log::warning("GoogleDocsApi: Failed to move document to folder", [
                 'document_id' => $documentId,
-                'folder_id' => $folderId,
-                'error' => $e->getMessage()
+                'folder_id'   => $folderId,
+                'error'       => $e->getMessage(),
             ]);
         }
     }
@@ -293,20 +296,20 @@ class GoogleDocsApi extends Api
     {
         try {
             $permissions = $permissions ?: config('google-docs.default_permissions');
-            
+
             if ($permissions && isset($permissions['type']) && isset($permissions['role'])) {
                 // This would need to use Drive API which has a different base URL
                 // For now, just log that we would do this
                 Log::info("GoogleDocsApi: Would set document permissions", [
                     'document_id' => $documentId,
-                    'permissions' => $permissions
+                    'permissions' => $permissions,
                 ]);
             }
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             Log::warning("GoogleDocsApi: Failed to set document permissions", [
                 'document_id' => $documentId,
-                'error' => $e->getMessage()
+                'error'       => $e->getMessage(),
             ]);
         }
     }
@@ -319,39 +322,39 @@ class GoogleDocsApi extends Api
         try {
             // Generate title if not provided
             $title = $newTitle ?? ('Document - ' . now()->format('Y-m-d H:i:s'));
-            
+
             Log::info("GoogleDocsApi: Creating document from template", [
-                'template_id' => $templateId,
-                'title' => $title,
+                'template_id'      => $templateId,
+                'title'            => $title,
                 'parent_folder_id' => $parentFolderId,
-                'variable_count' => count($variableMappings)
+                'variable_count'   => count($variableMappings),
             ]);
 
             // Step 1: Copy the template document using Drive API
             $copyMetadata = [
-                'name' => $title
+                'name' => $title,
             ];
-            
+
             if ($parentFolderId) {
                 $copyMetadata['parents'] = [$parentFolderId];
             }
 
             $response = $this->postToDriveApi("files/{$templateId}/copy", $copyMetadata);
-            
+
             $documentData = $response->json();
-            
+
             // Log the response to debug
             Log::info("GoogleDocsApi: Drive API copy response", [
-                'status' => $response->status(),
-                'response' => $documentData
+                'status'   => $response->status(),
+                'response' => $documentData,
             ]);
-            
+
             if (!$response->successful()) {
                 throw new ApiException('Drive API copy request failed: ' . ($documentData['error']['message'] ?? 'Unknown error'));
             }
-            
+
             $documentId = $documentData['id'] ?? null;
-            
+
             if (!$documentId) {
                 throw new ApiException('Failed to get document ID from Drive API copy response');
             }
@@ -361,7 +364,7 @@ class GoogleDocsApi extends Api
                 $this->replaceVariablesInDocument($documentId, $variableMappings);
             }
 
-            // Step 3: Set permissions if configured  
+            // Step 3: Set permissions if configured
             $permissions = config('google-docs.default_permissions');
             if ($permissions) {
                 $this->setDocumentPermissions($documentId, $permissions);
@@ -370,23 +373,23 @@ class GoogleDocsApi extends Api
             $documentUrl = "https://docs.google.com/document/d/{$documentId}/edit";
 
             Log::info("GoogleDocsApi: Document created from template successfully", [
-                'document_id' => $documentId,
-                'document_url' => $documentUrl
+                'document_id'  => $documentId,
+                'document_url' => $documentUrl,
             ]);
 
             return [
                 'document_id' => $documentId,
-                'title' => $title,
-                'url' => $documentUrl,
-                'created_at' => now()->toISOString(),
+                'title'       => $title,
+                'url'         => $documentUrl,
+                'created_at'  => now()->toISOString(),
             ];
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             Log::error("GoogleDocsApi: Failed to create document from template", [
                 'template_id' => $templateId,
-                'error' => $e->getMessage()
+                'error'       => $e->getMessage(),
             ]);
-            
+
             throw new ApiException('Failed to create document from template: ' . $e->getMessage());
         }
     }
@@ -398,45 +401,45 @@ class GoogleDocsApi extends Api
     {
         try {
             $requests = [];
-            
+
             // Create a replaceAllText request for each variable
-            foreach ($variableMappings as $variable => $value) {
+            foreach($variableMappings as $variable => $value) {
                 // Convert value to string
                 $textValue = is_array($value) ? json_encode($value) : (string)$value;
-                
+
                 // Always create replace request, even for empty values
                 // Empty strings should replace the template variable with nothing
                 $requests[] = [
                     'replaceAllText' => [
                         'containsText' => [
-                            'text' => '{{' . $variable . '}}',
-                            'matchCase' => true
+                            'text'      => '{{' . $variable . '}}',
+                            'matchCase' => true,
                         ],
-                        'replaceText' => $textValue
-                    ]
+                        'replaceText'  => $textValue,
+                    ],
                 ];
             }
-            
+
             if (!empty($requests)) {
                 $response = $this->post("documents/{$documentId}:batchUpdate", [
-                    'requests' => $requests
+                    'requests' => $requests,
                 ]);
-                
+
                 $responseData = $response->json();
                 if (isset($responseData['error'])) {
                     throw new ApiException('Failed to replace variables: ' . ($responseData['error']['message'] ?? 'Unknown error'));
                 }
-                
+
                 Log::info("GoogleDocsApi: Variables replaced in document", [
-                    'document_id' => $documentId,
-                    'variables_replaced' => count($requests)
+                    'document_id'        => $documentId,
+                    'variables_replaced' => count($requests),
                 ]);
             }
-            
-        } catch (\Exception $e) {
+
+        } catch(\Exception $e) {
             Log::warning("GoogleDocsApi: Failed to replace variables in document", [
                 'document_id' => $documentId,
-                'error' => $e->getMessage()
+                'error'       => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -448,6 +451,7 @@ class GoogleDocsApi extends Api
     public function extractTemplateVariables(string $templateId): array
     {
         $templateData = $this->readDocument($templateId);
+
         return $this->parseTemplateVariables($templateData['content']);
     }
 
@@ -468,7 +472,7 @@ class GoogleDocsApi extends Api
     {
         try {
             $oauthService = app(OAuthService::class);
-            $token = $oauthService->getToken('google');
+            $token        = $oauthService->getToken('google');
 
             if (!$token) {
                 return false;
@@ -483,16 +487,17 @@ class GoogleDocsApi extends Api
             $this->accessToken = $token->access_token;
 
             Log::info("GoogleDocsApi: OAuth authentication initialized", [
-                'team_id' => $token->team_id,
-                'expires_at' => $token->expires_at?->toISOString()
+                'team_id'    => $token->team_id,
+                'expires_at' => $token->expires_at?->toISOString(),
             ]);
 
             return true;
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             Log::warning("GoogleDocsApi: Failed to initialize OAuth authentication", [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -504,7 +509,7 @@ class GoogleDocsApi extends Api
     protected function postToDriveApi(string $endpoint, array $data = []): \Illuminate\Http\Client\Response
     {
         $driveApiUrl = 'https://www.googleapis.com/drive/v3/';
-        
+
         return Http::withHeaders($this->getRequestHeaders())
             ->post($driveApiUrl . $endpoint, $data);
     }
@@ -517,9 +522,10 @@ class GoogleDocsApi extends Api
     {
         try {
             $oauthService = app(OAuthService::class);
-            $token = $oauthService->getToken('google');
+            $token        = $oauthService->getToken('google');
+
             return $token && $token->isValid();
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             return false;
         }
     }
@@ -530,6 +536,6 @@ class GoogleDocsApi extends Api
     public function reinitializeAuth(): void
     {
         $this->isInitialized = false;
-        $this->accessToken = null;
+        $this->accessToken   = null;
     }
 }

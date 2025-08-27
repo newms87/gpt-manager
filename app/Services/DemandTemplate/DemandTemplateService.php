@@ -6,7 +6,6 @@ use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\DemandTemplate;
 use App\Services\GoogleDocs\GoogleDocsFileService;
 use Exception;
-use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class DemandTemplateService
@@ -26,21 +25,19 @@ class DemandTemplateService
         $data['team_id'] = team()->id;
         $data['user_id'] = $data['user_id'] ?? user()->id;
 
-        return DB::transaction(function () use ($data) {
-            // Handle Google Docs template URL if provided
-            if (isset($data['template_url']) && !empty($data['template_url'])) {
-                $storedFileId           = $this->googleDocsFileService->createFromUrl($data['template_url'], $data['name']);
-                $data['stored_file_id'] = $storedFileId;
-            }
+        // Handle Google Docs template URL if provided
+        if (isset($data['template_url']) && !empty($data['template_url'])) {
+            $storedFileId           = $this->googleDocsFileService->createFromUrl($data['template_url'], $data['name']);
+            $data['stored_file_id'] = $storedFileId;
+        }
 
-            unset($data['template_url']);
+        unset($data['template_url']);
 
-            $template = new DemandTemplate($data);
-            $template->validate();
-            $template->save();
+        $template = new DemandTemplate($data);
+        $template->validate();
+        $template->save();
 
-            return $template;
-        });
+        return $template;
     }
 
     /**
@@ -50,27 +47,25 @@ class DemandTemplateService
     {
         $this->validateOwnership($template);
 
-        return DB::transaction(function () use ($template, $data) {
-            // Handle template_url by creating StoredFile if provided
-            if (isset($data['template_url']) && !empty($data['template_url'])) {
-                $name                   = $data['name'] ?? $template->name;
-                $storedFileId           = $this->googleDocsFileService->createFromUrl($data['template_url'], $name);
-                $data['stored_file_id'] = $storedFileId;
-            }
+        // Handle template_url by creating StoredFile if provided
+        if (isset($data['template_url']) && !empty($data['template_url'])) {
+            $name                   = $data['name'] ?? $template->name;
+            $storedFileId           = $this->googleDocsFileService->createFromUrl($data['template_url'], $name);
+            $data['stored_file_id'] = $storedFileId;
+        }
 
-            unset($data['template_url']);
+        unset($data['template_url']);
 
-            $template->fill($data);
-            $template->validate();
-            $template->save();
+        $template->fill($data);
+        $template->validate();
+        $template->save();
 
-            // Sync template variables to StoredFile if they were updated
-            if (isset($data['template_variables'])) {
-                $this->syncVariablesToStoredFile($template);
-            }
+        // Sync template variables to StoredFile if they were updated
+        if (isset($data['template_variables'])) {
+            $this->syncVariablesToStoredFile($template);
+        }
 
-            return $template;
-        });
+        return $template;
     }
 
     /**
@@ -85,7 +80,7 @@ class DemandTemplateService
     }
 
     /**
-     * Fetch template variables from Google Docs and update the template
+     * Fetch template variables from Google Docs and merge with existing variables
      */
     public function fetchTemplateVariables(DemandTemplate $template): DemandTemplate
     {
@@ -96,17 +91,27 @@ class DemandTemplateService
             throw new ValidationError('Template does not have a valid Google Docs URL', 400);
         }
 
-        return DB::transaction(function () use ($template, $googleDocId) {
-            $templateVariables = $this->googleDocsApi->extractTemplateVariables($googleDocId);
+        // Get new variables from Google Docs (returns array of variable names)
+        $newVariableNames = $this->googleDocsApi->extractTemplateVariables($googleDocId);
 
-            $template->template_variables = $templateVariables;
-            $template->save();
+        // Get existing template variables (associative array of variable => description)
+        $existingVariables = $template->template_variables ?? [];
 
-            // Sync to StoredFile meta for TaskRunner consumption
-            $this->syncVariablesToStoredFile($template);
+        // Merge: keep existing variables with their descriptions, add new ones with empty descriptions
+        $mergedVariables = $existingVariables;
+        foreach($newVariableNames as $variableName) {
+            if (!isset($mergedVariables[$variableName])) {
+                $mergedVariables[$variableName] = '';
+            }
+        }
 
-            return $template->fresh();
-        });
+        $template->template_variables = $mergedVariables;
+        $template->save();
+
+        // Sync to StoredFile meta for TaskRunner consumption
+        $this->syncVariablesToStoredFile($template);
+
+        return $template->fresh();
     }
 
     /**

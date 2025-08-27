@@ -11,7 +11,6 @@ use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowListener;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\UiDemand\UiDemandWorkflowService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -21,7 +20,7 @@ use Tests\Traits\SetUpTeamTrait;
 
 class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     protected UiDemandWorkflowService $service;
 
@@ -34,10 +33,10 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Set up workflow configuration
         Config::set('ui-demands.workflows.extract_data', 'Extract Service Dates');
         Config::set('ui-demands.workflows.write_demand', 'Write Demand Summary');
-        
+
         // Mock queue to prevent actual job dispatching
         Queue::fake();
-        
+
         // Enable events for this test to capture workflow completion
         Event::fake([WorkflowRunUpdatedEvent::class]);
     }
@@ -47,14 +46,14 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Given - Set up extract data workflow
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test Extract Data Demand',
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
+            'status'   => UiDemand::STATUS_DRAFT,
+            'title'    => 'Test Extract Data Demand',
             'metadata' => ['existing_key' => 'existing_value'],
         ]);
 
@@ -69,7 +68,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
         // Then - Verify WorkflowListener is created
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
-        
+
         $workflowListener = WorkflowListener::where('workflow_run_id', $workflowRun->id)->first();
         $this->assertNotNull($workflowListener);
         $this->assertEquals(UiDemand::class, $workflowListener->listener_type);
@@ -80,14 +79,14 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Verify pivot relationship is created
         $this->assertTrue($uiDemand->fresh()->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->exists());
         $this->assertEquals(
-            UiDemand::WORKFLOW_TYPE_EXTRACT_DATA, 
+            UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
             $uiDemand->fresh()->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->first()->pivot->workflow_type
         );
 
         // When - Simulate workflow completion by marking WorkflowRun as completed
         $workflowRun->update([
-            'status' => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
-            'completed_at' => now()
+            'status'       => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
+            'completed_at' => now(),
         ]);
 
         // Simulate the workflow completion callback
@@ -96,14 +95,14 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Then - Verify extract data completion effects
         $updatedDemand = $uiDemand->fresh();
         $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
-        
+
         // Verify metadata is updated with extract data completion
         $this->assertArrayHasKey('existing_key', $updatedDemand->metadata);
         $this->assertEquals('existing_value', $updatedDemand->metadata['existing_key']);
         $this->assertArrayHasKey('extract_data_completed_at', $updatedDemand->metadata);
         $this->assertArrayHasKey('workflow_run_id', $updatedDemand->metadata);
         $this->assertEquals($workflowRun->id, $updatedDemand->metadata['workflow_run_id']);
-        
+
         // Verify the timestamp is recent (within last 5 seconds)
         $completedAt = new \DateTime($updatedDemand->metadata['extract_data_completed_at']);
         $this->assertLessThan(5, abs(time() - $completedAt->getTimestamp()));
@@ -114,29 +113,29 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Given - Set up write demand workflow
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         // Create a UiDemand that can write demand (has team object and completed extract data)
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'Document',
+            'type'    => 'Document',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test Write Demand',
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
+            'title'          => 'Test Write Demand',
             'team_object_id' => $teamObject->id,
-            'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
+            'metadata'       => ['extract_data_completed_at' => now()->toIso8601String()],
         ]);
 
         // Mock a completed extract data workflow run
         $extractWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
-            'completed_at' => now(),
+            'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
+            'completed_at'           => now(),
         ]);
         $uiDemand->workflowRuns()->attach($extractWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 
@@ -145,7 +144,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
         // Then - Verify WorkflowListener is created
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
-        
+
         $workflowListener = WorkflowListener::where('workflow_run_id', $workflowRun->id)->first();
         $this->assertNotNull($workflowListener);
         $this->assertEquals(UiDemand::class, $workflowListener->listener_type);
@@ -155,14 +154,14 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
         // Create output artifacts with stored files to simulate workflow output
         $outputFile1 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'demand_output_1.docx',
         ]);
-        
+
         $outputFile2 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'demand_output_2.pdf',
         ]);
 
@@ -186,17 +185,17 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
         // When - Simulate workflow completion
         $workflowRun->update([
-            'status' => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
-            'completed_at' => now()
+            'status'       => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
+            'completed_at' => now(),
         ]);
 
-        // Since the collectFinalOutputArtifacts needs proper workflow nodes, 
+        // Since the collectFinalOutputArtifacts needs proper workflow nodes,
         // let's simulate the file attachment directly
         $outputArtifacts = collect([$artifact1, $artifact2]);
-        
+
         // Use reflection to call the protected method for testing
         $reflection = new \ReflectionClass($this->service);
-        $method = $reflection->getMethod('attachOutputFilesFromWorkflow');
+        $method     = $reflection->getMethod('attachOutputFilesFromWorkflow');
         $method->setAccessible(true);
         $method->invokeArgs($this->service, [$uiDemand, $outputArtifacts]);
 
@@ -206,7 +205,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Then - Verify write demand completion effects
         $updatedDemand = $uiDemand->fresh();
         $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
-        
+
         // Verify metadata is updated with write demand completion
         $this->assertArrayHasKey('extract_data_completed_at', $updatedDemand->metadata);
         $this->assertArrayHasKey('write_demand_completed_at', $updatedDemand->metadata);
@@ -216,13 +215,13 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Verify output files are attached to UiDemand
         $outputFiles = $updatedDemand->outputFiles;
         $this->assertCount(2, $outputFiles);
-        
+
         $outputFileIds = $outputFiles->pluck('id')->toArray();
         $this->assertContains($outputFile1->id, $outputFileIds);
         $this->assertContains($outputFile2->id, $outputFileIds);
-        
+
         // Verify the pivot data has correct category
-        foreach ($outputFiles as $file) {
+        foreach($outputFiles as $file) {
             $this->assertEquals('output', $file->pivot->category ?? 'output');
         }
     }
@@ -232,14 +231,14 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Given - Set up extract data workflow
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test Extract Data Failure',
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
+            'status'   => UiDemand::STATUS_DRAFT,
+            'title'    => 'Test Extract Data Failure',
             'metadata' => ['existing_key' => 'existing_value'],
         ]);
 
@@ -252,8 +251,8 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // When - Start and fail extract data workflow
         $workflowRun = $this->service->extractData($uiDemand);
         $workflowRun->update([
-            'status' => \App\Models\Workflow\WorkflowStatesContract::STATUS_FAILED,
-            'failed_at' => now()
+            'status'    => \App\Models\Workflow\WorkflowStatesContract::STATUS_FAILED,
+            'failed_at' => now(),
         ]);
 
         // Simulate the workflow failure callback
@@ -262,7 +261,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Then - Verify failure handling
         $updatedDemand = $uiDemand->fresh();
         $this->assertEquals(UiDemand::STATUS_FAILED, $updatedDemand->status);
-        
+
         // Verify metadata includes failure information
         $this->assertArrayHasKey('existing_key', $updatedDemand->metadata);
         $this->assertArrayHasKey('failed_at', $updatedDemand->metadata);
@@ -277,36 +276,36 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Given - Set up write demand workflow
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'Document',
+            'type'    => 'Document',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test Write Demand Failure',
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
+            'title'          => 'Test Write Demand Failure',
             'team_object_id' => $teamObject->id,
-            'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
+            'metadata'       => ['extract_data_completed_at' => now()->toIso8601String()],
         ]);
 
         // Mock a completed extract data workflow run
         $extractWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
-            'completed_at' => now(),
+            'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
+            'completed_at'           => now(),
         ]);
         $uiDemand->workflowRuns()->attach($extractWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 
         // When - Start and fail write demand workflow
         $workflowRun = $this->service->writeDemand($uiDemand);
         $workflowRun->update([
-            'status' => \App\Models\Workflow\WorkflowStatesContract::STATUS_FAILED,
-            'failed_at' => now()
+            'status'    => \App\Models\Workflow\WorkflowStatesContract::STATUS_FAILED,
+            'failed_at' => now(),
         ]);
 
         // Simulate the workflow failure callback
@@ -315,7 +314,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Then - Verify failure handling
         $updatedDemand = $uiDemand->fresh();
         $this->assertEquals(UiDemand::STATUS_FAILED, $updatedDemand->status);
-        
+
         // Verify metadata includes failure information
         $this->assertArrayHasKey('extract_data_completed_at', $updatedDemand->metadata);
         $this->assertArrayHasKey('failed_at', $updatedDemand->metadata);
@@ -330,14 +329,14 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Given - Set up extract data workflow
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test WorkflowListener Status',
+            'status'  => UiDemand::STATUS_DRAFT,
+            'title'   => 'Test WorkflowListener Status',
         ]);
 
         $inputFile = StoredFile::factory()->create([
@@ -348,7 +347,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
         // When - Start workflow
         $workflowRun = $this->service->extractData($uiDemand);
-        
+
         // Then - Verify initial WorkflowListener state
         $workflowListener = WorkflowListener::where('workflow_run_id', $workflowRun->id)->first();
         $this->assertNotNull($workflowListener);
@@ -359,7 +358,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
         // When - Simulate workflow running (this would happen automatically in real workflow)
         $workflowListener->markAsRunning();
-        
+
         // Then - Verify running state
         $workflowListener->refresh();
         $this->assertEquals(WorkflowListener::STATUS_RUNNING, $workflowListener->status);
@@ -369,8 +368,8 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
         // When - Complete workflow
         $workflowRun->update([
-            'status' => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
-            'completed_at' => now()
+            'status'       => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
+            'completed_at' => now(),
         ]);
         $workflowListener->markAsCompleted();
 
@@ -387,41 +386,41 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         // Given - Set up write demand workflow with template
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'Document',
+            'type'    => 'Document',
         ]);
 
         $templateFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'demand_template.docx',
         ]);
 
         $template = \App\Models\DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $templateFile->id,
-            'name' => 'Test Template',
+            'name'           => 'Test Template',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Test Write Demand with Template',
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
+            'title'          => 'Test Write Demand with Template',
             'team_object_id' => $teamObject->id,
-            'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
+            'metadata'       => ['extract_data_completed_at' => now()->toIso8601String()],
         ]);
 
         // Mock a completed extract data workflow run
         $extractWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
-            'completed_at' => now(),
+            'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
+            'completed_at'           => now(),
         ]);
         $uiDemand->workflowRuns()->attach($extractWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 
@@ -430,7 +429,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
         // Then - Verify WorkflowListener is created and workflow starts
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
-        
+
         $workflowListener = WorkflowListener::where('workflow_run_id', $workflowRun->id)->first();
         $this->assertNotNull($workflowListener);
         $this->assertEquals(WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND, $workflowListener->workflow_type);

@@ -26,12 +26,13 @@ class DemandTemplate extends Model implements AuditableContract
         'category',
         'metadata',
         'is_active',
+        'template_variables',
     ];
 
     protected $casts = [
-        'metadata' => 'array',
+        'metadata'           => 'array',
         'template_variables' => 'array',
-        'is_active' => 'boolean',
+        'is_active'          => 'boolean',
     ];
 
     public function team(): BelongsTo
@@ -62,20 +63,20 @@ class DemandTemplate extends Model implements AuditableContract
     public function validate(): static
     {
         validator($this->toArray(), [
-            'team_id' => ['required', 'exists:teams,id'],
-            'user_id' => ['required', 'exists:users,id'],
-            'stored_file_id' => ['nullable', 'exists:stored_files,id'],
-            'name' => [
+            'team_id'            => ['required', 'exists:teams,id'],
+            'user_id'            => ['required', 'exists:users,id'],
+            'stored_file_id'     => ['nullable', 'exists:stored_files,id'],
+            'name'               => [
                 'required',
                 'string',
                 'max:255',
                 TeamScopedUniqueRule::make('demand_templates', 'name')->ignore($this),
             ],
-            'description' => ['nullable', 'string'],
-            'category' => ['nullable', 'string', 'max:255'],
-            'metadata' => ['nullable', 'array'],
+            'description'        => ['nullable', 'string'],
+            'category'           => ['nullable', 'string', 'max:255'],
+            'metadata'           => ['nullable', 'array'],
             'template_variables' => ['nullable', 'array'],
-            'is_active' => ['boolean'],
+            'is_active'          => ['boolean'],
         ])->validate();
 
         return $this;

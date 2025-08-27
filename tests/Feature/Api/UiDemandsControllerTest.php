@@ -5,10 +5,8 @@ namespace Tests\Feature\Api;
 use App\Models\TeamObject\TeamObject;
 use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
-use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\UiDemand\UiDemandWorkflowService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -17,17 +15,17 @@ use Tests\Traits\SetUpTeamTrait;
 
 class UiDemandsControllerTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     public function setUp(): void
     {
         parent::setUp();
         $this->setUpTeam();
-        
+
         // Set up workflow configuration
         Config::set('ui-demands.workflows.extract_data', 'Extract Service Dates');
         Config::set('ui-demands.workflows.write_demand', 'Write Demand Summary');
-        
+
         // Mock queue to prevent actual job dispatching
         Queue::fake();
     }
@@ -37,7 +35,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -45,11 +43,11 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'title' => 'Test Demand',
+            'title'          => 'Test Demand',
         ]);
 
         $storedFile = StoredFile::factory()->create([
@@ -73,8 +71,8 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'extract_data_workflow_run' => [
                 'id',
                 'status',
-                'progress_percent'
-            ]
+                'progress_percent',
+            ],
         ]);
 
         // Verify workflow was started
@@ -88,8 +86,8 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_COMPLETED, // Invalid status
-            'title' => 'Test Demand',
+            'status'  => UiDemand::STATUS_COMPLETED, // Invalid status
+            'title'   => 'Test Demand',
         ]);
 
         // When
@@ -99,7 +97,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $response->assertStatus(400);
         $response->assertJsonStructure([
             'message',
-            'error'
+            'error',
         ]);
     }
 
@@ -108,12 +106,12 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         // Given
         $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -121,19 +119,19 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
-            'title' => 'Test Demand',
+            'metadata'       => ['extract_data_completed_at' => now()->toIso8601String()],
+            'title'          => 'Test Demand',
         ]);
 
         // Create completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
@@ -154,8 +152,8 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'write_demand_workflow_run' => [
                 'id',
                 'status',
-                'progress_percent'
-            ]
+                'progress_percent',
+            ],
         ]);
 
         // Verify workflow was started
@@ -168,11 +166,11 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
     {
         // Given - demand without team object
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => null, // No team object
-            'title' => 'Test Demand',
+            'title'          => 'Test Demand',
         ]);
 
         // When
@@ -182,10 +180,10 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $response->assertStatus(400);
         $response->assertJsonStructure([
             'message',
-            'error'
+            'error',
         ]);
         $response->assertJsonFragment([
-            'message' => 'Failed to start write demand workflow.'
+            'message' => 'Failed to start write demand workflow.',
         ]);
     }
 
@@ -197,12 +195,12 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'metadata' => [], // No extract data completed metadata
-            'title' => 'Test Demand',
+            'metadata'       => [], // No extract data completed metadata
+            'title'          => 'Test Demand',
         ]);
 
         // When
@@ -212,7 +210,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $response->assertStatus(400);
         $response->assertJsonStructure([
             'message',
-            'error'
+            'error',
         ]);
     }
 
@@ -221,7 +219,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -229,11 +227,11 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'title' => 'Test Demand',
+            'title'          => 'Test Demand',
         ]);
 
         $storedFile = StoredFile::factory()->create([
@@ -253,7 +251,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('input_files', $data);
         $this->assertArrayHasKey('output_files', $data);
         $this->assertArrayHasKey('extract_data_workflow_run', $data);
-        
+
         // Verify workflow run has necessary data
         $this->assertNotNull($data['extract_data_workflow_run']);
         $this->assertArrayHasKey('progress_percent', $data['extract_data_workflow_run']);
@@ -266,12 +264,12 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         // Given
         $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -279,19 +277,19 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
-            'title' => 'Test Demand',
+            'metadata'       => ['extract_data_completed_at' => now()->toIso8601String()],
+            'title'          => 'Test Demand',
         ]);
 
         // Create completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
@@ -307,7 +305,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $data = $response->json();
         $this->assertArrayHasKey('team_object', $data);
         $this->assertArrayHasKey('write_demand_workflow_run', $data);
-        
+
         // Verify workflow run has necessary data
         $this->assertNotNull($data['write_demand_workflow_run']);
         $this->assertArrayHasKey('progress_percent', $data['write_demand_workflow_run']);
@@ -323,12 +321,12 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'metadata' => [],
-            'title' => 'Test Demand',
+            'metadata'       => [],
+            'title'          => 'Test Demand',
         ]);
 
         // When - get demand details
@@ -342,13 +340,13 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         // Now complete extract data and verify can_write_demand becomes true
         $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
@@ -356,7 +354,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->update([
-            'metadata' => ['extract_data_completed_at' => now()->toIso8601String()]
+            'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
         ]);
 
         $response = $this->getJson("/api/ui-demands/{$uiDemand->id}/details");
@@ -370,28 +368,28 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         // Given - Set up extract data workflow that will complete
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extract Service Dates',
+            'name'    => 'Extract Service Dates',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
-        
+
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'metadata' => [],
-            'title' => 'Test Demand',
+            'metadata'       => [],
+            'title'          => 'Test Demand',
         ]);
-        
+
         // Connect via pivot table
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 

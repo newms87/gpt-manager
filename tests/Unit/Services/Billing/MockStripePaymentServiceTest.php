@@ -5,22 +5,19 @@ namespace Tests\Unit\Services\Billing;
 use App\Models\Team\Team;
 use App\Services\Billing\MockStripePaymentService;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class MockStripePaymentServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     private MockStripePaymentService $mockStripeService;
-    private Team $team;
+    private Team                     $team;
 
     public function setUp(): void
     {
         parent::setUp();
-        
+
         $this->mockStripeService = new MockStripePaymentService();
-        $this->team = Team::factory()->create();
+        $this->team              = Team::factory()->create();
     }
 
     public function test_createCustomer_withValidData_returnsCustomerData(): void
@@ -28,7 +25,7 @@ class MockStripePaymentServiceTest extends TestCase
         // Given
         $customerData = [
             'email' => 'test@example.com',
-            'name' => 'Test Customer'
+            'name'  => 'Test Customer',
         ];
 
         // When
@@ -75,7 +72,7 @@ class MockStripePaymentServiceTest extends TestCase
     {
         // Given
         $customerId = 'cus_test123';
-        $options = ['usage' => 'on_session'];
+        $options    = ['usage' => 'on_session'];
 
         // When
         $result = $this->mockStripeService->createSetupIntent($customerId, $options);
@@ -89,7 +86,7 @@ class MockStripePaymentServiceTest extends TestCase
     {
         // Given
         $paymentMethodId = 'pm_test123';
-        $customerId = 'cus_test123';
+        $customerId      = 'cus_test123';
 
         // When
         $result = $this->mockStripeService->attachPaymentMethod($paymentMethodId, $customerId);
@@ -122,7 +119,7 @@ class MockStripePaymentServiceTest extends TestCase
     {
         // Given
         $customerId = 'cus_test123';
-        $priceId = 'price_test123';
+        $priceId    = 'price_test123';
 
         // When
         $result = $this->mockStripeService->createSubscription($customerId, $priceId);
@@ -143,8 +140,8 @@ class MockStripePaymentServiceTest extends TestCase
     {
         // Given
         $customerId = 'cus_test123';
-        $priceId = 'price_test123';
-        $options = ['trial_period_days' => 14];
+        $priceId    = 'price_test123';
+        $options    = ['trial_period_days' => 14];
 
         // When
         $result = $this->mockStripeService->createSubscription($customerId, $priceId, $options);
@@ -159,7 +156,7 @@ class MockStripePaymentServiceTest extends TestCase
     {
         // Given
         $subscriptionId = 'sub_test123';
-        $options = ['price_id' => 'price_new123'];
+        $options        = ['price_id' => 'price_new123'];
 
         // When
         $result = $this->mockStripeService->updateSubscription($subscriptionId, $options);
@@ -206,11 +203,11 @@ class MockStripePaymentServiceTest extends TestCase
     {
         // Given
         $customerId = 'cus_test123';
-        $amount = 15.50;
-        $currency = 'USD';
-        $options = [
+        $amount     = 15.50;
+        $currency   = 'USD';
+        $options    = [
             'description' => 'Usage charges',
-            'metadata' => ['usage_type' => 'api_calls']
+            'metadata'    => ['usage_type' => 'api_calls'],
         ];
 
         // When
@@ -294,9 +291,9 @@ class MockStripePaymentServiceTest extends TestCase
     public function test_constructWebhookEvent_returnsDecodedPayload(): void
     {
         // Given
-        $payload = '{"type": "invoice.payment_succeeded", "id": "evt_test123"}';
+        $payload   = '{"type": "invoice.payment_succeeded", "id": "evt_test123"}';
         $signature = 'test_signature';
-        $secret = 'whsec_test';
+        $secret    = 'whsec_test';
 
         // When
         $result = $this->mockStripeService->constructWebhookEvent($payload, $signature, $secret);
@@ -309,7 +306,7 @@ class MockStripePaymentServiceTest extends TestCase
     public function test_validateWebhookSignature_returnsDecodedPayload(): void
     {
         // Given
-        $payload = '{"type": "customer.subscription.created"}';
+        $payload   = '{"type": "customer.subscription.created"}';
         $signature = 'test_signature';
 
         // When
@@ -337,10 +334,10 @@ class MockStripePaymentServiceTest extends TestCase
     public function test_createCharge_withNormalAmount_returnsSuccessfulCharge(): void
     {
         // Given
-        $customerId = 'cus_test123';
+        $customerId    = 'cus_test123';
         $amountInCents = 1500; // $15.00
-        $currency = 'USD';
-        $description = 'Usage charges';
+        $currency      = 'USD';
+        $description   = 'Usage charges';
 
         // When
         $result = $this->mockStripeService->createCharge($customerId, $amountInCents, $currency, $description);
@@ -359,10 +356,10 @@ class MockStripePaymentServiceTest extends TestCase
     public function test_createCharge_withFailureTestAmount_returnsFailedCharge(): void
     {
         // Given
-        $customerId = 'cus_test123';
+        $customerId    = 'cus_test123';
         $amountInCents = 99999; // Test failure amount
-        $currency = 'USD';
-        $description = 'Test failure';
+        $currency      = 'USD';
+        $description   = 'Test failure';
 
         // When
         $result = $this->mockStripeService->createCharge($customerId, $amountInCents, $currency, $description);

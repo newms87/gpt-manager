@@ -1,222 +1,172 @@
 <template>
-  <UiCard>
-    <template #header>
-      <h3 class="text-lg font-semibold text-slate-800">
-        Status Timeline
-      </h3>
-    </template>
+    <UiCard>
+        <template #header>
+            <h3 class="text-lg font-semibold text-slate-800">
+                Status Timeline
+            </h3>
+        </template>
 
-    <div class="space-y-3">
-      <div
-        v-for="status in statusTimeline"
-        :key="status.status"
-        class="flex items-start space-x-3"
-        :class="{ 'opacity-50': status.grayed }"
-      >
-        <!-- Status Icon with Progress Ring -->
-        <div class="relative">
-          <div
-            class="w-8 h-8 rounded-full flex items-center justify-center"
-            :class="status.completed ? status.bgColor : status.isActive ? status.activeBgColor : 'bg-slate-200'"
-          >
-            <component
-              :is="status.icon"
-              class="w-4 h-4"
-              :class="status.failed ? 'text-white' : status.completed || status.isActive ? 'text-white' : 'text-slate-400'"
-            />
-          </div>
-          
-          <!-- Progress Ring for Active Workflows -->
-          <div 
-            v-if="status.isActive && status.progress != null"
-            class="absolute inset-0 w-8 h-8"
-          >
-            <svg class="w-8 h-8 transform -rotate-90" viewBox="0 0 32 32">
-              <!-- Background circle -->
-              <circle
-                cx="16"
-                cy="16"
-                r="14"
-                stroke="currentColor"
-                stroke-width="2"
-                fill="none"
-                class="text-gray-300"
-              />
-              <!-- Progress circle -->
-              <circle
-                cx="16"
-                cy="16"
-                r="14"
-                stroke="currentColor"
-                stroke-width="2"
-                fill="none"
-                stroke-linecap="round"
-                class="text-blue-500"
-                :stroke-dasharray="`${(status.progress / 100) * 87.96} 87.96`"
-                style="transition: stroke-dasharray 0.3s ease"
-              />
-            </svg>
-          </div>
-        </div>
-
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between">
-            <p class="font-medium" :class="status.failed ? 'text-red-700' : 'text-slate-800'">{{ status.label }}</p>
-            <span 
-              v-if="status.isActive && status.progress != null"
-              class="text-xs font-semibold text-blue-600 ml-2"
+        <div class="space-y-3">
+            <div
+                v-for="status in statusTimeline"
+                :key="status.status"
+                class="flex items-start space-x-3"
+                :class="{ 'opacity-50': status.grayed }"
             >
+                <!-- Status Icon with Progress Ring -->
+                <div class="relative">
+                    <div
+                        class="w-8 h-8 rounded-full flex items-center justify-center"
+                        :class="status.bgColor"
+                    >
+                        <QSpinnerHourglass
+                            v-if="status.isActive"
+                            class="w-5 h-5"
+                            color="sky-200"
+                            size="lg"
+                            bg-active
+                        />
+                        <component
+                            v-else
+                            :is="status.icon"
+                            class="w-4 h-4"
+                            :class="status.textColor"
+                        />
+                    </div>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                        <p class="font-medium" :class="status.failed ? 'text-red-700' : 'text-slate-800'">{{
+                                status.label
+                            }}</p>
+                        <span
+                            v-if="status.isActive && status.progress != null"
+                            class="text-xs font-semibold text-blue-600 ml-2"
+                        >
               {{ status.progress }}%
             </span>
-          </div>
-          
-          <p v-if="status.date" class="text-sm text-slate-500">
-            {{ formatDate(status.date) }}
-          </p>
-          
-          <!-- Progress Bar for Active Workflows -->
-          <div 
-            v-if="status.isActive && status.progress != null"
-            class="mt-2 w-full bg-gray-200 rounded-full h-1.5"
-          >
-            <div 
-              class="bg-blue-500 h-1.5 rounded-full transition-all duration-300 ease-out"
-              :style="{ width: `${status.progress}%` }"
-            />
-          </div>
+                    </div>
+
+                    <p v-if="status.date" class="text-sm text-slate-500">
+                        {{ formatDate(status.date) }}
+                    </p>
+
+                    <!-- Progress Bar for Active Workflows -->
+                    <div
+                        v-if="status.isActive && status.progress != null"
+                        class="mt-2 w-full bg-gray-200 rounded-full h-1.5"
+                    >
+                        <div
+                            class="bg-blue-500 h-1.5 rounded-full transition-all duration-300 ease-out"
+                            :style="{ width: `${status.progress}%` }"
+                        />
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </UiCard>
+    </UiCard>
 </template>
 
 <script setup lang="ts">
+import { FaSolidCheck, FaSolidClock, FaSolidTriangleExclamation } from "danx-icon";
 import { computed } from "vue";
-import { FaSolidCheck, FaSolidClock, FaSolidSpinner, FaSolidTriangleExclamation } from "danx-icon";
 import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
 import { DEMAND_STATUS } from "../../config";
 
 const props = defineProps<{
-  demand: UiDemand | null;
+    demand: UiDemand | null;
 }>();
 
 const statusTimeline = computed(() => {
-  if (!props.demand) return [];
+    if (!props.demand) return [];
 
-  // Debug logging for reactive updates
-  console.log('StatusTimeline computed - demand workflow states:', {
-    demand_id: props.demand.id,
-    is_extract_data_running: props.demand.is_extract_data_running,
-    extract_data_workflow_run: props.demand.extract_data_workflow_run,
-    is_write_demand_running: props.demand.is_write_demand_running,
-    write_demand_workflow_run: props.demand.write_demand_workflow_run
-  });
+    // Helper function to determine workflow state
+    const getWorkflowState = (status: string | undefined) => {
+        if (!status) return { completed: false, failed: false, active: false };
 
-  // Determine which workflows are active
-  const isExtractDataActive = props.demand.is_extract_data_running && 
-                             props.demand.extract_data_workflow_run?.progress_percent != null && 
-                             props.demand.extract_data_workflow_run.progress_percent > 0 && 
-                             props.demand.extract_data_workflow_run.progress_percent < 100;
-                             
-  const isWriteDemandActive = props.demand.is_write_demand_running && 
-                             props.demand.write_demand_workflow_run?.progress_percent != null && 
-                             props.demand.write_demand_workflow_run.progress_percent > 0 && 
-                             props.demand.write_demand_workflow_run.progress_percent < 100;
+        const completed = ["Skipped", "Completed"].includes(status);
+        const active = ["Pending", "Running", "Incomplete"].includes(status);
+        const failed = !completed && !active; // Everything else is failed
 
-  // Determine completion states - must have 100% progress AND status "Completed"
-  const extractDataCompleted = props.demand.extract_data_workflow_run?.progress_percent === 100 && 
-                               props.demand.extract_data_workflow_run?.status === "Completed";
-  const writeDemandCompleted = props.demand.write_demand_workflow_run?.progress_percent === 100 && 
-                              props.demand.write_demand_workflow_run?.status === "Completed";
-                              
-  // Determine if workflows have failed
-  const extractDataFailed = props.demand.extract_data_workflow_run?.status === "Failed";
-  const writeDemandFailed = props.demand.write_demand_workflow_run?.status === "Failed";
-  const hasFiles = props.demand.files && props.demand.files.length > 0;
-  
-  // Determine if steps should be grayed out
-  const extractDataGrayed = !hasFiles && !props.demand.extract_data_workflow_run;
-  const writeDemandGrayed = !extractDataCompleted;
-  const completeGrayed = !writeDemandCompleted;
-  
-  console.log('StatusTimeline activity states:', {
-    isExtractDataActive,
-    isWriteDemandActive,
-    extractDataCompleted,
-    writeDemandCompleted,
-    extractDataFailed,
-    writeDemandFailed,
-    extractDataGrayed,
-    writeDemandGrayed
-  });
+        return { completed, failed, active };
+    };
 
-  // Always show all 4 steps
-  const steps = [
-    {
-      status: "draft",
-      label: "Created (Draft)",
-      icon: FaSolidClock,
-      bgColor: "bg-slate-500",
-      activeBgColor: "bg-slate-400",
-      completed: true,
-      failed: false,
-      isActive: false,
-      progress: null,
-      date: props.demand.created_at,
-      grayed: false
-    },
-    {
-      status: "extract-data",
-      label: extractDataFailed ? "Extract Data (Failed)" : "Extract Data",
-      icon: extractDataCompleted ? FaSolidCheck : extractDataFailed ? FaSolidTriangleExclamation : FaSolidSpinner,
-      bgColor: extractDataFailed ? "bg-red-500" : "bg-blue-500",
-      activeBgColor: extractDataFailed ? "bg-red-400" : "bg-blue-400",
-      completed: extractDataCompleted,
-      failed: extractDataFailed,
-      isActive: isExtractDataActive,
-      progress: isExtractDataActive ? props.demand.extract_data_workflow_run?.progress_percent : null,
-      date: extractDataCompleted ? props.demand.extract_data_workflow_run?.completed_at : extractDataFailed ? props.demand.extract_data_workflow_run?.failed_at : null,
-      grayed: extractDataGrayed
-    },
-    {
-      status: "write-demand",
-      label: writeDemandFailed ? "Write Demand (Failed)" : "Write Demand",
-      icon: writeDemandCompleted ? FaSolidCheck : writeDemandFailed ? FaSolidTriangleExclamation : FaSolidSpinner,
-      bgColor: writeDemandFailed ? "bg-red-500" : "bg-green-500", 
-      activeBgColor: writeDemandFailed ? "bg-red-400" : "bg-green-400",
-      completed: writeDemandCompleted,
-      failed: writeDemandFailed,
-      isActive: isWriteDemandActive,
-      progress: isWriteDemandActive ? props.demand.write_demand_workflow_run?.progress_percent : null,
-      date: writeDemandCompleted ? props.demand.write_demand_workflow_run?.completed_at : writeDemandFailed ? props.demand.write_demand_workflow_run?.failed_at : null,
-      grayed: writeDemandGrayed
-    },
-    {
-      status: "completed",
-      label: "Complete",
-      icon: FaSolidCheck,
-      bgColor: "bg-green-500",
-      activeBgColor: "bg-green-400",
-      completed: props.demand.status === DEMAND_STATUS.COMPLETED,
-      failed: false,
-      isActive: false,
-      progress: null,
-      date: props.demand.completed_at,
-      grayed: completeGrayed
-    }
-  ];
+    // Get workflow states
+    const extractDataState = getWorkflowState(props.demand.extract_data_workflow_run?.status);
+    const writeDemandState = getWorkflowState(props.demand.write_demand_workflow_run?.status);
+    const hasFiles = props.demand.files && props.demand.files.length > 0;
 
-  return steps;
+    // Determine if steps should be grayed out
+    const extractDataGrayed = !hasFiles && !props.demand.extract_data_workflow_run;
+    const writeDemandGrayed = !extractDataState.completed;
+    const completeGrayed = !writeDemandState.completed;
+
+    // Always show all 4 steps
+    return [
+        {
+            status: "draft",
+            label: "Created (Draft)",
+            icon: FaSolidClock,
+            bgColor: "bg-slate-500",
+            textColor: "text-slate-100",
+            completed: true,
+            failed: false,
+            isActive: false,
+            progress: null,
+            date: props.demand.created_at,
+            grayed: false
+        },
+        {
+            status: "extract-data",
+            label: extractDataState.failed ? "Extract Data (Failed)" : "Extract Data",
+            icon: extractDataState.completed ? FaSolidCheck : extractDataState.failed ? FaSolidTriangleExclamation : FaSolidClock,
+            bgColor: extractDataState.failed ? "bg-red-500" : extractDataState.completed ? "bg-blue-500" : extractDataState.active ? "bg-slate-200" : "bg-gray-400",
+            textColor: extractDataState.failed ? "text-red-200" : extractDataState.completed ? "text-blue-200" : "text-gray-200",
+            completed: extractDataState.completed,
+            failed: extractDataState.failed,
+            isActive: extractDataState.active,
+            progress: extractDataState.active ? props.demand.extract_data_workflow_run?.progress_percent : null,
+            date: extractDataState.completed ? props.demand.extract_data_workflow_run?.completed_at : extractDataState.failed ? props.demand.extract_data_workflow_run?.failed_at : null,
+            grayed: extractDataGrayed
+        },
+        {
+            status: "write-demand",
+            label: writeDemandState.failed ? "Write Demand (Failed)" : "Write Demand",
+            icon: writeDemandState.completed ? FaSolidCheck : writeDemandState.failed ? FaSolidTriangleExclamation : FaSolidClock,
+            bgColor: writeDemandState.failed ? "bg-red-500" : writeDemandState.completed ? "bg-green-500" : writeDemandState.active ? "bg-slate-200" : "bg-gray-400",
+            textColor: writeDemandState.failed ? "text-red-200" : writeDemandState.completed ? "text-green-200" : "text-gray-200",
+            completed: writeDemandState.completed,
+            failed: writeDemandState.failed,
+            isActive: writeDemandState.active,
+            progress: writeDemandState.active ? props.demand.write_demand_workflow_run?.progress_percent : null,
+            date: writeDemandState.completed ? props.demand.write_demand_workflow_run?.completed_at : writeDemandState.failed ? props.demand.write_demand_workflow_run?.failed_at : null,
+            grayed: writeDemandGrayed
+        },
+        {
+            status: "completed",
+            label: "Complete",
+            icon: FaSolidCheck,
+            bgColor: props.demand.status === DEMAND_STATUS.COMPLETED ? "bg-green-600" : "bg-gray-400",
+            textColor: props.demand.status === DEMAND_STATUS.COMPLETED ? "text-green-200" : "text-gray-200",
+            completed: props.demand.status === DEMAND_STATUS.COMPLETED,
+            failed: false,
+            isActive: false,
+            progress: null,
+            date: props.demand.completed_at,
+            grayed: completeGrayed
+        }
+    ];
 });
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
-  });
+    return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
 };
 </script>

@@ -2,15 +2,13 @@
 
 namespace Tests\Feature\Api;
 
-use App\Http\Resources\Billing\SubscriptionPlanResource;
 use App\Models\Billing\SubscriptionPlan;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
 class SubscriptionPlansControllerTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     public function setUp(): void
     {
@@ -21,20 +19,20 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
     public function test_index_withActiveOnly_returnsOnlyActivePlans(): void
     {
         // Given
-        $activePlan1 = SubscriptionPlan::factory()->create([
-            'name' => 'Basic Plan',
-            'is_active' => true,
-            'sort_order' => 1
+        $activePlan1  = SubscriptionPlan::factory()->create([
+            'name'       => 'Basic Plan',
+            'is_active'  => true,
+            'sort_order' => 1,
         ]);
-        $activePlan2 = SubscriptionPlan::factory()->create([
-            'name' => 'Pro Plan',
-            'is_active' => true,
-            'sort_order' => 2
+        $activePlan2  = SubscriptionPlan::factory()->create([
+            'name'       => 'Pro Plan',
+            'is_active'  => true,
+            'sort_order' => 2,
         ]);
         $inactivePlan = SubscriptionPlan::factory()->create([
-            'name' => 'Legacy Plan',
-            'is_active' => false,
-            'sort_order' => 3
+            'name'       => 'Legacy Plan',
+            'is_active'  => false,
+            'sort_order' => 3,
         ]);
 
         // When
@@ -58,9 +56,9 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
                     'features',
                     'usage_limits',
                     'is_active',
-                    'sort_order'
-                ]
-            ]
+                    'sort_order',
+                ],
+            ],
         ]);
 
         // Verify only active plans are returned
@@ -73,15 +71,15 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
     public function test_index_withIncludeInactive_returnsAllPlans(): void
     {
         // Given
-        $activePlan = SubscriptionPlan::factory()->create([
-            'name' => 'Active Plan',
-            'is_active' => true,
-            'sort_order' => 1
+        $activePlan   = SubscriptionPlan::factory()->create([
+            'name'       => 'Active Plan',
+            'is_active'  => true,
+            'sort_order' => 1,
         ]);
         $inactivePlan = SubscriptionPlan::factory()->create([
-            'name' => 'Inactive Plan',
-            'is_active' => false,
-            'sort_order' => 2
+            'name'       => 'Inactive Plan',
+            'is_active'  => false,
+            'sort_order' => 2,
         ]);
 
         // When
@@ -114,19 +112,19 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
     {
         // Given
         $plan = SubscriptionPlan::factory()->create([
-            'name' => 'Test Plan',
-            'description' => 'A test plan',
+            'name'          => 'Test Plan',
+            'description'   => 'A test plan',
             'monthly_price' => 29.99,
-            'yearly_price' => 299.99,
-            'features' => [
-                'api_calls' => 10000,
+            'yearly_price'  => 299.99,
+            'features'      => [
+                'api_calls'  => 10000,
                 'storage_gb' => 100,
-                'support' => 'email'
+                'support'    => 'email',
             ],
-            'usage_limits' => [
+            'usage_limits'  => [
                 'max_requests_per_month' => 50000,
-                'max_tokens_per_request' => 4000
-            ]
+                'max_tokens_per_request' => 4000,
+            ],
         ]);
 
         // When
@@ -136,21 +134,21 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
         $response->assertOk();
         $response->assertJson([
             'plan' => [
-                'id' => $plan->id,
-                'name' => 'Test Plan',
-                'description' => 'A test plan',
+                'id'            => $plan->id,
+                'name'          => 'Test Plan',
+                'description'   => 'A test plan',
                 'monthly_price' => 29.99,
-                'yearly_price' => 299.99,
-                'features' => [
-                    'api_calls' => 10000,
+                'yearly_price'  => 299.99,
+                'features'      => [
+                    'api_calls'  => 10000,
                     'storage_gb' => 100,
-                    'support' => 'email'
+                    'support'    => 'email',
                 ],
-                'usage_limits' => [
+                'usage_limits'  => [
                     'max_requests_per_month' => 50000,
-                    'max_tokens_per_request' => 4000
-                ]
-            ]
+                    'max_tokens_per_request' => 4000,
+                ],
+            ],
         ]);
     }
 
@@ -167,32 +165,32 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
     {
         // Given
         $basicPlan = SubscriptionPlan::factory()->create([
-            'name' => 'Basic',
-            'slug' => 'basic',
-            'is_active' => true,
+            'name'       => 'Basic',
+            'slug'       => 'basic',
+            'is_active'  => true,
             'sort_order' => 1,
-            'features' => [
-                'api_calls' => 1000,
+            'features'   => [
+                'api_calls'  => 1000,
                 'storage_gb' => 10,
-                'support' => 'email'
-            ]
+                'support'    => 'email',
+            ],
         ]);
 
         $proPlan = SubscriptionPlan::factory()->create([
-            'name' => 'Pro',
-            'slug' => 'pro',
-            'is_active' => true,
+            'name'       => 'Pro',
+            'slug'       => 'pro',
+            'is_active'  => true,
             'sort_order' => 2,
-            'features' => [
-                'api_calls' => 10000,
-                'storage_gb' => 100,
-                'support' => 'priority',
-                'advanced_analytics' => true
-            ]
+            'features'   => [
+                'api_calls'          => 10000,
+                'storage_gb'         => 100,
+                'support'            => 'priority',
+                'advanced_analytics' => true,
+            ],
         ]);
 
         $inactivePlan = SubscriptionPlan::factory()->create([
-            'is_active' => false
+            'is_active' => false,
         ]);
 
         // When
@@ -202,22 +200,22 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
         $response->assertOk();
         $response->assertJsonCount(2, 'plans');
         $response->assertJsonStructure([
-            'plans' => [
-                '*' => ['id', 'name', 'slug', 'features']
+            'plans'      => [
+                '*' => ['id', 'name', 'slug', 'features'],
             ],
             'comparison' => [
                 '*' => [
                     'feature',
                     'basic',
-                    'pro'
-                ]
-            ]
+                    'pro',
+                ],
+            ],
         ]);
 
         // Verify comparison matrix includes all features
         $comparison = $response->json('comparison');
-        $features = collect($comparison)->pluck('feature')->toArray();
-        
+        $features   = collect($comparison)->pluck('feature')->toArray();
+
         $this->assertContains('api_calls', $features);
         $this->assertContains('storage_gb', $features);
         $this->assertContains('support', $features);
@@ -237,25 +235,25 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
     {
         // Given
         $plan1 = SubscriptionPlan::factory()->create([
-            'name' => 'Plan 1',
-            'slug' => 'plan1',
-            'is_active' => true,
+            'name'       => 'Plan 1',
+            'slug'       => 'plan1',
+            'is_active'  => true,
             'sort_order' => 1,
-            'features' => ['feature1' => 'value1']
+            'features'   => ['feature1' => 'value1'],
         ]);
 
         $plan2 = SubscriptionPlan::factory()->create([
-            'name' => 'Plan 2',
-            'slug' => 'plan2',
-            'is_active' => true,
+            'name'       => 'Plan 2',
+            'slug'       => 'plan2',
+            'is_active'  => true,
             'sort_order' => 2,
-            'features' => ['feature1' => 'value2', 'feature2' => 'value3']
+            'features'   => ['feature1' => 'value2', 'feature2' => 'value3'],
         ]);
 
         $plan3 = SubscriptionPlan::factory()->create([
-            'name' => 'Plan 3',
-            'slug' => 'plan3',
-            'is_active' => true
+            'name'      => 'Plan 3',
+            'slug'      => 'plan3',
+            'is_active' => true,
         ]);
 
         // When
@@ -272,7 +270,7 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
         $this->assertNotContains('Plan 3', $planNames);
 
         // Verify comparison matrix only includes specified plans
-        $comparison = $response->json('comparison');
+        $comparison  = $response->json('comparison');
         $feature1Row = collect($comparison)->firstWhere('feature', 'feature1');
         $this->assertEquals('value1', $feature1Row['plan1']);
         $this->assertEquals('value2', $feature1Row['plan2']);
@@ -296,8 +294,8 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
     {
         // Given
         $plan = SubscriptionPlan::factory()->create([
-            'features' => null,
-            'is_active' => true
+            'features'  => null,
+            'is_active' => true,
         ]);
 
         // When
@@ -306,7 +304,7 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'comparison' => []
+            'comparison' => [],
         ]);
     }
 
@@ -314,23 +312,23 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
     {
         // Given
         $plan1 = SubscriptionPlan::factory()->create([
-            'name' => 'Plan 1',
-            'slug' => 'plan1',
+            'name'      => 'Plan 1',
+            'slug'      => 'plan1',
             'is_active' => true,
-            'features' => [
+            'features'  => [
                 'shared_feature' => 100,
-                'plan1_only' => 'special'
-            ]
+                'plan1_only'     => 'special',
+            ],
         ]);
 
         $plan2 = SubscriptionPlan::factory()->create([
-            'name' => 'Plan 2',
-            'slug' => 'plan2',
+            'name'      => 'Plan 2',
+            'slug'      => 'plan2',
             'is_active' => true,
-            'features' => [
+            'features'  => [
                 'shared_feature' => 500,
-                'plan2_only' => true
-            ]
+                'plan2_only'     => true,
+            ],
         ]);
 
         // When
@@ -338,9 +336,9 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
 
         // Then
         $response->assertOk();
-        
+
         $comparison = $response->json('comparison');
-        
+
         // Verify shared feature
         $sharedFeatureRow = collect($comparison)->firstWhere('feature', 'shared_feature');
         $this->assertEquals(100, $sharedFeatureRow['plan1']);
@@ -365,10 +363,10 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
         $endpoints = [
             ['GET', '/api/subscription-plans'],
             ['GET', '/api/subscription-plans/1'],
-            ['GET', '/api/subscription-plans/compare']
+            ['GET', '/api/subscription-plans/compare'],
         ];
 
-        foreach ($endpoints as [$method, $endpoint]) {
+        foreach($endpoints as [$method, $endpoint]) {
             $response = $this->json($method, $endpoint);
             if ($response->getStatusCode() !== 401) {
                 $this->fail("Endpoint $method $endpoint should require authentication. Got {$response->getStatusCode()}: " . $response->getContent());

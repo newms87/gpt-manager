@@ -9,7 +9,6 @@ use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Models\User;
 use App\Services\Task\ClassificationVerificationService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
@@ -18,8 +17,6 @@ use Tests\TestCase;
 
 class ClassificationVerificationServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected ClassificationVerificationService $service;
     protected Team                              $team;
     protected User                              $user;
@@ -31,11 +28,11 @@ class ClassificationVerificationServiceTest extends TestCase
     {
         $response = ['corrections' => []];
 
-        foreach ($corrections as $artifactId => $correction) {
+        foreach($corrections as $artifactId => $correction) {
             $response['corrections'][] = [
-                'artifact_id' => $artifactId,
+                'artifact_id'     => $artifactId,
                 'corrected_value' => $correction['value'],
-                'reason' => $correction['reason'],
+                'reason'          => $correction['reason'],
             ];
         }
 
@@ -111,7 +108,7 @@ class ClassificationVerificationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('buildVerificationGroups');
+        $method     = $reflection->getMethod('buildVerificationGroups');
         $method->setAccessible(true);
 
         $groups = $method->invoke($service, $artifacts, 'company');
@@ -120,7 +117,7 @@ class ClassificationVerificationServiceTest extends TestCase
         $this->assertGreaterThan(0, count($groups));
 
         // Verify group structure
-        foreach ($groups as $group) {
+        foreach($groups as $group) {
             $this->assertArrayHasKey('focus_artifact_id', $group);
             $this->assertArrayHasKey('focus_position', $group);
             $this->assertArrayHasKey('context', $group);
@@ -141,7 +138,7 @@ class ClassificationVerificationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('buildVerificationGroups');
+        $method     = $reflection->getMethod('buildVerificationGroups');
         $method->setAccessible(true);
 
         $groups = $method->invoke($service, $artifacts, 'company');
@@ -165,7 +162,7 @@ class ClassificationVerificationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('buildVerificationGroups');
+        $method     = $reflection->getMethod('buildVerificationGroups');
         $method->setAccessible(true);
 
         $groups = $method->invoke($service, $artifacts, 'company');
@@ -189,14 +186,14 @@ class ClassificationVerificationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('buildVerificationGroups');
+        $method     = $reflection->getMethod('buildVerificationGroups');
         $method->setAccessible(true);
 
         $groups = $method->invoke($service, $artifacts, 'company');
 
         // Find the group for the focus artifact (index 2)
         $focusGroup = null;
-        foreach ($groups as $group) {
+        foreach($groups as $group) {
             if ($group['focus_artifact_id'] === $artifacts[2]->id) {
                 $focusGroup = $group;
                 break;
@@ -232,7 +229,7 @@ class ClassificationVerificationServiceTest extends TestCase
         // Mock verification response with correction
         $this->mockVerificationResponse([
             $artifacts[1]->id => [
-                'value' => 'Apple Inc',
+                'value'  => 'Apple Inc',
                 'reason' => 'Inconsistent casing, should match adjacent artifacts',
             ],
         ]);
@@ -286,9 +283,9 @@ class ClassificationVerificationServiceTest extends TestCase
         $artifacts = collect([
             Artifact::factory()->create([
                 'position' => 1,
-                'meta' => [
+                'meta'     => [
                     'classification' => [
-                        'company' => 'Apple Inc',
+                        'company'  => 'Apple Inc',
                         'location' => 'Cupertino',
                         'category' => 'Technology',
                     ],
@@ -296,9 +293,9 @@ class ClassificationVerificationServiceTest extends TestCase
             ]),
             Artifact::factory()->create([
                 'position' => 2,
-                'meta' => [
+                'meta'     => [
                     'classification' => [
-                        'company' => 'Google Inc', // Different company (outlier)
+                        'company'  => 'Google Inc', // Different company (outlier)
                         'location' => 'Mountain View', // Different location (outlier)
                         'category' => 'Technology',
                     ],
@@ -306,9 +303,9 @@ class ClassificationVerificationServiceTest extends TestCase
             ]),
             Artifact::factory()->create([
                 'position' => 3,
-                'meta' => [
+                'meta'     => [
                     'classification' => [
-                        'company' => 'Apple Inc', // Back to Apple
+                        'company'  => 'Apple Inc', // Back to Apple
                         'location' => 'Cupertino', // Back to Cupertino
                         'category' => 'Technology',
                     ],
@@ -317,7 +314,7 @@ class ClassificationVerificationServiceTest extends TestCase
         ]);
 
         // Associate artifact as output
-        foreach ($artifacts as $artifact) {
+        foreach($artifacts as $artifact) {
             $taskRun->outputArtifacts()->attach($artifact->id);
         }
 
@@ -334,7 +331,7 @@ class ClassificationVerificationServiceTest extends TestCase
         $this->assertNotContains('category', $processProperties);
 
         // Verify process names
-        foreach ($processes as $process) {
+        foreach($processes as $process) {
             $this->assertStringContainsString('Classification Verification:', $process->name);
             $this->assertArrayHasKey('classification_verification_property', $process->meta);
         }
@@ -361,7 +358,7 @@ class ClassificationVerificationServiceTest extends TestCase
             ]),
         ]);
 
-        foreach ($artifacts as $artifact) {
+        foreach($artifacts as $artifact) {
             $taskRun->outputArtifacts()->attach($artifact->id);
         }
 
@@ -397,7 +394,7 @@ class ClassificationVerificationServiceTest extends TestCase
 
         // Use reflection to test property value extraction
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('getPropertyValue');
+        $method     = $reflection->getMethod('getPropertyValue');
         $method->setAccessible(true);
 
         $value1 = $method->invoke($service, $artifacts[0], 'provider');
@@ -420,7 +417,7 @@ class ClassificationVerificationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('buildVerificationGroups');
+        $method     = $reflection->getMethod('buildVerificationGroups');
         $method->setAccessible(true);
 
         $groups = $method->invoke($service, $artifacts, 'company');
@@ -442,7 +439,7 @@ class ClassificationVerificationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('buildVerificationGroups');
+        $method     = $reflection->getMethod('buildVerificationGroups');
         $method->setAccessible(true);
 
         $groups = $method->invoke($service, $artifacts, 'company');
@@ -472,7 +469,7 @@ class ClassificationVerificationServiceTest extends TestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('buildVerificationGroups');
+        $method     = $reflection->getMethod('buildVerificationGroups');
         $method->setAccessible(true);
 
         $groups = $method->invoke($service, $artifacts, 'company');
@@ -504,7 +501,7 @@ class ClassificationVerificationServiceTest extends TestCase
         // Mock verification response trying to "correct" to the same value
         $this->mockVerificationResponse([
             $artifacts[0]->id => [
-                'value' => 'Apple Inc', // Same as current value
+                'value'  => 'Apple Inc', // Same as current value
                 'reason' => 'Already correct',
             ],
         ]);
@@ -553,8 +550,8 @@ class ClassificationVerificationServiceTest extends TestCase
         // Mock verification response with nonexistent artifact ID
         $this->mockVerificationResponse([
             99999 => [ // Nonexistent artifact ID
-                'value' => 'Apple Inc',
-                'reason' => 'Correction for nonexistent artifact',
+                       'value'  => 'Apple Inc',
+                       'reason' => 'Correction for nonexistent artifact',
             ],
         ]);
 
@@ -582,9 +579,9 @@ class ClassificationVerificationServiceTest extends TestCase
         $artifacts = collect([
             Artifact::factory()->create([
                 'position' => 1,
-                'meta' => [
+                'meta'     => [
                     'classification' => [
-                        'company' => 'Apple Inc',
+                        'company'  => 'Apple Inc',
                         'location' => 'Cupertino',
                         'category' => 'Technology',
                     ],
@@ -592,9 +589,9 @@ class ClassificationVerificationServiceTest extends TestCase
             ]),
             Artifact::factory()->create([
                 'position' => 2,
-                'meta' => [
+                'meta'     => [
                     'classification' => [
-                        'company' => 'Google Inc', // Different company (outlier to test)
+                        'company'  => 'Google Inc', // Different company (outlier to test)
                         'location' => 'Mountain View', // Different location (but not in verify config)
                         'category' => 'Technology',
                     ],
@@ -602,9 +599,9 @@ class ClassificationVerificationServiceTest extends TestCase
             ]),
             Artifact::factory()->create([
                 'position' => 3,
-                'meta' => [
+                'meta'     => [
                     'classification' => [
-                        'company' => 'Apple Inc', // Back to Apple
+                        'company'  => 'Apple Inc', // Back to Apple
                         'location' => 'Cupertino', // Back to Cupertino
                         'category' => 'Technology',
                     ],
@@ -612,7 +609,7 @@ class ClassificationVerificationServiceTest extends TestCase
             ]),
         ]);
 
-        foreach ($artifacts as $artifact) {
+        foreach($artifacts as $artifact) {
             $taskRun->outputArtifacts()->attach($artifact->id);
         }
 
@@ -640,7 +637,7 @@ class ClassificationVerificationServiceTest extends TestCase
         // Mock verification response correcting the previous artifact
         $this->mockVerificationResponse([
             $artifacts[0]->id => [
-                'value' => 'Apple Inc',
+                'value'  => 'Apple Inc',
                 'reason' => 'Previous artifact classification was incorrect based on context',
             ],
         ]);
@@ -665,7 +662,7 @@ class ClassificationVerificationServiceTest extends TestCase
         // Mock verification response correcting the next artifact
         $this->mockVerificationResponse([
             $artifacts[2]->id => [
-                'value' => 'Apple Inc',
+                'value'  => 'Apple Inc',
                 'reason' => 'Next artifact classification was incorrect based on context',
             ],
         ]);
@@ -691,11 +688,11 @@ class ClassificationVerificationServiceTest extends TestCase
         // Mock verification response correcting the current artifact and also finding issue with first artifact
         $this->mockVerificationResponse([
             $artifacts[0]->id => [
-                'value' => 'Apple, Inc.',
+                'value'  => 'Apple, Inc.',
                 'reason' => 'With full context, proper formal name includes comma',
             ],
             $artifacts[2]->id => [
-                'value' => 'Apple, Inc.',
+                'value'  => 'Apple, Inc.',
                 'reason' => 'Incorrect format based on context',
             ],
         ]);
@@ -715,30 +712,30 @@ class ClassificationVerificationServiceTest extends TestCase
     public function it_creates_recursive_verification_process_when_previous_artifact_corrected()
     {
         $taskRun = TaskRun::factory()->create();
-        
+
         $artifacts = collect([
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'Apple Inc']]
-            ]), // Previous 
+                'meta'        => ['classification' => ['company' => 'Apple Inc']],
+            ]), // Previous
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'APPLE']]
+                'meta'        => ['classification' => ['company' => 'APPLE']],
             ]), // Current - outlier (neighbors agree)
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'Apple Inc']]
+                'meta'        => ['classification' => ['company' => 'Apple Inc']],
             ]), // Next
         ]);
 
         // Mock verification response correcting current and also the previous artifact
         $this->mockVerificationResponse([
             $artifacts[0]->id => [
-                'value' => 'Apple, Inc.',
+                'value'  => 'Apple, Inc.',
                 'reason' => 'Previous artifact needs proper formatting with comma',
             ],
             $artifacts[1]->id => [
-                'value' => 'Apple, Inc.',
+                'value'  => 'Apple, Inc.',
                 'reason' => 'Current artifact was incorrect',
             ],
         ]);
@@ -763,26 +760,26 @@ class ClassificationVerificationServiceTest extends TestCase
     public function it_does_not_create_recursive_process_when_current_artifact_corrected()
     {
         $taskRun = TaskRun::factory()->create();
-        
+
         $artifacts = collect([
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'Apple Inc']]
+                'meta'        => ['classification' => ['company' => 'Apple Inc']],
             ]), // Previous
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'APPLE']]
+                'meta'        => ['classification' => ['company' => 'APPLE']],
             ]), // Current - will be corrected
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'Apple Inc']]
+                'meta'        => ['classification' => ['company' => 'Apple Inc']],
             ]), // Next
         ]);
 
         // Mock verification response correcting the current artifact
         $this->mockVerificationResponse([
             $artifacts[1]->id => [
-                'value' => 'Apple Inc',
+                'value'  => 'Apple Inc',
                 'reason' => 'Current artifact was incorrect',
             ],
         ]);
@@ -799,26 +796,26 @@ class ClassificationVerificationServiceTest extends TestCase
     public function it_does_not_create_recursive_process_when_next_artifact_corrected()
     {
         $taskRun = TaskRun::factory()->create();
-        
+
         $artifacts = collect([
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'Apple Inc']]
+                'meta'        => ['classification' => ['company' => 'Apple Inc']],
             ]), // Previous
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'Apple Inc']]
+                'meta'        => ['classification' => ['company' => 'Apple Inc']],
             ]), // Current
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'APPLE']]
+                'meta'        => ['classification' => ['company' => 'APPLE']],
             ]), // Next - will be corrected
         ]);
 
         // Mock verification response correcting the next artifact
         $this->mockVerificationResponse([
             $artifacts[2]->id => [
-                'value' => 'Apple Inc',
+                'value'  => 'Apple Inc',
                 'reason' => 'Next artifact was incorrect',
             ],
         ]);
@@ -835,38 +832,38 @@ class ClassificationVerificationServiceTest extends TestCase
     public function it_creates_multiple_recursive_processes_when_multiple_previous_artifacts_corrected()
     {
         $taskRun = TaskRun::factory()->create();
-        
+
         $artifacts = collect([
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'Apple Inc']]
+                'meta'        => ['classification' => ['company' => 'Apple Inc']],
             ]), // Previous 1
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'Apple Inc']]
+                'meta'        => ['classification' => ['company' => 'Apple Inc']],
             ]), // Previous 2
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'APPLE']]
+                'meta'        => ['classification' => ['company' => 'APPLE']],
             ]), // Current - outlier (neighbors agree)
             Artifact::factory()->create([
                 'task_run_id' => $taskRun->id,
-                'meta' => ['classification' => ['company' => 'Apple Inc']]
+                'meta'        => ['classification' => ['company' => 'Apple Inc']],
             ]), // Next
         ]);
 
         // Mock verification response correcting both previous artifacts and current
         $this->mockVerificationResponse([
             $artifacts[0]->id => [
-                'value' => 'Apple, Inc.',
+                'value'  => 'Apple, Inc.',
                 'reason' => 'Previous artifact 1 needs proper format',
             ],
             $artifacts[1]->id => [
-                'value' => 'Apple, Inc.',
+                'value'  => 'Apple, Inc.',
                 'reason' => 'Previous artifact 2 needs proper format',
             ],
             $artifacts[2]->id => [
-                'value' => 'Apple, Inc.',
+                'value'  => 'Apple, Inc.',
                 'reason' => 'Current artifact was incorrect',
             ],
         ]);
@@ -882,7 +879,7 @@ class ClassificationVerificationServiceTest extends TestCase
         $this->assertContains($artifacts[0]->id, $recursiveArtifactIds);
         $this->assertContains($artifacts[1]->id, $recursiveArtifactIds);
 
-        foreach ($processes as $process) {
+        foreach($processes as $process) {
             $this->assertStringContainsString('Recursive Classification Verification', $process->name);
             $this->assertTrue($process->meta['is_recursive']);
         }

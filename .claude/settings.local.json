@@ -74,8 +74,15 @@
       "Bash(npm run lint:*)",
       "Bash(ssh:*)",
       "Bash(PGPASSWORD=\"iMoKYGU59rRJSeH6t8h6gVFjJ6DGWn5Hsfuj07Ae\" psql -h localhost -p 5433 -U vapor -d vapor -c \"\\dt agent_thread_messageables\")",
-      "Bash(gcloud auth:*)"
+      "Bash(gcloud auth:*)",
+      "Read(/home/newms/web/quasar-ui-danx/**)",
+      "Read(/home/newms/web/quasar-ui-danx/**)",
+      "Read(/home/newms/web/quasar-ui-danx/**)",
+      "WebSearch"
     ],
-    "deny": []
+    "deny": [],
+    "additionalDirectories": [
+      "/home/newms/web/quasar-ui-danx/ui/"
+    ]
   }
 }

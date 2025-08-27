@@ -22,9 +22,9 @@ class UiDemandRepository extends ActionRepository
     {
         switch($action) {
             case 'create':
-                return UiDemandResource::make($this->createDemand($data));
+                return UiDemandResource::details($this->createDemand($data));
             case 'update':
-                return UiDemandResource::make($this->updateDemand($model, $data));
+                return UiDemandResource::details($this->updateDemand($model, $data));
             default:
                 return parent::applyAction($action, $model, $data);
         }
@@ -68,19 +68,19 @@ class UiDemandRepository extends ActionRepository
     {
         if (array_key_exists('input_files', $data)) {
             $files = $data['input_files'] ?? [];
-            
+
             if (empty($files)) {
                 // Clear all input files
                 $demand->inputFiles()->sync([]);
             } else {
-                $fileIds = collect($files)->pluck('id')->filter();
+                $fileIds       = collect($files)->pluck('id')->filter();
                 $existingFiles = StoredFile::whereIn('id', $fileIds)->pluck('id');
-                
+
                 // Create sync data with category pivot
                 $syncData = $existingFiles->mapWithKeys(function ($fileId) {
                     return [$fileId => ['category' => 'input']];
                 })->toArray();
-                
+
                 $demand->inputFiles()->sync($syncData);
             }
         }

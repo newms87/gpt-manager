@@ -12,14 +12,13 @@ use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;
 use App\Services\UiDemand\UiDemandWorkflowService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
 class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     protected UiDemandWorkflowService $workflowService;
 

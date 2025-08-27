@@ -11,7 +11,6 @@ use App\Models\Team\Team;
 use App\Models\User;
 use App\Services\Task\ClassificationDeduplicationService;
 use App\Services\Task\Runners\ClassifierTaskRunner;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Api\TestAi\TestAiApi;
@@ -19,8 +18,6 @@ use Tests\TestCase;
 
 class ClassifierTaskRunnerTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected Team           $team;
     protected User           $user;
     protected TaskRun        $taskRun;
@@ -89,7 +86,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Associate artifacts as input artifacts
-        foreach ($artifacts as $artifact) {
+        foreach($artifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -119,7 +116,7 @@ class ClassifierTaskRunnerTest extends TestCase
 
         // Verify the meta field is properly set
         $this->assertEquals('location', $taskProcess->meta['classification_property']);
-        
+
         // Test another property
         $taskProcess2 = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
@@ -174,9 +171,9 @@ class ClassifierTaskRunnerTest extends TestCase
         $newProcesses = $this->taskRun->taskProcesses()
             ->whereNotNull('meta->classification_property')
             ->get();
-        
+
         $this->assertGreaterThan(0, $newProcesses->count());
-        
+
         // Verify they have the expected properties
         $properties = $newProcesses->pluck('meta.classification_property')->toArray();
         $this->assertContains('company', $properties);
@@ -225,7 +222,7 @@ class ClassifierTaskRunnerTest extends TestCase
         // Test that runner handles this gracefully in afterAllProcessesCompleted
         $runner = new ClassifierTaskRunner();
         $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
-        
+
         // Should not throw exception
         $runner->afterAllProcessesCompleted();
         $this->assertTrue(true);
@@ -350,7 +347,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $this->taskDefinition->task_runner_config = [];
         $this->taskDefinition->save();
 
-        foreach ($artifacts as $artifact) {
+        foreach($artifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -359,7 +356,7 @@ class ClassifierTaskRunnerTest extends TestCase
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('getContextArtifacts');
+        $method     = $reflection->getMethod('getContextArtifacts');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $artifacts);
@@ -384,7 +381,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Add all artifacts to task run as input artifacts
-        foreach ($contextArtifacts->merge($inputArtifacts) as $artifact) {
+        foreach($contextArtifacts->merge($inputArtifacts) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -396,7 +393,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $this->taskDefinition->task_runner_config = ['context_before' => 3];
         $this->taskDefinition->save();
 
-        foreach ($inputArtifacts as $artifact) {
+        foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -405,7 +402,7 @@ class ClassifierTaskRunnerTest extends TestCase
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('getContextArtifacts');
+        $method     = $reflection->getMethod('getContextArtifacts');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $inputArtifacts);
@@ -429,7 +426,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Add all artifacts to task run as input artifacts
-        foreach ($inputArtifacts->merge($contextArtifacts) as $artifact) {
+        foreach($inputArtifacts->merge($contextArtifacts) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -441,7 +438,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $this->taskDefinition->task_runner_config = ['context_after' => 3];
         $this->taskDefinition->save();
 
-        foreach ($inputArtifacts as $artifact) {
+        foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -450,7 +447,7 @@ class ClassifierTaskRunnerTest extends TestCase
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('getContextArtifacts');
+        $method     = $reflection->getMethod('getContextArtifacts');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $inputArtifacts);
@@ -482,7 +479,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Add all artifacts to task run as input artifacts
-        foreach ($contextBefore->merge($inputArtifacts)->merge($contextAfter) as $artifact) {
+        foreach($contextBefore->merge($inputArtifacts)->merge($contextAfter) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -493,11 +490,11 @@ class ClassifierTaskRunnerTest extends TestCase
         // Set task definition with both context_before and context_after
         $this->taskDefinition->task_runner_config = [
             'context_before' => 2,
-            'context_after' => 2,
+            'context_after'  => 2,
         ];
         $this->taskDefinition->save();
 
-        foreach ($inputArtifacts as $artifact) {
+        foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -506,7 +503,7 @@ class ClassifierTaskRunnerTest extends TestCase
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('getContextArtifacts');
+        $method     = $reflection->getMethod('getContextArtifacts');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $inputArtifacts);
@@ -525,7 +522,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Add artifacts to task run as input artifacts
-        foreach ($inputArtifacts as $artifact) {
+        foreach($inputArtifacts as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -536,11 +533,11 @@ class ClassifierTaskRunnerTest extends TestCase
         // Set very high context values
         $this->taskDefinition->task_runner_config = [
             'context_before' => 10,
-            'context_after' => 10,
+            'context_after'  => 10,
         ];
         $this->taskDefinition->save();
 
-        foreach ($inputArtifacts as $artifact) {
+        foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -549,7 +546,7 @@ class ClassifierTaskRunnerTest extends TestCase
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('getContextArtifacts');
+        $method     = $reflection->getMethod('getContextArtifacts');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $inputArtifacts);
@@ -579,7 +576,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Add all artifacts to task run as input artifacts
-        foreach ($contextArtifacts->merge($inputArtifacts) as $artifact) {
+        foreach($contextArtifacts->merge($inputArtifacts) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -590,11 +587,11 @@ class ClassifierTaskRunnerTest extends TestCase
         // Set context configuration
         $this->taskDefinition->task_runner_config = [
             'context_before' => 3,
-            'context_after' => 3,
+            'context_after'  => 3,
         ];
         $this->taskDefinition->save();
 
-        foreach ($inputArtifacts as $artifact) {
+        foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -603,7 +600,7 @@ class ClassifierTaskRunnerTest extends TestCase
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('getContextArtifacts');
+        $method     = $reflection->getMethod('getContextArtifacts');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $inputArtifacts);
@@ -620,7 +617,7 @@ class ClassifierTaskRunnerTest extends TestCase
             Artifact::factory()->create(['position' => 3]),
             Artifact::factory()->create(['position' => 4]),
             Artifact::factory()->create(['position' => 5]), // This will be input artifact
-            Artifact::factory()->create(['position' => 6]), // This will be input artifact  
+            Artifact::factory()->create(['position' => 6]), // This will be input artifact
             Artifact::factory()->create(['position' => 7]),
             Artifact::factory()->create(['position' => 8]),
         ]);
@@ -628,7 +625,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $inputArtifacts = $allArtifacts->where('position', '>=', 5)->where('position', '<=', 6);
 
         // Add all artifacts to task run as input artifacts
-        foreach ($allArtifacts as $artifact) {
+        foreach($allArtifacts as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -639,11 +636,11 @@ class ClassifierTaskRunnerTest extends TestCase
         // Set context configuration
         $this->taskDefinition->task_runner_config = [
             'context_before' => 3,
-            'context_after' => 3,
+            'context_after'  => 3,
         ];
         $this->taskDefinition->save();
 
-        foreach ($inputArtifacts as $artifact) {
+        foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -652,7 +649,7 @@ class ClassifierTaskRunnerTest extends TestCase
 
         // Use reflection to test the protected method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('getContextArtifacts');
+        $method     = $reflection->getMethod('getContextArtifacts');
         $method->setAccessible(true);
 
         $result = $method->invoke($runner, $inputArtifacts);

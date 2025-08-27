@@ -5,19 +5,16 @@ namespace Tests\Unit\Models\Usage;
 use App\Models\Task\TaskProcess;
 use App\Models\Usage\UsageEvent;
 use App\Models\Usage\UsageSummary;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class UsageSummaryTest extends TestCase
 {
-    use RefreshDatabase;
-
     #[Test]
     public function it_calculates_total_tokens_attribute()
     {
         $summary = UsageSummary::factory()->create([
-            'input_tokens' => 100,
+            'input_tokens'  => 100,
             'output_tokens' => 50,
         ]);
 
@@ -28,9 +25,9 @@ class UsageSummaryTest extends TestCase
     public function it_has_polymorphic_relationship_to_object()
     {
         $taskProcess = TaskProcess::factory()->create();
-        $summary = UsageSummary::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+        $summary     = UsageSummary::factory()->create([
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
         ]);
 
@@ -42,15 +39,15 @@ class UsageSummaryTest extends TestCase
     public function it_casts_attributes_correctly()
     {
         $summary = UsageSummary::factory()->create([
-            'count' => '10',
-            'run_time_ms' => '5000',
-            'input_tokens' => '1000',
+            'count'         => '10',
+            'run_time_ms'   => '5000',
+            'input_tokens'  => '1000',
             'output_tokens' => '500',
-            'input_cost' => '2.5',
-            'output_cost' => '5.0',
-            'total_cost' => '7.5',
+            'input_cost'    => '2.5',
+            'output_cost'   => '5.0',
+            'total_cost'    => '7.5',
             'request_count' => '20',
-            'data_volume' => '10240',
+            'data_volume'   => '10240',
         ]);
 
         $this->assertIsInt($summary->count);
@@ -68,43 +65,43 @@ class UsageSummaryTest extends TestCase
     public function it_updates_from_usage_events()
     {
         $taskProcess = TaskProcess::factory()->create();
-        $summary = UsageSummary::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+        $summary     = UsageSummary::factory()->create([
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'count' => 0,
-            'input_tokens' => 0,
+            'count'         => 0,
+            'input_tokens'  => 0,
             'output_tokens' => 0,
-            'input_cost' => 0,
-            'output_cost' => 0,
-            'total_cost' => 0,
+            'input_cost'    => 0,
+            'output_cost'   => 0,
+            'total_cost'    => 0,
         ]);
 
         // Create usage events
         UsageEvent::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'input_tokens' => 100,
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.0005,
-            'run_time_ms' => 1000,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.0005,
+            'run_time_ms'   => 1000,
             'request_count' => 1,
-            'data_volume' => 1024,
+            'data_volume'   => 1024,
         ]);
 
         UsageEvent::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'input_tokens' => 200,
+            'input_tokens'  => 200,
             'output_tokens' => 100,
-            'input_cost' => 0.002,
-            'output_cost' => 0.001,
-            'run_time_ms' => 2000,
+            'input_cost'    => 0.002,
+            'output_cost'   => 0.001,
+            'run_time_ms'   => 2000,
             'request_count' => 2,
-            'data_volume' => 2048,
+            'data_volume'   => 2048,
         ]);
 
         // Update summary from events
@@ -126,13 +123,13 @@ class UsageSummaryTest extends TestCase
     public function it_handles_empty_event_set_in_update()
     {
         $taskProcess = TaskProcess::factory()->create();
-        $summary = UsageSummary::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
-            'count' => 5,
-            'input_tokens' => 500,
+        $summary     = UsageSummary::factory()->create([
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
+            'count'         => 5,
+            'input_tokens'  => 500,
             'output_tokens' => 250,
-            'total_cost' => 10.0,
+            'total_cost'    => 10.0,
         ]);
 
         // No events exist
@@ -150,7 +147,7 @@ class UsageSummaryTest extends TestCase
     public function it_handles_null_values_in_calculations()
     {
         $summary = UsageSummary::factory()->create([
-            'input_tokens' => null,
+            'input_tokens'  => null,
             'output_tokens' => null,
         ]);
 
@@ -161,35 +158,35 @@ class UsageSummaryTest extends TestCase
     public function it_relates_to_usage_events_correctly()
     {
         $taskProcess = TaskProcess::factory()->create();
-        $summary = UsageSummary::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+        $summary     = UsageSummary::factory()->create([
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
         ]);
 
         // Create related events
         $event1 = UsageEvent::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
         ]);
 
         $event2 = UsageEvent::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $taskProcess->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $taskProcess->id,
             'object_id_int' => $taskProcess->id,
         ]);
 
         // Create unrelated event
         $otherProcess = TaskProcess::factory()->create();
         UsageEvent::factory()->create([
-            'object_type' => TaskProcess::class,
-            'object_id' => $otherProcess->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => $otherProcess->id,
             'object_id_int' => $otherProcess->id,
         ]);
 
         $relatedEvents = $summary->usageEvents()->get();
-        
+
         $this->assertCount(2, $relatedEvents);
         $this->assertTrue($relatedEvents->contains($event1));
         $this->assertTrue($relatedEvents->contains($event2));

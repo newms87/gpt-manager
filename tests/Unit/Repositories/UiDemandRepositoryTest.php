@@ -6,15 +6,13 @@ use App\Models\TeamObject\TeamObject;
 use App\Models\UiDemand;
 use App\Repositories\TeamObjectRepository;
 use App\Repositories\UiDemandRepository;
-use App\Resources\UiDemandResource;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
 class UiDemandRepositoryTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     private UiDemandRepository $repository;
 
@@ -29,18 +27,18 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $storedFile1 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'test-file-1.pdf',
         ]);
         $storedFile2 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'test-file-2.pdf',
         ]);
 
         $data = [
-            'title' => 'Test UI Demand',
+            'title'       => 'Test UI Demand',
             'description' => 'Test description',
             'input_files' => [
                 ['id' => $storedFile1->id],
@@ -53,7 +51,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $this->assertIsArray($result);
-        
+
         $uiDemand = UiDemand::where('title', 'Test UI Demand')->first();
         $this->assertNotNull($uiDemand);
         $this->assertEquals($this->user->currentTeam->id, $uiDemand->team_id);
@@ -74,9 +72,9 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
         $this->assertCount(2, $inputFiles);
         $this->assertTrue($inputFiles->pluck('id')->contains($storedFile1->id));
         $this->assertTrue($inputFiles->pluck('id')->contains($storedFile2->id));
-        
+
         // Verify pivot table has correct category
-        foreach ($inputFiles as $file) {
+        foreach($inputFiles as $file) {
             $this->assertEquals('input', $file->pivot->category);
         }
     }
@@ -85,7 +83,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $data = [
-            'title' => 'Test UI Demand Without Files',
+            'title'       => 'Test UI Demand Without Files',
             'description' => 'Test description',
         ];
 
@@ -94,7 +92,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $this->assertIsArray($result);
-        
+
         $uiDemand = UiDemand::where('title', 'Test UI Demand Without Files')->first();
         $this->assertNotNull($uiDemand);
         $this->assertEquals($this->user->currentTeam->id, $uiDemand->team_id);
@@ -112,33 +110,33 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
     {
         // Given - Create initial demand with one file
         $initialFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'initial-file.pdf',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'title' => 'Original Title',
+            'team_id'     => $this->user->currentTeam->id,
+            'user_id'     => $this->user->id,
+            'title'       => 'Original Title',
             'description' => 'Original description',
         ]);
         $uiDemand->inputFiles()->attach($initialFile->id, ['category' => 'input']);
 
         // Create new files for update
         $newFile1 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'new-file-1.pdf',
         ]);
         $newFile2 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'new-file-2.pdf',
         ]);
 
         $updateData = [
-            'title' => 'Updated Title',
+            'title'       => 'Updated Title',
             'description' => 'Updated description',
             'input_files' => [
                 ['id' => $newFile1->id],
@@ -151,7 +149,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $this->assertIsArray($result);
-        
+
         $uiDemand->refresh();
         $this->assertEquals('Updated Title', $uiDemand->title);
         $this->assertEquals('Updated description', $uiDemand->description);
@@ -164,7 +162,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
         $this->assertFalse($inputFiles->pluck('id')->contains($initialFile->id));
 
         // Verify pivot table has correct category
-        foreach ($inputFiles as $file) {
+        foreach($inputFiles as $file) {
             $this->assertEquals('input', $file->pivot->category);
         }
     }
@@ -173,20 +171,20 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
     {
         // Given - Create demand with files
         $existingFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'existing-file.pdf',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'title' => 'Test Demand',
+            'title'   => 'Test Demand',
         ]);
         $uiDemand->inputFiles()->attach($existingFile->id, ['category' => 'input']);
 
         $updateData = [
-            'title' => 'Updated Title',
+            'title'       => 'Updated Title',
             'input_files' => [], // Empty array
         ];
 
@@ -195,7 +193,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $this->assertIsArray($result);
-        
+
         $uiDemand->refresh();
         $this->assertEquals('Updated Title', $uiDemand->title);
         $this->assertCount(0, $uiDemand->inputFiles);
@@ -205,13 +203,13 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $file1 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'file-1.pdf',
         ]);
         $file2 = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'file-2.pdf',
         ]);
 
@@ -238,7 +236,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
         $this->assertTrue($inputFiles->pluck('id')->contains($file2->id));
 
         // Verify pivot table has correct category
-        foreach ($inputFiles as $file) {
+        foreach($inputFiles as $file) {
             $this->assertEquals('input', $file->pivot->category);
         }
     }
@@ -271,8 +269,8 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $validFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'filename' => 'valid-file.pdf',
         ]);
 
@@ -303,17 +301,17 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $otherTeam = $this->createTeam();
-        
+
         $currentTeamDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'title' => 'Current Team Demand',
+            'title'   => 'Current Team Demand',
         ]);
 
         $otherTeamDemand = UiDemand::factory()->create([
             'team_id' => $otherTeam->id,
             'user_id' => $this->user->id,
-            'title' => 'Other Team Demand',
+            'title'   => 'Other Team Demand',
         ]);
 
         // When
@@ -330,10 +328,10 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
         // Given
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'Demand',
-            'name' => 'Test Demand Title',
+            'type'    => 'Demand',
+            'name'    => 'Test Demand Title',
         ]);
-        
+
         $this->mock(TeamObjectRepository::class, function ($mock) use ($teamObject) {
             $mock->shouldReceive('createTeamObject')
                 ->once()
@@ -352,7 +350,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
         });
 
         $data = [
-            'title' => 'Test Demand Title',
+            'title'       => 'Test Demand Title',
             'description' => 'Test Demand Description',
         ];
 
@@ -361,7 +359,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $this->assertIsArray($result);
-        
+
         $uiDemand = UiDemand::where('title', 'Test Demand Title')->first();
         $this->assertNotNull($uiDemand);
         $this->assertEquals($teamObject->id, $uiDemand->team_object_id);

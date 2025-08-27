@@ -5,30 +5,26 @@ namespace Tests\Unit\Services\Billing;
 use App\Api\Stripe\StripeApi;
 use App\Models\Team\Team;
 use App\Services\Billing\StripePaymentService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Newms87\Danx\Exceptions\ValidationError;
 use Tests\TestCase;
 
 class StripePaymentServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     private StripePaymentService $stripeService;
-    private Team $team;
-    private StripeApi $mockStripeApi;
+    private Team                 $team;
+    private StripeApi            $mockStripeApi;
 
     public function setUp(): void
     {
         parent::setUp();
-        
+
         // Set up config for testing
         config(['services.stripe.secret' => 'sk_test_fake_key']);
         config(['services.stripe.webhook_secret' => 'whsec_fake_secret']);
-        
+
         // Create a mock StripeApi
         $this->mockStripeApi = $this->createMock(StripeApi::class);
         $this->stripeService = new StripePaymentService($this->mockStripeApi);
-        $this->team = Team::factory()->create();
+        $this->team          = Team::factory()->create();
     }
 
     public function test_constructor_withoutApiKey_throwsValidationError(): void
@@ -51,10 +47,10 @@ class StripePaymentServiceTest extends TestCase
         $this->mockStripeApi->expects($this->once())
             ->method('createCustomer')
             ->with([
-                'email' => null,
-                'name' => $this->team->name,
+                'email'    => null,
+                'name'     => $this->team->name,
                 'metadata' => [
-                    'team_id' => (string) $this->team->id,
+                    'team_id' => (string)$this->team->id,
                 ],
             ])
             ->willReturn($expectedResponse);
@@ -74,7 +70,7 @@ class StripePaymentServiceTest extends TestCase
             ->method('createSetupIntent')
             ->with([
                 'customer' => 'cus_test123',
-                'usage' => 'off_session',
+                'usage'    => 'off_session',
                 'metadata' => [],
             ])
             ->willReturn($expectedResponse);
@@ -125,10 +121,10 @@ class StripePaymentServiceTest extends TestCase
         $this->mockStripeApi->expects($this->once())
             ->method('createSubscription')
             ->with([
-                'customer' => 'cus_test123',
-                'items' => [['price' => 'price_test123']],
+                'customer'          => 'cus_test123',
+                'items'             => [['price' => 'price_test123']],
                 'trial_period_days' => null,
-                'metadata' => [],
+                'metadata'          => [],
             ])
             ->willReturn($expectedResponse);
 
@@ -182,11 +178,11 @@ class StripePaymentServiceTest extends TestCase
         $this->mockStripeApi->expects($this->once())
             ->method('createInvoiceItem')
             ->with([
-                'customer' => 'cus_test123',
-                'amount' => 1550, // 15.50 * 100
-                'currency' => 'usd',
+                'customer'    => 'cus_test123',
+                'amount'      => 1550, // 15.50 * 100
+                'currency'    => 'usd',
                 'description' => 'Usage charges',
-                'metadata' => [],
+                'metadata'    => [],
             ])
             ->willReturn($expectedResponse);
 
@@ -204,8 +200,8 @@ class StripePaymentServiceTest extends TestCase
         $this->mockStripeApi->expects($this->once())
             ->method('createInvoice')
             ->with([
-                'customer' => 'cus_test123',
-                'auto_advance' => true,
+                'customer'          => 'cus_test123',
+                'auto_advance'      => true,
                 'collection_method' => 'charge_automatically',
             ])
             ->willReturn($expectedResponse);
@@ -268,9 +264,9 @@ class StripePaymentServiceTest extends TestCase
     public function test_constructWebhookEvent_returnsDecodedPayload(): void
     {
         // Given
-        $payload = '{"id": "evt_test123"}';
+        $payload   = '{"id": "evt_test123"}';
         $signature = 'test_signature';
-        $secret = 'test_secret';
+        $secret    = 'test_secret';
 
         // When
         $result = $this->stripeService->constructWebhookEvent($payload, $signature, $secret);
@@ -282,7 +278,7 @@ class StripePaymentServiceTest extends TestCase
     public function test_validateWebhookSignature_returnsDecodedPayload(): void
     {
         // Given
-        $payload = '{"id": "evt_test123"}';
+        $payload   = '{"id": "evt_test123"}';
         $signature = 'test_signature';
 
         // When
@@ -315,9 +311,9 @@ class StripePaymentServiceTest extends TestCase
         $this->mockStripeApi->expects($this->once())
             ->method('createCharge')
             ->with([
-                'customer' => 'cus_test123',
-                'amount' => 1500,
-                'currency' => 'usd',
+                'customer'    => 'cus_test123',
+                'amount'      => 1500,
+                'currency'    => 'usd',
                 'description' => 'Test charge',
             ])
             ->willReturn($expectedResponse);

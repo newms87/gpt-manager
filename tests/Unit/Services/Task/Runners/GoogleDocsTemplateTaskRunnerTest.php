@@ -2,24 +2,20 @@
 
 namespace Tests\Unit\Services\Task\Runners;
 
-use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\Agent\Agent;
-use App\Models\Agent\AgentThread;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
 class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     protected TaskDefinition               $taskDefinition;
     protected TaskRun                      $taskRun;

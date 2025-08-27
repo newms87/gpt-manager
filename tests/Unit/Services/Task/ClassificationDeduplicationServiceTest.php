@@ -8,7 +8,6 @@ use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Models\User;
 use App\Services\Task\ClassificationDeduplicationService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
@@ -17,8 +16,6 @@ use Tests\TestCase;
 
 class ClassificationDeduplicationServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected ClassificationDeduplicationService $service;
     protected Team                               $team;
     protected User                               $user;

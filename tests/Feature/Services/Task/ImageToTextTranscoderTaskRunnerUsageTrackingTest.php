@@ -6,16 +6,12 @@ use App\Api\ImageToText\ImageToTextOcrApi;
 use App\Models\Task\TaskProcess;
 use App\Models\Usage\UsageEvent;
 use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
 {
-    use RefreshDatabase;
-
     #[Test]
     public function it_tracks_usage_when_performing_ocr_conversion()
     {

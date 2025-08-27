@@ -14,9 +14,14 @@
 - Never use chmod on files to fix permissions!!! Always use `./vendor/bin/sail artisan fix`
 - Never use the rg command, use grep instead
 - When attempting to run PHP files, always use sail php
-- To avoid making mistakes, ALWAYS ALWAYS ALWAYS READ THE COMPONENT / CLASS YOU ARE about to interact with BEFORE YOU
-  use it. Understand the method completely (no abstraction) before assuming its behavior. Never assume you know how
-  something works. Never guess. It is CRITICAL you understand what you are doing before you do it.
+- **CRITICAL - NEVER GUESS OR MAKE ASSUMPTIONS**: 
+  - ALWAYS READ THE COMPONENT / CLASS YOU ARE about to interact with BEFORE YOU use it
+  - Understand the method completely (no abstraction) before assuming its behavior
+  - Never assume you know how something works - ALWAYS check the actual implementation
+  - Never guess parameter names, configuration options, or API signatures
+  - ALWAYS look at examples first or the actual implementation and do it by example or by understanding how the code actually works
+  - When unsure, search for existing usage patterns in the codebase
+  - It is CRITICAL you understand what you are doing before you do it
 
 **CRITICALLY IMPORTANT: Before each code change, make a TODO list with the FIRST STEP stating:**
 *"I will follow the best practices and standards: DRY Principles, no Legacy/backwards compatibility, and use the correct

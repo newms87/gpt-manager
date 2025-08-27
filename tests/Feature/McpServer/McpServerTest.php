@@ -5,13 +5,10 @@ namespace Tests\Feature\McpServer;
 use App\Models\Agent\McpServer;
 use App\Models\Team\Team;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class McpServerTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected User $user;
     protected Team $team;
 
@@ -32,19 +29,19 @@ class McpServerTest extends TestCase
     {
 
         $mcpServerData = [
-            'name'        => 'Test MCP Server',
-            'description' => 'A test MCP server for API testing',
-            'server_url'  => 'http://localhost:8080',
-            'headers'     => [
+            'name'          => 'Test MCP Server',
+            'description'   => 'A test MCP server for API testing',
+            'server_url'    => 'http://localhost:8080',
+            'headers'       => [
                 'Authorization' => 'Bearer test-token',
-                'Content-Type'  => 'application/json'
+                'Content-Type'  => 'application/json',
             ],
             'allowed_tools' => ['tool1', 'tool2'],
         ];
 
         $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
-            'data' => $mcpServerData
+            'data'   => $mcpServerData,
         ]);
 
         $response->assertStatus(200);
@@ -59,7 +56,7 @@ class McpServerTest extends TestCase
     {
         $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
-            'data' => []
+            'data'   => [],
         ]);
 
         $response->assertStatus(400);
@@ -98,7 +95,7 @@ class McpServerTest extends TestCase
 
         $response = $this->postJson(route('mcp-servers.apply-action', $mcpServer), [
             'action' => 'update',
-            'data' => $updateData
+            'data'   => $updateData,
         ]);
 
         $response->assertStatus(200);
@@ -116,7 +113,7 @@ class McpServerTest extends TestCase
         ]);
 
         $response = $this->postJson(route('mcp-servers.apply-action', $mcpServer), [
-            'action' => 'delete'
+            'action' => 'delete',
         ]);
 
         $response->assertStatus(200);
@@ -133,7 +130,7 @@ class McpServerTest extends TestCase
         ]);
 
         $response = $this->postJson(route('mcp-servers.apply-action', $originalServer), [
-            'action' => 'copy'
+            'action' => 'copy',
         ]);
 
         $response->assertStatus(200);
@@ -152,10 +149,10 @@ class McpServerTest extends TestCase
     {
         $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
-            'data' => [
+            'data'   => [
                 'name'       => 'test-server',
                 'server_url' => 'invalid-url',
-            ]
+            ],
         ]);
 
         $response->assertStatus(400);
@@ -165,9 +162,9 @@ class McpServerTest extends TestCase
     {
         $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
-            'data' => [
+            'data'   => [
                 'server_url' => 'http://example.com',
-            ]
+            ],
         ]);
 
         $response->assertStatus(400);
@@ -177,9 +174,9 @@ class McpServerTest extends TestCase
     {
         $response = $this->postJson(route('mcp-servers.apply-action.create'), [
             'action' => 'create',
-            'data' => [
+            'data'   => [
                 'name' => 'test-server',
-            ]
+            ],
         ]);
 
         $response->assertStatus(400);

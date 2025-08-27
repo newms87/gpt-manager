@@ -9,12 +9,10 @@ use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\LoadCsvTaskRunner;
 use Illuminate\Support\Facades\File;
 use Newms87\Danx\Models\Utilities\StoredFile;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\AuthenticatedTestCase;
 
 class LoadCsvTaskRunnerTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase;
     protected TaskDefinition    $taskDefinition;
     protected TaskRun           $taskRun;
     protected TaskProcess       $taskProcess;

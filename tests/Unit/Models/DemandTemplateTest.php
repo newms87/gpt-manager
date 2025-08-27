@@ -5,7 +5,6 @@ namespace Tests\Unit\Models;
 use App\Models\DemandTemplate;
 use App\Models\Team\Team;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
@@ -13,7 +12,7 @@ use Tests\Traits\SetUpTeamTrait;
 
 class DemandTemplateTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     public function setUp(): void
     {
@@ -59,8 +58,8 @@ class DemandTemplateTest extends AuthenticatedTestCase
     {
         // Given
         $storedFile = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+        $template   = DemandTemplate::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
@@ -76,9 +75,9 @@ class DemandTemplateTest extends AuthenticatedTestCase
     {
         // Given
         $storedFile = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+        $template   = DemandTemplate::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
@@ -94,8 +93,8 @@ class DemandTemplateTest extends AuthenticatedTestCase
     {
         // Given
         $storedFile = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+        $template   = DemandTemplate::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
@@ -112,16 +111,16 @@ class DemandTemplateTest extends AuthenticatedTestCase
         // Given
         $storedFile1 = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $storedFile2 = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        
-        $activeTemplate = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+
+        $activeTemplate   = DemandTemplate::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile1->id,
-            'is_active' => true,
+            'is_active'      => true,
         ]);
         $inactiveTemplate = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile2->id,
-            'is_active' => false,
+            'is_active'      => false,
         ]);
 
         // When
@@ -135,16 +134,16 @@ class DemandTemplateTest extends AuthenticatedTestCase
     public function test_scopeForTeam_filtersTemplatesByTeam(): void
     {
         // Given
-        $otherTeam = Team::factory()->create();
+        $otherTeam   = Team::factory()->create();
         $storedFile1 = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $storedFile2 = StoredFile::factory()->create(['team_id' => $otherTeam->id]);
-        
+
         $currentTeamTemplate = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile1->id,
         ]);
-        $otherTeamTemplate = DemandTemplate::factory()->create([
-            'team_id' => $otherTeam->id,
+        $otherTeamTemplate   = DemandTemplate::factory()->create([
+            'team_id'        => $otherTeam->id,
             'stored_file_id' => $storedFile2->id,
         ]);
 
@@ -160,15 +159,15 @@ class DemandTemplateTest extends AuthenticatedTestCase
     {
         // Given
         $storedFile = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $template = DemandTemplate::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+        $template   = DemandTemplate::create([
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile->id,
-            'name' => 'Test Template',
-            'description' => 'Test Description',
-            'category' => 'Legal',
-            'metadata' => ['key' => 'value'],
-            'is_active' => true,
+            'name'           => 'Test Template',
+            'description'    => 'Test Description',
+            'category'       => 'Legal',
+            'metadata'       => ['key' => 'value'],
+            'is_active'      => true,
         ]);
 
         // When & Then
@@ -180,11 +179,11 @@ class DemandTemplateTest extends AuthenticatedTestCase
     {
         // Given
         $template = DemandTemplate::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'name' => 'Test Template Without File',
+            'team_id'     => $this->user->currentTeam->id,
+            'user_id'     => $this->user->id,
+            'name'        => 'Test Template Without File',
             'description' => 'Test Description',
-            'is_active' => true,
+            'is_active'   => true,
         ]);
 
         // When & Then
@@ -209,18 +208,18 @@ class DemandTemplateTest extends AuthenticatedTestCase
         // Given
         $storedFile1 = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $storedFile2 = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        
+
         DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile1->id,
-            'name' => 'Duplicate Name',
+            'name'           => 'Duplicate Name',
         ]);
 
         $template = DemandTemplate::make([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile2->id,
-            'name' => 'Duplicate Name',
+            'name'           => 'Duplicate Name',
         ]);
 
         // Then
@@ -233,21 +232,21 @@ class DemandTemplateTest extends AuthenticatedTestCase
     public function test_validate_withDuplicateNameInDifferentTeam_passesValidation(): void
     {
         // Given
-        $otherTeam = Team::factory()->create();
+        $otherTeam   = Team::factory()->create();
         $storedFile1 = StoredFile::factory()->create(['team_id' => $otherTeam->id]);
         $storedFile2 = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        
+
         DemandTemplate::factory()->create([
-            'team_id' => $otherTeam->id,
+            'team_id'        => $otherTeam->id,
             'stored_file_id' => $storedFile1->id,
-            'name' => 'Same Name',
+            'name'           => 'Same Name',
         ]);
 
         $template = DemandTemplate::make([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile2->id,
-            'name' => 'Same Name',
+            'name'           => 'Same Name',
         ]);
 
         // When & Then
@@ -260,10 +259,10 @@ class DemandTemplateTest extends AuthenticatedTestCase
         // Given
         $storedFile = StoredFile::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'url' => 'https://docs.google.com/document/d/test123/edit',
+            'url'     => 'https://docs.google.com/document/d/test123/edit',
         ]);
-        $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+        $template   = DemandTemplate::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
@@ -278,7 +277,7 @@ class DemandTemplateTest extends AuthenticatedTestCase
     {
         // Given
         $template = DemandTemplate::make([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => 'non-existent-id',
         ]);
 
@@ -294,10 +293,10 @@ class DemandTemplateTest extends AuthenticatedTestCase
         // Given
         $storedFile = StoredFile::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'url' => 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
+            'url'     => 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
         ]);
-        $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+        $template   = DemandTemplate::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
@@ -313,10 +312,10 @@ class DemandTemplateTest extends AuthenticatedTestCase
         // Given
         $storedFile = StoredFile::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'url' => '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+            'url'     => '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
         ]);
-        $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+        $template   = DemandTemplate::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
@@ -332,10 +331,10 @@ class DemandTemplateTest extends AuthenticatedTestCase
         // Given
         $storedFile = StoredFile::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'url' => 'https://example.com/invalid-url',
+            'url'     => 'https://example.com/invalid-url',
         ]);
-        $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+        $template   = DemandTemplate::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
@@ -350,7 +349,7 @@ class DemandTemplateTest extends AuthenticatedTestCase
     {
         // Given
         $template = DemandTemplate::make([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => 'non-existent-id',
         ]);
 

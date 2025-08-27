@@ -5,19 +5,17 @@ namespace Tests\Unit\Services\ContentSearch;
 use App\Models\Agent\Agent;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
-use App\Models\Task\TaskDefinitionDirective;
 use App\Services\ContentSearch\ContentSearchRequest;
 use App\Services\ContentSearch\Exceptions\InvalidSearchParametersException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
 class ContentSearchRequestTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
     protected TaskDefinition $taskDefinition;
-    protected Agent $agent;
+    protected Agent          $agent;
 
     public function setUp(): void
     {
@@ -26,13 +24,13 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
 
         $this->agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Test Agent',
+            'name'    => 'Test Agent',
         ]);
 
         $this->taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $this->agent->id,
-            'name' => 'Test Task Definition',
+            'name'     => 'Test Task Definition',
         ]);
     }
 
@@ -48,7 +46,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     public function test_withNaturalLanguageQuery_setsQuery(): void
     {
         // Given
-        $query = 'Find the Google Docs file ID';
+        $query   = 'Find the Google Docs file ID';
         $request = ContentSearchRequest::create();
 
         // When
@@ -64,7 +62,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     {
         // Given
         $fieldPath = 'template_stored_file_id';
-        $request = ContentSearchRequest::create();
+        $request   = ContentSearchRequest::create();
 
         // When
         $result = $request->withFieldPath($fieldPath);
@@ -93,8 +91,8 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     public function test_withValidation_setsValidationCallback(): void
     {
         // Given
-        $validationCallback = function($value) { return strlen($value) > 10; };
-        $request = ContentSearchRequest::create();
+        $validationCallback = function ($value) { return strlen($value) > 10; };
+        $request            = ContentSearchRequest::create();
 
         // When
         $result = $request->withValidation($validationCallback, true);
@@ -108,8 +106,8 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     public function test_withValidation_setsValidationNotRequired(): void
     {
         // Given
-        $validationCallback = function($value) { return strlen($value) > 10; };
-        $request = ContentSearchRequest::create();
+        $validationCallback = function ($value) { return strlen($value) > 10; };
+        $request            = ContentSearchRequest::create();
 
         // When
         $result = $request->withValidation($validationCallback, false);
@@ -122,7 +120,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     public function test_withLlmModel_setsModel(): void
     {
         // Given
-        $model = 'gpt-4o-mini';
+        $model   = 'gpt-4o-mini';
         $request = ContentSearchRequest::create();
 
         // When
@@ -154,7 +152,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
             Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]),
             Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]),
         ]);
-        $request = ContentSearchRequest::create();
+        $request   = ContentSearchRequest::create();
 
         // When
         $result = $request->searchArtifacts($artifacts);
@@ -170,7 +168,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         $directives = collect([
             new \stdClass(),  // Mock directive object
         ]);
-        $request = ContentSearchRequest::create();
+        $request    = ContentSearchRequest::create();
 
         // When
         $result = $request->searchDirectives($directives);
@@ -184,7 +182,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     {
         // Given
         $maxAttempts = 5;
-        $request = ContentSearchRequest::create();
+        $request     = ContentSearchRequest::create();
 
         // When
         $result = $request->withMaxAttempts($maxAttempts);
@@ -226,9 +224,9 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     public function test_withOptions_mergesWithExistingOptions(): void
     {
         // Given
-        $initialOptions = ['option1' => 'value1'];
+        $initialOptions    = ['option1' => 'value1'];
         $additionalOptions = ['option2' => 'value2', 'option1' => 'overridden'];
-        $request = ContentSearchRequest::create()->withOptions($initialOptions);
+        $request           = ContentSearchRequest::create()->withOptions($initialOptions);
 
         // When
         $result = $request->withOptions($additionalOptions);
@@ -267,7 +265,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts = collect([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
-        $request = ContentSearchRequest::create()
+        $request   = ContentSearchRequest::create()
             ->withFieldPath('template_stored_file_id')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts($artifacts);
@@ -281,7 +279,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts = collect([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
-        $request = ContentSearchRequest::create()
+        $request   = ContentSearchRequest::create()
             ->withRegexPattern('/[a-zA-Z0-9_-]+/')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts($artifacts);
@@ -295,7 +293,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts = collect([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
-        $request = ContentSearchRequest::create()
+        $request   = ContentSearchRequest::create()
             ->withNaturalLanguageQuery('Find the file ID')
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts($artifacts);
@@ -309,7 +307,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts = collect([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
-        $request = ContentSearchRequest::create()
+        $request   = ContentSearchRequest::create()
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts($artifacts);
 
@@ -322,12 +320,11 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     }
 
 
-
     public function test_validate_withNaturalLanguageQueryButNoTaskDefinition_throwsException(): void
     {
         // Given
         $artifacts = collect([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
-        $request = ContentSearchRequest::create()
+        $request   = ContentSearchRequest::create()
             ->withNaturalLanguageQuery('Find the file ID')
             ->searchArtifacts($artifacts);
         // Not setting task definition
@@ -344,7 +341,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts = collect([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
-        $request = ContentSearchRequest::create()
+        $request   = ContentSearchRequest::create()
             ->withRegexPattern('/[unclosed') // Invalid regex
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts($artifacts);
@@ -360,8 +357,8 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     public function test_builderPattern_canChainAllMethods(): void
     {
         // Given
-        $artifacts = collect([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
-        $validationCallback = function($value) { return !empty($value); };
+        $artifacts          = collect([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
+        $validationCallback = function ($value) { return !empty($value); };
 
         // When
         $request = ContentSearchRequest::create()
@@ -388,7 +385,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         $this->assertEquals(3, $request->getMaxAttempts());
         $this->assertTrue($request->getOption('debug'));
         $this->assertEquals(30, $request->getOption('timeout'));
-        
+
         // Should use all search methods
         $this->assertTrue($request->usesLlmExtraction());
         $this->assertTrue($request->usesFieldPath());

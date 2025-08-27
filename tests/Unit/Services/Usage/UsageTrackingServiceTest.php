@@ -11,14 +11,11 @@ use App\Models\Usage\UsageSummary;
 use App\Models\User;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Usage\UsageTrackingService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class UsageTrackingServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected UsageTrackingService $service;
 
     public function setUp(): void

@@ -2,7 +2,8 @@
 
 ## Core Architecture Overview
 
-This application follows a strict **Service-Repository-Controller** pattern with the **danx library** integration for standardized CRUD operations, team-based access control, and modern Laravel best practices.
+This application follows a strict **Service-Repository-Controller** pattern with the **danx library** integration for
+standardized CRUD operations, team-based access control, and modern Laravel best practices.
 
 ### Key Principles
 
@@ -95,16 +96,19 @@ class TeamObjectMergeService
 ### Service Patterns by Type
 
 #### Data Processing Services
+
 - `TaskProcessExecutorService`: Processes workflow tasks
 - `ArtifactDeduplicationService`: Removes duplicate artifacts
 - `ClassificationVerificationService`: Verifies data classifications
 
 #### Integration Services
+
 - `AgentThreadService`: Manages AI agent conversations
 - `WorkflowRunnerService`: Executes workflow definitions
 - `UsageTrackingService`: Tracks API usage and costs
 
 #### Transformation Services
+
 - `WorkflowExportService`/`WorkflowImportService`: Data serialization
 - `JSONSchemaDataToDatabaseMapper`: Schema-based data mapping
 - `DatabaseSchemaMapper`: Database structure management
@@ -411,7 +415,8 @@ return new class extends Migration
 
 **❌ CRITICAL: NEVER TEST CONTROLLERS DIRECTLY**
 
-Due to Laravel configuration issues causing 503 errors in controller tests, **ALL CONTROLLER TESTING IS PROHIBITED**. Controllers are thin delegation layers that should not contain business logic to test.
+Due to Laravel configuration issues causing 503 errors in controller tests, **ALL CONTROLLER TESTING IS PROHIBITED**.
+Controllers are thin delegation layers that should not contain business logic to test.
 
 ### What To Test Instead:
 
@@ -544,18 +549,18 @@ class [Model]RepositoryTest extends AuthenticatedTestCase
 - **Factory usage**: All test data via factories
 - **Given-When-Then**: Clear test structure
 - **Exception testing**: Verify error conditions
-- **RefreshDatabase**: Fresh database per test
 
 ### Troubleshooting Test Failures
 
 If tests are failing unexpectedly (especially with dependency errors or missing methods from the danx library):
+
 - Run `make danx-core` to update the danx library and re-establish local symlinks
 - This ensures your local danx library is properly synced with the latest changes
 - Common symptoms that indicate danx sync issues:
-  - Method not found errors in danx components/traits/classes
-  - Unexpected test failures after updating danx-related code
-  - Import errors for danx modules
-  - Tests that were passing suddenly failing after pulling changes
+    - Method not found errors in danx components/traits/classes
+    - Unexpected test failures after updating danx-related code
+    - Import errors for danx modules
+    - Tests that were passing suddenly failing after pulling changes
 
 ---
 
@@ -636,6 +641,7 @@ ActionRoute::routes('[route-prefix]', new [Model]Controller, function () {
 ### Generated Routes
 
 ActionRoute automatically creates:
+
 - `GET /[prefix]` → `index()` (list with pagination, filtering, sorting)
 - `GET /[prefix]/{id}` → `show()` (single resource)
 - `POST /[prefix]` → `store()` (create new)
@@ -806,7 +812,7 @@ class BadService
     public function processData($data)
     {
         // ❌ Mixed validation, business logic, and data access
-        if (!$data['valid']) throw new Exception('Invalid');
+        if (!$data['valid']) {throw new Exception('Invalid');}
         $result = DB::table('models')->insert($data);
         return response()->json($result);
     }
@@ -848,11 +854,13 @@ class GoodService
 ## Development Workflow
 
 ### Before Writing Code
+
 1. Check existing patterns in similar files
 2. Use existing services and repositories
 3. Follow established conventions exactly
 
 ### When Writing Code
+
 1. Start with the service layer (business logic)
 2. Create repository methods (data access)
 3. Add controller actions (thin delegation)
@@ -860,6 +868,7 @@ class GoodService
 5. Write comprehensive tests
 
 ### After Writing Code
+
 1. Run `./vendor/bin/sail artisan fix` for permissions
 2. Ensure all tests pass
 3. Verify no console errors
@@ -872,17 +881,19 @@ class GoodService
 ### CRITICAL TESTING PRINCIPLES
 
 **NEVER:**
+
 - Use `Mockery::mock(...)` - ALWAYS use `$this->mock(...)`
 - Mock database interactions - USE THE DATABASE!
 - Mock internal service/repository methods
 - Avoid database writes in tests
 
 **ALWAYS:**
+
 - Use real database interactions with factories
 - Only mock 3rd party API calls and external services
 - Test the complete system behavior, not isolated functions
-- Use RefreshDatabase trait (all tests reset database)
 - Verify database state changes
+- Review other test examples for consistency
 
 ### Test Structure Standards
 
@@ -920,6 +931,7 @@ class ServiceTest extends AuthenticatedTestCase
 ### PROHIBITED PRACTICES
 
 #### ❌ **NEVER USE STATIC MOCKING**
+
 ```php
 // ❌ NEVER DO THIS - BREAKS TEST ISOLATION
 $mock = Mockery::mock('alias:' . SomeStaticService::class);
@@ -927,14 +939,16 @@ $mock->shouldReceive('method')->andReturn('value');
 ```
 
 **Why this is forbidden:**
+
 - **Breaks test isolation** - affects other tests when run in batch
-- **Global state pollution** - static mocks persist across tests  
+- **Global state pollution** - static mocks persist across tests
 - **Non-standard** - other tests use real services or proper DI
 - **Hard to debug** - causes mysterious failures in test suites
 
 #### ✅ **STANDARD ALTERNATIVES**
 
 **For Integration Testing:**
+
 ```php
 // ✅ Use real services - this is an integration test
 $result = SomeStaticService::method($data);
@@ -942,6 +956,7 @@ $this->assertEquals('expected', $result);
 ```
 
 **For Unit Testing:**
+
 ```php
 // ✅ Use dependency injection and mock the dependency
 $mockService = $this->mock(SomeService::class);
@@ -951,6 +966,7 @@ $systemUnderTest = new ClassUnderTest($mockService);
 ```
 
 **For Refactoring Static Dependencies:**
+
 ```php
 // ✅ Inject dependencies instead of using static calls
 class SomeService {
@@ -965,9 +981,10 @@ class SomeService {
 ### TEST ISOLATION REQUIREMENTS
 
 - **Each test must run independently** - order should not matter
-- **Use real database** - don't mock database interactions 
+- **Use real database** - don't mock database interactions
 - **Only mock external APIs** - everything else should be real
 - **Use factories extensively** - for consistent test data
 - **Follow Given-When-Then** - clear test structure
 
-This guide ensures consistent, maintainable, and scalable Laravel backend code following the GPT Manager application patterns.
+This guide ensures consistent, maintainable, and scalable Laravel backend code following the GPT Manager application
+patterns.

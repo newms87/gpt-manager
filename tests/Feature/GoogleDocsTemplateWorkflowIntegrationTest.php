@@ -8,17 +8,14 @@ use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Agent\Agent;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
-use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowListener;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
-use App\Services\AgentThread\AgentThreadService;
 use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;
 use App\Services\UiDemand\UiDemandWorkflowService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -29,9 +26,9 @@ use Tests\Traits\SetUpTeamTrait;
 
 class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 {
-    use RefreshDatabase, SetUpTeamTrait;
+    use SetUpTeamTrait;
 
-    protected UiDemandWorkflowService $uiDemandWorkflowService;
+    protected UiDemandWorkflowService           $uiDemandWorkflowService;
     protected WorkflowListenerCompletedListener $workflowListener;
 
     public function setUp(): void
@@ -40,7 +37,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->setUpTeam();
 
         $this->uiDemandWorkflowService = app(UiDemandWorkflowService::class);
-        $this->workflowListener = app(WorkflowListenerCompletedListener::class);
+        $this->workflowListener        = app(WorkflowListenerCompletedListener::class);
 
         // Configure test-model for testing
         Config::set('ai.models.test-model', [
@@ -51,7 +48,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Set up workflow configuration
         Config::set('ui-demands.workflows.write_demand', 'Write Demand Summary');
-        
+
         // Mock queue to prevent actual job dispatching
         Queue::fake();
         Event::fake([WorkflowRunUpdatedEvent::class]);
@@ -60,12 +57,12 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
     public function test_completeWorkflow_googleDocsTemplateTaskRunner_to_uiDemandFileAttachment(): void
     {
         // Given - Set up the complete workflow chain
-        
+
         // 1. Create GoogleDocsTemplateTaskRunner and related setup
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent          = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'agent_id' => $agent->id,
+            'team_id'          => $this->user->currentTeam->id,
+            'agent_id'         => $agent->id,
             'task_runner_name' => GoogleDocsTemplateTaskRunner::RUNNER_NAME,
         ]);
 
@@ -73,19 +70,19 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
-            'title' => 'Integration Test Demand',
+            'status'  => UiDemand::STATUS_DRAFT,
+            'title'   => 'Integration Test Demand',
         ]);
 
         // 3. Create template StoredFile
         $templateStoredFile = new StoredFile([
-            'disk' => 'google',
+            'disk'     => 'google',
             'filename' => 'Template Document',
-            'url' => 'https://docs.google.com/document/d/template-doc-123/edit',
-            'mime' => 'application/vnd.google-apps.document',
-            'size' => 0,
+            'url'      => 'https://docs.google.com/document/d/template-doc-123/edit',
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
         ]);
-        
+
         // Set team_id and user_id separately since they're not fillable
         $templateStoredFile->team_id = $this->user->currentTeam->id;
         $templateStoredFile->user_id = $this->user->id;
@@ -94,7 +91,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // 4. Create workflow definition and setup
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $workflowNode = WorkflowNode::factory()->create([
@@ -104,30 +101,30 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // 5. Create workflow run and task run
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'running',
+            'status'                 => 'running',
         ]);
 
         $taskRun = TaskRun::factory()->create([
-            'workflow_run_id' => $workflowRun->id,
-            'workflow_node_id' => $workflowNode->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
             'task_definition_id' => $taskDefinition->id,
         ]);
 
         $taskProcess = $taskRun->taskProcesses()->create([
-            'name' => 'Google Docs Template Process',
+            'name'   => 'Google Docs Template Process',
             'status' => 'pending',
         ]);
 
         // 6. Create input artifact with template reference
         $inputArtifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'json_content' => [
                 'template_stored_file_id' => $templateStoredFile->id,
-                'demand_data' => [
-                    'title' => 'Integration Test Demand',
+                'demand_data'             => [
+                    'title'       => 'Integration Test Demand',
                     'client_name' => 'Test Client',
-                    'amount' => '$10,000',
-                ]
+                    'amount'      => '$10,000',
+                ],
             ],
         ]);
 
@@ -135,11 +132,11 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // 7. Create workflow listener for UiDemand
         WorkflowListener::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'         => $this->user->currentTeam->id,
             'workflow_run_id' => $workflowRun->id,
-            'listener_type' => UiDemand::class,
-            'listener_id' => $uiDemand->id,
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'listener_type'   => UiDemand::class,
+            'listener_id'     => $uiDemand->id,
+            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
@@ -148,27 +145,27 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->mock(GoogleDocsApi::class, function ($mock) {
             $mock->shouldReceive('extractTemplateVariables')
                 ->andReturn(['client_name', 'title', 'amount']);
-                
+
             $mock->shouldReceive('createDocumentFromTemplate')
                 ->andReturn([
                     'document_id' => 'generated-doc-456',
-                    'title' => 'Generated Demand Document',
-                    'url' => 'https://docs.google.com/document/d/generated-doc-456/edit',
-                    'created_at' => '2023-01-01T12:00:00Z',
+                    'title'       => 'Generated Demand Document',
+                    'url'         => 'https://docs.google.com/document/d/generated-doc-456/edit',
+                    'created_at'  => '2023-01-01T12:00:00Z',
                 ]);
         });
 
         // When - Execute the GoogleDocsTemplateTaskRunner
-        
+
         // Create mock agent response artifact
         $agentResponseArtifact = Artifact::factory()->create([
-            'team_id' => $taskDefinition->team_id,
+            'team_id'      => $taskDefinition->team_id,
             'text_content' => json_encode([
-                'title' => 'Generated Demand Document',
+                'title'     => 'Generated Demand Document',
                 'variables' => [
                     'client_name' => 'Test Client',
-                    'title' => 'Integration Test Demand',
-                    'amount' => '$10,000',
+                    'title'       => 'Integration Test Demand',
+                    'amount'      => '$10,000',
                 ],
                 'reasoning' => 'Mapped variables from input data',
             ]),
@@ -178,11 +175,11 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $runner = $this->getMockBuilder(GoogleDocsTemplateTaskRunner::class)
             ->onlyMethods(['runAgentThread'])
             ->getMock();
-            
+
         $runner->expects($this->once())
             ->method('runAgentThread')
             ->willReturn($agentResponseArtifact);
-            
+
         $runner->setTaskRun($taskRun)
             ->setTaskProcess($taskProcess);
 
@@ -190,7 +187,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Simulate workflow completion
         $workflowRun->update([
-            'status' => 'completed',
+            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -203,7 +200,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // 1. Verify GoogleDocsTemplateTaskRunner created output artifact with StoredFile
         $outputArtifacts = $taskRun->outputArtifacts;
         $this->assertCount(1, $outputArtifacts);
-        
+
         $outputArtifact = $outputArtifacts->first();
         $this->assertEquals('Generated Google Doc: Generated Demand Document', $outputArtifact->name);
         $this->assertArrayHasKey('google_doc_url', $outputArtifact->meta);
@@ -228,7 +225,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // 4. Verify StoredFile was reused and attached to UiDemand as output file
         $outputFiles = $updatedUiDemand->outputFiles;
         $this->assertCount(1, $outputFiles);
-        
+
         $attachedOutputFile = $outputFiles->first();
         $this->assertEquals($generatedStoredFile->id, $attachedOutputFile->id); // Same StoredFile instance reused
         $this->assertEquals('Generated Demand Document.gdoc', $attachedOutputFile->filename);
@@ -236,9 +233,9 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // 5. Verify database relationships are correct
         $this->assertDatabaseHas('stored_file_storables', [
             'stored_file_id' => $generatedStoredFile->id,
-            'storable_type' => 'App\\Models\\UiDemand',
-            'storable_id' => $uiDemand->id,
-            'category' => 'output',
+            'storable_type'  => 'App\\Models\\UiDemand',
+            'storable_id'    => $uiDemand->id,
+            'category'       => 'output',
         ]);
 
         // 6. Verify no duplicate StoredFiles were created
@@ -251,7 +248,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
     public function test_multipleWriteDemandRuns_reuseStoredFilesCorrectly(): void
     {
         // Given - Set up for multiple workflow runs using the same generated document
-        
+
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
@@ -259,22 +256,22 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         // Create an existing StoredFile (as if from previous workflow run)
         $existingStoredFile = new StoredFile([
-            'disk' => 'external',
+            'disk'     => 'external',
             'filename' => 'Reused Document.gdoc',
-            'url' => 'https://docs.google.com/document/d/reused-doc-789/edit',
-            'mime' => 'application/vnd.google-apps.document',
-            'size' => 0,
-            'meta' => [
-                'type' => 'google_docs',
+            'url'      => 'https://docs.google.com/document/d/reused-doc-789/edit',
+            'mime'     => 'application/vnd.google-apps.document',
+            'size'     => 0,
+            'meta'     => [
+                'type'        => 'google_docs',
                 'document_id' => 'reused-doc-789',
             ],
         ]);
-        
+
         // Set team_id and user_id separately since they're not fillable
         $existingStoredFile->team_id = $this->user->currentTeam->id;
         $existingStoredFile->user_id = $this->user->id;
@@ -283,8 +280,8 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // First workflow run
         $firstWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
 
         $firstArtifact = Artifact::factory()->create([
@@ -297,7 +294,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         $firstTaskRun = TaskRun::factory()->create([
-            'workflow_run_id' => $firstWorkflowRun->id,
+            'workflow_run_id'  => $firstWorkflowRun->id,
             'workflow_node_id' => $firstWorkflowNode->id,
         ]);
         $firstTaskRun->outputArtifacts()->attach($firstArtifact->id);
@@ -307,8 +304,8 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Second workflow run (reusing the same document)
         $secondWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
 
         $secondArtifact = Artifact::factory()->create([
@@ -321,7 +318,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         $secondTaskRun = TaskRun::factory()->create([
-            'workflow_run_id' => $secondWorkflowRun->id,
+            'workflow_run_id'  => $secondWorkflowRun->id,
             'workflow_node_id' => $secondWorkflowNode->id,
         ]);
         $secondTaskRun->outputArtifacts()->attach($secondArtifact->id);
@@ -330,19 +327,19 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Create WorkflowListeners for both workflow runs
         WorkflowListener::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'         => $this->user->currentTeam->id,
             'workflow_run_id' => $firstWorkflowRun->id,
-            'listener_type' => UiDemand::class,
-            'listener_id' => $uiDemand->id,
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'listener_type'   => UiDemand::class,
+            'listener_id'     => $uiDemand->id,
+            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
         ]);
 
         WorkflowListener::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'         => $this->user->currentTeam->id,
             'workflow_run_id' => $secondWorkflowRun->id,
-            'listener_type' => UiDemand::class,
-            'listener_id' => $uiDemand->id,
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'listener_type'   => UiDemand::class,
+            'listener_id'     => $uiDemand->id,
+            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
         ]);
 
         // When - Process both workflow completions
@@ -381,29 +378,29 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'status'  => UiDemand::STATUS_DRAFT,
         ]);
 
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $failedWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'failed',
-            'failed_at' => now(),
+            'status'                 => 'failed',
+            'failed_at'              => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($failedWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
 
         // Create WorkflowListener to connect the workflow run to the UiDemand
         WorkflowListener::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'         => $this->user->currentTeam->id,
             'workflow_run_id' => $failedWorkflowRun->id,
-            'listener_type' => UiDemand::class,
-            'listener_id' => $uiDemand->id,
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'listener_type'   => UiDemand::class,
+            'listener_id'     => $uiDemand->id,
+            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
         ]);
 
         // When
@@ -422,7 +419,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
     {
         // Given - Create two teams with separate data
         $otherTeam = \App\Models\Team\Team::factory()->create();
-        
+
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
@@ -434,24 +431,24 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Write Demand Summary',
+            'name'    => 'Write Demand Summary',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status'                 => 'completed',
+            'completed_at'           => now(),
         ]);
 
         // Create StoredFile for current team
         $teamStoredFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filename' => 'team-document.gdoc',
         ]);
 
         // Create StoredFile for other team
         $otherTeamStoredFile = StoredFile::factory()->create([
-            'team_id' => $otherTeam->id,
+            'team_id'  => $otherTeam->id,
             'filename' => 'other-team-document.gdoc',
         ]);
 
@@ -465,7 +462,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         $taskRun = TaskRun::factory()->create([
-            'workflow_run_id' => $workflowRun->id,
+            'workflow_run_id'  => $workflowRun->id,
             'workflow_node_id' => $workflowNode->id,
         ]);
         $taskRun->outputArtifacts()->attach($artifact->id);
@@ -474,11 +471,11 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Create WorkflowListener to connect the workflow run to the UiDemand
         WorkflowListener::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'         => $this->user->currentTeam->id,
             'workflow_run_id' => $workflowRun->id,
-            'listener_type' => UiDemand::class,
-            'listener_id' => $uiDemand->id,
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'listener_type'   => UiDemand::class,
+            'listener_id'     => $uiDemand->id,
+            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
         ]);
 
         // When
@@ -487,12 +484,12 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Then - Verify team isolation
         $updatedUiDemand = $uiDemand->fresh();
-        $outputFiles = $updatedUiDemand->outputFiles;
-        
+        $outputFiles     = $updatedUiDemand->outputFiles;
+
         $this->assertCount(1, $outputFiles);
         $this->assertEquals($teamStoredFile->id, $outputFiles->first()->id);
         $this->assertEquals($this->user->currentTeam->id, $outputFiles->first()->team_id);
-        
+
         // Verify other team's data is not affected
         $this->assertCount(0, $otherTeamDemand->fresh()->outputFiles);
     }
@@ -504,13 +501,13 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
     {
         // Create a mock agent response artifact
         $agentResponseArtifact = Artifact::factory()->create([
-            'team_id' => $taskDefinition->team_id,
+            'team_id'      => $taskDefinition->team_id,
             'text_content' => json_encode([
-                'title' => 'Generated Demand Document',
+                'title'     => 'Generated Demand Document',
                 'variables' => [
                     'client_name' => 'Test Client',
-                    'title' => 'Integration Test Demand',
-                    'amount' => '$10,000',
+                    'title'       => 'Integration Test Demand',
+                    'amount'      => '$10,000',
                 ],
                 'reasoning' => 'Mapped variables from input data',
             ]),
@@ -518,7 +515,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Use reflection to mock the runAgentThread method
         $reflection = new \ReflectionClass($runner);
-        $method = $reflection->getMethod('runAgentThread');
+        $method     = $reflection->getMethod('runAgentThread');
         $method->setAccessible(true);
 
         // Replace the runner with a mock that returns our artifact
@@ -540,7 +537,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Replace the original runner with our mock
         $reflection = new \ReflectionClass($runner);
-        foreach ($reflection->getProperties() as $property) {
+        foreach($reflection->getProperties() as $property) {
             $property->setAccessible(true);
             $value = $property->getValue($runner);
             $property->setValue($mockRunner, $value);

@@ -11,7 +11,6 @@ use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Models\User;
 use App\Services\Task\Runners\ClassifierTaskRunner;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
@@ -20,13 +19,11 @@ use Tests\TestCase;
 
 class ClassifierTaskRunnerContextIntegrationTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected Team           $team;
-    protected User           $user;
-    protected TaskRun        $taskRun;
-    protected TaskDefinition $taskDefinition;
-    protected Agent          $agent;
+    protected Team             $team;
+    protected User             $user;
+    protected TaskRun          $taskRun;
+    protected TaskDefinition   $taskDefinition;
+    protected Agent            $agent;
     protected SchemaDefinition $schemaDefinition;
 
     public function setUp(): void
@@ -54,28 +51,28 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
         // Create schema definition
         $this->schemaDefinition = SchemaDefinition::factory()->create([
             'team_id' => $this->team->id,
-            'schema' => [
-                'type' => 'object',
+            'schema'  => [
+                'type'       => 'object',
                 'properties' => [
-                    'company' => [
-                        'type' => 'string',
-                        'description' => 'The company name mentioned in the document'
+                    'company'          => [
+                        'type'        => 'string',
+                        'description' => 'The company name mentioned in the document',
                     ],
-                    'location' => [
-                        'type' => 'string',
-                        'description' => 'The location mentioned in the document'
+                    'location'         => [
+                        'type'        => 'string',
+                        'description' => 'The location mentioned in the document',
                     ],
                     'continued_before' => [
-                        'type' => 'boolean',
-                        'description' => 'True if content flows from previous artifact'
+                        'type'        => 'boolean',
+                        'description' => 'True if content flows from previous artifact',
                     ],
-                    'continued_after' => [
-                        'type' => 'boolean',
-                        'description' => 'True if content flows to next artifact'
-                    ]
+                    'continued_after'  => [
+                        'type'        => 'boolean',
+                        'description' => 'True if content flows to next artifact',
+                    ],
                 ],
-                'required' => ['company', 'location', 'continued_before', 'continued_after']
-            ]
+                'required'   => ['company', 'location', 'continued_before', 'continued_after'],
+            ],
         ]);
 
         // Create agent
@@ -111,31 +108,31 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
         // Create artifacts with specific positions and content
         $contextBefore = collect([
             Artifact::factory()->create([
-                'position' => 1,
+                'position'     => 1,
                 'text_content' => 'Apple Inc is mentioned in the beginning of the document.',
             ]),
             Artifact::factory()->create([
-                'position' => 2,
+                'position'     => 2,
                 'text_content' => 'The company is based in Cupertino, California...',
             ]),
         ]);
 
         $primaryArtifacts = collect([
             Artifact::factory()->create([
-                'position' => 3,
+                'position'     => 3,
                 'text_content' => '...and continues to innovate in technology.',
             ]),
         ]);
 
         $contextAfter = collect([
             Artifact::factory()->create([
-                'position' => 4,
+                'position'     => 4,
                 'text_content' => 'The headquarters are located in Silicon Valley.',
             ]),
         ]);
 
         // Add all artifacts to task run
-        foreach ($contextBefore->merge($primaryArtifacts)->merge($contextAfter) as $artifact) {
+        foreach($contextBefore->merge($primaryArtifacts)->merge($contextAfter) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -144,16 +141,16 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
             'task_run_id' => $this->taskRun->id,
         ]);
 
-        foreach ($primaryArtifacts as $artifact) {
+        foreach($primaryArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
         // Mock AI response
         TestAiCompletionResponse::setMockResponse(json_encode([
-            'company' => 'Apple Inc',
-            'location' => 'Cupertino',
+            'company'          => 'Apple Inc',
+            'location'         => 'Cupertino',
             'continued_before' => true,
-            'continued_after' => true,
+            'continued_after'  => true,
         ]));
 
         // Run the classifier
@@ -212,7 +209,7 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
         // Create artifacts
         $primaryArtifacts = collect([
             Artifact::factory()->create([
-                'position' => 3,
+                'position'     => 3,
                 'text_content' => 'Google Inc is based in Mountain View.',
             ]),
         ]);
@@ -227,10 +224,10 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
 
         // Mock AI response
         TestAiCompletionResponse::setMockResponse(json_encode([
-            'company' => 'Google Inc',
-            'location' => 'Mountain View',
+            'company'          => 'Google Inc',
+            'location'         => 'Mountain View',
             'continued_before' => false,
-            'continued_after' => false,
+            'continued_after'  => false,
         ]));
 
         // Run the classifier
@@ -243,7 +240,7 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
 
         // Verify that no context sections were added
         $agentThread = $taskProcess->fresh()->agentThread;
-        $messages = $agentThread->messages->pluck('content')->join(' ');
+        $messages    = $agentThread->messages->pluck('content')->join(' ');
         $this->assertStringNotContainsString('--- CONTEXT BEFORE ---', $messages);
         $this->assertStringContainsString('--- PRIMARY ARTIFACTS ---', $messages);
         $this->assertStringNotContainsString('--- CONTEXT AFTER ---', $messages);
@@ -254,26 +251,26 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
     {
         // Create task definition with only context_before
         $this->taskDefinition->task_runner_config = ['context_before' => 1];
-        $this->taskDefinition->task_runner_name = 'Classifier';
+        $this->taskDefinition->task_runner_name   = 'Classifier';
         $this->taskDefinition->save();
 
         // Create artifacts
         $contextBefore = collect([
             Artifact::factory()->create([
-                'position' => 2,
+                'position'     => 2,
                 'text_content' => 'Microsoft Corporation context before.',
             ]),
         ]);
 
         $primaryArtifacts = collect([
             Artifact::factory()->create([
-                'position' => 3,
+                'position'     => 3,
                 'text_content' => 'Microsoft develops software products.',
             ]),
         ]);
 
         // Add all artifacts to task run
-        foreach ($contextBefore->merge($primaryArtifacts) as $artifact) {
+        foreach($contextBefore->merge($primaryArtifacts) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -281,16 +278,16 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
             'task_run_id' => $this->taskRun->id,
         ]);
 
-        foreach ($primaryArtifacts as $artifact) {
+        foreach($primaryArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
         // Mock AI response
         TestAiCompletionResponse::setMockResponse(json_encode([
-            'company' => 'Microsoft Corporation',
-            'location' => 'Redmond',
+            'company'          => 'Microsoft Corporation',
+            'location'         => 'Redmond',
             'continued_before' => true,
-            'continued_after' => false,
+            'continued_after'  => false,
         ]));
 
         // Run the classifier
@@ -300,7 +297,7 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
 
         // Verify that only context before was included
         $agentThread = $taskProcess->fresh()->agentThread;
-        $messages = $agentThread->messages->pluck('content')->join(' ');
+        $messages    = $agentThread->messages->pluck('content')->join(' ');
         $this->assertStringContainsString('--- CONTEXT BEFORE ---', $messages);
         $this->assertStringContainsString('--- PRIMARY ARTIFACTS ---', $messages);
         $this->assertStringNotContainsString('--- CONTEXT AFTER ---', $messages);
@@ -312,7 +309,7 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
         // Create primary artifact at position 1 (no room for context before)
         $primaryArtifacts = collect([
             Artifact::factory()->create([
-                'position' => 1,
+                'position'     => 1,
                 'text_content' => 'Amazon Web Services is a cloud platform.',
             ]),
         ]);
@@ -327,10 +324,10 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
 
         // Mock AI response
         TestAiCompletionResponse::setMockResponse(json_encode([
-            'company' => 'Amazon',
-            'location' => 'Seattle',
+            'company'          => 'Amazon',
+            'location'         => 'Seattle',
             'continued_before' => false,
-            'continued_after' => false,
+            'continued_after'  => false,
         ]));
 
         // Run the classifier
@@ -343,7 +340,7 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
 
         // Verify that no context sections were added (no artifacts available)
         $agentThread = $taskProcess->fresh()->agentThread;
-        $messages = $agentThread->messages->pluck('content')->join(' ');
+        $messages    = $agentThread->messages->pluck('content')->join(' ');
         $this->assertStringNotContainsString('--- CONTEXT BEFORE ---', $messages);
         $this->assertStringContainsString('--- PRIMARY ARTIFACTS ---', $messages);
         $this->assertStringNotContainsString('--- CONTEXT AFTER ---', $messages);
@@ -354,32 +351,32 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
     {
         // Create artifacts with positions that will be included in context
         // Primary artifact at position 5
-        // context_before=2 should fetch positions 3,4 
+        // context_before=2 should fetch positions 3,4
         // context_after=1 should fetch position 6
         $contextArtifacts = collect([
             Artifact::factory()->create([
-                'position' => 3,
+                'position'     => 3,
                 'text_content' => 'Third context artifact.',
             ]),
             Artifact::factory()->create([
-                'position' => 4,
+                'position'     => 4,
                 'text_content' => 'Fourth context artifact.',
             ]),
             Artifact::factory()->create([
-                'position' => 6,
+                'position'     => 6,
                 'text_content' => 'Sixth context artifact.',
             ]),
         ]);
 
         $primaryArtifacts = collect([
             Artifact::factory()->create([
-                'position' => 5,
+                'position'     => 5,
                 'text_content' => 'Primary artifact at position 5.',
             ]),
         ]);
 
         // Add all artifacts to task run
-        foreach ($contextArtifacts->merge($primaryArtifacts) as $artifact) {
+        foreach($contextArtifacts->merge($primaryArtifacts) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -391,10 +388,10 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
 
         // Mock AI response
         TestAiCompletionResponse::setMockResponse(json_encode([
-            'company' => 'Test Company',
-            'location' => 'Test Location',
+            'company'          => 'Test Company',
+            'location'         => 'Test Location',
             'continued_before' => false,
-            'continued_after' => false,
+            'continued_after'  => false,
         ]));
 
         // Run the classifier
@@ -404,13 +401,13 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
 
         // Verify ordering in the thread messages
         $agentThread = $taskProcess->fresh()->agentThread;
-        $messages = $agentThread->messages->pluck('content')->join(' ');
+        $messages    = $agentThread->messages->pluck('content')->join(' ');
 
         // Verify context artifacts appear in correct order
-        $thirdPos = strpos($messages, 'Third context artifact');
-        $fourthPos = strpos($messages, 'Fourth context artifact');
+        $thirdPos   = strpos($messages, 'Third context artifact');
+        $fourthPos  = strpos($messages, 'Fourth context artifact');
         $primaryPos = strpos($messages, 'Primary artifact at position 5');
-        $sixthPos = strpos($messages, 'Sixth context artifact');
+        $sixthPos   = strpos($messages, 'Sixth context artifact');
 
         // Context before should appear before primary
         $this->assertNotFalse($thirdPos, 'Third context artifact not found');
