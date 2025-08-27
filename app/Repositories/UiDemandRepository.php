@@ -66,9 +66,23 @@ class UiDemandRepository extends ActionRepository
 
     public function syncInputFiles(UiDemand $demand, array $data): void
     {
-        if (isset($data['files'])) {
-            $files = StoredFile::whereIn('id', collect($data['files'])->pluck('id'))->get();
-            $demand->inputFiles()->sync($files);
+        if (array_key_exists('input_files', $data)) {
+            $files = $data['input_files'] ?? [];
+            
+            if (empty($files)) {
+                // Clear all input files
+                $demand->inputFiles()->sync([]);
+            } else {
+                $fileIds = collect($files)->pluck('id')->filter();
+                $existingFiles = StoredFile::whereIn('id', $fileIds)->pluck('id');
+                
+                // Create sync data with category pivot
+                $syncData = $existingFiles->mapWithKeys(function ($fileId) {
+                    return [$fileId => ['category' => 'input']];
+                })->toArray();
+                
+                $demand->inputFiles()->sync($syncData);
+            }
         }
     }
 }

@@ -86,6 +86,7 @@ class UiDemand extends Model implements Auditable
     {
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')
             ->wherePivot('category', 'input')
+            ->withPivot('category')
             ->withTimestamps();
     }
 
@@ -93,12 +94,33 @@ class UiDemand extends Model implements Auditable
     {
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')
             ->wherePivot('category', 'output')
+            ->withPivot('category')
             ->withTimestamps();
     }
 
     public function teamObject(): BelongsTo
     {
         return $this->belongsTo(TeamObject::class);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereIn('status', [self::STATUS_DRAFT, self::STATUS_COMPLETED]);
+    }
+
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', self::STATUS_COMPLETED);
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', self::STATUS_DRAFT);
+    }
+
+    public function scopeForTeam($query, $teamId)
+    {
+        return $query->where('team_id', $teamId);
     }
 
     public function workflowRuns(): BelongsToMany

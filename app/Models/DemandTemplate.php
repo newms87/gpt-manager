@@ -25,7 +25,6 @@ class DemandTemplate extends Model implements AuditableContract
         'description',
         'category',
         'metadata',
-        'template_variables',
         'is_active',
     ];
 
