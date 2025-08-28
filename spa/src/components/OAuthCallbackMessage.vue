@@ -116,18 +116,15 @@ function processOAuthCallback() {
   const currentRoute = router.currentRoute.value;
   const query = currentRoute.query;
   
-  console.log('OAuthCallbackMessage: Current query params:', query);
 
   // Check for OAuth callback parameters
   const hasOAuthSuccess = query.oauth_success === "true";
   const hasOAuthError = query.oauth_error === "true";
 
   if (!hasOAuthSuccess && !hasOAuthError) {
-    console.log('OAuthCallbackMessage: No OAuth callback parameters found');
     return; // No OAuth callback to process
   }
   
-  console.log('OAuthCallbackMessage: Processing OAuth callback -', hasOAuthSuccess ? 'Success' : 'Error');
 
   // Extract callback data
   isSuccess.value = hasOAuthSuccess;
@@ -157,7 +154,6 @@ function processOAuthCallback() {
 
 // Initialize on component mount
 onMounted(() => {
-  console.log('OAuthCallbackMessage: Checking for OAuth callback parameters...');
   processOAuthCallback();
 });
 </script>

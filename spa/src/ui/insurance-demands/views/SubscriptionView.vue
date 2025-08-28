@@ -534,7 +534,6 @@ async function handleCancelSubscription() {
 
 	const success = await cancelSubscription();
 	if (success) {
-		console.log("Subscription canceled successfully");
 	}
 }
 
@@ -546,7 +545,6 @@ async function handleAddPaymentMethod() {
 			showPaymentMethodDialog.value = false;
 			resetPaymentSetup();
 			resetPaymentMethodForm();
-			console.log("Payment method added successfully");
 		}
 	} catch (error) {
 		console.error("Failed to add payment method:", error);
@@ -555,7 +553,6 @@ async function handleAddPaymentMethod() {
 
 function onPaymentMethodUpdated() {
 	// Payment method store is automatically updated via composable
-	console.log("Payment method updated");
 }
 
 function onPaymentElementError(error: string) {

@@ -108,9 +108,7 @@ async function checkOAuthStatus(): Promise<void> {
 		isLoading.value = true;
 		error.value = null;
 
-		console.log("Checking Google OAuth status...");
 		const response = await request.get("oauth/google/status");
-		console.log("OAuth status response:", response);
 		oauthStatus.value = response;
 	} catch (err) {
 		console.error("Error checking OAuth status:", err);
@@ -126,7 +124,6 @@ async function handleConnect(): Promise<void> {
 		error.value = null;
 
 		const redirectUrl = `${window.location.origin}/ui/templates`;
-		console.log("Initiating OAuth with redirect URL:", redirectUrl);
 
 		const response = await request.get("oauth/google/authorize", {
 			params: {
@@ -135,7 +132,6 @@ async function handleConnect(): Promise<void> {
 		});
 
 		const authData: OAuthAuthorizeResponse = response;
-		console.log("OAuth authorization response:", authData);
 
 		// Redirect to Google OAuth
 		window.location.href = authData.authorization_url;

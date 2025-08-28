@@ -170,7 +170,6 @@ import JobDispatchCard from "@/components/Modules/Audits/JobDispatches/JobDispat
 import { JOB_DISPATCH_STATUS } from "@/components/Modules/Audits/JobDispatches/statuses";
 import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/config";
 import { usePusher } from "@/helpers/pusher";
-import { useAssistantDebug } from "@/composables/useAssistantDebug";
 import { WorkflowDefinition, WorkflowRun } from "@/types";
 import {
 	FaSolidBolt as DispatchIcon,
@@ -195,7 +194,6 @@ defineEmits<{
 	close: [];
 }>();
 
-const { debugWebSocketSubscribe, debugError } = useAssistantDebug();
 
 const activeJobDispatches = ref<JobDispatch[]>([]);
 const isLoadingJobDispatches = ref(false);
@@ -289,7 +287,6 @@ function onMaxWorkersChange() {
 				await request.post(`workflow-runs/${props.workflowRun.id}/dispatch-workers`);
 			}
 		} catch (error) {
-			debugError('updating max workers', error);
 		} finally {
 			isUpdatingMaxWorkers.value = false;
 		}
@@ -303,7 +300,6 @@ watch(() => props.isShowing, async (showing) => {
 	const pusher = usePusher();
 
 	if (showing) {
-		debugWebSocketSubscribe(`workflow-${props.workflowRun?.id}`);
 		await pusher.subscribeToWorkflowJobDispatches(props.workflowRun);
 		pusher.onEvent("JobDispatch", ["updated", "created"], storeObject);
 		await loadActiveJobDispatches();
@@ -327,7 +323,6 @@ async function loadActiveJobDispatches() {
 		const response = await request.get(`workflow-runs/${props.workflowRun.id}/active-job-dispatches`);
 		activeJobDispatches.value = response;
 	} catch (error) {
-		debugError('loading active job dispatches', error);
 		activeJobDispatches.value = [];
 	} finally {
 		isLoadingJobDispatches.value = false;
@@ -341,7 +336,6 @@ async function onDispatchWorkers() {
 	try {
 		await request.post(`workflow-runs/${props.workflowRun.id}/dispatch-workers`);
 	} catch (error) {
-		debugError('dispatching workers', error);
 	} finally {
 		isDispatchingWorkers.value = false;
 	}

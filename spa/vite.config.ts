@@ -8,7 +8,6 @@ import svgLoader from "vite-svg-loader";
 // Set to true to load the Vue Dev Tools (NOTE: This causes performance issues on some pages, so use as needed in dev)
 const DEV_MODE = false;
 
-console.log("Checking quasar-ui-danx existence:", fs.existsSync("./node_modules/quasar-ui-danx/src"));
 
 // https://vitejs.dev/config/
 export default ({ command }: ConfigEnv) => {
@@ -22,7 +21,6 @@ export default ({ command }: ConfigEnv) => {
 		// Import from quasar-ui-danx module for production
 		"quasar-ui-danx-styles": "quasar-ui-danx/dist/style.css"
 	});
-	console.log("Danx", command, danx);
 
 	return defineConfig({
 		plugins: [

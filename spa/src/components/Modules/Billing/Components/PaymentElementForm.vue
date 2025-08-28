@@ -123,14 +123,12 @@ async function initializePaymentElement() {
 
     // Setup event listeners
     paymentElement.on('ready', () => {
-      console.log('Payment element ready');
       isElementReady.value = true;
       isElementLoading.value = false;
       emit('ready');
     });
 
     paymentElement.on('change', (event: PaymentElementChangeEvent) => {
-      console.log('Payment element changed:', event);
       
       if (event.error) {
         elementError.value = event.error.message;
@@ -143,11 +141,9 @@ async function initializePaymentElement() {
     });
 
     paymentElement.on('focus', () => {
-      console.log('Payment element focused');
     });
 
     paymentElement.on('blur', () => {
-      console.log('Payment element blurred');
     });
 
   } catch (error: any) {

@@ -83,28 +83,4 @@ defineEmits<{
     "delete": [];
 }>();
 
-// Debug logging for DemandQuickActions state
-watchEffect(() => {
-    console.log("🔍 DemandQuickActions - Demand State Debug:", {
-        demand_exists: !!props.demand,
-        demand_id: props.demand?.id,
-        demand_status: props.demand?.status,
-        demand_status_enum: DEMAND_STATUS,
-        is_draft: props.demand?.status === DEMAND_STATUS.DRAFT,
-        loading_states: props.loadingStates,
-        full_demand: props.demand
-    });
-
-    if (props.demand) {
-        console.log("🔍 DemandQuickActions - Demand Object Details:", {
-            can_extract_data: props.demand.can_extract_data,
-            can_write_demand: props.demand.can_write_demand,
-            metadata: props.demand.metadata,
-            extract_data_completed_at: props.demand.metadata?.extract_data_completed_at,
-            team_object_id: props.demand.team_object_id,
-            is_extract_data_running: props.demand.is_extract_data_running,
-            is_write_demand_running: props.demand.is_write_demand_running
-        });
-    }
-});
 </script>

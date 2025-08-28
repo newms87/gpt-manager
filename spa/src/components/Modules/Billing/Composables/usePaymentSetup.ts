@@ -28,7 +28,6 @@ export function usePaymentSetup() {
       const response = await routes.setupIntent.create();
       setupIntent.value = response.data;
       
-      console.log('Setup intent created:', setupIntent.value);
       return setupIntent.value;
       
     } catch (error: any) {
@@ -107,7 +106,6 @@ export function usePaymentSetup() {
       // Update store
       addPaymentMethod(paymentMethod);
       
-      console.log('Payment method saved:', paymentMethod);
       return paymentMethod;
       
     } catch (error: any) {

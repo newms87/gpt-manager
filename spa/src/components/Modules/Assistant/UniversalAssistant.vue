@@ -26,7 +26,6 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { useAssistantDebug } from "@/composables/useAssistantDebug";
 import FloatingChatButton from "./FloatingChatButton.vue";
 import ChatWindow from "./ChatWindow.vue";
 
@@ -49,29 +48,24 @@ const isMinimized = ref(false);
 const unreadCount = ref(0);
 
 // Composables
-const { debugLog } = useAssistantDebug();
 
 // Methods
 function openChat(): void {
-    debugLog("UI", "Opening assistant chat interface");
     isOpen.value = true;
     isMinimized.value = false;
     unreadCount.value = 0;
 }
 
 function restoreChat(): void {
-    debugLog("UI", "Restoring assistant chat from minimized state");
     isMinimized.value = false;
     unreadCount.value = 0;
 }
 
 function minimizeChat(): void {
-    debugLog("UI", "Minimizing assistant chat interface");
     isMinimized.value = true;
 }
 
 function closeChat(): void {
-    debugLog("UI", "Closing assistant chat interface");
     isOpen.value = false;
     isMinimized.value = false;
 }

@@ -1,7 +1,6 @@
 import { ref, computed } from "vue";
 import { request, storeObject, storeObjects } from "quasar-ui-danx";
 import { AssistantAction, AssistantCapability, CapabilitiesResponse } from "@/components/Modules/Assistant/types";
-import { useAssistantDebug } from "@/composables/useAssistantDebug";
 
 // Global state for actions
 const activeActions = ref<AssistantAction[]>([]);
@@ -12,13 +11,11 @@ const capabilitiesLoaded = ref(false);
 const isLoadingCapabilities = ref(false);
 
 export function useAssistantState() {
-    const { debugLog, debugError } = useAssistantDebug();
 
     // Add actions from chat response
     function handleChatActions(actions: AssistantAction[]) {
         if (!actions || actions.length === 0) return;
         
-        debugLog('ACTIONS', `Adding ${actions.length} new actions to state`);
         const storedActions = storeObjects(actions);
         activeActions.value = [...activeActions.value, ...storedActions];
     }
@@ -31,7 +28,6 @@ export function useAssistantState() {
 
     // Action management
     async function approveAction(actionId: number): Promise<void> {
-        debugLog('ACTIONS', `Approving action ${actionId}`);
         
         try {
             const response = await request.post(`assistant/actions/${actionId}/approve`);
@@ -46,17 +42,14 @@ export function useAssistantState() {
             if (updatedAction.is_finished) {
                 setTimeout(() => {
                     activeActions.value = activeActions.value.filter(a => a.id !== actionId);
-                    debugLog('ACTIONS', `Removed finished action ${actionId} from state`);
                 }, 3000);
             }
         } catch (error) {
-            debugError('approving action', error);
             throw error;
         }
     }
 
     async function cancelAction(actionId: number): Promise<void> {
-        debugLog('ACTIONS', `Cancelling action ${actionId}`);
         
         try {
             const response = await request.post(`assistant/actions/${actionId}/cancel`);
@@ -70,16 +63,13 @@ export function useAssistantState() {
             // Remove cancelled actions after delay
             setTimeout(() => {
                 activeActions.value = activeActions.value.filter(a => a.id !== actionId);
-                debugLog('ACTIONS', `Removed cancelled action ${actionId} from state`);
             }, 3000);
         } catch (error) {
-            debugError('cancelling action', error);
             throw error;
         }
     }
 
     async function cancelAllActions(): Promise<void> {
-        debugLog('ACTIONS', `Cancelling all ${activeActions.value.length} actions`);
         
         const pendingActions = activeActions.value.filter(a => a.is_pending || a.is_in_progress);
         await Promise.all(pendingActions.map(action => cancelAction(action.id)));
@@ -87,7 +77,6 @@ export function useAssistantState() {
 
     // Clear all actions
     function clearActions(): void {
-        debugLog('ACTIONS', 'Clearing all actions from state');
         activeActions.value = [];
     }
 
@@ -95,7 +84,6 @@ export function useAssistantState() {
     async function loadCapabilities(context: string): Promise<void> {
         if (capabilitiesLoaded.value || isLoadingCapabilities.value) return;
         
-        debugLog('CAPABILITIES', `Loading capabilities for context: ${context}`);
         isLoadingCapabilities.value = true;
         
         try {
@@ -110,9 +98,7 @@ export function useAssistantState() {
             }));
             
             capabilitiesLoaded.value = true;
-            debugLog('CAPABILITIES', `Loaded ${contextCapabilities.value.length} capabilities`);
         } catch (error) {
-            debugError('loading capabilities', error);
             contextCapabilities.value = [];
         } finally {
             isLoadingCapabilities.value = false;
@@ -120,7 +106,6 @@ export function useAssistantState() {
     }
 
     function clearCapabilities(): void {
-        debugLog('CAPABILITIES', 'Clearing capabilities from state');
         contextCapabilities.value = [];
         capabilitiesLoaded.value = false;
     }

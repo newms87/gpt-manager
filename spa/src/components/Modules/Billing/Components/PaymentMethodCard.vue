@@ -163,7 +163,6 @@ async function handleSetDefault() {
 
 		if (success) {
 			emit("set-default", props.paymentMethod);
-			console.log("Payment method set as default");
 		}
 
 	} catch (error) {
@@ -188,7 +187,6 @@ async function confirmDelete() {
 
 		if (success) {
 			emit("delete", props.paymentMethod);
-			console.log("Payment method deleted");
 		}
 
 	} catch (error) {

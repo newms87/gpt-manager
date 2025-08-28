@@ -422,6 +422,5 @@ const updateNotifications = async () => {
 
 const downloadData = () => {
   // TODO: Implement data download
-  console.log('Download user data');
 };
 </script>

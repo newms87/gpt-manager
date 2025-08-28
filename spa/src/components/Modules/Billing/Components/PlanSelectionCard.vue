@@ -186,7 +186,6 @@ async function handleSubscribe() {
   try {
     const success = await createSubscription(props.plan.id);
     if (success) {
-      console.log('Successfully subscribed to plan:', props.plan.name);
     }
   } catch (error) {
     console.error('Failed to subscribe:', error);
@@ -199,7 +198,6 @@ async function handleChangePlan() {
   try {
     const success = await updateSubscription(props.plan.id);
     if (success) {
-      console.log('Successfully changed to plan:', props.plan.name);
     }
   } catch (error) {
     console.error('Failed to change plan:', error);

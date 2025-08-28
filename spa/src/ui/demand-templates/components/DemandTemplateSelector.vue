@@ -151,15 +151,8 @@ const getSelectedCardClasses = (index: number) => {
 onMounted(loadActiveTemplates);
 
 const handleConfirm = () => {
-	console.log("🔍 DemandTemplateSelector - handleConfirm called:", {
-		selectedTemplate: selectedTemplate.value,
-		templateId: selectedTemplate.value?.id,
-		templateName: selectedTemplate.value?.name,
-		additionalInstructions: additionalInstructions.value
-	});
 	
 	if (!selectedTemplate.value) {
-		console.error("❌ No template selected when trying to confirm");
 		return;
 	}
 	

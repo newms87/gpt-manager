@@ -60,6 +60,5 @@ const showMenu = ref(false);
 const logout = () => {
   showMenu.value = false;
   // TODO: Implement logout logic
-  console.log('Logout clicked');
 };
 </script>

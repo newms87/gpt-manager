@@ -25,7 +25,6 @@ export function useStripe() {
     try {
       if (stripeConfig.isMockMode) {
         // Mock Stripe for development
-        console.log('Using mock Stripe for development');
         createMockStripe();
         isStripeLoaded.value = true;
         return true;
@@ -63,7 +62,6 @@ export function useStripe() {
       },
       createPaymentMethod: async (options: any) => {
         // Mock payment method creation
-        console.log('Mock: Creating payment method', options);
         await new Promise(resolve => setTimeout(resolve, 1000));
         return {
           paymentMethod: {
@@ -80,7 +78,6 @@ export function useStripe() {
       },
       confirmCardSetup: async (clientSecret: string, options?: any) => {
         // Mock setup confirmation
-        console.log('Mock: Confirming card setup', clientSecret, options);
         await new Promise(resolve => setTimeout(resolve, 1500));
         return {
           setupIntent: {
@@ -98,7 +95,6 @@ export function useStripe() {
         };
       },
       confirmCardPayment: async (clientSecret: string, options?: any) => {
-        console.log('Mock: Confirming card payment', clientSecret, options);
         await new Promise(resolve => setTimeout(resolve, 1500));
         return {
           paymentIntent: {
@@ -130,7 +126,6 @@ export function useStripe() {
   function createMockPaymentElement(): StripePaymentElement {
     const mockElement = {
       mount: (domElement: string | HTMLElement) => {
-        console.log('Mock: Mounting payment element to', domElement);
         const element = typeof domElement === 'string' 
           ? document.querySelector(domElement)
           : domElement;
@@ -161,10 +156,8 @@ export function useStripe() {
         }
       },
       unmount: () => {
-        console.log('Mock: Unmounting payment element');
       },
       on: (event: string, callback: Function) => {
-        console.log('Mock: Adding event listener for', event);
         // Simulate ready event
         if (event === 'ready') {
           setTimeout(() => callback(), 100);
@@ -174,11 +167,11 @@ export function useStripe() {
           setTimeout(() => callback({ complete: true, empty: false }), 200);
         }
       },
-      focus: () => console.log('Mock: Focusing payment element'),
-      blur: () => console.log('Mock: Blurring payment element'),
-      clear: () => console.log('Mock: Clearing payment element'),
-      collapse: () => console.log('Mock: Collapsing payment element'),
-      destroy: () => console.log('Mock: Destroying payment element')
+      focus: () => {},
+      blur: () => {},
+      clear: () => {},
+      collapse: () => {},
+      destroy: () => {}
     };
 
     paymentElement.value = mockElement;

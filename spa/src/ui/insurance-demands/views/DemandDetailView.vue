@@ -4,18 +4,7 @@
             <DemandDetailHeader
                 :demand="demand"
                 @back="router.back()"
-            >
-                <template #actions>
-                    <DemandDetailActions
-                        :demand="demand"
-                        :edit-mode="editMode"
-                        :loading-states="loadingStates"
-                        @toggle-edit="editMode = !editMode"
-                        @extract-data="handleExtractData"
-                        @write-demand="handleWriteDemand"
-                    />
-                </template>
-            </DemandDetailHeader>
+            />
         </template>
 
         <!-- Loading State -->
@@ -37,9 +26,8 @@
                 <!-- Demand Details -->
                 <DemandDetailInfo
                     :demand="demand"
-                    :edit-mode="editMode"
+                    v-model:edit-mode="editMode"
                     @update="handleUpdate"
-                    @cancel-edit="editMode = false"
                 />
 
                 <!-- Documents Section -->
@@ -94,13 +82,12 @@ import { usePusher } from "@/helpers/pusher";
 import { WorkflowRun } from "@/types";
 import { FaSolidExclamation } from "danx-icon";
 import { type StoredFile, storeObject } from "quasar-ui-danx";
-import { computed, ref, watch, watchEffect } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { DemandTemplateSelector } from "../../demand-templates/components";
 import { UiCard, UiLoadingSpinner, UiMainLayout } from "../../shared";
 import type { UiDemand } from "../../shared/types";
 import {
-    DemandDetailActions,
     DemandDetailDocuments,
     DemandDetailHeader,
     DemandDetailInfo,
@@ -153,29 +140,20 @@ const pusher = usePusher();
 
 const subscribeToWorkflowRunUpdates = () => {
     if (!pusher || !demand.value) {
-        console.log("WebSocket subscription not available - pusher:", !!pusher, "demand:", !!demand.value);
         return;
     }
 
-    console.log("Setting up real-time WorkflowRun subscriptions for demand:", demand.value.id);
 
     // Subscribe to extract data workflow run if not already subscribed
     if (demand.value.extract_data_workflow_run?.id && !subscribedWorkflowIds.value.has(demand.value.extract_data_workflow_run.id)) {
-        console.log("Subscribing to extract data workflow run updates:", demand.value.extract_data_workflow_run.id);
         subscribedWorkflowIds.value.add(demand.value.extract_data_workflow_run.id);
 
         pusher.onModelEvent(
             demand.value.extract_data_workflow_run,
             "updated",
             (updatedWorkflowRun: WorkflowRun) => {
-                console.log("Extract data workflow run updated via WebSocket:", {
-                    id: updatedWorkflowRun.id,
-                    progress: updatedWorkflowRun.progress_percent,
-                    status: updatedWorkflowRun.status
-                });
 
                 if (updatedWorkflowRun.status === "Completed") {
-                    console.log("🎉 Extract Data JUST COMPLETED! Reloading full demand record");
                     // Trigger full demand reload to get updated data
                     loadDemand();
                 }
@@ -185,21 +163,14 @@ const subscribeToWorkflowRunUpdates = () => {
 
     // Subscribe to write demand workflow run if not already subscribed
     if (demand.value.write_demand_workflow_run?.id && !subscribedWorkflowIds.value.has(demand.value.write_demand_workflow_run.id)) {
-        console.log("Subscribing to write demand workflow run updates:", demand.value.write_demand_workflow_run.id);
         subscribedWorkflowIds.value.add(demand.value.write_demand_workflow_run.id);
 
         pusher.onModelEvent(
             demand.value.write_demand_workflow_run,
             "updated",
             (updatedWorkflowRun: WorkflowRun) => {
-                console.log("Write demand workflow run updated via WebSocket:", {
-                    id: updatedWorkflowRun.id,
-                    progress: updatedWorkflowRun.progress_percent,
-                    status: updatedWorkflowRun.status
-                });
 
                 if (updatedWorkflowRun.status === "Completed") {
-                    console.log("🎉 Write Demand JUST COMPLETED! Reloading full demand record");
                     loadDemand();
                 }
             }
@@ -267,14 +238,6 @@ const handleWriteDemand = async () => {
 };
 
 const handleWriteDemandWithTemplate = async (template: any, instructions: string) => {
-    console.log("🔍 DemandDetailView - handleWriteDemandWithTemplate called:", {
-        template,
-        templateId: template?.id,
-        templateStoredFileId: template?.stored_file?.id,
-        templateStoredFileIdDirect: template?.stored_file_id,
-        instructions,
-        demand: demand.value?.id
-    });
 
     if (!demand.value) return;
 
@@ -285,11 +248,6 @@ const handleWriteDemandWithTemplate = async (template: any, instructions: string
 
         // Store the updated demand using storeObject for reactive updates
         demand.value = storeObject(updatedDemand);
-        console.log("Write demand started with template, demand updated:", {
-            id: demand.value.id,
-            write_demand_workflow_run: demand.value.write_demand_workflow_run,
-            is_write_demand_running: demand.value.is_write_demand_running
-        });
 
         // Re-subscribe to workflow run updates after starting write demand
         subscribeToWorkflowRunUpdates();
@@ -314,20 +272,9 @@ const handleOutputFilesUpdate = async (outputFiles: StoredFile[]) => {
     if (!demand.value) return;
 
     try {
-        console.log("🗂️ handleOutputFilesUpdate called:", {
-            demandId: demand.value.id,
-            currentOutputFiles: demand.value.output_files?.length || 0,
-            newOutputFiles: outputFiles.length,
-            outputFiles: outputFiles
-        });
 
         const updatedDemand = await updateDemand(demand.value.id, { output_files: outputFiles });
 
-        console.log("✅ handleOutputFilesUpdate success:", {
-            demandId: updatedDemand.id,
-            outputFilesCount: updatedDemand.output_files?.length || 0,
-            outputFiles: updatedDemand.output_files
-        });
 
         // Store the updated demand using storeObject for reactive updates
         demand.value = storeObject(updatedDemand);
@@ -352,7 +299,6 @@ const handleComplete = async () => {
         // Store the updated demand using storeObject for reactive updates
         demand.value = storeObject(updatedDemand);
 
-        console.log("✅ Demand marked as completed:", demand.value.id);
     } catch (err: any) {
         error.value = err.message || "Failed to mark demand as complete";
         console.error("❌ Failed to complete demand:", err);
@@ -376,7 +322,6 @@ const handleSetAsDraft = async () => {
         // Store the updated demand using storeObject for reactive updates
         demand.value = storeObject(updatedDemand);
 
-        console.log("📝 Demand set as draft:", demand.value.id);
     } catch (err: any) {
         error.value = err.message || "Failed to set demand as draft";
         console.error("❌ Failed to set demand as draft:", err);
@@ -407,45 +352,6 @@ watch(demandId, (newId, oldId) => {
     loadDemand();
 }, { immediate: true });
 
-
-// Debug logging for demand state changes
-watchEffect(() => {
-    if (demand.value) {
-        console.log("🔍 DemandDetailView - Demand State Changed:", {
-            demand_id: demand.value.id,
-            can_extract_data: demand.value.can_extract_data,
-            can_write_demand: demand.value.can_write_demand,
-            is_extract_data_running: demand.value.is_extract_data_running,
-            is_write_demand_running: demand.value.is_write_demand_running,
-            metadata: demand.value.metadata,
-            extract_data_completed_at: demand.value.metadata?.extract_data_completed_at,
-            team_object_id: demand.value.team_object_id,
-            extract_workflow_run: demand.value.extract_data_workflow_run ? {
-                id: demand.value.extract_data_workflow_run.id,
-                status: demand.value.extract_data_workflow_run.status,
-                progress: demand.value.extract_data_workflow_run.progress_percent,
-                completed_at: demand.value.extract_data_workflow_run.completed_at
-            } : null,
-            write_workflow_run: demand.value.write_demand_workflow_run ? {
-                id: demand.value.write_demand_workflow_run.id,
-                status: demand.value.write_demand_workflow_run.status,
-                progress: demand.value.write_demand_workflow_run.progress_percent,
-                completed_at: demand.value.write_demand_workflow_run.completed_at
-            } : null
-        });
-
-        if (!demand.value.can_write_demand) {
-            console.log("❌ DemandDetailView - Write Demand NOT AVAILABLE. Checking conditions:");
-            console.log("  - extract_data_completed_at:", demand.value.metadata?.extract_data_completed_at);
-            console.log("  - team_object_id:", demand.value.team_object_id);
-            console.log("  - is_write_demand_running:", demand.value.is_write_demand_running);
-            console.log("  - extract_data_workflow_run status:", demand.value.extract_data_workflow_run?.status);
-            console.log("  - extract_data_workflow_run completed_at:", demand.value.extract_data_workflow_run?.completed_at);
-        } else {
-            console.log("✅ DemandDetailView - Write Demand AVAILABLE");
-        }
-    }
-});
 
 // Note: WebSocket subscriptions are automatically managed by the pusher helper
 </script>

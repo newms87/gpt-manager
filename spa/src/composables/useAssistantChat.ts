@@ -1,7 +1,6 @@
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import { request, storeObjects } from "quasar-ui-danx";
 import { usePusher } from "@/helpers/pusher";
-import { useAssistantDebug } from "@/composables/useAssistantDebug";
 import { useAssistantGlobalContext } from "@/composables/useAssistantGlobalContext";
 // Removed useAssistantState - using thread actions directly
 import { AssistantThread, AssistantMessage } from "@/components/Modules/Assistant/types";
@@ -36,18 +35,6 @@ export function useAssistantChat() {
     const pusher = usePusher();
     const { currentContext, currentObject } = useAssistantGlobalContext();
     
-    const {
-        debugSendMessage,
-        debugChatResponse,
-        debugThreadStored,
-        debugWebSocketSubscribe,
-        debugWebSocketUpdate,
-        debugThreadLoaded,
-        debugThreadCleared,
-        debugStorageCheck,
-        debugError,
-        debugLog
-    } = useAssistantDebug();
 
     // Build context data
     const contextData = computed(() => {
@@ -108,7 +95,6 @@ export function useAssistantChat() {
     async function sendMessage(message: string): Promise<void> {
         if (!message.trim() || isLoading.value || isThreadRunning.value) return;
         
-        debugSendMessage(message);
         isLoading.value = true;
         
         try {
@@ -130,13 +116,11 @@ export function useAssistantChat() {
                 });
             }
             
-            debugChatResponse(response);
             
             // Store the thread (response is now the thread directly)
             storedThreads.value = storeObjects([response]);
             const thread = storedThreads.value[0];
             
-            debugThreadStored(thread.id);
             storedThreadId.value = thread.id;
             localStorage.setItem(STORAGE_KEY, thread.id.toString());
             
@@ -146,7 +130,6 @@ export function useAssistantChat() {
             localErrorMessages.value = [];
             
         } catch (error) {
-            debugError('to send message', error);
             addErrorMessage(error);
         } finally {
             isLoading.value = false;
@@ -154,7 +137,6 @@ export function useAssistantChat() {
     }
 
     function startNewChat(): void {
-        debugThreadCleared();
         
         localStorage.removeItem(STORAGE_KEY);
         storedThreadId.value = null;
@@ -174,12 +156,10 @@ export function useAssistantChat() {
         hasLoadedFromStorage.value = true;
         
         const savedThreadId = localStorage.getItem(STORAGE_KEY);
-        debugStorageCheck(savedThreadId);
         
         if (savedThreadId) {
             try {
                 const response = await request.get(`threads/${savedThreadId}/details?fields[actions]=true`);
-                debugThreadLoaded(response);
                 storedThreads.value = storeObjects([response]);
                 const thread = storedThreads.value[0];
                 storedThreadId.value = thread.id;
@@ -188,7 +168,6 @@ export function useAssistantChat() {
                 
                 subscribeToThread(thread);
             } catch (error) {
-                debugError('to load stored thread', error);
                 localStorage.removeItem(STORAGE_KEY);
             }
         }
@@ -197,10 +176,8 @@ export function useAssistantChat() {
     function subscribeToThread(thread: AssistantThread): void {
         if (!pusher) return;
         
-        debugWebSocketSubscribe(thread.id);
         
         pusher.onEvent('AgentThread', 'updated', async (minimalThread: any) => {
-            debugWebSocketUpdate(minimalThread.id, minimalThread);
             
             if (minimalThread.id === thread.id) {
                 const existingThreadIndex = storedThreads.value.findIndex(t => t.id === minimalThread.id);
@@ -213,12 +190,10 @@ export function useAssistantChat() {
                 if (!minimalThread.is_running) {
                     try {
                         const response = await request.get(`threads/${minimalThread.id}/details?fields[actions]=true`);
-                        debugLog('WEBSOCKET', 'Fetched full thread data after completion');
                         storedThreads.value = storeObjects([response]);
                         
                         // Actions are handled directly through thread.actions - no separate state needed
                     } catch (error) {
-                        debugError('fetching full thread data', error);
                     }
                 }
             }
@@ -251,7 +226,6 @@ export function useAssistantChat() {
                 await request.post(`assistant/actions/${action.id}`, { status: 'approved' });
                 // Thread will be updated via websocket
             } catch (error) {
-                debugError('approving action', error);
             }
         },
         
@@ -260,7 +234,6 @@ export function useAssistantChat() {
                 await request.post(`assistant/actions/${action.id}`, { status: 'cancelled' });
                 // Thread will be updated via websocket
             } catch (error) {
-                debugError('cancelling action', error);
             }
         }
     };
