@@ -101,7 +101,7 @@ const apiOptions = computed<AgentApiOptions>(() => ({
 	model: localAgent.value.model,
 	reasoning: {
 		effort: "medium",
-		summary: "auto",
+		summary: null,
 		...(localAgent.value.api_options?.reasoning || {})
 	},
 	service_tier: localAgent.value.api_options?.service_tier || "auto",
@@ -128,7 +128,7 @@ const modelSupportsStreaming = computed(() => selectedModelFeatures.value?.strea
 // Reasoning options
 const reasoningOptions = computed(() => ({
 	effort: apiOptions.value.reasoning?.effort || "medium",
-	summary: apiOptions.value.reasoning?.summary || "auto"
+	summary: apiOptions.value.reasoning?.summary !== undefined ? apiOptions.value.reasoning.summary : null
 }));
 
 // Update action
