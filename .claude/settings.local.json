@@ -79,7 +79,8 @@
       "Read(/home/newms/web/quasar-ui-danx/**)",
       "Read(/home/newms/web/quasar-ui-danx/**)",
       "WebSearch",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "additionalDirectories": [

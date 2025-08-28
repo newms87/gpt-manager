@@ -46,6 +46,7 @@
 				<DemandDetailDocuments
 					:demand="demand"
 					@update:input-files="handleInputFilesUpdate"
+					@update:output-files="handleOutputFilesUpdate"
 				/>
 
 				<!-- Workflow Error Display -->
@@ -341,6 +342,81 @@ const handleInputFilesUpdate = async (inputFiles: StoredFile[]) => {
 		demand.value = storeObject(updatedDemand);
 	} catch (err: any) {
 		error.value = err.message || "Failed to update input files";
+	}
+};
+
+const handleOutputFilesUpdate = async (outputFiles: StoredFile[]) => {
+	if (!demand.value) return;
+
+	try {
+		console.log('🗂️ handleOutputFilesUpdate called:', {
+			demandId: demand.value.id,
+			currentOutputFiles: demand.value.output_files?.length || 0,
+			newOutputFiles: outputFiles.length,
+			outputFiles: outputFiles
+		});
+		
+		const updatedDemand = await updateDemand(demand.value.id, { output_files: outputFiles });
+		
+		console.log('✅ handleOutputFilesUpdate success:', {
+			demandId: updatedDemand.id,
+			outputFilesCount: updatedDemand.output_files?.length || 0,
+			outputFiles: updatedDemand.output_files
+		});
+		
+		// Store the updated demand using storeObject for reactive updates
+		demand.value = storeObject(updatedDemand);
+	} catch (err: any) {
+		console.error('❌ handleOutputFilesUpdate error:', err);
+		error.value = err.message || "Failed to update output files";
+	}
+};
+
+const handleComplete = async () => {
+	if (!demand.value) return;
+
+	try {
+		isCompleting.value = true;
+		error.value = null;
+		
+		const updatedDemand = await updateDemand(demand.value.id, { 
+			status: DEMAND_STATUS.COMPLETED,
+			completed_at: new Date().toISOString()
+		});
+		
+		// Store the updated demand using storeObject for reactive updates
+		demand.value = storeObject(updatedDemand);
+		
+		console.log("✅ Demand marked as completed:", demand.value.id);
+	} catch (err: any) {
+		error.value = err.message || "Failed to mark demand as complete";
+		console.error("❌ Failed to complete demand:", err);
+	} finally {
+		isCompleting.value = false;
+	}
+};
+
+const handleSetAsDraft = async () => {
+	if (!demand.value) return;
+
+	try {
+		isSettingAsDraft.value = true;
+		error.value = null;
+		
+		const updatedDemand = await updateDemand(demand.value.id, { 
+			status: DEMAND_STATUS.DRAFT,
+			completed_at: null
+		});
+		
+		// Store the updated demand using storeObject for reactive updates
+		demand.value = storeObject(updatedDemand);
+		
+		console.log("📝 Demand set as draft:", demand.value.id);
+	} catch (err: any) {
+		error.value = err.message || "Failed to set demand as draft";
+		console.error("❌ Failed to set demand as draft:", err);
+	} finally {
+		isSettingAsDraft.value = false;
 	}
 };
 

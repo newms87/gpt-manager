@@ -478,6 +478,13 @@ const modelValue = defineModel<string>();
 const agent = defineModel<Agent | null>();
 ```
 
+## Testing & Build
+
+### Build Process
+- **NEVER run yarn type-check** - Type checking is handled by the IDE
+- Use `yarn build` only for production builds
+- Prefer manual code review over automated type checking
+
 ## Key Principles
 
 1. **Use existing danx components** - Don't reinvent the wheel
@@ -487,3 +494,4 @@ const agent = defineModel<Agent | null>();
 5. **Tailwind utilities** - Avoid inline styles
 6. **TypeScript everything** - Full type safety
 7. **Modular organization** - Keep related code together
+8. **No automated type checking** - NEVER run yarn type-check commands

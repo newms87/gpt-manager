@@ -34,11 +34,11 @@ const props = withDefaults(defineProps<{
 
 const statusClasses = computed(() => {
   const classes = {
-    draft: 'bg-slate-100 text-slate-700 border-slate-200',
-    ready: 'bg-blue-100 text-blue-700 border-blue-200',
-    processing: 'bg-amber-100 text-amber-700 border-amber-200',
-    completed: 'bg-green-100 text-green-700 border-green-200',
-    failed: 'bg-red-100 text-red-700 border-red-200',
+    draft: 'bg-slate-500 text-white border-slate-600',
+    ready: 'bg-blue-600 text-white border-blue-700',
+    processing: 'bg-amber-500 text-white border-amber-600',
+    completed: 'bg-green-600 text-white border-green-700',
+    failed: 'bg-red-600 text-white border-red-700',
   };
   // Handle both lowercase and proper case status values
   const status = props.status.toLowerCase();

@@ -60,6 +60,7 @@ class UiDemandRepository extends ActionRepository
     {
         $demand->update($data);
         $this->syncInputFiles($demand, $data);
+        $this->syncOutputFiles($demand, $data);
 
         return $demand;
     }
@@ -82,6 +83,28 @@ class UiDemandRepository extends ActionRepository
                 })->toArray();
 
                 $demand->inputFiles()->sync($syncData);
+            }
+        }
+    }
+
+    public function syncOutputFiles(UiDemand $demand, array $data): void
+    {
+        if (array_key_exists('output_files', $data)) {
+            $files = $data['output_files'] ?? [];
+
+            if (empty($files)) {
+                // Clear all output files
+                $demand->outputFiles()->sync([]);
+            } else {
+                $fileIds       = collect($files)->pluck('id')->filter();
+                $existingFiles = StoredFile::whereIn('id', $fileIds)->pluck('id');
+
+                // Create sync data with category pivot
+                $syncData = $existingFiles->mapWithKeys(function ($fileId) {
+                    return [$fileId => ['category' => 'output']];
+                })->toArray();
+
+                $demand->outputFiles()->sync($syncData);
             }
         }
     }

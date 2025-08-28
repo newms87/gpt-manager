@@ -52,6 +52,13 @@
                         {{ formatDate(status.date) }}
                     </p>
 
+                    <!-- Runtime Display -->
+                    <p v-if="status.runtime" class="text-xs text-slate-400 font-medium">
+                        <span v-if="status.isActive">Running for: {{ status.runtime }}</span>
+                        <span v-else-if="status.completed">Completed in: {{ status.runtime }}</span>
+                        <span v-else-if="status.failed">Failed after: {{ status.runtime }}</span>
+                    </p>
+
                     <!-- Progress Bar for Active Workflows -->
                     <div
                         v-if="status.isActive && status.progress != null"
@@ -70,7 +77,8 @@
 
 <script setup lang="ts">
 import { FaSolidCheck, FaSolidClock, FaSolidTriangleExclamation } from "danx-icon";
-import { computed } from "vue";
+import { computed, ref, onMounted, onUnmounted, watch } from "vue";
+import { DateTime, fDuration } from "quasar-ui-danx";
 import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
 import { DEMAND_STATUS } from "../../config";
@@ -78,6 +86,75 @@ import { DEMAND_STATUS } from "../../config";
 const props = defineProps<{
     demand: UiDemand | null;
 }>();
+
+// Reactive timer for live updates of running workflows
+const currentTime = ref(Date.now());
+let intervalId: NodeJS.Timeout | null = null;
+
+
+// Calculate runtime for a workflow run using fDuration
+const calculateRuntime = (workflowRun: any, isActive: boolean): string | null => {
+    if (!workflowRun?.started_at) return null;
+    
+    let endTime: string | DateTime;
+    
+    if (isActive) {
+        // For running workflows, use reactive currentTime for live updates
+        endTime = DateTime.fromMillis(currentTime.value);
+    } else {
+        // For completed/failed workflows, use completed_at or failed_at
+        const completedAt = workflowRun.completed_at || workflowRun.failed_at;
+        if (!completedAt) return null;
+        endTime = completedAt;
+    }
+    
+    return fDuration(workflowRun.started_at, endTime);
+};
+
+// Check if there are any active workflows that need live updates
+const hasActiveWorkflows = computed(() => {
+    if (!props.demand) return false;
+    
+    const extractDataActive = props.demand.extract_data_workflow_run?.status && 
+        ["Pending", "Running", "Incomplete"].includes(props.demand.extract_data_workflow_run.status);
+    const writeDemandActive = props.demand.write_demand_workflow_run?.status && 
+        ["Pending", "Running", "Incomplete"].includes(props.demand.write_demand_workflow_run.status);
+    
+    return extractDataActive || writeDemandActive;
+});
+
+// Setup timer for live updates only when needed
+const setupTimer = () => {
+    if (!intervalId && hasActiveWorkflows.value) {
+        intervalId = setInterval(() => {
+            currentTime.value = Date.now();
+        }, 1000); // Update every second
+    }
+};
+
+const clearTimer = () => {
+    if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+    }
+};
+
+// Watch for changes in active workflows to manage timer
+watch(hasActiveWorkflows, (hasActive) => {
+    if (hasActive) {
+        setupTimer();
+    } else {
+        clearTimer();
+    }
+}, { immediate: true });
+
+onMounted(() => {
+    setupTimer();
+});
+
+onUnmounted(() => {
+    clearTimer();
+});
 
 const statusTimeline = computed(() => {
     if (!props.demand) return [];
@@ -129,6 +206,7 @@ const statusTimeline = computed(() => {
             isActive: extractDataState.active,
             progress: extractDataState.active ? props.demand.extract_data_workflow_run?.progress_percent : null,
             date: extractDataState.completed ? props.demand.extract_data_workflow_run?.completed_at : extractDataState.failed ? props.demand.extract_data_workflow_run?.failed_at : null,
+            runtime: calculateRuntime(props.demand.extract_data_workflow_run, extractDataState.active),
             grayed: extractDataGrayed
         },
         {
@@ -142,6 +220,7 @@ const statusTimeline = computed(() => {
             isActive: writeDemandState.active,
             progress: writeDemandState.active ? props.demand.write_demand_workflow_run?.progress_percent : null,
             date: writeDemandState.completed ? props.demand.write_demand_workflow_run?.completed_at : writeDemandState.failed ? props.demand.write_demand_workflow_run?.failed_at : null,
+            runtime: calculateRuntime(props.demand.write_demand_workflow_run, writeDemandState.active),
             grayed: writeDemandGrayed
         },
         {
