@@ -139,6 +139,19 @@ Service-Repository-Controller pattern with danx integration.
 - **Use factories and extend TestCase or AuthenticatedTestCase (read the full code for these base classes)** - All tests
   reset the database between runs
 - **Database writes are GOOD in tests** - They verify the complete behavior
+- **NEVER TEST LARAVEL FRAMEWORK FEATURES** - DO NOT test:
+  - Model fillable attributes working correctly
+  - Model cast attributes working correctly
+  - Eloquent relationships working (belongs to, has many, etc.)
+  - Laravel validation rules syntax
+  - Laravel's built-in functionality
+- **ONLY TEST YOUR BUSINESS LOGIC** - Tests should focus on:
+  - Custom business rules and validation logic
+  - Service layer methods and their outcomes
+  - Repository methods with complex queries
+  - Custom scopes and data transformations
+  - Team-based access control logic
+  - Custom exception handling
 
 **MANDATORY for all non-trivial changes:**
 

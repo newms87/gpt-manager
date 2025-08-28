@@ -308,7 +308,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
             'message' => "OAuth token for {$this->service} revoked successfully"
         ]);
         
-        $this->assertDatabaseMissing('auth_tokens', [
+        // Token should be soft deleted, not hard deleted
+        $this->assertSoftDeleted('auth_tokens', [
             'id' => $token->id
         ]);
     }
@@ -475,7 +476,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
             'message' => 'Successfully deleted oauth token for google'
         ]);
         
-        $this->assertDatabaseMissing('auth_tokens', [
+        // Token should be soft deleted, not hard deleted
+        $this->assertSoftDeleted('auth_tokens', [
             'id' => $token->id
         ]);
     }

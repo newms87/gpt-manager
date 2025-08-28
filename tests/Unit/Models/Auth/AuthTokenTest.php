@@ -17,61 +17,9 @@ class AuthTokenTest extends AuthenticatedTestCase
         $this->setUpTeam();
     }
 
-    public function test_belongsTo_team_relationship(): void
-    {
-        // Given
-        $token = AuthToken::factory()->create();
 
-        // When
-        $team = $token->team;
 
-        // Then
-        $this->assertInstanceOf(Team::class, $team);
-        $this->assertEquals($token->team_id, $team->id);
-    }
 
-    public function test_casts_scopes_as_json(): void
-    {
-        // Given
-        $scopes = ['scope1', 'scope2', 'scope3'];
-        $token = AuthToken::factory()->create(['scopes' => $scopes]);
-
-        // When
-        $token = $token->fresh();
-
-        // Then
-        $this->assertIsArray($token->scopes);
-        $this->assertEquals($scopes, $token->scopes);
-    }
-
-    public function test_casts_metadata_as_json(): void
-    {
-        // Given
-        $metadata = ['key1' => 'value1', 'key2' => 'value2'];
-        $token = AuthToken::factory()->create(['metadata' => $metadata]);
-
-        // When
-        $token = $token->fresh();
-
-        // Then
-        $this->assertIsArray($token->metadata);
-        $this->assertEquals($metadata, $token->metadata);
-    }
-
-    public function test_casts_expires_at_as_datetime(): void
-    {
-        // Given
-        $expiresAt = now()->addHour();
-        $token = AuthToken::factory()->create(['expires_at' => $expiresAt]);
-
-        // When
-        $token = $token->fresh();
-
-        // Then
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $token->expires_at);
-        // Allow 1 second difference due to test timing
-        $this->assertTrue(abs($expiresAt->timestamp - $token->expires_at->timestamp) <= 1);
-    }
 
     public function test_isExpired_withExpiredOAuthToken_returnsTrue(): void
     {
@@ -361,18 +309,4 @@ class AuthTokenTest extends AuthenticatedTestCase
         $this->assertFalse($validTokens->contains($emptyAccessToken));
     }
 
-    public function test_getValidationRules_returnsCorrectRules(): void
-    {
-        // When
-        $rules = AuthToken::getValidationRules();
-
-        // Then
-        $this->assertIsArray($rules);
-        $this->assertArrayHasKey('service', $rules);
-        $this->assertArrayHasKey('type', $rules);
-        $this->assertArrayHasKey('access_token', $rules);
-        $this->assertEquals('required|string|max:50', $rules['service']);
-        $this->assertEquals('required|in:oauth,api_key', $rules['type']);
-        $this->assertEquals('required|string', $rules['access_token']);
-    }
 }

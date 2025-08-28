@@ -887,6 +887,27 @@ class GoodService
 - Mock internal service/repository methods
 - Avoid database writes in tests
 
+**NEVER TEST LARAVEL FRAMEWORK FEATURES:**
+
+- Model fillable attributes working correctly
+- Model cast attributes working correctly
+- Eloquent relationships working (belongs to, has many, etc.)
+- Laravel validation rules syntax
+- Laravel's built-in functionality
+- Basic getter/setter functionality
+- Standard Laravel traits working
+
+**ONLY TEST YOUR BUSINESS LOGIC:**
+
+- Custom business rules and validation logic
+- Service layer methods and their outcomes
+- Repository methods with complex queries
+- Custom scopes and data transformations
+- Team-based access control logic
+- Custom exception handling
+- Business workflows and processes
+- Custom data processing logic
+
 **ALWAYS:**
 
 - Use real database interactions with factories

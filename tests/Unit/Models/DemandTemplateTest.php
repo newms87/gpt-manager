@@ -19,92 +19,9 @@ class DemandTemplateTest extends AuthenticatedTestCase
         parent::setUp();
         $this->setUpTeam();
     }
+    
 
-    public function test_fillableAttributes_areCorrect(): void
-    {
-        // Given
-        $expectedFillable = [
-            'team_id',
-            'user_id',
-            'stored_file_id',
-            'name',
-            'description',
-            'category',
-            'metadata',
-            'is_active',
-        ];
 
-        // When
-        $fillable = (new DemandTemplate())->getFillable();
-
-        // Then
-        $this->assertEquals($expectedFillable, $fillable);
-    }
-
-    public function test_casts_areCorrect(): void
-    {
-        // Given
-        $template = new DemandTemplate();
-
-        // When
-        $casts = $template->getCasts();
-
-        // Then
-        $this->assertEquals('array', $casts['metadata']);
-        $this->assertEquals('boolean', $casts['is_active']);
-    }
-
-    public function test_teamRelationship_isConfiguredCorrectly(): void
-    {
-        // Given
-        $storedFile = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $template   = DemandTemplate::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'stored_file_id' => $storedFile->id,
-        ]);
-
-        // When
-        $team = $template->team;
-
-        // Then
-        $this->assertInstanceOf(Team::class, $team);
-        $this->assertEquals($this->user->currentTeam->id, $team->id);
-    }
-
-    public function test_userRelationship_isConfiguredCorrectly(): void
-    {
-        // Given
-        $storedFile = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $template   = DemandTemplate::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'user_id'        => $this->user->id,
-            'stored_file_id' => $storedFile->id,
-        ]);
-
-        // When
-        $user = $template->user;
-
-        // Then
-        $this->assertInstanceOf(User::class, $user);
-        $this->assertEquals($this->user->id, $user->id);
-    }
-
-    public function test_storedFileRelationship_isConfiguredCorrectly(): void
-    {
-        // Given
-        $storedFile = StoredFile::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $template   = DemandTemplate::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'stored_file_id' => $storedFile->id,
-        ]);
-
-        // When
-        $file = $template->storedFile;
-
-        // Then
-        $this->assertInstanceOf(StoredFile::class, $file);
-        $this->assertEquals($storedFile->id, $file->id);
-    }
 
     public function test_scopeActive_filtersActiveTemplatesOnly(): void
     {

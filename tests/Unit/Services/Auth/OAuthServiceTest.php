@@ -2,6 +2,9 @@
 
 namespace Tests\Unit\Services\Auth;
 
+use App\Exceptions\Auth\NoTokenFoundException;
+use App\Exceptions\Auth\TokenExpiredException;
+use App\Exceptions\Auth\TokenRevokedException;
 use App\Models\Auth\AuthToken;
 use App\Models\Team\Team;
 use App\Services\Auth\OAuthService;
@@ -390,7 +393,7 @@ class OAuthServiceTest extends AuthenticatedTestCase
         $this->assertInstanceOf(AuthToken::class, $newToken);
         $this->assertEquals('new_access_token', $newToken->access_token);
         
-        // Verify old token is deleted
+        // Verify old token is deleted (hard deleted since store replaces)
         $this->assertDatabaseMissing('auth_tokens', [
             'id' => $existingToken->id
         ]);
@@ -459,15 +462,13 @@ class OAuthServiceTest extends AuthenticatedTestCase
         ]);
 
         // When & Then
-        $this->expectException(ValidationError::class);
-        $this->expectExceptionMessage('OAuth token has been revoked. Re-authorization required.');
+        $this->expectException(TokenRevokedException::class);
+        $this->expectExceptionMessage('OAuth token for google');
         
         $this->service->refreshToken($this->testService, $token);
 
-        // Verify token was deleted
-        $this->assertDatabaseMissing('auth_tokens', [
-            'id' => $token->id
-        ]);
+        // Verify token was soft deleted
+        $this->assertTrue($token->fresh()->trashed());
     }
 
     public function test_refreshToken_withWrongTeam_throwsValidationError(): void
@@ -519,7 +520,9 @@ class OAuthServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertTrue($result);
-        $this->assertDatabaseMissing('auth_tokens', [
+        // Should be soft deleted, not hard deleted
+        $this->assertTrue($token->fresh()->trashed());
+        $this->assertDatabaseHas('auth_tokens', [
             'id' => $token->id
         ]);
         Http::assertSent(function ($request) use ($token) {
@@ -550,7 +553,9 @@ class OAuthServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertTrue($result);
-        $this->assertDatabaseMissing('auth_tokens', [
+        // Should be soft deleted, not hard deleted
+        $this->assertTrue($token->fresh()->trashed());
+        $this->assertDatabaseHas('auth_tokens', [
             'id' => $token->id
         ]);
     }
@@ -583,7 +588,9 @@ class OAuthServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertTrue($result);
-        $this->assertDatabaseMissing('auth_tokens', [
+        // Should be soft deleted, not hard deleted
+        $this->assertTrue($token->fresh()->trashed());
+        $this->assertDatabaseHas('auth_tokens', [
             'id' => $token->id
         ]);
         Http::assertNothingSent();
@@ -609,5 +616,271 @@ class OAuthServiceTest extends AuthenticatedTestCase
         $this->expectException(ValidationError::class);
         $this->expectExceptionMessage('Missing access_token in OAuth response');
         $this->service->storeToken($this->testService, $invalidTokenData, $this->user->currentTeam);
+    }
+
+    // Tests for new getValidToken method and specific exceptions
+
+    public function test_getValidToken_withNoToken_throwsNoTokenFoundException(): void
+    {
+        // Given - no token exists
+
+        // When & Then
+        $this->expectException(NoTokenFoundException::class);
+        $this->expectExceptionMessage('No OAuth token found for google');
+        
+        $exception = null;
+        try {
+            $this->service->getValidToken($this->testService, $this->user->currentTeam);
+        } catch (NoTokenFoundException $e) {
+            $exception = $e;
+            throw $e;
+        }
+
+        // Verify exception context
+        $this->assertEquals($this->testService, $exception->getService());
+        $this->assertEquals($this->user->currentTeam->id, $exception->getTeamId());
+        $this->assertEquals('oauth_authorization', $exception->getActionRequired());
+    }
+
+    public function test_getValidToken_withValidToken_returnsToken(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'valid_token',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        // When
+        $result = $this->service->getValidToken($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertEquals($token->id, $result->id);
+        $this->assertEquals('valid_token', $result->access_token);
+    }
+
+    public function test_getValidToken_withExpiredTokenNoRefresh_throwsTokenExpiredException(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'expired_token',
+            'refresh_token' => null,
+            'expires_at' => now()->subHour(),
+        ]);
+
+        // When & Then
+        $this->expectException(TokenExpiredException::class);
+        $this->expectExceptionMessage('OAuth token for google');
+        
+        $exception = null;
+        try {
+            $this->service->getValidToken($this->testService, $this->user->currentTeam);
+        } catch (TokenExpiredException $e) {
+            $exception = $e;
+            throw $e;
+        }
+        
+        // Verify exception context
+        $this->assertEquals($this->testService, $exception->getService());
+        $this->assertEquals($this->user->currentTeam->id, $exception->getTeamId());
+        $this->assertNotNull($exception->getExpiresAt());
+        $this->assertEquals('oauth_authorization', $exception->getActionRequired());
+        
+        // Token should be soft deleted
+        $this->assertTrue($token->fresh()->trashed());
+    }
+
+    public function test_getValidToken_withExpiredTokenValidRefresh_refreshesToken(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'expired_token',
+            'refresh_token' => 'valid_refresh_token',
+            'expires_at' => now()->subHour(),
+        ]);
+
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'new_access_token',
+                'expires_in' => 3600,
+                'scope' => 'https://www.googleapis.com/auth/documents'
+            ], 200)
+        ]);
+
+        // When
+        $result = $this->service->getValidToken($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertEquals($token->id, $result->id);
+        $this->assertEquals('new_access_token', $result->access_token);
+        $this->assertTrue($result->expires_at->isAfter(now()));
+        $this->assertFalse($result->trashed()); // Should not be soft deleted
+    }
+
+    public function test_getValidToken_withRefreshFailure_throwsTokenRevokedException(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'expired_token',
+            'refresh_token' => 'invalid_refresh_token',
+            'expires_at' => now()->subHour(),
+        ]);
+
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response([
+                'error' => 'invalid_grant',
+                'error_description' => 'Token has been revoked'
+            ], 400)
+        ]);
+
+        // When & Then
+        $this->expectException(TokenRevokedException::class);
+        $this->expectExceptionMessage('OAuth token for google');
+        
+        $exception = null;
+        try {
+            $this->service->getValidToken($this->testService, $this->user->currentTeam);
+        } catch (TokenRevokedException $e) {
+            $exception = $e;
+            throw $e;
+        }
+        
+        // Verify exception context
+        $this->assertEquals($this->testService, $exception->getService());
+        $this->assertEquals($this->user->currentTeam->id, $exception->getTeamId());
+        $this->assertEquals('Token has been revoked', $exception->getRevokeReason());
+        $this->assertEquals('oauth_authorization', $exception->getActionRequired());
+        
+        // Token should be soft deleted
+        $this->assertTrue($token->fresh()->trashed());
+    }
+
+    public function test_refreshToken_withRevokedToken_throwsTokenRevokedException(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'old_token',
+            'refresh_token' => 'revoked_refresh_token',
+            'expires_at' => now()->subMinutes(10),
+        ]);
+
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response([
+                'error' => 'invalid_grant',
+                'error_description' => 'Token has been revoked'
+            ], 400)
+        ]);
+
+        // When & Then
+        $this->expectException(TokenRevokedException::class);
+        $this->expectExceptionMessage('OAuth token for google');
+        
+        $exception = null;
+        try {
+            $this->service->refreshToken($this->testService, $token);
+        } catch (TokenRevokedException $e) {
+            $exception = $e;
+            throw $e;
+        }
+        
+        // Verify exception context and token is soft deleted
+        $this->assertEquals($this->testService, $exception->getService());
+        $this->assertEquals($token->team_id, $exception->getTeamId());
+        $this->assertEquals('Token has been revoked', $exception->getRevokeReason());
+        $this->assertTrue($token->fresh()->trashed());
+    }
+
+    public function test_revokeToken_softDeletesToken(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create();
+        Http::fake([
+            'oauth2.googleapis.com/revoke' => Http::response(null, 200)
+        ]);
+
+        // When
+        $result = $this->service->revokeToken($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertTrue($result);
+        // Should be soft deleted, not hard deleted
+        $this->assertTrue($token->fresh()->trashed());
+        $this->assertDatabaseHas('auth_tokens', [
+            'id' => $token->id
+        ]);
+    }
+
+    // Tests for AuthToken model convenience methods
+
+    public function test_authToken_canBeRefreshed_withRefreshToken_returnsTrue(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'refresh_token' => 'valid_refresh_token',
+        ]);
+
+        // When & Then
+        $this->assertTrue($token->canBeRefreshed());
+    }
+
+    public function test_authToken_canBeRefreshed_withoutRefreshToken_returnsFalse(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'refresh_token' => null,
+        ]);
+
+        // When & Then
+        $this->assertFalse($token->canBeRefreshed());
+    }
+
+    public function test_authToken_canBeRefreshed_withApiKey_returnsFalse(): void
+    {
+        // Given
+        $token = AuthToken::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'service' => 'stripe',
+            'type' => AuthToken::TYPE_API_KEY,
+            'refresh_token' => 'should_not_matter',
+        ]);
+
+        // When & Then
+        $this->assertFalse($token->canBeRefreshed());
+    }
+
+    public function test_authToken_isLikelyRevoked_withExpiredTokenAndNoRefresh_returnsTrue(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'expires_at' => now()->subHour(),
+            'refresh_token' => null,
+        ]);
+
+        // When & Then
+        $this->assertTrue($token->isLikelyRevoked());
+    }
+
+    public function test_authToken_isLikelyRevoked_withExpiredTokenButHasRefresh_returnsFalse(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'expires_at' => now()->subHour(),
+            'refresh_token' => 'valid_refresh_token',
+        ]);
+
+        // When & Then
+        $this->assertFalse($token->isLikelyRevoked());
+    }
+
+    public function test_authToken_markAsInvalid_softDeletesToken(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create();
+
+        // When
+        $result = $token->markAsInvalid();
+
+        // Then
+        $this->assertTrue($result);
+        $this->assertTrue($token->fresh()->trashed());
     }
 }

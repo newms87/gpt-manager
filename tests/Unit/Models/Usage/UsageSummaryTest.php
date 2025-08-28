@@ -21,45 +21,7 @@ class UsageSummaryTest extends TestCase
         $this->assertEquals(150, $summary->total_tokens);
     }
 
-    #[Test]
-    public function it_has_polymorphic_relationship_to_object()
-    {
-        $taskProcess = TaskProcess::factory()->create();
-        $summary     = UsageSummary::factory()->create([
-            'object_type'   => TaskProcess::class,
-            'object_id'     => $taskProcess->id,
-            'object_id_int' => $taskProcess->id,
-        ]);
 
-        $this->assertInstanceOf(TaskProcess::class, $summary->object);
-        $this->assertEquals($taskProcess->id, $summary->object->id);
-    }
-
-    #[Test]
-    public function it_casts_attributes_correctly()
-    {
-        $summary = UsageSummary::factory()->create([
-            'count'         => '10',
-            'run_time_ms'   => '5000',
-            'input_tokens'  => '1000',
-            'output_tokens' => '500',
-            'input_cost'    => '2.5',
-            'output_cost'   => '5.0',
-            'total_cost'    => '7.5',
-            'request_count' => '20',
-            'data_volume'   => '10240',
-        ]);
-
-        $this->assertIsInt($summary->count);
-        $this->assertIsInt($summary->run_time_ms);
-        $this->assertIsInt($summary->input_tokens);
-        $this->assertIsInt($summary->output_tokens);
-        $this->assertIsFloat($summary->input_cost);
-        $this->assertIsFloat($summary->output_cost);
-        $this->assertIsFloat($summary->total_cost);
-        $this->assertIsInt($summary->request_count);
-        $this->assertIsInt($summary->data_volume);
-    }
 
     #[Test]
     public function it_updates_from_usage_events()
@@ -154,41 +116,4 @@ class UsageSummaryTest extends TestCase
         $this->assertEquals(0, $summary->total_tokens);
     }
 
-    #[Test]
-    public function it_relates_to_usage_events_correctly()
-    {
-        $taskProcess = TaskProcess::factory()->create();
-        $summary     = UsageSummary::factory()->create([
-            'object_type'   => TaskProcess::class,
-            'object_id'     => $taskProcess->id,
-            'object_id_int' => $taskProcess->id,
-        ]);
-
-        // Create related events
-        $event1 = UsageEvent::factory()->create([
-            'object_type'   => TaskProcess::class,
-            'object_id'     => $taskProcess->id,
-            'object_id_int' => $taskProcess->id,
-        ]);
-
-        $event2 = UsageEvent::factory()->create([
-            'object_type'   => TaskProcess::class,
-            'object_id'     => $taskProcess->id,
-            'object_id_int' => $taskProcess->id,
-        ]);
-
-        // Create unrelated event
-        $otherProcess = TaskProcess::factory()->create();
-        UsageEvent::factory()->create([
-            'object_type'   => TaskProcess::class,
-            'object_id'     => $otherProcess->id,
-            'object_id_int' => $otherProcess->id,
-        ]);
-
-        $relatedEvents = $summary->usageEvents()->get();
-
-        $this->assertCount(2, $relatedEvents);
-        $this->assertTrue($relatedEvents->contains($event1));
-        $this->assertTrue($relatedEvents->contains($event2));
-    }
 }

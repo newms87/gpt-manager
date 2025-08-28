@@ -154,10 +154,10 @@
       <path value="$PROJECT_DIR$/vendor/pusher/pusher-php-server" />
       <path value="$PROJECT_DIR$/vendor/paragonie/sodium_compat" />
       <path value="$PROJECT_DIR$/vendor/itsgoingd/clockwork" />
-      <path value="$PROJECT_DIR$/vendor/newms87/danx" />
       <path value="$PROJECT_DIR$/vendor/spatie/fork" />
       <path value="$PROJECT_DIR$/vendor/laravel/horizon" />
       <path value="$PROJECT_DIR$/vendor/firebase/php-jwt" />
+      <path value="$PROJECT_DIR$/vendor/newms87/danx" />
     </include_path>
   </component>
   <component name="PhpInterpreters">

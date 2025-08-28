@@ -6,11 +6,11 @@ use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Newms87\Danx\Models\Utilities\StoredFile;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AuthToken extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'team_id',
@@ -197,6 +197,32 @@ class AuthToken extends Model
         $metadata = is_array($this->metadata) ? $this->metadata : [];
         $metadata[$key] = $value;
         $this->metadata = $metadata;
+    }
+
+    /**
+     * Check if this token can be refreshed
+     */
+    public function canBeRefreshed(): bool
+    {
+        return $this->type === self::TYPE_OAUTH && !empty($this->refresh_token);
+    }
+
+    /**
+     * Check if this token is likely revoked (expired and no refresh token)
+     */
+    public function isLikelyRevoked(): bool
+    {
+        return $this->type === self::TYPE_OAUTH 
+            && $this->isExpired() 
+            && empty($this->refresh_token);
+    }
+
+    /**
+     * Mark this token as invalid by soft deleting it
+     */
+    public function markAsInvalid(): bool
+    {
+        return $this->delete();
     }
 
     /**

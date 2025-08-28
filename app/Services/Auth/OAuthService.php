@@ -2,20 +2,22 @@
 
 namespace App\Services\Auth;
 
+use App\Exceptions\Auth\NoTokenFoundException;
+use App\Exceptions\Auth\TokenExpiredException;
+use App\Exceptions\Auth\TokenRevokedException;
 use App\Models\Auth\AuthToken;
 use App\Models\Team\Team;
 use App\Repositories\Auth\AuthTokenRepository;
+use App\Traits\HasDebugLogging;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class OAuthService
 {
-    protected AuthTokenRepository $repository;
+    use HasDebugLogging;
 
-    public function __construct(AuthTokenRepository $repository)
+    public function __construct(protected AuthTokenRepository $repository)
     {
-        $this->repository = $repository;
     }
 
     /**
@@ -64,7 +66,7 @@ class OAuthService
             try {
                 $token = $this->refreshToken($service, $token);
             } catch (\Exception $e) {
-                Log::warning('OAuthService: Failed to refresh token', [
+                static::log('Failed to refresh token', [
                     'service' => $service,
                     'team_id' => $token->team_id,
                     'error' => $e->getMessage()
@@ -72,6 +74,58 @@ class OAuthService
                 // Return the existing token even if refresh failed
                 // The caller can handle expired tokens
             }
+        }
+
+        return $token;
+    }
+
+    /**
+     * Get valid OAuth token or throw specific exception
+     */
+    public function getValidToken(string $service, ?Team $team = null): AuthToken
+    {
+        $team = $team ?: team();
+        $token = $this->repository->getOAuthToken($service, $team);
+
+        if (!$token) {
+            throw new NoTokenFoundException($service, $team?->id);
+        }
+
+        // Check if token is expired or will expire soon
+        $needsRefresh = $token->isExpired() || $token->willExpireWithin(5);
+        
+        if ($needsRefresh && $token->canBeRefreshed()) {
+            // Try to refresh the token
+            try {
+                $token = $this->refreshToken($service, $token);
+            } catch (TokenRevokedException $e) {
+                // Token was revoked during refresh - already soft deleted in refreshToken method
+                throw $e;
+            } catch (\Exception $e) {
+                // Refresh failed for other reasons
+                static::log('Token refresh failed', [
+                    'service' => $service,
+                    'team_id' => $team?->id,
+                    'error' => $e->getMessage(),
+                    'was_expired' => $token->isExpired()
+                ]);
+                
+                // If the token is actually expired (not just expiring soon), throw exception
+                if ($token->isExpired()) {
+                    throw new TokenExpiredException($service, $team?->id, $token->expires_at?->toISOString());
+                }
+                // Otherwise continue with the soon-to-expire token
+            }
+        } elseif ($token->isExpired() && !$token->canBeRefreshed()) {
+            // Token is expired and cannot be refreshed - soft delete it
+            $token->markAsInvalid();
+            throw new TokenExpiredException($service, $team?->id, $token->expires_at?->toISOString());
+        }
+
+        // Final validation
+        if (!$token->isValid()) {
+            $token->markAsInvalid();
+            throw new TokenExpiredException($service, $team?->id, $token->expires_at?->toISOString());
         }
 
         return $token;
@@ -113,7 +167,7 @@ class OAuthService
 
         $url = $config['auth_url'] . '?' . http_build_query($params);
 
-        Log::info('OAuthService: Generated authorization URL', [
+        static::log('Generated authorization URL', [
             'service' => $service,
             'redirect_uri' => $params['redirect_uri'],
             'scopes' => $params['scope']
@@ -131,7 +185,7 @@ class OAuthService
         $config = $this->getServiceConfig($service);
 
         try {
-            Log::info('OAuthService: Exchanging authorization code for token', [
+            static::log('Exchanging authorization code for token', [
                 'service' => $service,
                 'code_length' => strlen($code)
             ]);
@@ -146,7 +200,7 @@ class OAuthService
 
             if (!$response->successful()) {
                 $error = $response->json();
-                Log::error('OAuthService: Failed to exchange code for token', [
+                static::log('Failed to exchange code for token', [
                     'service' => $service,
                     'status' => $response->status(),
                     'error' => $error
@@ -160,7 +214,7 @@ class OAuthService
                 throw new ValidationError('Invalid token response - missing access_token', 400);
             }
 
-            Log::info('OAuthService: Successfully exchanged code for token', [
+            static::log('Successfully exchanged code for token', [
                 'service' => $service,
                 'expires_in' => $tokenData['expires_in'] ?? null,
                 'scope' => $tokenData['scope'] ?? null
@@ -173,7 +227,7 @@ class OAuthService
                 throw $e;
             }
 
-            Log::error('OAuthService: Exception during token exchange', [
+            static::log('Exception during token exchange', [
                 'service' => $service,
                 'error' => $e->getMessage()
             ]);
@@ -191,7 +245,7 @@ class OAuthService
 
         $token = $this->repository->storeOAuthToken($service, $tokenData, $team, $metadata);
 
-        Log::info('OAuthService: OAuth token stored successfully', [
+        static::log('OAuth token stored successfully', [
             'service' => $service,
             'team_id' => $token->team_id,
             'expires_at' => $token->expires_at?->toISOString()
@@ -218,7 +272,7 @@ class OAuthService
         }
 
         try {
-            Log::info('OAuthService: Refreshing OAuth token', [
+            static::log('Refreshing OAuth token', [
                 'service' => $service,
                 'team_id' => $token->team_id,
                 'expires_at' => $token->expires_at?->toISOString()
@@ -233,17 +287,17 @@ class OAuthService
 
             if (!$response->successful()) {
                 $error = $response->json();
-                Log::error('OAuthService: Failed to refresh token', [
+                static::log('Failed to refresh token', [
                     'service' => $service,
                     'status' => $response->status(),
                     'error' => $error,
                     'team_id' => $token->team_id
                 ]);
 
-                // If refresh token is invalid, delete the stored token
+                // If refresh token is invalid, soft delete the stored token
                 if (isset($error['error']) && in_array($error['error'], ['invalid_grant', 'invalid_request'])) {
                     $this->repository->revokeToken($token);
-                    throw new ValidationError('OAuth token has been revoked. Re-authorization required.', 401);
+                    throw new TokenRevokedException($service, $token->team_id, $error['error_description'] ?? $error['error'] ?? null);
                 }
 
                 throw new ValidationError('Failed to refresh OAuth token: ' . ($error['error_description'] ?? 'Unknown error'), 400);
@@ -257,7 +311,7 @@ class OAuthService
 
             $token = $this->repository->updateOAuthToken($token, $tokenData);
 
-            Log::info('OAuthService: Successfully refreshed OAuth token', [
+            static::log('Successfully refreshed OAuth token', [
                 'service' => $service,
                 'team_id' => $token->team_id,
                 'new_expires_at' => $token->expires_at?->toISOString()
@@ -270,7 +324,7 @@ class OAuthService
                 throw $e;
             }
 
-            Log::error('OAuthService: Exception during token refresh', [
+            static::log('Exception during token refresh', [
                 'service' => $service,
                 'team_id' => $token->team_id,
                 'error' => $e->getMessage()
@@ -303,7 +357,7 @@ class OAuthService
         $config = $this->getServiceConfig($service);
 
         try {
-            Log::info('OAuthService: Revoking OAuth token', [
+            static::log('Revoking OAuth token', [
                 'service' => $service,
                 'team_id' => $token->team_id
             ]);
@@ -315,7 +369,7 @@ class OAuthService
                 ]);
 
                 if (!$response->successful()) {
-                    Log::warning('OAuthService: Failed to revoke token with service (will delete locally)', [
+                    static::log('Failed to revoke token with service (will delete locally)', [
                         'service' => $service,
                         'team_id' => $token->team_id,
                         'status' => $response->status()
@@ -323,10 +377,10 @@ class OAuthService
                 }
             }
 
-            // Delete the local token regardless of service response
+            // Soft delete the local token regardless of service response
             $this->repository->revokeToken($token);
 
-            Log::info('OAuthService: Successfully revoked OAuth token', [
+            static::log('Successfully revoked OAuth token', [
                 'service' => $service,
                 'team_id' => $token->team_id
             ]);
@@ -334,13 +388,13 @@ class OAuthService
             return true;
 
         } catch (\Exception $e) {
-            Log::error('OAuthService: Exception during token revocation', [
+            static::log('Exception during token revocation', [
                 'service' => $service,
                 'team_id' => $token->team_id,
                 'error' => $e->getMessage()
             ]);
 
-            // Still delete the local token
+            // Still soft delete the local token
             $this->repository->revokeToken($token);
             return false;
         }

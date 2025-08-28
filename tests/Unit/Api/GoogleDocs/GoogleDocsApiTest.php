@@ -3,6 +3,9 @@
 namespace Tests\Unit\Api\GoogleDocs;
 
 use App\Api\GoogleDocs\GoogleDocsApi;
+use App\Exceptions\Auth\NoTokenFoundException;
+use App\Exceptions\Auth\TokenExpiredException;
+use App\Exceptions\Auth\TokenRevokedException;
 use App\Models\Auth\AuthToken;
 use App\Services\Auth\OAuthService;
 use Illuminate\Support\Facades\Config;
@@ -68,7 +71,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
 
         // Then
         $this->expectException(ApiException::class);
-        $this->expectExceptionMessage('No valid OAuth token found');
+        $this->expectExceptionMessage('No OAuth token found for google');
 
         // When
         $this->api->getRequestHeaders();
@@ -77,11 +80,13 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     public function test_initializeAuthentication_withExpiredOAuthToken_throwsException(): void
     {
         // Given
-        AuthToken::factory()->google()->forTeam($this->team)->expired()->create();
+        AuthToken::factory()->google()->forTeam($this->team)->expired()->create([
+            'refresh_token' => null
+        ]);
 
         // Then
         $this->expectException(ApiException::class);
-        $this->expectExceptionMessage('No valid OAuth token found');
+        $this->expectExceptionMessage('OAuth token for google');
 
         // When
         $this->api->getRequestHeaders();
@@ -183,7 +188,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
         $this->assertEquals('Bearer new_access_token', $headers['Authorization']);
     }
 
-    public function test_initializeOAuth_withRefreshFailure_usesExpiredToken(): void
+    public function test_initializeOAuth_withRefreshFailure_throwsTokenRevokedException(): void
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->expiresSoon()->create([
@@ -191,18 +196,19 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
             'refresh_token' => 'refresh_token'
         ]);
         
-        // Mock refresh failure
+        // Mock refresh failure with invalid_grant (token revoked)
         Http::fake([
             'https://oauth2.googleapis.com/token' => Http::response([
-                'error' => 'invalid_grant'
+                'error' => 'invalid_grant',
+                'error_description' => 'Token has been revoked'
             ], 400)
         ]);
 
-        // When
-        $headers = $this->api->getRequestHeaders();
-
-        // Then - should still use the old token even though refresh failed
-        $this->assertEquals('Bearer old_token', $headers['Authorization']);
+        // When & Then
+        $this->expectException(ApiException::class);
+        $this->expectExceptionMessage('OAuth token for google');
+        
+        $this->api->getRequestHeaders();
     }
 
     public function test_readDocument_withOAuthAuthentication_makesApiCall(): void
@@ -388,5 +394,131 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
         $this->assertCount(2, $variables);
         $this->assertContains('customer_name', $variables);
         $this->assertContains('product', $variables);
+    }
+
+    // Tests for new specific exception handling
+
+    public function test_initializeAuthentication_withRevokedToken_throwsApiExceptionWithCorrectMessage(): void
+    {
+        // Given
+        AuthToken::factory()->google()->forTeam($this->team)->create([
+            'access_token' => 'expired_token',
+            'refresh_token' => 'invalid_refresh_token',
+            'expires_at' => now()->subHour(),
+        ]);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'error' => 'invalid_grant',
+                'error_description' => 'Token has been revoked'
+            ], 400)
+        ]);
+
+        // When & Then
+        $this->expectException(ApiException::class);
+        $this->expectExceptionMessage('OAuth token for google');
+        
+        $this->api->getRequestHeaders();
+    }
+
+    public function test_initializeAuthentication_withNoTokenFoundException_throwsCorrectApiException(): void
+    {
+        // Given - Use reflection to test specific exception handling
+        $reflection = new \ReflectionClass($this->api);
+        $method = $reflection->getMethod('initializeAuthentication');
+        $method->setAccessible(true);
+
+        // Mock OAuthService to throw NoTokenFoundException
+        $mockOAuthService = $this->mock(OAuthService::class);
+        $mockOAuthService->shouldReceive('getValidToken')
+            ->with('google')
+            ->andThrow(new NoTokenFoundException('google', $this->team->id));
+
+        app()->instance(OAuthService::class, $mockOAuthService);
+
+        // When & Then
+        $this->expectException(ApiException::class);
+        $this->expectExceptionMessage('No OAuth token found for google for team ' . $this->team->id);
+        $this->expectExceptionCode(404);
+        
+        $method->invoke($this->api);
+    }
+
+    public function test_initializeAuthentication_withTokenExpiredException_throwsCorrectApiException(): void
+    {
+        // Given
+        $reflection = new \ReflectionClass($this->api);
+        $method = $reflection->getMethod('initializeAuthentication');
+        $method->setAccessible(true);
+
+        // Mock OAuthService to throw TokenExpiredException
+        $mockOAuthService = $this->mock(OAuthService::class);
+        $mockOAuthService->shouldReceive('getValidToken')
+            ->with('google')
+            ->andThrow(new TokenExpiredException('google', $this->team->id, now()->subHour()->toISOString()));
+
+        app()->instance(OAuthService::class, $mockOAuthService);
+
+        // When & Then
+        $this->expectException(ApiException::class);
+        $this->expectExceptionMessage('OAuth token for google for team ' . $this->team->id . ' has expired');
+        $this->expectExceptionCode(401);
+        
+        $method->invoke($this->api);
+    }
+
+    public function test_initializeAuthentication_withTokenRevokedException_throwsCorrectApiException(): void
+    {
+        // Given
+        $reflection = new \ReflectionClass($this->api);
+        $method = $reflection->getMethod('initializeAuthentication');
+        $method->setAccessible(true);
+
+        // Mock OAuthService to throw TokenRevokedException
+        $mockOAuthService = $this->mock(OAuthService::class);
+        $mockOAuthService->shouldReceive('getValidToken')
+            ->with('google')
+            ->andThrow(new TokenRevokedException('google', $this->team->id, 'Token has been revoked'));
+
+        app()->instance(OAuthService::class, $mockOAuthService);
+
+        // When & Then
+        $this->expectException(ApiException::class);
+        $this->expectExceptionMessage('OAuth token for google for team ' . $this->team->id . ' has been revoked');
+        $this->expectExceptionCode(401);
+        
+        $method->invoke($this->api);
+    }
+
+    public function test_initializeAuthentication_withValidTokenAfterRefresh_setsAccessToken(): void
+    {
+        // Given
+        AuthToken::factory()->google()->forTeam($this->team)->create([
+            'access_token' => 'expired_token',
+            'refresh_token' => 'valid_refresh_token',
+            'expires_at' => now()->subHour(),
+        ]);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'refreshed_access_token',
+                'expires_in' => 3600,
+                'scope' => 'https://www.googleapis.com/auth/documents'
+            ], 200)
+        ]);
+
+        // When
+        $reflection = new \ReflectionClass($this->api);
+        $method = $reflection->getMethod('initializeAuthentication');
+        $method->setAccessible(true);
+        
+        $method->invoke($this->api);
+
+        // Then
+        $accessTokenProperty = $reflection->getProperty('accessToken');
+        $accessTokenProperty->setAccessible(true);
+        $accessToken = $accessTokenProperty->getValue($this->api);
+        
+        $this->assertEquals('refreshed_access_token', $accessToken);
     }
 }

@@ -4,11 +4,21 @@ namespace App\Repositories\Auth;
 
 use App\Models\Auth\AuthToken;
 use App\Models\Team\Team;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class AuthTokenRepository extends ActionRepository
 {
     public static string $model = AuthToken::class;
+
+    /**
+     * Apply team-based scoping to all queries
+     */
+    public function query(): Builder
+    {
+        return parent::query()->where('team_id', team()->id);
+    }
 
     /**
      * Get OAuth token for a service and team
@@ -69,11 +79,11 @@ class AuthTokenRepository extends ActionRepository
             throw new \InvalidArgumentException('Team is required to store OAuth token');
         }
 
-        // Remove existing OAuth token for this service/team
+        // Remove existing OAuth token for this service/team (hard delete since we're replacing)
         AuthToken::forTeam($team->id)
             ->forService($service)
             ->ofType(AuthToken::TYPE_OAUTH)
-            ->delete();
+            ->forceDelete();
 
         $expiresAt = null;
         if (isset($tokenData['expires_in'])) {
@@ -155,11 +165,86 @@ class AuthTokenRepository extends ActionRepository
     }
 
     /**
-     * Revoke/delete token
+     * Revoke/delete token (soft delete for audit trail)
      */
     public function revokeToken(AuthToken $token): bool
     {
+        $this->validateTokenOwnership($token);
         return $token->delete();
+    }
+
+    /**
+     * Hard delete a token (permanent removal)
+     */
+    public function permanentlyDeleteToken(AuthToken $token): bool
+    {
+        $this->validateTokenOwnership($token);
+        return $token->forceDelete();
+    }
+
+    /**
+     * Soft delete invalid tokens for cleanup
+     */
+    public function softDeleteInvalidTokens(string $service, ?Team $team = null): int
+    {
+        $team = $team ?: team();
+        
+        if (!$team) {
+            return 0;
+        }
+
+        return AuthToken::forTeam($team->id)
+            ->forService($service)
+            ->ofType(AuthToken::TYPE_OAUTH)
+            ->where(function (Builder $query) {
+                $query->where('expires_at', '<', now())
+                    ->whereNull('refresh_token');
+            })
+            ->delete();
+    }
+
+    /**
+     * Get soft deleted tokens for a team (for recovery)
+     */
+    public function getDeletedTokensForTeam(?Team $team = null): \Illuminate\Database\Eloquent\Collection
+    {
+        $team = $team ?: team();
+        
+        if (!$team) {
+            return collect();
+        }
+
+        return AuthToken::onlyTrashed()
+            ->forTeam($team->id)
+            ->orderByDesc('deleted_at')
+            ->get();
+    }
+
+    /**
+     * Restore a soft deleted token
+     */
+    public function restoreToken(int $tokenId): ?AuthToken
+    {
+        $token = AuthToken::onlyTrashed()
+            ->forTeam(team()->id)
+            ->find($tokenId);
+
+        if ($token && $token->restore()) {
+            return $token->fresh();
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate that the current team owns the token
+     */
+    protected function validateTokenOwnership(AuthToken $token): void
+    {
+        $currentTeam = team();
+        if (!$currentTeam || $token->team_id !== $currentTeam->id) {
+            throw new \InvalidArgumentException('You do not have permission to access this OAuth token');
+        }
     }
 
     /**
@@ -195,7 +280,7 @@ class AuthTokenRepository extends ActionRepository
     }
 
     /**
-     * Clean up expired tokens without refresh tokens
+     * Clean up expired tokens without refresh tokens (soft delete)
      */
     public function cleanupExpiredTokens(): int
     {
@@ -203,5 +288,23 @@ class AuthTokenRepository extends ActionRepository
             ->where('expires_at', '<', now())
             ->whereNull('refresh_token')
             ->delete();
+    }
+
+    /**
+     * Permanently clean up very old soft deleted tokens for current team
+     */
+    public function permanentlyCleanupOldDeletedTokens(int $daysOld = 90, ?Team $team = null): int
+    {
+        $team = $team ?: team();
+        $cutoffDate = now()->subDays($daysOld);
+        
+        $query = AuthToken::onlyTrashed()
+            ->where('deleted_at', '<', $cutoffDate);
+            
+        if ($team) {
+            $query->where('team_id', $team->id);
+        }
+        
+        return $query->forceDelete();
     }
 }
