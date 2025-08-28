@@ -55,7 +55,6 @@
 
 <script setup lang="ts">
 import { ActionButton } from "quasar-ui-danx";
-import { watchEffect } from "vue";
 import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
 import { DEMAND_STATUS } from "../../config";

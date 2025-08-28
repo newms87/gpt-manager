@@ -81,7 +81,7 @@
 import { usePusher } from "@/helpers/pusher";
 import { WorkflowRun } from "@/types";
 import { FaSolidExclamation } from "danx-icon";
-import { type StoredFile, storeObject } from "quasar-ui-danx";
+import { type StoredFile } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { DemandTemplateSelector } from "../../demand-templates/components";
@@ -143,7 +143,6 @@ const subscribeToWorkflowRunUpdates = () => {
         return;
     }
 
-
     // Subscribe to extract data workflow run if not already subscribed
     if (demand.value.extract_data_workflow_run?.id && !subscribedWorkflowIds.value.has(demand.value.extract_data_workflow_run.id)) {
         subscribedWorkflowIds.value.add(demand.value.extract_data_workflow_run.id);
@@ -185,10 +184,11 @@ const loadDemand = async () => {
     try {
         isLoading.value = true;
         error.value = null;
-        const demandData = await demandRoutes.details({ id: demandId.value });
+        const newDemand = await demandRoutes.details({ id: demandId.value });
 
-        // Store the demand using storeObject for reactive updates
-        demand.value = storeObject(demandData);
+        if (!demand.value || demand.value.id !== newDemand.id) {
+            demand.value = newDemand;
+        }
 
         // Subscribe to workflow run updates after demand is loaded
         subscribeToWorkflowRunUpdates();
@@ -204,8 +204,6 @@ const handleUpdate = async (data: { title: string; description: string; input_fi
 
     try {
         const updatedDemand = await updateDemand(demand.value.id, data);
-        // Store the updated demand using storeObject for reactive updates
-        demand.value = storeObject(updatedDemand);
         editMode.value = false;
     } catch (err: any) {
         error.value = err.message || "Failed to update demand";
@@ -218,10 +216,7 @@ const handleExtractData = async () => {
 
     try {
         workflowError.value = null;
-        const updatedDemand = await extractData(demand.value);
-
-        // Store the updated demand using storeObject for reactive updates
-        demand.value = storeObject(updatedDemand);
+        await extractData(demand.value);
 
         // Re-subscribe to workflow run updates after starting extract data
         subscribeToWorkflowRunUpdates();
@@ -244,10 +239,7 @@ const handleWriteDemandWithTemplate = async (template: any, instructions: string
     try {
         workflowError.value = null;
         showTemplateSelector.value = false; // Close the modal
-        const updatedDemand = await writeDemand(demand.value, template.id, instructions);
-
-        // Store the updated demand using storeObject for reactive updates
-        demand.value = storeObject(updatedDemand);
+        await writeDemand(demand.value, template.id, instructions);
 
         // Re-subscribe to workflow run updates after starting write demand
         subscribeToWorkflowRunUpdates();
@@ -260,9 +252,7 @@ const handleInputFilesUpdate = async (inputFiles: StoredFile[]) => {
     if (!demand.value) return;
 
     try {
-        const updatedDemand = await updateDemand(demand.value.id, { input_files: inputFiles });
-        // Store the updated demand using storeObject for reactive updates
-        demand.value = storeObject(updatedDemand);
+        await updateDemand(demand.value.id, { input_files: inputFiles });
     } catch (err: any) {
         error.value = err.message || "Failed to update input files";
     }
@@ -272,12 +262,7 @@ const handleOutputFilesUpdate = async (outputFiles: StoredFile[]) => {
     if (!demand.value) return;
 
     try {
-
-        const updatedDemand = await updateDemand(demand.value.id, { output_files: outputFiles });
-
-
-        // Store the updated demand using storeObject for reactive updates
-        demand.value = storeObject(updatedDemand);
+        await updateDemand(demand.value.id, { output_files: outputFiles });
     } catch (err: any) {
         console.error("❌ handleOutputFilesUpdate error:", err);
         error.value = err.message || "Failed to update output files";
@@ -291,14 +276,10 @@ const handleComplete = async () => {
         isCompleting.value = true;
         error.value = null;
 
-        const updatedDemand = await updateDemand(demand.value.id, {
+        await updateDemand(demand.value.id, {
             status: DEMAND_STATUS.COMPLETED,
             completed_at: new Date().toISOString()
         });
-
-        // Store the updated demand using storeObject for reactive updates
-        demand.value = storeObject(updatedDemand);
-
     } catch (err: any) {
         error.value = err.message || "Failed to mark demand as complete";
         console.error("❌ Failed to complete demand:", err);
@@ -314,14 +295,10 @@ const handleSetAsDraft = async () => {
         isSettingAsDraft.value = true;
         error.value = null;
 
-        const updatedDemand = await updateDemand(demand.value.id, {
+        await updateDemand(demand.value.id, {
             status: DEMAND_STATUS.DRAFT,
             completed_at: null
         });
-
-        // Store the updated demand using storeObject for reactive updates
-        demand.value = storeObject(updatedDemand);
-
     } catch (err: any) {
         error.value = err.message || "Failed to set demand as draft";
         console.error("❌ Failed to set demand as draft:", err);
@@ -351,7 +328,4 @@ watch(demandId, (newId, oldId) => {
     }
     loadDemand();
 }, { immediate: true });
-
-
-// Note: WebSocket subscriptions are automatically managed by the pusher helper
 </script>

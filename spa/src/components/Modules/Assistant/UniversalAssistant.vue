@@ -26,8 +26,8 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import FloatingChatButton from "./FloatingChatButton.vue";
 import ChatWindow from "./ChatWindow.vue";
+import FloatingChatButton from "./FloatingChatButton.vue";
 
 // Props
 interface Props {
@@ -39,7 +39,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     autoOpen: false,
     persistent: false,
-    minimizable: true,
+    minimizable: true
 });
 
 // State
@@ -77,9 +77,3 @@ onMounted(() => {
     }
 });
 </script>
-
-<style lang="scss" scoped>
-.universal-assistant {
-    // All styling is handled by child components
-}
-</style>

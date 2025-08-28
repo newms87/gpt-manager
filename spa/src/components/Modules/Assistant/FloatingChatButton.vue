@@ -1,6 +1,6 @@
 <template>
-    <div 
-        class="floating-chat-button fixed bottom-4 right-4 z-50 cursor-pointer"
+    <div
+        class="floating-chat-button fixed bottom-10 right-20 z-50 cursor-pointer"
         @click="handleClick"
     >
         <div
@@ -18,8 +18,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import { FaSolidComments } from "danx-icon";
+import { computed } from "vue";
 
 // Props
 interface Props {
@@ -27,12 +27,12 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    unreadCount: 0,
+    unreadCount: 0
 });
 
 // Emits
 interface Emits {
-    (e: 'click'): void;
+    (e: "click"): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -42,7 +42,7 @@ const hasUnreadMessages = computed(() => props.unreadCount > 0);
 
 // Methods
 function handleClick(): void {
-    emit('click');
+    emit("click");
 }
 </script>
 
