@@ -265,10 +265,6 @@ class ResponsesApiOptions
             $options['tools'] = $this->mcpServers;
         }
 
-        if ($this->timeout !== null) {
-            $options['timeout'] = $this->timeout;
-        }
-
         return $options;
     }
 
