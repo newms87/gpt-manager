@@ -52,7 +52,10 @@
             <!-- Sidebar -->
             <div class="space-y-6">
                 <!-- Status Timeline -->
-                <DemandStatusTimeline :demand="demand" />
+                <DemandStatusTimeline 
+                    :demand="demand" 
+                    @view-workflow="handleViewWorkflow" 
+                />
 
                 <!-- Quick Actions -->
                 <DemandQuickActions
@@ -74,6 +77,13 @@
             @confirm="handleWriteDemandWithTemplate"
             @close="showTemplateSelector = false"
         />
+
+        <!-- View Workflow Dialog -->
+        <ViewWorkflowDialog
+            v-if="showWorkflowDialog"
+            :workflow-run="selectedWorkflowRun"
+            @close="handleCloseWorkflowDialog"
+        />
     </UiMainLayout>
 </template>
 
@@ -92,7 +102,8 @@ import {
     DemandDetailHeader,
     DemandDetailInfo,
     DemandQuickActions,
-    DemandStatusTimeline
+    DemandStatusTimeline,
+    ViewWorkflowDialog
 } from "../components/Detail";
 import { useDemands } from "../composables";
 import { DEMAND_STATUS, demandRoutes } from "../config";
@@ -113,6 +124,8 @@ const error = ref<string | null>(null);
 const editMode = ref(false);
 const workflowError = ref<string | null>(null);
 const showTemplateSelector = ref(false);
+const showWorkflowDialog = ref(false);
+const selectedWorkflowRun = ref<WorkflowRun | null>(null);
 const isCompleting = ref(false);
 const isSettingAsDraft = ref(false);
 
@@ -318,6 +331,16 @@ const deleteDemand = async () => {
             error.value = err.message || "Failed to delete demand";
         }
     }
+};
+
+const handleViewWorkflow = (workflowRun: WorkflowRun) => {
+    selectedWorkflowRun.value = workflowRun;
+    showWorkflowDialog.value = true;
+};
+
+const handleCloseWorkflowDialog = () => {
+    showWorkflowDialog.value = false;
+    selectedWorkflowRun.value = null;
 };
 
 // Watch for route changes and load demand

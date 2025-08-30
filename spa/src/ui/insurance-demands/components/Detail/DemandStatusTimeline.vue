@@ -36,16 +36,21 @@
                 </div>
 
                 <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between">
-                        <p class="font-medium" :class="status.failed ? 'text-red-700' : 'text-slate-800'">{{
+                    <div class="flex items-center">
+                        <div class="font-medium" :class="status.failed ? 'text-red-700' : 'text-slate-800'">{{
                                 status.label
-                            }}</p>
-                        <span
-                            v-if="status.isActive && status.progress != null"
-                            class="text-xs font-semibold text-blue-600 ml-2"
-                        >
-              {{ status.progress }}%
-            </span>
+                            }}
+                        </div>
+
+                        <div v-if="status.workflowRun" class="ml-4">
+                            <ActionButton
+                                type="view"
+                                color="sky-invert"
+                                size="xs"
+                                class="text-xs"
+                                @click="$emit('view-workflow', status.workflowRun)"
+                            />
+                        </div>
                     </div>
 
                     <p v-if="status.date" class="text-sm text-slate-500">
@@ -59,16 +64,16 @@
                         <span v-else-if="status.failed">Failed after: {{ status.runtime }}</span>
                     </p>
 
-                    <!-- Progress Bar for Active Workflows -->
-                    <div
+                    <QLinearProgress
                         v-if="status.isActive && status.progress != null"
-                        class="mt-2 w-full bg-gray-200 rounded-full h-1.5"
+                        size="29px"
+                        :value="status.progress"
+                        class="w-full rounded bg-slate-300"
                     >
-                        <div
-                            class="bg-blue-500 h-1.5 rounded-full transition-all duration-300 ease-out"
-                            :style="{ width: `${status.progress}%` }"
-                        />
-                    </div>
+                        <div class="absolute-full flex flex-center">
+                            <LabelPillWidget :label="fPercent(status.progress)" color="sky" size="xs" />
+                        </div>
+                    </QLinearProgress>
                 </div>
             </div>
         </div>
@@ -77,14 +82,18 @@
 
 <script setup lang="ts">
 import { FaSolidCheck, FaSolidClock, FaSolidTriangleExclamation } from "danx-icon";
-import { computed, ref, onMounted, onUnmounted, watch } from "vue";
-import { DateTime, fDuration } from "quasar-ui-danx";
+import { ActionButton, DateTime, fDuration, fPercent, LabelPillWidget } from "quasar-ui-danx";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
 import { DEMAND_STATUS } from "../../config";
 
 const props = defineProps<{
     demand: UiDemand | null;
+}>();
+
+const emit = defineEmits<{
+    "view-workflow": [workflowRun: any];
 }>();
 
 // Reactive timer for live updates of running workflows
@@ -95,9 +104,9 @@ let intervalId: NodeJS.Timeout | null = null;
 // Calculate runtime for a workflow run using fDuration
 const calculateRuntime = (workflowRun: any, isActive: boolean): string | null => {
     if (!workflowRun?.started_at) return null;
-    
+
     let endTime: string | DateTime;
-    
+
     if (isActive) {
         // For running workflows, use reactive currentTime for live updates
         endTime = DateTime.fromMillis(currentTime.value);
@@ -107,19 +116,19 @@ const calculateRuntime = (workflowRun: any, isActive: boolean): string | null =>
         if (!completedAt) return null;
         endTime = completedAt;
     }
-    
+
     return fDuration(workflowRun.started_at, endTime);
 };
 
 // Check if there are any active workflows that need live updates
 const hasActiveWorkflows = computed(() => {
     if (!props.demand) return false;
-    
-    const extractDataActive = props.demand.extract_data_workflow_run?.status && 
+
+    const extractDataActive = props.demand.extract_data_workflow_run?.status &&
         ["Pending", "Running", "Incomplete"].includes(props.demand.extract_data_workflow_run.status);
-    const writeDemandActive = props.demand.write_demand_workflow_run?.status && 
+    const writeDemandActive = props.demand.write_demand_workflow_run?.status &&
         ["Pending", "Running", "Incomplete"].includes(props.demand.write_demand_workflow_run.status);
-    
+
     return extractDataActive || writeDemandActive;
 });
 
@@ -193,7 +202,8 @@ const statusTimeline = computed(() => {
             isActive: false,
             progress: null,
             date: props.demand.created_at,
-            grayed: false
+            grayed: false,
+            workflowRun: null
         },
         {
             status: "extract-data",
@@ -207,7 +217,8 @@ const statusTimeline = computed(() => {
             progress: extractDataState.active ? props.demand.extract_data_workflow_run?.progress_percent : null,
             date: extractDataState.completed ? props.demand.extract_data_workflow_run?.completed_at : extractDataState.failed ? props.demand.extract_data_workflow_run?.failed_at : null,
             runtime: calculateRuntime(props.demand.extract_data_workflow_run, extractDataState.active),
-            grayed: extractDataGrayed
+            grayed: extractDataGrayed,
+            workflowRun: props.demand.extract_data_workflow_run
         },
         {
             status: "write-demand",
@@ -221,7 +232,8 @@ const statusTimeline = computed(() => {
             progress: writeDemandState.active ? props.demand.write_demand_workflow_run?.progress_percent : null,
             date: writeDemandState.completed ? props.demand.write_demand_workflow_run?.completed_at : writeDemandState.failed ? props.demand.write_demand_workflow_run?.failed_at : null,
             runtime: calculateRuntime(props.demand.write_demand_workflow_run, writeDemandState.active),
-            grayed: writeDemandGrayed
+            grayed: writeDemandGrayed,
+            workflowRun: props.demand.write_demand_workflow_run
         },
         {
             status: "completed",
@@ -234,7 +246,8 @@ const statusTimeline = computed(() => {
             isActive: false,
             progress: null,
             date: props.demand.completed_at,
-            grayed: completeGrayed
+            grayed: completeGrayed,
+            workflowRun: null
         }
     ];
 });

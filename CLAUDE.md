@@ -49,6 +49,11 @@ You MUST use the specialized Vue agents for any frontend work:
     - Ensuring adherence to project patterns and quality standards
     - Quality assurance of all Vue/Tailwind code
 
+**CRITICAL: If you write ANY Vue/frontend code yourself instead of using specialized agents, you MUST:**
+- First read the complete documentation files for the specialized agents (e.g., `@agent-vue-spa-engineer.md`)
+- Follow ALL patterns and standards documented in those files
+- Never guess at implementation patterns - always verify against existing code
+
 **DO NOT** attempt to write Vue components or frontend code directly. Always delegate to the appropriate specialized
 agent to ensure consistency, quality, and adherence to project standards.
 

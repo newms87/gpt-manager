@@ -78,6 +78,33 @@ await request.post('/api/endpoint', data);
 - Conditional render: `v-if` for DOM, `v-show` for visibility
 - Formatting: `fDate()`, `fNumber()`, `fCurrency()` from quasar-ui-danx
 
+### **CRITICAL Performance Rules for Dialogs and Heavy Components**
+
+- **NEVER use `v-model` for dialog visibility** - Always use `v-if` for lazy loading
+- **Lazy Loading is MANDATORY** - Heavy components (dialogs, modals, complex forms) MUST be conditionally rendered
+- **Dialog Pattern**: Use `:model-value="true"` on dialog components when using `v-if` wrapper
+- **Component Props**: Remove `modelValue` prop from dialog components when using `v-if` pattern
+- **Performance First**: Always prioritize performance over convenience - lazy loading prevents unnecessary renders
+
+**Example - CORRECT Dialog Implementation:**
+```vue
+<!-- Parent Component -->
+<MyDialog v-if="showDialog" @close="showDialog = false" />
+
+<!-- Dialog Component -->
+<template>
+  <FullScreenDialog :model-value="true" @close="$emit('close')">
+    <!-- content -->
+  </FullScreenDialog>
+</template>
+```
+
+**NEVER DO THIS - Performance Anti-Pattern:**
+```vue
+<!-- WRONG - Always renders dialog -->
+<MyDialog v-model="showDialog" />
+```
+
 **Core Principles:**
 
 1. **DRY (Don't Repeat Yourself)**: You never duplicate code or logic. You identify patterns and extract them into
