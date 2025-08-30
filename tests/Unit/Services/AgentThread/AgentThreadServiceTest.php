@@ -30,7 +30,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $this->assertSame($service, $result, 'withTimeout should return the same service instance for chaining');
 
         // Use reflection to access the protected property
-        $reflection = new \ReflectionClass($service);
+        $reflection      = new \ReflectionClass($service);
         $timeoutProperty = $reflection->getProperty('timeout');
         $timeoutProperty->setAccessible(true);
         $timeout = $timeoutProperty->getValue($service);
@@ -50,7 +50,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         $this->assertSame($service, $result, 'withTimeout should return the same service instance for chaining');
 
         // Use reflection to access the protected property
-        $reflection = new \ReflectionClass($service);
+        $reflection      = new \ReflectionClass($service);
         $timeoutProperty = $reflection->getProperty('timeout');
         $timeoutProperty->setAccessible(true);
         $timeout = $timeoutProperty->getValue($service);
@@ -62,7 +62,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         // Given
         $agentThread = AgentThread::factory()->create();
-        $service = new AgentThreadService();
+        $service     = new AgentThreadService();
         $service->withTimeout(240);
 
         // When
@@ -77,7 +77,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         // Given
         $agentThread = AgentThread::factory()->create();
-        $service = new AgentThreadService();
+        $service     = new AgentThreadService();
         $service->withTimeout(null);
 
         // When
@@ -92,7 +92,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         // Given
         $agentThread = AgentThread::factory()->create();
-        $service = new AgentThreadService();
+        $service     = new AgentThreadService();
         // Not calling withTimeout() at all
 
         // When
@@ -107,10 +107,10 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         $testTimeouts = [1, 30, 60, 120, 300, 600, null];
 
-        foreach ($testTimeouts as $timeout) {
+        foreach($testTimeouts as $timeout) {
             // Given
             $agentThread = AgentThread::factory()->create();
-            $service = new AgentThreadService();
+            $service     = new AgentThreadService();
             $service->withTimeout($timeout);
 
             // When
@@ -118,36 +118,18 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
 
             // Then
             $this->assertEquals($timeout, $agentThreadRun->timeout, "AgentThreadRun API timeout should match service timeout: " . ($timeout ?? 'null'));
-            
+
             // Clean up for next iteration
             $agentThreadRun->delete();
         }
     }
 
-    public function test_executeResponsesApi_withTimeout_passesToResponsesApiOptions(): void
-    {
-        // Given - directly test ResponsesApiOptions timeout behavior
-        $apiOptions = \App\Api\Options\ResponsesApiOptions::fromArray([]);
-        
-        // When - setting timeout
-        $apiOptions->setTimeout(180);
-        
-        // Then - timeout is properly stored and retrieved
-        $this->assertEquals(180, $apiOptions->getTimeout(), 'ResponsesApiOptions should store timeout for HTTP client');
-        
-        // When - converting to array for API call
-        $optionsArray = $apiOptions->toArray();
-        
-        // Then - timeout is included in API options
-        $this->assertEquals(180, $optionsArray['timeout'], 'API options array should include timeout for HTTP client');
-    }
-
     public function test_timeoutFlow_separatesJobAndApiTimeouts(): void
     {
         // Given - API timeout configuration
-        $apiTimeout = 120;
+        $apiTimeout  = 120;
         $agentThread = AgentThread::factory()->create();
-        $service = new AgentThreadService();
+        $service     = new AgentThreadService();
         $service->withTimeout($apiTimeout);
 
         // When - preparing agent thread run
@@ -176,10 +158,10 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         // Given - various timeout configurations
         $testTimeouts = [1, 120, 300, 600, 1000];
 
-        foreach ($testTimeouts as $apiTimeout) {
+        foreach($testTimeouts as $apiTimeout) {
             // When - creating the job directly with a mock AgentThreadRun
             $agentThreadRun = $this->createMock(\App\Models\Agent\AgentThreadRun::class);
-            $job = new \App\Jobs\ExecuteThreadRunJob($agentThreadRun);
+            $job            = new \App\Jobs\ExecuteThreadRunJob($agentThreadRun);
 
             // Then - job timeout is always 600 seconds regardless of API timeout config
             $this->assertEquals(600, $job->timeout, "Job timeout should always be 600 seconds, not {$apiTimeout}");

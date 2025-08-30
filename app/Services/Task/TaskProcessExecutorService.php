@@ -7,7 +7,9 @@ use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Traits\HasDebugLogging;
+use Exception;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Newms87\Danx\Helpers\LockHelper;
 
 class TaskProcessExecutorService
@@ -25,7 +27,7 @@ class TaskProcessExecutorService
             // Check for timed out running processes first
             $this->checkForTimedOutProcesses($workflowRun);
 
-            $taskProcess = $this->findNextTaskProcessForWorkflow($workflowRun);
+            $taskProcess = $this->findNextTaskProcessForQuery($workflowRun->taskProcesses());
         } finally {
             LockHelper::release($workflowRun);
         }
@@ -48,7 +50,7 @@ class TaskProcessExecutorService
             // Check for timed out running processes first
             $this->checkForTimedOutProcesses($taskRun);
 
-            $taskProcess = $this->findNextTaskProcessForTaskRun($taskRun);
+            $taskProcess = $this->findNextTaskProcessForQuery($taskRun->taskProcesses());
 
             if ($taskProcess) {
                 $this->executeTaskProcess($taskProcess);
@@ -61,60 +63,34 @@ class TaskProcessExecutorService
     }
 
     /**
-     * Find the next available task process for a workflow
+     * Find the next available task process from a base query
      */
-    protected function findNextTaskProcessForWorkflow(WorkflowRun $workflowRun): ?TaskProcess
+    protected function findNextTaskProcessForQuery(Builder|Relation $taskProcessesQuery): ?TaskProcess
     {
-        // Query for eligible processes one at a time to avoid loading thousands
-        $baseQuery = $workflowRun->taskProcessesReadyToRun()
-            ->with(['taskRun.taskDefinition.taskQueueType'])
-            ->orderBy('created_at');
+        // Check for the existence of the readyToRun Laravel scope on the $taskProcessesQuery builder
+        if (!method_exists($taskProcessesQuery->getModel(), 'scopeReadyToRun')) {
+            throw new Exception("The provided query does not have the readyToRun scope");
+        }
 
         // Use chunk to process one at a time until we find one with available slots
         $foundProcess = null;
-        $baseQuery->chunk(1, function ($processes) use (&$foundProcess) {
+        $taskProcessesQuery->readyToRun()->chunk(1, function ($processes) use (&$foundProcess) {
             $process       = $processes->first();
             $taskQueueType = $process->taskRun->taskDefinition->taskQueueType;
 
             if (!$taskQueueType || $taskQueueType->hasAvailableSlots()) {
+                // If the lock cannot be acquired, it means another worker is already processing this
+                if (!LockHelper::get('next-to-run-' . $process->id, 10)) {
+                    return true; // Continue to next chunk
+                }
+                // Re-check within the
                 $foundProcess = $process;
-
-                return false; // Stop chunking
             }
 
-            return true; // Continue to next chunk
+            return $foundProcess === null; // if not found, continue to next. Otherwise, stop processing and return the found process
         });
 
         return $foundProcess;
-    }
-
-    /**
-     * Find the next available task process for a task run
-     */
-    protected function findNextTaskProcessForTaskRun(TaskRun $taskRun): ?TaskProcess
-    {
-        // Check if the task run's queue type has available slots
-        $taskQueueType = $taskRun->taskDefinition->taskQueueType;
-        if ($taskQueueType && !$taskQueueType->hasAvailableSlots()) {
-            static::log("Queue type '{$taskQueueType->name}' has no available slots for TaskRun {$taskRun->id}");
-
-            return null;
-        }
-
-        return $taskRun->taskProcesses()
-            ->where(function (Builder $q) {
-                // Pending processes
-                $q->where('status', WorkflowStatesContract::STATUS_PENDING)
-                    // Or incomplete/timeout processes that can be retried
-                    ->orWhere(function (Builder $retryQuery) {
-                        $retryQuery->whereIn('status', [WorkflowStatesContract::STATUS_INCOMPLETE, WorkflowStatesContract::STATUS_TIMEOUT])
-                            ->whereHas('taskRun.taskDefinition', function (Builder $taskDefQuery) {
-                                $taskDefQuery->whereColumn('task_processes.restart_count', '<', 'task_definitions.max_process_retries');
-                            });
-                    });
-            })
-            ->orderBy('created_at')
-            ->first();
     }
 
     /**

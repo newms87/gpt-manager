@@ -3,9 +3,11 @@
 namespace Tests\Feature\Api\TestAi;
 
 use App\Api\AgentApiContracts\AgentApiContract;
+use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
 use App\Api\OpenAi\Classes\OpenAiMessageFormatter;
 use App\Api\Options\ResponsesApiOptions;
+use App\Models\Agent\AgentThreadMessage;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
 
 class TestAiApi implements AgentApiContract
@@ -36,7 +38,7 @@ class TestAiApi implements AgentApiContract
         return app(OpenAiMessageFormatter::class);
     }
 
-    public function responses(string $model, array $messages, ResponsesApiOptions $options): \App\Api\AgentApiContracts\AgentCompletionResponseContract
+    public function responses(string $model, array $messages, ResponsesApiOptions $options): AgentCompletionResponseContract
     {
         return TestAiCompletionResponse::make([
             'messages' => $messages,
@@ -44,7 +46,7 @@ class TestAiApi implements AgentApiContract
         ]);
     }
 
-    public function streamResponses(string $model, array $messages, ResponsesApiOptions $options, \App\Models\Agent\AgentThreadMessage $streamMessage): \App\Api\AgentApiContracts\AgentCompletionResponseContract
+    public function streamResponses(string $model, array $messages, ResponsesApiOptions $options, AgentThreadMessage $streamMessage): AgentCompletionResponseContract
     {
         return TestAiCompletionResponse::make([
             'messages'  => $messages,

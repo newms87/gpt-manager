@@ -12,11 +12,11 @@ use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Workflow\WorkflowRunnerService;
 use App\Traits\HasDebugLogging;
 use App\Traits\HasWorkflowStatesTrait;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -82,7 +82,6 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
     {
         return $this->hasMany(TaskRun::class);
     }
-
 
     public function taskProcessListeners(): MorphMany
     {
@@ -173,24 +172,10 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         return $outputArtifacts;
     }
 
-    public function taskProcessesReadyToRun(): Builder
+    public function taskProcesses(): HasManyThrough|TaskProcess
     {
-        $workflowRun = $this;
-
-        return TaskProcess::whereHas('taskRun', function (Builder $q) use ($workflowRun) {
-            $q->where('workflow_run_id', $workflowRun->id);
-        })
-            ->where(function (Builder $q) {
-                // Pending processes
-                $q->where('status', WorkflowStatesContract::STATUS_PENDING)
-                    // Or incomplete/timeout processes that can be retried
-                    ->orWhere(function (Builder $retryQuery) {
-                        $retryQuery->whereIn('status', [WorkflowStatesContract::STATUS_INCOMPLETE, WorkflowStatesContract::STATUS_TIMEOUT])
-                            ->whereHas('taskRun.taskDefinition', function (Builder $taskDefQuery) {
-                                $taskDefQuery->whereColumn('task_processes.restart_count', '<', 'task_definitions.max_process_retries');
-                            });
-                    });
-            });
+        // A workflow has many task processes through its task runs
+        return $this->hasManyThrough(TaskProcess::class, TaskRun::class, 'workflow_run_id', 'task_run_id', 'id', 'id');
     }
 
     /**

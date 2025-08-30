@@ -71,7 +71,7 @@ class TaskProcessDispatcherService
                 return;
             }
 
-            $pendingProcessesCount = $workflowRun->taskProcessesReadyToRun()->count();
+            $pendingProcessesCount = $workflowRun->taskProcesses()->readyToRun()->count();
 
             static::log("Workers: $availableSlots available slots / $pendingProcessesCount pending processes");
 

@@ -9,6 +9,7 @@ use App\Models\Traits\HasUsageTracking;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Runners\TaskRunnerContract;
 use App\Traits\HasWorkflowStatesTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -121,6 +122,20 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         return $this->morphOne(SchemaAssociation::class, 'object')->where('category', 'output');
     }
 
+    public function scopeReadyToRun(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q) {
+            // Pending processes
+            $q->where('task_processes.status', WorkflowStatesContract::STATUS_PENDING)
+                // Or incomplete/timeout processes that can be retried
+                ->orWhere(function (Builder $retryQuery) {
+                    $retryQuery->whereIn('task_processes.status', [WorkflowStatesContract::STATUS_INCOMPLETE, WorkflowStatesContract::STATUS_TIMEOUT])
+                        ->whereHas('taskRun.taskDefinition', function (Builder $taskDefQuery) {
+                            $taskDefQuery->whereColumn('task_processes.restart_count', '<', 'task_definitions.max_process_retries');
+                        });
+                });
+        });
+    }
 
     public function addInputArtifacts($artifacts): static
     {
