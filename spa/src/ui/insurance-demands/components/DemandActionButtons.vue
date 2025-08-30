@@ -5,10 +5,10 @@
             type="play"
             color="sky"
             :size="size"
-            :loading="loadingStates.extractData"
+            :loading="isExtractingDataComputed"
             :label="extractDataLabel"
             :class="buttonItemClass"
-            @click="onExtractData"
+            @click="handleExtractData"
         />
 
         <!-- Write Demand Button -->
@@ -16,25 +16,29 @@
             type="play"
             color="green"
             :size="size"
-            :loading="loadingStates.writeDemand"
+            :loading="isWritingDemandComputed"
             :disabled="!canWriteDemand"
             :label="writeDemandLabel"
             :tooltip="writeDemandTooltip"
             :class="buttonItemClass"
-            @click="onWriteDemand"
+            @click="showTemplateSelector = true"
+        />
+
+        <!-- Template Selector Dialog -->
+        <DemandTemplateSelector
+            v-if="showTemplateSelector"
+            @confirm="handleWriteDemandWithTemplate"
+            @close="showTemplateSelector = false"
         />
     </div>
 </template>
 
 <script setup lang="ts">
+import { DemandTemplateSelector } from "@/ui/demand-templates/components";
 import { ActionButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import type { UiDemand } from "../../shared/types";
-
-interface LoadingStates {
-    extractData: boolean;
-    writeDemand: boolean;
-}
+import { useDemands } from "../composables";
 
 const props = withDefaults(defineProps<{
     demand: UiDemand;
@@ -43,7 +47,6 @@ const props = withDefaults(defineProps<{
     buttonItemClass?: string;
     extractDataLabel?: string;
     writeDemandLabel?: string;
-    loadingStates: LoadingStates;
 }>(), {
     size: "md",
     buttonItemClass: "",
@@ -51,16 +54,17 @@ const props = withDefaults(defineProps<{
     writeDemandLabel: "Write Demand"
 });
 
-const emit = defineEmits<{
-    "extract-data": [];
-    "write-demand": [];
-}>();
+// Import composable for demand actions
+const { extractData, writeDemand } = useDemands();
 
-// Computed loading states that combine local loading with demand running states
-const loadingStates = computed(() => ({
-    extractData: props.loadingStates.extractData || props.demand.is_extract_data_running || isExtractingData.value,
-    writeDemand: props.loadingStates.writeDemand || props.demand.is_write_demand_running || isWritingDemand.value
-}));
+// Local state
+const isExtractingData = ref(false);
+const isWritingDemand = ref(false);
+const showTemplateSelector = ref(false);
+
+// Computed loading states based on workflow status and local state
+const isExtractingDataComputed = computed(() => props.demand?.is_extract_data_running || isExtractingData.value);
+const isWritingDemandComputed = computed(() => props.demand?.is_write_demand_running || isWritingDemand.value);
 
 // Write Demand button state management
 const canWriteDemand = computed(() => {
@@ -84,23 +88,24 @@ const writeDemandTooltip = computed(() => {
     return undefined;
 });
 
-const isExtractingData = ref(false);
-const isWritingDemand = ref(false);
-
-function onExtractData() {
-    emit("extract-data");
-    isExtractingData.value = true;
-    setTimeout(() => {
+// Action handlers
+const handleExtractData = async () => {
+    try {
+        isExtractingData.value = true;
+        await extractData(props.demand);
+    } finally {
         isExtractingData.value = false;
-    }, 3000);
-}
+    }
+};
 
-function onWriteDemand() {
-    emit("write-demand");
-    isWritingDemand.value = true;
-    setTimeout(() => {
+const handleWriteDemandWithTemplate = async (template: any, instructions: string) => {
+    try {
+        isWritingDemand.value = true;
+        showTemplateSelector.value = false; // Close the modal
+        await writeDemand(props.demand, template.id, instructions);
+    } finally {
         isWritingDemand.value = false;
-    }, 3000);
-}
+    }
+};
 
 </script>

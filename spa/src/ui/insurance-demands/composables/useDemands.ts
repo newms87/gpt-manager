@@ -1,3 +1,5 @@
+import { usePusher } from "@/helpers/pusher";
+import { WorkflowRun } from "@/types";
 import { FlashMessages, storeObject, storeObjects } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import type { UiDemand } from "../../shared/types";
@@ -6,6 +8,10 @@ import { DEMAND_STATUS, demandRoutes } from "../config";
 const demands = ref<UiDemand[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
+
+// WebSocket subscriptions tracking
+const subscribedWorkflowIds = ref<Set<number>>(new Set());
+const pusher = usePusher();
 
 export function useDemands() {
     const sortedDemands = computed(() => {
@@ -82,7 +88,7 @@ export function useDemands() {
     };
 
 
-    const extractData = async (idOrDemand: number | UiDemand) => {
+    const extractData = async (idOrDemand: number | UiDemand, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {
         try {
             let demand: UiDemand;
             if (typeof idOrDemand === "number") {
@@ -112,6 +118,9 @@ export function useDemands() {
                 demands.value[index] = updatedDemand;
             }
 
+            // Subscribe to workflow run updates after starting extract data
+            subscribeToWorkflowRunUpdates(updatedDemand, onDemandUpdate);
+
             return updatedDemand;
         } catch (err: any) {
             const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to extract data";
@@ -123,7 +132,7 @@ export function useDemands() {
         }
     };
 
-    const writeDemand = async (idOrDemand: number | UiDemand, templateId?: string, additionalInstructions?: string) => {
+    const writeDemand = async (idOrDemand: number | UiDemand, templateId?: string, additionalInstructions?: string, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {
         try {
             let demand: UiDemand;
             if (typeof idOrDemand === "number") {
@@ -161,6 +170,9 @@ export function useDemands() {
                 demands.value[index] = updatedDemand;
             }
 
+            // Subscribe to workflow run updates after starting write demand
+            subscribeToWorkflowRunUpdates(updatedDemand, onDemandUpdate);
+
             return updatedDemand;
         } catch (err: any) {
             const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to write demand";
@@ -173,6 +185,69 @@ export function useDemands() {
     };
 
 
+    // Load a single demand by ID
+    const loadDemand = async (demandId: number) => {
+        try {
+            const loadedDemand = await demandRoutes.details({ id: demandId });
+            const storedDemand = storeObject(loadedDemand);
+            
+            // Update in the demands array if it exists
+            const index = demands.value.findIndex(d => d.id === demandId);
+            if (index !== -1) {
+                demands.value[index] = storedDemand;
+            }
+            
+            return storedDemand;
+        } catch (err: any) {
+            const errorMessage = err.message || "Failed to load demand";
+            error.value = errorMessage;
+            throw new Error(errorMessage);
+        }
+    };
+
+    // Helper function to subscribe to a single workflow run
+    const subscribeToWorkflowRun = (workflowRun: WorkflowRun, demandId: number, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {
+        if (!pusher || !workflowRun?.id || subscribedWorkflowIds.value.has(workflowRun.id)) {
+            return;
+        }
+
+        subscribedWorkflowIds.value.add(workflowRun.id);
+
+        pusher.onModelEvent(
+            workflowRun,
+            "updated",
+            async (updatedWorkflowRun: WorkflowRun) => {
+                if (updatedWorkflowRun.status === "Completed") {
+                    // Reload the demand to get updated data
+                    const updatedDemand = await loadDemand(demandId);
+                    if (onDemandUpdate) {
+                        onDemandUpdate(updatedDemand);
+                    }
+                }
+            }
+        );
+    };
+
+    // Subscribe to workflow run updates for real-time status updates
+    const subscribeToWorkflowRunUpdates = (demand: UiDemand, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {
+        if (!demand) return;
+
+        // Subscribe to extract data workflow run
+        if (demand.extract_data_workflow_run) {
+            subscribeToWorkflowRun(demand.extract_data_workflow_run, demand.id, onDemandUpdate);
+        }
+
+        // Subscribe to write demand workflow run
+        if (demand.write_demand_workflow_run) {
+            subscribeToWorkflowRun(demand.write_demand_workflow_run, demand.id, onDemandUpdate);
+        }
+    };
+
+    // Clear workflow subscriptions (useful when navigating away or changing demands)
+    const clearWorkflowSubscriptions = () => {
+        subscribedWorkflowIds.value.clear();
+    };
+
     return {
         demands: sortedDemands,
         demandsByStatus,
@@ -180,10 +255,13 @@ export function useDemands() {
         isLoading,
         error,
         loadDemands,
+        loadDemand,
         createDemand,
         updateDemand,
         deleteDemand,
         extractData,
-        writeDemand
+        writeDemand,
+        subscribeToWorkflowRunUpdates,
+        clearWorkflowSubscriptions
     };
 }

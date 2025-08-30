@@ -48,7 +48,6 @@
 
                 <!-- Quick Actions -->
                 <DemandQuickActions
-                    v-if="demand"
                     :demand="demand"
                     @edit="editMode = true"
                 />
@@ -65,7 +64,6 @@
 </template>
 
 <script setup lang="ts">
-import { usePusher } from "@/helpers/pusher";
 import { WorkflowRun } from "@/types";
 import { FaSolidExclamation } from "danx-icon";
 import { type StoredFile } from "quasar-ui-danx";
@@ -82,12 +80,11 @@ import {
     ViewWorkflowDialog
 } from "../components/Detail";
 import { useDemands } from "../composables";
-import { demandRoutes } from "../config";
 
 const route = useRoute();
 const router = useRouter();
 
-const { updateDemand } = useDemands();
+const { updateDemand, loadDemand, subscribeToWorkflowRunUpdates, clearWorkflowSubscriptions } = useDemands();
 
 const demand = ref<UiDemand | null>(null);
 const isLoading = ref(false);
@@ -96,72 +93,26 @@ const editMode = ref(false);
 const showWorkflowDialog = ref(false);
 const selectedWorkflowRun = ref<WorkflowRun | null>(null);
 
-// Track which workflow runs we've already subscribed to
-const subscribedWorkflowIds = ref<Set<number>>(new Set());
-
 const demandId = computed(() => {
     const id = route.params.id;
     return typeof id === "string" ? parseInt(id, 10) : null;
 });
 
-
-// WebSocket subscriptions for real-time WorkflowRun updates
-const pusher = usePusher();
-
-const subscribeToWorkflowRunUpdates = () => {
-    if (!pusher || !demand.value) {
-        return;
-    }
-
-    // Subscribe to extract data workflow run if not already subscribed
-    if (demand.value.extract_data_workflow_run?.id && !subscribedWorkflowIds.value.has(demand.value.extract_data_workflow_run.id)) {
-        subscribedWorkflowIds.value.add(demand.value.extract_data_workflow_run.id);
-
-        pusher.onModelEvent(
-            demand.value.extract_data_workflow_run,
-            "updated",
-            (updatedWorkflowRun: WorkflowRun) => {
-
-                if (updatedWorkflowRun.status === "Completed") {
-                    // Trigger full demand reload to get updated data
-                    loadDemand();
-                }
-            }
-        );
-    }
-
-    // Subscribe to write demand workflow run if not already subscribed
-    if (demand.value.write_demand_workflow_run?.id && !subscribedWorkflowIds.value.has(demand.value.write_demand_workflow_run.id)) {
-        subscribedWorkflowIds.value.add(demand.value.write_demand_workflow_run.id);
-
-        pusher.onModelEvent(
-            demand.value.write_demand_workflow_run,
-            "updated",
-            (updatedWorkflowRun: WorkflowRun) => {
-
-                if (updatedWorkflowRun.status === "Completed") {
-                    loadDemand();
-                }
-            }
-        );
-    }
-};
-
-
-const loadDemand = async () => {
-    if (!demandId.value && !isLoading.value) return;
+// Load demand with WebSocket subscriptions
+const loadDemandWithSubscriptions = async () => {
+    if (!demandId.value || isLoading.value) return;
 
     try {
         isLoading.value = true;
         error.value = null;
-        const newDemand = await demandRoutes.details({ id: demandId.value });
+        const newDemand = await loadDemand(demandId.value);
 
-        if (!demand.value || demand.value.id !== newDemand.id) {
-            demand.value = newDemand;
-        }
+        demand.value = newDemand;
 
         // Subscribe to workflow run updates after demand is loaded
-        subscribeToWorkflowRunUpdates();
+        subscribeToWorkflowRunUpdates(newDemand, (updatedDemand) => {
+            demand.value = updatedDemand;
+        });
     } catch (err: any) {
         error.value = err.message || "Failed to load demand";
     } finally {
@@ -216,8 +167,8 @@ const handleCloseWorkflowDialog = () => {
 watch(demandId, (newId, oldId) => {
     // Clear subscriptions when navigating to a different demand
     if (newId !== oldId) {
-        subscribedWorkflowIds.value.clear();
+        clearWorkflowSubscriptions();
     }
-    loadDemand();
+    loadDemandWithSubscriptions();
 }, { immediate: true });
 </script>

@@ -16,10 +16,7 @@
             <DemandActionButtons
                 :demand="demand"
                 size="md"
-                :loading-states="loadingStates"
                 class="w-full flex flex-col space-y-2"
-                @extract-data="handleExtractData"
-                @write-demand="showTemplateSelector = true"
             />
 
             <!-- Complete Button -->
@@ -50,18 +47,10 @@
                 @click="handleDelete"
             />
         </div>
-
-        <!-- Template Selector Dialog -->
-        <DemandTemplateSelector
-            v-if="showTemplateSelector"
-            @confirm="handleWriteDemandWithTemplate"
-            @close="showTemplateSelector = false"
-        />
     </UiCard>
 </template>
 
 <script setup lang="ts">
-import { DemandTemplateSelector } from "@/ui/demand-templates/components";
 import { ActionButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -73,8 +62,6 @@ import DemandActionButtons from "../DemandActionButtons.vue";
 
 const emit = defineEmits<{
     "edit": [];
-    "extract-data": [];
-    "write-demand": [];
 }>();
 
 const props = defineProps<{
@@ -82,34 +69,18 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const { updateDemand, extractData, writeDemand, deleteDemand: deleteDemandAction } = useDemands();
+const { updateDemand, deleteDemand: deleteDemandAction } = useDemands();
 
 // Local loading states
 const isCompleting = ref(false);
 const isSettingAsDraft = ref(false);
 const isDeleting = ref(false);
 
-// Computed properties for loading states based on workflow status
-const extractingData = computed(() => props.demand?.is_extract_data_running || false);
-const writingDemand = computed(() => props.demand?.is_write_demand_running || false);
-
+// Computed loading states for remaining buttons
 const loadingStates = computed(() => ({
-    extractData: extractingData.value,
-    writeDemand: writingDemand.value,
     complete: isCompleting.value,
     setAsDraft: isSettingAsDraft.value
 }));
-
-// Action handlers
-const handleExtractData = async () => {
-    await extractData(props.demand);
-};
-
-const showTemplateSelector = ref(false);
-const handleWriteDemandWithTemplate = async (template: any, instructions: string) => {
-    showTemplateSelector.value = false; // Close the modal
-    await writeDemand(props.demand, template.id, instructions);
-};
 
 const handleComplete = async () => {
     try {
