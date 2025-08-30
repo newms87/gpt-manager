@@ -28,6 +28,7 @@
 		</div>
 
 		<div
+			v-if="!readonly"
 			:style="{
 				pointerEvents: 'all',
 				position: 'absolute',
@@ -72,9 +73,11 @@ const props = withDefaults(defineProps<{
 	workflowRun?: WorkflowRun,
 	edge: EdgeProps;
 	nodes: Node[];
+	readonly?: boolean;
 }>(), {
 	pathType: "smoothstep",
-	workflowRun: null
+	workflowRun: null,
+	readonly: false
 });
 
 const sourceTaskRun = computed(() => props.workflowRun?.taskRuns?.find((tr) => tr.workflow_node_id == +props.edge.source));

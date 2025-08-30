@@ -8,19 +8,22 @@
             :default-viewport="{ zoom: 1 }"
             :min-zoom="0.2"
             :max-zoom="2"
-            snap-to-grid
+            :snap-to-grid="!readonly"
             fit-view-on-init
             :snap-grid="[20, 20]"
             class="workflow-canvas"
             :connect-on-click="false"
             elevate-edges-on-select
-            :connection-mode="ConnectionMode.Strict"
+            :connection-mode="readonly ? 'Loose' : ConnectionMode.Strict"
+            :nodes-draggable="!readonly"
+            :edges-updatable="!readonly"
+            :nodes-connectable="true"
             @pane-ready="onPaneReady"
             @connect="onConnectionAdd"
-            @node-drag-stop="onSelectionDragStop"
-            @selection-drag-stop="onSelectionDragStop"
-            @dragover="onDragOver"
-            @drop="e => handleExternalDrop('workflow-canvas-vf', e)"
+            @node-drag-stop="readonly ? undefined : onSelectionDragStop"
+            @selection-drag-stop="readonly ? undefined : onSelectionDragStop"
+            @dragover="readonly ? undefined : onDragOver"
+            @drop="readonly ? undefined : (e => handleExternalDrop('workflow-canvas-vf', e))"
         >
             <template #node-custom="nodeProps">
                 <WorkflowCanvasNode
@@ -28,6 +31,7 @@
                     :workflow-definition="workflowDefinition"
                     :workflow-run="workflowRun"
                     :loading="loading"
+                    :readonly="readonly"
                     @copy="node => $emit('node-copy', resolveWorkflowNode(node))"
                     @edit="node => $emit('node-edit', resolveWorkflowNode(node))"
                     @remove="node => $emit('node-remove', resolveWorkflowNode(node))"
@@ -38,6 +42,7 @@
                     :edge="edgeProps"
                     :nodes="nodes"
                     :workflow-run="workflowRun"
+                    :readonly="readonly"
                     @remove="onConnectionRemove"
                 />
             </template>
@@ -83,6 +88,7 @@ const emit = defineEmits<{
 const props = defineProps<{
     workflowRun?: WorkflowRun;
     loading?: boolean;
+    readonly?: boolean;
 }>();
 
 let vueFlowInstance = null;
@@ -146,6 +152,11 @@ function resolveWorkflowConnection(edge: EdgeProps) {
 }
 
 function onConnectionAdd(connection: Connection) {
+    // Prevent connection creation in readonly mode
+    if (props.readonly) {
+        return;
+    }
+    
     const connections = connectWorkflowNodes(workflowDefinition.value.connections, connection);
     if (connections) {
         emit("connection-add", connections.pop());

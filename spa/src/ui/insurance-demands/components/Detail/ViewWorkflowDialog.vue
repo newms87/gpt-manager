@@ -46,6 +46,7 @@
                     v-model="workflowDefinition"
                     :workflow-run="workflowRun"
                     :loading="false"
+                    readonly
                 />
             </div>
         </div>

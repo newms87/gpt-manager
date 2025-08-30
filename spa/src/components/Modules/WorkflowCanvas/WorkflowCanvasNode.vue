@@ -13,6 +13,7 @@
 				:task-run="taskRun"
 				:temporary="isTemporary"
 				:loading="loading"
+				:readonly="readonly"
 				@copy="$emit('copy', node)"
 				@edit="$emit('edit', node)"
 				@remove="$emit('remove', node)"
@@ -71,6 +72,7 @@ const props = defineProps<{
 	workflowDefinition: WorkflowDefinition;
 	workflowRun?: WorkflowRun;
 	loading?: boolean;
+	readonly?: boolean;
 }>();
 
 // Is this node a temporary placeholder waiting for the backend to respond with the real node ID

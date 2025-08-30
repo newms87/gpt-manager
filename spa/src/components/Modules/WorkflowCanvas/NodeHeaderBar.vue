@@ -48,7 +48,7 @@
 					size="xs"
 				/>
 			</div>
-			<template v-if="!isTaskRunning">
+			<template v-if="!isTaskRunning && !readonly">
 				<ActionButton
 					type="copy"
 					color="blue"
@@ -99,6 +99,7 @@ const props = defineProps<{
 	taskRun?: TaskRun;
 	temporary?: boolean;
 	loading?: boolean;
+	readonly?: boolean;
 }>();
 
 const isTaskRunning = computed(() => ["Running"].includes(props.taskRun?.status));

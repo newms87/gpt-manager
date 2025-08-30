@@ -52,9 +52,9 @@
             <!-- Sidebar -->
             <div class="space-y-6">
                 <!-- Status Timeline -->
-                <DemandStatusTimeline 
-                    :demand="demand" 
-                    @view-workflow="handleViewWorkflow" 
+                <DemandStatusTimeline
+                    :demand="demand"
+                    @view-workflow="handleViewWorkflow"
                 />
 
                 <!-- Quick Actions -->
@@ -192,7 +192,7 @@ const subscribeToWorkflowRunUpdates = () => {
 
 
 const loadDemand = async () => {
-    if (!demandId.value) return;
+    if (!demandId.value && !isLoading.value) return;
 
     try {
         isLoading.value = true;

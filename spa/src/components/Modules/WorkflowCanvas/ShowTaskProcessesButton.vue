@@ -7,7 +7,7 @@
 	>
 		<InfoDialog
 			v-if="isShowingTaskProcesses"
-			:title="`${taskRun.taskDefinition.name} (${taskRun.id}): Task Processes`"
+			:title="`${taskRun.taskDefinition?.name || 'Task'} (${taskRun.id}): Task Processes`"
 			hide-done
 			@close="isShowingTaskProcesses = false"
 		>
