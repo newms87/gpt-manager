@@ -1,6 +1,5 @@
 <template>
     <ConfirmDialog
-        v-if="isOpen"
         title="Create New Demand"
         content-class="w-[600px]"
         confirm-text="Create Demand"
@@ -45,12 +44,10 @@
                     Documents
                 </label>
                 <MultiFileField
-                    v-model="formData.input_files"
+                    v-model="inputFiles"
                     placeholder="Upload supporting documents..."
                     :error="errors.input_files"
                     class="w-full"
-                    @uploading="isUploading = true"
-                    @complete="isUploading = false"
                 />
                 <p class="text-xs text-slate-500 mt-1">
                     Supported formats: PDF, DOC, DOCX, JPG, PNG
@@ -67,20 +64,17 @@
                 </div>
             </div>
         </div>
+        <div v-if="hasUnuploadedFiles">Yes files</div>
     </ConfirmDialog>
 </template>
 
 <script setup lang="ts">
 import { FaSolidSpinner } from "danx-icon";
-import { ConfirmDialog, FlashMessages, MultiFileField } from "quasar-ui-danx";
+import { ConfirmDialog, FlashMessages, MultiFileField, StoredFile } from "quasar-ui-danx";
 import { computed, reactive, ref } from "vue";
 import { UiInput, UiTextarea } from "../../shared/components";
 import { useDemands } from "../composables";
 import { DEMAND_STATUS } from "../config";
-
-const props = defineProps<{
-    isOpen: boolean;
-}>();
 
 const emit = defineEmits<{
     close: [];
@@ -89,10 +83,10 @@ const emit = defineEmits<{
 const { createDemand, demands } = useDemands();
 const creating = ref(false);
 
+const inputFiles = ref<Array<StoredFile>>([]);
 const formData = reactive({
     title: "",
-    description: "",
-    input_files: [] as File[]
+    description: ""
 });
 
 const errors = reactive({
@@ -105,18 +99,7 @@ const isFormValid = computed(() => {
     return formData.title.trim().length > 0;
 });
 
-const isUploading = ref(false);
-
-const resetForm = () => {
-    formData.title = "";
-    formData.description = "";
-    formData.input_files = [];
-
-    // Clear errors
-    Object.keys(errors).forEach(key => {
-        errors[key as keyof typeof errors] = "";
-    });
-};
+const isUploading = computed(() => inputFiles.value.some(file => !file.__type || file.progress < 100));
 
 const validateForm = (): boolean => {
     let isValid = true;
@@ -156,11 +139,10 @@ const handleSubmit = async () => {
             title: formData.title.trim(),
             description: formData.description.trim() || null,
             status: DEMAND_STATUS.DRAFT,
-            input_files: formData.input_files
+            input_files: inputFiles.value
         });
 
         if (result.success) {
-            resetForm();
             emit("close");
         } else {
             FlashMessages.error("Failed to create demand" + (result.message ? ": " + result.message : ""));
@@ -174,14 +156,9 @@ const handleSubmit = async () => {
 
 const handleClose = () => {
     // Warn if files are uploading
-    if (isUploading.value) {
-        if (confirm("Files are still uploading. Are you sure you want to close? Your progress will be lost.")) {
-            resetForm();
-            emit("close");
-        }
-    } else {
-        resetForm();
-        emit("close");
+    if (isUploading.value && !confirm("Files are still uploading. Are you sure you want to close? Your progress will be lost.")) {
+        return;
     }
+    emit("close");
 };
 </script>

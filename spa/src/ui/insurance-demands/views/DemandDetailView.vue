@@ -36,17 +36,6 @@
                     @update:input-files="handleInputFilesUpdate"
                     @update:output-files="handleOutputFilesUpdate"
                 />
-
-                <!-- Workflow Error Display -->
-                <UiCard v-if="workflowError" class="border-red-200 bg-red-50">
-                    <div class="flex items-start space-x-3">
-                        <FaSolidExclamation class="w-5 h-5 text-red-600 mt-0.5" />
-                        <div>
-                            <h4 class="font-medium text-red-800">Workflow Error</h4>
-                            <p class="text-red-700 mt-1">{{ workflowError }}</p>
-                        </div>
-                    </div>
-                </UiCard>
             </div>
 
             <!-- Sidebar -->
@@ -59,24 +48,12 @@
 
                 <!-- Quick Actions -->
                 <DemandQuickActions
+                    v-if="demand"
                     :demand="demand"
-                    :loading-states="loadingStates"
                     @edit="editMode = true"
-                    @extract-data="handleExtractData"
-                    @write-demand="handleWriteDemand"
-                    @complete="handleComplete"
-                    @set-as-draft="handleSetAsDraft"
-                    @delete="deleteDemand"
                 />
             </div>
         </div>
-
-        <!-- Template Selector Dialog -->
-        <DemandTemplateSelector
-            v-if="showTemplateSelector"
-            @confirm="handleWriteDemandWithTemplate"
-            @close="showTemplateSelector = false"
-        />
 
         <!-- View Workflow Dialog -->
         <ViewWorkflowDialog
@@ -94,8 +71,7 @@ import { FaSolidExclamation } from "danx-icon";
 import { type StoredFile } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { DemandTemplateSelector } from "../../demand-templates/components";
-import { UiCard, UiLoadingSpinner, UiMainLayout } from "../../shared";
+import { UiLoadingSpinner, UiMainLayout } from "../../shared";
 import type { UiDemand } from "../../shared/types";
 import {
     DemandDetailDocuments,
@@ -106,28 +82,19 @@ import {
     ViewWorkflowDialog
 } from "../components/Detail";
 import { useDemands } from "../composables";
-import { DEMAND_STATUS, demandRoutes } from "../config";
+import { demandRoutes } from "../config";
 
 const route = useRoute();
 const router = useRouter();
 
-const {
-    updateDemand,
-    extractData,
-    writeDemand,
-    deleteDemand: deleteDemandAction
-} = useDemands();
+const { updateDemand } = useDemands();
 
 const demand = ref<UiDemand | null>(null);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 const editMode = ref(false);
-const workflowError = ref<string | null>(null);
-const showTemplateSelector = ref(false);
 const showWorkflowDialog = ref(false);
 const selectedWorkflowRun = ref<WorkflowRun | null>(null);
-const isCompleting = ref(false);
-const isSettingAsDraft = ref(false);
 
 // Track which workflow runs we've already subscribed to
 const subscribedWorkflowIds = ref<Set<number>>(new Set());
@@ -137,16 +104,6 @@ const demandId = computed(() => {
     return typeof id === "string" ? parseInt(id, 10) : null;
 });
 
-// Computed properties for loading states based on workflow status
-const extractingData = computed(() => demand.value?.is_extract_data_running || false);
-const writingDemand = computed(() => demand.value?.is_write_demand_running || false);
-
-const loadingStates = computed(() => ({
-    extractData: extractingData.value,
-    writeDemand: writingDemand.value,
-    complete: isCompleting.value,
-    setAsDraft: isSettingAsDraft.value
-}));
 
 // WebSocket subscriptions for real-time WorkflowRun updates
 const pusher = usePusher();
@@ -223,44 +180,6 @@ const handleUpdate = async (data: { title: string; description: string; input_fi
     }
 };
 
-
-const handleExtractData = async () => {
-    if (!demand.value) return;
-
-    try {
-        workflowError.value = null;
-        await extractData(demand.value);
-
-        // Re-subscribe to workflow run updates after starting extract data
-        subscribeToWorkflowRunUpdates();
-    } catch (err: any) {
-        workflowError.value = err.message || "Failed to extract data";
-    }
-};
-
-const handleWriteDemand = async () => {
-    if (!demand.value) return;
-
-    // Show template selector dialog
-    showTemplateSelector.value = true;
-};
-
-const handleWriteDemandWithTemplate = async (template: any, instructions: string) => {
-
-    if (!demand.value) return;
-
-    try {
-        workflowError.value = null;
-        showTemplateSelector.value = false; // Close the modal
-        await writeDemand(demand.value, template.id, instructions);
-
-        // Re-subscribe to workflow run updates after starting write demand
-        subscribeToWorkflowRunUpdates();
-    } catch (err: any) {
-        workflowError.value = err.message || "Failed to write demand";
-    }
-};
-
 const handleInputFilesUpdate = async (inputFiles: StoredFile[]) => {
     if (!demand.value) return;
 
@@ -282,56 +201,6 @@ const handleOutputFilesUpdate = async (outputFiles: StoredFile[]) => {
     }
 };
 
-const handleComplete = async () => {
-    if (!demand.value) return;
-
-    try {
-        isCompleting.value = true;
-        error.value = null;
-
-        await updateDemand(demand.value.id, {
-            status: DEMAND_STATUS.COMPLETED,
-            completed_at: new Date().toISOString()
-        });
-    } catch (err: any) {
-        error.value = err.message || "Failed to mark demand as complete";
-        console.error("❌ Failed to complete demand:", err);
-    } finally {
-        isCompleting.value = false;
-    }
-};
-
-const handleSetAsDraft = async () => {
-    if (!demand.value) return;
-
-    try {
-        isSettingAsDraft.value = true;
-        error.value = null;
-
-        await updateDemand(demand.value.id, {
-            status: DEMAND_STATUS.DRAFT,
-            completed_at: null
-        });
-    } catch (err: any) {
-        error.value = err.message || "Failed to set demand as draft";
-        console.error("❌ Failed to set demand as draft:", err);
-    } finally {
-        isSettingAsDraft.value = false;
-    }
-};
-
-const deleteDemand = async () => {
-    if (!demand.value) return;
-
-    if (confirm("Are you sure you want to delete this demand? This action cannot be undone.")) {
-        try {
-            await deleteDemandAction(demand.value.id);
-            router.push("/ui/demands");
-        } catch (err: any) {
-            error.value = err.message || "Failed to delete demand";
-        }
-    }
-};
 
 const handleViewWorkflow = (workflowRun: WorkflowRun) => {
     selectedWorkflowRun.value = workflowRun;

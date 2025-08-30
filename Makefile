@@ -40,3 +40,6 @@ work:
 
 horizon-restart:
 	./horizon-restart.sh
+
+ngrok:
+	ngrok http --url=painfully-optimum-cricket.ngrok-free.app 80

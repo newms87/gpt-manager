@@ -67,11 +67,11 @@
                     <QLinearProgress
                         v-if="status.isActive && status.progress != null"
                         size="29px"
-                        :value="status.progress"
+                        :value="status.progress / 100"
                         class="w-full rounded bg-slate-300"
                     >
                         <div class="absolute-full flex flex-center">
-                            <LabelPillWidget :label="fPercent(status.progress)" color="sky" size="xs" />
+                            <LabelPillWidget :label="fPercent(status.progress / 100)" color="sky" size="xs" />
                         </div>
                     </QLinearProgress>
                 </div>
