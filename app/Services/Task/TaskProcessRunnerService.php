@@ -68,6 +68,9 @@ class TaskProcessRunnerService
             throw $throwable;
         }
 
+        $taskProcess->is_ready = true;
+        $taskProcess->save();
+        
         LockHelper::release($taskProcess);
         static::log("Prepared $taskProcess");
 
@@ -224,6 +227,7 @@ class TaskProcessRunnerService
             $taskProcess->completed_at     = null;
             $taskProcess->percent_complete = 0;
             $taskProcess->restart_count    += 1;
+            $taskProcess->is_ready         = true;
             $taskProcess->save();
         } finally {
             LockHelper::release($taskProcess);

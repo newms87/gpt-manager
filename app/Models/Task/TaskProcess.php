@@ -31,6 +31,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
     protected $fillable = [
         'name',
+        'is_ready',
         'started_at',
         'stopped_at',
         'completed_at',
@@ -53,6 +54,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
     public function casts(): array
     {
         return [
+            'is_ready'         => 'boolean',
             'percent_complete' => 'float',
             'started_at'       => 'datetime',
             'stopped_at'       => 'datetime',
@@ -124,17 +126,18 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
 
     public function scopeReadyToRun(Builder $query): Builder
     {
-        return $query->where(function (Builder $q) {
-            // Pending processes
-            $q->where('task_processes.status', WorkflowStatesContract::STATUS_PENDING)
-                // Or incomplete/timeout processes that can be retried
-                ->orWhere(function (Builder $retryQuery) {
-                    $retryQuery->whereIn('task_processes.status', [WorkflowStatesContract::STATUS_INCOMPLETE, WorkflowStatesContract::STATUS_TIMEOUT])
-                        ->whereHas('taskRun.taskDefinition', function (Builder $taskDefQuery) {
-                            $taskDefQuery->whereColumn('task_processes.restart_count', '<', 'task_definitions.max_process_retries');
-                        });
-                });
-        });
+        return $query->where('task_processes.is_ready', true)
+            ->where(function (Builder $q) {
+                // Pending processes
+                $q->where('task_processes.status', WorkflowStatesContract::STATUS_PENDING)
+                    // Or incomplete/timeout processes that can be retried
+                    ->orWhere(function (Builder $retryQuery) {
+                        $retryQuery->whereIn('task_processes.status', [WorkflowStatesContract::STATUS_INCOMPLETE, WorkflowStatesContract::STATUS_TIMEOUT])
+                            ->whereHas('taskRun.taskDefinition', function (Builder $taskDefQuery) {
+                                $taskDefQuery->whereColumn('task_processes.restart_count', '<', 'task_definitions.max_process_retries');
+                            });
+                    });
+            });
     }
 
     public function addInputArtifacts($artifacts): static
