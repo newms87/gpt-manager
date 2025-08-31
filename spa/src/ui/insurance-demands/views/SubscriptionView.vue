@@ -64,7 +64,7 @@
 								<p class="text-slate-600">{{ currentPlan?.description }}</p>
 							</div>
 							<div class="text-right">
-								<p class="text-3xl font-bold text-blue-600">${{ currentPlan?.price }}</p>
+								<p class="text-3xl font-bold text-blue-600">{{ fCurrency(currentPlan?.price) }}</p>
 								<p class="text-sm text-slate-600">per {{ currentPlan?.interval }}</p>
 							</div>
 						</div>
@@ -231,7 +231,7 @@
 							</div>
 
 							<div class="flex items-center space-x-4">
-								<span class="font-medium text-slate-800">${{ invoice.amount }}</span>
+								<span class="font-medium text-slate-800">{{ fCurrency(invoice.amount) }}</span>
 								<ActionButton
 									type="download"
 									size="sm"
@@ -315,7 +315,7 @@
                         'text-slate-600': plan.id !== currentPlan?.id
                       }"
 								>
-                  ${{ plan.price }}/{{ plan.interval === "month" ? "mo" : "yr" }}
+                  {{ fCurrency(plan.price) }}/{{ plan.interval === "month" ? "mo" : "yr" }}
                 </span>
 							</div>
 							<p
@@ -394,7 +394,7 @@
 
 <script setup lang="ts">
 import { FaSolidCheck, FaSolidCreditCard, FaSolidTriangleExclamation } from "danx-icon";
-import { ActionButton, ConfirmDialog, fDate } from "quasar-ui-danx";
+import { ActionButton, ConfirmDialog, fDate, fCurrency } from "quasar-ui-danx";
 import { computed, onMounted, ref } from "vue";
 import {
 	BillingAddressForm,

@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Events\JobDispatchUpdatedEvent;
+use App\Events\UsageEventCreated;
 use App\Events\WorkflowRunUpdatedEvent;
+use App\Listeners\UiDemandUsageSubscriber;
 use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Workflow\WorkflowRun;
 use DB;
@@ -25,6 +27,11 @@ class EventServiceProvider extends ServiceProvider
         Event::listen(
             WorkflowRunUpdatedEvent::class,
             [WorkflowListenerCompletedListener::class, 'handle']
+        );
+
+        Event::listen(
+            UsageEventCreated::class,
+            [UiDemandUsageSubscriber::class, 'handle']
         );
 
         // Dispatch the jobs w/ team info

@@ -2,6 +2,7 @@
 
 namespace App\Services\Usage;
 
+use App\Events\UsageEventCreated;
 use App\Models\Usage\UsageEvent;
 use App\Models\Usage\UsageSummary;
 use App\Models\User;
@@ -45,6 +46,8 @@ class UsageTrackingService
         ]);
 
         $this->updateUsageSummary($object);
+
+        event(new UsageEventCreated($usageEvent));
 
         return $usageEvent;
     }

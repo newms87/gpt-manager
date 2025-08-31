@@ -103,14 +103,30 @@ This guide documents the reusable components, patterns, and conventions used thr
 
 **ActionButton** - Semantic action buttons
 ```vue
+<!-- ✅ CORRECT: Use type and label props only -->
 <ActionButton
-    type="create"      // Types: create, edit, delete, trash, merge, etc.
+    type="create"      // Types: create, edit, delete, trash, merge, cancel, confirm, etc.
+    label="Create New" // Use label prop for text
     color="blue-invert"
     tooltip="Create New"
     :loading="action.isApplying"
     @click="action.trigger()"
 />
+
+<!-- ❌ WRONG: NEVER add custom icons or slot content -->
+<ActionButton type="cancel" @click="...">
+    <template #icon>
+        <FaSolidX class="w-3" />  <!-- Creates duplicate icons! -->
+    </template>
+    Cancel  <!-- Use label prop instead -->
+</ActionButton>
 ```
+
+**CRITICAL ActionButton Rules:**
+- **ALWAYS use `type` prop** - Each type has a predefined icon (create=plus, cancel=X, etc.)
+- **ALWAYS use `label` prop** for text - NEVER use slot content
+- **NEVER add custom icons** - The type already provides the correct icon
+- **Available types**: create, edit, delete, trash, cancel, confirm, save, export, import, play, stop, pause, refresh, restart, merge, check, view, etc.
 
 **ShowHideButton** - Toggle visibility
 ```vue
@@ -210,18 +226,45 @@ This guide documents the reusable components, patterns, and conventions used thr
 />
 ```
 
-## 2. State Management with storeObjects
+## 2. State Management with ActionRoutes
+
+**CRITICAL: NEVER use storeObject() or storeObjects() directly**
 
 ```typescript
-import { storeObjects, storeObject, getItem, setItem } from "quasar-ui-danx";
-
-// Store multiple objects (auto-normalizes and makes reactive)
+// ❌ WRONG - Manual state management
 const items = storeObjects(await api.list());
-
-// Store single object (updates everywhere it's used)
 storeObject(updatedItem);
 
-// Local storage helpers
+// ✅ CORRECT - Automatic state management
+const result = await routes.list(); // Automatically stores internally
+items.value = result.data; // Assign the already-stored data
+await routes.details(object, fields); // Updates existing object in-place
+
+// ✅ CORRECT - Performance optimized loading
+const loadBasicData = async (item) => {
+  await routes.details(item, {
+    user: true,
+    files: true
+  });
+};
+
+const loadHeavyData = async (item) => {
+  await routes.details(item, {
+    usage_events: { user: true } // Load separately when needed
+  });
+};
+```
+
+**Key Principles:**
+- Routes handle all state management automatically
+- Objects are stored once per `id + __type` combination  
+- All references point to the same instance
+- Updates reflect everywhere automatically
+- No manual array management needed
+
+**Local Storage Helpers:**
+```typescript
+import { getItem, setItem } from "quasar-ui-danx";
 setItem("key", value);
 const value = getItem("key");
 ```

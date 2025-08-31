@@ -6,3 +6,6 @@ export { default as CreateDemandModal } from './CreateDemandModal.vue';
 
 // Detail components
 export * from './Detail';
+
+// Usage components
+export * from './Usage';

@@ -14,13 +14,20 @@
 - Never use chmod on files to fix permissions!!! Always use `./vendor/bin/sail artisan fix`
 - Never use the rg command, use grep instead
 - When attempting to run PHP files, always use sail php
-- **CRITICAL - NEVER GUESS OR MAKE ASSUMPTIONS**: 
+- **CRITICAL - ALWAYS READ EXISTING PATTERNS FIRST**: 
+  - MANDATORY: READ EXISTING SIMILAR IMPLEMENTATIONS BEFORE WRITING ANY CODE
   - ALWAYS READ THE COMPONENT / CLASS YOU ARE about to interact with BEFORE YOU use it
+  - NEVER create custom implementations when established patterns exist
+  - NEVER create custom API endpoints - use existing resource relationships and details() methods
+  - NEVER create custom formatters - use quasar-ui-danx formats.ts patterns ONLY
+  - NEVER create custom tables - use ActionTable/ActionTableLayout patterns ONLY
+  - NEVER create custom controllers - use existing DanxController patterns ONLY
   - Understand the method completely (no abstraction) before assuming its behavior
   - Never assume you know how something works - ALWAYS check the actual implementation
   - Never guess parameter names, configuration options, or API signatures
   - ALWAYS look at examples first or the actual implementation and do it by example or by understanding how the code actually works
   - When unsure, search for existing usage patterns in the codebase
+  - READ FULL FILES of similar implementations to understand complete patterns
   - It is CRITICAL you understand what you are doing before you do it
 
 **CRITICALLY IMPORTANT: Before each code change, make a TODO list with the FIRST STEP stating:**
@@ -113,6 +120,53 @@ Service-Repository-Controller pattern with danx integration.
 - **API**: ALWAYS use `request` from quasar-ui-danx (NEVER axios)
 - **TypeScript**: Full TypeScript, no 'any' types, interface definitions for all data structures
 - **Logic**: Composables for reusable logic, props validation with TypeScript
+
+### Critical Data Management Patterns
+
+**NEVER USE storeObject() OR storeObjects() DIRECTLY:**
+- ❌ `const stored = storeObject(response)` - WRONG
+- ❌ `items.value = storeObjects(response.data)` - WRONG
+- ✅ `const result = await routes.list()` - Returns stored data
+- ✅ `items.value = result.data` - Assign already-stored data
+- ✅ `await routes.details(object, fields)` - Updates object in-place
+
+**CORRECT details() Usage:**
+- ❌ `routes.details({ id: 123 }, fields)` - WRONG
+- ✅ `routes.details(objectInstance, fields)` - Pass actual object
+- ✅ Loads relationships INTO the existing object automatically
+- ✅ No manual state management needed - store handles everything
+
+**Performance-Optimized Relationship Loading:**
+```javascript
+// ❌ WRONG - Loads heavy relationships every time
+const loadItem = async (id) => {
+  await routes.details(item, {
+    user: true,
+    files: true,
+    usage_events: { user: true } // HEAVY!
+  });
+};
+
+// ✅ CORRECT - Load relationships separately as needed
+const loadItem = async (id) => {
+  await routes.details(item, {
+    user: true,
+    files: true
+  });
+};
+
+const loadItemUsage = async (item) => {
+  await routes.details(item, {
+    usage_events: { user: true }
+  });
+};
+```
+
+**Centralized State Management:**
+- Objects are stored once per `id + __type` combination
+- All references point to the same object instance
+- Updates automatically reflect everywhere
+- No manual array updates needed - store handles it all
 
 ## Coding Style Rules
 

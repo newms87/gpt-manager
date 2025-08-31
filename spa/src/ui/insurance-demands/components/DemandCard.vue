@@ -28,7 +28,7 @@
                 :animated="hasActiveWorkflows"
             />
 
-            <!-- File Count & Dates -->
+            <!-- File Count, Dates & Usage -->
             <div class="flex items-center justify-between text-sm text-slate-500">
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center">
@@ -40,6 +40,12 @@
                         <FaSolidClock class="w-4 h-4 mr-1" />
                         <span>{{ formatDate(demand.created_at) }}</span>
                     </div>
+                    
+                    <!-- Usage Cost Button -->
+                    <UsageCostButton
+                        :cost="demand.usage_summary?.total_cost || null"
+                        @click.stop="handleUsageClick"
+                    />
                 </div>
 
                 <div v-if="demand.completed_at" class="text-green-600 font-medium">
@@ -87,14 +93,16 @@ import { computed } from "vue";
 import { UiCard, UiProgressBar, UiStatusBadge } from "../../shared/components";
 import type { UiDemand } from "../../shared/types";
 import { getDemandProgressPercentage, getDemandStatusColor } from "../config";
+import { UsageCostButton } from "./Usage";
 
 const props = defineProps<{
     demand: UiDemand;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
     edit: [];
     view: [];
+    'view-usage': [];
 }>();
 
 const progressColor = computed(() => getDemandStatusColor(props.demand.status));
@@ -121,6 +129,10 @@ const formatDate = (dateString: string) => {
         day: "numeric",
         year: "numeric"
     });
+};
+
+const handleUsageClick = () => {
+    emit('view-usage');
 };
 </script>
 

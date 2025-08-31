@@ -28,7 +28,8 @@ const defaultChannelNames = {
 	"AgentThread": ["updated"],
 	"StoredFile": ["updated"],
 	"JobDispatch": ["updated", "created"],
-	"ClaudeCodeGeneration": ["started", "progress", "code_chunk", "completed", "error"]
+	"ClaudeCodeGeneration": ["started", "progress", "code_chunk", "completed", "error"],
+	"UsageSummary": ["updated"]
 };
 
 function subscribeToChannel(channelName, id, events): boolean {

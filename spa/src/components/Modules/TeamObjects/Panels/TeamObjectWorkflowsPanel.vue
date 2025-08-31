@@ -42,8 +42,8 @@ import { dxWorkflowInput } from "@/components/Modules/WorkflowDefinitions/Workfl
 import WorkflowInputCard from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/WorkflowInputCard";
 import { WorkflowInput } from "@/types";
 import { FaSolidPlus as CreateIcon, FaSolidWorm as ShowWorkflowIcon } from "danx-icon";
-import { ActionButton, FlashMessages, ShowHideButton, storeObjects } from "quasar-ui-danx";
-import { onMounted, Ref, ref } from "vue";
+import { ActionButton, FlashMessages, ShowHideButton } from "quasar-ui-danx";
+import { onMounted, ref } from "vue";
 
 const props = defineProps<{
 	teamObject: TeamObject,
@@ -53,7 +53,7 @@ onMounted(loadWorkflowInputs);
 
 const deleteAction = dxWorkflowInput.getAction("delete", { onSuccess: loadWorkflowInputs });
 
-const workflowInputs: Ref<WorkflowInput[]> = ref([]);
+const workflowInputs = ref<WorkflowInput[]>([]);
 const activeWorkflowInput = ref<WorkflowInput>(null);
 
 async function createWorkflowInput() {
@@ -76,6 +76,6 @@ async function loadWorkflowInputs() {
 		filter: { team_object_id: props.teamObject.id },
 		fields: { files: { thumb: true }, content: true }
 	});
-	workflowInputs.value = storeObjects(result.data) as WorkflowInput[];
+	workflowInputs.value = result.data;
 }
 </script>

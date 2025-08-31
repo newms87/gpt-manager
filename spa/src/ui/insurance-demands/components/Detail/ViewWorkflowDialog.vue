@@ -7,9 +7,18 @@
     >
         <!-- Header -->
         <div class="bg-slate-800 p-4 border-b border-slate-700 flex-shrink-0">
-            <h2 class="text-lg font-semibold text-slate-200">
-                Workflow: {{ workflowRun?.name || "Loading..." }}
-            </h2>
+            <div class="flex-x space-x-2">
+                <h2 class="text-lg font-semibold text-slate-200">
+                    Workflow: {{ workflowRun?.name || "Loading..." }}
+                </h2>
+                <LabelPillWidget
+                    v-if="workflowRun"
+                    :label="workflowRun.id"
+                    color="sky"
+                    size="xs"
+                    class="flex-shrink-0"
+                />
+            </div>
             <div class="flex items-center gap-3 mt-1">
                 <div class="text-sm text-slate-400">
                     Status: <span :class="statusColor">{{ workflowRun?.status }}</span>
@@ -58,7 +67,7 @@ import WorkflowCanvas from "@/components/Modules/WorkflowCanvas/WorkflowCanvas.v
 import { routes as workflowDefinitionRoutes } from "@/components/Modules/WorkflowDefinitions/config/routes";
 import { WorkflowDefinition, WorkflowRun } from "@/types";
 import { FaSolidTriangleExclamation } from "danx-icon";
-import { FullScreenDialog } from "quasar-ui-danx";
+import { FullScreenDialog, LabelPillWidget } from "quasar-ui-danx";
 import { computed, onMounted, ref, watch } from "vue";
 
 const emit = defineEmits<{

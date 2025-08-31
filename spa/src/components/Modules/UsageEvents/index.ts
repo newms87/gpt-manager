@@ -1,0 +1,1 @@
+export { dxUsageEvent } from "./config";

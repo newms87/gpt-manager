@@ -124,8 +124,9 @@ class ClassificationVerificationService
             static::log("Property '$property' has " . count($verificationGroups) . " outlier groups - creating verification process");
 
             $taskRun->taskProcesses()->create([
-                'name' => "Classification Verification: $property",
-                'meta' => ['classification_verification_property' => $property],
+                'name'     => "Classification Verification: $property",
+                'meta'     => ['classification_verification_property' => $property],
+                'is_ready' => true,
             ]);
 
             $processesCreated++;
@@ -400,11 +401,11 @@ PROMPT;
             $reason         = $correction['reason'] ?? 'No reason provided';
 
             // Find the artifact and its position in the context
-            $artifact = null;
+            $artifact         = null;
             $artifactPosition = null;
             foreach($group['context'] as $contextItem) {
                 if ($contextItem['artifact']->id == $artifactId) {
-                    $artifact = $contextItem['artifact'];
+                    $artifact         = $contextItem['artifact'];
                     $artifactPosition = $contextItem['position'];
                     break;
                 }
@@ -449,7 +450,7 @@ PROMPT;
     {
         static::log('Creating recursive verification processes for ' . count($correctedArtifacts) . ' corrected previous artifacts');
 
-        foreach ($correctedArtifacts as $artifact) {
+        foreach($correctedArtifacts as $artifact) {
             // Get the TaskRun this artifact belongs to
             $taskRun = $artifact->taskRun;
             if (!$taskRun) {
@@ -459,12 +460,13 @@ PROMPT;
 
             // Create a new task process for recursive verification
             $taskProcess = $taskRun->taskProcesses()->create([
-                'name' => "Recursive Classification Verification: $property (Artifact {$artifact->id})",
-                'meta' => [
+                'name'     => "Recursive Classification Verification: $property (Artifact {$artifact->id})",
+                'meta'     => [
                     'classification_verification_property' => $property,
-                    'recursive_verification_artifact_id' => $artifact->id,
-                    'is_recursive' => true
+                    'recursive_verification_artifact_id'   => $artifact->id,
+                    'is_recursive'                         => true,
                 ],
+                'is_ready' => true,
             ]);
 
             static::log("Created recursive verification process {$taskProcess->id} for artifact {$artifact->id}");

@@ -6,6 +6,7 @@ export * from "./mcp-servers";
 export * from "./prompts";
 export * from "./resources";
 export * from "./task-definitions";
+export * from "./usage-events";
 export * from "./user";
 export * from "./workflow-inputs";
 export * from "./workflows";

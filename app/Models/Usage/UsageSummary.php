@@ -2,6 +2,7 @@
 
 namespace App\Models\Usage;
 
+use App\Events\UsageSummaryUpdatedEvent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,16 +28,24 @@ class UsageSummary extends Model
     ];
 
     protected $casts = [
-        'count' => 'integer',
-        'run_time_ms' => 'integer',
-        'input_tokens' => 'integer',
+        'count'         => 'integer',
+        'run_time_ms'   => 'integer',
+        'input_tokens'  => 'integer',
         'output_tokens' => 'integer',
-        'input_cost' => 'float',
-        'output_cost' => 'float',
-        'total_cost' => 'float',
+        'input_cost'    => 'float',
+        'output_cost'   => 'float',
+        'total_cost'    => 'float',
         'request_count' => 'integer',
-        'data_volume' => 'integer',
+        'data_volume'   => 'integer',
     ];
+
+    public static function booted(): void
+    {
+        static::saved(function (UsageSummary $usageSummary) {
+            // Broadcast event when usage summary is updated
+            UsageSummaryUpdatedEvent::broadcast($usageSummary);
+        });
+    }
 
     public function object(): MorphTo
     {
@@ -48,7 +57,7 @@ class UsageSummary extends Model
      */
     public function setObjectIdAttribute($value)
     {
-        $this->attributes['object_id'] = (string) $value;
+        $this->attributes['object_id'] = (string)$value;
     }
 
     /**
@@ -56,7 +65,7 @@ class UsageSummary extends Model
      */
     public function scopeWhereObjectId($query, $id)
     {
-        return $query->where('object_id', (string) $id);
+        return $query->where('object_id', (string)$id);
     }
 
     public function usageEvents(): HasMany
@@ -87,15 +96,15 @@ class UsageSummary extends Model
 
         if ($summary) {
             $this->update([
-                'count' => $summary->count,
-                'run_time_ms' => $summary->run_time_ms,
-                'input_tokens' => $summary->input_tokens,
+                'count'         => $summary->count,
+                'run_time_ms'   => $summary->run_time_ms,
+                'input_tokens'  => $summary->input_tokens,
                 'output_tokens' => $summary->output_tokens,
-                'input_cost' => $summary->input_cost,
-                'output_cost' => $summary->output_cost,
-                'total_cost' => $summary->input_cost + $summary->output_cost,
+                'input_cost'    => $summary->input_cost,
+                'output_cost'   => $summary->output_cost,
+                'total_cost'    => $summary->input_cost + $summary->output_cost,
                 'request_count' => $summary->request_count,
-                'data_volume' => $summary->data_volume,
+                'data_volume'   => $summary->data_volume,
             ]);
         }
     }

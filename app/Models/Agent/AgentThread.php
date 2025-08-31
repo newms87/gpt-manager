@@ -4,6 +4,7 @@ namespace App\Models\Agent;
 
 use App\Events\AgentThreadUpdatedEvent;
 use App\Models\Assistant\AssistantAction;
+use App\Models\Task\TaskProcess;
 use App\Models\Team\Team;
 use App\Models\Traits\HasUsageTracking;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -81,6 +82,11 @@ class AgentThread extends Model implements AuditableContract
     public function lastRun(): HasOne|AgentThreadRun
     {
         return $this->hasOne(AgentThreadRun::class)->latest();
+    }
+
+    public function taskProcesses(): HasMany|TaskProcess
+    {
+        return $this->hasMany(TaskProcess::class);
     }
 
     public function messages(): HasMany|AgentThreadMessage

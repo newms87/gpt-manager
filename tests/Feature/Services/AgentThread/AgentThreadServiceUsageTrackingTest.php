@@ -59,10 +59,10 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
 
         // Check that thread run usage is accessible via trait
         $threadRun->refresh();
-        $usage = $threadRun->usage;
-        $this->assertNotNull($usage);
-        $this->assertEquals(200, $usage['input_tokens']); // From the response
-        $this->assertEquals(100, $usage['output_tokens']); // From the response
+        $summary = $threadRun->usageSummary;
+        $this->assertNotNull($summary);
+        $this->assertEquals(200, $summary->input_tokens); // From the response
+        $this->assertEquals(100, $summary->output_tokens); // From the response
     }
 
     #[Test]

@@ -20,15 +20,15 @@ class UiDemandsController extends ActionController
             app(UiDemandWorkflowService::class)->extractData($uiDemand);
 
             return UiDemandResource::make($uiDemand->fresh([
-                'inputFiles', 
+                'inputFiles',
                 'outputFiles',
-                'teamObject', 
+                'teamObject',
                 'workflowRuns.workflowDefinition.workflowNodes',
-                'workflowRuns.taskRuns'
+                'workflowRuns.taskRuns',
             ]), [
-                'team_object' => true,
-                'input_files' => true,
-                'output_files' => true,
+                'team_object'               => true,
+                'input_files'               => true,
+                'output_files'              => true,
                 'extract_data_workflow_run' => true,
                 'write_demand_workflow_run' => true,
             ]);
@@ -43,21 +43,21 @@ class UiDemandsController extends ActionController
     public function writeDemand(UiDemand $uiDemand)
     {
         try {
-            $templateId = request()->input('template_id');
+            $templateId             = request()->input('template_id');
             $additionalInstructions = request()->input('additional_instructions');
-            
+
             $workflowRun = app(UiDemandWorkflowService::class)->writeDemand($uiDemand, $templateId, $additionalInstructions);
 
             return UiDemandResource::make($uiDemand->fresh([
-                'inputFiles', 
+                'inputFiles',
                 'outputFiles',
-                'teamObject', 
+                'teamObject',
                 'workflowRuns.workflowDefinition.workflowNodes',
-                'workflowRuns.taskRuns'
+                'workflowRuns.taskRuns',
             ]), [
-                'team_object' => true,
-                'input_files' => true,
-                'output_files' => true,
+                'team_object'               => true,
+                'input_files'               => true,
+                'output_files'              => true,
                 'extract_data_workflow_run' => true,
                 'write_demand_workflow_run' => true,
             ]);
@@ -68,4 +68,5 @@ class UiDemandsController extends ActionController
             ], 400);
         }
     }
+
 }

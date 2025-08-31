@@ -1,6 +1,6 @@
 import { usePusher } from "@/helpers/pusher";
 import { WorkflowRun } from "@/types";
-import { FlashMessages, storeObject, storeObjects } from "quasar-ui-danx";
+import { FlashMessages, storeObject } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import type { UiDemand } from "../../shared/types";
 import { DEMAND_STATUS, demandRoutes } from "../config";
@@ -42,7 +42,7 @@ export function useDemands() {
             isLoading.value = true;
             error.value = null;
             const response = await demandRoutes.list();
-            demands.value = storeObjects(response.data);
+            demands.value = response.data;
         } catch (err: any) {
             error.value = err.message || "Failed to load demands";
             console.error("Error loading demands:", err);
@@ -65,12 +65,8 @@ export function useDemands() {
     const updateDemand = async (id: number, data: Partial<UiDemand>) => {
         try {
             const response = await demandRoutes.applyAction("update", { id }, data);
-            const updatedDemand = response.item;
-            const index = demands.value.findIndex(d => d.id === id);
-            if (index !== -1) {
-                demands.value[index] = updatedDemand;
-            }
-            return updatedDemand;
+            return response.item;
+
         } catch (err: any) {
             error.value = err.message || "Failed to update demand";
             throw err;
@@ -103,6 +99,8 @@ export function useDemands() {
 
             const response = await demandRoutes.extractData(demand);
 
+            storeObject(response.data);
+
             // Check if response is an error (has error or message fields indicating failure)
             if (response?.error || response?.message?.includes("Failed")) {
                 const errorMessage = response?.error || response?.message || "Failed to extract data";
@@ -110,18 +108,10 @@ export function useDemands() {
                 throw new Error(errorMessage);
             }
 
-            const updatedDemand = storeObject(response);
-
-            // Update the demand in the array if it exists
-            const index = demands.value.findIndex(d => d.id === demand.id);
-            if (index !== -1) {
-                demands.value[index] = updatedDemand;
-            }
-
             // Subscribe to workflow run updates after starting extract data
-            subscribeToWorkflowRunUpdates(updatedDemand, onDemandUpdate);
+            subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
 
-            return updatedDemand;
+            return demand;
         } catch (err: any) {
             const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to extract data";
             error.value = errorMessage;
@@ -162,18 +152,10 @@ export function useDemands() {
                 throw new Error(errorMessage);
             }
 
-            const updatedDemand = storeObject(response);
-
-            // Update the demand in the array if it exists
-            const index = demands.value.findIndex(d => d.id === demand.id);
-            if (index !== -1) {
-                demands.value[index] = updatedDemand;
-            }
-
             // Subscribe to workflow run updates after starting write demand
-            subscribeToWorkflowRunUpdates(updatedDemand, onDemandUpdate);
+            subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
 
-            return updatedDemand;
+            return demand;
         } catch (err: any) {
             const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to write demand";
             error.value = errorMessage;
@@ -185,25 +167,24 @@ export function useDemands() {
     };
 
 
-    // Load a single demand by ID
+    // Load a single demand by ID with basic relationships
     const loadDemand = async (demandId: number) => {
         try {
-            const loadedDemand = await demandRoutes.details({ id: demandId });
-            const storedDemand = storeObject(loadedDemand);
-            
-            // Update in the demands array if it exists
-            const index = demands.value.findIndex(d => d.id === demandId);
-            if (index !== -1) {
-                demands.value[index] = storedDemand;
-            }
-            
-            return storedDemand;
+            return await demandRoutes.details({ id: demandId }, {
+                user: true,
+                input_files: { thumb: true },
+                output_files: { thumb: true },
+                team_object: true,
+                extract_data_workflow_run: true,
+                write_demand_workflow_run: true
+            });
         } catch (err: any) {
             const errorMessage = err.message || "Failed to load demand";
             error.value = errorMessage;
             throw new Error(errorMessage);
         }
     };
+
 
     // Helper function to subscribe to a single workflow run
     const subscribeToWorkflowRun = (workflowRun: WorkflowRun, demandId: number, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {

@@ -34,3 +34,7 @@ Broadcast::channel('JobDispatch.{userId}', function (User $user, $userId) {
 Broadcast::channel('ClaudeCodeGeneration.{teamId}', function (User $user, $teamId) {
     return (bool)$user->teams()->find($teamId);
 });
+
+Broadcast::channel('UsageSummary.{teamId}', function (User $user, $teamId) {
+    return (bool)$user->teams()->find($teamId);
+});

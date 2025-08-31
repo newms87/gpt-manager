@@ -279,13 +279,13 @@ class UsageTrackingServiceTest extends TestCase
         );
 
         $taskProcess->refresh();
-        $usage = $taskProcess->usage;
+        $summary = $taskProcess->usageSummary;
 
-        $this->assertIsArray($usage);
-        $this->assertArrayHasKey('count', $usage);
-        $this->assertArrayHasKey('total_tokens', $usage);
-        $this->assertArrayHasKey('total_cost', $usage);
-        $this->assertEquals(150, $usage['total_tokens']); // 100 + 50
+        $this->assertNotNull($summary);
+        $this->assertNotNull($summary->count);
+        $this->assertNotNull($summary->total_tokens);
+        $this->assertNotNull($summary->total_cost);
+        $this->assertEquals(150, $summary->total_tokens); // 100 + 50
     }
 
     #[Test]
@@ -314,11 +314,11 @@ class UsageTrackingServiceTest extends TestCase
         $taskRun->refreshUsageFromProcesses();
         $taskRun->refresh();
 
-        $usage = $taskRun->usage;
-        $this->assertNotNull($usage);
-        $this->assertEquals(300, $usage['input_tokens']); // 100 + 200
-        $this->assertEquals(150, $usage['output_tokens']); // 50 + 100
-        $this->assertEquals(3000, $usage['run_time_ms']); // 1000 + 2000
+        $summary = $taskRun->usageSummary;
+        $this->assertNotNull($summary);
+        $this->assertEquals(300, $summary->input_tokens); // 100 + 200
+        $this->assertEquals(150, $summary->output_tokens); // 50 + 100
+        $this->assertEquals(3000, $summary->run_time_ms); // 1000 + 2000
     }
 
     #[Test]
@@ -368,10 +368,10 @@ class UsageTrackingServiceTest extends TestCase
         $workflowRun->refreshUsageFromTaskRuns();
         $workflowRun->refresh();
 
-        $usage = $workflowRun->usage;
-        $this->assertNotNull($usage);
-        $this->assertEquals(300, $usage['input_tokens']); // 100 + 200
-        $this->assertEquals(150, $usage['output_tokens']); // 50 + 100
-        $this->assertEquals(0.0045, $usage['total_cost']); // 0.0015 + 0.003
+        $summary = $workflowRun->usageSummary;
+        $this->assertNotNull($summary);
+        $this->assertEquals(300, $summary->input_tokens); // 100 + 200
+        $this->assertEquals(150, $summary->output_tokens); // 50 + 100
+        $this->assertEquals(0.0045, $summary->total_cost); // 0.0015 + 0.003
     }
 }

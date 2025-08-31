@@ -128,7 +128,7 @@ import {
 	FaSolidDatabase as SchemaIcon,
 	FaSolidPuzzlePiece as FragmentIcon
 } from "danx-icon";
-import { FlashMessages, SelectField, SelectionMenuField, ShowHideButton, storeObjects } from "quasar-ui-danx";
+import { FlashMessages, SelectField, SelectionMenuField, ShowHideButton } from "quasar-ui-danx";
 import { computed, onMounted, ref, shallowRef, watch } from "vue";
 
 const instanceId = Math.random().toString(36).substring(7);
@@ -224,7 +224,7 @@ async function loadFragments() {
 
 	// NOTE The use of requestKey is to avoid generating duplicate requests at the same time causing this request to abort, leaving this instance w/o any fragments
 	const fragments = await routes.list({ filter: { schema_definition_id: activeSchema.value.id } }, { requestKey: instanceId });
-	fragmentList.value = storeObjects(fragments.data);
+	fragmentList.value = fragments.data;
 }
 
 function onCloseDialog() {

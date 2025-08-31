@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class UsageEvent extends Model
@@ -74,5 +75,16 @@ class UsageEvent extends Model
     public function getTotalTokensAttribute(): int
     {
         return ($this->input_tokens ?? 0) + ($this->output_tokens ?? 0);
+    }
+
+    public function subscribers(): MorphToMany
+    {
+        return $this->morphToMany(
+            Model::class,
+            'subscriber',
+            'usage_event_subscribers',
+            'usage_event_id',
+            'subscriber_id'
+        )->withPivot('subscribed_at')->withTimestamps();
     }
 }

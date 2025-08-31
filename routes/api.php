@@ -31,6 +31,7 @@ use App\Http\Controllers\Audit\AuditRequestsController;
 use App\Http\Controllers\DemandTemplatesController;
 use App\Http\Controllers\Team\TeamsController;
 use App\Http\Controllers\UiDemandsController;
+use App\Http\Controllers\Usage\UsageEventsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Newms87\Danx\Http\Routes\ActionRoute;
@@ -101,6 +102,9 @@ ActionRoute::routes('mcp-servers', new McpServersController);
 ActionRoute::routes('threads', new ThreadsController);
 ActionRoute::routes('messages', new MessagesController);
 ActionRoute::routes('prompt/directives', new PromptDirectivesController);
+
+// Usage Events
+ActionRoute::routes('usage-events', new UsageEventsController);
 
 // Assistant Actions
 ActionRoute::routes('assistant/actions', new AssistantActionsController);

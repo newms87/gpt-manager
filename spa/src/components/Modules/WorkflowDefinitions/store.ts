@@ -10,7 +10,7 @@ import {
 	WorkflowNode,
 	WorkflowRun
 } from "@/types";
-import { getItem, setItem, storeObjects } from "quasar-ui-danx";
+import { getItem, setItem } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const ACTIVE_WORKFLOW_DEFINITION_KEY = "dx-active-workflow-definition-id";
@@ -48,7 +48,8 @@ async function initWorkflowState() {
 
 async function loadWorkflowDefinitions() {
 	isLoadingWorkflowDefinitions.value = true;
-	workflowDefinitions.value = storeObjects((await dxWorkflowDefinition.routes.list()).data);
+	const result = await dxWorkflowDefinition.routes.list();
+	workflowDefinitions.value = result.data;
 	isLoadingWorkflowDefinitions.value = false;
 }
 

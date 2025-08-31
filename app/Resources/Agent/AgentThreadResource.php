@@ -6,6 +6,7 @@ use App\Http\Resources\Assistant\AssistantActionResource;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
 use App\Resources\Audit\JobDispatchResource;
+use App\Resources\Usage\UsageSummaryResource;
 use Newms87\Danx\Resources\ActionResource;
 
 class AgentThreadResource extends ActionResource
@@ -18,7 +19,7 @@ class AgentThreadResource extends ActionResource
             'summary'          => $agentThread->summary,
             'is_running'       => $agentThread->isRunning(),
             'logs'             => $agentThread->lastRun?->jobDispatch?->runningAuditRequest?->logs ?? '',
-            'usage'            => $agentThread->usage,
+            'usage'            => UsageSummaryResource::make($agentThread->usageSummary),
             'audit_request_id' => $agentThread->lastRun?->jobDispatch?->running_audit_request_id,
             'timestamp'        => $agentThread->updated_at,
             'can'              => $agentThread->can(),

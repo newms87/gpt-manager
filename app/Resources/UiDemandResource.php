@@ -5,6 +5,7 @@ namespace App\Resources;
 use App\Models\UiDemand;
 use App\Resources\Auth\UserResource;
 use App\Resources\TeamObject\TeamObjectResource;
+use App\Resources\Usage\UsageSummaryResource;
 use App\Resources\Workflow\WorkflowRunResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
@@ -42,6 +43,9 @@ class UiDemandResource extends ActionResource
             'input_files_count'         => $demand->inputFiles()->count(),
             'output_files_count'        => $demand->outputFiles()->count(),
             'team_object'               => fn($fields) => TeamObjectResource::make($demand->teamObject, $fields),
+
+            // Usage tracking
+            'usage_summary'             => UsageSummaryResource::make($demand->usageSummary),
         ];
     }
 

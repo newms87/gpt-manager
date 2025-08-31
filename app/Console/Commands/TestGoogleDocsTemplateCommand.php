@@ -226,8 +226,9 @@ class TestGoogleDocsTemplateCommand extends Command
 
         // Create task process
         $taskProcess = $taskRun->taskProcesses()->create([
-            'name'   => 'Google Docs Template Process',
-            'status' => 'pending',
+            'name'     => 'Google Docs Template Process',
+            'status'   => 'pending',
+            'is_ready' => true,
         ]);
 
         // Attach input artifact

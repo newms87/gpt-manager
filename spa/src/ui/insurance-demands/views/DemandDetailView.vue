@@ -40,6 +40,13 @@
 
             <!-- Sidebar -->
             <div class="space-y-6">
+                <!-- Usage Display -->
+                <UsageDisplayContainer
+                    :demand="demand"
+                    :default-expanded="true"
+                    :allow-collapse="false"
+                />
+
                 <!-- Status Timeline -->
                 <DemandStatusTimeline
                     :demand="demand"
@@ -79,6 +86,7 @@ import {
     DemandStatusTimeline,
     ViewWorkflowDialog
 } from "../components/Detail";
+import { UsageDisplayContainer } from "../components/Usage";
 import { useDemands } from "../composables";
 
 const route = useRoute();
@@ -124,7 +132,7 @@ const handleUpdate = async (data: { title: string; description: string; input_fi
     if (!demand.value) return;
 
     try {
-        const updatedDemand = await updateDemand(demand.value.id, data);
+        await updateDemand(demand.value.id, data);
         editMode.value = false;
     } catch (err: any) {
         error.value = err.message || "Failed to update demand";

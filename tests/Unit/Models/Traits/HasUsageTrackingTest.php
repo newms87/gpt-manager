@@ -76,19 +76,19 @@ class HasUsageTrackingTest extends TestCase
         ]);
 
         $taskProcess->refresh();
-        $usage = $taskProcess->usage;
+        $summary = $taskProcess->usageSummary;
 
-        $this->assertIsArray($usage);
-        $this->assertEquals(5, $usage['count']);
-        $this->assertEquals(5000, $usage['run_time_ms']);
-        $this->assertEquals(1000, $usage['input_tokens']);
-        $this->assertEquals(500, $usage['output_tokens']);
-        $this->assertEquals(1500, $usage['total_tokens']);
-        $this->assertEquals(2.5, $usage['input_cost']);
-        $this->assertEquals(5.0, $usage['output_cost']);
-        $this->assertEquals(7.5, $usage['total_cost']);
-        $this->assertEquals(10, $usage['request_count']);
-        $this->assertEquals(2048, $usage['data_volume']);
+        $this->assertNotNull($summary);
+        $this->assertEquals(5, $summary->count);
+        $this->assertEquals(5000, $summary->run_time_ms);
+        $this->assertEquals(1000, $summary->input_tokens);
+        $this->assertEquals(500, $summary->output_tokens);
+        $this->assertEquals(1500, $summary->total_tokens);
+        $this->assertEquals(2.5, $summary->input_cost);
+        $this->assertEquals(5.0, $summary->output_cost);
+        $this->assertEquals(7.5, $summary->total_cost);
+        $this->assertEquals(10, $summary->request_count);
+        $this->assertEquals(2048, $summary->data_volume);
     }
 
     #[Test]
@@ -96,9 +96,9 @@ class HasUsageTrackingTest extends TestCase
     {
         $taskProcess = TaskProcess::factory()->create();
 
-        $usage = $taskProcess->usage;
+        $summary = $taskProcess->usageSummary;
 
-        $this->assertNull($usage);
+        $this->assertNull($summary);
     }
 
     #[Test]

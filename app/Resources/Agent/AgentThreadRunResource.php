@@ -3,6 +3,7 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\AgentThreadRun;
+use App\Resources\Usage\UsageSummaryResource;
 use Newms87\Danx\Resources\ActionResource;
 
 class AgentThreadRunResource extends ActionResource
@@ -16,7 +17,7 @@ class AgentThreadRunResource extends ActionResource
             'completed_at'         => $threadRun->completed_at,
             'failed_at'            => $threadRun->failed_at,
             'refreshed_at'         => $threadRun->refreshed_at,
-            'usage'                => $threadRun->usage,
+            'usage'                => UsageSummaryResource::make($threadRun->usageSummary),
             'response_format'      => $threadRun->response_format,
             'response_schema_id'   => $threadRun->response_schema_id,
             'response_fragment_id' => $threadRun->response_fragment_id,

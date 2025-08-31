@@ -80,12 +80,13 @@
       "Read(/home/newms/web/quasar-ui-danx/**)",
       "WebSearch",
       "Bash(make:*)",
-      "Bash(git log:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "additionalDirectories": [
       "/home/newms/web/quasar-ui-danx/ui/",
-      "/home/newms/web/quasar-ui-danx/"
+      "/home/newms/web/quasar-ui-danx/",
+      "/home/newms/web/quasar-ui-danx/ui"
     ]
   }
 }

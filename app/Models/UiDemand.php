@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Events\UiDemandUpdatedEvent;
 use App\Models\Team\Team;
 use App\Models\TeamObject\TeamObject;
+use App\Models\Traits\HasUsageTracking;
 use App\Models\Workflow\WorkflowRun;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +21,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class UiDemand extends Model implements Auditable
 {
-    use HasFactory, SoftDeletes, ActionModelTrait, AuditableTrait;
+    use HasFactory, SoftDeletes, ActionModelTrait, AuditableTrait, HasUsageTracking;
 
     // Status constants following platform pattern
     const string
