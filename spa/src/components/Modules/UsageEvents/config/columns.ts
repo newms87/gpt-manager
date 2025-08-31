@@ -20,14 +20,8 @@ export const columns: TableColumn[] = [
         name: "api_name",
         label: "API",
         align: "left",
-        sortable: true
-    },
-    {
-        name: "user_name",
-        label: "User",
-        align: "left",
         sortable: true,
-        field: (row) => row.user?.name || "System"
+        format: (value) => value.replace(/.*\\/, "")
     },
     {
         name: "input_tokens",

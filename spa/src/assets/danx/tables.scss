@@ -1,55 +1,65 @@
 .dx-action-table {
-	.q-table__container {
-		@apply shadow-none;
-		tr {
-			th:last-child, td:last-child {
-				@apply pr-4;
-			}
-		}
-	}
+    .q-table__container {
+        @apply shadow-none;
+        tr {
+            th:last-child, td:last-child {
+                @apply pr-4;
+            }
+        }
+    }
 
-	&.dx-is-loading-list {
-		@apply opacity-80;
-	}
+    &.dx-is-loading-list {
+        @apply opacity-80;
+    }
 
-	thead > tr > th, tbody > tr > td {
-		@apply px-2;
-	}
+    thead > tr > th, tbody > tr > td {
+        @apply px-2;
+    }
 
-	// Make sure the checkbox column is left aligned and always the same size
-	thead > tr:first-child > th:first-child, tbody > tr:not(.dx-table-summary-tr) > td:first-child {
-		@apply text-left w-[1px] pl-4;
-	}
+    // Make sure the checkbox column is left aligned and always the same size
+    thead > tr:first-child > th:first-child, tbody > tr:not(.dx-table-summary-tr) > td:first-child {
+        @apply text-left w-[1px] pl-4;
+    }
 }
 
 .dx-table-summary-tr {
-	@apply bg-slate-600;
+    @apply bg-slate-600;
 
-	&.has-selection {
-		@apply bg-slate-200;
-	}
+    &.has-selection {
+        @apply bg-slate-200;
+    }
 
-	&.is-loading {
-		@apply opacity-50;
-	}
+    &.is-loading {
+        @apply opacity-50;
+    }
 
-	.dx-table-summary-td {
-		@apply font-bold bg-slate-600 pl-7;
+    .dx-table-summary-td {
+        @apply font-bold bg-slate-600 pl-7;
 
-		&.has-selection {
-			@apply bg-slate-200 text-slate-600 pl-6;
-		}
-	}
+        &.has-selection {
+            @apply bg-slate-200 text-slate-600 pl-6;
+        }
+    }
 }
 
 .dx-column-link {
-	@apply p-3 inline-block;
+    @apply p-3 inline-block;
 }
 
 .dx-summary-column-link {
-	@apply px-3;
+    @apply px-3;
 }
 
 .dx-action-table-filters {
-	@apply bg-slate-800;
+    @apply bg-slate-800;
+}
+
+.dx-action-table-theme-light {
+    .dx-table-summary-tr {
+        @apply bg-slate-200;
+
+        .dx-table-summary-td {
+            @apply bg-slate-200;
+        }
+    }
 }

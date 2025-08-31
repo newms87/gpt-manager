@@ -40,13 +40,6 @@
 
             <!-- Sidebar -->
             <div class="space-y-6">
-                <!-- Usage Display -->
-                <UsageDisplayContainer
-                    :demand="demand"
-                    :default-expanded="true"
-                    :allow-collapse="false"
-                />
-
                 <!-- Status Timeline -->
                 <DemandStatusTimeline
                     :demand="demand"
@@ -57,6 +50,13 @@
                 <DemandQuickActions
                     :demand="demand"
                     @edit="editMode = true"
+                />
+
+                <!-- Usage Display -->
+                <UsageDisplayContainer
+                    :demand="demand"
+                    :default-expanded="true"
+                    :allow-collapse="false"
                 />
             </div>
         </div>

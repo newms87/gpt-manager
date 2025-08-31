@@ -63,10 +63,8 @@ const props = defineProps<{
 }>();
 
 const usageEventsFilter = computed(() => ({
-    subscribers: {
-        subscriber_type: 'App\\Models\\UiDemand',
-        subscriber_id: props.demand.id
-    }
+    "usageEventSubscribers.subscriber_type": "App\\Models\\UiDemand",
+    "usageEventSubscribers.subscriber_id": props.demand.id
 }));
 
 defineEmits<{

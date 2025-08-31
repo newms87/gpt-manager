@@ -7,8 +7,8 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class UsageEvent extends Model
@@ -34,14 +34,14 @@ class UsageEvent extends Model
     ];
 
     protected $casts = [
-        'run_time_ms' => 'integer',
-        'input_tokens' => 'integer',
+        'run_time_ms'   => 'integer',
+        'input_tokens'  => 'integer',
         'output_tokens' => 'integer',
-        'input_cost' => 'float',
-        'output_cost' => 'float',
+        'input_cost'    => 'float',
+        'output_cost'   => 'float',
         'request_count' => 'integer',
-        'data_volume' => 'integer',
-        'metadata' => 'array',
+        'data_volume'   => 'integer',
+        'metadata'      => 'array',
     ];
 
     public function team(): BelongsTo
@@ -64,7 +64,7 @@ class UsageEvent extends Model
      */
     public function setObjectIdAttribute($value)
     {
-        $this->attributes['object_id'] = (string) $value;
+        $this->attributes['object_id'] = (string)$value;
     }
 
     public function getTotalCostAttribute(): float
@@ -77,14 +77,8 @@ class UsageEvent extends Model
         return ($this->input_tokens ?? 0) + ($this->output_tokens ?? 0);
     }
 
-    public function subscribers(): MorphToMany
+    public function usageEventSubscribers(): HasMany
     {
-        return $this->morphToMany(
-            Model::class,
-            'subscriber',
-            'usage_event_subscribers',
-            'usage_event_id',
-            'subscriber_id'
-        )->withPivot('subscribed_at')->withTimestamps();
+        return $this->hasMany(UsageEventSubscriber::class);
     }
 }

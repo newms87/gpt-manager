@@ -1,6 +1,6 @@
 <template>
     <ActionTable
-        class="flex-grow"
+        class="dx-action-table-theme-light"
         :pagination="dxUsageEvent.pagination.value"
         :selected-rows="dxUsageEvent.selectedRows.value"
         :label="dxUsageEvent.label"
@@ -26,5 +26,6 @@ const props = defineProps<{
 
 onMounted(() => {
     dxUsageEvent.initialize();
+    dxUsageEvent.setActiveFilter(props.filter);
 });
 </script>
