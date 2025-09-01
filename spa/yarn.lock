@@ -4380,10 +4380,10 @@ pusher-js@^8.4.0:
   dependencies:
     tweetnacl "^1.0.3"
 
-quasar-ui-danx@^0.4.87:
-  version "0.4.87"
-  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.4.87.tgz#3087c0ffb01e8f5de318ceb7efe3e4fae17d8299"
-  integrity sha512-SaNBuF67zYUhKGVGph+Bsi6Dnl3F0wuF71U+rEEtj11nDqRCGxGa/vyv8q+a2dfsTdee+xVtnvGik4J2cDgYnQ==
+quasar-ui-danx@^0.4.88:
+  version "0.4.88"
+  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.4.88.tgz#957a23aa807cd3ff565f414dd863205421d7140b"
+  integrity sha512-ljaxTbsR3siSbj9GjJRWVOluE+vcB5P3UymOacd8r/fFg+WdCvv7m2wWI1vKBXEBs1VZ3gV8UefsZr1gbM0cAw==
   dependencies:
     "@heroicons/vue" v1
     "@tinymce/tinymce-vue" "^5.1.1"
