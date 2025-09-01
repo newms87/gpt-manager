@@ -1,104 +1,106 @@
 .milkdown {
-	h1 {
-		font-size: 2rem;
-		line-height: 4rem;
-		font-weight: bold;
-	}
+    h1 {
+        font-size: 2rem;
+        line-height: 4rem;
+        font-weight: bold;
+    }
 
-	h2 {
-		font-size: 1.7rem;
-		line-height: 3rem;
-		font-weight: bold;
-	}
+    h2 {
+        font-size: 1.7rem;
+        line-height: 3rem;
+        font-weight: bold;
+    }
 
-	h3 {
-		font-size: 1.5rem;
-		line-height: 2.2rem;
-		font-weight: normal;
-	}
+    h3 {
+        font-size: 1.5rem;
+        line-height: 2.2rem;
+        font-weight: normal;
+    }
 
-	h4 {
-		font-size: 1.3rem;
-		line-height: 1.8rem;
-		font-weight: normal;
-	}
+    h4 {
+        font-size: 1.3rem;
+        line-height: 1.8rem;
+        font-weight: normal;
+    }
 
-	h5 {
-		font-size: 1.1rem;
-		line-height: 1.5rem;
-		font-weight: bold;
-	}
+    h5 {
+        font-size: 1.1rem;
+        line-height: 1.5rem;
+        font-weight: bold;
+    }
 
-	h6 {
-		font-size: 1rem;
-		font-weight: bold;
-	}
+    h6 {
+        font-size: 1rem;
+        font-weight: bold;
+    }
 
-	ul {
-		margin: 0;
+    ul {
+        margin: 0;
 
-		li {
-			list-style-type: disc;
-			margin-left: 2em;
-		}
-	}
+        li {
+            list-style-type: disc;
+            margin-left: 2em;
+        }
+    }
 
-	[contenteditable] {
-		@apply outline-none min-h-4 rounded transition-all p-2;
+    [contenteditable] {
+        @apply outline-none min-h-4 rounded transition-all p-2;
 
-		p {
-			@apply py-1.5;
-		}
+        p {
+            @apply py-1.5;
+        }
 
-		pre[data-language] {
-			@apply bg-slate-600 text-slate-300 p-2 rounded relative my-2 overflow-hidden transition-all;
+        pre[data-language] {
+            @apply bg-slate-600 text-slate-300 p-2 rounded relative my-2 overflow-hidden transition-all;
 
-			&::before {
-				content: attr(data-language); /* This gets the value of the data-language attribute */
-				@apply text-[.7em] absolute top-0 right-0 p-1 bg-gray-800 text-gray-400 rounded-bl;
-			}
+            &::before {
+                content: attr(data-language); /* This gets the value of the data-language attribute */
+                @apply text-[.7em] absolute top-0 right-0 p-1 bg-gray-800 text-gray-400 rounded-bl;
+            }
 
-			&[data-language="yaml"] {
-				@apply text-lime-700;
-			}
-		}
+            &[data-language="yaml"] {
+                @apply text-lime-700;
+            }
+        }
 
-		&.ProseMirror-focused {
-			[data-language] {
-				@apply bg-gray-700;
-			}
-		}
-	}
+        &.ProseMirror-focused {
+            [data-language] {
+                @apply bg-gray-700;
+            }
+        }
+    }
 }
 
 .dx-markdown-editor {
-	&.dx-markdown-code-only {
-		[contenteditable] {
-			@apply bg-inherit p-0;
-		}
-	}
+    overflow: auto;
 
-	&.md-bg-green {
-		[contenteditable] {
-			&, pre {
-				@apply bg-lime-950;
-			}
-		}
-	}
+    &.dx-markdown-code-only {
+        [contenteditable] {
+            @apply bg-inherit p-0;
+        }
+    }
 
-	&.md-bg-red {
-		[contenteditable] {
-			&, pre {
-				@apply bg-red-950 text-red-800;
-			}
-		}
-	}
+    &.md-bg-green {
+        [contenteditable] {
+            &, pre {
+                @apply bg-lime-950;
+            }
+        }
+    }
 
-	&.dx-markdown-invalid {
-		.milkdown {
-			[contenteditable], .ProseMirror-focused > pre, .editor > pre {
-				@apply bg-red-950;
-			}
-		}
-	}
+    &.md-bg-red {
+        [contenteditable] {
+            &, pre {
+                @apply bg-red-950 text-red-800;
+            }
+        }
+    }
+
+    &.dx-markdown-invalid {
+        .milkdown {
+            [contenteditable], .ProseMirror-focused > pre, .editor > pre {
+                @apply bg-red-950;
+            }
+        }
+    }
 }

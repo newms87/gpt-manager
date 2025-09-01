@@ -351,6 +351,12 @@ STR;
 
         // Record usage event for this specific AI call
         if ($newInputTokens > 0 || $newOutputTokens > 0) {
+            // Calculate run time in milliseconds
+            $runTimeMs = null;
+            if ($threadRun->started_at) {
+                $runTimeMs = (int) ($threadRun->started_at->diffInMilliseconds(now()));
+            }
+            
             app(UsageTrackingService::class)->recordAiUsage(
                 $threadRun,
                 $thread->agent->model,
@@ -358,7 +364,8 @@ STR;
                     'input_tokens'  => $newInputTokens,
                     'output_tokens' => $newOutputTokens,
                     'api_response'  => $response->toArray(),
-                ]
+                ],
+                $runTimeMs
             );
         }
 

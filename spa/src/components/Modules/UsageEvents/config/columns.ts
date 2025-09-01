@@ -73,6 +73,14 @@ export const columns: TableColumn[] = [
         format: fNumber
     },
     {
+        name: "metadata",
+        label: "Metadata",
+        align: "center",
+        shrink: true,
+        format: (value) => value ? "View" : "N/A",
+        onClick: (event) => controls.showMetadata(event)
+    },
+    {
         name: "created_at",
         label: "Created",
         sortable: true,

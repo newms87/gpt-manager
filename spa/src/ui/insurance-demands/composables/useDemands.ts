@@ -84,34 +84,18 @@ export function useDemands() {
     };
 
 
-    const extractData = async (idOrDemand: number | UiDemand, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {
+    async function extractData(demand: UiDemand, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
         try {
-            let demand: UiDemand;
-            if (typeof idOrDemand === "number") {
-                const foundDemand = demands.value.find(d => d.id === idOrDemand);
-                if (!foundDemand) {
-                    throw new Error("Demand not found");
-                }
-                demand = foundDemand;
-            } else {
-                demand = idOrDemand;
-            }
-
             const response = await demandRoutes.extractData(demand);
 
-            storeObject(response.data);
-
             // Check if response is an error (has error or message fields indicating failure)
-            if (response?.error || response?.message?.includes("Failed")) {
-                const errorMessage = response?.error || response?.message || "Failed to extract data";
-                FlashMessages.error(errorMessage);
-                throw new Error(errorMessage);
+            if (response?.error) {
+                throw new Error(response.error);
+            } else {
+                storeObject(response);
+                // Subscribe to workflow run updates after starting extract data
+                subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
             }
-
-            // Subscribe to workflow run updates after starting extract data
-            subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
-
-            return demand;
         } catch (err: any) {
             const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to extract data";
             error.value = errorMessage;
@@ -120,21 +104,10 @@ export function useDemands() {
             // Don't update the demand object with error response - just throw the error
             throw err;
         }
-    };
+    }
 
-    const writeDemand = async (idOrDemand: number | UiDemand, templateId?: string, additionalInstructions?: string, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {
+    async function writeDemand(demand: UiDemand, templateId?: string, additionalInstructions?: string, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
         try {
-            let demand: UiDemand;
-            if (typeof idOrDemand === "number") {
-                const foundDemand = demands.value.find(d => d.id === idOrDemand);
-                if (!foundDemand) {
-                    throw new Error("Demand not found");
-                }
-                demand = foundDemand;
-            } else {
-                demand = idOrDemand;
-            }
-
             const data: any = {};
             if (templateId) {
                 data.template_id = templateId;
@@ -146,16 +119,13 @@ export function useDemands() {
             const response = await demandRoutes.writeDemand(demand, data);
 
             // Check if response is an error (has error or message fields indicating failure)
-            if (response?.error || response?.message?.includes("Failed")) {
-                const errorMessage = response?.error || response?.message || "Failed to write demand";
-                FlashMessages.error(errorMessage);
-                throw new Error(errorMessage);
+            if (response?.error) {
+                throw new Error(response.error);
+            } else {
+                storeObject(response);
+                // Subscribe to workflow run updates after starting write demand
+                subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
             }
-
-            // Subscribe to workflow run updates after starting write demand
-            subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
-
-            return demand;
         } catch (err: any) {
             const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to write demand";
             error.value = errorMessage;
@@ -164,8 +134,7 @@ export function useDemands() {
             // Don't update the demand object with error response - just throw the error
             throw err;
         }
-    };
-
+    }
 
     // Load a single demand by ID with basic relationships
     const loadDemand = async (demandId: number) => {

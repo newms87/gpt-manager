@@ -1,17 +1,17 @@
 <template>
-	<div class="ui-app min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
-		<UiHeader />
+    <div class="ui-app min-h-screen h-full bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col overflow-hidden">
+        <UiHeader />
 
-		<div class="flex flex-1">
-			<UiSidebar v-if="config.showSidebar" />
+        <div class="flex flex-grow overflow-y-auto">
+            <UiSidebar v-if="config.showSidebar" />
 
-			<main class="flex-1 overflow-auto">
-				<div class="p-6">
-					<router-view />
-				</div>
-			</main>
-		</div>
-	</div>
+            <main class="flex-1 overflow-auto">
+                <div class="p-6">
+                    <router-view />
+                </div>
+            </main>
+        </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -26,19 +26,19 @@ const { applyTheme } = useUiTheme();
 const { setNavigation } = useUiNavigation();
 
 onMounted(() => {
-	// Apply theme
-	applyTheme();
+    // Apply theme
+    applyTheme();
 
-	// Set navigation items
-	setNavigation(uiNavigation);
-	
-	// Add UI mode class to body for scoped styling
-	document.body.classList.add('ui-mode');
+    // Set navigation items
+    setNavigation(uiNavigation);
+
+    // Add UI mode class to body for scoped styling
+    document.body.classList.add("ui-mode");
 });
 
 onUnmounted(() => {
-	// Remove UI mode class from body
-	document.body.classList.remove('ui-mode');
+    // Remove UI mode class from body
+    document.body.classList.remove("ui-mode");
 });
 </script>
 
