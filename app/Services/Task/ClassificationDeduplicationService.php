@@ -122,6 +122,7 @@ class ClassificationDeduplicationService
             static::log("Property '$property' has " . count($labels) . " labels - creating deduplication process");
 
             $taskRun->taskProcesses()->create([
+                'activity' => "Classification Deduplication for $property w/ " . count($labels) . ' values',
                 'name'     => "Classification Deduplication: $property",
                 'meta'     => ['classification_property' => $property],
                 'is_ready' => true,

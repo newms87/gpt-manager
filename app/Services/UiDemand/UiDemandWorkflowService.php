@@ -21,6 +21,7 @@ class UiDemandWorkflowService
             throw new ValidationError('Cannot extract data for this demand. Check status and existing workflows.');
         }
 
+
         $workflowDefinition = $this->getWorkflowDefinition('extract_data');
         $workflowInput      = $this->createWorkflowInputFromDemand($uiDemand, 'Extract Data');
 
@@ -33,6 +34,9 @@ class UiDemandWorkflowService
             WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA
         );
 
+        // Subscribe UiDemand to the workflow's usage event
+        $this->subscribeToWorkflowUsageEvent($uiDemand, $workflowRun);
+
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 
         return $workflowRun;
@@ -43,6 +47,7 @@ class UiDemandWorkflowService
         if (!$uiDemand->canWriteDemand()) {
             throw new ValidationError('Cannot write demand. Check if extract data is completed and team object exists.');
         }
+
 
         $workflowDefinition = $this->getWorkflowDefinition('write_demand');
         $workflowInput      = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand', $templateId, $additionalInstructions);
@@ -55,6 +60,9 @@ class UiDemandWorkflowService
             $workflowRun,
             WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
         );
+
+        // Subscribe UiDemand to the workflow's usage event
+        $this->subscribeToWorkflowUsageEvent($uiDemand, $workflowRun);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
 
@@ -211,6 +219,17 @@ class UiDemandWorkflowService
                 // Reuse the StoredFile from artifact and attach to UiDemand as output
                 $uiDemand->outputFiles()->syncWithoutDetaching([$storedFile->id => ['category' => 'output']]);
             }
+        }
+    }
+
+    /**
+     * Subscribe UiDemand to the workflow's usage event for tracking
+     */
+    protected function subscribeToWorkflowUsageEvent(UiDemand $uiDemand, WorkflowRun $workflowRun): void
+    {
+        $usageEvent = $workflowRun->findWorkflowUsageEvent();
+        if ($usageEvent) {
+            $uiDemand->subscribeToUsageEvent($usageEvent);
         }
     }
 }

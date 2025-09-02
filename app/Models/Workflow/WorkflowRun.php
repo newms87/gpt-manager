@@ -8,7 +8,9 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Traits\HasUsageTracking;
+use App\Models\Usage\UsageEvent;
 use App\Services\Task\TaskProcessRunnerService;
+use App\Services\Usage\UsageTrackingService;
 use App\Services\Workflow\WorkflowRunnerService;
 use App\Traits\HasDebugLogging;
 use App\Traits\HasWorkflowStatesTrait;
@@ -32,6 +34,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
     use HasFactory, SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowStatesTrait, HasDebugLogging, HasUsageTracking;
 
     protected $fillable = [
+        'workflow_definition_id',
         'name',
         'started_at',
         'stopped_at',
@@ -383,8 +386,98 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         return false;
     }
 
+    /**
+     * Create a usage event for this workflow run
+     */
+    public function createWorkflowUsageEvent(): UsageEvent
+    {
+        return app(UsageTrackingService::class)->recordUsage(
+            $this,
+            'workflow_run',
+            $this->workflowDefinition->name,
+            [
+                'input_cost'  => 0,
+                'output_cost' => 0,
+                'run_time_ms' => 0,
+                'metadata'    => [
+                    'status'             => $this->status,
+                    'progress_percent'   => 0,
+                    'task_run_count'     => 0,
+                    'task_process_count' => 0,
+                ],
+            ]
+        );
+    }
+
+    /**
+     * Update the usage event for this workflow run
+     */
+    public function updateWorkflowUsageEvent(): void
+    {
+        $usageEvent = $this->findWorkflowUsageEvent() ?: $this->createWorkflowUsageEvent();
+
+        if (!$usageEvent) {
+            return;
+        }
+
+        $runTimeMs = $this->calculateWorkflowRunTime();
+
+        $metadata = array_merge($usageEvent->metadata ?? [], [
+            'status'             => $this->status,
+            'progress_percent'   => $this->calculateProgress(),
+            'task_run_count'     => $this->taskRuns()->count(),
+            'task_process_count' => $this->taskProcesses()->count(),
+        ]);
+
+        if ($this->isFinished()) {
+            $metadata['completed_at'] = now()->toIso8601String();
+
+            if ($this->failed_at) {
+                $metadata['failed_at'] = $this->failed_at->toIso8601String();
+                $metadata['error']     = $this->status;
+            }
+        }
+
+        $usageEvent->update([
+            'run_time_ms' => $runTimeMs,
+            'metadata'    => $metadata,
+        ]);
+    }
+
+    /**
+     * Find the workflow usage event for this workflow run
+     */
+    public function findWorkflowUsageEvent(): ?UsageEvent
+    {
+        return $this->usageEvents()
+            ->where('event_type', 'workflow_run')
+            ->first();
+    }
+
+    /**
+     * Calculate the runtime in milliseconds for this workflow run
+     */
+    protected function calculateWorkflowRunTime(): int
+    {
+        if (!$this->started_at) {
+            return 0;
+        }
+
+        $endTime = $this->completed_at
+            ?? $this->failed_at
+            ?? $this->stopped_at
+            ?? now();
+
+        return $this->started_at->diffInMilliseconds($endTime);
+    }
+
     public static function booted(): void
     {
+        static::created(function (WorkflowRun $workflowRun) {
+            // Create usage event when workflow run is created
+            $workflowRun->createWorkflowUsageEvent();
+        });
+
         static::saving(function (WorkflowRun $workflowRun) {
             if ($workflowRun->isDirty('has_run_all_tasks')) {
                 $workflowRun->checkTaskRuns();
@@ -394,7 +487,11 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         });
 
         static::saved(function (WorkflowRun $workflowRun) {
-            // If the workflow run was recently completed, let the service know so we can trigger any events
+            // Update usage event when status or completion fields change (but not on the initial creation)
+            if (!$workflowRun->wasRecentlyCreated && $workflowRun->wasChanged('status')) {
+                $workflowRun->updateWorkflowUsageEvent();
+            }
+
             if ($workflowRun->wasChanged('status')) {
                 if ($workflowRun->isCompleted()) {
                     WorkflowRunnerService::onComplete($workflowRun);
