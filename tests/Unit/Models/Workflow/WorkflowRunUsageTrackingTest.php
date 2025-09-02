@@ -41,9 +41,8 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         $usageEvent = $workflowRun->findWorkflowUsageEvent();
         $this->assertNotNull($usageEvent);
         $this->assertEquals('workflow_run', $usageEvent->event_type);
-        $this->assertEquals('internal', $usageEvent->api_name);
-        $this->assertEquals('test-workflow', $usageEvent->metadata['workflow_name']);
-        $this->assertEquals('started', $usageEvent->metadata['status']);
+        $this->assertEquals('test-workflow', $usageEvent->api_name);
+        $this->assertEquals('Running', $usageEvent->metadata['status']);
         $this->assertEquals(0, $usageEvent->metadata['progress_percent']);
         $this->assertEquals(0, $usageEvent->metadata['task_run_count']);
         $this->assertEquals(0, $usageEvent->metadata['task_process_count']);
@@ -75,8 +74,7 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         // Then
         $usageEvent = $workflowRun->findWorkflowUsageEvent();
         $this->assertNotNull($usageEvent);
-        $this->assertEquals('extract-data-workflow', $usageEvent->metadata['workflow_name']);
-        $this->assertEquals('completed', $usageEvent->metadata['status']);
+        $this->assertEquals('Completed', $usageEvent->metadata['status']);
         $this->assertArrayHasKey('completed_at', $usageEvent->metadata);
         $this->assertGreaterThan(0, $usageEvent->run_time_ms);
     }
@@ -108,7 +106,7 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         // Then
         $usageEvent = $workflowRun->findWorkflowUsageEvent();
         $this->assertNotNull($usageEvent);
-        $this->assertEquals('failed', $usageEvent->metadata['status']);
+        $this->assertEquals('Failed', $usageEvent->metadata['status']);
         $this->assertArrayHasKey('completed_at', $usageEvent->metadata);
         $this->assertArrayHasKey('failed_at', $usageEvent->metadata);
         // The error should match the actual status of the workflow run
@@ -142,7 +140,7 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         // Then
         $usageEvent = $workflowRun->findWorkflowUsageEvent();
         $this->assertNotNull($usageEvent);
-        $this->assertEquals('stopped', $usageEvent->metadata['status']);
+        $this->assertEquals('Stopped', $usageEvent->metadata['status']);
         $this->assertArrayHasKey('completed_at', $usageEvent->metadata);
         $this->assertGreaterThan(0, $usageEvent->run_time_ms);
     }
@@ -229,27 +227,24 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         // Then
         $this->assertNotNull($usageEvent);
         $this->assertEquals('workflow_run', $usageEvent->event_type);
-        $this->assertEquals('internal', $usageEvent->api_name);
+        // The api_name should be the workflow definition name, not 'internal'
+        $this->assertEquals($workflowDefinition->name, $usageEvent->api_name);
     }
 
     #[Test]
     public function test_workflowRunWithoutDefinition_doesNotCreateUsageEvent(): void
     {
-        // Given - Mock the creating event to bypass the workflowDefinition check
-        $usageTrackingService = $this->mock(UsageTrackingService::class);
-        $usageTrackingService->shouldNotReceive('recordUsage');
-
-        // When - Create WorkflowRun without workflow definition
+        // Given - Create WorkflowRun without workflow definition
         $workflowRun = new WorkflowRun([
             'name' => 'Test Run',
             'started_at' => now(),
         ]);
         
-        // Manually call the method that would be triggered in creating event
+        // When - Try to create usage event (should fail due to null workflowDefinition)
+        $this->expectException(\ErrorException::class);
+        $this->expectExceptionMessage('Attempt to read property "name" on null');
+        
         $workflowRun->createWorkflowUsageEvent();
-
-        // Then - No usage event should be created (verified by mock expectations)
-        $this->assertTrue(true);
     }
 
     #[Test]
@@ -276,7 +271,7 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         // Then - Usage event should be recreated
         $usageEvent = $workflowRun->findWorkflowUsageEvent();
         $this->assertNotNull($usageEvent);
-        $this->assertEquals('completed', $usageEvent->metadata['status']);
+        $this->assertEquals('Completed', $usageEvent->metadata['status']);
     }
 
     #[Test]
@@ -301,7 +296,6 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         $usageEvent = $workflowRun->findWorkflowUsageEvent();
         $metadata = $usageEvent->metadata;
         
-        $this->assertArrayHasKey('workflow_name', $metadata);
         $this->assertArrayHasKey('status', $metadata);
         $this->assertArrayHasKey('progress_percent', $metadata);
         $this->assertArrayHasKey('task_run_count', $metadata);

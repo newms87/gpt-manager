@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Repositories;
 
+use App\Models\Schema\SchemaDefinition;
 use App\Models\TeamObject\TeamObject;
 use App\Models\UiDemand;
 use App\Repositories\TeamObjectRepository;
@@ -21,6 +22,12 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
         parent::setUp();
         $this->setUpTeam();
         $this->repository = new UiDemandRepository();
+        
+        // Create required SchemaDefinition
+        SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Demand Schema',
+        ]);
     }
 
     public function test_createDemand_withValidData_createsUiDemandWithTeamObjectAndFiles(): void

@@ -2,6 +2,7 @@
 
 namespace App\Services\UiDemand;
 
+use App\Models\Schema\SchemaDefinition;
 use App\Models\TeamObject\TeamObject;
 use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
@@ -11,7 +12,6 @@ use App\Models\Workflow\WorkflowRun;
 use App\Repositories\WorkflowInputRepository;
 use App\Services\Workflow\WorkflowRunnerService;
 use Newms87\Danx\Exceptions\ValidationError;
-use Newms87\Danx\Models\Utilities\StoredFile;
 
 class UiDemandWorkflowService
 {
@@ -132,6 +132,21 @@ class UiDemandWorkflowService
         ]);
     }
 
+    public function getSchemaDefinitionForDemand(): SchemaDefinition
+    {
+        $name = config('ui-demands.workflows.schema_definition');
+
+        $schemaDefinition = SchemaDefinition::where('team_id', team()->id)
+            ->where('name', $name)
+            ->first();
+
+        if (!$schemaDefinition) {
+            throw new ValidationError("UI Demand failed to resolve Schema definition '{$name}': Not found");
+        }
+
+        return $schemaDefinition;
+    }
+
     protected function getWorkflowDefinition(string $workflowType): WorkflowDefinition
     {
         $workflowName = config("ui-demands.workflows.{$workflowType}");
@@ -211,11 +226,11 @@ class UiDemandWorkflowService
      */
     protected function attachOutputFilesFromWorkflow(UiDemand $uiDemand, $outputArtifacts): void
     {
-        foreach ($outputArtifacts as $artifact) {
+        foreach($outputArtifacts as $artifact) {
             // Get all StoredFiles attached to this artifact
             $artifactStoredFiles = $artifact->storedFiles;
-            
-            foreach ($artifactStoredFiles as $storedFile) {
+
+            foreach($artifactStoredFiles as $storedFile) {
                 // Reuse the StoredFile from artifact and attach to UiDemand as output
                 $uiDemand->outputFiles()->syncWithoutDetaching([$storedFile->id => ['category' => 'output']]);
             }

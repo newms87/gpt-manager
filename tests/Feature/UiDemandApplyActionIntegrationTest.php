@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Schema\SchemaDefinition;
 use App\Models\UiDemand;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
@@ -15,6 +16,12 @@ class UiDemandApplyActionIntegrationTest extends AuthenticatedTestCase
     {
         parent::setUp();
         $this->setUpTeam();
+        
+        // Create required SchemaDefinition
+        SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Demand Schema',
+        ]);
     }
 
     public function test_applyAction_update_withInputFiles_updatesFilesCorrectly(): void

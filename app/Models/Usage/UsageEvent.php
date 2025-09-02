@@ -81,4 +81,9 @@ class UsageEvent extends Model
     {
         return $this->hasMany(UsageEventSubscriber::class);
     }
+
+    public function subscribers(): HasMany
+    {
+        return $this->hasMany(UsageEventSubscriber::class);
+    }
 }

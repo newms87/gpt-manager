@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\UiDemand;
 use App\Resources\UiDemandResource;
+use App\Services\UiDemand\UiDemandWorkflowService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -39,15 +40,16 @@ class UiDemandRepository extends ActionRepository
         $demand = UiDemand::create($data);
         $this->syncInputFiles($demand, $data);
 
+        $schemaDefinition = app(UiDemandWorkflowService::class)->getSchemaDefinitionForDemand();
         // Create team object immediately
-        $teamObjectRepo = app(TeamObjectRepository::class);
-        $teamObject     = $teamObjectRepo->createTeamObject(
+        $teamObject = app(TeamObjectRepository::class)->createTeamObject(
             'Demand',
             $demand->title,
             [
-                'demand_id'   => $demand->id,
-                'title'       => $demand->title,
-                'description' => $demand->description,
+                'schema_definition_id' => $schemaDefinition->id,
+                'demand_id'            => $demand->id,
+                'title'                => $demand->title,
+                'description'          => $demand->description,
             ]
         );
 

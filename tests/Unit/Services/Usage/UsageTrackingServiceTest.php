@@ -12,15 +12,18 @@ use App\Models\User;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Usage\UsageTrackingService;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\AuthenticatedTestCase;
+use Tests\Traits\SetUpTeamTrait;
 
-class UsageTrackingServiceTest extends TestCase
+class UsageTrackingServiceTest extends AuthenticatedTestCase
 {
+    use SetUpTeamTrait;
     protected UsageTrackingService $service;
 
     public function setUp(): void
     {
         parent::setUp();
+        $this->setUpTeam();
         $this->service = app(UsageTrackingService::class);
     }
 
@@ -325,9 +328,14 @@ class UsageTrackingServiceTest extends TestCase
     public function it_aggregates_child_usage_for_workflow_runs()
     {
         // Create workflow run and task runs manually since WorkflowRun factory doesn't exist
+        $workflowDefinition = \App\Models\Workflow\WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Test Workflow'
+        ]);
+        
         $workflowRun = WorkflowRun::create([
             'name'                   => 'Test Workflow',
-            'workflow_definition_id' => 1,
+            'workflow_definition_id' => $workflowDefinition->id,
         ]);
 
         $taskRun1 = TaskRun::factory()->create(['workflow_run_id' => $workflowRun->id]);

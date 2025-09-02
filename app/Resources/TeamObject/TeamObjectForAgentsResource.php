@@ -69,17 +69,21 @@ class TeamObjectForAgentsResource
 
             $arrayRelatedObject = $relatedAttributes + $relatedRelationships + $arrayRelatedObject;
 
-            // Assuming the relationship is singular initially, set the object as the relationship directly
-            $currentRelation = $arrayRelatedObject;
-
             // If the relationship is plural, add the object to the relationship array
             $relatedSchemaType = $relatedSchema['type'] ?? null;
-            if ($relatedSchemaType === 'array') {
-                if (isset($loadedRelationships[$relationship->relationship_name])) {
-                    $currentRelation   = $loadedRelationships[$relationship->relationship_name];
-                    $currentRelation[] = $arrayRelatedObject;
+            $currentRelation   = $loadedRelationships[$relationship->relationship_name] ?? null;
+
+            if ($currentRelation) {
+                if (is_associative_array($currentRelation)) {
+                    $currentRelation = [$currentRelation, $arrayRelatedObject];
                 } else {
+                    $currentRelation[] = $arrayRelatedObject;
+                }
+            } else {
+                if ($relatedSchemaType === 'array') {
                     $currentRelation = [$arrayRelatedObject];
+                } else {
+                    $currentRelation = $arrayRelatedObject;
                 }
             }
 

@@ -201,10 +201,6 @@ class WorkflowImportService
             }
         }
 
-        if ($key === 'name') {
-            $value .= ' (' . $this->versionName . ')';
-        }
-
         return $value;
     }
 
