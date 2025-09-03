@@ -195,7 +195,10 @@ class ClassificationDeduplicationService
      */
     protected function getNormalizedClassificationMappings(array $labels): ?array
     {
-        $prompt = $this->buildClassificationDeduplicationPrompt($labels);
+        // Clean labels to prevent JSON parsing issues
+        $cleanedLabels = array_map([$this, 'cleanLabelForLLM'], $labels);
+
+        $prompt = $this->buildClassificationDeduplicationPrompt($cleanedLabels);
 
         $threadRepository = app(ThreadRepository::class);
         $agent            = $this->getOrCreateClassificationDeduplicationAgent();
@@ -237,8 +240,13 @@ class ClassificationDeduplicationService
                     throw new \Exception("Invalid mapping format: 'correct' and 'incorrect' fields are required");
                 }
 
+                // Clean the correct value returned by the LLM
+                $correctValue = $this->cleanLabelForLLM($mapping['correct']);
+                
                 foreach($mapping['incorrect'] as $incorrectValue) {
-                    $normalizedMappings[$incorrectValue] = $mapping['correct'];
+                    // Clean the incorrect value returned by the LLM
+                    $cleanIncorrectValue = $this->cleanLabelForLLM($incorrectValue);
+                    $normalizedMappings[$cleanIncorrectValue] = $correctValue;
                 }
             }
 
@@ -266,29 +274,34 @@ Please analyze these values and create a mapping of original values to normalize
 
 **For String Values:**
 1. **Entity Recognition**: Identify when different strings refer to the same entity or concept
-   - Be AGGRESSIVE in identifying entities that are clearly the same organization/person with location suffixes
-   - Example: "University Orthopedic Care", "University Orthopedic Care, Palm Springs", "University Orthopedic Care, Tamarac" should ALL map to "University Orthopedic Care"
-   - Example: "Dr. John Smith", "Dr John Smith", "John Smith, MD" should ALL map to "Dr. John Smith"
-2. **Location Suffix Removal**: Remove location suffixes from organization names when they clearly refer to the same entity
-   - "Company Name, City" → "Company Name"
-   - "Practice Name, Location" → "Practice Name"
-3. **Consistent Casing**: Normalize casing to be consistent:
+   - Be AGGRESSIVE in identifying entities that are clearly the same (organizations, people, places, etc.)
+   - Look for core identifiers that remain consistent across variations (names, IDs, key attributes)
+   - Example: "Microsoft Corp", "Microsoft Corporation", "MICROSOFT", "microsoft inc" should ALL map to the most complete version
+   - Example: "Tokyo Station", "Tokyo Stn", "TOKYO STATION" should ALL map to "Tokyo Station"
+2. **Identifier-Based Consolidation**: 
+   - If records contain the same core identifiers or unique attributes, consolidate them aggressively
+   - Choose the most complete version that includes the most relevant information
+   - Different formatting of the same information should be consolidated (dates, phone numbers, addresses, etc.)
+3. **Location/Suffix Handling**: Handle location suffixes and organizational designations appropriately
+   - Remove redundant location suffixes when they clearly refer to the same core entity
+   - Preserve meaningful distinctions between actually different entities
+4. **Consistent Formatting**: Normalize formatting to be consistent:
    - Proper nouns: Use appropriate title casing
-   - Acronyms: Keep as uppercase
-   - Common terms: Use lowercase unless they are proper nouns
-4. **Standardization**: Normalize similar formats to a consistent standard
-5. **Redundancy removal**: Remove duplicate concepts while preserving the most complete/formal version
-6. **Formatting consistency**: Standardize punctuation, spacing, and formatting
+   - Acronyms: Keep as uppercase when appropriate
+   - Standardize punctuation, spacing, and formatting
+5. **Completeness Priority**: When consolidating variations, choose the version with the most complete and useful information
+6. **Aggressive Consolidation**: When strings clearly refer to the same underlying entity (same core name/identifier), consolidate them even if some details vary
 
-**Important**: You are normalizing individual string values. These strings represent any kind of data that may have variations in formatting, casing, or representation.
+**Important**: You are normalizing individual string values that could represent ANY type of data - people, places, organizations, products, categories, etc.
 
 IMPORTANT RULES:
 1. Only include entries where the value actually needs to be changed
 2. If a value is already in its best normalized form, don't include it in the incorrect list
 3. Choose the most complete and properly formatted version when consolidating
-4. Maintain consistency in formatting and casing
-5. **CRITICAL**: Do NOT collapse different concepts into the same value
-6. **CRITICAL**: Group all incorrect variations together under a single correct value
+4. **BE AGGRESSIVE**: When strings clearly refer to the same underlying entity, consolidate them into ONE normalized value
+5. **CRITICAL**: Group all incorrect variations together under a single correct value
+6. Look for shared core identifiers (names, IDs, key attributes) as the basis for consolidation
+7. When in doubt about whether records refer to the same entity, err on the side of consolidation if they share key identifying characteristics
 
 Example response format:
 {
@@ -358,14 +371,17 @@ PROMPT;
     protected function getPropertyValueUpdate($value, array $normalizedMappings)
     {
         if (is_string($value)) {
-            $trimmedValue = trim($value);
-            if (isset($normalizedMappings[$trimmedValue])) {
-                static::log("Updated property value: '$trimmedValue' => '{$normalizedMappings[$trimmedValue]}'");
+            // Clean the original value for proper matching with cleaned mapping keys
+            $cleanedValue = $this->cleanLabelForLLM(trim($value));
+            
+            if (isset($normalizedMappings[$cleanedValue])) {
+                static::log("Updated property value: '$cleanedValue' => '{$normalizedMappings[$cleanedValue]}'");
 
-                return $normalizedMappings[$trimmedValue];
+                return $normalizedMappings[$cleanedValue];
             }
 
-            return $value;
+            // If no mapping found, return the cleaned version to ensure consistency
+            return $cleanedValue;
         } elseif (is_array($value)) {
             if (is_associative_array($value)) {
                 if (isset($value['id']) && isset($normalizedMappings[$value['id']])) {
@@ -387,6 +403,41 @@ PROMPT;
         }
 
         return $value;
+    }
+
+    /**
+     * Clean a label to prevent JSON parsing issues when processed by the LLM
+     */
+    protected function cleanLabelForLLM(string $label): string
+    {
+        // CRITICAL: First unescape forward slashes that cause API timeouts
+        // Convert escaped forward slashes back to normal forward slashes
+        $label = str_replace('\\/', '/', $label);
+        
+        // Remove control characters and normalize whitespace
+        $label = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $label);
+
+        // Replace other problematic characters that could break JSON parsing
+        // Note: We handle forward slashes separately above, so don't replace them here
+        $label = str_replace(['\\', '"', "'", "\r", "\n", "\t"], [' ', ' ', ' ', ' ', ' ', ' '], $label);
+
+        // Collapse multiple spaces into single space
+        $label = preg_replace('/\s+/', ' ', $label);
+
+        // Trim whitespace
+        $label = trim($label);
+
+        // If label is empty after cleaning, return a placeholder
+        if (empty($label)) {
+            return '[empty]';
+        }
+
+        // Limit length to prevent extremely long values
+        if (strlen($label) > 250) {
+            $label = substr($label, 0, 247) . '...';
+        }
+
+        return $label;
     }
 
     /**

@@ -84,3 +84,17 @@ export interface TeamObjectAttributeProps extends TeamObjectAttributeBlockProps 
 export interface TeamObjectAttributeSourceCardProps {
 	source: TeamObjectAttributeSource;
 }
+
+// Export main interfaces
+export {
+	TeamObject,
+	TeamObjectAttribute,
+	TeamObjectAttributeSource,
+	BooleanAttribute,
+	StringAttribute,
+	NumberAttribute,
+	DateAttribute,
+	ObjectAttribute,
+	StringArrayAttribute,
+	ObjectArrayAttribute
+};

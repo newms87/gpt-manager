@@ -11,6 +11,7 @@ import {
 	PageNotFoundView,
 	SchemaDefinitionsView,
 	TaskDefinitionsView,
+	TeamObjectsDemoView,
 	WorkflowDefinitionsView,
 	WorkflowInputsView
 } from "@/views";
@@ -82,6 +83,12 @@ const router = createRouter({
 					name: "audit-requests",
 					component: AuditRequestsView,
 					meta: { title: "Auditing", type: "AuditRequestResource" }
+				},
+				{
+					path: "/team-objects-demo",
+					name: "team-objects-demo",
+					component: TeamObjectsDemoView,
+					meta: { title: "Team Objects Demo", type: "TeamObjectResource" }
 				}
 			]
 		},

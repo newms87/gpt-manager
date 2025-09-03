@@ -58,13 +58,12 @@
             <div v-if="isUploading" class="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <div class="flex items-center">
                     <FaSolidSpinner class="w-4 h-4 text-amber-600 animate-spin mr-2" />
-                    <span class="text-sm text-amber-700">
-            Files are still uploading... Please wait before saving.
-          </span>
+                    <div class="text-sm text-amber-700">
+                        Files are still uploading... Please wait before saving.
+                    </div>
                 </div>
             </div>
         </div>
-        <div v-if="hasUnuploadedFiles">Yes files</div>
     </ConfirmDialog>
 </template>
 
