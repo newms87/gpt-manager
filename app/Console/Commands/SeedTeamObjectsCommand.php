@@ -166,17 +166,55 @@ class SeedTeamObjectsCommand extends Command
         $this->info("Schema parsed: {$attributeCount} attributes, {$relationshipCount} relationships");
     }
 
-
-    protected function createTeamObject($parentObject = null, $currentDepth = 0, $maxDepth = 3)
+    protected function determineObjectType($propertySchema = null)
     {
-        $schemaTitle = $this->schema->schema['title'] ?? 'Object';
+        if ($propertySchema) {
+            // Check if this is an array of objects
+            if (($propertySchema['type'] ?? '') === 'array') {
+                $items = $propertySchema['items'] ?? [];
+                if (($items['type'] ?? '') === 'object' && isset($items['title'])) {
+                    return $items['title'];
+                }
+            }
+            // Check if this is a direct object with a title
+            elseif (($propertySchema['type'] ?? '') === 'object' && isset($propertySchema['title'])) {
+                return $propertySchema['title'];
+            }
+        }
+
+        // Fall back to main schema title
+        return $this->schema->schema['title'] ?? 'Object';
+    }
+
+    protected function getSchemaProperties($propertySchema = null)
+    {
+        if ($propertySchema) {
+            // Handle array of objects - get properties from items
+            if (($propertySchema['type'] ?? '') === 'array') {
+                $items = $propertySchema['items'] ?? [];
+                return $items['properties'] ?? [];
+            }
+            // Handle direct object - get its properties
+            elseif (($propertySchema['type'] ?? '') === 'object') {
+                return $propertySchema['properties'] ?? [];
+            }
+        }
+
+        // Fall back to root schema properties
+        return $this->schemaProperties;
+    }
+
+    protected function createTeamObject($parentObject = null, $currentDepth = 0, $maxDepth = 3, $propertySchema = null)
+    {
+        // Determine the object type from the property schema or fall back to main schema
+        $objectType = $this->determineObjectType($propertySchema);
 
         $object = TeamObject::create([
             'team_id'              => $this->team->id,
             'schema_definition_id' => $this->schema->id,
             'root_object_id'       => $parentObject?->root_object_id ?? $parentObject?->id,
-            'type'                 => $schemaTitle,
-            'name'                 => $this->generateObjectName($schemaTitle),
+            'type'                 => $objectType,
+            'name'                 => $this->generateObjectName($objectType),
             'description'          => $this->faker->sentence(rand(5, 15)),
             'date'                 => $this->faker->optional(0.6)->dateTimeBetween('-1 year', 'now'),
             'url'                  => $this->faker->optional(0.3)->url(),
@@ -184,11 +222,11 @@ class SeedTeamObjectsCommand extends Command
         ]);
 
         // Create attributes
-        $this->createAttributes($object);
+        $this->createAttributes($object, $propertySchema);
 
         // Create relationships based on schema definition
         if ($currentDepth < $maxDepth) {
-            $this->createSchemaBasedRelationships($object, $currentDepth, $maxDepth);
+            $this->createSchemaBasedRelationships($object, $currentDepth, $maxDepth, $propertySchema);
         }
 
         return $object;
@@ -236,10 +274,13 @@ class SeedTeamObjectsCommand extends Command
         return null;
     }
 
-    protected function createAttributes($object)
+    protected function createAttributes($object, $propertySchema = null)
     {
+        // Get properties from the passed schema or fall back to root schema
+        $schemaProperties = $this->getSchemaProperties($propertySchema);
+        
         // Create attributes only for non-relationship properties in the schema
-        $attributeProperties = array_filter($this->schemaProperties, function ($property) {
+        $attributeProperties = array_filter($schemaProperties, function ($property) {
             $type = $property['type'] ?? 'string';
 
             return !($type === 'object' || ($type === 'array' && ($property['items']['type'] ?? '') === 'object'));
@@ -263,10 +304,13 @@ class SeedTeamObjectsCommand extends Command
         }
     }
 
-    protected function createSchemaBasedRelationships($object, $currentDepth, $maxDepth)
+    protected function createSchemaBasedRelationships($object, $currentDepth, $maxDepth, $propertySchema = null)
     {
+        // Get properties from the passed schema or fall back to root schema
+        $schemaProperties = $this->getSchemaProperties($propertySchema);
+        
         // Create relationships only for object/array properties in the schema
-        $relationshipProperties = array_filter($this->schemaProperties, function ($property) {
+        $relationshipProperties = array_filter($schemaProperties, function ($property) {
             $type = $property['type'] ?? 'string';
 
             return $type === 'object' || ($type === 'array' && ($property['items']['type'] ?? '') === 'object');
@@ -279,7 +323,7 @@ class SeedTeamObjectsCommand extends Command
                 // Create multiple related objects for array relationships
                 $numRelated = rand(1, 3); // Random number of related objects
                 for($i = 0; $i < $numRelated; $i++) {
-                    $relatedObject = $this->createTeamObject($object, $currentDepth + 1, $maxDepth);
+                    $relatedObject = $this->createTeamObject($object, $currentDepth + 1, $maxDepth, $property);
 
                     TeamObjectRelationship::create([
                         'team_object_id'         => $object->id,
@@ -289,7 +333,7 @@ class SeedTeamObjectsCommand extends Command
                 }
             } else {
                 // Create single related object for object relationships
-                $relatedObject = $this->createTeamObject($object, $currentDepth + 1, $maxDepth);
+                $relatedObject = $this->createTeamObject($object, $currentDepth + 1, $maxDepth, $property);
 
                 TeamObjectRelationship::create([
                     'team_object_id'         => $object->id,

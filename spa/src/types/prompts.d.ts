@@ -8,6 +8,10 @@ export interface SchemaDefinition extends ActionTargetItem {
 	schema: JsonSchema;
 	response_example: object | object[];
 	agents: Agent[];
+	meta?: {
+		color?: string;
+		[key: string]: any;
+	};
 	can: {
 		view: boolean;
 		edit: boolean;

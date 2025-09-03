@@ -50,6 +50,7 @@
 <script setup lang="ts">
 import { computed, ref, defineComponent, h, watch } from 'vue';
 import type { TeamObject, TeamObjectAttribute } from './team-objects';
+import { LabelPillWidget } from 'quasar-ui-danx';
 import { 
   FaSolidChevronRight as ChevronRightIcon,
   FaSolidUsers as UsersIcon,
@@ -59,6 +60,7 @@ import {
   FaSolidFolder as FolderIcon,
   FaSolidTag as TagIcon
 } from 'danx-icon';
+import { getTypeColor } from '@/utils/typeColors';
 
 const props = defineProps<{
   objects: TeamObject[];
@@ -90,18 +92,8 @@ watch(() => props.selectedObject, (newSelected) => {
 });
 
 // Helper functions
-const getTypeColor = (type: string) => {
-  const hash = type.split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
-  
-  const colors = [
-    'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-red-500',
-    'bg-yellow-500', 'bg-indigo-500', 'bg-pink-500', 'bg-teal-500'
-  ];
-  
-  return colors[Math.abs(hash) % colors.length];
+const getObjectTypeColor = (type: string) => {
+  return getTypeColor(type).bgColor;
 };
 
 const getRelationshipIcon = (relationName: string) => {
@@ -225,9 +217,10 @@ const TreeNodeComponent = defineComponent({
       confidenceCounts,
       handleSelect,
       handleToggle,
-      getTypeColor,
+      getObjectTypeColor,
       getRelationshipIcon,
-      ChevronRightIcon
+      ChevronRightIcon,
+      LabelPillWidget
     };
   },
   render() {
@@ -239,9 +232,10 @@ const TreeNodeComponent = defineComponent({
       confidenceCounts, 
       handleSelect, 
       handleToggle, 
-      getTypeColor,
+      getObjectTypeColor,
       getRelationshipIcon,
-      ChevronRightIcon 
+      ChevronRightIcon,
+      LabelPillWidget
     } = this;
 
     const { object, selectedObject, expandedNodes, level } = this.$props;
@@ -277,12 +271,19 @@ const TreeNodeComponent = defineComponent({
         h('div', { class: 'flex items-center gap-2 flex-1 min-w-0' }, [
           // Type indicator
           h('div', {
-            class: ['w-3 h-3 rounded-full flex-shrink-0', getTypeColor(object.type)]
+            class: ['w-3 h-3 rounded-full flex-shrink-0', getObjectTypeColor(object.type)]
           }),
           
           // Text content
           h('div', { class: 'flex-1 min-w-0' }, [
-            h('div', { class: 'text-sm font-medium truncate' }, object.name || 'Unnamed'),
+            h('div', { class: 'flex items-center gap-2 mb-1' }, [
+              h('div', { class: 'text-sm font-medium truncate flex-1' }, object.name || 'Unnamed'),
+              h(LabelPillWidget, { 
+                label: object.id, 
+                class: 'bg-slate-500 text-slate-100', 
+                size: 'xs' 
+              })
+            ]),
             h('div', { class: 'text-xs text-slate-500' }, [
               object.type,
               childrenCount > 0 ? ` • ${childrenCount}` : ''

@@ -81,6 +81,7 @@
       "WebSearch",
       "Bash(make:*)",
       "Bash(git log:*)",
+      "Read(/home/newms/web/quasar-ui-danx/**)",
       "Read(/home/newms/web/quasar-ui-danx/**)"
     ],
     "deny": [],

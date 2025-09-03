@@ -1,123 +1,31 @@
 <template>
     <div class="h-full bg-slate-900 p-6">
         <!-- Header -->
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold text-slate-100 mb-2">Team Objects Explorer</h1>
-            <p class="text-slate-400">Explore and manage your team's object hierarchy</p>
-        </div>
-
-        <!-- Search and Filter Controls -->
-        <div class="bg-slate-800 rounded-lg p-4 mb-6 border border-slate-700">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                <!-- Search -->
-                <div class="lg:col-span-2">
-                    <TextField
-                        v-model="searchQuery"
-                        label="Search objects..."
-                        placeholder="Search by name, type, or attributes"
-                        class="w-full"
-                    >
-                        <template #prepend>
-                            <SearchIcon class="w-4 h-4 text-slate-400" />
-                        </template>
-                    </TextField>
-                </div>
-
-                <!-- Object Type Filter -->
-                <SelectField
-                    v-model="selectedTypes"
-                    label="Object Types"
-                    :options="typeOptions"
-                    multiple
-                    clearable
-                />
-
-                <!-- Confidence Filter -->
-                <SelectField
-                    v-model="selectedConfidences"
-                    label="Confidence Levels"
-                    :options="confidenceOptions"
-                    multiple
-                    clearable
-                />
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-100 mb-2">Team Objects Explorer</h1>
+                <p class="text-slate-400">Explore and manage your team's object hierarchy</p>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Date Range -->
-                <div class="flex gap-2">
-                    <DateField
-                        v-model="dateRange.start"
-                        label="From Date"
-                        class="flex-1"
-                    />
-                    <DateField
-                        v-model="dateRange.end"
-                        label="To Date"
-                        class="flex-1"
-                    />
-                </div>
-
-                <!-- Sort Controls -->
-                <SelectField
-                    v-model="sortBy"
-                    label="Sort By"
-                    :options="sortOptions"
+            
+            <!-- Filter Controls -->
+            <div class="flex items-center gap-2">
+                <ActionButton
+                    type="refresh"
+                    color="slate"
+                    tooltip="Refresh data"
+                    @click="loadObjects"
                 />
-
-                <!-- View Controls -->
-                <div class="flex items-end gap-2">
-                    <ActionButton
-                        type="refresh"
-                        color="slate"
-                        tooltip="Refresh data"
-                        @click="loadObjects"
-                    />
-                    <ShowHideButton
-                        v-model="showFilters"
-                        label="Advanced Filters"
-                        size="sm"
-                    />
-                </div>
-            </div>
-
-            <!-- Advanced Filters (Collapsible) -->
-            <div v-if="showFilters" class="mt-4 pt-4 border-t border-slate-700">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <NumberField
-                        v-model="minAttributes"
-                        label="Min Attributes"
-                        :min="0"
-                        placeholder="Minimum number of attributes"
-                    />
-                    <NumberField
-                        v-model="minRelations"
-                        label="Min Relations"
-                        :min="0"
-                        placeholder="Minimum number of relations"
-                    />
-                </div>
-            </div>
-
-            <!-- Filter Summary -->
-            <div v-if="hasActiveFilters" class="mt-4 pt-4 border-t border-slate-700">
-                <div class="flex items-center gap-2 text-sm text-slate-300">
-                    <FilterIcon class="w-4 h-4" />
-                    <span>{{ filteredObjects.length }} of {{ allObjects.length }} objects match filters</span>
-                    <ActionButton
-                        type="delete"
-                        size="xs"
-                        color="slate"
-                        label="Clear all filters"
-                        @click="clearFilters"
-                    />
-                </div>
+                <TeamObjectFilterPopover
+                    v-model="filterValues"
+                    :objects="allObjects"
+                />
             </div>
         </div>
 
         <!-- Main Content Layout -->
         <div class="flex gap-6 h-[calc(100vh-280px)]">
             <!-- Left Sidebar: Tree View -->
-            <div class="w-1/3 min-w-0">
+            <div class="min-w-[25rem]">
                 <TeamObjectTreeView
                     :objects="filteredObjects"
                     :selected-object="selectedObject"
@@ -143,29 +51,27 @@
 </template>
 
 <script setup lang="ts">
-import { FaSolidFilter as FilterIcon, FaSolidMagnifyingGlass as SearchIcon } from "danx-icon";
-import { ActionButton, DateField, NumberField, SelectField, ShowHideButton, TextField } from "quasar-ui-danx";
-import { computed, onMounted, ref } from "vue";
+import { ActionButton } from "quasar-ui-danx";
+import { computed, onMounted, ref, watch } from "vue";
 import { dxTeamObject } from "./config";
 import type { TeamObject } from "./team-objects";
 import TeamObjectDetailView from "./TeamObjectDetailView.vue";
 import TeamObjectTreeView from "./TeamObjectTreeView.vue";
+import TeamObjectFilterPopover from "./TeamObjectFilterPopover.vue";
 
 // State
 const selectedObject = ref<TeamObject | null>(null);
 
 // Filter state
-const searchQuery = ref("");
-const selectedTypes = ref<string[]>([]);
-const selectedConfidences = ref<string[]>([]);
-const dateRange = ref({
-    start: "",
-    end: ""
+const filterValues = ref({
+    searchQuery: "",
+    selectedTypes: [] as string[],
+    selectedConfidences: [] as string[],
+    dateRange: { start: "", end: "" },
+    sortBy: "name",
+    minAttributes: null as number | null,
+    minRelations: null as number | null,
 });
-const sortBy = ref("name");
-const showFilters = ref(false);
-const minAttributes = ref<number | null>(null);
-const minRelations = ref<number | null>(null);
 
 // Controller state access
 const allObjects = computed(() => {
@@ -190,41 +96,6 @@ const pagedItemsWatcher = computed(() => {
 const currentPage = ref(1);
 const itemsPerPage = ref(100);
 
-// Filter options
-const typeOptions = computed(() => {
-    const types = new Set(allObjects.value.map(obj => obj.type));
-    return Array.from(types).map(type => ({
-        label: type,
-        value: type
-    }));
-});
-
-const confidenceOptions = [
-    { label: "High", value: "high" },
-    { label: "Medium", value: "medium" },
-    { label: "Low", value: "low" },
-    { label: "None", value: "none" }
-];
-
-const sortOptions = [
-    { label: "Name", value: "name" },
-    { label: "Type", value: "type" },
-    { label: "Date", value: "date" },
-    { label: "Attributes Count", value: "attributes_count" },
-    { label: "Relations Count", value: "relations_count" }
-];
-
-// Computed values
-const hasActiveFilters = computed(() => {
-    return searchQuery.value ||
-        selectedTypes.value.length > 0 ||
-        selectedConfidences.value.length > 0 ||
-        dateRange.value.start ||
-        dateRange.value.end ||
-        minAttributes.value !== null ||
-        minRelations.value !== null;
-});
-
 const filteredObjects = computed(() => {
     console.log("🔍 TeamObjectExplorer: Computing filteredObjects...");
     console.log("📊 TeamObjectExplorer: allObjects.value in computed:", allObjects.value);
@@ -236,10 +107,12 @@ const filteredObjects = computed(() => {
     let filtered = [...allObjects.value];
     console.log("📋 TeamObjectExplorer: Initial filtered array length:", filtered.length);
 
+    const filters = filterValues.value;
+
     // Search filter
-    if (searchQuery.value.trim()) {
-        console.log("🔍 TeamObjectExplorer: Applying search filter:", searchQuery.value);
-        const query = searchQuery.value.toLowerCase().trim();
+    if (filters.searchQuery.trim()) {
+        console.log("🔍 TeamObjectExplorer: Applying search filter:", filters.searchQuery);
+        const query = filters.searchQuery.toLowerCase().trim();
         const beforeSearchLength = filtered.length;
         filtered = filtered.filter(obj => {
             // Search in name, type, description
@@ -261,30 +134,30 @@ const filteredObjects = computed(() => {
     }
 
     // Type filter
-    if (selectedTypes.value.length > 0) {
-        console.log("🏷️ TeamObjectExplorer: Applying type filter:", selectedTypes.value);
+    if (filters.selectedTypes.length > 0) {
+        console.log("🏷️ TeamObjectExplorer: Applying type filter:", filters.selectedTypes);
         const beforeTypeLength = filtered.length;
-        filtered = filtered.filter(obj => selectedTypes.value.includes(obj.type));
+        filtered = filtered.filter(obj => filters.selectedTypes.includes(obj.type));
         console.log(`🏷️ TeamObjectExplorer: Type filter reduced from ${beforeTypeLength} to ${filtered.length} objects`);
     }
 
     // Confidence filter
-    if (selectedConfidences.value.length > 0) {
-        console.log("🎯 TeamObjectExplorer: Applying confidence filter:", selectedConfidences.value);
+    if (filters.selectedConfidences.length > 0) {
+        console.log("🎯 TeamObjectExplorer: Applying confidence filter:", filters.selectedConfidences);
         const beforeConfidenceLength = filtered.length;
         filtered = filtered.filter(obj => {
             if (!obj.attributes) return false;
             return Object.values(obj.attributes).some(attr =>
-                selectedConfidences.value.includes(attr.confidence?.toLowerCase() || "none")
+                filters.selectedConfidences.includes(attr.confidence?.toLowerCase() || "none")
             );
         });
         console.log(`🎯 TeamObjectExplorer: Confidence filter reduced from ${beforeConfidenceLength} to ${filtered.length} objects`);
     }
 
     // Date range filter
-    if (dateRange.value.start) {
-        console.log("📅 TeamObjectExplorer: Applying start date filter:", dateRange.value.start);
-        const startDate = new Date(dateRange.value.start);
+    if (filters.dateRange.start) {
+        console.log("📅 TeamObjectExplorer: Applying start date filter:", filters.dateRange.start);
+        const startDate = new Date(filters.dateRange.start);
         const beforeStartDateLength = filtered.length;
         filtered = filtered.filter(obj => {
             const objDate = obj.date ? new Date(obj.date) : null;
@@ -293,9 +166,9 @@ const filteredObjects = computed(() => {
         console.log(`📅 TeamObjectExplorer: Start date filter reduced from ${beforeStartDateLength} to ${filtered.length} objects`);
     }
 
-    if (dateRange.value.end) {
-        console.log("📅 TeamObjectExplorer: Applying end date filter:", dateRange.value.end);
-        const endDate = new Date(dateRange.value.end);
+    if (filters.dateRange.end) {
+        console.log("📅 TeamObjectExplorer: Applying end date filter:", filters.dateRange.end);
+        const endDate = new Date(filters.dateRange.end);
         const beforeEndDateLength = filtered.length;
         filtered = filtered.filter(obj => {
             const objDate = obj.date ? new Date(obj.date) : null;
@@ -305,32 +178,32 @@ const filteredObjects = computed(() => {
     }
 
     // Min attributes filter
-    if (minAttributes.value !== null) {
-        console.log("📊 TeamObjectExplorer: Applying min attributes filter:", minAttributes.value);
+    if (filters.minAttributes !== null) {
+        console.log("📊 TeamObjectExplorer: Applying min attributes filter:", filters.minAttributes);
         const beforeMinAttrsLength = filtered.length;
         filtered = filtered.filter(obj => {
             const attrCount = obj.attributes ? Object.keys(obj.attributes).length : 0;
-            return attrCount >= minAttributes.value!;
+            return attrCount >= filters.minAttributes!;
         });
         console.log(`📊 TeamObjectExplorer: Min attributes filter reduced from ${beforeMinAttrsLength} to ${filtered.length} objects`);
     }
 
     // Min relations filter
-    if (minRelations.value !== null) {
-        console.log("🔗 TeamObjectExplorer: Applying min relations filter:", minRelations.value);
+    if (filters.minRelations !== null) {
+        console.log("🔗 TeamObjectExplorer: Applying min relations filter:", filters.minRelations);
         const beforeMinRelsLength = filtered.length;
         filtered = filtered.filter(obj => {
             const relCount = obj.relations
                 ? Object.values(obj.relations).reduce((total, relations) => total + relations.length, 0)
                 : 0;
-            return relCount >= minRelations.value!;
+            return relCount >= filters.minRelations!;
         });
         console.log(`🔗 TeamObjectExplorer: Min relations filter reduced from ${beforeMinRelsLength} to ${filtered.length} objects`);
     }
 
     // Sort
-    console.log(`🔀 TeamObjectExplorer: Sorting ${filtered.length} objects by ${sortBy.value}`);
-    const sorted = sortObjects(filtered, sortBy.value);
+    console.log(`🔀 TeamObjectExplorer: Sorting ${filtered.length} objects by ${filters.sortBy}`);
+    const sorted = sortObjects(filtered, filters.sortBy);
     console.log("✅ TeamObjectExplorer: Final filtered and sorted objects:", sorted);
     console.log("🔢 TeamObjectExplorer: Final filtered objects length:", sorted.length);
 
@@ -370,9 +243,9 @@ const sortObjects = (objects: TeamObject[], sortField: string): TeamObject[] => 
 };
 
 const initializeController = async () => {
-    console.log("🔄 TeamObjectExplorer: Initializing dxTeamObject controller...");
+    console.log("🔄 TeamObjectExplorer: Initializing controllers...");
 
-    // Initialize the controller with required options
+    // Initialize the TeamObject controller
     dxTeamObject.initialize({
         isDetailsEnabled: false,
         isListEnabled: false, // We'll enable this after setup
@@ -380,7 +253,7 @@ const initializeController = async () => {
         isFieldOptionsEnabled: false
     });
 
-    console.log("✅ TeamObjectExplorer: dxTeamObject.initialize() completed");
+    console.log("✅ TeamObjectExplorer: Controller initialized");
 
     // Set pagination to get a large number of objects (or all of them)
     // Most explorer interfaces need to load all objects for filtering/searching
@@ -416,15 +289,6 @@ const onNavigate = (object: TeamObject) => {
     selectedObject.value = object;
 };
 
-const clearFilters = () => {
-    searchQuery.value = "";
-    selectedTypes.value = [];
-    selectedConfidences.value = [];
-    dateRange.value = { start: "", end: "" };
-    minAttributes.value = null;
-    minRelations.value = null;
-    currentPage.value = 1;
-};
 
 // Initialize
 onMounted(() => {

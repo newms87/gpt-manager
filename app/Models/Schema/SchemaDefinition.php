@@ -36,6 +36,7 @@ class SchemaDefinition extends Model implements AuditableContract, ResourcePacka
         'description',
         'schema_format',
         'schema',
+        'meta',
     ];
 
     protected array $keywordFields = [
@@ -55,6 +56,7 @@ class SchemaDefinition extends Model implements AuditableContract, ResourcePacka
         return [
             'schema'           => 'json',
             'response_example' => 'json',
+            'meta'             => 'json',
         ];
     }
 
