@@ -38,3 +38,11 @@ Broadcast::channel('ClaudeCodeGeneration.{teamId}', function (User $user, $teamI
 Broadcast::channel('UsageSummary.{teamId}', function (User $user, $teamId) {
     return (bool)$user->teams()->find($teamId);
 });
+
+Broadcast::channel('TeamObject.{teamId}', function (User $user, $teamId) {
+    return (bool)$user->teams()->find($teamId);
+});
+
+Broadcast::channel('UiDemand.{teamId}', function (User $user, $teamId) {
+    return (bool)$user->teams()->find($teamId);
+});

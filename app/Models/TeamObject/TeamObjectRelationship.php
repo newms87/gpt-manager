@@ -2,6 +2,7 @@
 
 namespace App\Models\TeamObject;
 
+use App\Events\TeamObjectUpdatedEvent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,20 @@ class TeamObjectRelationship extends Model implements AuditableContract
         'updated_at',
         'deleted_at',
     ];
+
+    public static function booted(): void
+    {
+        static::saved(function (TeamObjectRelationship $relationship) {
+            if ($relationship->teamObject) {
+                TeamObjectUpdatedEvent::broadcast($relationship->teamObject);
+            }
+        });
+    }
+
+    public function teamObject(): BelongsTo|TeamObject
+    {
+        return $this->belongsTo(TeamObject::class, 'team_object_id');
+    }
 
     public function related(): TeamObject|BelongsTo
     {

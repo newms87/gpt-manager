@@ -100,6 +100,9 @@ trait HasUsageTracking
                 'subscriber_id_int' => $this->id,
                 'subscribed_at'     => now(),
             ]);
+
+            $this->refreshUsageSummaryFromSubscribedEvents();
+            $this->load('usageSummary');
         }
     }
 

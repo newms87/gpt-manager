@@ -2,6 +2,7 @@
 
 namespace App\Models\TeamObject;
 
+use App\Events\TeamObjectUpdatedEvent;
 use App\Models\Schema\SchemaDefinition;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +33,13 @@ class TeamObject extends Model implements AuditableContract
             'meta' => 'json',
             'date' => 'datetime',
         ];
+    }
+
+    public static function booted(): void
+    {
+        static::saved(function (TeamObject $teamObject) {
+            TeamObjectUpdatedEvent::broadcast($teamObject);
+        });
     }
 
     public function schemaDefinition(): BelongsTo|SchemaDefinition

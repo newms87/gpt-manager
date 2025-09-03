@@ -20,6 +20,8 @@ let pusher: Pusher;
 const channels: Channel[] = [];
 const listeners: ChannelEventListener[] = [];
 const userSubscriptionsMap: Map<string, UserSubscription> = new Map();
+// Track model event listeners separately for proper cleanup
+const modelEventListeners: Map<string, ChannelEventListener> = new Map();
 
 const defaultChannelNames = {
 	"WorkflowRun": ["updated"],
@@ -29,7 +31,8 @@ const defaultChannelNames = {
 	"StoredFile": ["updated"],
 	"JobDispatch": ["updated", "created"],
 	"ClaudeCodeGeneration": ["started", "progress", "code_chunk", "completed", "error"],
-	"UsageSummary": ["updated"]
+	"UsageSummary": ["updated"],
+	"TeamObject": ["updated"]
 };
 
 function subscribeToChannel(channelName, id, events): boolean {
@@ -187,11 +190,72 @@ export function usePusher() {
 		}
 
 		const channel = model.__type.replace("Resource", "");
-		onEvent(channel, event, (data: ActionTargetItem) => {
+		const events = Array.isArray(event) ? event : [event];
+		
+		// Create a unique key for this model event listener
+		const listenerKey = `${channel}-${model.id}-${events.join(',')}-${callback.toString().substring(0, 50)}`;
+		
+		// Create the wrapper callback that checks for model ID
+		const wrappedCallback = (data: ActionTargetItem) => {
 			if (data.id === model.id) {
 				callback(data);
 			}
+		};
+		
+		// Create and store the listener
+		const listener: ChannelEventListener = {
+			channel,
+			events,
+			callback: wrappedCallback
+		};
+		
+		// Store in both maps for tracking
+		modelEventListeners.set(listenerKey, listener);
+		listeners.push(listener);
+	}
+
+	function offEvent(channel: string, event: string | string[], callback: (data: ActionTargetItem) => void) {
+		const eventsToRemove = Array.isArray(event) ? event : [event];
+		
+		// Remove matching listeners
+		const indexesToRemove: number[] = [];
+		listeners.forEach((listener, index) => {
+			if ([channel, "private-" + channel].includes(listener.channel) && 
+				listener.events.some(e => eventsToRemove.includes(e)) &&
+				listener.callback === callback) {
+				indexesToRemove.push(index);
+			}
 		});
+		
+		// Remove listeners in reverse order to maintain correct indices
+		for (let i = indexesToRemove.length - 1; i >= 0; i--) {
+			listeners.splice(indexesToRemove[i], 1);
+		}
+	}
+
+	function offModelEvent(model: ActionTargetItem, event: string | string[], callback: (data: ActionTargetItem) => void) {
+		if (!model?.id || !model?.__type) {
+			return;
+		}
+
+		const channel = model.__type.replace("Resource", "");
+		const events = Array.isArray(event) ? event : [event];
+		
+		// Create the same unique key used in onModelEvent
+		const listenerKey = `${channel}-${model.id}-${events.join(',')}-${callback.toString().substring(0, 50)}`;
+		
+		// Get the stored listener
+		const storedListener = modelEventListeners.get(listenerKey);
+		if (storedListener) {
+			// Remove from modelEventListeners map
+			modelEventListeners.delete(listenerKey);
+			
+			// Remove from listeners array
+			const index = listeners.findIndex(l => l === storedListener);
+			if (index !== -1) {
+				listeners.splice(index, 1);
+			}
+		}
 	}
 
 
@@ -199,7 +263,9 @@ export function usePusher() {
 		pusher,
 		channels,
 		onEvent,
+		offEvent,
 		onModelEvent,
+		offModelEvent,
 		subscribeToProcesses,
 		unsubscribeFromProcesses,
 		subscribeToWorkflowJobDispatches,

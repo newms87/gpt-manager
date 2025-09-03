@@ -48,10 +48,11 @@
 
 <script setup lang="ts">
 import type { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
+import { useTeamObjectUpdates } from "@/components/Modules/TeamObjects/composables/useTeamObjectUpdates";
 import TeamObjectDetailView from "@/components/Modules/TeamObjects/TeamObjectDetailView.vue";
 import TeamObjectTreeView from "@/components/Modules/TeamObjects/TeamObjectTreeView.vue";
 import { FullScreenDialog } from "quasar-ui-danx";
-import { ref, watch } from "vue";
+import { ref, watch, onUnmounted } from "vue";
 
 const emit = defineEmits<{
     close: [];
@@ -63,6 +64,9 @@ const props = defineProps<{
 
 const selectedObject = ref<TeamObject | null>(null);
 const parentObject = ref<TeamObject | null>(null);
+
+// Initialize the TeamObject updates composable
+const { subscribeToTeamObjectUpdates, unsubscribeFromAllUpdates } = useTeamObjectUpdates();
 
 const onSelectObject = (object: TeamObject) => {
     // Track parent navigation
@@ -87,11 +91,20 @@ const onSelectObject = (object: TeamObject) => {
     selectedObject.value = object;
 };
 
-// Initialize selected object when team object changes
+// Initialize when team object changes - don't set selectedObject, let it default to props.teamObject
 watch(() => props.teamObject, (newTeamObject) => {
     if (newTeamObject) {
-        selectedObject.value = newTeamObject;
+        // Only reset navigation state, don't copy the object reference
+        selectedObject.value = null; // This will make template use teamObject
         parentObject.value = null;
+        
+        // Subscribe to real-time updates for the root team object
+        subscribeToTeamObjectUpdates(newTeamObject);
     }
 }, { immediate: true });
+
+// Clean up subscriptions when the dialog is closed
+onUnmounted(() => {
+    unsubscribeFromAllUpdates();
+});
 </script>

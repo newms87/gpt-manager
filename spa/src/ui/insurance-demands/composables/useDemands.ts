@@ -13,6 +13,14 @@ const error = ref<string | null>(null);
 const subscribedWorkflowIds = ref<Set<number>>(new Set());
 const pusher = usePusher();
 
+// Debounce state for loadDemand
+const loadDemandDebounceMap = ref<Map<number, {
+    isLoading: boolean;
+    lastCallTime: number;
+    queuedResolvers: Array<{ resolve: (value: any) => void; reject: (error: any) => void }>;
+    timeoutId: NodeJS.Timeout | null;
+}>>(new Map());
+
 export function useDemands() {
     const sortedDemands = computed(() => {
         return [...demands.value].sort((a, b) =>
@@ -136,8 +144,8 @@ export function useDemands() {
         }
     }
 
-    // Load a single demand by ID with basic relationships
-    const loadDemand = async (demandId: number) => {
+    // Internal function to actually load the demand
+    const _loadDemandInternal = async (demandId: number) => {
         try {
             return await demandRoutes.details({ id: demandId }, {
                 user: true,
@@ -151,6 +159,110 @@ export function useDemands() {
             const errorMessage = err.message || "Failed to load demand";
             error.value = errorMessage;
             throw new Error(errorMessage);
+        }
+    };
+
+    // Debounced load demand function with immediate execution and queuing
+    const loadDemand = async (demandId: number): Promise<any> => {
+        return new Promise((resolve, reject) => {
+            const now = Date.now();
+            const DEBOUNCE_MS = 500;
+            
+            // Get or create debounce state for this demand ID
+            if (!loadDemandDebounceMap.value.has(demandId)) {
+                loadDemandDebounceMap.value.set(demandId, {
+                    isLoading: false,
+                    lastCallTime: 0,
+                    queuedResolvers: [],
+                    timeoutId: null
+                });
+            }
+            
+            const debounceState = loadDemandDebounceMap.value.get(demandId)!;
+            
+            // If already loading, queue this request
+            if (debounceState.isLoading) {
+                debounceState.queuedResolvers.push({ resolve, reject });
+                return;
+            }
+            
+            // If this is the first call or enough time has passed, execute immediately
+            const timeSinceLastCall = now - debounceState.lastCallTime;
+            if (debounceState.lastCallTime === 0 || timeSinceLastCall >= DEBOUNCE_MS) {
+                executeLoadDemand(demandId, resolve, reject);
+            } else {
+                // Queue this request and set a timeout for the remaining debounce time
+                debounceState.queuedResolvers.push({ resolve, reject });
+                
+                if (debounceState.timeoutId) {
+                    clearTimeout(debounceState.timeoutId);
+                }
+                
+                const remainingTime = DEBOUNCE_MS - timeSinceLastCall;
+                debounceState.timeoutId = setTimeout(() => {
+                    if (debounceState.queuedResolvers.length > 0) {
+                        const { resolve: queuedResolve, reject: queuedReject } = debounceState.queuedResolvers.shift()!;
+                        executeLoadDemand(demandId, queuedResolve, queuedReject);
+                    }
+                }, remainingTime);
+            }
+        });
+    };
+
+    // Execute the actual load and process queued requests
+    const executeLoadDemand = async (
+        demandId: number, 
+        resolve: (value: any) => void, 
+        reject: (error: any) => void
+    ) => {
+        const debounceState = loadDemandDebounceMap.value.get(demandId)!;
+        
+        // Mark as loading and update last call time
+        debounceState.isLoading = true;
+        debounceState.lastCallTime = Date.now();
+        
+        // Clear any pending timeout
+        if (debounceState.timeoutId) {
+            clearTimeout(debounceState.timeoutId);
+            debounceState.timeoutId = null;
+        }
+        
+        try {
+            const result = await _loadDemandInternal(demandId);
+            
+            // Resolve the current request
+            resolve(result);
+            
+            // Resolve all queued requests with the same result
+            const queuedResolvers = [...debounceState.queuedResolvers];
+            debounceState.queuedResolvers = [];
+            queuedResolvers.forEach(({ resolve: queuedResolve }) => {
+                queuedResolve(result);
+            });
+            
+        } catch (error) {
+            // Reject the current request
+            reject(error);
+            
+            // Reject all queued requests with the same error
+            const queuedResolvers = [...debounceState.queuedResolvers];
+            debounceState.queuedResolvers = [];
+            queuedResolvers.forEach(({ reject: queuedReject }) => {
+                queuedReject(error);
+            });
+        } finally {
+            // Mark as not loading
+            debounceState.isLoading = false;
+            
+            // If there are still queued requests, process the next one after debounce
+            if (debounceState.queuedResolvers.length > 0) {
+                debounceState.timeoutId = setTimeout(() => {
+                    if (debounceState.queuedResolvers.length > 0) {
+                        const { resolve: nextResolve, reject: nextReject } = debounceState.queuedResolvers.shift()!;
+                        executeLoadDemand(demandId, nextResolve, nextReject);
+                    }
+                }, 500);
+            }
         }
     };
 

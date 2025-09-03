@@ -2,6 +2,7 @@
 
 namespace App\Models\TeamObject;
 
+use App\Events\TeamObjectUpdatedEvent;
 use App\Models\Agent\AgentThreadRun;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,9 +32,23 @@ class TeamObjectAttribute extends Model implements AuditableContract
         ];
     }
 
+    public static function booted(): void
+    {
+        static::saved(function (TeamObjectAttribute $attribute) {
+            if ($attribute->teamObject) {
+                TeamObjectUpdatedEvent::broadcast($attribute->teamObject);
+            }
+        });
+    }
+
     public function getValue(): string|array|null
     {
         return $this->text_value ?? $this->json_value;
+    }
+
+    public function teamObject(): BelongsTo|TeamObject
+    {
+        return $this->belongsTo(TeamObject::class, 'team_object_id');
     }
 
     public function sources(): HasMany|TeamObjectAttributeSource
