@@ -244,7 +244,7 @@ ALTER SEQUENCE gpt_manager.agent_threads_id_seq OWNED BY gpt_manager.agent_threa
 CREATE TABLE gpt_manager.agents (
     id bigint NOT NULL,
     resource_package_import_id character(36) DEFAULT NULL::bpchar,
-    team_id bigint,
+    team_id bigint NULL,
     knowledge_id bigint,
     name text,
     description text DEFAULT ''::character varying,
@@ -1358,7 +1358,7 @@ ALTER SEQUENCE gpt_manager.schema_associations_id_seq OWNED BY gpt_manager.schem
 CREATE TABLE gpt_manager.schema_definitions (
     id bigint NOT NULL,
     resource_package_import_id character(36) DEFAULT NULL::bpchar,
-    team_id bigint,
+    team_id bigint NULL,
     type text,
     name text,
     description text,

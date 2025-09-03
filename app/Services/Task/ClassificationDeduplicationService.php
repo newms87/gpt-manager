@@ -242,10 +242,10 @@ class ClassificationDeduplicationService
 
                 // Clean the correct value returned by the LLM
                 $correctValue = $this->cleanLabelForLLM($mapping['correct']);
-                
+
                 foreach($mapping['incorrect'] as $incorrectValue) {
                     // Clean the incorrect value returned by the LLM
-                    $cleanIncorrectValue = $this->cleanLabelForLLM($incorrectValue);
+                    $cleanIncorrectValue                      = $this->cleanLabelForLLM($incorrectValue);
                     $normalizedMappings[$cleanIncorrectValue] = $correctValue;
                 }
             }
@@ -278,7 +278,7 @@ Please analyze these values and create a mapping of original values to normalize
    - Look for core identifiers that remain consistent across variations (names, IDs, key attributes)
    - Example: "Microsoft Corp", "Microsoft Corporation", "MICROSOFT", "microsoft inc" should ALL map to the most complete version
    - Example: "Tokyo Station", "Tokyo Stn", "TOKYO STATION" should ALL map to "Tokyo Station"
-2. **Identifier-Based Consolidation**: 
+2. **Identifier-Based Consolidation**:
    - If records contain the same core identifiers or unique attributes, consolidate them aggressively
    - Choose the most complete version that includes the most relevant information
    - Different formatting of the same information should be consolidated (dates, phone numbers, addresses, etc.)
@@ -373,7 +373,7 @@ PROMPT;
         if (is_string($value)) {
             // Clean the original value for proper matching with cleaned mapping keys
             $cleanedValue = $this->cleanLabelForLLM(trim($value));
-            
+
             if (isset($normalizedMappings[$cleanedValue])) {
                 static::log("Updated property value: '$cleanedValue' => '{$normalizedMappings[$cleanedValue]}'");
 
@@ -413,7 +413,7 @@ PROMPT;
         // CRITICAL: First unescape forward slashes that cause API timeouts
         // Convert escaped forward slashes back to normal forward slashes
         $label = str_replace('\\/', '/', $label);
-        
+
         // Remove control characters and normalize whitespace
         $label = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $label);
 
@@ -479,9 +479,11 @@ PROMPT;
         return SchemaDefinition::firstOrCreate([
             'team_id' => null, // System-level schema, not team-specific
             'name'    => 'Classification Deduplication Response',
+            'type'    => 'DeduplicationResponse',
         ], [
-            'description' => 'JSON schema for classification deduplication responses',
-            'schema'      => $schema,
+            'description'   => 'JSON schema for classification deduplication responses',
+            'schema'        => $schema,
+            'schema_format' => SchemaDefinition::FORMAT_JSON,
         ]);
     }
 }

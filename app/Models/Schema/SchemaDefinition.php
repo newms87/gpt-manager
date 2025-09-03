@@ -31,6 +31,7 @@ class SchemaDefinition extends Model implements AuditableContract, ResourcePacka
         TYPE_AGENT_RESPONSE = 'Agent Response';
 
     protected $fillable = [
+        'team_id',
         'type',
         'name',
         'description',

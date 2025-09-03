@@ -9,7 +9,7 @@
         <div class="space-y-3">
             <div
                 v-for="status in statusTimeline"
-                :key="status.status"
+                :key="status.name"
                 class="flex items-start space-x-3"
                 :class="{ 'opacity-50': status.grayed }"
             >
@@ -52,7 +52,27 @@
                             />
 
                             <ActionButton
-                                v-if="status.status === 'extract-data' && demand?.team_object"
+                                v-if="status.isActive && status.workflowRun"
+                                type="stop"
+                                color="red"
+                                size="xs"
+                                tooltip="Stop Workflow"
+                                :action="stopWorkflowRunAction"
+                                :target="status.workflowRun"
+                            />
+
+                            <ActionButton
+                                v-if="status.isStopped && status.workflowRun"
+                                type="play"
+                                color="sky"
+                                size="xs"
+                                tooltip="Resume Workflow"
+                                :action="resumeWorkflowRunAction"
+                                :target="status.workflowRun"
+                            />
+
+                            <ActionButton
+                                v-if="status.name === 'extract-data' && demand?.team_object"
                                 type="database"
                                 color="green-invert"
                                 size="xs"
@@ -62,7 +82,7 @@
                     </div>
 
                     <p v-if="status.date" class="text-sm text-slate-500">
-                        {{ formatDate(status.date) }}
+                        {{ fDateTime(status.date) }}
                     </p>
 
                     <!-- Runtime Display -->
@@ -89,8 +109,9 @@
 </template>
 
 <script setup lang="ts">
+import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { FaSolidCheck, FaSolidClock, FaSolidTriangleExclamation } from "danx-icon";
-import { ActionButton, DateTime, fDuration, fPercent, LabelPillWidget } from "quasar-ui-danx";
+import { ActionButton, DateTime, fDateTime, fDuration, fPercent, LabelPillWidget } from "quasar-ui-danx";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
@@ -104,6 +125,10 @@ const emit = defineEmits<{
     "view-workflow": [workflowRun: any];
     "view-data": [];
 }>();
+
+// Get the workflow run actions from the existing dxWorkflowRun controller
+const stopWorkflowRunAction = dxWorkflowRun.getAction("stop");
+const resumeWorkflowRunAction = dxWorkflowRun.getAction("resume");
 
 // Reactive timer for live updates of running workflows
 const currentTime = ref(Date.now());
@@ -179,13 +204,14 @@ const statusTimeline = computed(() => {
 
     // Helper function to determine workflow state
     const getWorkflowState = (status: string | undefined) => {
-        if (!status) return { completed: false, failed: false, active: false };
+        if (!status) return { completed: false, failed: false, active: false, stopped: false };
 
         const completed = ["Skipped", "Completed"].includes(status);
         const active = ["Pending", "Running", "Incomplete"].includes(status);
-        const failed = !completed && !active; // Everything else is failed
+        const stopped = status === "Stopped";
+        const failed = !completed && !active && !stopped; // Everything else is failed
 
-        return { completed, failed, active };
+        return { completed, failed, active, stopped };
     };
 
     // Get workflow states
@@ -201,7 +227,7 @@ const statusTimeline = computed(() => {
     // Always show all 4 steps
     return [
         {
-            status: "draft",
+            name: "draft",
             label: "Created (Draft)",
             icon: FaSolidClock,
             bgColor: "bg-slate-500",
@@ -215,7 +241,7 @@ const statusTimeline = computed(() => {
             workflowRun: null
         },
         {
-            status: "extract-data",
+            name: "extract-data",
             label: extractDataState.failed ? "Extract Data (Failed)" : "Extract Data",
             icon: extractDataState.completed ? FaSolidCheck : extractDataState.failed ? FaSolidTriangleExclamation : FaSolidClock,
             bgColor: extractDataState.failed ? "bg-red-500" : extractDataState.completed ? "bg-blue-500" : extractDataState.active ? "bg-slate-200" : "bg-gray-400",
@@ -223,6 +249,7 @@ const statusTimeline = computed(() => {
             completed: extractDataState.completed,
             failed: extractDataState.failed,
             isActive: extractDataState.active,
+            isStopped: extractDataState.stopped,
             progress: extractDataState.active ? props.demand.extract_data_workflow_run?.progress_percent : null,
             date: extractDataState.completed ? props.demand.extract_data_workflow_run?.completed_at : extractDataState.failed ? props.demand.extract_data_workflow_run?.failed_at : null,
             runtime: calculateRuntime(props.demand.extract_data_workflow_run, extractDataState.active),
@@ -230,7 +257,7 @@ const statusTimeline = computed(() => {
             workflowRun: props.demand.extract_data_workflow_run
         },
         {
-            status: "write-demand",
+            name: "write-demand",
             label: writeDemandState.failed ? "Write Demand (Failed)" : "Write Demand",
             icon: writeDemandState.completed ? FaSolidCheck : writeDemandState.failed ? FaSolidTriangleExclamation : FaSolidClock,
             bgColor: writeDemandState.failed ? "bg-red-500" : writeDemandState.completed ? "bg-green-500" : writeDemandState.active ? "bg-slate-200" : "bg-gray-400",
@@ -238,6 +265,7 @@ const statusTimeline = computed(() => {
             completed: writeDemandState.completed,
             failed: writeDemandState.failed,
             isActive: writeDemandState.active,
+            isStopped: writeDemandState.stopped,
             progress: writeDemandState.active ? props.demand.write_demand_workflow_run?.progress_percent : null,
             date: writeDemandState.completed ? props.demand.write_demand_workflow_run?.completed_at : writeDemandState.failed ? props.demand.write_demand_workflow_run?.failed_at : null,
             runtime: calculateRuntime(props.demand.write_demand_workflow_run, writeDemandState.active),
@@ -245,7 +273,7 @@ const statusTimeline = computed(() => {
             workflowRun: props.demand.write_demand_workflow_run
         },
         {
-            status: "completed",
+            name: "completed",
             label: "Complete",
             icon: FaSolidCheck,
             bgColor: props.demand.status === DEMAND_STATUS.COMPLETED ? "bg-green-600" : "bg-gray-400",
@@ -260,14 +288,4 @@ const statusTimeline = computed(() => {
         }
     ];
 });
-
-const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit"
-    });
-};
 </script>

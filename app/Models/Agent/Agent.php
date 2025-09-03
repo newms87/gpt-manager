@@ -27,6 +27,7 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
     use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, ResourcePackageableTrait, KeywordSearchTrait, ActionModelTrait;
 
     protected $fillable = [
+        'team_id',
         'name',
         'description',
         'model',
