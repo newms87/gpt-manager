@@ -64,7 +64,7 @@
 
                     <div class="grid grid-cols-12 gap-3">
                         <div
-                            v-for="(attribute, name) in object.attributes"
+                            v-for="[name, attribute] in sortedAttributes"
                             :key="name"
                             :class="[getAttributeGridClass(attribute), typeColors.bgColorLight, typeColors.borderColorLight]"
                             class="border rounded-lg p-3 hover:border-opacity-70 transition-all duration-200 group relative"
@@ -94,7 +94,7 @@
 
                             <!-- Main value -->
                             <div class="mb-2">
-                                <div class="text-slate-100 text-base font-medium leading-snug">
+                                <div class="text-slate-100 text-base font-medium leading-snug whitespace-pre-wrap">
                                     {{ formatAttributeValue(attribute) }}
                                 </div>
                             </div>
@@ -183,6 +183,24 @@ const parentTypeColors = computed(() => {
     return getTypeColor(props.parentObject.type);
 });
 
+// Sorted attributes by size (grid span) then by name
+const sortedAttributes = computed(() => {
+    if (!props.object?.attributes) return [];
+
+    return Object.entries(props.object.attributes).sort(([nameA, attrA], [nameB, attrB]) => {
+        // First sort by grid size (smaller first)
+        const sizeA = getAttributeGridSize(attrA);
+        const sizeB = getAttributeGridSize(attrB);
+
+        if (sizeA !== sizeB) {
+            return sizeA - sizeB;
+        }
+
+        // Then sort by name alphabetically
+        return nameA.localeCompare(nameB);
+    });
+});
+
 // Helper functions
 const getSourceIcon = (sourceType: string) => {
     switch (sourceType.toLowerCase()) {
@@ -236,15 +254,10 @@ const formatAttributeValue = (attribute: TeamObjectAttribute): string => {
         if (dateRegex.test(value)) {
             return fDate(value);
         }
-
-        // Limit very long strings
-        if (value.length > 200) {
-            return value.substring(0, 200) + "...";
-        }
     }
 
     if (Array.isArray(value)) {
-        return value.slice(0, 5).join(", ") + (value.length > 5 ? "..." : "");
+        return value.join(", ");
     }
 
     if (typeof value === "object") {
@@ -263,17 +276,22 @@ const getSourceUrl = (source: TeamObjectAttributeSource): string => {
     return "#";
 };
 
-// Grid sizing function based on attribute value length
-const getAttributeGridClass = (attribute: TeamObjectAttribute): string => {
+// Helper function to get grid size as number for sorting
+const getAttributeGridSize = (attribute: TeamObjectAttribute): number => {
     const valueStr = String(attribute.value || "");
     const length = valueStr.length;
 
-    if (length < 20) return "col-span-2";
-    if (length < 40) return "col-span-2";
-    if (length < 80) return "col-span-3";
-    if (length < 150) return "col-span-4";
-    if (length < 300) return "col-span-6";
-    return "col-span-12";
+    if (length < 100) return 2;   // Very short: < 100 chars (2 cols)
+    if (length < 200) return 3;   // Short: 100-299 chars (3 cols)
+    if (length < 300) return 4;   // Medium: 300-799 chars (4 cols)
+    if (length < 600) return 6;  // Long: 800-1999 chars (6 cols)
+    return 12;                    // Very long: 2000+ chars (12 cols)
+};
+
+// Grid sizing function based on attribute value length
+const getAttributeGridClass = (attribute: TeamObjectAttribute): string => {
+    const size = getAttributeGridSize(attribute);
+    return `col-span-${size}`;
 };
 
 </script>

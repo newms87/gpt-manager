@@ -39,8 +39,8 @@
                 <!-- Main content -->
                 <div class="flex-1 min-w-0">
                     <!-- Name and Type+ID pill -->
-                    <div class="text-sm font-medium truncate flex-1">
-                        {{ object.name || "Unnamed" }}
+                    <div class="text-sm font-medium truncate flex-1" :title="object.name || 'Unnamed'">
+                        {{ truncatedName }}
                     </div>
                 </div>
 
@@ -146,6 +146,12 @@ const childrenCount = computed(() =>
 // Color management
 const objectColors = computed(() => getTypeColor(props.object.type));
 const typeColor = computed(() => objectColors.value.bgColor);
+
+// Truncated name for display
+const truncatedName = computed(() => {
+    const name = props.object.name || "Unnamed";
+    return name.length > 25 ? name.substring(0, 25) + "..." : name;
+});
 
 // Confidence counts
 const confidenceCounts = computed(() => {

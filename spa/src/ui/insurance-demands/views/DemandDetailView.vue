@@ -44,6 +44,7 @@
                 <DemandStatusTimeline
                     :demand="demand"
                     @view-workflow="handleViewWorkflow"
+                    @view-data="handleViewData"
                 />
 
                 <!-- Quick Actions -->
@@ -67,6 +68,13 @@
             :workflow-run="selectedWorkflowRun"
             @close="handleCloseWorkflowDialog"
         />
+
+        <!-- View Data Dialog -->
+        <TeamObjectDataDialog
+            v-if="showDataDialog"
+            :team-object="demand?.team_object || null"
+            @close="handleCloseDataDialog"
+        />
     </UiMainLayout>
 </template>
 
@@ -84,7 +92,8 @@ import {
     DemandDetailInfo,
     DemandQuickActions,
     DemandStatusTimeline,
-    ViewWorkflowDialog
+    ViewWorkflowDialog,
+    TeamObjectDataDialog
 } from "../components/Detail";
 import { UsageDisplayContainer } from "../components/Usage";
 import { useDemands } from "../composables";
@@ -100,6 +109,7 @@ const error = ref<string | null>(null);
 const editMode = ref(false);
 const showWorkflowDialog = ref(false);
 const selectedWorkflowRun = ref<WorkflowRun | null>(null);
+const showDataDialog = ref(false);
 
 const demandId = computed(() => {
     const id = route.params.id;
@@ -169,6 +179,14 @@ const handleViewWorkflow = (workflowRun: WorkflowRun) => {
 const handleCloseWorkflowDialog = () => {
     showWorkflowDialog.value = false;
     selectedWorkflowRun.value = null;
+};
+
+const handleViewData = () => {
+    showDataDialog.value = true;
+};
+
+const handleCloseDataDialog = () => {
+    showDataDialog.value = false;
 };
 
 // Watch for route changes and load demand

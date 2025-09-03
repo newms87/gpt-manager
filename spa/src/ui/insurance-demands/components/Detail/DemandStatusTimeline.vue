@@ -42,13 +42,21 @@
                             }}
                         </div>
 
-                        <div v-if="status.workflowRun" class="ml-4">
+                        <div class="ml-4 flex items-center gap-2">
                             <ActionButton
+                                v-if="status.workflowRun"
                                 type="view"
                                 color="sky-invert"
                                 size="xs"
-                                class="text-xs"
                                 @click="$emit('view-workflow', status.workflowRun)"
+                            />
+
+                            <ActionButton
+                                v-if="status.status === 'extract-data' && demand?.team_object"
+                                type="database"
+                                color="green-invert"
+                                size="xs"
+                                @click="$emit('view-data')"
                             />
                         </div>
                     </div>
@@ -94,6 +102,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     "view-workflow": [workflowRun: any];
+    "view-data": [];
 }>();
 
 // Reactive timer for live updates of running workflows
