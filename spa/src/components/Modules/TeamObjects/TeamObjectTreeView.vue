@@ -2,7 +2,7 @@
   <div class="bg-slate-800 rounded-lg border border-slate-700 h-full flex flex-col">
     <!-- Compact Header -->
     <div class="p-3 border-b border-slate-700">
-      <h3 class="text-base font-semibold text-slate-200">Object Tree</h3>
+      <h3 class="text-base font-semibold text-slate-200">{{ treeTitle }}</h3>
     </div>
     
     <!-- Breadcrumb Navigation -->
@@ -32,7 +32,7 @@
       </div>
       
       <div v-else class="space-y-1">
-        <TreeNodeComponent
+        <TreeNode
           v-for="object in rootObjects"
           :key="object.id"
           :object="object"
@@ -48,19 +48,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, defineComponent, h, watch } from 'vue';
-import type { TeamObject, TeamObjectAttribute } from './team-objects';
-import { LabelPillWidget } from 'quasar-ui-danx';
+import { computed, ref, watch } from 'vue';
+import type { TeamObject } from './team-objects';
+import TreeNode from './TreeNode.vue';
 import { 
-  FaSolidChevronRight as ChevronRightIcon,
-  FaSolidUsers as UsersIcon,
-  FaSolidBuilding as BuildingIcon,
-  FaSolidGear as GearIcon,
-  FaSolidLink as LinkIcon,
-  FaSolidFolder as FolderIcon,
-  FaSolidTag as TagIcon
+  FaSolidChevronRight as ChevronRightIcon
 } from 'danx-icon';
-import { getTypeColor } from '@/utils/typeColors';
 
 const props = defineProps<{
   objects: TeamObject[];
@@ -77,6 +70,23 @@ const breadcrumbs = ref<TeamObject[]>([]);
 
 const rootObjects = computed(() => props.objects);
 
+// Dynamic tree title based on root object types
+const treeTitle = computed(() => {
+  if (!rootObjects.value.length) return 'Object Tree';
+  
+  // Get the most common type among root objects
+  const typeCounts = rootObjects.value.reduce((acc, obj) => {
+    acc[obj.type] = (acc[obj.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const mostCommonType = Object.keys(typeCounts).reduce((a, b) => 
+    typeCounts[a] > typeCounts[b] ? a : b
+  );
+  
+  return `${mostCommonType} List`;
+});
+
 // Watch for changes to selected object and auto-expand path to it
 watch(() => props.selectedObject, (newSelected) => {
   if (newSelected) {
@@ -91,38 +101,6 @@ watch(() => props.selectedObject, (newSelected) => {
   }
 });
 
-// Helper functions
-const getObjectTypeColor = (type: string) => {
-  return getTypeColor(type).bgColor;
-};
-
-const getRelationshipIcon = (relationName: string) => {
-  const name = relationName.toLowerCase();
-  
-  if (name.includes('user') || name.includes('person') || name.includes('people') || name.includes('provider')) {
-    return UsersIcon;
-  } else if (name.includes('building') || name.includes('facility') || name.includes('location') || name.includes('place')) {
-    return BuildingIcon;
-  } else if (name.includes('config') || name.includes('setting') || name.includes('system')) {
-    return GearIcon;
-  } else if (name.includes('folder') || name.includes('directory') || name.includes('container')) {
-    return FolderIcon;
-  } else if (name.includes('tag') || name.includes('label') || name.includes('category')) {
-    return TagIcon;
-  } else {
-    return LinkIcon;
-  }
-};
-
-const getConfidenceCounts = (attributes?: Record<string, TeamObjectAttribute>) => {
-  if (!attributes) return {};
-  
-  return Object.values(attributes).reduce((acc: any, attr: any) => {
-    const conf = attr.confidence?.toLowerCase() || 'none';
-    acc[conf] = (acc[conf] || 0) + 1;
-    return acc;
-  }, {});
-};
 
 const onSelectObject = (object: TeamObject) => {
   emit('select-object', object);
@@ -167,182 +145,6 @@ const expandPathToObject = (targetObject: TeamObject) => {
   findAndExpandPath(rootObjects.value, targetObject);
 };
 
-// TreeNode component definition using render function
-const TreeNodeComponent = defineComponent({
-  name: 'TreeNodeComponent',
-  props: {
-    object: {
-      type: Object as () => TeamObject,
-      required: true
-    },
-    selectedObject: {
-      type: Object as () => TeamObject | null | undefined,
-      default: null
-    },
-    expandedNodes: {
-      type: Object as () => Set<number>,
-      required: true
-    },
-    level: {
-      type: Number,
-      required: true
-    }
-  },
-  emits: ['select', 'toggle'],
-  setup(props, { emit }) {
-    const isExpanded = computed(() => props.expandedNodes.has(props.object.id));
-    const isSelected = computed(() => props.selectedObject?.id === props.object.id);
-    const hasChildren = computed(() => 
-      Object.values(props.object.relations || {}).some(relations => relations.length > 0)
-    );
-    const childrenCount = computed(() => 
-      Object.values(props.object.relations || {}).reduce((total, relations) => total + relations.length, 0)
-    );
-    const confidenceCounts = computed(() => getConfidenceCounts(props.object.attributes));
-
-    const handleSelect = () => {
-      emit('select', props.object);
-    };
-
-    const handleToggle = (e: Event) => {
-      e.stopPropagation();
-      emit('toggle', props.object.id);
-    };
-
-    return {
-      isExpanded,
-      isSelected,
-      hasChildren,
-      childrenCount,
-      confidenceCounts,
-      handleSelect,
-      handleToggle,
-      getObjectTypeColor,
-      getRelationshipIcon,
-      ChevronRightIcon,
-      LabelPillWidget
-    };
-  },
-  render() {
-    const { 
-      isExpanded, 
-      isSelected, 
-      hasChildren, 
-      childrenCount, 
-      confidenceCounts, 
-      handleSelect, 
-      handleToggle, 
-      getObjectTypeColor,
-      getRelationshipIcon,
-      ChevronRightIcon,
-      LabelPillWidget
-    } = this;
-
-    const { object, selectedObject, expandedNodes, level } = this.$props;
-
-    return h('div', [
-      // Main node container
-      h('div', {
-        class: [
-          'flex items-center gap-2 p-1.5 rounded cursor-pointer transition-all duration-200',
-          isSelected 
-            ? 'bg-blue-600/30 border border-blue-500/50 text-blue-100' 
-            : 'hover:bg-slate-700 text-slate-300',
-          level > 0 ? 'ml-4' : ''
-        ],
-        onClick: handleSelect
-      }, [
-        // Expand/collapse button or spacer
-        hasChildren 
-          ? h('button', {
-              class: 'flex items-center justify-center w-4 h-4 rounded hover:bg-slate-600 transition-colors',
-              onClick: handleToggle
-            }, [
-              h(ChevronRightIcon, {
-                class: [
-                  'w-3 h-3 text-slate-400 transition-transform',
-                  isExpanded ? 'transform rotate-90' : ''
-                ]
-              })
-            ])
-          : h('div', { class: 'w-4' }),
-        
-        // Content area
-        h('div', { class: 'flex items-center gap-2 flex-1 min-w-0' }, [
-          // Type indicator
-          h('div', {
-            class: ['w-3 h-3 rounded-full flex-shrink-0', getObjectTypeColor(object.type)]
-          }),
-          
-          // Text content
-          h('div', { class: 'flex-1 min-w-0' }, [
-            h('div', { class: 'flex items-center gap-2 mb-1' }, [
-              h('div', { class: 'text-sm font-medium truncate flex-1' }, object.name || 'Unnamed'),
-              h(LabelPillWidget, { 
-                label: object.id, 
-                class: 'bg-slate-500 text-slate-100', 
-                size: 'xs' 
-              })
-            ]),
-            h('div', { class: 'text-xs text-slate-500' }, [
-              object.type,
-              childrenCount > 0 ? ` • ${childrenCount}` : ''
-            ])
-          ]),
-          
-          // Confidence indicators
-          h('div', { class: 'flex items-center gap-1' }, [
-            confidenceCounts.high > 0 && h('div', {
-              class: 'w-2 h-2 rounded-full bg-green-500',
-              title: `${confidenceCounts.high} high confidence`
-            }),
-            confidenceCounts.medium > 0 && h('div', {
-              class: 'w-2 h-2 rounded-full bg-amber-500',
-              title: `${confidenceCounts.medium} medium confidence`
-            }),
-            confidenceCounts.low > 0 && h('div', {
-              class: 'w-2 h-2 rounded-full bg-red-500',
-              title: `${confidenceCounts.low} low confidence`
-            })
-          ])
-        ])
-      ]),
-      
-      // Children container with relationship grouping
-      isExpanded && hasChildren && h('div', {
-        class: 'ml-4 border-l border-slate-600 pl-2 mt-2 space-y-3'
-      }, Object.entries(object.relations || {}).map(([relationName, relatedObjects]) => 
-        relatedObjects.length > 0 ? h('div', { key: relationName }, [
-          // Relationship header
-          h('div', {
-            class: 'flex items-center gap-2 px-2 py-1 text-xs font-medium italic text-slate-400 border-b border-slate-700/50 mb-2'
-          }, [
-            // Relationship icon based on name
-            h(getRelationshipIcon(relationName), {
-              class: 'w-3 h-3 text-slate-400 flex-shrink-0'
-            }),
-            h('span', { class: 'capitalize' }, relationName.replace(/_/g, ' ')),
-            h('span', { class: 'text-slate-500' }, `(${relatedObjects.length})`)
-          ]),
-          // Related objects under this relationship
-          h('div', { class: 'space-y-1' }, 
-            relatedObjects.map((relatedObject: TeamObject) =>
-              h(TreeNodeComponent, {
-                key: relatedObject.id,
-                object: relatedObject,
-                selectedObject: selectedObject,
-                expandedNodes: expandedNodes,
-                level: level + 1,
-                onSelect: (obj: TeamObject) => this.$emit('select', obj),
-                onToggle: (objId: number) => this.$emit('toggle', objId)
-              })
-            )
-          )
-        ]) : null
-      ).filter(Boolean))
-    ]);
-  }
-});
 
 // Expose methods for parent component
 defineExpose({

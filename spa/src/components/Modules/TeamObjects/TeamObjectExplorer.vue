@@ -38,6 +38,7 @@
             <div class="flex-1 min-w-0">
                 <TeamObjectDetailView
                     :object="selectedObject"
+                    :parent-object="parentObject"
                     @select-object="onSelectObject"
                 />
             </div>
@@ -61,6 +62,8 @@ import TeamObjectFilterPopover from "./TeamObjectFilterPopover.vue";
 
 // State
 const selectedObject = ref<TeamObject | null>(null);
+const parentObject = ref<TeamObject | null>(null);
+const navigationStack = ref<TeamObject[]>([]);
 
 // Filter state
 const filterValues = ref({
@@ -282,6 +285,28 @@ const loadObjects = () => {
 };
 
 const onSelectObject = (object: TeamObject) => {
+    // Track parent navigation
+    if (selectedObject.value && object.id !== selectedObject.value.id) {
+        // Check if this is a child of current selection
+        const isChild = Object.values(selectedObject.value.relations || {})
+            .flat()
+            .some(related => related.id === object.id);
+        
+        if (isChild) {
+            // Going deeper, current selection becomes parent
+            parentObject.value = selectedObject.value;
+            navigationStack.value.push(selectedObject.value);
+        } else if (parentObject.value && parentObject.value.id === object.id) {
+            // Going back up to parent
+            navigationStack.value.pop();
+            parentObject.value = navigationStack.value[navigationStack.value.length - 1] || null;
+        } else {
+            // Lateral navigation or jumping to unrelated object
+            parentObject.value = null;
+            navigationStack.value = [];
+        }
+    }
+    
     selectedObject.value = object;
 };
 

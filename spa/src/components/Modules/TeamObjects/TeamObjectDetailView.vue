@@ -4,20 +4,19 @@
             <div class="p-4 space-y-4">
 
                 <!-- Compact Header Section -->
-                <div class="flex-x space-x-2">
-                    <LabelPillWidget
-                        :label="`${object.type}: ${object.id}`"
-                        :class="[typeColors.bgColor, typeColors.textColor]"
-                        size="md"
-                    />
-                    <h1 class="text-xl font-bold text-slate-100 leading-tight">
-                        {{ object.name || "Unnamed Object" }}
-                    </h1>
-
-                    <div class="flex items-center justify-center gap-2 flex-wrap text-sm">
-            <span v-if="object.date" class="text-slate-400">
-              {{ fDate(object.date) }}
-            </span>
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex-x space-x-2">
+                        <LabelPillWidget
+                            :label="`${object.type}: ${object.id}`"
+                            :class="[typeColors.bgColor, typeColors.textColor]"
+                            size="md"
+                        />
+                        <h1 class="text-xl font-bold text-slate-100 leading-tight">
+                            {{ object.name || "Unnamed Object" }}
+                        </h1>
+                        <div v-if="object.date" class="text-slate-400">
+                            {{ fDate(object.date) }}
+                        </div>
 
                         <a
                             v-if="object.url"
@@ -29,6 +28,22 @@
                             <component :is="ExternalLinkIcon" class="w-4 h-4" />
                         </a>
                     </div>
+
+                    <!-- Parent Navigation Link -->
+                    <a
+                        v-if="parentObject"
+                        @click="$emit('select-object', parentObject)"
+                        class="flex-x gap-1 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                    >
+                        <LabelPillWidget
+                            :class="[parentTypeColors.bgColor,parentTypeColors.textColor]"
+                            class="flex-x space-x-2"
+                            size="sm"
+                        >
+                            <ChevronUpIcon class="w-4 h-5" />
+                            <div>{{ `${parentObject.type}: ${parentObject.id}` }}</div>
+                        </LabelPillWidget>
+                    </a>
                 </div>
 
                 <!-- Compact Description -->
@@ -51,9 +66,8 @@
                         <div
                             v-for="(attribute, name) in object.attributes"
                             :key="name"
-                            :class="getAttributeGridClass(attribute)"
-                            class="bg-gradient-to-br border rounded-lg p-3 hover:border-opacity-70 transition-all duration-200 group relative"
-                            :style="getAttributeStyles(typeColors)"
+                            :class="[getAttributeGridClass(attribute), typeColors.bgColorLight, typeColors.borderColorLight]"
+                            class="border rounded-lg p-3 hover:border-opacity-70 transition-all duration-200 group relative"
                         >
                             <!-- Source indicators in top right -->
                             <div class="absolute top-2 right-2 flex gap-1">
@@ -95,53 +109,14 @@
                 </div>
 
                 <!-- Relation Sections -->
-                <div
+                <RelatedObjectSection
                     v-for="(relatedObjects, relationName) in object.relations"
                     :key="relationName"
                     v-if="relationCount > 0"
-                    class="space-y-3"
-                >
-                    <!-- Relation Header -->
-                    <h2
-                        class="text-lg font-bold border-b pb-1"
-                        :class="[getRelationTypeColors(relatedObjects).textColor, getRelationTypeColors(relatedObjects).borderColor + '/30']"
-                    >
-                        🔗 {{ formatRelationName(relationName) }}
-                        <span class="text-xs font-normal text-slate-400 ml-1">
-                            ({{ relatedObjects.length }})
-                        </span>
-                    </h2>
-
-                    <!-- Related Objects - Full Width Rows -->
-                    <div class="space-y-2">
-                        <div
-                            v-for="relatedObject in relatedObjects"
-                            :key="relatedObject.id"
-                            class="w-full rounded-lg p-3 border cursor-pointer transition-all duration-200 group"
-                            :style="getRelatedObjectStyles(relatedObject)"
-                            @click="$emit('select-object', relatedObject)"
-                        >
-                            <div class="flex items-center justify-between">
-                                <!-- Left: Name and Type -->
-                                <div class="flex items-center gap-3 flex-1">
-                                    <LabelPillWidget
-                                        :label="relatedObject.type + ': ' + relatedObject.id"
-                                        :class="[getTypeColor(relatedObject.type, schemaDefinition).bgColor, getTypeColor(relatedObject.type, schemaDefinition).textColor]"
-                                        size="xs"
-                                    />
-                                    <div class="text-sm font-medium text-slate-100 group-hover:text-white transition-colors">
-                                        {{ relatedObject.name || "Unnamed" }}
-                                    </div>
-                                </div>
-
-                                <!-- Right: ID and Date -->
-                                <div class="flex items-center gap-3 text-xs text-slate-400">
-                                    <span v-if="relatedObject.date">{{ fDate(relatedObject.date) }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    :relation-name="relationName"
+                    :related-objects="relatedObjects"
+                    @select-object="$emit('select-object', $event)"
+                />
 
             </div>
         </div>
@@ -156,9 +131,9 @@
 </template>
 
 <script setup lang="ts">
-import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions/config";
-import { getAttributeStyles, getTypeColor } from "@/utils/typeColors";
+import { getTypeColor } from "@/utils/typeColors";
 import {
+    FaSolidChevronUp as ChevronUpIcon,
     FaSolidDatabase as DatabaseIcon,
     FaSolidFile as FileIcon,
     FaSolidGlobe as WebIcon,
@@ -168,10 +143,12 @@ import {
 import { fCurrency, fDate, fNumber, LabelPillWidget } from "quasar-ui-danx";
 import { computed } from "vue";
 import ConfidenceIndicator from "./ConfidenceIndicator.vue";
+import RelatedObjectSection from "./RelatedObjectSection.vue";
 import type { TeamObject, TeamObjectAttribute, TeamObjectAttributeSource } from "./team-objects";
 
 const props = defineProps<{
     object?: TeamObject | null;
+    parentObject?: TeamObject | null;
 }>();
 
 const emit = defineEmits<{
@@ -195,11 +172,15 @@ const sourceCount = computed(() => {
 });
 
 // Color management
-const schemaDefinition = computed(() => dxSchemaDefinition.pagedItems.value?.data?.[0]);
 
 const typeColors = computed(() => {
     if (!props.object) return getTypeColor("default");
-    return getTypeColor(props.object.type, schemaDefinition.value);
+    return getTypeColor(props.object.type);
+});
+
+const parentTypeColors = computed(() => {
+    if (!props.parentObject) return getTypeColor("default");
+    return getTypeColor(props.parentObject.type);
 });
 
 // Helper functions
@@ -226,12 +207,6 @@ const formatAttributeName = (name: string): string => {
         .replace(/\b\w/g, l => l.toUpperCase());
 };
 
-const formatRelationName = (name: string): string => {
-    // Convert snake_case to human readable and make it more natural
-    return name
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, l => l.toUpperCase());
-};
 
 const formatAttributeValue = (attribute: TeamObjectAttribute): string => {
     if (attribute.value === null || attribute.value === undefined) {
@@ -293,7 +268,7 @@ const getAttributeGridClass = (attribute: TeamObjectAttribute): string => {
     const valueStr = String(attribute.value || "");
     const length = valueStr.length;
 
-    if (length < 20) return "col-span-1";
+    if (length < 20) return "col-span-2";
     if (length < 40) return "col-span-2";
     if (length < 80) return "col-span-3";
     if (length < 150) return "col-span-4";
@@ -301,26 +276,4 @@ const getAttributeGridClass = (attribute: TeamObjectAttribute): string => {
     return "col-span-12";
 };
 
-// Get relation type colors based on most common type in the relationship
-const getRelationTypeColors = (relatedObjects: TeamObject[]) => {
-    if (relatedObjects.length === 0) return getTypeColor("default");
-
-    // Use the most common type in the relationship
-    const typeCounts = relatedObjects.reduce((acc, obj) => {
-        acc[obj.type] = (acc[obj.type] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-
-    const mostCommonType = Object.keys(typeCounts).reduce((a, b) =>
-        typeCounts[a] > typeCounts[b] ? a : b
-    );
-
-    return getTypeColor(mostCommonType, schemaDefinition.value);
-};
-
-// Get styles for individual related objects
-const getRelatedObjectStyles = (relatedObject: TeamObject) => {
-    const objectColors = getTypeColor(relatedObject.type, schemaDefinition.value);
-    return getAttributeStyles(objectColors);
-};
 </script>
