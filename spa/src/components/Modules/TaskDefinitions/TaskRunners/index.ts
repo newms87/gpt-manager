@@ -2,6 +2,7 @@ import {
 	AgentThreadRunnerLottie,
 	ArtifactLevelProjectionLottie,
 	CategorizeArtifactsLottie,
+	DeliveryBoyLottie,
 	FilterArtifactsLottie,
 	ImageToTextLottie,
 	LoadCsvLottie,
@@ -34,7 +35,7 @@ import {
 	SplitArtifactsTaskRunnerConfig,
 	SplitByFileTaskRunnerConfig
 } from "./Configs";
-import { WorkflowInputTaskRunnerNode } from "./Nodes";
+import { WorkflowInputTaskRunnerNode, WorkflowOutputTaskRunnerNode } from "./Nodes";
 
 export const TaskRunnerClasses = {
 	list(): TaskRunnerClass[] {
@@ -153,6 +154,13 @@ export const TaskRunnerClasses = {
 		description: "Allows entering files, text or JSON content as input to the workflow.",
 		lottie: WorkflowInputLottie,
 		node: { is: WorkflowInputTaskRunnerNode },
+		config: BaseTaskRunnerConfig
+	},
+	"Workflow Output": {
+		name: "Workflow Output",
+		description: "Collects input artifacts and attaches them to the workflow as final output artifacts.",
+		lottie: DeliveryBoyLottie,
+		node: { is: WorkflowOutputTaskRunnerNode },
 		config: BaseTaskRunnerConfig
 	},
 	"Google Docs Template": {

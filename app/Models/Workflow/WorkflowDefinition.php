@@ -86,8 +86,31 @@ class WorkflowDefinition extends Model implements AuditableContract, ResourcePac
         return $this;
     }
 
+    /**
+     * Clean up any corrupted connections that reference non-existent nodes
+     */
+    public function cleanCorruptedConnections(): void
+    {
+        static::log("Clean corrupted connections for $this");
+
+        $validNodeIds = $this->workflowNodes()->pluck('id');
+
+        $corruptedConnections = WorkflowConnection::where('workflow_definition_id', $this->id)
+            ->where(function ($query) use ($validNodeIds) {
+                $query->whereNotIn('source_node_id', $validNodeIds)
+                    ->orWhereNotIn('target_node_id', $validNodeIds);
+            })
+            ->get();
+
+        if ($corruptedConnections->isNotEmpty()) {
+            static::log("Found " . $corruptedConnections->count() . " corrupted connections to delete");
+            $corruptedConnections->each->delete();
+        }
+    }
+
     public function exportToJson(WorkflowExportService $service): int
     {
+        $this->cleanCorruptedConnections();
         $service->registerRelatedModels($this->workflowNodes);
         $service->registerRelatedModels($this->workflowConnections);
 

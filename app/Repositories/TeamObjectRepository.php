@@ -67,7 +67,8 @@ class TeamObjectRepository extends ActionRepository
             }
         }
 
-        $teamObjectQuery = TeamObject::where('type', $type)
+        $teamObjectQuery = $this->query()
+            ->where('type', $type)
             ->where('name', $name)
             ->withTrashed();
 

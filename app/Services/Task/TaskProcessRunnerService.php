@@ -2,6 +2,7 @@
 
 namespace App\Services\Task;
 
+use App\Exceptions\Auth\NoTokenFoundException;
 use App\Jobs\WorkflowApiInvocationWebhookJob;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\Artifact;
@@ -70,7 +71,7 @@ class TaskProcessRunnerService
 
         $taskProcess->is_ready = true;
         $taskProcess->save();
-        
+
         LockHelper::release($taskProcess);
         static::log("Prepared $taskProcess");
 
@@ -166,8 +167,13 @@ class TaskProcessRunnerService
             $taskProcess->getRunner()->run();
             static::log("TaskProcess finished running: $taskProcess");
         } catch(Throwable $throwable) {
-            static::log("TaskProcess failed: $taskProcess");
-            $taskProcess->incomplete_at = now();
+            static::log("TaskProcess failed: $taskProcess\n" . $throwable->getMessage());
+
+            if ($throwable instanceof NoTokenFoundException) {
+                $taskProcess->failed_at = now();
+            } else {
+                $taskProcess->incomplete_at = now();
+            }
             $taskProcess->save();
             throw $throwable;
         }

@@ -8,6 +8,7 @@ use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Agent\Agent;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
+use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
@@ -185,6 +186,37 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $runner->run();
 
+        // After GoogleDocsTemplateTaskRunner completes, run WorkflowOutputTaskRunner to collect outputs
+        $workflowOutputTaskDef = TaskDefinition::factory()->create([
+            'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
+        ]);
+        
+        $outputNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+        
+        $outputTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $workflowOutputTaskDef->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $outputNode->id,
+        ]);
+        
+        // Get the artifacts created by GoogleDocsTemplateTaskRunner
+        $generatedArtifacts = $taskRun->outputArtifacts()->get();
+        
+        $outputTaskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $outputTaskRun->id,
+        ]);
+        
+        // Pass the generated artifacts to the output task
+        foreach ($generatedArtifacts as $artifact) {
+            $outputTaskProcess->inputArtifacts()->attach($artifact->id);
+        }
+        
+        // Run the WorkflowOutputTaskRunner to collect workflow outputs
+        $workflowOutputRunner = $outputTaskProcess->getRunner();
+        $workflowOutputRunner->run();
+
         // Simulate workflow completion
         $workflowRun->update([
             'status'       => 'completed',
@@ -293,11 +325,42 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
 
-        $firstTaskRun = TaskRun::factory()->create([
-            'workflow_run_id'  => $firstWorkflowRun->id,
-            'workflow_node_id' => $firstWorkflowNode->id,
+        // Simulate proper workflow execution for reuse test
+        // 1. Document generation task produces the artifact
+        $docGenTaskDef = TaskDefinition::factory()->create([
+            'task_runner_name' => GoogleDocsTemplateTaskRunner::class,
         ]);
-        $firstTaskRun->outputArtifacts()->attach($firstArtifact->id);
+        
+        $docGenTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $docGenTaskDef->id,
+            'workflow_run_id'    => $firstWorkflowRun->id,
+            'workflow_node_id'   => $firstWorkflowNode->id,
+        ]);
+        
+        $docGenTaskRun->outputArtifacts()->attach($firstArtifact->id);
+        
+        // 2. Workflow output task collects final outputs
+        $workflowOutputTaskDef = TaskDefinition::factory()->create([
+            'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
+        ]);
+        
+        $outputNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+        
+        $outputTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $workflowOutputTaskDef->id,
+            'workflow_run_id'    => $firstWorkflowRun->id,
+            'workflow_node_id'   => $outputNode->id,
+        ]);
+        
+        $outputTaskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $outputTaskRun->id,
+        ]);
+        $outputTaskProcess->inputArtifacts()->attach($firstArtifact->id);
+        
+        $workflowOutputRunner = $outputTaskProcess->getRunner();
+        $workflowOutputRunner->run();
 
         $uiDemand->workflowRuns()->attach($firstWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
 
@@ -317,11 +380,35 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
 
-        $secondTaskRun = TaskRun::factory()->create([
-            'workflow_run_id'  => $secondWorkflowRun->id,
-            'workflow_node_id' => $secondWorkflowNode->id,
+        // Simulate second workflow execution
+        // 1. Document generation task produces the artifact
+        $secondDocGenTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $docGenTaskDef->id, // Reuse same task definition
+            'workflow_run_id'    => $secondWorkflowRun->id,
+            'workflow_node_id'   => $secondWorkflowNode->id,
         ]);
-        $secondTaskRun->outputArtifacts()->attach($secondArtifact->id);
+        
+        $secondDocGenTaskRun->outputArtifacts()->attach($secondArtifact->id);
+        
+        // 2. Workflow output task collects final outputs
+        $secondOutputNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+        
+        $secondOutputTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $workflowOutputTaskDef->id, // Reuse same task definition
+            'workflow_run_id'    => $secondWorkflowRun->id,
+            'workflow_node_id'   => $secondOutputNode->id,
+        ]);
+        
+        $secondOutputTaskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $secondOutputTaskRun->id,
+        ]);
+        $secondOutputTaskProcess->inputArtifacts()->attach($secondArtifact->id);
+        
+        // Run the WorkflowOutputTaskRunner
+        $secondWorkflowOutputRunner = $secondOutputTaskProcess->getRunner();
+        $secondWorkflowOutputRunner->run();
 
         $uiDemand->workflowRuns()->attach($secondWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
 
@@ -461,11 +548,44 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
 
-        $taskRun = TaskRun::factory()->create([
-            'workflow_run_id'  => $workflowRun->id,
-            'workflow_node_id' => $workflowNode->id,
+        // Simulate proper workflow execution
+        // 1. Document generation task produces the artifact
+        $docGenTaskDef = TaskDefinition::factory()->create([
+            'task_runner_name' => GoogleDocsTemplateTaskRunner::class,
         ]);
-        $taskRun->outputArtifacts()->attach($artifact->id);
+        
+        $docGenTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $docGenTaskDef->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
+        ]);
+        
+        // The document generation task produces the artifact
+        $docGenTaskRun->outputArtifacts()->attach($artifact->id);
+        
+        // 2. Workflow output task collects final outputs
+        $workflowOutputTaskDef = TaskDefinition::factory()->create([
+            'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
+        ]);
+        
+        $outputNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+        
+        $outputTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $workflowOutputTaskDef->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $outputNode->id,
+        ]);
+        
+        $outputTaskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $outputTaskRun->id,
+        ]);
+        $outputTaskProcess->inputArtifacts()->attach($artifact->id);
+        
+        // Run the WorkflowOutputTaskRunner
+        $workflowOutputRunner = $outputTaskProcess->getRunner();
+        $workflowOutputRunner->run();
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
 

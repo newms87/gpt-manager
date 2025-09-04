@@ -4,6 +4,7 @@ namespace App\Models\Workflow;
 
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Models\Task\Artifact;
+use App\Models\Task\Artifactable;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
@@ -91,6 +92,38 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         return $this->morphMany(TaskProcessListener::class, 'event');
     }
 
+    public function artifactables(): MorphMany|Artifactable
+    {
+        return $this->morphMany(Artifactable::class, 'artifactable');
+    }
+
+    public function outputArtifactables(): MorphMany|Artifactable
+    {
+        return $this->artifactables()->where('category', 'output');
+    }
+
+    public function artifacts(): MorphToMany|Artifact
+    {
+        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps()->orderBy('position');
+    }
+
+    public function outputArtifacts(): MorphToMany|Artifact
+    {
+        return $this->artifacts()->withPivotValue('category', 'output');
+    }
+
+    public function addOutputArtifacts($artifacts): static
+    {
+        $this->outputArtifacts()->syncWithoutDetaching(collect($artifacts)->pluck('id')->toArray());
+
+        return $this;
+    }
+
+    public function clearOutputArtifacts(): void
+    {
+        $this->outputArtifacts()->detach();
+    }
+
     /**
      * Checks if the given target node is ready to be run by checking if all of its source nodes have completed running
      */
@@ -118,23 +151,9 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         return true;
     }
 
-    public function cleanCorruptedConnections()
+    public function cleanCorruptedConnections(): void
     {
-        static::log("Clean corrupted connections for $this");
-
-        $validNodeIds = $this->workflowDefinition->workflowNodes()->pluck('id');
-
-        $corruptedConnections = WorkflowConnection::where('workflow_definition_id', $this->workflowDefinition->id)
-            ->where(function ($query) use ($validNodeIds) {
-                $query->whereNotIn('source_node_id', $validNodeIds)
-                    ->orWhereNotIn('target_node_id', $validNodeIds);
-            })
-            ->get();
-
-        if ($corruptedConnections->isNotEmpty()) {
-            static::log("Found " . $corruptedConnections->count() . " corrupted connections to delete");
-            $corruptedConnections->each->delete();
-        }
+        $this->workflowDefinition->cleanCorruptedConnections();
     }
 
     /**
@@ -161,18 +180,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
      */
     public function collectFinalOutputArtifacts(): Collection
     {
-        $outputArtifacts = collect();
-
-        foreach($this->taskRuns as $taskRun) {
-            // Only consider task runs that do not have any target nodes that depend on them
-            if ($taskRun->workflowNode->connectionsAsSource()->exists()) {
-                continue;
-            }
-
-            $outputArtifacts = $outputArtifacts->merge($taskRun->outputArtifacts()->get());
-        }
-
-        return $outputArtifacts;
+        return $this->outputArtifacts()->get();
     }
 
     public function taskProcesses(): HasManyThrough|TaskProcess

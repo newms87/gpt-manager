@@ -7,6 +7,7 @@ use App\Exceptions\Auth\TokenExpiredException;
 use App\Exceptions\Auth\TokenRevokedException;
 use App\Services\Auth\OAuthService;
 use App\Traits\HasDebugLogging;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Newms87\Danx\Api\Api;
 use Newms87\Danx\Exceptions\ApiException;
@@ -463,55 +464,40 @@ class GoogleDocsApi extends Api
     protected function initializeAuthentication(): void
     {
         try {
-            $oauthService = app(OAuthService::class);
-            $token = $oauthService->getValidToken('google');
+            $oauthService      = app(OAuthService::class);
+            $token             = $oauthService->getValidToken('google');
             $this->accessToken = $token->access_token;
-            
+
             static::log("OAuth authentication initialized", [
                 'team_id'    => $token->team_id,
                 'expires_at' => $token->expires_at?->toISOString(),
             ]);
-        } catch (TokenRevokedException | TokenExpiredException $e) {
+        } catch(TokenRevokedException|TokenExpiredException $e) {
             static::log("OAuth token issue", [
-                'service' => $e->getService(),
-                'team_id' => $e->getTeamId(),
+                'service'    => $e->getService(),
+                'team_id'    => $e->getTeamId(),
                 'error_type' => get_class($e),
-                'reason' => method_exists($e, 'getRevokeReason') ? $e->getRevokeReason() : ($e->getExpiresAt() ?? 'unknown')
+                'reason'     => method_exists($e, 'getRevokeReason') ? $e->getRevokeReason() : ($e->getExpiresAt() ?? 'unknown'),
             ]);
             throw new ApiException($e->getMessage(), $e->getCode());
-        } catch (NoTokenFoundException $e) {
+        } catch(NoTokenFoundException $e) {
             static::log("No OAuth token found", [
                 'service' => $e->getService(),
-                'team_id' => $e->getTeamId()
+                'team_id' => $e->getTeamId(),
             ]);
             throw new ApiException($e->getMessage(), $e->getCode());
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             static::log("Failed to initialize OAuth authentication", [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw new ApiException('Failed to initialize Google Docs authentication: ' . $e->getMessage());
         }
     }
 
     /**
-     * Try to initialize OAuth authentication (deprecated - use initializeAuthentication)
-     * @deprecated Use initializeAuthentication() instead
-     */
-    protected function initializeOAuth(): bool
-    {
-        try {
-            $this->initializeAuthentication();
-            return true;
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-
-
-    /**
      * Make a POST request to Google Drive API
      */
-    protected function postToDriveApi(string $endpoint, array $data = []): \Illuminate\Http\Client\Response
+    protected function postToDriveApi(string $endpoint, array $data = []): Response
     {
         $driveApiUrl = 'https://www.googleapis.com/drive/v3/';
 

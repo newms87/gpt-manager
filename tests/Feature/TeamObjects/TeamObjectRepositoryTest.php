@@ -65,7 +65,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     public function test_resolveTeamObject_withSameTypeNameAndSchemaDefinition_resolvesExistingObject(): void
     {
         // Given
-        $teamObject = TeamObject::factory()->forSchemaDefinition()->create();
+        $teamObject = TeamObject::factory()->forSchemaDefinition()->create(['team_id' => team()->id]);
         $input      = [
             'schema_definition_id' => $teamObject->schema_definition_id,
         ];
@@ -109,7 +109,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     public function test_resolveTeamObject_withSameTypeNameAndRootObject_resolvesExistingObject(): void
     {
         // Given
-        $teamObject = TeamObject::factory()->forRootObject()->create();
+        $teamObject = TeamObject::factory()->forRootObject()->create(['team_id' => team()->id]);
         $input      = [
             'root_object_id' => $teamObject->root_object_id,
         ];
@@ -153,7 +153,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
     public function test_resolvedTeamObject_withSameTypeNameRootObjectAndSchemaDefinition_resolvesObject(): void
     {
         // Given
-        $teamObject = TeamObject::factory()->forRootObject()->create();
+        $teamObject = TeamObject::factory()->forSchemaDefinition()->forRootObject()->create(['team_id' => team()->id]);
         $input      = [
             'schema_definition_id' => $teamObject->schema_definition_id,
             'root_object_id'       => $teamObject->root_object_id,

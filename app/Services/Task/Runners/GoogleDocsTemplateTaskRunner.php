@@ -34,7 +34,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
 
         static::log('Template variables retrieved', [
             'variables' => array_keys($templateVariables),
-            'source' => $storedFile->meta['template_variables'] ?? null ? 'pre_resolved' : 'dynamic_extraction',
+            'source'    => $storedFile->meta['template_variables'] ?? null ? 'pre_resolved' : 'dynamic_extraction',
         ]);
 
         $agentThread     = $this->setupAgentThread($this->taskProcess->inputArtifacts);
@@ -42,7 +42,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
 
         // Step 6: Create document from template
         $googleDocsApi = app(GoogleDocsApi::class);
-        $newDocument = $googleDocsApi->createDocumentFromTemplate(
+        $newDocument   = $googleDocsApi->createDocumentFromTemplate(
             $googleDocFileId,
             $variableMapping['variables'],
             $variableMapping['title']
@@ -92,19 +92,19 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
     protected function getTemplateVariablesFromStoredFile(StoredFile $storedFile, string $googleDocFileId): array
     {
         $meta = $storedFile->meta ?? [];
-        
-        if (isset($meta['template_variables']) && is_array($meta['template_variables']) && !empty($meta['template_variables'])) {
+
+        if (!empty($meta['template_variables']) && is_array($meta['template_variables'])) {
             return $meta['template_variables'];
         }
 
         $googleDocsApi = app(GoogleDocsApi::class);
-        $variables = $googleDocsApi->extractTemplateVariables($googleDocFileId);
-        
+        $variables     = $googleDocsApi->extractTemplateVariables($googleDocFileId);
+
         $templateVariables = [];
-        foreach ($variables as $variable) {
+        foreach($variables as $variable) {
             $templateVariables[$variable] = '';
         }
-        
+
         return $templateVariables;
     }
 
@@ -114,15 +114,15 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
     protected function formatTemplateVariablesForAgent(array $templateVariables): string
     {
         $formattedVariables = [];
-        
-        foreach ($templateVariables as $variable => $description) {
+
+        foreach($templateVariables as $variable => $description) {
             if (!empty($description)) {
-                $formattedVariables[] = "{{$variable}}: $description";
+                $formattedVariables[] = "$variable: $description";
             } else {
-                $formattedVariables[] = "{{$variable}}";
+                $formattedVariables[] = $variable;
             }
         }
-        
+
         return implode(', ', $formattedVariables);
     }
 

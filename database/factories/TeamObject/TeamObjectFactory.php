@@ -27,7 +27,7 @@ class TeamObjectFactory extends Factory
         
         return [
             'team_id' => Team::factory(),
-            'schema_definition_id' => SchemaDefinition::factory(),
+            'schema_definition_id' => null,
             'root_object_id' => null,
             'type' => $type,
             'name' => $this->generateObjectName($type),
@@ -60,6 +60,20 @@ class TeamObjectFactory extends Factory
             'schema_definition_id' => $schema->id,
             'team_id' => $schema->team_id,
             'type' => $schema->schema['title'] ?? $attributes['type'],
+        ]);
+    }
+
+    public function forRootObject(): self
+    {
+        return $this->state(fn (array $attributes) => [
+            'root_object_id' => TeamObject::factory()->create()->id,
+        ]);
+    }
+
+    public function forSchemaDefinition(): self
+    {
+        return $this->state(fn (array $attributes) => [
+            'schema_definition_id' => SchemaDefinition::factory()->create()->id,
         ]);
     }
 

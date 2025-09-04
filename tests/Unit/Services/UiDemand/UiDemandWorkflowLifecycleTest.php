@@ -4,11 +4,14 @@ namespace Tests\Unit\Services\UiDemand;
 
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskDefinition;
+use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowListener;
+use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\UiDemand\UiDemandWorkflowService;
 use Illuminate\Support\Facades\Config;
@@ -176,12 +179,48 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         ]);
         $artifact2->storedFiles()->attach($outputFile2->id);
 
-        // Create a task run and attach artifacts (simulating workflow output)
-        $taskRun = TaskRun::factory()->create();
-        $taskRun->outputArtifacts()->attach([$artifact1->id, $artifact2->id]);
-
-        // Associate task run with workflow run
-        $taskRun->update(['workflow_run_id' => $workflowRun->id]);
+        // Simulate proper workflow execution
+        // 1. Some processing task produces the artifacts
+        $processingTaskDef = TaskDefinition::factory()->create([
+            'task_runner_name' => 'document_processing_task',
+        ]);
+        
+        $processingNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+        
+        $processingTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $processingTaskDef->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $processingNode->id,
+        ]);
+        
+        // The processing task produces both artifacts
+        $processingTaskRun->outputArtifacts()->attach([$artifact1->id, $artifact2->id]);
+        
+        // 2. Workflow output task collects final outputs  
+        $workflowOutputTaskDef = TaskDefinition::factory()->create([
+            'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
+        ]);
+        
+        $outputNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+        
+        $outputTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $workflowOutputTaskDef->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $outputNode->id,
+        ]);
+        
+        $outputTaskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $outputTaskRun->id,
+        ]);
+        $outputTaskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id]);
+        
+        // Run the WorkflowOutputTaskRunner
+        $workflowOutputRunner = $outputTaskProcess->getRunner();
+        $workflowOutputRunner->run();
 
         // When - Simulate workflow completion
         $workflowRun->update([
