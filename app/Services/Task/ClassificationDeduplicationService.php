@@ -33,7 +33,13 @@ class ClassificationDeduplicationService
             [
                 'model'       => $model,
                 'description' => 'Automated agent for data value deduplication and normalization',
-                'api_options' => ['temperature' => 0],
+                'api_options' => [
+                    'temperature' => 0,
+                    'reasoning'   => [
+                        'effort' => 'medium',
+                    ],
+                    'timeout'     => 180,
+                ],
                 'retry_count' => 2,
             ]
         );

@@ -77,6 +77,14 @@ class WorkflowNode extends Model implements AuditableContract, ResourcePackageab
         ]);
     }
 
+    public function delete(): ?bool
+    {
+        $this->connectionsAsSource()->delete();
+        $this->connectionsAsTarget()->delete();
+
+        return parent::delete();
+    }
+
     public function __toString()
     {
         return "<WorkflowNode id='$this->id' name='$this->name'>";
