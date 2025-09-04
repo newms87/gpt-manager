@@ -52,6 +52,7 @@
             <div v-else-if="workflowDefinition" class="h-full w-full">
                 <WorkflowCanvas
                     class="h-full"
+                    :instance-id="'vf-' + workflowDefinition.id"
                     v-model="workflowDefinition"
                     :workflow-run="workflowRun"
                     :loading="false"

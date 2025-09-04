@@ -1,54 +1,55 @@
 <template>
-	<div class="group workflow-canvas-node w-48 relative">
-		<div v-if="loading" class="absolute-top-left w-56 h-24 left-[-1rem] flex items-center justify-center z-[2000]">
-			<LoadingSandLottie class="w-32" autoplay />
-		</div>
-		<div
-			class="node-content relative border  rounded-xl text-lg h-24"
-			:class="nodeClass"
-		>
-			<NodeHeaderBar
-				class="opacity-0 group-hover:opacity-100 transition-all absolute-top-left w-52 z-10 top-[-2.5rem] left-[-.5rem]"
-				:workflow-node="workflowNode"
-				:task-run="taskRun"
-				:temporary="isTemporary"
-				:loading="loading"
-				:readonly="readonly"
-				@copy="$emit('copy', node)"
-				@edit="$emit('edit', node)"
-				@remove="$emit('remove', node)"
-			/>
+    <div class="group workflow-canvas-node w-48 relative">
+        <div v-if="loading" class="absolute-top-left w-56 h-24 left-[-1rem] flex items-center justify-center z-[2000]">
+            <LoadingSandLottie class="w-32" autoplay />
+        </div>
+        <div
+            class="node-content relative border  rounded-xl text-lg h-24"
+            :class="nodeClass"
+        >
+            <NodeHeaderBar
+                class="opacity-0 group-hover:opacity-100 transition-all absolute-top-left w-52 z-10 top-[-2.5rem] left-[-.5rem]"
+                :workflow-node="workflowNode"
+                :task-run="taskRun"
+                :temporary="isTemporary"
+                :loading="loading"
+                :readonly="readonly"
+                @copy="$emit('copy', node)"
+                @edit="$emit('edit', node)"
+                @remove="$emit('remove', node)"
+            />
 
-			<div class="flex justify-center items-center h-full">
-				<Component
-					:is="taskRunner.node?.is || BaseTaskRunnerNode"
-					v-if="workflowNode"
-					v-bind="taskRunner.node || {}"
-					:lottie="taskRunner.lottie"
-					:workflow-node="workflowNode"
-					:task-run="taskRun"
-					:loading="loading"
-				/>
-				<div v-else>
-					<LoadingSandLottie class="w-32 h-24" autoplay />
-				</div>
-			</div>
-		</div>
-		<div class="mt-2 flex justify-center">
-			<div>
-				<div class="node-title text-center">{{ node.data.name }}</div>
-				<div class="flex justify-center mt-2">
-					<WorkflowStatusTimerPill
-						v-if="taskRun"
-						:runner="taskRun"
-						class="text-xs"
-						status-class="rounded-full px-4"
-						timer-class="bg-slate-800 px-4 rounded-full"
-					/>
-				</div>
-			</div>
-		</div>
-	</div>
+            <div class="flex justify-center items-center h-full">
+                <Component
+                    :is="taskRunner.node?.is || BaseTaskRunnerNode"
+                    v-if="workflowNode"
+                    v-bind="taskRunner.node || {}"
+                    :instance-id="instanceId"
+                    :lottie="taskRunner.lottie"
+                    :workflow-node="workflowNode"
+                    :task-run="taskRun"
+                    :loading="loading"
+                />
+                <div v-else>
+                    <LoadingSandLottie class="w-32 h-24" autoplay />
+                </div>
+            </div>
+        </div>
+        <div class="mt-2 flex justify-center">
+            <div>
+                <div class="node-title text-center">{{ node.data.name }}</div>
+                <div class="flex justify-center mt-2">
+                    <WorkflowStatusTimerPill
+                        v-if="taskRun"
+                        :runner="taskRun"
+                        class="text-xs"
+                        status-class="rounded-full px-4"
+                        timer-class="bg-slate-800 px-4 rounded-full"
+                    />
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -62,17 +63,18 @@ import { Node } from "@vue-flow/core";
 import { computed } from "vue";
 
 defineEmits<{
-	(e: "copy", node: Node): void;
-	(e: "edit", node: Node): void;
-	(e: "remove", node: Node): void;
+    (e: "copy", node: Node): void;
+    (e: "edit", node: Node): void;
+    (e: "remove", node: Node): void;
 }>();
 
 const props = defineProps<{
-	node: Node;
-	workflowDefinition: WorkflowDefinition;
-	workflowRun?: WorkflowRun;
-	loading?: boolean;
-	readonly?: boolean;
+    node: Node;
+    workflowDefinition: WorkflowDefinition;
+    workflowRun?: WorkflowRun;
+    instanceId: string;
+    loading?: boolean;
+    readonly?: boolean;
 }>();
 
 // Is this node a temporary placeholder waiting for the backend to respond with the real node ID
@@ -82,32 +84,32 @@ const workflowNode = computed(() => props.workflowDefinition.nodes?.find((wn) =>
 const taskRun = computed<TaskRun>(() => props.workflowRun?.taskRuns?.find((tr) => tr.workflow_node_id == +props.node.id));
 
 const {
-	taskRunner,
-	isTaskRunning,
-	isTaskCompleted,
-	isTaskSkipped,
-	isTaskFailed,
-	isTaskPending
-} = useWorkflowNode(workflowNode, taskRun);
+    taskRunner,
+    isTaskRunning,
+    isTaskCompleted,
+    isTaskSkipped,
+    isTaskFailed,
+    isTaskPending
+} = useWorkflowNode(workflowNode, taskRun, props.instanceId);
 
 const nodeClass = computed(() => {
-	return {
-		"opacity-50": props.loading,
-		"border-gray-300 bg-slate-700": isTaskPending.value,
-		"bg-sky-900 border-sky-400": isTaskRunning.value,
-		"bg-red-900 border-red-400": isTaskFailed.value,
-		"bg-skipped border-yellow-600": isTaskSkipped.value,
-		"bg-green-900 border-green-400": isTaskCompleted.value
-	};
+    return {
+        "opacity-50": props.loading,
+        "border-gray-300 bg-slate-700": isTaskPending.value,
+        "bg-sky-900 border-sky-400": isTaskRunning.value,
+        "bg-red-900 border-red-400": isTaskFailed.value,
+        "bg-skipped border-yellow-600": isTaskSkipped.value,
+        "bg-green-900 border-green-400": isTaskCompleted.value
+    };
 });
 </script>
 
 <style lang="scss">
 .vue-flow__node.selected {
-	.workflow-canvas-node {
-		.node-content {
-			@apply outline outline-4 outline-blue-500;
-		}
-	}
+    .workflow-canvas-node {
+        .node-content {
+            @apply outline outline-4 outline-blue-500;
+        }
+    }
 }
 </style>

@@ -1,14 +1,19 @@
 <template>
-	<BaseTaskRunnerNode :workflow-node="workflowNode" :task-run="taskRun" :lottie="DeliveryBoyLottie">
-		<template #ports>
-			<NodePortsWidget
-				:task-run="taskRun"
-				:source-edges="sourceEdges"
-				:target-edges="targetEdges"
-				:source-ports="[]"
-			/>
-		</template>
-	</BaseTaskRunnerNode>
+    <BaseTaskRunnerNode
+        :workflow-node="workflowNode"
+        :task-run="taskRun"
+        :lottie="DeliveryBoyLottie"
+        :instance-id="instanceId"
+    >
+        <template #ports>
+            <NodePortsWidget
+                :task-run="taskRun"
+                :source-edges="sourceEdges"
+                :target-edges="targetEdges"
+                :source-ports="[]"
+            />
+        </template>
+    </BaseTaskRunnerNode>
 </template>
 <script setup lang="ts">
 import { DeliveryBoyLottie } from "@/assets/dotlottie";
@@ -19,10 +24,11 @@ import { toRefs } from "vue";
 import BaseTaskRunnerNode from "./BaseTaskRunnerNode";
 
 const props = defineProps<{
-	workflowNode: WorkflowNode;
-	taskRun?: TaskRun;
+    workflowNode: WorkflowNode;
+    taskRun?: TaskRun;
+    instanceId: string;
 }>();
 
 const { workflowNode, taskRun } = toRefs(props);
-const { sourceEdges, targetEdges } = useWorkflowNode(workflowNode, taskRun);
+const { sourceEdges, targetEdges } = useWorkflowNode(workflowNode, taskRun, props.instanceId);
 </script>
