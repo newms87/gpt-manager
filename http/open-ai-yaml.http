@@ -1,0 +1,87 @@
+### POST responses API timeout tests
+# @timeout 5 m
+POST https://api.openai.com/v1/responses
+Authorization: Bearer {{openai_api_key}}
+Content-Type: application/json
+Accept: application/json
+User-Agent: GuzzleHttp/7
+
+{
+    "model": "gpt-5",
+    "service_tier": "default",
+    "stream": false,
+    "instructions": "The current date and time is 2025-09-03 21:48:36\n\n",
+    "text": {
+        "format": {
+            "type": "text"
+        }
+    },
+    "input": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": "\n--- PRIMARY ARTIFACTS ---\n"
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": "text_content: |-\n Radiology Report Interpretation – Dr. Juan Telleria, MD\n\n Imaging Dates: 11/01/2024 (Cervical MRI); 12/06/2024 (Lumbar MRI)\n\n On 11/01/2024, Ms. Renese Antoine underwent a cervical spine MRI following her 10/12/2024 pedestrian-versus-vehicle collision. Dr. Juan Telleria interpreted the study, which demonstrated multilevel disc bulges from C3 through C7 with mild canal stenosis.\n\n On 12/06/2024, Ms. Antoine underwent a lumbar spine MRI. Dr. Telleria’s interpretation demonstrated multilevel disc bulges from L1 through S1 with contact/foraminal narrowing at L3–4 and L4–5.\n\n These objective imaging findings are consistent with her reported post-accident neck and low-back pain and provide radiographic evidence of multilevel cervical and lumbar disc pathology.\nmeta:\n agent_thread_run_id: 2347\n api_response_id: resp_68b8b61d07888197b0029e9dcf40af040c5efdf301937b7e"
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": "text_content: |-\n Initial Orthopedic Evaluation – University Orthopedic Care\n\n Dates of Treatment: 11/20/2024 and 12/04/2024 No. of Visits: 2\n\n On November 20, 2024, Ms. Renese Antoine (DOB 11/15/1964) presented to University Orthopedic Care for an Orthopedic Spine Injury Evaluation and Treatment Plan following an incident on 10/12/2024 in which she was a pedestrian struck by a vehicle while crossing a crosswalk, falling onto her right side. She reported low back pain centered in the midline, intermittent and achy/burning, worst at 8/10 and 6/10 at the initial visit, without numbness, tingling, or radiation. Pain was aggravated by prolonged sitting, bending forward, and lifting, and improved with chiropractic therapy. She also reported general fatigue and sleep changes, but denied mental status changes or bowel/bladder issues. She was evaluated by Angel Rigueras, DO (Board Certified Physical Medicine & Rehabilitation), with APRN Mariano Palazzolo. Physical examination revealed decreased active lumbar range of motion (limited flexion, extension, bilateral lateral flexion, and right rotation), tenderness over the right L2–L5 and bilateral L3–S1 paraspinal regions, moderate paraspinal hypertonicity/muscle spasm, and pain reproduced with facet loading on rotation/extension. Review of cervical MRI from 11/01/2024 showed straightening of the normal lordosis (positional or due to spasm) and multilevel disc bulges at C3–4, C4–5, C5–6 causing mild canal stenosis; at C6–7 disc bulge with uncovertebral hypertrophy causing mild stenosis; and a disc bulge at C7–T1. Assessment/Impression included cervicalgia with cervical facet joint syndrome and multilevel cervical disc disorder, lumbago with lumbar facet joint syndrome, lumbar disc injury/disease (L2–5; multilevel). The treatment plan included: Mobic 15 mg by mouth daily with food x30 days, Omeprazole 20 mg by mouth every morning x30 days for gastric protection, and Tizanidine 4 mg by mouth nightly x30 nights for muscle spasm; application of moist heat x15 minutes as needed; encouragement to attend chiropractic therapy and perform a home exercise program; and ordering a lumbar spine MRI to evaluate the etiology of low back pain. Interventional options, including facet joint injections, were discussed pending MRI results. She was advised to return in two weeks for MRI review and medication check, and no alteration or restrictions of work/activity were recommended until reevaluation. Based on the history, exam, and diagnostic review, the provider opined that Ms. Antoine sustained a permanent injury directly resulting from the 10/12/2024 accident.\n\n Ms. Antoine returned on December 4, 2024, reporting persistent low back pain and ongoing paraspinal muscle spasms. Examination again showed tenderness over the bilateral L3–S1 paraspinal regions with associated hypertonicity, limited active lumbar range of motion, and pain reproduced with facet loading. A lumbar MRI performed on 12/06/2024 demonstrated: broad-based disc bulges at L1–2 and L2–3; at L3–4, a disc bulge with facet arthropathy contacting the descending bilateral L4 nerve roots and mild bilateral foraminal narrowing; at L4–5, a disc bulge with facet arthropathy contacting and displacing the descending bilateral L5 nerve roots with mild-to-moderate right and mild left foraminal narrowing; and at L5–S1, a broad-based disc bulge with mild bilateral foraminal narrowing. Diagnoses included lumbar facet joint syndrome and lumbar disc disease in addition to the previously documented cervical conditions. Interventional pain management was recommended, including bilateral cervical facet joint injections at C3–4 and C4–5 and bilateral lumbar facet joint injections at L3–4, L4–5, and L5–S1, along with continued therapy/home exercise.\n\n Causation, MMI, and Impairment: The provider expressly opined that Ms. Antoine sustained a permanent injury as a direct result of the 10/12/2024 accident. In the absence of further interventional or surgical care, she was deemed to have reached maximum medical improvement on 12/17/2024. Using the AMA Guides to the Evaluation of Permanent Impairment, 6th Edition, she was assigned a combined whole-person impairment of 4% (2% for cervicalgia/cervical facet joint syndrome and 2% for lumbago/lumbar facet joint syndrome).\n\n Referrals and Future Care:\n - Referrals: lumbar MRI (POM MRI & Radiology Centers of Plantation), chiropractic therapy, diagnostic bilateral L3–4/L4–5/L5–S1 facet joint injections, and bilateral C3–4/C4–5 facet joint injections.\n - Interventional pain procedures recommended:\n - Bilateral cervical facet joint injections at C3–4 and C4–5: estimated professional charges $5,000; surgical supplies/medications $3,000; postoperative medications approximately $300; optional cold therapy unit approximately $2,000. These procedures can be performed in-office in a Joint Commission–accredited operatory with no additional anesthesia or facility fees anticipated.\n - Bilateral lumbar facet joint injections at L3–4, L4–5, and L5–S1: estimated professional charges $6,000.\n - Ongoing conservative management with physical therapy and home exercise was also recommended.\nmeta:\n agent_thread_run_id: 2345\n api_response_id: resp_68b8b61c6f50819d90e8a612d70995b702e26cfc5907a3fc"
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": "text_content: |-\n Diagnostic Imaging – POM MRI and Radiology Centers\n\n Dates of Treatment: 11/01/2024 and 12/06/2024 No. of Visits: 2\n\n On November 1, 2024, Ms. Renese Antoine underwent an MRI of the cervical spine at POM MRI & Radiology Centers (4373 W. Sunrise Blvd, Plantation), ordered by Richard Henry, for neck pain following the 10/12/2024 motor vehicle accident. Interpreting radiologist Pauline Gilmore, MD (report electronically signed 11/12/2024), documented straightening of the normal cervical lordosis (positional versus secondary to muscle spasm; clinical correlation recommended). Vertebral body heights were maintained with expected marrow signal, no abnormal cervical cord signal, and loss of T2 disc signal at all cervical levels. Segmental findings included: C3-4, C4-5, and C5-6 disc bulging each resulting in mild spinal canal stenosis; C6-7 disc bulging with uncovertebral hypertrophy resulting in mild spinal canal stenosis; and C7-T1 disc bulging without spinal canal stenosis. No neural foraminal narrowing was identified at these levels. Prevertebral and paraspinal soft tissues were within normal limits.\n\n On December 6, 2024, a lumbar spine MRI was obtained for ongoing low back pain related to the 10/12/2024 accident. Imaging demonstrated multilevel fatty endplate changes. Specific level findings were: L1-2 and L2-3 broad-based disc bulges without spinal canal stenosis or neural foraminal narrowing; L3-4 disc bulge with facet arthropathy contacting the descending bilateral L4 nerve roots and causing mild bilateral neural foraminal narrowing; L4-5 disc bulge with facet arthropathy contacting and displacing the descending bilateral L5 nerve roots with mild-to-moderate right and mild left neural foraminal narrowing; and L5-S1 broad-based disc bulge producing mild bilateral neural foraminal narrowing without spinal canal stenosis.\n\n Diagnoses documented in connection with these studies include: other lordosis of the cervical region (straightening of the normal cervical lordosis), spinal stenosis of the cervical region at C6-7 due to disc bulging and uncovertebral hypertrophy, and other cervical disc degeneration (cervical disc bulges C3–T1).\nmeta:\n agent_thread_run_id: 2349\n api_response_id: resp_68b8b69d2e5c8190a0a7e6f22b2998b705afc87a5e32c07b"
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": "text_content: |-\n Impairment Evaluation and Treatment Projection – Dr. Angel Rigueras, DO (Physical Medicine & Rehabilitation)\n\n Dr. Angel Rigueras, a board-certified PM&R physician, performed an impairment evaluation and issued a treatment projection for Ms. Renese Antoine following her 10/12/2024 pedestrian-versus-vehicle collision. Ms. Antoine sustained neck, mid-back, and low-back injuries with persistent cervical, thoracic, and lumbar pain. Her course of care included chiropractic care and physiotherapy beginning 10/22/2024. Imaging documented multilevel pathology: a cervical MRI on 11/01/2024 revealed multilevel disc bulges at C3–C7 with mild canal stenosis; a lumbar MRI on 12/06/2024 showed multilevel disc bulges from L1–S1 with contact/foraminal narrowing at L3–4 and L4–5. On 12/17/2024, Ms. Antoine was deemed to have reached maximum medical improvement, with a combined whole-person impairment of 4%. Ongoing conservative care and interventional pain management as indicated (e.g., facet injections) were recommended.\n\n Treatment Plan and Future Care/Costs: Dr. Rigueras projected the need for aggressive physical therapy to address exacerbations of symptoms associated with her diagnosed injuries. The plan entails an evaluation followed by a 6–12 week course of care, approximately 10–24 total sessions, at about $300 per session (approximately $3,000.00 or more in total). As clinically indicated, repeat diagnostic testing (MRI or CT imaging with radiologist review) may be required to monitor progression of her condition, estimated at $1,500.00–$2,000.00. He further recommended specialty physician evaluation for pain management during exacerbations, with each visit/workup ranging from several hundred to several thousand dollars. Periodic medications, such as NSAIDs, may be needed and could cost upwards of several hundred dollars per month. For any indicated procedure, the cost of surgical supplies and medications utilized in the procedure is $3,000.00. Post-procedure/postoperative pain control may also require medications (approximately $300.00) and a cold therapy unit to reduce the need for narcotics (approximately $2,000.00).\n\n Referrals/Recommendations: referral to physical therapy for the above course; as-needed MRI/CT imaging for progression monitoring; and specialty pain management evaluation/treatment during exacerbations.\n\n All cost figures are best estimates generated by the billing office based upon physician guidance documented in the record.\nmeta:\n agent_thread_run_id: 2348\n api_response_id: resp_68b8b69bfa3881a39b507f8f079b41d80e8ec711c20ce465"
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": "text_content: |-\n demand_id: 34\n title: Antoine Test E\n description: null\n template_stored_file_id: 9fbd3076-e68c-459c-b788-b91b96368f54\njson_content:\n id: 1123\n type: Demand\n demand_id: 34\n title: Antoine Test E\n description: null\n template_stored_file_id: 9fbd3076-e68c-459c-b788-b91b96368f54"
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": "You are helping to populate a Google Docs template with data. Please review the template variables and suggest the best mapping and document title.\n\nTemplate Variables Found: {todays_date}, {client_full_name}, {date_of_loss}, {date_of_birth}, {gender}, {total_medical_expenses}, {first_treatment_date}, {facts_of_accident}, {treatments_by_provider}: Output all the summaries in order by provider name and leave the treatment summary paragraphs verbatim as what you are given, just copy the verbatim text for all the combined summaries into this field., {icd_diagnosis_list}, {treatment_summary_list}, {current_medical_expenses}, {duties_under_duress}\n\nPlease provide your response in the following JSON format:\n{\n \"title\": \"Suggested document title based on the data\",\n \"variables\": {\n \"variable1\": \"mapped_value1\",\n \"variable2\": \"mapped_value2\"\n },\n \"reasoning\": \"Brief explanation of your mapping choices\"\n}\n\nRequirements:\n1. Suggest an appropriate document title based on the available data\n2. Map each template variable to the most appropriate value from the available data\n3. Use the variable descriptions provided to understand what each variable should contain\n4. If no good mapping exists for a variable, use an empty string \"\"\n5. Provide brief reasoning for your choices\n\nIMPORTANT: Return ONLY valid JSON in the exact format shown above."
+                }
+            ]
+        }
+    ]
+}
+
+
+###

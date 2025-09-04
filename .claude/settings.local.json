@@ -82,13 +82,17 @@
       "Bash(make:*)",
       "Bash(git log:*)",
       "Read(/home/newms/web/quasar-ui-danx/**)",
-      "Read(/home/newms/web/quasar-ui-danx/**)"
+      "Read(/home/newms/web/quasar-ui-danx/**)",
+      "Read(/home/newms/web/quasar-ui-danx/**)",
+      "WebFetch(domain:docs.guzzlephp.org)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "additionalDirectories": [
       "/home/newms/web/quasar-ui-danx/ui/",
       "/home/newms/web/quasar-ui-danx/",
-      "/home/newms/web/quasar-ui-danx/ui"
+      "/home/newms/web/quasar-ui-danx/ui",
+      "/home/newms/web/danx"
     ]
   }
 }

@@ -479,10 +479,6 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         });
 
         static::saving(function (WorkflowRun $workflowRun) {
-            if ($workflowRun->isDirty('has_run_all_tasks')) {
-                $workflowRun->checkTaskRuns();
-            }
-
             $workflowRun->computeStatus();
         });
 

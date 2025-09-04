@@ -8,15 +8,20 @@ use App\Api\OpenAi\Classes\OpenAiResponsesResponse;
 use App\Api\Options\ResponsesApiOptions;
 use App\Events\AgentThreadMessageStreamEvent;
 use App\Models\Agent\AgentThreadMessage;
+use App\Traits\HasDebugLogging;
 use Newms87\Danx\Api\BearerTokenApi;
 use Newms87\Danx\Exceptions\ApiException;
 
 class OpenAiApi extends BearerTokenApi implements AgentApiContract
 {
+    use HasDebugLogging;
+
     protected array $rateLimits = [
         // 5 requests per second, wait 1 second between attempts
         ['limit' => 5, 'interval' => 1, 'waitPerAttempt' => 1],
     ];
+
+    protected int $requestTimeout = 60 * 5; // 5 minutes
 
     public static string $serviceName = 'OpenAI';
 
@@ -56,13 +61,16 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         $requestBody['input'] = $this->formatter()->convertRawMessagesToResponsesApiInput($messages);
 
         // Set HTTP client timeout from options
-        $httpOptions = [];
         if ($options->getTimeout()) {
-            $httpOptions['timeout'] = $options->getTimeout();
+            $this->requestTimeout = $options->getTimeout();
         }
 
+        static::log("OpenAI Making request to Responses API w/ timeout {$this->requestTimeout}s");
+
         // Regular request (no streaming in this method)
-        $response = $this->post('responses', $requestBody, $httpOptions)->json();
+        $response = $this->post('responses', $requestBody)->json();
+
+        static::log('OpenAI Responses API response received: ' . strlen(json_encode($response)) . ' bytes');
 
         return OpenAiResponsesResponse::make($response);
     }
@@ -113,7 +121,7 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
                 }
             },
         ];
-        
+
         // Set HTTP client timeout from options
         if ($options->getTimeout()) {
             $httpOptions['timeout'] = $options->getTimeout();

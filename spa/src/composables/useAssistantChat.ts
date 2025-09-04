@@ -1,17 +1,23 @@
-import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
-import { request, storeObjects } from "quasar-ui-danx";
-import { usePusher } from "@/helpers/pusher";
-import { useAssistantGlobalContext } from "@/composables/useAssistantGlobalContext";
 // Removed useAssistantState - using thread actions directly
-import { AssistantThread, AssistantMessage } from "@/components/Modules/Assistant/types";
+import { AssistantThread } from "@/components/Modules/Assistant/types";
+import { useAssistantGlobalContext } from "@/composables/useAssistantGlobalContext";
+import { usePusher } from "@/helpers/pusher";
+import { request, storeObjects } from "quasar-ui-danx";
+import { computed, ref } from "vue";
 
-const STORAGE_KEY = 'assistant-thread-id';
+const STORAGE_KEY = "assistant-thread-id";
 
 // Global state - single source of truth
 const isLoading = ref(false);
 const storedThreadId = ref<number | null>(null);
 const storedThreads = ref<AssistantThread[]>([]);
-const localErrorMessages = ref<Array<{ id: string; role: 'error'; content: string; error_data: any; created_at: string }>>([]);
+const localErrorMessages = ref<Array<{
+    id: string;
+    role: "error";
+    content: string;
+    error_data: any;
+    created_at: string
+}>>([]);
 const hasLoadedFromStorage = ref(false);
 
 // Global computed properties
@@ -23,7 +29,7 @@ const currentThread = computed(() => {
 const messages = computed(() => {
     const threadMessages = currentThread.value?.messages || [];
     const allMessages = [...threadMessages, ...localErrorMessages.value];
-    
+
     return allMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 });
 
@@ -34,19 +40,19 @@ const isThreadRunning = computed(() => {
 export function useAssistantChat() {
     const pusher = usePusher();
     const { currentContext, currentObject } = useAssistantGlobalContext();
-    
+
 
     // Build context data
     const contextData = computed(() => {
         const contextResources = [];
-        
+
         if (currentObject.value?.id && currentObject.value?.__type) {
             contextResources.push({
                 resource_type: currentObject.value.__type,
                 resource_id: currentObject.value.id
             });
         }
-        
+
         const metadata = {
             page_url: window.location.href,
             page_path: window.location.pathname,
@@ -55,7 +61,7 @@ export function useAssistantChat() {
             viewport_height: window.innerHeight,
             timestamp: new Date().toISOString()
         };
-        
+
         return {
             resources: contextResources,
             metadata
@@ -64,8 +70,8 @@ export function useAssistantChat() {
 
     function addErrorMessage(error: any): void {
         let parsedError = error;
-        let errorContent = 'An error occurred while processing your message';
-        
+        let errorContent = "An error occurred while processing your message";
+
         if (error?.response?.data) {
             parsedError = error.response.data;
             if (parsedError.message) {
@@ -80,55 +86,55 @@ export function useAssistantChat() {
                 stack: error?.stack
             };
         }
-        
+
         const errorMessage = {
             id: `error-${Date.now()}-${Math.random()}`,
-            role: 'error' as const,
+            role: "error" as const,
             content: errorContent,
             error_data: parsedError,
-            created_at: new Date().toISOString(),
+            created_at: new Date().toISOString()
         };
-        
+
         localErrorMessages.value.push(errorMessage);
     }
 
     async function sendMessage(message: string): Promise<void> {
         if (!message.trim() || isLoading.value || isThreadRunning.value) return;
-        
+
         isLoading.value = true;
-        
+
         try {
             let response;
-            
+
             if (currentThread.value?.id) {
                 // Continue existing chat - use existing thread API
                 response = await request.post(`assistant/threads/${currentThread.value.id}/chat`, {
                     message,
                     context: currentContext.value,
-                    context_data: contextData.value,
+                    context_data: contextData.value
                 });
             } else {
                 // Start new chat
-                response = await request.post('assistant/start-chat', {
+                response = await request.post("assistant/start-chat", {
                     message,
                     context: currentContext.value,
-                    context_data: contextData.value,
+                    context_data: contextData.value
                 });
             }
-            
-            
+
+
             // Store the thread (response is now the thread directly)
             storedThreads.value = storeObjects([response]);
             const thread = storedThreads.value[0];
-            
+
             storedThreadId.value = thread.id;
             localStorage.setItem(STORAGE_KEY, thread.id.toString());
-            
+
             // Actions are handled directly through thread.actions - no separate state needed
-            
+
             subscribeToThread(thread);
             localErrorMessages.value = [];
-            
+
         } catch (error) {
             addErrorMessage(error);
         } finally {
@@ -137,14 +143,14 @@ export function useAssistantChat() {
     }
 
     function startNewChat(): void {
-        
+
         localStorage.removeItem(STORAGE_KEY);
         storedThreadId.value = null;
         storedThreads.value = [];
         localErrorMessages.value = [];
-        
+
         // Actions are cleared automatically when thread is cleared
-        
+
         unsubscribeFromThread();
     }
 
@@ -154,18 +160,18 @@ export function useAssistantChat() {
             return;
         }
         hasLoadedFromStorage.value = true;
-        
+
         const savedThreadId = localStorage.getItem(STORAGE_KEY);
-        
+
         if (savedThreadId) {
             try {
                 const response = await request.get(`threads/${savedThreadId}/details?fields[actions]=true`);
                 storedThreads.value = storeObjects([response]);
                 const thread = storedThreads.value[0];
                 storedThreadId.value = thread.id;
-                
+
                 // Actions are handled directly through thread.actions - no separate state needed
-                
+
                 subscribeToThread(thread);
             } catch (error) {
                 localStorage.removeItem(STORAGE_KEY);
@@ -175,23 +181,23 @@ export function useAssistantChat() {
 
     function subscribeToThread(thread: AssistantThread): void {
         if (!pusher) return;
-        
-        
-        pusher.onEvent('AgentThread', 'updated', async (minimalThread: any) => {
-            
+
+
+        pusher.onEvent("AgentThread", "updated", async (minimalThread: any) => {
+
             if (minimalThread.id === thread.id) {
                 const existingThreadIndex = storedThreads.value.findIndex(t => t.id === minimalThread.id);
                 if (existingThreadIndex >= 0) {
-                    storedThreads.value = storedThreads.value.map(t => 
+                    storedThreads.value = storedThreads.value.map(t =>
                         t.id === minimalThread.id ? { ...t, ...minimalThread } : t
                     );
                 }
-                
+
                 if (!minimalThread.is_running) {
                     try {
                         const response = await request.get(`threads/${minimalThread.id}/details?fields[actions]=true`);
                         storedThreads.value = storeObjects([response]);
-                        
+
                         // Actions are handled directly through thread.actions - no separate state needed
                     } catch (error) {
                     }
@@ -204,8 +210,6 @@ export function useAssistantChat() {
         // Pusher cleanup is handled automatically by the library
     }
 
-    // Don't auto-load - let components decide when to load
-
     return {
         // State
         isLoading,
@@ -213,25 +217,25 @@ export function useAssistantChat() {
         messages,
         isThreadRunning,
         contextData,
-        
+
         // Methods
         sendMessage,
         startNewChat,
         addErrorMessage,
         loadStoredThread,
-        
+
         // Action methods - using ActionController patterns
         async approveAction(action: any) {
             try {
-                await request.post(`assistant/actions/${action.id}`, { status: 'approved' });
+                await request.post(`assistant/actions/${action.id}`, { status: "approved" });
                 // Thread will be updated via websocket
             } catch (error) {
             }
         },
-        
+
         async cancelAction(action: any) {
             try {
-                await request.post(`assistant/actions/${action.id}`, { status: 'cancelled' });
+                await request.post(`assistant/actions/${action.id}`, { status: "cancelled" });
                 // Thread will be updated via websocket
             } catch (error) {
             }

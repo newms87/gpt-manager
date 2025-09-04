@@ -8,7 +8,7 @@
             :default-viewport="{ zoom: 1 }"
             :min-zoom="0.2"
             :max-zoom="2"
-            :snap-to-grid="!readonly"
+            snap-to-grid
             fit-view-on-init
             :snap-grid="[20, 20]"
             class="workflow-canvas"
@@ -20,10 +20,10 @@
             :nodes-connectable="true"
             @pane-ready="onPaneReady"
             @connect="onConnectionAdd"
-            @node-drag-stop="readonly ? undefined : onSelectionDragStop"
-            @selection-drag-stop="readonly ? undefined : onSelectionDragStop"
-            @dragover="readonly ? undefined : onDragOver"
-            @drop="readonly ? undefined : (e => handleExternalDrop('workflow-canvas-vf', e))"
+            @node-drag-stop="onSelectionDragStop"
+            @selection-drag-stop="onSelectionDragStop"
+            @dragover="onDragOver"
+            @drop="e => handleExternalDrop('workflow-canvas-vf', e)"
         >
             <template #node-custom="nodeProps">
                 <WorkflowCanvasNode
@@ -110,14 +110,15 @@ function convertToVueFlow() {
     if (previousWorkflowDefinitionId.value !== workflowDefinition.value?.id && workflowDefinition.value?.nodes?.length > 0) {
         previousWorkflowDefinitionId.value = workflowDefinition.value?.id as number;
     }
-
-    loadWorkflowRunDetails();
 }
 
 // Watch for changes in the prop model and update the flow
 watch(() => workflowDefinition.value, convertToVueFlow, { deep: true });
 watch(() => props.workflowRun, loadWorkflowRunDetails);
-onMounted(convertToVueFlow);
+onMounted(() => {
+    convertToVueFlow();
+    loadWorkflowRunDetails();
+});
 
 function loadWorkflowRunDetails() {
     if (props.workflowRun) dxWorkflowRun.routes.details(props.workflowRun);
@@ -135,6 +136,9 @@ function resolveWorkflowNode(node: Node) {
 }
 
 function onSelectionDragStop(selection) {
+    if (props.readonly) {
+        return;
+    }
     for (const node of selection.nodes) {
         emit("node-position", resolveWorkflowNode(node), { ...node.position });
     }
@@ -156,7 +160,7 @@ function onConnectionAdd(connection: Connection) {
     if (props.readonly) {
         return;
     }
-    
+
     const connections = connectWorkflowNodes(workflowDefinition.value.connections, connection);
     if (connections) {
         emit("connection-add", connections.pop());
@@ -164,6 +168,10 @@ function onConnectionAdd(connection: Connection) {
 }
 
 function onConnectionRemove(edge: EdgeProps) {
+    if (props.readonly) {
+        return;
+    }
+    
     emit("connection-remove", resolveWorkflowConnection(edge));
 }
 

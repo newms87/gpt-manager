@@ -65,22 +65,25 @@
 <script setup lang="ts">
 import WorkflowCanvas from "@/components/Modules/WorkflowCanvas/WorkflowCanvas.vue";
 import { routes as workflowDefinitionRoutes } from "@/components/Modules/WorkflowDefinitions/config/routes";
-import { WorkflowDefinition, WorkflowRun } from "@/types";
+import { refreshWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
+import { usePusher } from "@/helpers/pusher";
+import { TaskRun, WorkflowDefinition, WorkflowRun } from "@/types";
 import { FaSolidTriangleExclamation } from "danx-icon";
 import { FullScreenDialog, LabelPillWidget } from "quasar-ui-danx";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 const emit = defineEmits<{
     close: [];
 }>();
 
 const props = defineProps<{
-    workflowRun: WorkflowRun | null;
+    workflowRun: WorkflowRun;
 }>();
 
 const workflowDefinition = ref<WorkflowDefinition | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const pusher = usePusher();
 
 const statusColor = computed(() => {
     if (!props.workflowRun?.status) return "text-slate-400";
@@ -121,12 +124,40 @@ const loadWorkflowDefinition = async () => {
     }
 };
 
-const loadOnChange = () => {
-    if (props.workflowRun) {
-        loadWorkflowDefinition();
+// Store the callback reference for proper cleanup
+const onWorkflowRunUpdate = (updatedWorkflowRun: WorkflowRun) => {
+    if (updatedWorkflowRun.id === props.workflowRun?.id) {
+        refreshWorkflowRun(props.workflowRun);
     }
 };
 
+const onTaskRunCreated = (taskRun: TaskRun) => {
+    if (taskRun.workflow_run_id === props.workflowRun?.id) {
+        refreshWorkflowRun(props.workflowRun);
+    }
+};
+
+const loadOnChange = () => {
+    loadWorkflowDefinition();
+
+    // First unsubscribe from any previous subscription
+    unsubscribeFromUpdates();
+    subscribeToUpdates();
+};
+
+const subscribeToUpdates = () => {
+    // Subscribe to workflow run updates for real-time status changes
+    pusher.onModelEvent(props.workflowRun, "updated", onWorkflowRunUpdate);
+    pusher.onEvent("TaskRun", "created", onTaskRunCreated);
+};
+
+const unsubscribeFromUpdates = () => {
+    // Clean up the subscription using the same callback reference
+    pusher.offModelEvent(props.workflowRun, "updated", onWorkflowRunUpdate);
+    pusher.offEvent("TaskRun", "created", onTaskRunCreated);
+};
+
 onMounted(loadOnChange);
+onUnmounted(unsubscribeFromUpdates);
 watch(() => props.workflowRun, loadOnChange);
 </script>

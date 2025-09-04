@@ -20,7 +20,7 @@ class JobDispatchResource extends ActionResource
             'ran_at'                    => $jobDispatch->ran_at,
             'completed_at'              => $jobDispatch->completed_at,
             'timeout_at'                => $jobDispatch->timeout_at,
-            'run_time'                  => $jobDispatch->run_time,
+            'run_time_ms'               => $jobDispatch->run_time_ms,
             'count'                     => $jobDispatch->count,
             'created_at'                => $jobDispatch->created_at,
 

@@ -2,13 +2,13 @@ import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/c
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { usePusher } from "@/helpers/pusher";
 import {
-	TaskDefinition,
-	TaskRun,
-	TaskRunnerClass,
-	WorkflowDefinition,
-	WorkflowInput,
-	WorkflowNode,
-	WorkflowRun
+    TaskDefinition,
+    TaskRun,
+    TaskRunnerClass,
+    WorkflowDefinition,
+    WorkflowInput,
+    WorkflowNode,
+    WorkflowRun
 } from "@/types";
 import { getItem, setItem } from "quasar-ui-danx";
 import { ref } from "vue";
@@ -21,45 +21,69 @@ const activeWorkflowRun = ref<WorkflowRun>(null);
 const workflowDefinitions = ref([]);
 
 async function refreshActiveWorkflowDefinition() {
-	await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value);
+    await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value);
 }
 
 async function setActiveWorkflowDefinition(workflowDefinition: string | number | WorkflowDefinition | null) {
-	const workflowDefinitionId = typeof workflowDefinition === "object" ? workflowDefinition?.id : workflowDefinition;
-	setItem(ACTIVE_WORKFLOW_DEFINITION_KEY, workflowDefinitionId);
+    const workflowDefinitionId = typeof workflowDefinition === "object" ? workflowDefinition?.id : workflowDefinition;
+    setItem(ACTIVE_WORKFLOW_DEFINITION_KEY, workflowDefinitionId);
 
-	// Clear active run if the definition has changed
-	if (activeWorkflowDefinition.value?.id !== workflowDefinitionId) {
-		activeWorkflowRun.value = null;
-	}
+    // Clear active run if the definition has changed
+    if (activeWorkflowDefinition.value?.id !== workflowDefinitionId) {
+        activeWorkflowRun.value = null;
+    }
 
-	activeWorkflowDefinition.value = workflowDefinitions.value.find((tw) => tw.id === workflowDefinitionId) || null;
+    activeWorkflowDefinition.value = workflowDefinitions.value.find((tw) => tw.id === workflowDefinitionId) || null;
 
-	if (activeWorkflowDefinition.value) {
-		await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value);
-		await loadWorkflowRuns();
-	}
+    if (activeWorkflowDefinition.value) {
+        await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value);
+        await loadWorkflowRuns();
+    }
 }
 
 async function initWorkflowState() {
-	await loadWorkflowDefinitions();
-	await setActiveWorkflowDefinition(getItem(ACTIVE_WORKFLOW_DEFINITION_KEY));
+    await loadWorkflowDefinitions();
+    await setActiveWorkflowDefinition(getItem(ACTIVE_WORKFLOW_DEFINITION_KEY));
 }
 
 async function loadWorkflowDefinitions() {
-	isLoadingWorkflowDefinitions.value = true;
-	const result = await dxWorkflowDefinition.routes.list();
-	workflowDefinitions.value = result.data;
-	isLoadingWorkflowDefinitions.value = false;
+    isLoadingWorkflowDefinitions.value = true;
+    const result = await dxWorkflowDefinition.routes.list();
+    workflowDefinitions.value = result.data;
+    isLoadingWorkflowDefinitions.value = false;
 }
 
 async function loadWorkflowRuns() {
-	if (!activeWorkflowDefinition.value) return;
-	return await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value, { "*": false, runs: true });
+    if (!activeWorkflowDefinition.value) return;
+    return await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value, { "*": false, runs: true });
 }
 
-async function refreshWorkflowRun(workflowRun: WorkflowRun) {
-	return await dxWorkflowRun.routes.details(workflowRun, { taskRuns: { taskDefinition: true } });
+const refreshQueue = ref([]);
+const refreshingWorkflowRun = ref(false);
+
+async function refreshWorkflowRun(workflowRun?: WorkflowRun) {
+    if (workflowRun) {
+        // Add the workflow run to the refresh queue
+        refreshQueue.value.push(workflowRun);
+    }
+
+    // If a workflow run is already being refreshed, exit
+    if (refreshingWorkflowRun.value) return;
+
+    // FIFO - process the first workflow run in the queue
+    refreshingWorkflowRun.value = refreshQueue.value.shift();
+
+    // Stop if there's no workflow run to refresh
+    if (!refreshingWorkflowRun.value) return;
+
+    // Clear duplicates from the queue
+    refreshQueue.value = refreshQueue.value.filter(wr => wr.id === refreshingWorkflowRun.value.id);
+
+    await dxWorkflowRun.routes.details(refreshingWorkflowRun.value, { taskRuns: { taskDefinition: true } });
+
+    // Keep running the queue until it's empty
+    refreshingWorkflowRun.value = null;
+    await refreshWorkflowRun();
 }
 
 /**
@@ -67,56 +91,57 @@ async function refreshWorkflowRun(workflowRun: WorkflowRun) {
  */
 const pusher = usePusher();
 if (pusher) {
-	pusher.onEvent("TaskRun", "created", async (taskRun: TaskRun) => {
-		if (taskRun.workflow_run_id === activeWorkflowRun.value?.id) {
-			await refreshWorkflowRun(activeWorkflowRun.value);
-		}
-	});
+    pusher.onEvent("TaskRun", "created", async (taskRun: TaskRun) => {
+        if (taskRun.workflow_run_id === activeWorkflowRun.value?.id) {
+            await refreshWorkflowRun(activeWorkflowRun.value);
+        }
+    });
 }
 
 const addNodeAction = dxWorkflowDefinition.getAction("add-node", {
-	optimistic: (action, target: WorkflowDefinition, data: WorkflowNode) => target.nodes.push({ ...data }),
-	onFinish: async () => await refreshWorkflowRun(activeWorkflowRun.value)
+    optimistic: (action, target: WorkflowDefinition, data: WorkflowNode) => target.nodes.push({ ...data }),
+    onFinish: async () => await refreshWorkflowRun(activeWorkflowRun.value)
 });
 
 async function addWorkflowNode(newNode: TaskDefinition | TaskRunnerClass, input: Partial<WorkflowNode> = {}) {
-	return await addNodeAction.trigger(activeWorkflowDefinition.value, {
-		id: "td-" + newNode.name,
-		name: newNode.name,
-		task_definition_id: newNode.id || null,
-		task_runner_name: newNode.id ? null : newNode.name,
-		...input
-	});
+    return await addNodeAction.trigger(activeWorkflowDefinition.value, {
+        id: "td-" + newNode.name,
+        name: newNode.name,
+        task_definition_id: newNode.id || null,
+        task_runner_name: newNode.id ? null : newNode.name,
+        ...input
+    });
 }
 
 const createWorkflowRunAction = dxWorkflowRun.getAction("quick-create", { onFinish: loadWorkflowRuns });
 const isCreatingWorkflowRun = ref(false);
+
 async function createWorkflowRun(workflowInput?: WorkflowInput) {
-	if (!activeWorkflowDefinition.value) return;
-	activeWorkflowRun.value = null;
+    if (!activeWorkflowDefinition.value) return;
+    activeWorkflowRun.value = null;
 
-	isCreatingWorkflowRun.value = true;
-	const result = await createWorkflowRunAction.trigger(null, {
-		workflow_definition_id: activeWorkflowDefinition.value.id,
-		workflow_input_id: workflowInput?.id
-	});
-	isCreatingWorkflowRun.value = false;
+    isCreatingWorkflowRun.value = true;
+    const result = await createWorkflowRunAction.trigger(null, {
+        workflow_definition_id: activeWorkflowDefinition.value.id,
+        workflow_input_id: workflowInput?.id
+    });
+    isCreatingWorkflowRun.value = false;
 
-	activeWorkflowRun.value = result.item;
+    activeWorkflowRun.value = result.item;
 }
 
 export {
-	isLoadingWorkflowDefinitions,
-	isCreatingWorkflowRun,
-	activeWorkflowDefinition,
-	activeWorkflowRun,
-	workflowDefinitions,
-	initWorkflowState,
-	refreshActiveWorkflowDefinition,
-	refreshWorkflowRun,
-	createWorkflowRun,
-	loadWorkflowDefinitions,
-	loadWorkflowRuns,
-	setActiveWorkflowDefinition,
-	addWorkflowNode
+    isLoadingWorkflowDefinitions,
+    isCreatingWorkflowRun,
+    activeWorkflowDefinition,
+    activeWorkflowRun,
+    workflowDefinitions,
+    initWorkflowState,
+    refreshActiveWorkflowDefinition,
+    refreshWorkflowRun,
+    createWorkflowRun,
+    loadWorkflowDefinitions,
+    loadWorkflowRuns,
+    setActiveWorkflowDefinition,
+    addWorkflowNode
 };
