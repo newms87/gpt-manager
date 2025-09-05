@@ -3,6 +3,7 @@
 namespace App\Models\Demand;
 
 use App\Events\UiDemandUpdatedEvent;
+use App\Models\Task\Artifact;
 use App\Models\Team\Team;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Traits\HasUsageTracking;
@@ -33,7 +34,8 @@ class UiDemand extends Model implements Auditable
     // Workflow type constants
     const string
         WORKFLOW_TYPE_EXTRACT_DATA = 'extract_data',
-        WORKFLOW_TYPE_WRITE_DEMAND = 'write_demand';
+        WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY = 'write_medical_summary',
+        WORKFLOW_TYPE_WRITE_DEMAND_LETTER = 'write_demand_letter';
 
     protected $fillable = [
         'team_id',
@@ -100,6 +102,20 @@ class UiDemand extends Model implements Auditable
             ->withTimestamps();
     }
 
+    public function artifacts(): MorphToMany
+    {
+        return $this->morphToMany(Artifact::class, 'artifactable')
+            ->withPivot('category')
+            ->withTimestamps()
+            ->orderBy('position');
+    }
+
+    public function medicalSummaries(): MorphToMany
+    {
+        return $this->artifacts()
+            ->wherePivot('category', 'medical_summary');
+    }
+
     public function teamObject(): BelongsTo
     {
         return $this->belongsTo(TeamObject::class);
@@ -126,6 +142,15 @@ class UiDemand extends Model implements Auditable
         return $query->where('team_id', $teamId);
     }
 
+    public function scopeWithCounts($query)
+    {
+        return $query->withCount([
+            'inputFiles as input_files_count',
+            'outputFiles as output_files_count', 
+            'medicalSummaries as medical_summaries_count'
+        ]);
+    }
+
     public function workflowRuns(): BelongsToMany
     {
         return $this->belongsToMany(WorkflowRun::class, 'ui_demand_workflow_runs')
@@ -141,14 +166,24 @@ class UiDemand extends Model implements Auditable
             !$this->isExtractDataRunning();
     }
 
-    public function canWriteDemand(): bool
+    public function canWriteMedicalSummary(): bool
     {
-        // Must have team_object_id and no write demand workflow running
-        if (!$this->team_object_id || $this->isWriteDemandRunning()) {
+        // Must have team_object_id and no write medical summary workflow running
+        if (!$this->team_object_id || $this->isWriteMedicalSummaryRunning()) {
             return false;
         }
 
         return $this->getLatestExtractDataWorkflowRun()?->isCompleted() ?? false;
+    }
+
+    public function canWriteDemandLetter(): bool
+    {
+        // Must have team_object_id and no write demand letter workflow running
+        if (!$this->team_object_id || $this->isWriteDemandLetterRunning()) {
+            return false;
+        }
+
+        return $this->getLatestWriteMedicalSummaryWorkflowRun()?->isCompleted() ?? false;
     }
 
     public function isExtractDataRunning(): bool
@@ -158,9 +193,16 @@ class UiDemand extends Model implements Auditable
             ->exists();
     }
 
-    public function isWriteDemandRunning(): bool
+    public function isWriteMedicalSummaryRunning(): bool
     {
-        return $this->writeDemandWorkflowRuns()
+        return $this->writeMedicalSummaryWorkflowRuns()
+            ->whereIn('workflow_runs.status', ['Pending', 'Running'])
+            ->exists();
+    }
+
+    public function isWriteDemandLetterRunning(): bool
+    {
+        return $this->writeDemandLetterWorkflowRuns()
             ->whereIn('workflow_runs.status', ['Pending', 'Running'])
             ->exists();
     }
@@ -172,10 +214,16 @@ class UiDemand extends Model implements Auditable
             ->wherePivot('workflow_type', self::WORKFLOW_TYPE_EXTRACT_DATA);
     }
 
-    public function writeDemandWorkflowRuns(): BelongsToMany
+    public function writeMedicalSummaryWorkflowRuns(): BelongsToMany
     {
         return $this->workflowRuns()
-            ->wherePivot('workflow_type', self::WORKFLOW_TYPE_WRITE_DEMAND);
+            ->wherePivot('workflow_type', self::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY);
+    }
+
+    public function writeDemandLetterWorkflowRuns(): BelongsToMany
+    {
+        return $this->workflowRuns()
+            ->wherePivot('workflow_type', self::WORKFLOW_TYPE_WRITE_DEMAND_LETTER);
     }
 
     public function getLatestExtractDataWorkflowRun(): ?WorkflowRun
@@ -193,17 +241,32 @@ class UiDemand extends Model implements Auditable
             ->first();
     }
 
-    public function getLatestWriteDemandWorkflowRun(): ?WorkflowRun
+    public function getLatestWriteMedicalSummaryWorkflowRun(): ?WorkflowRun
     {
         // Use preloaded relationships when available for better performance
         if ($this->relationLoaded('workflowRuns')) {
             return $this->workflowRuns
-                ->where('pivot.workflow_type', self::WORKFLOW_TYPE_WRITE_DEMAND)
+                ->where('pivot.workflow_type', self::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY)
                 ->sortByDesc('created_at')
                 ->first();
         }
 
-        return $this->writeDemandWorkflowRuns()
+        return $this->writeMedicalSummaryWorkflowRuns()
+            ->orderByDesc('created_at')
+            ->first();
+    }
+
+    public function getLatestWriteDemandLetterWorkflowRun(): ?WorkflowRun
+    {
+        // Use preloaded relationships when available for better performance
+        if ($this->relationLoaded('workflowRuns')) {
+            return $this->workflowRuns
+                ->where('pivot.workflow_type', self::WORKFLOW_TYPE_WRITE_DEMAND_LETTER)
+                ->sortByDesc('created_at')
+                ->first();
+        }
+
+        return $this->writeDemandLetterWorkflowRuns()
             ->orderByDesc('created_at')
             ->first();
     }
@@ -219,9 +282,20 @@ class UiDemand extends Model implements Auditable
         return $latestWorkflow->calculateProgress();
     }
 
-    public function getWriteDemandProgress(): float
+    public function getWriteMedicalSummaryProgress(): float
     {
-        $latestWorkflow = $this->getLatestWriteDemandWorkflowRun();
+        $latestWorkflow = $this->getLatestWriteMedicalSummaryWorkflowRun();
+
+        if (!$latestWorkflow) {
+            return 0.0;
+        }
+
+        return $latestWorkflow->calculateProgress();
+    }
+
+    public function getWriteDemandLetterProgress(): float
+    {
+        $latestWorkflow = $this->getLatestWriteDemandLetterWorkflowRun();
 
         if (!$latestWorkflow) {
             return 0.0;

@@ -13,48 +13,53 @@ class UiDemandsController extends ActionController
     public static ?string $repo     = UiDemandRepository::class;
     public static ?string $resource = UiDemandResource::class;
 
+    /**
+     * Handle workflow errors consistently
+     */
+    private function handleWorkflowError(string $action, \Exception $e)
+    {
+        return response()->json([
+            'message' => "Failed to start {$action} workflow.",
+            'error'   => $e->getMessage(),
+        ], 400);
+    }
 
     public function extractData(UiDemand $uiDemand)
     {
         try {
             app(UiDemandWorkflowService::class)->extractData($uiDemand);
 
-            return UiDemandResource::make($uiDemand, [
-                'team_object'               => true,
-                'input_files'               => true,
-                'output_files'              => true,
-                'extract_data_workflow_run' => true,
-                'write_demand_workflow_run' => true,
-            ]);
+            return UiDemandResource::details($uiDemand);
         } catch(\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to start extract data workflow.',
-                'error'   => $e->getMessage(),
-            ], 400);
+            return $this->handleWorkflowError('extract data', $e);
         }
     }
 
-    public function writeDemand(UiDemand $uiDemand)
+    public function writeMedicalSummary(UiDemand $uiDemand)
+    {
+        try {
+            $instructionTemplateId  = request()->input('instruction_template_id');
+            $additionalInstructions = request()->input('additional_instructions');
+
+            app(UiDemandWorkflowService::class)->writeMedicalSummary($uiDemand, $instructionTemplateId, $additionalInstructions);
+
+            return UiDemandResource::details($uiDemand);
+        } catch(\Exception $e) {
+            return $this->handleWorkflowError('write medical summary', $e);
+        }
+    }
+
+    public function writeDemandLetter(UiDemand $uiDemand)
     {
         try {
             $templateId             = request()->input('template_id');
             $additionalInstructions = request()->input('additional_instructions');
-            $instructionTemplateId  = request()->input('instruction_template_id');
 
-            app(UiDemandWorkflowService::class)->writeDemand($uiDemand, $templateId, $additionalInstructions, $instructionTemplateId);
+            app(UiDemandWorkflowService::class)->writeDemandLetter($uiDemand, $templateId, $additionalInstructions);
 
-            return UiDemandResource::make($uiDemand, [
-                'team_object'               => true,
-                'input_files'               => true,
-                'output_files'              => true,
-                'extract_data_workflow_run' => true,
-                'write_demand_workflow_run' => true,
-            ]);
+            return UiDemandResource::details($uiDemand);
         } catch(\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to start write demand workflow.',
-                'error'   => $e->getMessage(),
-            ], 400);
+            return $this->handleWorkflowError('write demand letter', $e);
         }
     }
 

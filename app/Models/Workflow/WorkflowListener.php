@@ -27,7 +27,8 @@ class WorkflowListener extends Model implements AuditableContract
     // Workflow type constants for UI demands
     const string
         WORKFLOW_TYPE_EXTRACT_DATA = 'extract_data',
-        WORKFLOW_TYPE_WRITE_DEMAND = 'write_demand';
+        WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY = 'write_medical_summary',
+        WORKFLOW_TYPE_WRITE_DEMAND_LETTER = 'write_demand_letter';
 
     protected $fillable = [
         'team_id',

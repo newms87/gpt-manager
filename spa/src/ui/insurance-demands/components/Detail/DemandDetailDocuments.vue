@@ -39,6 +39,9 @@
       </div>
     </UiCard>
 
+    <!-- Medical Summaries Section -->
+    <DemandMedicalSummaries :demand="demand" />
+
     <!-- Output Documents Section -->
     <UiCard class="border-green-200 bg-green-50">
       <template #header>
@@ -177,6 +180,7 @@ import { computed, ref } from "vue";
 import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
 import { DEMAND_STATUS } from "../../config";
+import DemandMedicalSummaries from "./DemandMedicalSummaries.vue";
 
 const props = defineProps<{
   demand: UiDemand | null;

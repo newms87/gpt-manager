@@ -160,10 +160,12 @@ const hasActiveWorkflows = computed(() => {
 
     const extractDataActive = props.demand.extract_data_workflow_run?.status &&
         ["Pending", "Running", "Incomplete"].includes(props.demand.extract_data_workflow_run.status);
-    const writeDemandActive = props.demand.write_demand_workflow_run?.status &&
-        ["Pending", "Running", "Incomplete"].includes(props.demand.write_demand_workflow_run.status);
+    const writeMedicalSummaryActive = props.demand.write_medical_summary_workflow_run?.status &&
+        ["Pending", "Running", "Incomplete"].includes(props.demand.write_medical_summary_workflow_run.status);
+    const writeDemandLetterActive = props.demand.write_demand_letter_workflow_run?.status &&
+        ["Pending", "Running", "Incomplete"].includes(props.demand.write_demand_letter_workflow_run.status);
 
-    return extractDataActive || writeDemandActive;
+    return extractDataActive || writeMedicalSummaryActive || writeDemandLetterActive;
 });
 
 // Setup timer for live updates only when needed
@@ -216,15 +218,17 @@ const statusTimeline = computed(() => {
 
     // Get workflow states
     const extractDataState = getWorkflowState(props.demand.extract_data_workflow_run?.status);
-    const writeDemandState = getWorkflowState(props.demand.write_demand_workflow_run?.status);
+    const writeMedicalSummaryState = getWorkflowState(props.demand.write_medical_summary_workflow_run?.status);
+    const writeDemandLetterState = getWorkflowState(props.demand.write_demand_letter_workflow_run?.status);
     const hasFiles = props.demand.files && props.demand.files.length > 0;
 
     // Determine if steps should be grayed out
     const extractDataGrayed = !hasFiles && !props.demand.extract_data_workflow_run;
-    const writeDemandGrayed = !extractDataState.completed;
-    const completeGrayed = !writeDemandState.completed;
+    const writeMedicalSummaryGrayed = !extractDataState.completed;
+    const writeDemandLetterGrayed = !writeMedicalSummaryState.completed;
+    const completeGrayed = !writeDemandLetterState.completed;
 
-    // Always show all 4 steps
+    // Always show all 5 steps
     return [
         {
             name: "draft",
@@ -257,20 +261,36 @@ const statusTimeline = computed(() => {
             workflowRun: props.demand.extract_data_workflow_run
         },
         {
-            name: "write-demand",
-            label: writeDemandState.failed ? "Write Demand (Failed)" : "Write Demand",
-            icon: writeDemandState.completed ? FaSolidCheck : writeDemandState.failed ? FaSolidTriangleExclamation : FaSolidClock,
-            bgColor: writeDemandState.failed ? "bg-red-500" : writeDemandState.completed ? "bg-green-500" : writeDemandState.active ? "bg-slate-200" : "bg-gray-400",
-            textColor: writeDemandState.failed ? "text-red-200" : writeDemandState.completed ? "text-green-200" : "text-gray-200",
-            completed: writeDemandState.completed,
-            failed: writeDemandState.failed,
-            isActive: writeDemandState.active,
-            isStopped: writeDemandState.stopped,
-            progress: writeDemandState.active ? props.demand.write_demand_workflow_run?.progress_percent : null,
-            date: writeDemandState.completed ? props.demand.write_demand_workflow_run?.completed_at : writeDemandState.failed ? props.demand.write_demand_workflow_run?.failed_at : null,
-            runtime: calculateRuntime(props.demand.write_demand_workflow_run, writeDemandState.active),
-            grayed: writeDemandGrayed,
-            workflowRun: props.demand.write_demand_workflow_run
+            name: "write-medical-summary",
+            label: writeMedicalSummaryState.failed ? "Write Medical Summary (Failed)" : "Write Medical Summary",
+            icon: writeMedicalSummaryState.completed ? FaSolidCheck : writeMedicalSummaryState.failed ? FaSolidTriangleExclamation : FaSolidClock,
+            bgColor: writeMedicalSummaryState.failed ? "bg-red-500" : writeMedicalSummaryState.completed ? "bg-teal-500" : writeMedicalSummaryState.active ? "bg-slate-200" : "bg-gray-400",
+            textColor: writeMedicalSummaryState.failed ? "text-red-200" : writeMedicalSummaryState.completed ? "text-teal-200" : "text-gray-200",
+            completed: writeMedicalSummaryState.completed,
+            failed: writeMedicalSummaryState.failed,
+            isActive: writeMedicalSummaryState.active,
+            isStopped: writeMedicalSummaryState.stopped,
+            progress: writeMedicalSummaryState.active ? props.demand.write_medical_summary_workflow_run?.progress_percent : null,
+            date: writeMedicalSummaryState.completed ? props.demand.write_medical_summary_workflow_run?.completed_at : writeMedicalSummaryState.failed ? props.demand.write_medical_summary_workflow_run?.failed_at : null,
+            runtime: calculateRuntime(props.demand.write_medical_summary_workflow_run, writeMedicalSummaryState.active),
+            grayed: writeMedicalSummaryGrayed,
+            workflowRun: props.demand.write_medical_summary_workflow_run
+        },
+        {
+            name: "write-demand-letter",
+            label: writeDemandLetterState.failed ? "Write Demand Letter (Failed)" : "Write Demand Letter",
+            icon: writeDemandLetterState.completed ? FaSolidCheck : writeDemandLetterState.failed ? FaSolidTriangleExclamation : FaSolidClock,
+            bgColor: writeDemandLetterState.failed ? "bg-red-500" : writeDemandLetterState.completed ? "bg-green-500" : writeDemandLetterState.active ? "bg-slate-200" : "bg-gray-400",
+            textColor: writeDemandLetterState.failed ? "text-red-200" : writeDemandLetterState.completed ? "text-green-200" : "text-gray-200",
+            completed: writeDemandLetterState.completed,
+            failed: writeDemandLetterState.failed,
+            isActive: writeDemandLetterState.active,
+            isStopped: writeDemandLetterState.stopped,
+            progress: writeDemandLetterState.active ? props.demand.write_demand_letter_workflow_run?.progress_percent : null,
+            date: writeDemandLetterState.completed ? props.demand.write_demand_letter_workflow_run?.completed_at : writeDemandLetterState.failed ? props.demand.write_demand_letter_workflow_run?.failed_at : null,
+            runtime: calculateRuntime(props.demand.write_demand_letter_workflow_run, writeDemandLetterState.active),
+            grayed: writeDemandLetterGrayed,
+            workflowRun: props.demand.write_demand_letter_workflow_run
         },
         {
             name: "completed",

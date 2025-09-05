@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Factories;
+namespace Database\Factories\Demand;
 
 use App\Models\Demand\DemandTemplate;
 use App\Models\Team\Team;

@@ -7,12 +7,6 @@
         </template>
 
         <div class="flex flex-col space-y-2">
-            <ActionButton
-                type="edit"
-                label="Edit Details"
-                @click="$emit('edit')"
-            />
-
             <DemandActionButtons
                 :demand="demand"
                 size="md"

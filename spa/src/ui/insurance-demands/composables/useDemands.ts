@@ -114,7 +114,37 @@ export function useDemands() {
         }
     }
 
-    async function writeDemand(demand: UiDemand, templateId?: string, additionalInstructions?: string, instructionTemplateId?: string, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
+    async function writeMedicalSummary(demand: UiDemand, instructionTemplateId?: string, additionalInstructions?: string, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
+        try {
+            const data: any = {};
+            if (instructionTemplateId) {
+                data.instruction_template_id = instructionTemplateId;
+            }
+            if (additionalInstructions) {
+                data.additional_instructions = additionalInstructions;
+            }
+
+            const response = await demandRoutes.writeMedicalSummary(demand, data);
+
+            // Check if response is an error (has error or message fields indicating failure)
+            if (response?.error) {
+                throw new Error(response.error);
+            } else {
+                storeObject(response);
+                // Subscribe to workflow run updates after starting write medical summary
+                subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
+            }
+        } catch (err: any) {
+            const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to write medical summary";
+            error.value = errorMessage;
+            FlashMessages.error(errorMessage);
+
+            // Don't update the demand object with error response - just throw the error
+            throw err;
+        }
+    }
+
+    async function writeDemandLetter(demand: UiDemand, templateId?: string, additionalInstructions?: string, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
         try {
             const data: any = {};
             if (templateId) {
@@ -123,22 +153,19 @@ export function useDemands() {
             if (additionalInstructions) {
                 data.additional_instructions = additionalInstructions;
             }
-            if (instructionTemplateId) {
-                data.instruction_template_id = instructionTemplateId;
-            }
 
-            const response = await demandRoutes.writeDemand(demand, data);
+            const response = await demandRoutes.writeDemandLetter(demand, data);
 
             // Check if response is an error (has error or message fields indicating failure)
             if (response?.error) {
                 throw new Error(response.error);
             } else {
                 storeObject(response);
-                // Subscribe to workflow run updates after starting write demand
+                // Subscribe to workflow run updates after starting write demand letter
                 subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
             }
         } catch (err: any) {
-            const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to write demand";
+            const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to write demand letter";
             error.value = errorMessage;
             FlashMessages.error(errorMessage);
 
@@ -154,9 +181,11 @@ export function useDemands() {
                 user: true,
                 input_files: { thumb: true },
                 output_files: { thumb: true },
+                medical_summaries: { text_content: true },
                 team_object: true,
                 extract_data_workflow_run: true,
-                write_demand_workflow_run: true
+                write_medical_summary_workflow_run: true,
+                write_demand_letter_workflow_run: true
             });
         } catch (err: any) {
             const errorMessage = err.message || "Failed to load demand";
@@ -170,7 +199,7 @@ export function useDemands() {
         return new Promise((resolve, reject) => {
             const now = Date.now();
             const DEBOUNCE_MS = 500;
-            
+
             // Get or create debounce state for this demand ID
             if (!loadDemandDebounceMap.value.has(demandId)) {
                 loadDemandDebounceMap.value.set(demandId, {
@@ -180,15 +209,15 @@ export function useDemands() {
                     timeoutId: null
                 });
             }
-            
+
             const debounceState = loadDemandDebounceMap.value.get(demandId)!;
-            
+
             // If already loading, queue this request
             if (debounceState.isLoading) {
                 debounceState.queuedResolvers.push({ resolve, reject });
                 return;
             }
-            
+
             // If this is the first call or enough time has passed, execute immediately
             const timeSinceLastCall = now - debounceState.lastCallTime;
             if (debounceState.lastCallTime === 0 || timeSinceLastCall >= DEBOUNCE_MS) {
@@ -196,11 +225,11 @@ export function useDemands() {
             } else {
                 // Queue this request and set a timeout for the remaining debounce time
                 debounceState.queuedResolvers.push({ resolve, reject });
-                
+
                 if (debounceState.timeoutId) {
                     clearTimeout(debounceState.timeoutId);
                 }
-                
+
                 const remainingTime = DEBOUNCE_MS - timeSinceLastCall;
                 debounceState.timeoutId = setTimeout(() => {
                     if (debounceState.queuedResolvers.length > 0) {
@@ -214,39 +243,39 @@ export function useDemands() {
 
     // Execute the actual load and process queued requests
     const executeLoadDemand = async (
-        demandId: number, 
-        resolve: (value: any) => void, 
+        demandId: number,
+        resolve: (value: any) => void,
         reject: (error: any) => void
     ) => {
         const debounceState = loadDemandDebounceMap.value.get(demandId)!;
-        
+
         // Mark as loading and update last call time
         debounceState.isLoading = true;
         debounceState.lastCallTime = Date.now();
-        
+
         // Clear any pending timeout
         if (debounceState.timeoutId) {
             clearTimeout(debounceState.timeoutId);
             debounceState.timeoutId = null;
         }
-        
+
         try {
             const result = await _loadDemandInternal(demandId);
-            
+
             // Resolve the current request
             resolve(result);
-            
+
             // Resolve all queued requests with the same result
             const queuedResolvers = [...debounceState.queuedResolvers];
             debounceState.queuedResolvers = [];
             queuedResolvers.forEach(({ resolve: queuedResolve }) => {
                 queuedResolve(result);
             });
-            
+
         } catch (error) {
             // Reject the current request
             reject(error);
-            
+
             // Reject all queued requests with the same error
             const queuedResolvers = [...debounceState.queuedResolvers];
             debounceState.queuedResolvers = [];
@@ -256,7 +285,7 @@ export function useDemands() {
         } finally {
             // Mark as not loading
             debounceState.isLoading = false;
-            
+
             // If there are still queued requests, process the next one after debounce
             if (debounceState.queuedResolvers.length > 0) {
                 debounceState.timeoutId = setTimeout(() => {
@@ -302,9 +331,14 @@ export function useDemands() {
             subscribeToWorkflowRun(demand.extract_data_workflow_run, demand.id, onDemandUpdate);
         }
 
-        // Subscribe to write demand workflow run
-        if (demand.write_demand_workflow_run) {
-            subscribeToWorkflowRun(demand.write_demand_workflow_run, demand.id, onDemandUpdate);
+        // Subscribe to write medical summary workflow run
+        if (demand.write_medical_summary_workflow_run) {
+            subscribeToWorkflowRun(demand.write_medical_summary_workflow_run, demand.id, onDemandUpdate);
+        }
+
+        // Subscribe to write demand letter workflow run
+        if (demand.write_demand_letter_workflow_run) {
+            subscribeToWorkflowRun(demand.write_demand_letter_workflow_run, demand.id, onDemandUpdate);
         }
     };
 
@@ -325,7 +359,8 @@ export function useDemands() {
         updateDemand,
         deleteDemand,
         extractData,
-        writeDemand,
+        writeMedicalSummary,
+        writeDemandLetter,
         subscribeToWorkflowRunUpdates,
         clearWorkflowSubscriptions
     };

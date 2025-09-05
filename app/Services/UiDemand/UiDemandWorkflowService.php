@@ -42,14 +42,14 @@ class UiDemandWorkflowService
         return $workflowRun;
     }
 
-    public function writeDemand(UiDemand $uiDemand, ?int $templateId = null, ?string $additionalInstructions = null, ?string $instructionTemplateId = null): WorkflowRun
+    public function writeMedicalSummary(UiDemand $uiDemand, ?string $instructionTemplateId = null, ?string $additionalInstructions = null): WorkflowRun
     {
-        if (!$uiDemand->canWriteDemand()) {
-            throw new ValidationError('Cannot write demand. Check if extract data is completed and team object exists.');
+        if (!$uiDemand->canWriteMedicalSummary()) {
+            throw new ValidationError('Cannot write medical summary. Check if extract data is completed and team object exists.');
         }
 
-        $workflowDefinition = $this->getWorkflowDefinition('write_demand');
-        $workflowInput      = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand', $templateId, $additionalInstructions);
+        $workflowDefinition = $this->getWorkflowDefinition('write_medical_summary');
+        $workflowInput      = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Medical Summary', null, $additionalInstructions);
 
         // Append instruction template content if provided
         if ($instructionTemplateId) {
@@ -60,7 +60,7 @@ class UiDemandWorkflowService
 
 
 === CRITICAL WRITING INSTRUCTIONS ===
-The following instructions are EXTREMELY IMPORTANT and must be followed carefully when writing the demand summary for the medical provider. These instructions define the required style, tone, structure, and format. Following these instructions precisely is a CRITICAL part of this task and directly impacts the quality and effectiveness of the final demand summary.
+The following instructions are EXTREMELY IMPORTANT and must be followed carefully when writing the medical summary. These instructions define the required style, tone, structure, and format. Following these instructions precisely is a CRITICAL part of this task and directly impacts the quality and effectiveness of the final medical summary.
 
 {$instructionTemplate->content}
 
@@ -76,13 +76,51 @@ TEXT;
         WorkflowListener::createForListener(
             $uiDemand,
             $workflowRun,
-            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
+            WorkflowListener::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY
         );
 
         // Subscribe UiDemand to the workflow's usage event
         $this->subscribeToWorkflowUsageEvent($uiDemand, $workflowRun);
 
-        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND]);
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY]);
+
+        return $workflowRun;
+    }
+
+    public function writeDemandLetter(UiDemand $uiDemand, ?int $templateId = null, ?string $additionalInstructions = null): WorkflowRun
+    {
+        if (!$uiDemand->canWriteDemandLetter()) {
+            throw new ValidationError('Cannot write demand letter. Check if write medical summary is completed and team object exists.');
+        }
+
+        $workflowDefinition = $this->getWorkflowDefinition('write_demand_letter');
+        $workflowInput      = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand Letter', $templateId, $additionalInstructions);
+
+        // Collect all input artifacts for the workflow:
+        // 1. The workflow input (converted to artifact)
+        // 2. Medical summary artifacts from previous workflow step
+        $inputArtifacts = [$workflowInput->toArtifact()];
+        
+        // Add medical summary artifacts as additional input artifacts
+        // These contain the generated medical summaries from the previous workflow step
+        $medicalSummaryArtifacts = $uiDemand->medicalSummaries()->get();
+        foreach ($medicalSummaryArtifacts as $artifact) {
+            $inputArtifacts[] = $artifact;
+        }
+
+        $workflowRun = WorkflowRunnerService::start($workflowDefinition, $inputArtifacts);
+
+        // Create WorkflowListener for callbacks
+        WorkflowListener::createForListener(
+            $uiDemand,
+            $workflowRun,
+            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER
+        );
+
+        // Subscribe UiDemand to the workflow's usage event
+        $this->subscribeToWorkflowUsageEvent($uiDemand, $workflowRun);
+
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER]);
 
         return $workflowRun;
     }
@@ -120,10 +158,24 @@ TEXT;
                 'metadata' => array_merge($uiDemand->metadata ?? [], $metadata),
             ]);
 
-        } elseif ($workflowName === config('ui-demands.workflows.write_demand')) {
+        } elseif ($workflowName === config('ui-demands.workflows.write_medical_summary')) {
             $metadata = [
-                'write_demand_completed_at' => now()->toIso8601String(),
-                'workflow_run_id'           => $workflowRun->id,
+                'write_medical_summary_completed_at' => now()->toIso8601String(),
+                'workflow_run_id'                    => $workflowRun->id,
+            ];
+
+            // Attach medical summary artifacts to UiDemand with medical_summary category
+            $this->attachArtifactsToUiDemand($uiDemand, $outputArtifacts, 'medical_summary');
+
+            $uiDemand->update([
+                'status'   => UiDemand::STATUS_DRAFT, // Stay as Draft until manually published
+                'metadata' => array_merge($uiDemand->metadata ?? [], $metadata),
+            ]);
+
+        } elseif ($workflowName === config('ui-demands.workflows.write_demand_letter')) {
+            $metadata = [
+                'write_demand_letter_completed_at' => now()->toIso8601String(),
+                'workflow_run_id'                  => $workflowRun->id,
             ];
 
             // Attach output files from workflow artifacts
@@ -252,6 +304,17 @@ TEXT;
                 // Reuse the StoredFile from artifact and attach to UiDemand as output
                 $uiDemand->outputFiles()->syncWithoutDetaching([$storedFile->id => ['category' => 'output']]);
             }
+        }
+    }
+
+    /**
+     * Attach artifacts to UiDemand with specified category
+     */
+    protected function attachArtifactsToUiDemand(UiDemand $uiDemand, $artifacts, string $category): void
+    {
+        foreach($artifacts as $artifact) {
+            // Attach artifact to UiDemand with specified category
+            $uiDemand->artifacts()->syncWithoutDetaching([$artifact->id => ['category' => $category]]);
         }
     }
 

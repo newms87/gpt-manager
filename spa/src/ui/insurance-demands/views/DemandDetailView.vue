@@ -48,10 +48,7 @@
                 />
 
                 <!-- Quick Actions -->
-                <DemandQuickActions
-                    :demand="demand"
-                    @edit="editMode = true"
-                />
+                <DemandQuickActions :demand="demand" />
 
                 <!-- Usage Display -->
                 <UsageDisplayContainer
@@ -92,8 +89,8 @@ import {
     DemandDetailInfo,
     DemandQuickActions,
     DemandStatusTimeline,
-    ViewWorkflowDialog,
-    TeamObjectDataDialog
+    TeamObjectDataDialog,
+    ViewWorkflowDialog
 } from "../components/Detail";
 import { UsageDisplayContainer } from "../components/Usage";
 import { useDemands } from "../composables";
