@@ -33,8 +33,9 @@
 
 			<!-- Templates Grid -->
 			<div v-else class="space-y-6">
-				<!-- Templates Section -->
+				<!-- Document Templates Section -->
 				<div>
+					<h3 class="text-lg font-semibold text-gray-900 mb-4">Document Templates</h3>
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div
 							v-for="(template, index) in activeTemplates"
@@ -78,6 +79,67 @@
 					</div>
 				</div>
 
+				<!-- Instruction Templates Section -->
+				<div>
+					<div class="flex items-center justify-between mb-4">
+						<h3 class="text-lg font-semibold text-gray-900">Instruction Templates</h3>
+						<ActionButton
+							type="create"
+							label="Manage Templates"
+							size="sm"
+							color="blue"
+							@click="goToInstructionTemplates"
+						/>
+					</div>
+					
+					<div v-if="isLoadingInstructionTemplates" class="flex justify-center py-8">
+						<QSpinner size="md" color="blue" />
+					</div>
+
+					<div v-else-if="instructionTemplates.length === 0" class="bg-slate-50 border border-slate-200 rounded-lg p-6 text-center">
+						<FaSolidFile class="w-8 h-8 text-slate-400 mx-auto mb-2" />
+						<p class="text-slate-600 text-sm mb-3">No global instruction templates available</p>
+						<ActionButton
+							type="create"
+							label="Create First Template"
+							size="sm"
+							color="sky"
+							@click="goToInstructionTemplates"
+						/>
+					</div>
+
+					<div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div
+							v-for="instructionTemplate in instructionTemplates"
+							:key="instructionTemplate.id"
+							:class="[
+								'bg-slate-50 border border-slate-200 rounded-lg p-4 cursor-pointer transition-all duration-200',
+								'hover:border-slate-300 hover:shadow-md',
+								selectedInstructionTemplate?.id === instructionTemplate.id
+									? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+									: ''
+							]"
+							@click="selectedInstructionTemplate = selectedInstructionTemplate?.id === instructionTemplate.id ? null : instructionTemplate"
+						>
+							<div class="flex items-start justify-between">
+								<div class="flex-1">
+									<h4 class="font-medium text-slate-900 text-sm mb-1">{{ instructionTemplate.name }}</h4>
+									<p v-if="instructionTemplate.description" class="text-slate-600 text-xs line-clamp-2">
+										{{ instructionTemplate.description }}
+									</p>
+								</div>
+								<div v-if="selectedInstructionTemplate?.id === instructionTemplate.id" class="flex-shrink-0 ml-2">
+									<FaSolidCheck class="w-4 h-4 text-blue-600" />
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div v-if="instructionTemplates.length > 0" class="text-xs text-slate-500 mt-2">
+						Select an instruction template (optional) to provide specific guidance for writing this demand.
+					</div>
+				</div>
+
 				<!-- Additional Instructions Section -->
 				<div class="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
 					<label class="block text-lg font-semibold text-gray-900 mb-4">
@@ -100,13 +162,20 @@
 import { FaSolidCheck, FaSolidFile, FaSolidLink } from "danx-icon";
 import { QSpinner } from "quasar";
 import { ActionButton, ConfirmDialog, TextField } from "quasar-ui-danx";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useDemandTemplates } from "../composables/useDemandTemplates";
 import type { DemandTemplate } from "../types";
+import type { UiDemand } from "../../shared/types";
+import type { WorkflowInput } from "@/types";
+import { dxWorkflowInput } from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/config";
+
+const props = defineProps<{
+	demand?: UiDemand | null;
+}>();
 
 const emit = defineEmits<{
-	"confirm": [template: DemandTemplate, instructions: string];
+	"confirm": [template: DemandTemplate, instructions: string, instructionTemplate?: WorkflowInput];
 	"close": [];
 }>();
 
@@ -114,7 +183,15 @@ const router = useRouter();
 const { activeTemplates, isLoading, loadActiveTemplates } = useDemandTemplates();
 
 const selectedTemplate = ref<DemandTemplate | null>(null);
+const selectedInstructionTemplate = ref<WorkflowInput | null>(null);
 const additionalInstructions = ref("");
+const isLoadingInstructionTemplates = ref(false);
+const loadedInstructionTemplates = ref<WorkflowInput[]>([]);
+
+// Computed properties for instruction templates
+const instructionTemplates = computed(() => {
+	return loadedInstructionTemplates.value;
+});
 
 // Vibrant color schemes for template cards
 const cardColors = [
@@ -147,8 +224,33 @@ const getSelectedCardClasses = (index: number) => {
 	return selectedCardColors[index % selectedCardColors.length];
 };
 
+// Load global instruction templates  
+const loadInstructionTemplates = async () => {
+	try {
+		isLoadingInstructionTemplates.value = true;
+		const result = await dxWorkflowInput.routes.list({
+			filter: {
+				"associations.associable_type": "App\\Models\\Demand\\UiDemand",
+				"associations.category": "write_demand_instructions"
+			}
+		});
+		
+		loadedInstructionTemplates.value = result.data || [];
+	} catch (error) {
+		console.error("Error loading instruction templates:", error);
+		loadedInstructionTemplates.value = [];
+	} finally {
+		isLoadingInstructionTemplates.value = false;
+	}
+};
+
 // Load templates when component mounts
-onMounted(loadActiveTemplates);
+onMounted(async () => {
+	await Promise.all([
+		loadActiveTemplates(),
+		loadInstructionTemplates()
+	]);
+});
 
 const handleConfirm = () => {
 	
@@ -156,7 +258,7 @@ const handleConfirm = () => {
 		return;
 	}
 	
-	emit("confirm", selectedTemplate.value, additionalInstructions.value);
+	emit("confirm", selectedTemplate.value, additionalInstructions.value, selectedInstructionTemplate.value || undefined);
 };
 
 const handleCancel = () => {
@@ -166,5 +268,10 @@ const handleCancel = () => {
 const goToCreateTemplate = () => {
 	emit("close");
 	router.push("/ui/templates");
+};
+
+const goToInstructionTemplates = () => {
+	emit("close");
+	router.push("/workflow-inputs");
 };
 </script>

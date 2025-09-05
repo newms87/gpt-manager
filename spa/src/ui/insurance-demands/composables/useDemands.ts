@@ -114,7 +114,7 @@ export function useDemands() {
         }
     }
 
-    async function writeDemand(demand: UiDemand, templateId?: string, additionalInstructions?: string, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
+    async function writeDemand(demand: UiDemand, templateId?: string, additionalInstructions?: string, instructionTemplateId?: string, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
         try {
             const data: any = {};
             if (templateId) {
@@ -122,6 +122,9 @@ export function useDemands() {
             }
             if (additionalInstructions) {
                 data.additional_instructions = additionalInstructions;
+            }
+            if (instructionTemplateId) {
+                data.instruction_template_id = instructionTemplateId;
             }
 
             const response = await demandRoutes.writeDemand(demand, data);

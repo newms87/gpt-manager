@@ -2,9 +2,9 @@
 
 namespace Tests\Unit\Repositories;
 
+use App\Models\Demand\UiDemand;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\TeamObject\TeamObject;
-use App\Models\UiDemand;
 use App\Repositories\TeamObjectRepository;
 use App\Repositories\UiDemandRepository;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -22,11 +22,11 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
         parent::setUp();
         $this->setUpTeam();
         $this->repository = new UiDemandRepository();
-        
+
         // Create required SchemaDefinition
         SchemaDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Demand Schema',
+            'name'    => 'Demand Schema',
         ]);
     }
 

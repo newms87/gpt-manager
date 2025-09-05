@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Demand\UiDemand;
 use App\Models\TeamObject\TeamObject;
-use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\UiDemand\UiDemandWorkflowService;

@@ -2,7 +2,7 @@
 
 namespace App\Resources;
 
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Resources\Auth\UserResource;
 use App\Resources\TeamObject\TeamObjectResource;
 use App\Resources\Usage\UsageSummaryResource;

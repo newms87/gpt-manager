@@ -3,10 +3,9 @@
 namespace Tests\Unit\Models;
 
 use App\Events\UiDemandUpdatedEvent;
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
-use Illuminate\Support\Facades\Event;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -23,7 +22,7 @@ class UiDemandEventTest extends AuthenticatedTestCase
     public function test_ui_demand_booted_method_exists_and_can_be_called()
     {
         // Given/When - Test that the booted method exists and doesn't throw errors
-        UiDemand::booted();
+        \App\Models\Demand\UiDemand::booted();
 
         // Then - No exception thrown
         $this->assertTrue(true);
@@ -35,11 +34,11 @@ class UiDemandEventTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'status'  => \App\Models\Demand\UiDemand::STATUS_DRAFT,
         ]);
 
         // When
-        $uiDemand->status = UiDemand::STATUS_COMPLETED;
+        $uiDemand->status = \App\Models\Demand\UiDemand::STATUS_COMPLETED;
         $uiDemand->save();
 
         // Then - Model should track that status was changed
@@ -52,14 +51,14 @@ class UiDemandEventTest extends AuthenticatedTestCase
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
-        
+
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
-        
-        $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+
+        $uiDemand = \App\Models\Demand\UiDemand::factory()->create([
+            'team_id'         => $this->user->currentTeam->id,
+            'user_id'         => $this->user->id,
             'workflow_run_id' => $workflowRun->id,
         ]);
 
@@ -68,16 +67,16 @@ class UiDemandEventTest extends AuthenticatedTestCase
 
         // Then
         $this->assertEquals($workflowRun->id, $uiDemand->workflow_run_id);
-        $this->assertEquals(UiDemand::STATUS_COMPLETED, $uiDemand->status);
+        $this->assertEquals(\App\Models\Demand\UiDemand::STATUS_COMPLETED, $uiDemand->status);
     }
 
     public function test_ui_demand_event_contains_correct_data()
     {
         // Given
-        $uiDemand = UiDemand::factory()->create([
+        $uiDemand = \App\Models\Demand\UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'status'  => \App\Models\Demand\UiDemand::STATUS_DRAFT,
         ]);
 
         // When
@@ -86,7 +85,7 @@ class UiDemandEventTest extends AuthenticatedTestCase
         // Then
         $this->assertEquals($uiDemand->id, $event->getUiDemand()->id);
         $this->assertEquals('private-UiDemand.' . $uiDemand->team_id, $event->broadcastOn()->name);
-        
+
         $data = $event->data();
         $this->assertArrayHasKey('id', $data);
         $this->assertArrayHasKey('status', $data);
@@ -96,7 +95,7 @@ class UiDemandEventTest extends AuthenticatedTestCase
     public function test_ui_demand_event_broadcast_channel_is_team_scoped()
     {
         // Given
-        $uiDemand = UiDemand::factory()->create([
+        $uiDemand = \App\Models\Demand\UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
@@ -113,15 +112,15 @@ class UiDemandEventTest extends AuthenticatedTestCase
     public function test_ui_demand_event_data_includes_workflow_state_helpers()
     {
         // Given
-        $uiDemand = UiDemand::factory()->create([
+        $uiDemand = \App\Models\Demand\UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'status' => UiDemand::STATUS_DRAFT,
+            'status'  => \App\Models\Demand\UiDemand::STATUS_DRAFT,
         ]);
 
         // When
         $event = new UiDemandUpdatedEvent($uiDemand, 'updated');
-        $data = $event->data();
+        $data  = $event->data();
 
         // Then
         $this->assertArrayHasKey('can_extract_data', $data);

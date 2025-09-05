@@ -2,10 +2,9 @@
 
 namespace Tests\Unit\Resources;
 
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Models\Usage\UsageEvent;
 use App\Resources\UiDemandResource;
-use App\Services\Usage\UsageTrackingService;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -26,7 +25,7 @@ class UiDemandResourceTest extends AuthenticatedTestCase
 
         $expectedFields = [
             'id',
-            'title', 
+            'title',
             'description',
             'status',
             'metadata',
@@ -37,10 +36,10 @@ class UiDemandResourceTest extends AuthenticatedTestCase
             'can_write_demand',
             'is_extract_data_running',
             'is_write_demand_running',
-            'usage_summary'
+            'usage_summary',
         ];
 
-        foreach ($expectedFields as $field) {
+        foreach($expectedFields as $field) {
             $this->assertArrayHasKey($field, $data, "Field '{$field}' should exist in UiDemandResource");
         }
     }
@@ -59,13 +58,13 @@ class UiDemandResourceTest extends AuthenticatedTestCase
         $expectedRelationshipFields = [
             'user',
             'input_files',
-            'output_files', 
+            'output_files',
             'team_object',
             'extract_data_workflow_run',
             'write_demand_workflow_run',
         ];
 
-        foreach ($expectedRelationshipFields as $field) {
+        foreach($expectedRelationshipFields as $field) {
             $this->assertArrayHasKey($field, $resource, "Relationship field '{$field}' should exist in details response");
         }
     }
@@ -81,7 +80,7 @@ class UiDemandResourceTest extends AuthenticatedTestCase
 
         $resource = UiDemandResource::details($uiDemand);
 
-        $this->assertArrayNotHasKey('usage_events', $resource, 
+        $this->assertArrayNotHasKey('usage_events', $resource,
             'usage_events field should not exist in resource - we now use subscription system');
     }
 
@@ -95,17 +94,17 @@ class UiDemandResourceTest extends AuthenticatedTestCase
         ]);
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => UiDemand::class,
-            'object_id' => (string)$uiDemand->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => UiDemand::class,
+            'object_id'     => (string)$uiDemand->id,
             'object_id_int' => $uiDemand->id,
-            'event_type' => 'test_event',
-            'api_name' => 'test_api',
-            'input_tokens' => 100,
+            'event_type'    => 'test_event',
+            'api_name'      => 'test_api',
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ]);
 
@@ -149,7 +148,7 @@ class UiDemandResourceTest extends AuthenticatedTestCase
         $this->expectExceptionMessage('is not a valid field');
 
         UiDemandResource::make($uiDemand, [
-            'invalid_field' => true
+            'invalid_field' => true,
         ]);
     }
 

@@ -3,7 +3,7 @@
 namespace Tests\Unit\Services\DemandTemplate;
 
 use App\Api\GoogleDocs\GoogleDocsApi;
-use App\Models\DemandTemplate;
+use App\Models\Demand\DemandTemplate;
 use App\Services\DemandTemplate\DemandTemplateService;
 use App\Services\GoogleDocs\GoogleDocsFileService;
 use Newms87\Danx\Exceptions\ValidationError;

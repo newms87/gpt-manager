@@ -20,6 +20,6 @@ return new class extends Migration {
     {
         // Remove the default task queue types
         $defaultNames = ['LLM Tasks', 'Convert API Tasks', 'General Tasks'];
-        \App\Models\TaskQueueType::whereIn('name', $defaultNames)->delete();
+        \App\Models\Task\TaskQueueType::whereIn('name', $defaultNames)->delete();
     }
 };

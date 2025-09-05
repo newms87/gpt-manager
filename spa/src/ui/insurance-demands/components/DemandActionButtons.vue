@@ -27,6 +27,7 @@
         <!-- Template Selector Dialog -->
         <DemandTemplateSelector
             v-if="showTemplateSelector"
+            :demand="demand"
             @confirm="handleWriteDemandWithTemplate"
             @close="showTemplateSelector = false"
         />
@@ -98,11 +99,11 @@ const handleExtractData = async () => {
     }
 };
 
-const handleWriteDemandWithTemplate = async (template: any, instructions: string) => {
+const handleWriteDemandWithTemplate = async (template: any, instructions: string, instructionTemplate?: any) => {
     try {
         isWritingDemand.value = true;
         showTemplateSelector.value = false; // Close the modal
-        await writeDemand(props.demand, template.id, instructions);
+        await writeDemand(props.demand, template.id, instructions, instructionTemplate?.id);
     } finally {
         isWritingDemand.value = false;
     }

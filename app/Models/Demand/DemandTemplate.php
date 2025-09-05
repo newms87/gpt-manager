@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Demand;
 
+use App\Models\User;
 use App\Rules\TeamScopedUniqueRule;
 use App\Services\GoogleDocs\GoogleDocsFileService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

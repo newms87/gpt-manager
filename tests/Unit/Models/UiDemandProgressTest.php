@@ -2,11 +2,10 @@
 
 namespace Tests\Unit\Models;
 
+use App\Models\Demand\UiDemand;
 use App\Models\Task\TaskRun;
-use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
-use App\Models\Workflow\WorkflowStatesContract;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -158,12 +157,12 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $olderWorkflow = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'created_at' => now()->subHour(),
+            'created_at'             => now()->subHour(),
         ]);
 
         $newerWorkflow = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'created_at' => now(),
+            'created_at'             => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach([
@@ -193,12 +192,12 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $olderWorkflow = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'created_at' => now()->subHour(),
+            'created_at'             => now()->subHour(),
         ]);
 
         $newerWorkflow = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'created_at' => now(),
+            'created_at'             => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach([
@@ -273,7 +272,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'completed_at' => now(),
+            'completed_at'           => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
@@ -301,34 +300,34 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
+            'started_at'             => now(),
         ]);
 
         // Create 4 task runs, 2 completed, 1 failed, 1 running
         $completedTask1 = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
-            'started_at' => now()->subMinutes(5),
-            'completed_at' => now(),
+            'started_at'      => now()->subMinutes(5),
+            'completed_at'    => now(),
         ]);
         $completedTask1->save(); // Trigger status computation
 
         $completedTask2 = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
-            'started_at' => now()->subMinutes(5),
-            'completed_at' => now(),
+            'started_at'      => now()->subMinutes(5),
+            'completed_at'    => now(),
         ]);
         $completedTask2->save(); // Trigger status computation
 
         $failedTask = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
-            'started_at' => now()->subMinutes(5),
-            'failed_at' => now(),
+            'started_at'      => now()->subMinutes(5),
+            'failed_at'       => now(),
         ]);
         $failedTask->save(); // Trigger status computation
 
         $runningTask = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
-            'started_at' => now(),
+            'started_at'      => now(),
         ]);
         $runningTask->save(); // Trigger status computation
 
@@ -372,7 +371,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'completed_at' => now(),
+            'completed_at'           => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
@@ -400,26 +399,26 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
+            'started_at'             => now(),
         ]);
 
         // Create 3 task runs, 1 completed, 2 running
         $completedTask = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
-            'started_at' => now()->subMinutes(5),
-            'completed_at' => now(),
+            'started_at'      => now()->subMinutes(5),
+            'completed_at'    => now(),
         ]);
         $completedTask->save(); // Trigger status computation
 
         $runningTask1 = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
-            'started_at' => now(),
+            'started_at'      => now(),
         ]);
         $runningTask1->save(); // Trigger status computation
 
         $runningTask2 = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
-            'started_at' => now(),
+            'started_at'      => now(),
         ]);
         $runningTask2->save(); // Trigger status computation
 
@@ -448,7 +447,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
+            'started_at'             => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
@@ -476,7 +475,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
+            'started_at'             => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
@@ -519,7 +518,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'completed_at' => now(),
+            'completed_at'           => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
@@ -547,7 +546,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
+            'started_at'             => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
@@ -590,7 +589,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'completed_at' => now(),
+            'completed_at'           => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
@@ -618,12 +617,12 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $extractDataWorkflow = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
+            'started_at'             => now(),
         ]);
 
         $writeDemandWorkflow = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
+            'started_at'             => now(),
         ]);
 
         $uiDemand->workflowRuns()->attach([
@@ -682,12 +681,12 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflow1 = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'created_at' => now()->subHour(),
+            'created_at'             => now()->subHour(),
         ]);
 
         $workflow2 = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'created_at' => now(),
+            'created_at'             => now(),
         ]);
 
         // When
@@ -716,21 +715,21 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'failed_at' => now(),
+            'failed_at'              => now(),
         ]);
 
         // Create task runs with different statuses
         $completedTask = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
-            'started_at' => now()->subMinutes(5),
-            'completed_at' => now(),
+            'started_at'      => now()->subMinutes(5),
+            'completed_at'    => now(),
         ]);
         $completedTask->save(); // Trigger status computation
 
         $failedTask = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
-            'started_at' => now()->subMinutes(5),
-            'failed_at' => now(),
+            'started_at'      => now()->subMinutes(5),
+            'failed_at'       => now(),
         ]);
         $failedTask->save(); // Trigger status computation
 
@@ -759,13 +758,13 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'stopped_at' => now(),
+            'stopped_at'             => now(),
         ]);
 
         $completedTask = TaskRun::factory()->create([
             'workflow_run_id' => $workflowRun->id,
-            'started_at' => now()->subMinutes(5),
-            'completed_at' => now(),
+            'started_at'      => now()->subMinutes(5),
+            'completed_at'    => now(),
         ]);
         $completedTask->save(); // Trigger status computation
 

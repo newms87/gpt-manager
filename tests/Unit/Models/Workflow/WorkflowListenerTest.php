@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Models\Workflow;
 
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Models\Workflow\WorkflowListener;
 use App\Models\Workflow\WorkflowRun;
 use Tests\AuthenticatedTestCase;
@@ -14,7 +14,7 @@ class WorkflowListenerTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'title' => 'Test Demand',
+            'title'   => 'Test Demand',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create();
@@ -27,13 +27,13 @@ class WorkflowListenerTest extends AuthenticatedTestCase
         );
 
         $this->assertDatabaseHas('workflow_listeners', [
-            'id' => $workflowListener->id,
-            'team_id' => $this->user->currentTeam->id,
+            'id'              => $workflowListener->id,
+            'team_id'         => $this->user->currentTeam->id,
             'workflow_run_id' => $workflowRun->id,
-            'listener_type' => UiDemand::class,
-            'listener_id' => $uiDemand->id,
-            'workflow_type' => WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA,
-            'status' => WorkflowListener::STATUS_PENDING,
+            'listener_type'   => UiDemand::class,
+            'listener_id'     => $uiDemand->id,
+            'workflow_type'   => WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA,
+            'status'          => WorkflowListener::STATUS_PENDING,
         ]);
 
         $this->assertEquals(['test_key' => 'test_value'], $workflowListener->metadata);
@@ -44,7 +44,7 @@ class WorkflowListenerTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'title' => 'Test Demand',
+            'title'   => 'Test Demand',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create();
@@ -66,7 +66,7 @@ class WorkflowListenerTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'title' => 'Test Demand',
+            'title'   => 'Test Demand',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create();
@@ -79,7 +79,7 @@ class WorkflowListenerTest extends AuthenticatedTestCase
 
         // Test pending to running
         $this->assertEquals(WorkflowListener::STATUS_PENDING, $workflowListener->status);
-        
+
         $workflowListener->markAsRunning();
         $this->assertEquals(WorkflowListener::STATUS_RUNNING, $workflowListener->fresh()->status);
         $this->assertNotNull($workflowListener->fresh()->started_at);
@@ -95,7 +95,7 @@ class WorkflowListenerTest extends AuthenticatedTestCase
             WorkflowRun::factory()->create(),
             WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
         );
-        
+
         $failedListener->markAsFailed();
         $this->assertEquals(WorkflowListener::STATUS_FAILED, $failedListener->fresh()->status);
         $this->assertNotNull($failedListener->fresh()->failed_at);
@@ -106,7 +106,7 @@ class WorkflowListenerTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'title' => 'Test Demand',
+            'title'   => 'Test Demand',
         ]);
 
         $workflowRun1 = WorkflowRun::factory()->create();
@@ -146,7 +146,7 @@ class WorkflowListenerTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'title' => 'Test Demand',
+            'title'   => 'Test Demand',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create();

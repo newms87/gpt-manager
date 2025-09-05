@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Models\DemandTemplate;
+use App\Models\Demand\DemandTemplate;
 use App\Services\DemandTemplate\DemandTemplateService;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Repositories\ActionRepository;

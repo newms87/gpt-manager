@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Resources\UiDemandResource;
 use App\Services\UiDemand\UiDemandWorkflowService;
 use Illuminate\Database\Eloquent\Builder;

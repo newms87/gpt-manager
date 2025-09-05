@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\DemandTemplates;
 
-use App\Models\DemandTemplate;
+use App\Models\Demand\DemandTemplate;
 use App\Models\Team\Team;
 use App\Models\User;
 use App\Repositories\DemandTemplateRepository;

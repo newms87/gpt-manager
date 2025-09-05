@@ -4,9 +4,9 @@ namespace Tests\Unit;
 
 use App\Events\UsageEventCreated;
 use App\Listeners\UiDemandUsageSubscriber;
+use App\Models\Demand\UiDemand;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Models\UiDemand;
 use App\Models\Usage\UsageEvent;
 use App\Models\Workflow\WorkflowRun;
 use Illuminate\Support\Facades\Event;
@@ -16,6 +16,7 @@ use Tests\Traits\SetUpTeamTrait;
 class UsageSubscriptionSystemTest extends AuthenticatedTestCase
 {
     use SetUpTeamTrait;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -25,14 +26,14 @@ class UsageSubscriptionSystemTest extends AuthenticatedTestCase
     public function test_usage_event_has_subscribers_relationship(): void
     {
         $usageEvent = new UsageEvent();
-        
+
         $this->assertTrue(method_exists($usageEvent, 'subscribers'));
     }
 
     public function test_has_usage_tracking_trait_has_subscribed_usage_events_relationship(): void
     {
         $uiDemand = new UiDemand();
-        
+
         $this->assertTrue(method_exists($uiDemand, 'subscribedUsageEvents'));
         $this->assertTrue(method_exists($uiDemand, 'subscribeToUsageEvent'));
         $this->assertTrue(method_exists($uiDemand, 'refreshUsageSummaryFromSubscribedEvents'));
@@ -50,24 +51,24 @@ class UsageSubscriptionSystemTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 100,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ]);
 
         $uiDemand->subscribeToUsageEvent($usageEvent);
 
         $this->assertTrue($uiDemand->subscribedUsageEvents()->where('usage_event_id', $usageEvent->id)->exists());
-        
+
         $subscribedEvents = $uiDemand->subscribedUsageEvents;
         $this->assertCount(1, $subscribedEvents);
         $this->assertEquals($usageEvent->id, $subscribedEvents->first()->id);
@@ -85,17 +86,17 @@ class UsageSubscriptionSystemTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 100,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ]);
 
@@ -118,7 +119,7 @@ class UsageSubscriptionSystemTest extends AuthenticatedTestCase
     {
         $this->setUpTeam();
 
-        $taskRun = TaskRun::factory()->create();
+        $taskRun     = TaskRun::factory()->create();
         $workflowRun = WorkflowRun::factory()->create();
         $taskRun->workflowRun()->associate($workflowRun);
         $taskRun->save();
@@ -127,9 +128,9 @@ class UsageSubscriptionSystemTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        
+
         $uiDemand->workflowRuns()->attach($workflowRun, [
-            'workflow_type' => 'extract_data'
+            'workflow_type' => 'extract_data',
         ]);
 
         $taskProcess = TaskProcess::factory()->create();
@@ -137,27 +138,27 @@ class UsageSubscriptionSystemTest extends AuthenticatedTestCase
         $taskProcess->save();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 100,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ]);
 
         $listener = new UiDemandUsageSubscriber();
-        $event = new UsageEventCreated($usageEvent);
+        $event    = new UsageEventCreated($usageEvent);
         $listener->handle($event);
 
         $uiDemand->refresh();
         $this->assertTrue($uiDemand->subscribedUsageEvents()->where('usage_event_id', $usageEvent->id)->exists());
-        
+
         $summary = $uiDemand->usageSummary;
         $this->assertNotNull($summary);
         $this->assertEquals(1, $summary->count);

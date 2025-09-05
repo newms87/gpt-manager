@@ -2,9 +2,9 @@
 
 namespace App\Services\UiDemand;
 
+use App\Models\Demand\UiDemand;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\TeamObject\TeamObject;
-use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowListener;
@@ -42,15 +42,33 @@ class UiDemandWorkflowService
         return $workflowRun;
     }
 
-    public function writeDemand(UiDemand $uiDemand, ?int $templateId = null, ?string $additionalInstructions = null): WorkflowRun
+    public function writeDemand(UiDemand $uiDemand, ?int $templateId = null, ?string $additionalInstructions = null, ?string $instructionTemplateId = null): WorkflowRun
     {
         if (!$uiDemand->canWriteDemand()) {
             throw new ValidationError('Cannot write demand. Check if extract data is completed and team object exists.');
         }
 
-
         $workflowDefinition = $this->getWorkflowDefinition('write_demand');
         $workflowInput      = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand', $templateId, $additionalInstructions);
+
+        // Append instruction template content if provided
+        if ($instructionTemplateId) {
+            $instructionTemplate = WorkflowInput::find($instructionTemplateId);
+            if ($instructionTemplate && $instructionTemplate->content) {
+                // Append critical instruction template content to the main workflow input
+                $workflowInput->content .= <<<TEXT
+
+
+=== CRITICAL WRITING INSTRUCTIONS ===
+The following instructions are EXTREMELY IMPORTANT and must be followed carefully when writing the demand summary for the medical provider. These instructions define the required style, tone, structure, and format. Following these instructions precisely is a CRITICAL part of this task and directly impacts the quality and effectiveness of the final demand summary.
+
+{$instructionTemplate->content}
+
+=== END CRITICAL INSTRUCTIONS ===
+
+TEXT;
+            }
+        }
 
         $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$workflowInput->toArtifact()]);
 
@@ -200,7 +218,7 @@ class UiDemandWorkflowService
 
         // Add template stored file ID if provided
         if ($templateId) {
-            $template = \App\Models\DemandTemplate::find($templateId);
+            $template = \App\Models\Demand\DemandTemplate::find($templateId);
             if ($template && $template->stored_file_id) {
                 $contentData['template_stored_file_id'] = $template->stored_file_id;
             }

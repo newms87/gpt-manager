@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Demand\UiDemand;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
-use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
@@ -86,60 +86,60 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertFalse($uiDemand->isWriteDemandRunning());
 
         // STEP 3: Simulate the actual workflow execution that would happen in production
-        
+
         // 1. Create an intermediate task that produces artifacts (like a data extraction task)
         $extractionTaskDef = TaskDefinition::factory()->create([
-            'name' => 'Extract Service Dates Task',
+            'name'             => 'Extract Service Dates Task',
             'task_runner_name' => 'test_extraction_runner', // Simulated
         ]);
-        
+
         $workflowNode1 = WorkflowNode::factory()->create([
             'workflow_definition_id' => $extractDataWorkflow->id,
         ]);
-        
+
         $extractionTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $extractionTaskDef->id,
-            'workflow_run_id' => $extractDataWorkflowRun->id,
-            'workflow_node_id' => $workflowNode1->id,
+            'workflow_run_id'    => $extractDataWorkflowRun->id,
+            'workflow_node_id'   => $workflowNode1->id,
         ]);
-        
+
         // Create an artifact that this extraction task would produce
         $extractedDataArtifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Extracted Service Dates',
+            'name'    => 'Extracted Service Dates',
         ]);
-        
+
         // This extraction task outputs its artifact (normal task behavior)
         $extractionTaskRun->outputArtifacts()->attach($extractedDataArtifact->id);
-        
+
         // 2. Create the workflow output task that collects the final outputs
         $workflowOutputTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
         ]);
-        
+
         $workflowNode2 = WorkflowNode::factory()->create([
             'workflow_definition_id' => $extractDataWorkflow->id,
         ]);
-        
+
         $outputTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $workflowOutputTaskDef->id,
-            'workflow_run_id' => $extractDataWorkflowRun->id,
-            'workflow_node_id' => $workflowNode2->id,
+            'workflow_run_id'    => $extractDataWorkflowRun->id,
+            'workflow_node_id'   => $workflowNode2->id,
         ]);
-        
+
         // The output task process gets the extracted artifact as input
         $outputTaskProcess = TaskProcess::factory()->create([
             'task_run_id' => $outputTaskRun->id,
         ]);
         $outputTaskProcess->inputArtifacts()->attach($extractedDataArtifact->id);
-        
+
         // 3. Run the WorkflowOutputTaskRunner (this is the ONLY place workflow outputs are created)
         $workflowOutputRunner = $outputTaskProcess->getRunner();
         $workflowOutputRunner->run();
-        
+
         // 4. Mark workflow as completed (as workflow system would do)
         $extractDataWorkflowRun->update([
-            'status' => WorkflowStatesContract::STATUS_COMPLETED,
+            'status'       => WorkflowStatesContract::STATUS_COMPLETED,
             'completed_at' => now(),
         ]);
 

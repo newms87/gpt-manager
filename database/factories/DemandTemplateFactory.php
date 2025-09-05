@@ -2,14 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Models\DemandTemplate;
+use App\Models\Demand\DemandTemplate;
 use App\Models\Team\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\DemandTemplate>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Demand\DemandTemplate>
  */
 class DemandTemplateFactory extends Factory
 {
@@ -23,17 +23,17 @@ class DemandTemplateFactory extends Factory
     public function definition(): array
     {
         return [
-            'team_id' => Team::factory(),
-            'user_id' => User::factory(),
+            'team_id'        => Team::factory(),
+            'user_id'        => User::factory(),
             'stored_file_id' => null,
-            'name' => $this->faker->words(3, true),
-            'description' => $this->faker->optional()->paragraph(),
-            'category' => $this->faker->optional()->randomElement(['Legal', 'Insurance', 'Medical', 'Business', 'Personal']),
-            'metadata' => $this->faker->optional()->passthrough([
-                'tags' => $this->faker->words(3),
+            'name'           => $this->faker->words(3, true),
+            'description'    => $this->faker->optional()->paragraph(),
+            'category'       => $this->faker->optional()->randomElement(['Legal', 'Insurance', 'Medical', 'Business', 'Personal']),
+            'metadata'       => $this->faker->optional()->passthrough([
+                'tags'       => $this->faker->words(3),
                 'created_by' => $this->faker->name(),
             ]),
-            'is_active' => $this->faker->boolean(80), // 80% chance of being active
+            'is_active'      => $this->faker->boolean(80), // 80% chance of being active
         ];
     }
 
@@ -42,7 +42,7 @@ class DemandTemplateFactory extends Factory
      */
     public function active(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'is_active' => true,
         ]);
     }
@@ -52,7 +52,7 @@ class DemandTemplateFactory extends Factory
      */
     public function inactive(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'is_active' => false,
         ]);
     }
@@ -62,7 +62,7 @@ class DemandTemplateFactory extends Factory
      */
     public function category(string $category): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'category' => $category,
         ]);
     }
@@ -72,7 +72,7 @@ class DemandTemplateFactory extends Factory
      */
     public function forTeam(Team $team): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'team_id' => $team->id,
         ]);
     }
@@ -82,7 +82,7 @@ class DemandTemplateFactory extends Factory
      */
     public function createdBy(User $user): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'user_id' => $user->id,
         ]);
     }
@@ -92,7 +92,7 @@ class DemandTemplateFactory extends Factory
      */
     public function withStoredFile(StoredFile $storedFile): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'stored_file_id' => $storedFile->id,
         ]);
     }
@@ -103,14 +103,14 @@ class DemandTemplateFactory extends Factory
     public function withGoogleDocsUrl(string $url = null): static
     {
         $googleDocUrl = $url ?? 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit';
-        
+
         return $this->state(function (array $attributes) use ($googleDocUrl) {
             $storedFile = StoredFile::factory()->create([
                 'team_id' => $attributes['team_id'] ?? Team::factory(),
-                'url' => $googleDocUrl,
-                'disk' => 'external',
-                'mime' => 'application/vnd.google-apps.document',
-                'meta' => [
+                'url'     => $googleDocUrl,
+                'disk'    => 'external',
+                'mime'    => 'application/vnd.google-apps.document',
+                'meta'    => [
                     'type' => 'google_docs_template',
                 ],
             ]);

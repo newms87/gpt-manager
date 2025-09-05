@@ -2,11 +2,9 @@
 
 namespace Tests\Unit;
 
+use App\Models\Demand\UiDemand;
 use App\Models\Task\TaskProcess;
-use App\Models\UiDemand;
 use App\Models\Usage\UsageEvent;
-use App\Models\Usage\UsageSummary;
-use Illuminate\Database\QueryException;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -30,17 +28,17 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 100,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ]);
 
@@ -61,24 +59,24 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 100,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ]);
 
         $this->assertEquals(0, $uiDemand->subscribedUsageEvents()->count());
-        
+
         $uiDemand->unsubscribeFromUsageEvent($usageEvent);
-        
+
         $this->assertEquals(0, $uiDemand->subscribedUsageEvents()->count());
     }
 
@@ -92,24 +90,24 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 100,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ]);
 
         $uiDemand->subscribeToUsageEvent($usageEvent);
         $uiDemand->refreshUsageSummaryFromSubscribedEvents();
         $uiDemand->refresh();
-        
+
         $this->assertNotNull($uiDemand->usageSummary);
         $this->assertEquals(0.003, $uiDemand->usageSummary->total_cost);
 
@@ -117,7 +115,7 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
 
         $uiDemand->refreshUsageSummaryFromSubscribedEvents();
         $uiDemand->refresh();
-        
+
         $this->assertNull($uiDemand->usageSummary);
     }
 
@@ -131,17 +129,17 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'data_processing',
-            'api_name' => 'custom_api',
-            'input_tokens' => 0,
+            'event_type'    => 'data_processing',
+            'api_name'      => 'custom_api',
+            'input_tokens'  => 0,
             'output_tokens' => 0,
-            'input_cost' => 0.0,
-            'output_cost' => 0.0,
+            'input_cost'    => 0.0,
+            'output_cost'   => 0.0,
             'request_count' => 1,
         ]);
 
@@ -169,17 +167,17 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 999999,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 999999,
             'output_tokens' => 888888,
-            'input_cost' => 999.99,
-            'output_cost' => 888.88,
+            'input_cost'    => 999.99,
+            'output_cost'   => 888.88,
             'request_count' => 1,
         ]);
 
@@ -208,32 +206,32 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
         $taskProcess2 = TaskProcess::factory()->create();
 
         $usageEvent1 = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess1->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess1->id,
             'object_id_int' => $taskProcess1->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 10,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 10,
             'output_tokens' => 5,
-            'input_cost' => 0.00001,
-            'output_cost' => 0.00002,
+            'input_cost'    => 0.00001,
+            'output_cost'   => 0.00002,
             'request_count' => 1,
         ]);
 
         $usageEvent2 = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess2->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess2->id,
             'object_id_int' => $taskProcess2->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 15,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 15,
             'output_tokens' => 8,
-            'input_cost' => 0.00003,
-            'output_cost' => 0.00004,
+            'input_cost'    => 0.00003,
+            'output_cost'   => 0.00004,
             'request_count' => 1,
         ]);
 
@@ -247,7 +245,7 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
         $this->assertEquals(2, $summary->count);
         $this->assertEquals(25, $summary->input_tokens);
         $this->assertEquals(13, $summary->output_tokens);
-        
+
         // Very small decimal values may be rounded to 0 by database precision
         // This is expected behavior for very small currency values
         if ($summary->input_cost > 0) {
@@ -255,13 +253,13 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
         } else {
             $this->assertEquals(0, $summary->input_cost);
         }
-        
+
         if ($summary->output_cost > 0) {
             $this->assertEqualsWithDelta(0.00006, $summary->output_cost, 0.0000001);
         } else {
             $this->assertEquals(0, $summary->output_cost);
         }
-        
+
         if ($summary->total_cost > 0) {
             $this->assertEqualsWithDelta(0.0001, $summary->total_cost, 0.0000001);
         } else {
@@ -279,17 +277,17 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 150,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 150,
             'output_tokens' => 75,
-            'input_cost' => 0.003,
-            'output_cost' => 0.006,
+            'input_cost'    => 0.003,
+            'output_cost'   => 0.006,
             'request_count' => 1,
         ]);
 
@@ -305,8 +303,8 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
 
     public function test_subscription_works_with_different_team_contexts(): void
     {
-        $team1 = $this->user->currentTeam;
-        $team2 = $team1->replicate();
+        $team1       = $this->user->currentTeam;
+        $team2       = $team1->replicate();
         $team2->name = 'Team 2';
         $team2->save();
 
@@ -324,32 +322,32 @@ class UsageSubscriptionEdgeCasesTest extends AuthenticatedTestCase
         $taskProcess2 = TaskProcess::factory()->create();
 
         $usageEvent1 = UsageEvent::create([
-            'team_id' => $team1->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess1->id,
+            'team_id'       => $team1->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess1->id,
             'object_id_int' => $taskProcess1->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 100,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ]);
 
         $usageEvent2 = UsageEvent::create([
-            'team_id' => $team2->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess2->id,
+            'team_id'       => $team2->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess2->id,
             'object_id_int' => $taskProcess2->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 200,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 200,
             'output_tokens' => 100,
-            'input_cost' => 0.004,
-            'output_cost' => 0.008,
+            'input_cost'    => 0.004,
+            'output_cost'   => 0.008,
             'request_count' => 1,
         ]);
 

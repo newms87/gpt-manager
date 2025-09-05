@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class UiDemandFactory extends Factory
@@ -12,11 +12,11 @@ class UiDemandFactory extends Factory
     public function definition(): array
     {
         return [
-            'team_id' => \App\Models\Team\Team::factory(),
-            'user_id' => \App\Models\User::factory(),
-            'title' => $this->faker->sentence(3),
+            'team_id'     => \App\Models\Team\Team::factory(),
+            'user_id'     => \App\Models\User::factory(),
+            'title'       => $this->faker->sentence(3),
             'description' => $this->faker->paragraph(),
-            'status' => UiDemand::STATUS_DRAFT,
+            'status'      => UiDemand::STATUS_DRAFT,
         ];
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Models\Usage\UsageEvent;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;

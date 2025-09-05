@@ -3,7 +3,7 @@
 namespace Tests\Unit\Events;
 
 use App\Events\UsageSummaryUpdatedEvent;
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Models\Usage\UsageSummary;
 use Illuminate\Support\Facades\Event;
 use Tests\AuthenticatedTestCase;
@@ -26,27 +26,27 @@ class UsageSummaryUpdatedEventTest extends AuthenticatedTestCase
             'user_id' => $this->user->id,
         ]);
 
-        $eventFired = false;
+        $eventFired    = false;
         $capturedEvent = null;
 
         Event::listen(UsageSummaryUpdatedEvent::class, function ($event) use (&$eventFired, &$capturedEvent) {
-            $eventFired = true;
+            $eventFired    = true;
             $capturedEvent = $event;
         });
 
         $usageSummary = UsageSummary::create([
-            'object_type' => UiDemand::class,
-            'object_id' => $uiDemand->id,
+            'object_type'   => UiDemand::class,
+            'object_id'     => $uiDemand->id,
             'object_id_int' => $uiDemand->id,
-            'count' => 1,
-            'run_time_ms' => 1000,
-            'input_tokens' => 100,
+            'count'         => 1,
+            'run_time_ms'   => 1000,
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
-            'total_cost' => 0.003,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
+            'total_cost'    => 0.003,
             'request_count' => 1,
-            'data_volume' => 0,
+            'data_volume'   => 0,
         ]);
 
         $this->assertTrue($eventFired, 'UsageSummaryUpdatedEvent should have been fired');
@@ -62,19 +62,19 @@ class UsageSummaryUpdatedEventTest extends AuthenticatedTestCase
         ]);
 
         $usageSummary = UsageSummary::create([
-            'object_type' => UiDemand::class,
-            'object_id' => $uiDemand->id,
+            'object_type'   => UiDemand::class,
+            'object_id'     => $uiDemand->id,
             'object_id_int' => $uiDemand->id,
-            'count' => 1,
-            'input_tokens' => 100,
+            'count'         => 1,
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
-            'total_cost' => 0.003,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
+            'total_cost'    => 0.003,
             'request_count' => 1,
         ]);
 
-        $event = new UsageSummaryUpdatedEvent($usageSummary, 'updated');
+        $event   = new UsageSummaryUpdatedEvent($usageSummary, 'updated');
         $channel = $event->broadcastOn();
 
         $this->assertEquals('private-UsageSummary.' . $this->user->currentTeam->id, $channel->name);
@@ -88,20 +88,20 @@ class UsageSummaryUpdatedEventTest extends AuthenticatedTestCase
         ]);
 
         $usageSummary = UsageSummary::create([
-            'object_type' => UiDemand::class,
-            'object_id' => $uiDemand->id,
+            'object_type'   => UiDemand::class,
+            'object_id'     => $uiDemand->id,
             'object_id_int' => $uiDemand->id,
-            'count' => 1,
-            'input_tokens' => 100,
+            'count'         => 1,
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
-            'total_cost' => 0.003,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
+            'total_cost'    => 0.003,
             'request_count' => 1,
         ]);
 
         $event = new UsageSummaryUpdatedEvent($usageSummary, 'updated');
-        $data = $event->data();
+        $data  = $event->data();
 
         $this->assertArrayHasKey('count', $data);
         $this->assertArrayHasKey('input_tokens', $data);

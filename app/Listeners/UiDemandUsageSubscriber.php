@@ -4,9 +4,9 @@ namespace App\Listeners;
 
 use App\Events\UsageEventCreated;
 use App\Models\Agent\AgentThreadRun;
+use App\Models\Demand\UiDemand;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowRun;
 use Illuminate\Support\Collection;
 
@@ -16,7 +16,7 @@ class UiDemandUsageSubscriber
     {
         $usageEvent = $event->usageEvent;
 
-        /** @var UiDemand[] $relatedUiDemands */
+        /** @var \App\Models\Demand\UiDemand[] $relatedUiDemands */
         $relatedUiDemands = collect();
 
         if ($usageEvent->object_type === TaskProcess::class) {

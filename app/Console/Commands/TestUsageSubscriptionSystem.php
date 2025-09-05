@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Demand\UiDemand;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Models\UiDemand;
 use App\Models\User;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Usage\UsageTrackingService;
@@ -12,7 +12,7 @@ use Illuminate\Console\Command;
 
 class TestUsageSubscriptionSystem extends Command
 {
-    protected $signature = 'test:usage-subscription';
+    protected $signature   = 'test:usage-subscription';
     protected $description = 'Test the new polymorphic usage subscription system';
 
     public function handle(): int
@@ -22,12 +22,14 @@ class TestUsageSubscriptionSystem extends Command
         $user = User::first();
         if (!$user) {
             $this->error('No users found. Please create a user first.');
+
             return 1;
         }
 
         $team = $user->teams()->first();
         if (!$team) {
             $this->error('No teams found for user. Please create a team first.');
+
             return 1;
         }
 
@@ -37,16 +39,16 @@ class TestUsageSubscriptionSystem extends Command
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $team->id,
             'user_id' => $user->id,
-            'title' => 'Test Usage Subscription Demand',
+            'title'   => 'Test Usage Subscription Demand',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create();
-        $taskRun = TaskRun::factory()->create();
+        $taskRun     = TaskRun::factory()->create();
         $taskRun->workflowRun()->associate($workflowRun);
         $taskRun->save();
 
         $uiDemand->workflowRuns()->attach($workflowRun, [
-            'workflow_type' => 'extract_data'
+            'workflow_type' => 'extract_data',
         ]);
 
         $taskProcess = TaskProcess::factory()->create();
@@ -66,17 +68,17 @@ class TestUsageSubscriptionSystem extends Command
             'ai_completion',
             'openai',
             [
-                'input_tokens' => 150,
+                'input_tokens'  => 150,
                 'output_tokens' => 75,
-                'input_cost' => 0.003,
-                'output_cost' => 0.006,
-                'run_time_ms' => 2500,
+                'input_cost'    => 0.003,
+                'output_cost'   => 0.006,
+                'run_time_ms'   => 2500,
                 'request_count' => 1,
-                'metadata' => [
-                    'model' => 'gpt-4o',
+                'metadata'      => [
+                    'model'       => 'gpt-4o',
                     'temperature' => 0.7,
-                    'test_run' => true,
-                ]
+                    'test_run'    => true,
+                ],
             ],
             $user
         );

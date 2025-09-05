@@ -2,16 +2,12 @@
 
 namespace Tests\Unit;
 
-use App\Events\UsageEventCreated;
-use App\Listeners\UiDemandUsageSubscriber;
+use App\Models\Demand\UiDemand;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Models\UiDemand;
 use App\Models\Usage\UsageEvent;
-use App\Models\Usage\UsageSummary;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Usage\UsageTrackingService;
-use Illuminate\Support\Facades\Event;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -29,7 +25,7 @@ class UsageSubscriptionIntegrationTest extends AuthenticatedTestCase
         $this->setUpTeam();
 
         $workflowRun = WorkflowRun::factory()->create();
-        $taskRun = TaskRun::factory()->create();
+        $taskRun     = TaskRun::factory()->create();
         $taskRun->workflowRun()->associate($workflowRun);
         $taskRun->save();
 
@@ -37,9 +33,9 @@ class UsageSubscriptionIntegrationTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        
+
         $uiDemand->workflowRuns()->attach($workflowRun, [
-            'workflow_type' => 'extract_data'
+            'workflow_type' => 'extract_data',
         ]);
 
         $taskProcess = TaskProcess::factory()->create();
@@ -53,11 +49,11 @@ class UsageSubscriptionIntegrationTest extends AuthenticatedTestCase
             'ai_completion',
             'openai',
             [
-                'input_tokens' => 150,
+                'input_tokens'  => 150,
                 'output_tokens' => 75,
-                'input_cost' => 0.003,
-                'output_cost' => 0.006,
-                'run_time_ms' => 2500,
+                'input_cost'    => 0.003,
+                'output_cost'   => 0.006,
+                'run_time_ms'   => 2500,
                 'request_count' => 1,
             ],
             $this->user
@@ -90,7 +86,7 @@ class UsageSubscriptionIntegrationTest extends AuthenticatedTestCase
         $this->setUpTeam();
 
         $workflowRun = WorkflowRun::factory()->create();
-        $taskRun = TaskRun::factory()->create();
+        $taskRun     = TaskRun::factory()->create();
         $taskRun->workflowRun()->associate($workflowRun);
         $taskRun->save();
 
@@ -98,9 +94,9 @@ class UsageSubscriptionIntegrationTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        
+
         $uiDemand->workflowRuns()->attach($workflowRun, [
-            'workflow_type' => 'extract_data'
+            'workflow_type' => 'extract_data',
         ]);
 
         $taskProcess1 = TaskProcess::factory()->create();
@@ -114,18 +110,18 @@ class UsageSubscriptionIntegrationTest extends AuthenticatedTestCase
         $usageTrackingService = app(UsageTrackingService::class);
 
         $usageEvent1 = $usageTrackingService->recordUsage($taskProcess1, 'ai_completion', 'openai', [
-            'input_tokens' => 100,
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ], $this->user);
 
         $usageEvent2 = $usageTrackingService->recordUsage($taskProcess2, 'ai_completion', 'openai', [
-            'input_tokens' => 200,
+            'input_tokens'  => 200,
             'output_tokens' => 100,
-            'input_cost' => 0.002,
-            'output_cost' => 0.004,
+            'input_cost'    => 0.002,
+            'output_cost'   => 0.004,
             'request_count' => 1,
         ], $this->user);
 
@@ -148,7 +144,7 @@ class UsageSubscriptionIntegrationTest extends AuthenticatedTestCase
         $this->setUpTeam();
 
         $workflowRun = WorkflowRun::factory()->create();
-        $taskRun = TaskRun::factory()->create();
+        $taskRun     = TaskRun::factory()->create();
         $taskRun->workflowRun()->associate($workflowRun);
         $taskRun->save();
 
@@ -156,9 +152,9 @@ class UsageSubscriptionIntegrationTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
-        
+
         $uiDemand->workflowRuns()->attach($workflowRun, [
-            'workflow_type' => 'extract_data'
+            'workflow_type' => 'extract_data',
         ]);
 
         $taskProcess = TaskProcess::factory()->create();
@@ -204,17 +200,17 @@ class UsageSubscriptionIntegrationTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 100,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ]);
 
@@ -237,17 +233,17 @@ class UsageSubscriptionIntegrationTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create();
 
         $usageEvent = UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => TaskProcess::class,
-            'object_id' => (string)$taskProcess->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => TaskProcess::class,
+            'object_id'     => (string)$taskProcess->id,
             'object_id_int' => $taskProcess->id,
-            'event_type' => 'ai_completion',
-            'api_name' => 'openai',
-            'input_tokens' => 100,
+            'event_type'    => 'ai_completion',
+            'api_name'      => 'openai',
+            'input_tokens'  => 100,
             'output_tokens' => 50,
-            'input_cost' => 0.001,
-            'output_cost' => 0.002,
+            'input_cost'    => 0.001,
+            'output_cost'   => 0.002,
             'request_count' => 1,
         ]);
 

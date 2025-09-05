@@ -2,9 +2,8 @@
 
 namespace Tests\Unit\Models;
 
-use App\Models\DemandTemplate;
+use App\Models\Demand\DemandTemplate;
 use App\Models\Team\Team;
-use App\Models\User;
 use Illuminate\Validation\ValidationException;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
@@ -19,8 +18,6 @@ class DemandTemplateTest extends AuthenticatedTestCase
         parent::setUp();
         $this->setUpTeam();
     }
-    
-
 
 
     public function test_scopeActive_filtersActiveTemplatesOnly(): void
@@ -41,7 +38,7 @@ class DemandTemplateTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $activeTemplates = DemandTemplate::active()->get();
+        $activeTemplates = \App\Models\Demand\DemandTemplate::active()->get();
 
         // Then
         $this->assertCount(1, $activeTemplates);

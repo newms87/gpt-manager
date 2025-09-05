@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Resources\UiDemandResource;
 use Illuminate\Broadcasting\PrivateChannel;
 use Newms87\Danx\Events\ModelSavedEvent;

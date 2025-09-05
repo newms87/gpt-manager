@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Demand;
 
 use App\Events\UiDemandUpdatedEvent;
 use App\Models\Team\Team;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Traits\HasUsageTracking;
+use App\Models\User;
 use App\Models\Workflow\WorkflowRun;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -103,6 +104,7 @@ class UiDemand extends Model implements Auditable
     {
         return $this->belongsTo(TeamObject::class);
     }
+
 
     public function scopeActive($query)
     {

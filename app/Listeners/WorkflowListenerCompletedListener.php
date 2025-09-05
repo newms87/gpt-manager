@@ -3,7 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\WorkflowRunUpdatedEvent;
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Models\Workflow\WorkflowListener;
 use App\Services\UiDemand\UiDemandWorkflowService;
 use App\Traits\HasDebugLogging;

@@ -6,11 +6,11 @@ use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Agent\Agent;
+use App\Models\Demand\UiDemand;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowListener;
 use App\Models\Workflow\WorkflowNode;
@@ -190,29 +190,29 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $workflowOutputTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
         ]);
-        
+
         $outputNode = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
-        
+
         $outputTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $workflowOutputTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $outputNode->id,
         ]);
-        
+
         // Get the artifacts created by GoogleDocsTemplateTaskRunner
         $generatedArtifacts = $taskRun->outputArtifacts()->get();
-        
+
         $outputTaskProcess = TaskProcess::factory()->create([
             'task_run_id' => $outputTaskRun->id,
         ]);
-        
+
         // Pass the generated artifacts to the output task
-        foreach ($generatedArtifacts as $artifact) {
+        foreach($generatedArtifacts as $artifact) {
             $outputTaskProcess->inputArtifacts()->attach($artifact->id);
         }
-        
+
         // Run the WorkflowOutputTaskRunner to collect workflow outputs
         $workflowOutputRunner = $outputTaskProcess->getRunner();
         $workflowOutputRunner->run();
@@ -265,7 +265,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // 5. Verify database relationships are correct
         $this->assertDatabaseHas('stored_file_storables', [
             'stored_file_id' => $generatedStoredFile->id,
-            'storable_type'  => 'App\\Models\\UiDemand',
+            'storable_type'  => 'App\\Models\\Demand\\UiDemand',
             'storable_id'    => $uiDemand->id,
             'category'       => 'output',
         ]);
@@ -330,35 +330,35 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $docGenTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => GoogleDocsTemplateTaskRunner::class,
         ]);
-        
+
         $docGenTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $docGenTaskDef->id,
             'workflow_run_id'    => $firstWorkflowRun->id,
             'workflow_node_id'   => $firstWorkflowNode->id,
         ]);
-        
+
         $docGenTaskRun->outputArtifacts()->attach($firstArtifact->id);
-        
+
         // 2. Workflow output task collects final outputs
         $workflowOutputTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
         ]);
-        
+
         $outputNode = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
-        
+
         $outputTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $workflowOutputTaskDef->id,
             'workflow_run_id'    => $firstWorkflowRun->id,
             'workflow_node_id'   => $outputNode->id,
         ]);
-        
+
         $outputTaskProcess = TaskProcess::factory()->create([
             'task_run_id' => $outputTaskRun->id,
         ]);
         $outputTaskProcess->inputArtifacts()->attach($firstArtifact->id);
-        
+
         $workflowOutputRunner = $outputTaskProcess->getRunner();
         $workflowOutputRunner->run();
 
@@ -387,25 +387,25 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_run_id'    => $secondWorkflowRun->id,
             'workflow_node_id'   => $secondWorkflowNode->id,
         ]);
-        
+
         $secondDocGenTaskRun->outputArtifacts()->attach($secondArtifact->id);
-        
+
         // 2. Workflow output task collects final outputs
         $secondOutputNode = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
-        
+
         $secondOutputTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $workflowOutputTaskDef->id, // Reuse same task definition
             'workflow_run_id'    => $secondWorkflowRun->id,
             'workflow_node_id'   => $secondOutputNode->id,
         ]);
-        
+
         $secondOutputTaskProcess = TaskProcess::factory()->create([
             'task_run_id' => $secondOutputTaskRun->id,
         ]);
         $secondOutputTaskProcess->inputArtifacts()->attach($secondArtifact->id);
-        
+
         // Run the WorkflowOutputTaskRunner
         $secondWorkflowOutputRunner = $secondOutputTaskProcess->getRunner();
         $secondWorkflowOutputRunner->run();
@@ -447,7 +447,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Verify there's only one pivot table record for this file
         $pivotRecords = \DB::table('stored_file_storables')
             ->where('stored_file_id', $existingStoredFile->id)
-            ->where('storable_type', 'App\\Models\\UiDemand')
+            ->where('storable_type', 'App\\Models\\Demand\\UiDemand')
             ->where('storable_id', $uiDemand->id)
             ->where('category', 'output')
             ->count();
@@ -553,36 +553,36 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $docGenTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => GoogleDocsTemplateTaskRunner::class,
         ]);
-        
+
         $docGenTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $docGenTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $workflowNode->id,
         ]);
-        
+
         // The document generation task produces the artifact
         $docGenTaskRun->outputArtifacts()->attach($artifact->id);
-        
+
         // 2. Workflow output task collects final outputs
         $workflowOutputTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
         ]);
-        
+
         $outputNode = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
-        
+
         $outputTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $workflowOutputTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $outputNode->id,
         ]);
-        
+
         $outputTaskProcess = TaskProcess::factory()->create([
             'task_run_id' => $outputTaskRun->id,
         ]);
         $outputTaskProcess->inputArtifacts()->attach($artifact->id);
-        
+
         // Run the WorkflowOutputTaskRunner
         $workflowOutputRunner = $outputTaskProcess->getRunner();
         $workflowOutputRunner->run();

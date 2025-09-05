@@ -7,7 +7,8 @@ import {
   SubscriptionView 
 } from '../ui/insurance-demands/views';
 import {
-  DemandTemplatesView
+  DemandTemplatesView,
+  InstructionTemplatesView
 } from '../ui/demand-templates/views';
 
 export const uiRoutes: RouteRecordRaw[] = [
@@ -66,6 +67,14 @@ export const uiRoutes: RouteRecordRaw[] = [
         component: DemandTemplatesView,
         meta: {
           title: 'Demand Templates',
+        },
+      },
+      {
+        path: 'instruction-templates',
+        name: 'ui.instruction-templates',
+        component: InstructionTemplatesView,
+        meta: {
+          title: 'Instruction Templates',
         },
       },
     ],

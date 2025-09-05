@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\DemandTemplates;
 
-use App\Models\DemandTemplate;
+use App\Models\Demand\DemandTemplate;
+use App\Models\Demand\UiDemand;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
-use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Repositories\UiDemandRepository;
 use App\Resources\UiDemandResource;
 use App\Services\UiDemand\UiDemandWorkflowService;
@@ -39,8 +39,9 @@ class UiDemandsController extends ActionController
         try {
             $templateId             = request()->input('template_id');
             $additionalInstructions = request()->input('additional_instructions');
+            $instructionTemplateId  = request()->input('instruction_template_id');
 
-            app(UiDemandWorkflowService::class)->writeDemand($uiDemand, $templateId, $additionalInstructions);
+            app(UiDemandWorkflowService::class)->writeDemand($uiDemand, $templateId, $additionalInstructions, $instructionTemplateId);
 
             return UiDemandResource::make($uiDemand, [
                 'team_object'               => true,

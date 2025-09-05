@@ -55,21 +55,41 @@ class WorkflowInputRepository extends ActionRepository
             'name' => 'New Workflow Input',
         ];
 
+        // Extract associations before creating the model
+        $associations = $data['associations'] ?? null;
+        unset($data['associations']); // Remove from model data
+
         $workflowInput       = WorkflowInput::make()->forceFill($data);
         $workflowInput->name = ModelHelper::getNextModelName($workflowInput);
 
         $workflowInput->validate()->save();
 
         $this->syncStoredFiles($workflowInput, $data);
+        
+        // Pass associations separately
+        if ($associations) {
+            $this->attachToAssociable($workflowInput, $associations);
+        }
 
         return $workflowInput;
     }
 
     public function updateWorkflowInput(WorkflowInput $workflowInput, array $data): WorkflowInput
     {
+        // Extract associations before updating the model
+        $associations = $data['associations'] ?? null;
+        unset($data['associations']); // Remove from model data
+        
         $workflowInput->fill($data)->validate();
         $workflowInput->save($data);
         $this->syncStoredFiles($workflowInput, $data);
+        
+        // Handle associations if provided
+        if ($associations) {
+            // For updates, we might want to replace existing associations
+            // But for now, just add new ones (can be enhanced later if needed)
+            $this->attachToAssociable($workflowInput, $associations);
+        }
 
         return $workflowInput;
     }
@@ -82,6 +102,20 @@ class WorkflowInputRepository extends ActionRepository
         if (isset($data['files'])) {
             $files = StoredFile::whereIn('id', collect($data['files'])->pluck('id'))->get();
             $workflowInput->storedFiles()->sync($files);
+        }
+    }
+
+    /**
+     * Attach workflow input associations from array
+     */
+    protected function attachToAssociable(WorkflowInput $workflowInput, array $associations): void
+    {
+        foreach ($associations as $association) {
+            $workflowInput->associations()->create([
+                'associable_type' => $association['associable_type'],
+                'associable_id' => $association['associable_id'],
+                'category' => $association['category'],
+            ]);
         }
     }
 }

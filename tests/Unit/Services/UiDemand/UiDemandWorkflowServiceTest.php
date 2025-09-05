@@ -2,12 +2,12 @@
 
 namespace Tests\Unit\Services\UiDemand;
 
+use App\Models\Demand\UiDemand;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
-use App\Models\UiDemand;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
@@ -286,36 +286,36 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $processingTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => 'test_processing_task',
         ]);
-        
+
         $processingTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $processingTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $workflowNode->id,
         ]);
-        
+
         // The processing task produces the artifact
         $processingTaskRun->outputArtifacts()->attach($artifact->id);
-        
+
         // 2. Workflow output task collects final outputs
         $workflowOutputTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
         ]);
-        
+
         $outputNode = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
-        
+
         $outputTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $workflowOutputTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $outputNode->id,
         ]);
-        
+
         $outputTaskProcess = TaskProcess::factory()->create([
             'task_run_id' => $outputTaskRun->id,
         ]);
         $outputTaskProcess->inputArtifacts()->attach($artifact->id);
-        
+
         // Run the WorkflowOutputTaskRunner
         $workflowOutputRunner = $outputTaskProcess->getRunner();
         $workflowOutputRunner->run();
@@ -374,36 +374,36 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $processingTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => 'test_processing_task',
         ]);
-        
+
         $processingTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $processingTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $workflowNode->id,
         ]);
-        
+
         // The processing task produces the artifact
         $processingTaskRun->outputArtifacts()->attach($artifact->id);
-        
+
         // 2. Workflow output task collects final outputs
         $workflowOutputTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
         ]);
-        
+
         $outputNode = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
-        
+
         $outputTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $workflowOutputTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $outputNode->id,
         ]);
-        
+
         $outputTaskProcess = TaskProcess::factory()->create([
             'task_run_id' => $outputTaskRun->id,
         ]);
         $outputTaskProcess->inputArtifacts()->attach($artifact->id);
-        
+
         // Run the WorkflowOutputTaskRunner
         $workflowOutputRunner = $outputTaskProcess->getRunner();
         $workflowOutputRunner->run();
@@ -467,36 +467,36 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $processingTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => 'test_processing_task',
         ]);
-        
+
         $processingTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $processingTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $workflowNode->id,
         ]);
-        
+
         // The processing task produces the artifact
         $processingTaskRun->outputArtifacts()->attach($artifact->id);
-        
+
         // 2. Workflow output task collects final outputs
         $workflowOutputTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
         ]);
-        
+
         $outputNode = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
-        
+
         $outputTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $workflowOutputTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $outputNode->id,
         ]);
-        
+
         $outputTaskProcess = TaskProcess::factory()->create([
             'task_run_id' => $outputTaskRun->id,
         ]);
         $outputTaskProcess->inputArtifacts()->attach($artifact->id);
-        
+
         // Run the WorkflowOutputTaskRunner
         $workflowOutputRunner = $outputTaskProcess->getRunner();
         $workflowOutputRunner->run();
@@ -615,36 +615,36 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $processingTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => 'test_processing_task',
         ]);
-        
+
         $processingTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $processingTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $workflowNode->id,
         ]);
-        
+
         // The processing task produces the artifact
         $processingTaskRun->outputArtifacts()->attach($artifact->id);
-        
+
         // 2. Workflow output task collects final outputs
         $workflowOutputTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
         ]);
-        
+
         $outputNode = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
-        
+
         $outputTaskRun = TaskRun::factory()->create([
             'task_definition_id' => $workflowOutputTaskDef->id,
             'workflow_run_id'    => $workflowRun->id,
             'workflow_node_id'   => $outputNode->id,
         ]);
-        
+
         $outputTaskProcess = TaskProcess::factory()->create([
             'task_run_id' => $outputTaskRun->id,
         ]);
         $outputTaskProcess->inputArtifacts()->attach($artifact->id);
-        
+
         // Run the WorkflowOutputTaskRunner
         $workflowOutputRunner = $outputTaskProcess->getRunner();
         $workflowOutputRunner->run();
@@ -735,14 +735,14 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Verify the category is set correctly
         $this->assertDatabaseHas('stored_file_storables', [
             'stored_file_id' => $storedFile1->id,
-            'storable_type'  => 'App\\Models\\UiDemand',
+            'storable_type'  => 'App\\Models\\Demand\\UiDemand',
             'storable_id'    => $uiDemand->id,
             'category'       => 'output',
         ]);
 
         $this->assertDatabaseHas('stored_file_storables', [
             'stored_file_id' => $storedFile2->id,
-            'storable_type'  => 'App\\Models\\UiDemand',
+            'storable_type'  => 'App\\Models\\Demand\\UiDemand',
             'storable_id'    => $uiDemand->id,
             'category'       => 'output',
         ]);
@@ -822,7 +822,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         // Verify there's only one record in the pivot table
         $pivotRecords = \DB::table('stored_file_storables')
             ->where('stored_file_id', $storedFile->id)
-            ->where('storable_type', 'App\\Models\\UiDemand')
+            ->where('storable_type', 'App\\Models\\Demand\\UiDemand')
             ->where('storable_id', $uiDemand->id)
             ->where('category', 'output')
             ->count();

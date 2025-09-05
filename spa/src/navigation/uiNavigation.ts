@@ -1,7 +1,8 @@
 import { markRaw } from 'vue';
 import { 
   FaSolidFile, 
-  FaSolidClipboard
+  FaSolidClipboard,
+  FaSolidBookOpen
 } from 'danx-icon';
 import type { UiNavigation } from '../ui/shared/types';
 
@@ -15,5 +16,10 @@ export const uiNavigation: UiNavigation[] = [
     title: 'Demand Templates',
     icon: markRaw(FaSolidClipboard),
     route: '/ui/templates',
+  },
+  {
+    title: 'Instruction Templates',
+    icon: markRaw(FaSolidBookOpen),
+    route: '/ui/instruction-templates',
   },
 ];

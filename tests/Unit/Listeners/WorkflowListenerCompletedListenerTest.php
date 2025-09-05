@@ -4,12 +4,11 @@ namespace Tests\Unit\Listeners;
 
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Listeners\WorkflowListenerCompletedListener;
-use App\Models\UiDemand;
+use App\Models\Demand\UiDemand;
 use App\Models\Workflow\WorkflowListener;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\UiDemand\UiDemandWorkflowService;
 use Illuminate\Support\Facades\Event;
-use Mockery;
 use Tests\AuthenticatedTestCase;
 
 class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
@@ -21,11 +20,11 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'title' => 'Test Demand',
+            'title'   => 'Test Demand',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
-            'status' => 'completed',
+            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -43,7 +42,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
 
         $this->app->instance(UiDemandWorkflowService::class, $mockService);
 
-        $event = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
+        $event    = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
         $listener = new WorkflowListenerCompletedListener();
 
         $listener->handle($event);
@@ -58,7 +57,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
         Event::fake();
 
         $workflowRun = WorkflowRun::factory()->create([
-            'status' => 'completed',
+            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -69,7 +68,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
 
         $this->app->instance(UiDemandWorkflowService::class, $mockService);
 
-        $event = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
+        $event    = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
         $listener = new WorkflowListenerCompletedListener();
 
         $listener->handle($event);
@@ -86,7 +85,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
-            'title' => 'Test Demand',
+            'title'   => 'Test Demand',
         ]);
 
         // Test with running workflow (should not trigger)
@@ -105,7 +104,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
 
         $this->app->instance(UiDemandWorkflowService::class, $mockService);
 
-        $event = new WorkflowRunUpdatedEvent($runningWorkflowRun, 'updated');
+        $event    = new WorkflowRunUpdatedEvent($runningWorkflowRun, 'updated');
         $listener = new WorkflowListenerCompletedListener();
 
         $listener->handle($event);
@@ -115,7 +114,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
 
         // Test with completed workflow (should trigger)
         $completedWorkflowRun = WorkflowRun::factory()->create([
-            'status' => 'completed',
+            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -144,7 +143,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
     {
         // This test ensures the listener is properly registered in EventServiceProvider
         $listeners = Event::getListeners(WorkflowRunUpdatedEvent::class);
-        
+
         // We expect at least one listener to be registered for this event
         $this->assertNotEmpty($listeners, 'WorkflowRunUpdatedEvent should have listeners registered');
     }
