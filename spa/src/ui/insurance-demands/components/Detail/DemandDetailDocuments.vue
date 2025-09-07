@@ -127,6 +127,7 @@
     <!-- Delete Confirmation Dialog -->
     <ConfirmDialog
       v-if="fileToDelete"
+      class="ui-mode"
       title="Delete Output File?"
       color="negative"
       confirm-text="Delete"

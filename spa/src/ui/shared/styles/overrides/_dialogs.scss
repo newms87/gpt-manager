@@ -3,229 +3,232 @@
 // ============================================
 // Beautiful, high-contrast styling for ConfirmDialog and InfoDialog
 
-// Global dialog backdrop (highest specificity)
-body.ui-mode .q-dialog .q-dialog__backdrop {
-	background: rgba(0, 0, 0, 0.6) !important;
-	backdrop-filter: blur(8px) !important;
-}
+// UI Mode Dialog Styling - apply ui-mode class directly to dialog
+.q-dialog.ui-mode {
+  // Global dialog backdrop
+  .q-dialog__backdrop {
+    background: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(8px) !important;
+  }
 
-// Base dialog container overrides
-body.ui-mode .q-dialog.dx-dialog {
-	.q-dialog__inner {
-		padding: var(--ui-space-lg) !important;
-	}
-}
+  // Base dialog container
+  &.dx-dialog {
+    .q-dialog__inner {
+      padding: var(--ui-space-lg) !important;
+    }
+  }
 
-// Dialog card overrides with high specificity
-body.ui-mode .q-dialog .dx-dialog-card.q-card {
-	background: var(--ui-neutral-50) !important;
-	border-radius: var(--ui-radius-2xl) !important;
-	box-shadow: var(--ui-shadow-2xl) !important;
-	border: 1px solid var(--ui-neutral-200) !important;
-	overflow: hidden !important;
-	min-width: 400px !important;
-	max-width: 90vw !important;
-	max-height: 90vh !important;
-	animation: uiSlideUp 0.3s ease-out !important;
-}
+  // Dialog card overrides
+  .dx-dialog-card.q-card {
+    background: var(--ui-neutral-50) !important;
+    border-radius: var(--ui-radius-2xl) !important;
+    box-shadow: var(--ui-shadow-2xl) !important;
+    border: 1px solid var(--ui-neutral-200) !important;
+    overflow: hidden !important;
+    min-width: 400px !important;
+    max-width: 90vw !important;
+    max-height: 90vh !important;
+    animation: uiSlideUp 0.3s ease-out !important;
 
-// Dialog header styling
-body.ui-mode .q-dialog .dx-dialog-card .dx-dialog-header.q-card__section {
-	background: linear-gradient(135deg, var(--ui-neutral-50) 0%, var(--ui-neutral-100) 100%) !important;
-	border-bottom: 1px solid var(--ui-neutral-200) !important;
-	padding: var(--ui-space-xl) !important;
-}
+    // Dialog header styling
+    .dx-dialog-header.q-card__section {
+      background: linear-gradient(135deg, var(--ui-neutral-50) 0%, var(--ui-neutral-100) 100%) !important;
+      border-bottom: 1px solid var(--ui-neutral-200) !important;
+      padding: var(--ui-space-xl) !important;
+    }
 
-// Dialog title styling
-body.ui-mode .q-dialog .dx-dialog-card .dx-dialog-title {
-	color: var(--ui-neutral-900) !important;
-	font-size: var(--ui-font-size-xl) !important;
-	font-weight: var(--ui-font-weight-semibold) !important;
-	margin: 0 !important;
-	font-family: "Inter", "Segoe UI", sans-serif !important;
-}
+    // Dialog title styling
+    .dx-dialog-title {
+      color: var(--ui-neutral-900) !important;
+      font-size: var(--ui-font-size-xl) !important;
+      font-weight: var(--ui-font-weight-semibold) !important;
+      margin: 0 !important;
+      font-family: "Inter", "Segoe UI", sans-serif !important;
+    }
 
-// Dialog close button
-body.ui-mode .q-dialog .dx-dialog-card .dx-close-button {
-	padding: var(--ui-space-sm) !important;
-	border-radius: var(--ui-radius-lg) !important;
-	transition: all var(--ui-transition-fast) !important;
-	color: var(--ui-neutral-500) !important;
-	cursor: pointer !important;
+    // Dialog close button
+    .dx-close-button {
+      padding: var(--ui-space-sm) !important;
+      border-radius: var(--ui-radius-lg) !important;
+      transition: all var(--ui-transition-fast) !important;
+      color: var(--ui-neutral-500) !important;
+      cursor: pointer !important;
 
-	&:hover {
-		background: var(--ui-neutral-200) !important;
-		color: var(--ui-neutral-700) !important;
-		transform: scale(1.1) !important;
-	}
-}
+      &:hover {
+        background: var(--ui-neutral-200) !important;
+        color: var(--ui-neutral-700) !important;
+        transform: scale(1.1) !important;
+      }
+    }
 
-// Dialog content styling
-body.ui-mode .q-dialog .dx-dialog-card .dx-dialog-content.q-card__section {
-	padding: var(--ui-space-xl) !important;
-	color: var(--ui-neutral-700) !important;
-	font-size: var(--ui-font-size-base) !important;
-	line-height: var(--ui-line-height-relaxed) !important;
-	background: white !important;
-}
+    // Dialog content styling
+    .dx-dialog-content.q-card__section {
+      padding: var(--ui-space-xl) !important;
+      color: var(--ui-neutral-700) !important;
+      font-size: var(--ui-font-size-base) !important;
+      line-height: var(--ui-line-height-relaxed) !important;
+      background: white !important;
+    }
 
-// Dialog actions styling
-body.ui-mode .q-dialog .dx-dialog-card .dx-dialog-actions {
-	padding: var(--ui-space-xl) !important;
-	background: var(--ui-neutral-50) !important;
-	border-top: 1px solid var(--ui-neutral-200) !important;
-	gap: var(--ui-space-md) !important;
-	justify-content: flex-end !important;
-	display: flex !important;
-}
+    // Dialog actions styling
+    .dx-dialog-actions {
+      padding: var(--ui-space-xl) !important;
+      background: var(--ui-neutral-50) !important;
+      border-top: 1px solid var(--ui-neutral-200) !important;
+      gap: var(--ui-space-md) !important;
+      justify-content: flex-end !important;
+      display: flex !important;
 
-// Dialog button overrides
-body.ui-mode .q-dialog .dx-dialog-actions .q-btn.dx-dialog-button {
-	min-width: 100px !important;
-	border-radius: var(--ui-radius-lg) !important;
-	font-weight: var(--ui-font-weight-medium) !important;
-	transition: all var(--ui-transition-fast) !important;
-	font-family: "Inter", "Segoe UI", sans-serif !important;
-	text-transform: none !important;
+      // Dialog button overrides
+      .q-btn.dx-dialog-button {
+        min-width: 100px !important;
+        border-radius: var(--ui-radius-lg) !important;
+        font-weight: var(--ui-font-weight-medium) !important;
+        transition: all var(--ui-transition-fast) !important;
+        font-family: "Inter", "Segoe UI", sans-serif !important;
+        text-transform: none !important;
 
-	&:focus {
-		outline: 2px solid var(--ui-primary-500) !important;
-		outline-offset: 2px !important;
-	}
-}
+        &:focus {
+          outline: 2px solid var(--ui-primary-500) !important;
+          outline-offset: 2px !important;
+        }
+      }
+    }
 
-// Cancel button styling
-body.ui-mode .q-dialog .dx-dialog-button-cancel .q-btn.dx-dialog-button {
-	background: var(--ui-neutral-100) !important;
-	color: var(--ui-neutral-700) !important;
-	border: 1px solid var(--ui-neutral-300) !important;
+    // Cancel button styling
+    .dx-dialog-button-cancel .q-btn.dx-dialog-button {
+      background: var(--ui-neutral-100) !important;
+      color: var(--ui-neutral-700) !important;
+      border: 1px solid var(--ui-neutral-300) !important;
 
-	.q-btn__content {
-		background: transparent !important;
-	}
+      .q-btn__content {
+        background: transparent !important;
+      }
 
-	&:before {
-		display: none !important;
-	}
+      &:before {
+        display: none !important;
+      }
 
-	&:hover {
-		background: var(--ui-neutral-200) !important;
-		border-color: var(--ui-neutral-400) !important;
-		transform: translateY(-1px) !important;
-		box-shadow: var(--ui-shadow-sm) !important;
+      &:hover {
+        background: var(--ui-neutral-200) !important;
+        border-color: var(--ui-neutral-400) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: var(--ui-shadow-sm) !important;
 
-		.q-btn__content {
-			background: transparent !important;
-		}
-	}
+        .q-btn__content {
+          background: transparent !important;
+        }
+      }
 
-	&:active {
-		transform: translateY(0) !important;
-	}
-}
+      &:active {
+        transform: translateY(0) !important;
+      }
+    }
 
-// Confirm button styling
-body.ui-mode .q-dialog .dx-dialog-button-confirm .q-btn.dx-dialog-button {
-	background: linear-gradient(135deg, var(--ui-primary-500) 0%, var(--ui-primary-700) 100%) !important;
-	color: white !important;
-	border: none !important;
-	box-shadow: var(--ui-shadow-sm) !important;
+    // Confirm button styling
+    .dx-dialog-button-confirm .q-btn.dx-dialog-button {
+      background: linear-gradient(135deg, var(--ui-primary-500) 0%, var(--ui-primary-700) 100%) !important;
+      color: white !important;
+      border: none !important;
+      box-shadow: var(--ui-shadow-sm) !important;
 
-	.q-btn__content {
-		background: transparent !important;
-	}
+      .q-btn__content {
+        background: transparent !important;
+      }
 
-	&:before {
-		display: none !important;
-	}
+      &:before {
+        display: none !important;
+      }
 
-	&:hover {
-		transform: translateY(-1px) !important;
-		box-shadow: var(--ui-shadow-md) !important;
-		filter: brightness(1.05) !important;
+      &:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: var(--ui-shadow-md) !important;
+        filter: brightness(1.05) !important;
 
-		.q-btn__content {
-			background: transparent !important;
-		}
-	}
+        .q-btn__content {
+          background: transparent !important;
+        }
+      }
 
-	&:active {
-		transform: translateY(0) !important;
-	}
+      &:active {
+        transform: translateY(0) !important;
+      }
 
-	&:disabled {
-		background: var(--ui-neutral-300) !important;
-		color: var(--ui-neutral-500) !important;
-		transform: none !important;
-		box-shadow: none !important;
-		cursor: not-allowed !important;
+      &:disabled {
+        background: var(--ui-neutral-300) !important;
+        color: var(--ui-neutral-500) !important;
+        transform: none !important;
+        box-shadow: none !important;
+        cursor: not-allowed !important;
 
-		.q-btn__content {
-			background: transparent !important;
-		}
-	}
-}
+        .q-btn__content {
+          background: transparent !important;
+        }
+      }
+    }
 
-// Done button styling (for InfoDialog)
-body.ui-mode .q-dialog .q-btn.dx-dialog-button-done {
-	background: linear-gradient(135deg, var(--ui-secondary-500) 0%, var(--ui-secondary-700) 100%) !important;
-	color: white !important;
-	border: none !important;
-	box-shadow: var(--ui-shadow-sm) !important;
-	border-radius: var(--ui-radius-lg) !important;
-	font-weight: var(--ui-font-weight-medium) !important;
-	min-width: 100px !important;
+    // Done button styling (for InfoDialog)
+    .q-btn.dx-dialog-button-done {
+      background: linear-gradient(135deg, var(--ui-secondary-500) 0%, var(--ui-secondary-700) 100%) !important;
+      color: white !important;
+      border: none !important;
+      box-shadow: var(--ui-shadow-sm) !important;
+      border-radius: var(--ui-radius-lg) !important;
+      font-weight: var(--ui-font-weight-medium) !important;
+      min-width: 100px !important;
 
-	.q-btn__content {
-		background: transparent !important;
-	}
+      .q-btn__content {
+        background: transparent !important;
+      }
 
-	&:before {
-		display: none !important;
-	}
+      &:before {
+        display: none !important;
+      }
 
-	&:hover {
-		transform: translateY(-1px) !important;
-		box-shadow: var(--ui-shadow-md) !important;
-		filter: brightness(1.05) !important;
+      &:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: var(--ui-shadow-md) !important;
+        filter: brightness(1.05) !important;
 
-		.q-btn__content {
-			background: transparent !important;
-		}
-	}
+        .q-btn__content {
+          background: transparent !important;
+        }
+      }
 
-	&:active {
-		transform: translateY(0) !important;
-	}
-}
+      &:active {
+        transform: translateY(0) !important;
+      }
+    }
+  }
 
-// Specific dialog type overrides
-body.ui-mode .q-dialog.dx-confirm-dialog .dx-dialog-title {
-	color: var(--ui-warning-700) !important;
-}
+  // Specific dialog type overrides
+  &.dx-confirm-dialog .dx-dialog-title {
+    color: var(--ui-warning-700) !important;
+  }
 
-body.ui-mode .q-dialog.dx-info-dialog .dx-dialog-title {
-	color: var(--ui-info-700) !important;
-}
+  &.dx-info-dialog .dx-dialog-title {
+    color: var(--ui-info-700) !important;
+  }
 
-// Mobile responsiveness
-@media (max-width: 640px) {
-	body.ui-mode .q-dialog .dx-dialog-card {
-		min-width: 320px !important;
-		margin: var(--ui-space-md) !important;
+  // Mobile responsiveness
+  @media (max-width: 640px) {
+    .dx-dialog-card {
+      min-width: 320px !important;
+      margin: var(--ui-space-md) !important;
 
-		.dx-dialog-header,
-		.dx-dialog-content,
-		.dx-dialog-actions {
-			padding: var(--ui-space-lg) !important;
-		}
+      .dx-dialog-header,
+      .dx-dialog-content,
+      .dx-dialog-actions {
+        padding: var(--ui-space-lg) !important;
+      }
 
-		.dx-dialog-actions {
-			flex-direction: column !important;
+      .dx-dialog-actions {
+        flex-direction: column !important;
 
-			.dx-dialog-button {
-				width: 100% !important;
-			}
-		}
-	}
+        .dx-dialog-button {
+          width: 100% !important;
+        }
+      }
+    }
+  }
 }

@@ -1,6 +1,7 @@
 <template>
     <InfoDialog
         v-if="visible"
+        class="ui-mode"
         title="Event Metadata"
         color="blue"
         :hide-cancel="true"

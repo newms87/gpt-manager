@@ -63,11 +63,12 @@
         <!-- Delete Confirmation Dialog -->
         <ConfirmDialog
             v-if="templateToDelete"
+            class="ui-mode"
             title="Delete Template?"
-            :message="`Are you sure you want to delete &quot;${templateToDelete.name}&quot;? This action cannot be undone.`"
+            :content="`Are you sure you want to delete &quot;${templateToDelete.name}&quot;? This action cannot be undone.`"
             color="negative"
             @confirm="confirmDelete"
-            @cancel="templateToDelete = null"
+            @close="templateToDelete = null"
         />
     </UiMainLayout>
 </template>

@@ -1,5 +1,6 @@
 <template>
     <ConfirmDialog
+        class="ui-mode"
         title="Create New Demand"
         content-class="w-[600px]"
         confirm-text="Create Demand"

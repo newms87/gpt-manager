@@ -1,6 +1,7 @@
 <template>
     <InfoDialog
         v-if="isShowing"
+        class="ui-mode"
         :title="`Template Variables - ${template?.name || 'Template'}`"
         content-class="w-[85vw] h-[85vh] overflow-hidden bg-white"
         @close="$emit('close')"

@@ -18,7 +18,10 @@ class UiDemandWorkflowService
     public function extractData(UiDemand $uiDemand): WorkflowRun
     {
         if (!$uiDemand->canExtractData()) {
-            throw new ValidationError('Cannot extract data for this demand. Check status and existing workflows.');
+            if (!$uiDemand->inputFiles()->count()) {
+                throw new ValidationError('No input files attached to the demand.');
+            }
+            throw new ValidationError('Cannot extract data for this demand. Make sure a workflow is not already running for this demand.');
         }
 
 
@@ -100,11 +103,11 @@ TEXT;
         // 1. The workflow input (converted to artifact)
         // 2. Medical summary artifacts from previous workflow step
         $inputArtifacts = [$workflowInput->toArtifact()];
-        
+
         // Add medical summary artifacts as additional input artifacts
         // These contain the generated medical summaries from the previous workflow step
         $medicalSummaryArtifacts = $uiDemand->medicalSummaries()->get();
-        foreach ($medicalSummaryArtifacts as $artifact) {
+        foreach($medicalSummaryArtifacts as $artifact) {
             $inputArtifacts[] = $artifact;
         }
 

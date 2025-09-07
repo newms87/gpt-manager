@@ -132,6 +132,7 @@
         <!-- Delete Confirmation Dialog -->
         <ConfirmDialog
             v-if="summaryToDelete"
+            class="ui-mode"
             title="Delete Medical Summary"
             :content="`Are you sure you want to delete '${summaryToDelete.name || 'this medical summary'}'? This action cannot be undone.`"
             confirm-text="Delete"

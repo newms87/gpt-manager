@@ -1,12 +1,13 @@
 <template>
     <ConfirmDialog
+        class="ui-mode"
         title="Select a Template for Writing Demand Letter"
         content-class="w-[90vw] max-w-4xl"
         confirm-text="Write Demand Letter"
         cancel-text="Cancel"
         :disabled="!selectedTemplate"
         @confirm="handleConfirm"
-        @close="handleCancel"
+        @close="$emit('close')"
     >
         <div class="space-y-6">
             <!-- Loading State -->
@@ -153,9 +154,7 @@ const getSelectedCardClasses = (index: number) => {
 
 
 // Load templates when component mounts
-onMounted(async () => {
-    await loadActiveTemplates();
-});
+onMounted(loadActiveTemplates);
 
 const handleConfirm = () => {
     if (!selectedTemplate.value) {
@@ -163,10 +162,6 @@ const handleConfirm = () => {
     }
 
     emit("confirm", selectedTemplate.value, additionalInstructions.value);
-};
-
-const handleCancel = () => {
-    emit("close");
 };
 
 const goToCreateTemplate = () => {

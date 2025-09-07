@@ -45,11 +45,13 @@
         <!-- Delete Confirmation Dialog -->
         <ConfirmDialog
             v-if="showDeleteConfirm"
+            class="ui-mode"
             title="Delete Demand?"
-            message="Are you sure you want to delete this demand? This action cannot be undone."
+            content="Are you sure you want to delete this demand? This action cannot be undone."
             color="negative"
+            :is-saving="isDeleting"
             @confirm="confirmDelete"
-            @cancel="showDeleteConfirm = false"
+            @close="showDeleteConfirm = false"
         />
     </UiCard>
 </template>

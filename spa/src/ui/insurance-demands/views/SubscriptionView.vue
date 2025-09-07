@@ -341,6 +341,7 @@
 		<!-- Plan Selection Dialog -->
 		<ConfirmDialog
 			v-if="showPlansDialog"
+			class="ui-mode"
 			title="Change Subscription Plan"
 			:show-cancel="false"
 			:show-confirm="false"
@@ -362,6 +363,7 @@
 		<!-- Add Payment Method Dialog -->
 		<ConfirmDialog
 			v-if="showPaymentMethodDialog"
+			class="ui-mode"
 			title="Add Payment Method"
 			confirm-label="Add Payment Method"
 			:confirm-loading="isAddingPaymentMethod"

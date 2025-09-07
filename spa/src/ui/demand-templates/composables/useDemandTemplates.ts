@@ -1,36 +1,37 @@
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { dxDemandTemplate } from "../config";
 import type { DemandTemplate } from "../types";
 
 export function useDemandTemplates() {
-	// Computed properties
-	const templates = computed(() => {
-		return dxDemandTemplate.pagedItems.value?.data || [];
-	});
+    // Computed properties
+    const templates = ref([]);
 
-	const activeTemplates = computed(() =>
-		templates.value.filter((t: DemandTemplate) => t.is_active)
-	);
+    const activeTemplates = computed(() =>
+        templates.value.filter((t: DemandTemplate) => t.is_active)
+    );
 
-	const sortedTemplates = computed(() =>
-		[...templates.value].sort((a: DemandTemplate, b: DemandTemplate) =>
-			new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-		)
-	);
+    const sortedTemplates = computed(() =>
+        [...templates.value].sort((a: DemandTemplate, b: DemandTemplate) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        )
+    );
 
-	const isLoading = computed(() => dxDemandTemplate.isLoadingList.value);
+    const isLoading = ref(false);
 
-	// Utility methods for convenience
-	const loadActiveTemplates = () => {
-		dxDemandTemplate.initialize();
-		dxDemandTemplate.setActiveFilter({ is_active: true });
-		dxDemandTemplate.loadList();
-	};
+    // Utility methods for convenience
+    const loadActiveTemplates = async () => {
+        isLoading.value = true;
+        try {
+            templates.value = (await dxDemandTemplate.routes.list())?.data || [];
+        } finally {
+            isLoading.value = false;
+        }
+    };
 
-	return {
-		templates: sortedTemplates,
-		activeTemplates,
-		isLoading,
-		loadActiveTemplates
-	};
+    return {
+        templates: sortedTemplates,
+        activeTemplates,
+        isLoading,
+        loadActiveTemplates
+    };
 }

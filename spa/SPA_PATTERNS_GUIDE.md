@@ -7,7 +7,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ### Tables & Lists
 
 **ActionTableLayout** - Complete CRUD table with filters, pagination, and actions
+
 ```vue
+
 <ActionTableLayout
     title="Agents"
     :controller="dxAgent"
@@ -20,7 +22,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **ListTransition** - Animated list transitions
+
 ```vue
+
 <ListTransition>
     <div v-for="item in items" :key="item.id">...</div>
 </ListTransition>
@@ -29,18 +33,22 @@ This guide documents the reusable components, patterns, and conventions used thr
 ### Forms & Inputs
 
 **TextField** - Text input with validation
+
 ```vue
-<TextField 
-    v-model="input.name" 
-    label="Name" 
-    required 
+
+<TextField
+    v-model="input.name"
+    label="Name"
+    required
     :max-length="40"
-    @update:model-value="onUpdate" 
+    @update:model-value="onUpdate"
 />
 ```
 
 **NumberField** - Numeric input with min/max
+
 ```vue
+
 <NumberField
     v-model="input.polling_interval"
     label="Polling Interval (in minutes)"
@@ -51,7 +59,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **SelectField** - Dropdown selection
+
 ```vue
+
 <SelectField
     v-model="selectedOption"
     label="Choose Option"
@@ -60,7 +70,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **DateField** - Date picker
+
 ```vue
+
 <DateField
     v-model="date"
     label="Select Date"
@@ -68,7 +80,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **MultiFileField** - File upload with preview
+
 ```vue
+
 <MultiFileField
     v-model="files"
     label="Upload Files"
@@ -77,7 +91,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **EditableDiv** - Inline editable text
+
 ```vue
+
 <EditableDiv
     :model-value="object.name"
     placeholder="Enter name..."
@@ -87,7 +103,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **SelectionMenuField** - Complex selection with CRUD operations
+
 ```vue
+
 <SelectionMenuField
     v-model:selected="agent"
     selectable
@@ -102,15 +120,16 @@ This guide documents the reusable components, patterns, and conventions used thr
 ### Actions & Buttons
 
 **ActionButton** - Semantic action buttons
+
 ```vue
 <!-- ✅ CORRECT: Use type and label props only -->
 <ActionButton
     type="create"      // Types: create, edit, delete, trash, merge, cancel, confirm, etc.
-    label="Create New" // Use label prop for text
-    color="blue-invert"
-    tooltip="Create New"
-    :loading="action.isApplying"
-    @click="action.trigger()"
+label="Create New" // Use label prop for text
+color="blue-invert"
+tooltip="Create New"
+:loading="action.isApplying"
+@click="action.trigger()"
 />
 
 <!-- ❌ WRONG: NEVER add custom icons or slot content -->
@@ -123,13 +142,17 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **CRITICAL ActionButton Rules:**
+
 - **ALWAYS use `type` prop** - Each type has a predefined icon (create=plus, cancel=X, etc.)
 - **ALWAYS use `label` prop** for text - NEVER use slot content
 - **NEVER add custom icons** - The type already provides the correct icon
-- **Available types**: create, edit, delete, trash, cancel, confirm, save, export, import, play, stop, pause, refresh, restart, merge, check, view, etc.
+- **Available types**: create, edit, delete, trash, cancel, confirm, save, export, import, play, stop, pause, refresh,
+  restart, merge, check, view, etc.
 
 **ShowHideButton** - Toggle visibility
+
 ```vue
+
 <ShowHideButton
     v-model="isShowing"
     label="Details"
@@ -140,7 +163,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ### Layout Components
 
 **PanelsDrawer** - Slide-out detail panels
+
 ```vue
+
 <PanelsDrawer
     v-model="activeItem"
     :title="activeItem?.name"
@@ -149,7 +174,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **CollapsableSidebar** - Collapsible navigation sidebar
+
 ```vue
+
 <CollapsableSidebar
     v-model="isOpen"
     :width="300"
@@ -159,7 +186,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **ActionForm** - Form wrapper with actions
+
 ```vue
+
 <ActionForm
     :action="updateAction"
     :target="object"
@@ -171,7 +200,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ### Display Components
 
 **LabelPillWidget** - Status/label pills
+
 ```vue
+
 <LabelPillWidget
     label="Status"
     value="Active"
@@ -180,7 +211,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **FilePreview** - File preview with actions
+
 ```vue
+
 <FilePreview
     :file="uploadedFile"
     downloadable
@@ -189,7 +222,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ```
 
 **SaveStateIndicator** - Save status indicator
+
 ```vue
+
 <SaveStateIndicator
     :saving="isSaving"
     :saved="isSaved"
@@ -199,17 +234,25 @@ This guide documents the reusable components, patterns, and conventions used thr
 ### Dialogs
 
 **ConfirmDialog** - Confirmation dialogs
+
 ```vue
+
 <ConfirmDialog
+    v-if="showConfirmDialog"
     title="Delete Item?"
-    message="This action cannot be undone."
+    content="This action cannot be undone."
+    confirm-label="Delete"
+    confirm-class="bg-red-700 text-red-200"
     @confirm="deleteItem"
 />
 ```
 
 **InfoDialog** - Information dialogs
+
 ```vue
+
 <InfoDialog
+    v-if="showInfoDialog"
     title="Process Details"
     :content="processInfo"
 />
@@ -218,7 +261,9 @@ This guide documents the reusable components, patterns, and conventions used thr
 ### Utilities
 
 **ListControlsPagination** - Pagination controls
+
 ```vue
+
 <ListControlsPagination
     v-model:page="currentPage"
     :total="totalItems"
@@ -242,29 +287,32 @@ await routes.details(object, fields); // Updates existing object in-place
 
 // ✅ CORRECT - Performance optimized loading
 const loadBasicData = async (item) => {
-  await routes.details(item, {
-    user: true,
-    files: true
-  });
+    await routes.details(item, {
+        user: true,
+        files: true
+    });
 };
 
 const loadHeavyData = async (item) => {
-  await routes.details(item, {
-    usage_events: { user: true } // Load separately when needed
-  });
+    await routes.details(item, {
+        usage_events: { user: true } // Load separately when needed
+    });
 };
 ```
 
 **Key Principles:**
+
 - Routes handle all state management automatically
-- Objects are stored once per `id + __type` combination  
+- Objects are stored once per `id + __type` combination
 - All references point to the same instance
 - Updates reflect everywhere automatically
 - No manual array management needed
 
 **Local Storage Helpers:**
+
 ```typescript
 import { getItem, setItem } from "quasar-ui-danx";
+
 setItem("key", value);
 const value = getItem("key");
 ```
@@ -297,9 +345,10 @@ dxAgent.initialize();
 ## 4. Icon Usage (danx-icon)
 
 ### Common Icons
+
 ```typescript
 // Solid icons (most common)
-import { 
+import {
     FaSolidPencil as EditIcon,
     FaSolidTrash as DeleteIcon,
     FaSolidPlus as CreateIcon,
@@ -320,7 +369,7 @@ import {
 } from "danx-icon";
 
 // Usage
-<EditIcon class="w-3" />  // Use Tailwind width classes
+<EditIcon class = "w-3" / >  // Use Tailwind width classes
 ```
 
 ## 5. File Organization
@@ -354,6 +403,7 @@ spa/src/
 ## 6. Common Patterns
 
 ### API Requests
+
 ```typescript
 import { request } from "quasar-ui-danx";
 
@@ -369,17 +419,24 @@ await list({ filter: { active: true } });
 ```
 
 ### Actions with Loading States
+
 ```typescript
 const action = dxAgent.getAction("update");
 
 // In template
-<QBtn :loading="action.isApplying" @click="action.trigger(object, data)">
+<QBtn
+:
+loading = "action.isApplying"
+@click
+= "action.trigger(object, data)" >
     Save
-</QBtn>
+    < /QBtn>
 ```
 
 ### Reactive Form Updates
+
 ```vue
+
 <TextField
     v-model="input.name"
     @update:model-value="updateAction.trigger(object, input)"
@@ -387,6 +444,7 @@ const action = dxAgent.getAction("update");
 ```
 
 ### Conditional Rendering
+
 ```vue
 <!-- Use v-if for conditional DOM -->
 <div v-if="hasPermission">...</div>
@@ -398,24 +456,26 @@ const action = dxAgent.getAction("update");
 ## 7. Styling Patterns
 
 ### Tailwind Classes
+
 ```vue
 <!-- Background colors -->
 <div class="bg-slate-600 bg-slate-700 bg-slate-800 bg-slate-900">
 
-<!-- Text colors -->
-<div class="text-slate-200 text-slate-300 text-slate-400">
+    <!-- Text colors -->
+    <div class="text-slate-200 text-slate-300 text-slate-400">
 
-<!-- Spacing -->
-<div class="p-4 px-6 py-3 mt-4 space-x-3">
+        <!-- Spacing -->
+        <div class="p-4 px-6 py-3 mt-4 space-x-3">
 
-<!-- Flexbox -->
-<div class="flex items-center justify-between gap-4">
+            <!-- Flexbox -->
+            <div class="flex items-center justify-between gap-4">
 
-<!-- Rounded corners -->
-<div class="rounded rounded-lg rounded-xl">
+                <!-- Rounded corners -->
+                <div class="rounded rounded-lg rounded-xl">
 ```
 
 ### Custom Utility Classes
+
 ```scss
 // In assets/general.scss
 .flex-x {
@@ -425,32 +485,35 @@ const action = dxAgent.getAction("update");
 // Special backgrounds
 .bg-skipped {
     background-image: repeating-linear-gradient(
-        135deg,
-        theme("colors.yellow.700") 0 10px,
-        theme("colors.gray.700") 10px 20px
+            135deg,
+            theme("colors.yellow.700") 0 10px,
+            theme("colors.gray.700") 10px 20px
     );
 }
 ```
 
 ### Component-Specific Styles
+
 ```vue
+
 <style lang="scss" scoped>
-.team-object-header {
-    .edit-button {
-        transition: all 0.3s;
-        opacity: 0;
+    .team-object-header {
+        .edit-button {
+            transition: all 0.3s;
+            opacity: 0;
+        }
+
+        &:hover .edit-button {
+            opacity: 1;
+        }
     }
-    
-    &:hover .edit-button {
-        opacity: 1;
-    }
-}
 </style>
 ```
 
 ## 8. Common Composables
 
 ### useAssistantState
+
 ```typescript
 import { useAssistantState } from "@/composables/useAssistantState";
 
@@ -464,6 +527,7 @@ const {
 ```
 
 ### Authentication Helpers
+
 ```typescript
 import { authUser, authTeam, isAuthenticated, setAuthToken } from "@/helpers/auth";
 
@@ -473,6 +537,7 @@ if (isAuthenticated()) {
 ```
 
 ### Pusher Integration
+
 ```typescript
 import { usePusher } from "@/helpers/pusher";
 
@@ -497,6 +562,7 @@ fPercent(0.85);           // "85%"
 ## 10. TypeScript Patterns
 
 ### Component Props
+
 ```typescript
 const props = withDefaults(defineProps<{
     object: TeamObject;
@@ -507,6 +573,7 @@ const props = withDefaults(defineProps<{
 ```
 
 ### Emits
+
 ```typescript
 const emit = defineEmits<{
     'update': [value: string];
@@ -515,6 +582,7 @@ const emit = defineEmits<{
 ```
 
 ### Model Binding
+
 ```typescript
 const modelValue = defineModel<string>();
 // or
@@ -524,6 +592,7 @@ const agent = defineModel<Agent | null>();
 ## Testing & Build
 
 ### Build Process
+
 - **NEVER run yarn type-check** - Type checking is handled by the IDE
 - Use `yarn build` only for production builds
 - Prefer manual code review over automated type checking
