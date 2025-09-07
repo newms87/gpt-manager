@@ -8,7 +8,7 @@
                             Instruction Templates
                         </h1>
                         <p class="text-slate-600 mt-1">
-                            Create and manage instruction templates for your demand writing workflows
+                            Create and manage instruction templates for writing the medical treatment summaries
                         </p>
                     </div>
 
