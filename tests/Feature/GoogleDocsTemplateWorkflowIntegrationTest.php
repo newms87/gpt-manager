@@ -48,7 +48,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         // Set up workflow configuration
-        Config::set('ui-demands.workflows.write_demand', 'Write Demand Summary');
+        Config::set('ui-demands.workflows.write_demand_letter', 'Write Demand Summary');
 
         // Mock queue to prevent actual job dispatching
         Queue::fake();

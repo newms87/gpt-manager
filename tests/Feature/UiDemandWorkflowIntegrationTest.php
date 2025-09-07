@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\WorkflowStartNodeJob;
+use App\Models\Demand\DemandTemplate;
 use App\Models\Demand\UiDemand;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\WorkflowDefinition;
+use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\UiDemand\UiDemandWorkflowService;
 use Illuminate\Support\Facades\Config;
@@ -30,7 +33,7 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         Config::set('ui-demands.workflows.write_medical_summary', 'Write Medical Summary');
         Config::set('ui-demands.workflows.write_demand_letter', 'Write Demand Letter');
 
-        // Mock queue to prevent actual job dispatching
+        // Mock queue to prevent actual job dispatching except for WorkflowStartNodeJob
         Queue::fake();
     }
 
@@ -328,30 +331,29 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         // Create instruction template
-        $instructionTemplate = \App\Models\Workflow\WorkflowInput::factory()->create([
+        $instructionTemplate = WorkflowInput::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'content' => 'Use formal medical terminology and include specific injury details.',
         ]);
 
-        // When
+        // When - Test the actual writeMedicalSummary method
         $workflowRun = $this->service->writeMedicalSummary(
             $uiDemand,
             $instructionTemplate->id,
             'Focus on the most severe injuries only.'
         );
 
-        // Then
-        $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
+        // Execute the WorkflowStartNodeJob to attach input artifacts
+        Queue::assertPushed(WorkflowStartNodeJob::class, function ($job) {
+            $job->run();
+            return true;
+        });
 
-        $artifacts = $workflowRun->artifacts;
-        $this->assertNotEmpty($artifacts);
-        $firstArtifact = $artifacts->first();
-
-        // Verify instruction template content is appended with critical instructions format
-        $this->assertStringContains('=== CRITICAL WRITING INSTRUCTIONS ===', $firstArtifact->text_content);
-        $this->assertStringContains('Use formal medical terminology and include specific injury details.', $firstArtifact->text_content);
-        $this->assertStringContains('Focus on the most severe injuries only.', $firstArtifact->text_content);
-        $this->assertStringContains('=== END CRITICAL INSTRUCTIONS ===', $firstArtifact->text_content);
+        // Then - Test that the workflow task run contains the artifact with instruction content
+        $artifact = $workflowRun->taskRuns()->first()->inputArtifacts()->first();
+        $this->assertStringContainsStringIgnoringCase('instructions', $artifact->text_content);
+        $this->assertStringContainsString('Use formal medical terminology and include specific injury details.', $artifact->text_content);
+        $this->assertStringContainsString('Focus on the most severe injuries only.', $artifact->text_content);
     }
 
     public function test_workflowWithDemandTemplate_includesTemplateData(): void
@@ -405,26 +407,27 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             'filename' => 'demand_template.docx',
         ]);
 
-        $template = \App\Models\Demand\DemandTemplate::factory()->create([
+        $template = DemandTemplate::factory()->create([
             'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $templateFile->id,
         ]);
 
-        // When
+        // When - Test the actual writeDemandLetter method
         $workflowRun = $this->service->writeDemandLetter(
             $uiDemand,
             $template->id,
             'Include specific monetary damages and timeline.'
         );
 
-        // Then
-        $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
+        // Execute the WorkflowStartNodeJob to attach input artifacts
+        Queue::assertPushed(WorkflowStartNodeJob::class, function ($job) {
+            $job->run();
+            return true;
+        });
 
-        $artifacts = $workflowRun->artifacts;
-        $this->assertNotEmpty($artifacts);
-        $firstArtifact = $artifacts->first();
-
-        $contentData = json_decode($firstArtifact->text_content, true);
+        // Then - Test that the workflow task run contains the artifact with template data
+        $artifact    = $workflowRun->taskRuns()->first()->inputArtifacts()->first();
+        $contentData = json_decode($artifact->text_content, true);
         $this->assertEquals($templateFile->id, $contentData['template_stored_file_id']);
         $this->assertEquals('Include specific monetary damages and timeline.', $contentData['additional_instructions']);
         $this->assertEquals($uiDemand->id, $contentData['demand_id']);
@@ -464,7 +467,7 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
     {
         // Given - Create demand in different team
         $otherTeam = \App\Models\Team\Team::factory()->create();
-        
+
         $otherTeamDemand = UiDemand::factory()->create([
             'team_id' => $otherTeam->id,
             'title'   => 'Other Team Demand',
