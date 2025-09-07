@@ -111,15 +111,15 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $this->assertLessThan(5, abs(time() - $completedAt->getTimestamp()));
     }
 
-    public function test_writeDemand_fullLifecycle_createsWorkflowListenerAndAttachesOutputFiles(): void
+    public function test_writeDemandLetter_fullLifecycle_createsWorkflowListenerAndAttachesOutputFiles(): void
     {
-        // Given - Set up write demand workflow
+        // Given - Set up write demand letter workflow
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name'    => 'Write Demand Summary',
+            'name'    => 'Write Demand Letter',
         ]);
 
-        // Create a UiDemand that can write demand (has team object and completed extract data)
+        // Create a UiDemand that can write demand letter (has team object and completed medical summary)
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'type'    => 'Document',
@@ -129,21 +129,26 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'team_id'        => $this->user->currentTeam->id,
             'user_id'        => $this->user->id,
             'status'         => UiDemand::STATUS_DRAFT,
-            'title'          => 'Test Write Demand',
+            'title'          => 'Test Write Demand Letter',
             'team_object_id' => $teamObject->id,
-            'metadata'       => ['extract_data_completed_at' => now()->toIso8601String()],
+            'metadata'       => ['write_medical_summary_completed_at' => now()->toIso8601String()],
         ]);
 
-        // Mock a completed extract data workflow run
-        $extractWorkflowRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
+        // Mock a completed medical summary workflow run (prerequisite for demand letter)
+        $medicalSummaryWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Write Medical Summary',
+        ]);
+        
+        $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
             'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
             'completed_at'           => now(),
         ]);
-        $uiDemand->workflowRuns()->attach($extractWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
+        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY]);
 
-        // When - Start write demand workflow
-        $workflowRun = $this->service->writeDemand($uiDemand);
+        // When - Start write demand letter workflow
+        $workflowRun = $this->service->writeDemandLetter($uiDemand);
 
         // Then - Verify WorkflowListener is created
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
@@ -152,7 +157,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $this->assertNotNull($workflowListener);
         $this->assertEquals(UiDemand::class, $workflowListener->listener_type);
         $this->assertEquals($uiDemand->id, $workflowListener->listener_id);
-        $this->assertEquals(WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND, $workflowListener->workflow_type);
+        $this->assertEquals(WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER, $workflowListener->workflow_type);
         $this->assertEquals(WorkflowListener::STATUS_PENDING, $workflowListener->status);
 
         // Create output artifacts with stored files to simulate workflow output
@@ -245,9 +250,9 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $updatedDemand = $uiDemand->fresh();
         $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
 
-        // Verify metadata is updated with write demand completion
-        $this->assertArrayHasKey('extract_data_completed_at', $updatedDemand->metadata);
-        $this->assertArrayHasKey('write_demand_completed_at', $updatedDemand->metadata);
+        // Verify metadata is updated with write demand letter completion
+        $this->assertArrayHasKey('write_medical_summary_completed_at', $updatedDemand->metadata);
+        $this->assertArrayHasKey('write_demand_letter_completed_at', $updatedDemand->metadata);
         $this->assertArrayHasKey('workflow_run_id', $updatedDemand->metadata);
         $this->assertEquals($workflowRun->id, $updatedDemand->metadata['workflow_run_id']);
 
@@ -310,12 +315,12 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $this->assertEquals($workflowRun->id, $updatedDemand->metadata['workflow_run_id']);
     }
 
-    public function test_writeDemand_workflowFailure_updatesStatusAndMetadata(): void
+    public function test_writeDemandLetter_workflowFailure_updatesStatusAndMetadata(): void
     {
-        // Given - Set up write demand workflow
+        // Given - Set up write demand letter workflow
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name'    => 'Write Demand Summary',
+            'name'    => 'Write Demand Letter',
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -327,21 +332,26 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'team_id'        => $this->user->currentTeam->id,
             'user_id'        => $this->user->id,
             'status'         => UiDemand::STATUS_DRAFT,
-            'title'          => 'Test Write Demand Failure',
+            'title'          => 'Test Write Demand Letter Failure',
             'team_object_id' => $teamObject->id,
-            'metadata'       => ['extract_data_completed_at' => now()->toIso8601String()],
+            'metadata'       => ['write_medical_summary_completed_at' => now()->toIso8601String()],
         ]);
 
-        // Mock a completed extract data workflow run
-        $extractWorkflowRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
+        // Mock a completed medical summary workflow run (prerequisite for demand letter)
+        $medicalSummaryWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Write Medical Summary',
+        ]);
+        
+        $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
             'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
             'completed_at'           => now(),
         ]);
-        $uiDemand->workflowRuns()->attach($extractWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
+        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY]);
 
         // When - Start and fail write demand workflow
-        $workflowRun = $this->service->writeDemand($uiDemand);
+        $workflowRun = $this->service->writeDemandLetter($uiDemand);
         $workflowRun->update([
             'status'    => \App\Models\Workflow\WorkflowStatesContract::STATUS_FAILED,
             'failed_at' => now(),
@@ -354,8 +364,8 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $updatedDemand = $uiDemand->fresh();
         $this->assertEquals(UiDemand::STATUS_FAILED, $updatedDemand->status);
 
-        // Verify metadata includes failure information
-        $this->assertArrayHasKey('extract_data_completed_at', $updatedDemand->metadata);
+        // Verify metadata includes failure information  
+        $this->assertArrayHasKey('write_medical_summary_completed_at', $updatedDemand->metadata);
         $this->assertArrayHasKey('failed_at', $updatedDemand->metadata);
         $this->assertArrayHasKey('error', $updatedDemand->metadata);
         $this->assertArrayHasKey('workflow_run_id', $updatedDemand->metadata);
@@ -422,10 +432,10 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
     public function test_writeDemand_withTemplate_includesTemplateInWorkflowInput(): void
     {
-        // Given - Set up write demand workflow with template
-        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+        // Given - Set up write demand letter workflow with template
+        $writeDemandLetterWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name'    => 'Write Demand Summary',
+            'name'    => 'Write Demand Letter',
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -452,26 +462,31 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'status'         => UiDemand::STATUS_DRAFT,
             'title'          => 'Test Write Demand with Template',
             'team_object_id' => $teamObject->id,
-            'metadata'       => ['extract_data_completed_at' => now()->toIso8601String()],
+            'metadata'       => ['write_medical_summary_completed_at' => now()->toIso8601String()],
         ]);
 
-        // Mock a completed extract data workflow run
-        $extractWorkflowRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
+        // Mock a completed medical summary workflow run (prerequisite for demand letter)
+        $medicalSummaryWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Write Medical Summary',
+        ]);
+        
+        $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
             'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
             'completed_at'           => now(),
         ]);
-        $uiDemand->workflowRuns()->attach($extractWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
+        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY]);
 
         // When - Start write demand workflow with template and additional instructions
-        $workflowRun = $this->service->writeDemand($uiDemand, $template->id, 'Please make it professional');
+        $workflowRun = $this->service->writeDemandLetter($uiDemand, $template->id, 'Please make it professional');
 
         // Then - Verify WorkflowListener is created and workflow starts
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
 
         $workflowListener = WorkflowListener::where('workflow_run_id', $workflowRun->id)->first();
         $this->assertNotNull($workflowListener);
-        $this->assertEquals(WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND, $workflowListener->workflow_type);
+        $this->assertEquals(WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER, $workflowListener->workflow_type);
 
         // The template and instructions would be included in the WorkflowInput content
         // This is verified by the successful creation of the workflow without errors

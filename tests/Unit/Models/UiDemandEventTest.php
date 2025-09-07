@@ -124,8 +124,8 @@ class UiDemandEventTest extends AuthenticatedTestCase
 
         // Then
         $this->assertArrayHasKey('can_extract_data', $data);
-        $this->assertArrayHasKey('can_write_demand', $data);
+        $this->assertArrayHasKey('can_write_demand_letter', $data);
         $this->assertArrayHasKey('is_extract_data_running', $data);
-        $this->assertArrayHasKey('is_write_demand_running', $data);
+        $this->assertArrayHasKey('is_write_demand_letter_running', $data);
     }
 }

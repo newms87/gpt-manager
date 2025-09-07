@@ -185,6 +185,10 @@ const loadItemUsage = async (item) => {
 
 ### PHP/Laravel
 
+- ALL class imports MUST use namespace `use` statements at the top of the file
+    - NEVER use inline class references like `\App\Models\User::find()`
+    - ALWAYS add `use App\Models\User;` at the top and use `User::find()`
+    - This applies to ALL classes: models, services, facades, exceptions, etc.
 - Use app() helper for service resolution in ActionControllers (not constructor DI)
 - Database transactions for multi-step operations
 - Custom exceptions with proper HTTP codes

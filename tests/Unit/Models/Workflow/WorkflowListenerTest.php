@@ -93,7 +93,7 @@ class WorkflowListenerTest extends AuthenticatedTestCase
         $failedListener = WorkflowListener::createForListener(
             $uiDemand,
             WorkflowRun::factory()->create(),
-            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
+            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER
         );
 
         $failedListener->markAsFailed();
@@ -122,7 +122,7 @@ class WorkflowListenerTest extends AuthenticatedTestCase
         $writeListener = WorkflowListener::createForListener(
             $uiDemand,
             $workflowRun2,
-            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
+            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER
         );
         $writeListener->markAsCompleted();
 

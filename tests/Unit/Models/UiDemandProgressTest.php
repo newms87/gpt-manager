@@ -68,7 +68,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $uiDemand->workflowRuns()->attach([
             $extractDataWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA],
-            $writeDemandWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND],
+            $writeDemandWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER],
         ]);
 
         // When
@@ -79,7 +79,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         $this->assertEquals($extractDataWorkflow->id, $extractDataWorkflows->first()->id);
     }
 
-    public function test_writeDemandWorkflowRuns_returns_only_write_demand_workflows()
+    public function test_writeDemandLetterWorkflowRuns_returns_only_write_demand_workflows()
     {
         // Given
         $uiDemand = UiDemand::factory()->create([
@@ -101,11 +101,11 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $uiDemand->workflowRuns()->attach([
             $extractDataWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA],
-            $writeDemandWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND],
+            $writeDemandWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER],
         ]);
 
         // When
-        $writeDemandWorkflows = $uiDemand->writeDemandWorkflowRuns()->get();
+        $writeDemandWorkflows = $uiDemand->writeDemandLetterWorkflowRuns()->get();
 
         // Then
         $this->assertEquals(1, $writeDemandWorkflows->count());
@@ -178,7 +178,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         $this->assertEquals($newerWorkflow->id, $latestWorkflow->id);
     }
 
-    public function test_getLatestWriteDemandWorkflowRun_returns_most_recent_write_demand_workflow()
+    public function test_getLatestWriteDemandLetterWorkflowRun_returns_most_recent_write_demand_workflow()
     {
         // Given
         $uiDemand = UiDemand::factory()->create([
@@ -201,12 +201,12 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach([
-            $olderWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND],
-            $newerWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND],
+            $olderWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER],
+            $newerWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER],
         ]);
 
         // When
-        $latestWorkflow = $uiDemand->getLatestWriteDemandWorkflowRun();
+        $latestWorkflow = $uiDemand->getLatestWriteDemandLetterWorkflowRun();
 
         // Then
         $this->assertNotNull($latestWorkflow);
@@ -228,7 +228,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         $this->assertNull($latestWorkflow);
     }
 
-    public function test_getLatestWriteDemandWorkflowRun_returns_null_when_no_workflows_exist()
+    public function test_getLatestWriteDemandLetterWorkflowRun_returns_null_when_no_workflows_exist()
     {
         // Given
         $uiDemand = UiDemand::factory()->create([
@@ -237,7 +237,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $latestWorkflow = $uiDemand->getLatestWriteDemandWorkflowRun();
+        $latestWorkflow = $uiDemand->getLatestWriteDemandLetterWorkflowRun();
 
         // Then
         $this->assertNull($latestWorkflow);
@@ -342,7 +342,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         $this->assertEquals(75, $progress);
     }
 
-    public function test_getWriteDemandProgress_returns_zero_when_no_write_demand_workflow_exists()
+    public function test_getWriteDemandLetterProgress_returns_zero_when_no_write_demand_workflow_exists()
     {
         // Given
         $uiDemand = UiDemand::factory()->create([
@@ -351,13 +351,13 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $progress = $uiDemand->getWriteDemandProgress();
+        $progress = $uiDemand->getWriteDemandLetterProgress();
 
         // Then
         $this->assertEquals(0, $progress);
     }
 
-    public function test_getWriteDemandProgress_returns_100_when_workflow_is_completed()
+    public function test_getWriteDemandLetterProgress_returns_100_when_workflow_is_completed()
     {
         // Given
         $uiDemand = UiDemand::factory()->create([
@@ -375,17 +375,17 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
         ]);
 
         // When
-        $progress = $uiDemand->getWriteDemandProgress();
+        $progress = $uiDemand->getWriteDemandLetterProgress();
 
         // Then
         $this->assertEquals(100, $progress);
     }
 
-    public function test_getWriteDemandProgress_calculates_correct_percentage_for_running_workflows()
+    public function test_getWriteDemandLetterProgress_calculates_correct_percentage_for_running_workflows()
     {
         // Given
         $uiDemand = UiDemand::factory()->create([
@@ -423,11 +423,11 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         $runningTask2->save(); // Trigger status computation
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
         ]);
 
         // When
-        $progress = $uiDemand->getWriteDemandProgress();
+        $progress = $uiDemand->getWriteDemandLetterProgress();
 
         // Then - 1 out of 3 tasks are completed (33%)
         $this->assertEquals(33, $progress);
@@ -550,11 +550,11 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
         ]);
 
         // When
-        $isRunning = $uiDemand->isWriteDemandRunning();
+        $isRunning = $uiDemand->isWriteDemandLetterRunning();
 
         // Then
         $this->assertTrue($isRunning);
@@ -569,7 +569,7 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $isRunning = $uiDemand->isWriteDemandRunning();
+        $isRunning = $uiDemand->isWriteDemandLetterRunning();
 
         // Then
         $this->assertFalse($isRunning);
@@ -593,11 +593,11 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
         ]);
 
         // When
-        $isRunning = $uiDemand->isWriteDemandRunning();
+        $isRunning = $uiDemand->isWriteDemandLetterRunning();
 
         // Then
         $this->assertFalse($isRunning);
@@ -627,12 +627,12 @@ class UiDemandProgressTest extends AuthenticatedTestCase
 
         $uiDemand->workflowRuns()->attach([
             $extractDataWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA],
-            $writeDemandWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND],
+            $writeDemandWorkflow->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER],
         ]);
 
         // When
         $isExtractDataRunning = $uiDemand->isExtractDataRunning();
-        $isWriteDemandRunning = $uiDemand->isWriteDemandRunning();
+        $isWriteDemandRunning = $uiDemand->isWriteDemandLetterRunning();
 
         // Then
         $this->assertTrue($isExtractDataRunning);
@@ -769,11 +769,11 @@ class UiDemandProgressTest extends AuthenticatedTestCase
         $completedTask->save(); // Trigger status computation
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
         ]);
 
         // When
-        $progress = $uiDemand->getWriteDemandProgress();
+        $progress = $uiDemand->getWriteDemandLetterProgress();
 
         // Then - 1 out of 1 tasks are finished, so 100%
         $this->assertEquals(100, $progress);

@@ -33,9 +33,9 @@ class UiDemandResourceTest extends AuthenticatedTestCase
             'created_at',
             'updated_at',
             'can_extract_data',
-            'can_write_demand',
+            'can_write_demand_letter',
             'is_extract_data_running',
-            'is_write_demand_running',
+            'is_write_demand_letter_running',
             'usage_summary',
         ];
 
@@ -61,7 +61,7 @@ class UiDemandResourceTest extends AuthenticatedTestCase
             'output_files',
             'team_object',
             'extract_data_workflow_run',
-            'write_demand_workflow_run',
+            'write_demand_letter_workflow_run',
         ];
 
         foreach($expectedRelationshipFields as $field) {
@@ -163,11 +163,11 @@ class UiDemandResourceTest extends AuthenticatedTestCase
 
         $data = UiDemandResource::make($uiDemand, [
             'extract_data_workflow_run' => true,
-            'write_demand_workflow_run' => true,
+            'write_demand_letter_workflow_run' => true,
         ]);
 
         $this->assertArrayHasKey('extract_data_workflow_run', $data);
-        $this->assertArrayHasKey('write_demand_workflow_run', $data);
+        $this->assertArrayHasKey('write_demand_letter_workflow_run', $data);
     }
 
     public function test_resource_conditionally_loads_relationships(): void

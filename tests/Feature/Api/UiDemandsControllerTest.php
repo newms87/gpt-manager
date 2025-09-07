@@ -368,7 +368,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $this->assertTrue($data['can_write_medical_summary']);
     }
 
-    public function test_workflow_completion_updates_canWriteDemand_correctly(): void
+    public function test_workflow_completion_updates_canWriteMedicalSummary_correctly(): void
     {
         // Given - Set up extract data workflow that will complete
         $workflowDefinition = WorkflowDefinition::factory()->create([
@@ -398,14 +398,17 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         // Connect via pivot table
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
 
-        // Should be able to write demand since extract data workflow is completed
-        $this->assertTrue($uiDemand->canWriteDemand());
+        // Should NOT be able to write demand letter yet - need medical summary first
+        $this->assertFalse($uiDemand->canWriteDemandLetter());
+        
+        // But should be able to write medical summary since extract data is completed
+        $this->assertTrue($uiDemand->canWriteMedicalSummary());
 
         // When - Handle workflow completion
         $service = app(UiDemandWorkflowService::class);
         $service->handleUiDemandWorkflowComplete($workflowRun);
 
-        // Then - Should now be able to write medical summary
+        // Then - Should now be able to write medical summary (metadata updated)
         $updatedDemand = $uiDemand->fresh();
         $this->assertTrue($updatedDemand->canWriteMedicalSummary());
         $this->assertArrayHasKey('extract_data_completed_at', $updatedDemand->metadata);

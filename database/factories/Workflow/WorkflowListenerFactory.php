@@ -19,7 +19,7 @@ class WorkflowListenerFactory extends Factory
             'workflow_run_id' => null, // Must be provided
             'listener_type' => null, // Must be provided
             'listener_id' => null, // Must be provided
-            'workflow_type' => WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND,
+            'workflow_type' => WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
             'status' => WorkflowListener::STATUS_PENDING,
             'metadata' => [],
             'started_at' => null,
@@ -61,10 +61,10 @@ class WorkflowListenerFactory extends Factory
         ]);
     }
 
-    public function writeDemand(): static
+    public function writeDemandLetter(): static
     {
         return $this->state(fn (array $attributes) => [
-            'workflow_type' => WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND,
+            'workflow_type' => WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
         ]);
     }
 }

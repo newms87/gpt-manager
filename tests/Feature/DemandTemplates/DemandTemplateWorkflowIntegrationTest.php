@@ -31,21 +31,22 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Set up required workflow configurations
         config([
             'ui-demands.workflows.extract_data' => 'Extract Service Dates',
-            'ui-demands.workflows.write_demand' => 'Write Demand Summary',
+            'ui-demands.workflows.write_medical_summary' => 'Write Medical Summary',
+            'ui-demands.workflows.write_demand_letter' => 'Write Demand Letter',
         ]);
     }
 
-    public function test_writeDemand_withTemplate_passesTemplateIdToWorkflow(): void
+    public function test_writeDemandLetter_withTemplate_passesTemplateIdToWorkflow(): void
     {
         // Given
-        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+        $medicalSummaryWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name'    => 'Extract Service Dates',
+            'name'    => 'Write Medical Summary',
         ]);
 
         $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name'    => 'Write Demand Summary',
+            'name'    => 'Write Demand Letter',
         ]);
 
         $storedFile = StoredFile::factory()->create([
@@ -70,23 +71,23 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'status'         => UiDemand::STATUS_COMPLETED,
             'metadata'       => [
-                'extract_data_completed_at' => now()->toIso8601String(),
+                'write_medical_summary_completed_at' => now()->toIso8601String(),
             ],
         ]);
 
-        // Create completed extract data workflow run
-        $extractDataWorkflowRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+        // Create completed medical summary workflow run (prerequisite for demand letter)
+        $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
             'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
-        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
         ]);
 
         // When
-        $workflowRun = $this->workflowService->writeDemand(
+        $workflowRun = $this->workflowService->writeDemandLetter(
             $uiDemand,
             $template->id,
             'Additional test instructions'
@@ -99,7 +100,7 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertDatabaseHas('ui_demand_workflow_runs', [
             'ui_demand_id'    => $uiDemand->id,
             'workflow_run_id' => $workflowRun->id,
-            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND,
+            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
         ]);
 
         // Verify workflow input contains template information
@@ -113,17 +114,17 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertEquals('Additional test instructions', $inputArtifact->json_content['additional_instructions']);
     }
 
-    public function test_writeDemand_withoutTemplate_doesNotIncludeTemplateData(): void
+    public function test_writeDemandLetter_withoutTemplate_doesNotIncludeTemplateData(): void
     {
         // Given
-        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+        $medicalSummaryWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name'    => 'Extract Service Dates',
+            'name'    => 'Write Medical Summary',
         ]);
 
         $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name'    => 'Write Demand Summary',
+            'name'    => 'Write Demand Letter',
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -137,23 +138,23 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'status'         => UiDemand::STATUS_COMPLETED,
             'metadata'       => [
-                'extract_data_completed_at' => now()->toIso8601String(),
+                'write_medical_summary_completed_at' => now()->toIso8601String(),
             ],
         ]);
 
-        // Create completed extract data workflow run
-        $extractDataWorkflowRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+        // Create completed medical summary workflow run (prerequisite for demand letter)
+        $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
             'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
-        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
         ]);
 
         // When
-        $workflowRun = $this->workflowService->writeDemand($uiDemand);
+        $workflowRun = $this->workflowService->writeDemandLetter($uiDemand);
 
         // Then
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
@@ -168,17 +169,17 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertArrayNotHasKey('additional_instructions', $inputArtifact->json_content ?? []);
     }
 
-    public function test_writeDemand_withAdditionalInstructionsOnly_includesInstructions(): void
+    public function test_writeDemandLetter_withAdditionalInstructionsOnly_includesInstructions(): void
     {
         // Given
-        $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+        $medicalSummaryWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name'    => 'Extract Service Dates',
+            'name'    => 'Write Medical Summary',
         ]);
 
         $writeDemandWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name'    => 'Write Demand Summary',
+            'name'    => 'Write Demand Letter',
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -192,23 +193,23 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'status'         => UiDemand::STATUS_COMPLETED,
             'metadata'       => [
-                'extract_data_completed_at' => now()->toIso8601String(),
+                'write_medical_summary_completed_at' => now()->toIso8601String(),
             ],
         ]);
 
-        // Create completed extract data workflow run
-        $extractDataWorkflowRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+        // Create completed medical summary workflow run (prerequisite for demand letter)
+        $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
             'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
-        $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, [
+            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
         ]);
 
         // When
-        $workflowRun = $this->workflowService->writeDemand(
+        $workflowRun = $this->workflowService->writeDemandLetter(
             $uiDemand,
             null,
             'Custom instructions without template'

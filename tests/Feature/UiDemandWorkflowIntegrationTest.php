@@ -213,7 +213,7 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
     public function test_workflowFailure_handlesCorrectly(): void
     {
         // Given
-        $workflowDefinition = WorkflowDefinition::factory()->create([
+        $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
         ]);
@@ -343,14 +343,15 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         // Then
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
 
-        $workflowInput = $workflowRun->workflowInputs()->first();
-        $this->assertNotNull($workflowInput);
+        $artifacts = $workflowRun->artifacts;
+        $this->assertNotEmpty($artifacts);
+        $firstArtifact = $artifacts->first();
 
         // Verify instruction template content is appended with critical instructions format
-        $this->assertStringContains('=== CRITICAL WRITING INSTRUCTIONS ===', $workflowInput->content);
-        $this->assertStringContains('Use formal medical terminology and include specific injury details.', $workflowInput->content);
-        $this->assertStringContains('Focus on the most severe injuries only.', $workflowInput->content);
-        $this->assertStringContains('=== END CRITICAL INSTRUCTIONS ===', $workflowInput->content);
+        $this->assertStringContains('=== CRITICAL WRITING INSTRUCTIONS ===', $firstArtifact->text_content);
+        $this->assertStringContains('Use formal medical terminology and include specific injury details.', $firstArtifact->text_content);
+        $this->assertStringContains('Focus on the most severe injuries only.', $firstArtifact->text_content);
+        $this->assertStringContains('=== END CRITICAL INSTRUCTIONS ===', $firstArtifact->text_content);
     }
 
     public function test_workflowWithDemandTemplate_includesTemplateData(): void
@@ -419,10 +420,11 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         // Then
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
 
-        $workflowInput = $workflowRun->workflowInputs()->first();
-        $this->assertNotNull($workflowInput);
+        $artifacts = $workflowRun->artifacts;
+        $this->assertNotEmpty($artifacts);
+        $firstArtifact = $artifacts->first();
 
-        $contentData = json_decode($workflowInput->content, true);
+        $contentData = json_decode($firstArtifact->text_content, true);
         $this->assertEquals($templateFile->id, $contentData['template_stored_file_id']);
         $this->assertEquals('Include specific monetary damages and timeline.', $contentData['additional_instructions']);
         $this->assertEquals($uiDemand->id, $contentData['demand_id']);
@@ -438,7 +440,7 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'progress_percent'       => 65.7,
+            'status'                 => 'Running',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
@@ -452,8 +454,8 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
         ]);
 
-        // Then
-        $this->assertEquals(65.7, $uiDemand->getExtractDataProgress());
+        // Then - Running workflow with no task runs will have 0 progress
+        $this->assertEquals(0.0, $uiDemand->getExtractDataProgress());
         $this->assertEquals(0.0, $uiDemand->getWriteMedicalSummaryProgress());
         $this->assertEquals(0.0, $uiDemand->getWriteDemandLetterProgress());
     }

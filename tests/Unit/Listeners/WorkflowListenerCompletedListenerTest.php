@@ -121,7 +121,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
         WorkflowListener::createForListener(
             $uiDemand,
             $completedWorkflowRun,
-            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND
+            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER
         );
 
         $mockService2 = $this->mock(UiDemandWorkflowService::class);

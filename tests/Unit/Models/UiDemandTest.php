@@ -420,7 +420,7 @@ class UiDemandTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'progress_percent'       => 75.5,
+            'status'                 => 'Running',
         ]);
 
         $uiDemand = UiDemand::factory()->create([
@@ -434,7 +434,8 @@ class UiDemandTest extends AuthenticatedTestCase
         ]);
 
         // When & Then
-        $this->assertEquals(75.5, $uiDemand->getExtractDataProgress());
+        // Running workflow with no task runs will have 0 progress
+        $this->assertEquals(0.0, $uiDemand->getExtractDataProgress());
         $this->assertEquals(0.0, $uiDemand->getWriteMedicalSummaryProgress()); // No workflow attached
         $this->assertEquals(0.0, $uiDemand->getWriteDemandLetterProgress()); // No workflow attached
     }
@@ -454,6 +455,7 @@ class UiDemandTest extends AuthenticatedTestCase
         $completedRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
             'status'                 => 'Completed',
+            'completed_at'           => now(),
         ]);
 
         $uiDemand = UiDemand::factory()->create([
