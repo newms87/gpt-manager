@@ -23,7 +23,7 @@
             @node-drag-stop="onSelectionDragStop"
             @selection-drag-stop="onSelectionDragStop"
             @dragover="onDragOver"
-            @drop="e => handleExternalDrop(isntanceId, e)"
+            @drop="e => handleExternalDrop(instanceId, e)"
         >
             <template #node-custom="nodeProps">
                 <WorkflowCanvasNode

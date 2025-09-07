@@ -37,4 +37,7 @@ export async function handleExternalDrop(id: string, event: DragEvent) {
 	await addWorkflowNode(draggingNodeItem.value, {
 		settings: { x: position.x, y: position.y }
 	});
+	
+	// Reset dragging state
+	draggingNodeItem.value = null;
 }
