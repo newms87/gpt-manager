@@ -112,9 +112,9 @@ const loadInstructionTemplates = async () => {
 onMounted(loadInstructionTemplates);
 
 // Actions with local state refresh
-const createAction = dxWorkflowInput.getAction("quick-create", { onFinish: loadInstructionTemplates });
+const createAction = dxWorkflowInput.getAction("create", { onFinish: loadInstructionTemplates });
 const updateAction = dxWorkflowInput.getAction("update");
-const deleteAction = dxWorkflowInput.getAction("quick-delete", { onFinish: loadInstructionTemplates });
+const deleteAction = dxWorkflowInput.getAction("delete", { onFinish: loadInstructionTemplates });
 
 // Computed properties
 const visibleTemplates = computed(() =>

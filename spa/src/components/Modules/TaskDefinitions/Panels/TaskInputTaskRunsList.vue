@@ -1,32 +1,37 @@
 <template>
-	<div>
-		<div class="flex justify-end">
-			<QBtn
-				class="bg-green-900 text-green-300 px-4 py-1"
-				:loading="createTaskRunAction.isApplying"
-				@click="createTaskRunAction.trigger(null, {task_definition_id: taskDefinition.id, task_input_id: taskInput.id})"
-			>
-				<RunTaskIcon class="w-3 mr-2" />
-				Run Task
-			</QBtn>
-		</div>
-		<div class="my-4">
-			<div v-if="isLoading">
-				<QSkeleton class="h-12" />
-			</div>
-			<div
-				v-else-if="taskInput.taskRuns?.length === 0"
-				class="text-center text-gray-500 font-bold h-12 flex items-center justify-center"
-			>
-				No task runs have been executed for this task input.
-			</div>
-			<div v-else>
-				<ListTransition>
-					<TaskRunCard v-for="taskRun in taskInput.taskRuns" :key="taskRun.id" :task-run="taskRun" class="my-2" />
-				</ListTransition>
-			</div>
-		</div>
-	</div>
+    <div>
+        <div class="flex justify-end">
+            <QBtn
+                class="bg-green-900 text-green-300 px-4 py-1"
+                :loading="createTaskRunAction.isApplying"
+                @click="createTaskRunAction.trigger(null, {task_definition_id: taskDefinition.id, task_input_id: taskInput.id})"
+            >
+                <RunTaskIcon class="w-3 mr-2" />
+                Run Task
+            </QBtn>
+        </div>
+        <div class="my-4">
+            <div v-if="isLoading">
+                <QSkeleton class="h-12" />
+            </div>
+            <div
+                v-else-if="taskInput.taskRuns?.length === 0"
+                class="text-center text-gray-500 font-bold h-12 flex items-center justify-center"
+            >
+                No task runs have been executed for this task input.
+            </div>
+            <div v-else>
+                <ListTransition>
+                    <TaskRunCard
+                        v-for="taskRun in taskInput.taskRuns"
+                        :key="taskRun.id"
+                        :task-run="taskRun"
+                        class="my-2"
+                    />
+                </ListTransition>
+            </div>
+        </div>
+    </div>
 </template>
 <script setup lang="ts">
 import TaskRunCard from "@/components/Modules/TaskDefinitions/Panels/TaskRunCard";
@@ -38,17 +43,17 @@ import { ListTransition } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
 
 const props = defineProps<{
-	taskDefinition: TaskDefinition;
-	taskInput: TaskInput;
+    taskDefinition: TaskDefinition;
+    taskInput: TaskInput;
 }>();
 
 const isLoading = ref(false);
-const createTaskRunAction = dxTaskRun.getAction("quick-create", { onFinish: loadTaskInput });
+const createTaskRunAction = dxTaskRun.getAction("create", { onFinish: loadTaskInput });
 onMounted(loadTaskInput);
 
 async function loadTaskInput() {
-	isLoading.value = true;
-	await routes.details(props.taskInput);
-	isLoading.value = false;
+    isLoading.value = true;
+    await routes.details(props.taskInput);
+    isLoading.value = false;
 }
 </script>

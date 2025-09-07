@@ -218,7 +218,7 @@ const confirmDelete = async () => {
     if (!summaryToDelete.value) return;
 
     try {
-        await dxArtifact.getAction("quick-delete").trigger(summaryToDelete.value);
+        await dxArtifact.getAction("delete").trigger(summaryToDelete.value);
         summaryToDelete.value = null;
     } catch (error) {
         console.error("Error deleting summary:", error);

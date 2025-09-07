@@ -1,39 +1,39 @@
 <template>
-	<div class="p-6 h-full overflow-y-auto">
-		<QBtn class="bg-green-900 text-slate-300 py-2 px-6" @click="createWorkflowInput">
-			<CreateIcon class="w-4 mr-2" />
-			New Workflow Input
-		</QBtn>
+    <div class="p-6 h-full overflow-y-auto">
+        <QBtn class="bg-green-900 text-slate-300 py-2 px-6" @click="createWorkflowInput">
+            <CreateIcon class="w-4 mr-2" />
+            New Workflow Input
+        </QBtn>
 
-		<QSeparator class="bg-slate-400 my-4" />
+        <QSeparator class="bg-slate-400 my-4" />
 
-		<div v-for="workflowInput in workflowInputs" :key="workflowInput.id">
-			<div class="flex items-start flex-nowrap">
-				<WorkflowInputCard :workflow-input="workflowInput" class="flex-grow" />
-				<div class="flex-x py-6">
-					<ShowHideButton
-						:model-value="activeWorkflowInput?.id === workflowInput.id"
-						:show-icon="ShowWorkflowIcon"
-						label=""
-						class="bg-green-800 "
-						@update:model-value="isActive => activeWorkflowInput = isActive && workflowInput || null"
-					/>
-					<WorkflowStatusProgressBar class="ml-2" :workflow-input="workflowInput" />
-					<ActionButton
-						:action="deleteAction"
-						:target="workflowInput"
-						type="trash"
-						class="ml-4"
-						tooltip="Delete workflow input"
-					/>
-				</div>
-			</div>
-			<div v-if="activeWorkflowInput?.id === workflowInput.id">
-				Implement this panel
-			</div>
-			<QSeparator class="bg-slate-400 my-4" />
-		</div>
-	</div>
+        <div v-for="workflowInput in workflowInputs" :key="workflowInput.id">
+            <div class="flex items-start flex-nowrap">
+                <WorkflowInputCard :workflow-input="workflowInput" class="flex-grow" />
+                <div class="flex-x py-6">
+                    <ShowHideButton
+                        :model-value="activeWorkflowInput?.id === workflowInput.id"
+                        :show-icon="ShowWorkflowIcon"
+                        label=""
+                        class="bg-green-800 "
+                        @update:model-value="isActive => activeWorkflowInput = isActive && workflowInput || null"
+                    />
+                    <WorkflowStatusProgressBar class="ml-2" :workflow-input="workflowInput" />
+                    <ActionButton
+                        :action="deleteAction"
+                        :target="workflowInput"
+                        type="trash"
+                        class="ml-4"
+                        tooltip="Delete workflow input"
+                    />
+                </div>
+            </div>
+            <div v-if="activeWorkflowInput?.id === workflowInput.id">
+                Implement this panel
+            </div>
+            <QSeparator class="bg-slate-400 my-4" />
+        </div>
+    </div>
 </template>
 <script setup lang="ts">
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
@@ -46,36 +46,36 @@ import { ActionButton, FlashMessages, ShowHideButton } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
 
 const props = defineProps<{
-	teamObject: TeamObject,
+    teamObject: TeamObject,
 }>();
 
 onMounted(loadWorkflowInputs);
 
-const deleteAction = dxWorkflowInput.getAction("delete", { onSuccess: loadWorkflowInputs });
+const deleteAction = dxWorkflowInput.getAction("delete-with-confirm", { onSuccess: loadWorkflowInputs });
 
 const workflowInputs = ref<WorkflowInput[]>([]);
 const activeWorkflowInput = ref<WorkflowInput>(null);
 
 async function createWorkflowInput() {
-	const result = await dxWorkflowInput.routes.applyAction("create", null, {
-		name: props.teamObject.name + " Input",
-		team_object_id: props.teamObject.id,
-		team_object_type: props.teamObject.type
-	});
+    const result = await dxWorkflowInput.routes.applyAction("create", null, {
+        name: props.teamObject.name + " Input",
+        team_object_id: props.teamObject.id,
+        team_object_type: props.teamObject.type
+    });
 
 
-	if (result.success) {
-		await loadWorkflowInputs();
-	} else {
-		FlashMessages.error("Failed to create workflow input" + (result.error ? ": " + result.message : ""));
-	}
+    if (result.success) {
+        await loadWorkflowInputs();
+    } else {
+        FlashMessages.error("Failed to create workflow input" + (result.error ? ": " + result.message : ""));
+    }
 }
 
 async function loadWorkflowInputs() {
-	const result = await dxWorkflowInput.routes.list({
-		filter: { team_object_id: props.teamObject.id },
-		fields: { files: { thumb: true }, content: true }
-	});
-	workflowInputs.value = result.data;
+    const result = await dxWorkflowInput.routes.list({
+        filter: { team_object_id: props.teamObject.id },
+        fields: { files: { thumb: true }, content: true }
+    });
+    workflowInputs.value = result.data;
 }
 </script>

@@ -113,7 +113,7 @@ async function addWorkflowNode(newNode: TaskDefinition | TaskRunnerClass, input:
     });
 }
 
-const createWorkflowRunAction = dxWorkflowRun.getAction("quick-create", { onFinish: loadWorkflowRuns });
+const createWorkflowRunAction = dxWorkflowRun.getAction("create", { onFinish: loadWorkflowRuns });
 const isCreatingWorkflowRun = ref(false);
 
 async function createWorkflowRun(workflowInput?: WorkflowInput) {

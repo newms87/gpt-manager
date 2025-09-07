@@ -1,62 +1,62 @@
 <template>
-	<div class="space-y-6">
-		<!-- Header -->
-		<div class="flex items-center justify-between">
-			<h3 class="text-lg font-semibold text-gray-900">Manage Instruction Templates</h3>
-			<ActionButton
-				type="create"
-				label="New Template"
-				size="sm"
-				color="green"
-				rounded
-				:action="createAction"
-				:input="newTemplateData"
-			/>
-		</div>
+    <div class="space-y-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Manage Instruction Templates</h3>
+            <ActionButton
+                type="create"
+                label="New Template"
+                size="sm"
+                color="green"
+                rounded
+                :action="createAction"
+                :input="newTemplateData"
+            />
+        </div>
 
-		<!-- Loading State -->
-		<div v-if="isLoading" class="flex justify-center py-12">
-			<QSpinner size="lg" color="green" />
-		</div>
+        <!-- Loading State -->
+        <div v-if="isLoading" class="flex justify-center py-12">
+            <QSpinner size="lg" color="green" />
+        </div>
 
-		<!-- Empty State -->
-		<div v-else-if="!visibleTemplates.length" class="text-center py-12">
-			<div class="bg-white rounded-lg p-8 border border-slate-200 shadow-sm">
-				<FaSolidFileLines class="w-16 h-16 text-slate-400 mx-auto mb-4" />
-				<h3 class="text-lg font-medium text-slate-800 mb-2">No templates yet</h3>
-				<p class="text-slate-600 mb-4">Get started by creating your first instruction template</p>
-				<ActionButton
-					class="mt-4"
-					type="create"
-					label="Create Template"
-					color="green"
-					:action="createAction"
-					:input="newTemplateData"
-				/>
-			</div>
-		</div>
+        <!-- Empty State -->
+        <div v-else-if="!visibleTemplates.length" class="text-center py-12">
+            <div class="bg-white rounded-lg p-8 border border-slate-200 shadow-sm">
+                <FaSolidFileLines class="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                <h3 class="text-lg font-medium text-slate-800 mb-2">No templates yet</h3>
+                <p class="text-slate-600 mb-4">Get started by creating your first instruction template</p>
+                <ActionButton
+                    class="mt-4"
+                    type="create"
+                    label="Create Template"
+                    color="green"
+                    :action="createAction"
+                    :input="newTemplateData"
+                />
+            </div>
+        </div>
 
-		<!-- Templates List -->
-		<div v-else class="space-y-4 max-h-[60vh] overflow-y-auto">
-			<InstructionTemplateCard
-				v-for="template in visibleTemplates"
-				:key="template.id"
-				:template="template"
-				@update="handleTemplateUpdate"
-				@delete="handleTemplateDelete"
-			/>
-		</div>
+        <!-- Templates List -->
+        <div v-else class="space-y-4 max-h-[60vh] overflow-y-auto">
+            <InstructionTemplateCard
+                v-for="template in visibleTemplates"
+                :key="template.id"
+                :template="template"
+                @update="handleTemplateUpdate"
+                @delete="handleTemplateDelete"
+            />
+        </div>
 
-		<!-- Delete Confirmation Dialog -->
-		<ConfirmDialog
-			v-if="templateToDelete"
-			title="Delete Template?"
-			:message="`Are you sure you want to delete &quot;${templateToDelete.name}&quot;? This action cannot be undone.`"
-			color="negative"
-			@confirm="confirmDelete"
-			@cancel="templateToDelete = null"
-		/>
-	</div>
+        <!-- Delete Confirmation Dialog -->
+        <ConfirmDialog
+            v-if="templateToDelete"
+            title="Delete Template?"
+            :message="`Are you sure you want to delete &quot;${templateToDelete.name}&quot;? This action cannot be undone.`"
+            color="negative"
+            @confirm="confirmDelete"
+            @cancel="templateToDelete = null"
+        />
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -69,7 +69,7 @@ import { computed, onMounted, ref } from "vue";
 import InstructionTemplateCard from "./InstructionTemplateCard.vue";
 
 const emit = defineEmits<{
-	"templates-updated": [];
+    "templates-updated": [];
 }>();
 
 // Local state management
@@ -79,72 +79,72 @@ const templateToDelete = ref<WorkflowInput | null>(null);
 
 // Load instruction templates with proper filtering
 const loadInstructionTemplates = async () => {
-	try {
-		isLoading.value = true;
-		const response = await dxWorkflowInput.routes.list({
-			filter: {
-				"associations.associable_type": "App\\Models\\Demand\\UiDemand",
-				"associations.category": "write_demand_instructions"
-			}
-		});
+    try {
+        isLoading.value = true;
+        const response = await dxWorkflowInput.routes.list({
+            filter: {
+                "associations.associable_type": "App\\Models\\Demand\\UiDemand",
+                "associations.category": "write_demand_instructions"
+            }
+        });
 
-		instructionTemplates.value = response.data;
-		emit("templates-updated");
-	} catch (error) {
-		console.error("Error loading instruction templates:", error);
-		instructionTemplates.value = [];
-	} finally {
-		isLoading.value = false;
-	}
+        instructionTemplates.value = response.data;
+        emit("templates-updated");
+    } catch (error) {
+        console.error("Error loading instruction templates:", error);
+        instructionTemplates.value = [];
+    } finally {
+        isLoading.value = false;
+    }
 };
 
 // Load templates on component mount
 onMounted(loadInstructionTemplates);
 
 // Actions with local state refresh
-const createAction = dxWorkflowInput.getAction("quick-create", { onFinish: loadInstructionTemplates });
+const createAction = dxWorkflowInput.getAction("create", { onFinish: loadInstructionTemplates });
 const updateAction = dxWorkflowInput.getAction("update");
-const deleteAction = dxWorkflowInput.getAction("quick-delete", { onFinish: loadInstructionTemplates });
+const deleteAction = dxWorkflowInput.getAction("delete", { onFinish: loadInstructionTemplates });
 
 // Computed properties
 const visibleTemplates = computed(() =>
-	instructionTemplates.value.filter((template: WorkflowInput) => !template.deleted_at)
+    instructionTemplates.value.filter((template: WorkflowInput) => !template.deleted_at)
 );
 
 const generateTemplateName = () => {
-	const count = instructionTemplates.value.length + 1;
-	return `Instruction Template ${count}`;
+    const count = instructionTemplates.value.length + 1;
+    return `Instruction Template ${count}`;
 };
 
 const newTemplateData = computed(() => ({
-	name: generateTemplateName(),
-	description: "",
-	content: "",
-	associations: [{
-		category: "write_demand_instructions",
-		associable_type: "App\\Models\\Demand\\UiDemand",
-		associable_id: null
-	}]
+    name: generateTemplateName(),
+    description: "",
+    content: "",
+    associations: [{
+        category: "write_demand_instructions",
+        associable_type: "App\\Models\\Demand\\UiDemand",
+        associable_id: null
+    }]
 }));
 
 // Event handlers
 const handleTemplateUpdate = (template: WorkflowInput, data: Partial<WorkflowInput>) => {
-	updateAction.trigger(template, data);
+    updateAction.trigger(template, data);
 };
 
 const handleTemplateDelete = (template: WorkflowInput) => {
-	templateToDelete.value = template;
+    templateToDelete.value = template;
 };
 
 const confirmDelete = () => {
-	if (templateToDelete.value) {
-		deleteAction.trigger(templateToDelete.value);
-		templateToDelete.value = null;
-	}
+    if (templateToDelete.value) {
+        deleteAction.trigger(templateToDelete.value);
+        templateToDelete.value = null;
+    }
 };
 
 // Expose method to refresh templates (useful when navigating back from manager)
 defineExpose({
-	loadInstructionTemplates
+    loadInstructionTemplates
 });
 </script>
