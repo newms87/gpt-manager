@@ -2,8 +2,7 @@
 
 ## Core Architecture Overview
 
-This application follows a strict **Service-Repository-Controller** pattern with the **danx library** integration for
-standardized CRUD operations, team-based access control, and modern Laravel best practices.
+This application follows a strict **Service-Repository-Controller** pattern with **danx library** integration for standardized CRUD operations, team-based access control, and modern Laravel best practices.
 
 ### Key Principles
 
@@ -12,6 +11,68 @@ standardized CRUD operations, team-based access control, and modern Laravel best
 - **DRY PRINCIPLES**: Don't Repeat Yourself - extract reusable patterns
 - **TEAM-BASED ACCESS CONTROL**: All data is scoped to teams automatically
 - **danx LIBRARY INTEGRATION**: Standardized patterns for CRUD, resources, and routing
+
+### Coding Standards
+
+#### Namespace and Import Rules
+
+- **CRITICAL: ALL class imports MUST use namespace `use` statements at the top of the file**
+- **NEVER use inline class references** like `\App\Models\User::find()` or `\DB::table()`
+- **ALWAYS add proper use statements** at the top: `use App\Models\User;` then use `User::find()`
+- **This applies to ALL classes**: models, services, repositories, facades, exceptions, traits, interfaces
+- **Group imports logically**: Laravel/PHP core first, then third-party packages, then app classes
+
+#### Dependency Injection Rules
+
+- **CRITICAL: ALWAYS use `app()` helper for ALL dependency injection**
+- **NEVER use constructor injection** (`public function __construct(Service $service)`)
+- **NEVER use `new Service()`** - always use `app(Service::class)`
+- **This applies EVERYWHERE**: services, repositories, controllers, jobs, listeners
+- **Better readability**: Inline `app(Service::class)->method()` calls are preferred
+- **More condensed code**: No need for constructor setup or class properties
+
+```php
+// ✅ CORRECT - Namespace imports and app() helper usage
+use App\Models\User;
+use App\Services\UserService;
+use App\Repositories\UserRepository;
+use Illuminate\Support\Facades\DB;
+
+class ExampleService
+{
+    public function processUser($id)
+    {
+        $user = User::find($id);
+        
+        // Use app() helper for all dependency injection
+        $userData = app(UserRepository::class)->getUserData($user);
+        $result = app(UserService::class)->transformData($userData);
+        
+        return $result;
+    }
+}
+
+// ❌ WRONG - Constructor injection
+class BadExampleService
+{
+    public function __construct(
+        private UserRepository $userRepo,
+        private UserService $userService
+    ) {}
+    
+    public function processUser($id) {
+        // This is the old pattern - DON'T DO THIS
+    }
+}
+
+// ❌ WRONG - Using new keyword
+class AnotherBadExample
+{
+    public function processUser($id) {
+        $service = new UserService(); // NEVER DO THIS
+    }
+}
+```
 
 ---
 
@@ -37,9 +98,9 @@ class [Domain][Action]Service
         $this->validate[Action]($model, $data);
 
         return DB::transaction(function () use ($model, $data) {
-            // All business logic here
-            $this->perform[Step1]($model, $data);
-            $this->perform[Step2]($model, $data);
+            // Use app() helper for all service/repository calls
+            app([Repository]::class)->updateModel($model, $data);
+            app([OtherService]::class)->processRelatedData($model);
             
             return $model->fresh();
         });
@@ -53,41 +114,11 @@ class [Domain][Action]Service
         }
     }
 
-    protected function perform[Step1]([Model] $model, array $data): void
+    protected function validateOwnership([Model] $model): void
     {
-        // Step implementation
-    }
-}
-```
-
-### Real Example: TeamObjectMergeService
-
-```php
-class TeamObjectMergeService
-{
-    public function merge(TeamObject $sourceObject, TeamObject $targetObject, ?array $schema = null): TeamObject
-    {
-        $this->validateMerge($sourceObject, $targetObject);
-
-        return DB::transaction(function () use ($sourceObject, $targetObject, $schema) {
-            $this->mergeAttributes($sourceObject, $targetObject);
-            $this->mergeRelationships($sourceObject, $targetObject, $schema);
-            $sourceObject->delete();
-            return $targetObject->fresh(['attributes', 'relationships']);
-        });
-    }
-
-    protected function validateMerge(TeamObject $sourceObject, TeamObject $targetObject): void
-    {
-        $this->validateOwnership($sourceObject);
-        $this->validateOwnership($targetObject);
-
-        if ($sourceObject->id === $targetObject->id) {
-            throw new ValidationError('Cannot merge object with itself', 400);
-        }
-
-        if ($sourceObject->type !== $targetObject->type) {
-            throw new ValidationError('Cannot merge objects of different types', 400);
+        $currentTeam = team();
+        if (!$currentTeam || $model->team_id !== $currentTeam->id) {
+            throw new ValidationError('You do not have permission to access this resource', 403);
         }
     }
 }
@@ -95,23 +126,9 @@ class TeamObjectMergeService
 
 ### Service Patterns by Type
 
-#### Data Processing Services
-
-- `TaskProcessExecutorService`: Processes workflow tasks
-- `ArtifactDeduplicationService`: Removes duplicate artifacts
-- `ClassificationVerificationService`: Verifies data classifications
-
-#### Integration Services
-
-- `AgentThreadService`: Manages AI agent conversations
-- `WorkflowRunnerService`: Executes workflow definitions
-- `UsageTrackingService`: Tracks API usage and costs
-
-#### Transformation Services
-
-- `WorkflowExportService`/`WorkflowImportService`: Data serialization
-- `JSONSchemaDataToDatabaseMapper`: Schema-based data mapping
-- `DatabaseSchemaMapper`: Database structure management
+- **Data Processing**: `TaskProcessExecutorService`, `ArtifactDeduplicationService`
+- **Integration**: `AgentThreadService`, `WorkflowRunnerService`, `UsageTrackingService`
+- **Transformation**: `WorkflowExportService`, `JSONSchemaDataToDatabaseMapper`
 
 ---
 
@@ -160,36 +177,6 @@ class [Model]Repository extends ActionRepository
 }
 ```
 
-### Real Example: TeamObjectRepository
-
-```php
-class TeamObjectRepository extends ActionRepository
-{
-    public static string $model = TeamObject::class;
-
-    public function query(): Builder
-    {
-        $query = parent::query()->where('team_id', team()->id);
-        if (!can('view_imported_schemas')) {
-            $query->whereDoesntHave('schemaDefinition.resourcePackageImport', 
-                fn(Builder $builder) => $builder->where('can_view', 0)
-            );
-        }
-        return $query;
-    }
-
-    public function applyAction(string $action, TeamObject|Model|array|null $model = null, ?array $data = null)
-    {
-        return match ($action) {
-            'create' => $this->createTeamObject($data['type'], $data['name'], $data),
-            'update' => (bool)$this->updateTeamObject($model, $data),
-            'create-relation' => $this->createRelation($model, $data['relationship_name'], $data['type'], $data['name'], $data),
-            default => parent::applyAction($action, $model, $data)
-        };
-    }
-}
-```
-
 ---
 
 ## 3. Controller Patterns
@@ -216,27 +203,14 @@ class [Model]sController extends ActionController
 
     public function customAction([Model] $model, [OtherModel] $otherModel)
     {
+        // Use app() helper - this is the standard pattern everywhere
         $result = app([Service]::class)->performAction($model, $otherModel);
         return new [Model]Resource($result);
     }
 }
 ```
 
-### Real Example: TeamObjectsController
-
-```php
-class TeamObjectsController extends ActionController
-{
-    public static ?string $repo = TeamObjectRepository::class;
-    public static ?string $resource = TeamObjectResource::class;
-
-    public function merge(TeamObject $sourceObject, TeamObject $targetObject)
-    {
-        $mergedObject = app(TeamObjectMergeService::class)->merge($sourceObject, $targetObject);
-        return new TeamObjectResource($mergedObject);
-    }
-}
-```
+**CRITICAL**: ALL classes MUST use `app()` helper for dependency injection (better readability and condensed code).
 
 ---
 
@@ -285,11 +259,6 @@ class [Model] extends Model implements AuditableContract
         return $this->belongsTo(ParentModel::class);
     }
 
-    public function children(): HasMany
-    {
-        return $this->hasMany(ChildModel::class);
-    }
-
     // Scopes
     public function scopeActive(Builder $query): Builder
     {
@@ -304,13 +273,6 @@ class [Model] extends Model implements AuditableContract
     }
 }
 ```
-
-### Common Model Traits
-
-- `AuditableTrait`: Automatic change tracking
-- `ActionModelTrait`: Integration with ActionController/ActionRepository
-- `SoftDeletes`: Soft deletion capability
-- `HasUsageTracking`: Usage/cost tracking for API calls
 
 ---
 
@@ -345,19 +307,6 @@ class [Model]Resource extends ActionResource
             // Relationships (loaded conditionally)
             'children' => static::loadChildren($model),
         ];
-    }
-
-    protected static function getDisplayName([Model] $model): string
-    {
-        return $model->name ?: "Unnamed {$model->type}";
-    }
-
-    protected static function loadChildren([Model] $model): array
-    {
-        return $model->children->map(fn($child) => [
-            'id' => $child->id,
-            'name' => $child->name,
-        ])->toArray();
     }
 }
 ```
@@ -406,6 +355,7 @@ return new class extends Migration
 - **Anonymous classes**: Modern Laravel 9+ style
 - **Foreign key constraints**: Proper cascading deletes
 - **Team-based scoping**: `team_id` on all relevant tables
+- **NEVER use `->comment()`**: Doesn't work with PostgreSQL
 - **Composite indexes**: For query performance
 - **Soft deletes**: For audit trails
 
@@ -413,17 +363,22 @@ return new class extends Migration
 
 ## 7. Testing Patterns
 
-**❌ CRITICAL: NEVER TEST CONTROLLERS DIRECTLY**
+### CRITICAL Testing Principles
 
-Due to Laravel configuration issues causing 503 errors in controller tests, **ALL CONTROLLER TESTING IS PROHIBITED**.
-Controllers are thin delegation layers that should not contain business logic to test.
+**NEVER TEST CONTROLLERS DIRECTLY** - Due to Laravel configuration issues causing 503 errors, ALL controller testing is PROHIBITED.
 
-### What To Test Instead:
+**NEVER:**
+- Use `Mockery::mock(...)` - ALWAYS use `$this->mock(...)`
+- Mock database interactions - USE THE DATABASE!
+- Test Laravel framework features (fillable, casts, relationships)
+- Use static mocking: `Mockery::mock('alias:' . StaticService::class)` - FORBIDDEN
 
-- **Services**: Test ALL business logic methods with real database interactions
-- **Repositories**: Test data access patterns and team scoping
-- **Models**: Test relationships, scopes, and validation methods
-- **Resources**: Test data transformation logic
+**ALWAYS:**
+- Use real database interactions with factories
+- Only mock 3rd party API calls
+- Test the complete system behavior
+- Verify database state changes
+- Run `./vendor/bin/sail test` before completing any work
 
 ### Service Testing Template
 
@@ -453,7 +408,7 @@ class [Service]Test extends AuthenticatedTestCase
         $model = [Model]::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $data = ['key' => 'value'];
 
-        // When
+        // When - Always use app() helper for service calls
         $result = app([Service]::class)->[action]($model, $data);
 
         // Then
@@ -464,103 +419,8 @@ class [Service]Test extends AuthenticatedTestCase
             'key' => 'value'
         ]);
     }
-
-    public function test_[action]_with[InvalidCondition]_throwsException(): void
-    {
-        // Given
-        $model = [Model]::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $invalidData = ['invalid' => 'data'];
-
-        // Then
-        $this->expectException(ValidationError::class);
-
-        // When
-        app([Service]::class)->[action]($model, $invalidData);
-    }
 }
 ```
-
-### Repository Testing Template
-
-```php
-<?php
-
-namespace Tests\Unit\Repositories;
-
-use App\Models\[Domain]\[Model];
-use App\Repositories\[Model]Repository;
-use Tests\AuthenticatedTestCase;
-use Tests\Traits\SetUpTeamTrait;
-
-class [Model]RepositoryTest extends AuthenticatedTestCase
-{
-    use SetUpTeamTrait;
-
-    protected [Model]Repository $repository;
-
-    public function setUp(): void
-    {
-        parent::setUp();
-        $this->setUpTeam();
-        $this->repository = app([Model]Repository::class);
-    }
-
-    public function test_query_scopesToCurrentTeam(): void
-    {
-        // Given
-        $teamModel = [Model]::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $otherTeamModel = [Model]::factory()->create(); // Different team
-
-        // When
-        $results = $this->repository->query()->get();
-
-        // Then
-        $this->assertCount(1, $results);
-        $this->assertEquals($teamModel->id, $results->first()->id);
-    }
-
-    public function test_applyAction_create_createsModelWithTeamId(): void
-    {
-        // Given
-        $data = ['name' => 'Test Model', 'description' => 'Test Description'];
-
-        // When
-        $result = $this->repository->applyAction('create', null, $data);
-
-        // Then
-        $this->assertInstanceOf([Model]::class, $result);
-        $this->assertEquals($this->user->currentTeam->id, $result->team_id);
-        $this->assertEquals('Test Model', $result->name);
-        $this->assertDatabaseHas('[table_name]', [
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'Test Model'
-        ]);
-    }
-}
-```
-
-### Testing Best Practices
-
-- **NEVER test controllers**: Controllers should be thin delegation only
-- **Test services comprehensively**: ALL business logic must have tests
-- **Test repositories for team scoping**: Verify security constraints
-- **Use real database interactions**: Only mock 3rd party APIs
-- **AuthenticatedTestCase**: Base class with team setup
-- **Factory usage**: All test data via factories
-- **Given-When-Then**: Clear test structure
-- **Exception testing**: Verify error conditions
-
-### Troubleshooting Test Failures
-
-If tests are failing unexpectedly (especially with dependency errors or missing methods from the danx library):
-
-- Run `make danx-core` to update the danx library and re-establish local symlinks
-- This ensures your local danx library is properly synced with the latest changes
-- Common symptoms that indicate danx sync issues:
-    - Method not found errors in danx components/traits/classes
-    - Unexpected test failures after updating danx-related code
-    - Import errors for danx modules
-    - Tests that were passing suddenly failing after pulling changes
 
 ---
 
@@ -593,27 +453,8 @@ class [Action][Model]Job extends Job
 
     public function run(): void
     {
+        // Use app() helper for all dependency injection
         app([Service]::class)->[action]($this->model, $this->data);
-    }
-}
-```
-
-### Event/Listener Patterns
-
-```php
-// Event
-class [Model][Action]Event
-{
-    public function __construct(public [Model] $model, public array $data = []) {}
-}
-
-// Listener
-class [Model][Action]Listener
-{
-    public function handle([Model][Action]Event $event): void
-    {
-        // Handle the event
-        app([Service]::class)->handle[Action]($event->model, $event->data);
     }
 }
 ```
@@ -634,14 +475,12 @@ ActionRoute::routes('[route-prefix]', new [Model]Controller);
 // With additional custom routes
 ActionRoute::routes('[route-prefix]', new [Model]Controller, function () {
     Route::post('{model}/custom-action', [[Model]Controller::class, 'customAction']);
-    Route::get('{model}/related-data', [[Model]Controller::class, 'getRelatedData']);
 });
 ```
 
 ### Generated Routes
 
 ActionRoute automatically creates:
-
 - `GET /[prefix]` → `index()` (list with pagination, filtering, sorting)
 - `GET /[prefix]/{id}` → `show()` (single resource)
 - `POST /[prefix]` → `store()` (create new)
@@ -650,23 +489,18 @@ ActionRoute automatically creates:
 
 ---
 
-## 10. Authentication & Authorization Patterns
+## 10. Team-Based Access Control
 
-### Team-Based Access Control
+### CRITICAL: ALL repositories and services MUST implement team scoping
 
 ```php
-// Automatic team scoping in repositories
+// Repository query scoping
 public function query(): Builder
 {
     return parent::query()->where('team_id', team()->id);
 }
 
-// Permission checking
-if (!can('view_imported_schemas')) {
-    // Restrict access
-}
-
-// Service validation
+// Service ownership validation
 protected function validateOwnership([Model] $model): void
 {
     $currentTeam = team();
@@ -674,14 +508,6 @@ protected function validateOwnership([Model] $model): void
         throw new ValidationError('You do not have permission to access this resource', 403);
     }
 }
-```
-
-### API Token Generation
-
-```bash
-# Generate token for CLI testing
-./vendor/bin/sail artisan auth:token user@example.com
-./vendor/bin/sail artisan auth:token user@example.com --team=team-uuid
 ```
 
 ---
@@ -702,8 +528,6 @@ protected function validateAction([Model] $model, array $data): void
     }
 }
 ```
-
-### Controller-Level Error Responses
 
 Controllers don't handle errors - they bubble up to Laravel's exception handler.
 
@@ -734,18 +558,6 @@ public function scopeWithRelatedData(Builder $query): Builder
 });
 ```
 
-### Caching Patterns
-
-```php
-// Service-level caching
-public function getCachedData([Model] $model): array
-{
-    return Cache::remember("model-data-{$model->id}", 3600, function () use ($model) {
-        return $this->generateExpensiveData($model);
-    });
-}
-```
-
 ---
 
 ## File Organization Standards
@@ -756,9 +568,7 @@ app/
 ├── Events/                     # Domain events
 ├── Http/
 │   ├── Controllers/            # Thin controllers
-│   │   ├── [Domain]/          # Grouped by domain
-│   ├── Middleware/            # Custom middleware
-│   ├── Requests/              # Form request validation
+│   │   └── [Domain]/          # Grouped by domain
 │   └── Resources/             # API resources
 │       └── [Domain]/          # Grouped by domain
 ├── Jobs/                      # Background jobs
@@ -780,74 +590,18 @@ tests/
 
 ---
 
-## Common Anti-Patterns to Avoid
+## CRITICAL Requirements Checklist
 
-### ❌ Don't Do
-
-```php
-// Business logic in controllers
-class BadController extends ActionController
-{
-    public function store(Request $request)
-    {
-        // ❌ Business logic in controller
-        $data = $request->validated();
-        if ($data['type'] === 'special') {
-            // Complex business logic here
-        }
-        return Model::create($data);
-    }
-}
-
-// Direct database queries in controllers
-public function index()
-{
-    // ❌ Direct query in controller
-    return Model::where('team_id', team()->id)->with('relations')->get();
-}
-
-// Mixed concerns in services
-class BadService
-{
-    public function processData($data)
-    {
-        // ❌ Mixed validation, business logic, and data access
-        if (!$data['valid']) {throw new Exception('Invalid');}
-        $result = DB::table('models')->insert($data);
-        return response()->json($result);
-    }
-}
-```
-
-### ✅ Do This Instead
-
-```php
-// Thin controller with proper delegation
-class GoodController extends ActionController
-{
-    public static ?string $repo = ModelRepository::class;
-    public static ?string $resource = ModelResource::class;
-
-    public function customAction(Model $model)
-    {
-        $result = app(ModelService::class)->performAction($model);
-        return new ModelResource($result);
-    }
-}
-
-// Proper service with clear separation
-class GoodService
-{
-    public function performAction(Model $model): Model
-    {
-        $this->validateAction($model);
-        
-        return DB::transaction(function () use ($model) {
-            return $this->executeBusinessLogic($model);
-        });
-    }
-}
-```
+1. **ALWAYS use team-based access control** in repositories and services
+2. **ALWAYS extend danx base classes**: ActionController, ActionRepository, ActionResource
+3. **ALWAYS use database transactions** for multi-step operations
+4. **ALWAYS validate ownership** before performing operations
+5. **ALWAYS use app() helper** for ALL dependency injection everywhere
+6. **ALWAYS use namespace imports** at the top of files
+7. **NEVER put business logic** in controllers or models
+8. **NEVER use inline class references** with backslashes
+9. **NEVER test controllers directly** - test services instead
+10. **NEVER use static mocking** in tests
 
 ---
 
@@ -869,143 +623,22 @@ class GoodService
 
 ### After Writing Code
 
-1. Run `./vendor/bin/sail artisan fix` for permissions
-2. Ensure all tests pass
-3. Verify no console errors
-4. Check for proper error handling
+1. **Verify all dependency injection uses app() helper** - no constructor injection
+2. Run `./vendor/bin/sail artisan fix` for permissions
+3. Run `./vendor/bin/sail test` to ensure all tests pass
+4. Verify no console errors
+5. Check for proper error handling
 
 ---
 
-## Testing Patterns & Requirements
+## Important Constraints
 
-### CRITICAL TESTING PRINCIPLES
-
-**NEVER:**
-
-- Use `Mockery::mock(...)` - ALWAYS use `$this->mock(...)`
-- Mock database interactions - USE THE DATABASE!
-- Mock internal service/repository methods
-- Avoid database writes in tests
-
-**NEVER TEST LARAVEL FRAMEWORK FEATURES:**
-
-- Model fillable attributes working correctly
-- Model cast attributes working correctly
-- Eloquent relationships working (belongs to, has many, etc.)
-- Laravel validation rules syntax
-- Laravel's built-in functionality
-- Basic getter/setter functionality
-- Standard Laravel traits working
-
-**ONLY TEST YOUR BUSINESS LOGIC:**
-
-- Custom business rules and validation logic
-- Service layer methods and their outcomes
-- Repository methods with complex queries
-- Custom scopes and data transformations
-- Team-based access control logic
-- Custom exception handling
-- Business workflows and processes
-- Custom data processing logic
-
-**ALWAYS:**
-
-- Use real database interactions with factories
-- Only mock 3rd party API calls and external services
-- Test the complete system behavior, not isolated functions
-- Verify database state changes
-- Review other test examples for consistency
-
-### Test Structure Standards
-
-```php
-<?php
-class ServiceTest extends AuthenticatedTestCase
-{
-    protected SomeService $service;
-
-    public function setUp(): void
-    {
-        parent::setUp();
-        $this->service = app(SomeService::class);
-    }
-
-    public function test_methodName_withCondition_expectedResult()
-    {
-        // Given: Setup test data with factories
-        $model = Model::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        
-        // When: Execute the method
-        $result = $this->service->performAction($model, $data);
-        
-        // Then: Assert database changes AND return values
-        $this->assertDatabaseHas('models', ['id' => $model->id, 'status' => 'updated']);
-        $this->assertEquals('expected', $result->property);
-    }
-}
-```
+- Never use chmod - use `./vendor/bin/sail artisan fix`
+- Always use `./vendor/bin/sail artisan make:migration` for migrations
+- Use grep instead of rg for searching
+- Run PHP with `./vendor/bin/sail php`
+- Run tests with `./vendor/bin/sail test`
 
 ---
 
-## 🚨 CRITICAL TESTING STANDARDS
-
-### PROHIBITED PRACTICES
-
-#### ❌ **NEVER USE STATIC MOCKING**
-
-```php
-// ❌ NEVER DO THIS - BREAKS TEST ISOLATION
-$mock = Mockery::mock('alias:' . SomeStaticService::class);
-$mock->shouldReceive('method')->andReturn('value');
-```
-
-**Why this is forbidden:**
-
-- **Breaks test isolation** - affects other tests when run in batch
-- **Global state pollution** - static mocks persist across tests
-- **Non-standard** - other tests use real services or proper DI
-- **Hard to debug** - causes mysterious failures in test suites
-
-#### ✅ **STANDARD ALTERNATIVES**
-
-**For Integration Testing:**
-
-```php
-// ✅ Use real services - this is an integration test
-$result = SomeStaticService::method($data);
-$this->assertEquals('expected', $result);
-```
-
-**For Unit Testing:**
-
-```php
-// ✅ Use dependency injection and mock the dependency
-$mockService = $this->mock(SomeService::class);
-$mockService->shouldReceive('method')->andReturn('value');
-
-$systemUnderTest = new ClassUnderTest($mockService);
-```
-
-**For Refactoring Static Dependencies:**
-
-```php
-// ✅ Inject dependencies instead of using static calls
-class SomeService {
-    public function __construct(private WorkflowRunner $workflowRunner) {}
-    
-    public function doWork() {
-        return $this->workflowRunner->start(); // Not static
-    }
-}
-```
-
-### TEST ISOLATION REQUIREMENTS
-
-- **Each test must run independently** - order should not matter
-- **Use real database** - don't mock database interactions
-- **Only mock external APIs** - everything else should be real
-- **Use factories extensively** - for consistent test data
-- **Follow Given-When-Then** - clear test structure
-
-This guide ensures consistent, maintainable, and scalable Laravel backend code following the GPT Manager application
-patterns.
+This guide ensures consistent, maintainable, and scalable Laravel backend code following the GPT Manager application patterns.
