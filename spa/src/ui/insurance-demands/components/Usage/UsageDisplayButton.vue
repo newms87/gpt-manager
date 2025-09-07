@@ -2,7 +2,7 @@
   <ActionButton
     type="view"
     :label="displayText"
-    :loading="loading"
+    :saving="loading"
     @click="$emit('click')"
   />
 </template>

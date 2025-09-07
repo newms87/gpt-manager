@@ -38,7 +38,7 @@
                 <div class="flex space-x-3">
                     <ActionButton
                         type="save"
-                        :loading="saving"
+                        :saving="saving"
                         :disabled="!isValid"
                         :label="mode === 'create' ? 'Create Demand' : 'Update Demand'"
                         @click="handleSubmit"

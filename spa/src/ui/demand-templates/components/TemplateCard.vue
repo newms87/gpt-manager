@@ -67,7 +67,7 @@
 			</div>
 			<UrlEditField
 				:model-value="template.template_url || ''"
-				:loading="isUpdating"
+				:saving="isUpdating"
 				@url-saved="onUrlSaved"
 			/>
 		</div>

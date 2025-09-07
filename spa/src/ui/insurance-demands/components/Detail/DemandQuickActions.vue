@@ -19,7 +19,7 @@
                 type="check"
                 color="green-invert"
                 label="Mark Complete"
-                :loading="loadingStates.complete || isCompleting"
+                :saving="loadingStates.complete || isCompleting"
                 @click="handleComplete"
             />
 
@@ -29,7 +29,7 @@
                 type="clock"
                 color="slate"
                 label="Set As Draft"
-                :loading="loadingStates.setAsDraft || isSettingAsDraft"
+                :saving="loadingStates.setAsDraft || isSettingAsDraft"
                 @click="handleSetAsDraft"
             />
 
@@ -37,15 +37,25 @@
                 type="trash"
                 color="red"
                 label="Delete Demand"
-                :loading="isDeleting"
+                :saving="isDeleting"
                 @click="handleDelete"
             />
         </div>
+
+        <!-- Delete Confirmation Dialog -->
+        <ConfirmDialog
+            v-if="showDeleteConfirm"
+            title="Delete Demand?"
+            message="Are you sure you want to delete this demand? This action cannot be undone."
+            color="negative"
+            @confirm="confirmDelete"
+            @cancel="showDeleteConfirm = false"
+        />
     </UiCard>
 </template>
 
 <script setup lang="ts">
-import { ActionButton } from "quasar-ui-danx";
+import { ActionButton, ConfirmDialog } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { UiCard } from "../../../shared";
@@ -69,6 +79,7 @@ const { updateDemand, deleteDemand: deleteDemandAction } = useDemands();
 const isCompleting = ref(false);
 const isSettingAsDraft = ref(false);
 const isDeleting = ref(false);
+const showDeleteConfirm = ref(false);
 
 // Computed loading states for remaining buttons
 const loadingStates = computed(() => ({
@@ -106,17 +117,20 @@ const handleSetAsDraft = async () => {
     }
 };
 
-const handleDelete = async () => {
-    if (confirm("Are you sure you want to delete this demand? This action cannot be undone.")) {
-        try {
-            isDeleting.value = true;
-            await deleteDemandAction(props.demand.id);
-            router.push("/ui/demands");
-        } catch (err: any) {
-            console.error("❌ Failed to delete demand:", err);
-        } finally {
-            isDeleting.value = false;
-        }
+const handleDelete = () => {
+    showDeleteConfirm.value = true;
+};
+
+const confirmDelete = async () => {
+    try {
+        isDeleting.value = true;
+        await deleteDemandAction(props.demand.id);
+        router.push("/ui/demands");
+    } catch (err: any) {
+        console.error("❌ Failed to delete demand:", err);
+    } finally {
+        isDeleting.value = false;
+        showDeleteConfirm.value = false;
     }
 };
 

@@ -73,7 +73,7 @@
               <ActionButton
                 type="save"
                 variant="primary"
-                :loading="savingProfile"
+                :saving="savingProfile"
                 label="Save Changes"
               />
             </div>
@@ -141,7 +141,7 @@
               <ActionButton
                 type="save"
                 variant="primary"
-                :loading="savingPassword"
+                :saving="savingPassword"
                 label="Update Password"
               />
             </div>

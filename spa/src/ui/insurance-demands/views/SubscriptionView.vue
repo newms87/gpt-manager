@@ -140,7 +140,7 @@
 								type="cancel"
 								variant="ghost"
 								label="Cancel Subscription"
-								:loading="isLoading"
+								:saving="isLoading"
 								@click="handleCancelSubscription"
 							/>
 						</div>

@@ -29,7 +29,7 @@
             />
             <ActionButton
                 type="save"
-                :loading="isSaving"
+                :saving="isSaving"
                 tooltip="Save URL"
                 color="sky"
                 @click="saveUrl"
