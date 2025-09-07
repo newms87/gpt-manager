@@ -47,7 +47,7 @@
                 </div>
 
                 <!-- Compact Description -->
-                <div v-if="object.description" class="bg-slate-750 rounded-lg p-3 border border-slate-600">
+                <div v-if="showDescription" class="bg-slate-750 rounded-lg p-3 border border-slate-600">
                     <p class="text-slate-100 text-sm leading-relaxed text-center">
                         {{ object.description }}
                     </p>
@@ -171,8 +171,14 @@ const sourceCount = computed(() => {
     return Object.values(props.object.attributes).reduce((total, attr) => total + (attr.sources?.length || 0), 0);
 });
 
-// Color management
+const showDescription = computed(() => {
+    // If description is not empty and there is not an attribute that is the name description
+    if (!props.object?.description || props.object.description.trim().length === 0) return false;
+    return !props.object.attributes["description"];
+    
+});
 
+// Color management
 const typeColors = computed(() => {
     if (!props.object) return getTypeColor("default");
     return getTypeColor(props.object.type);

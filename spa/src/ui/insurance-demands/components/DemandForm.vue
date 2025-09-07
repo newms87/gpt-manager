@@ -38,7 +38,7 @@
                 <div class="flex space-x-3">
                     <ActionButton
                         type="save"
-                        :saving="saving"
+                        :saving="isSaving"
                         :disabled="!isValid"
                         :label="mode === 'create' ? 'Create Demand' : 'Update Demand'"
                         @click="handleSubmit"
@@ -71,7 +71,7 @@ const emit = defineEmits<{
 
 const { formData, errors, isValid, validate, setData } = useDemandForm(props.initialData);
 
-const saving = ref(false);
+const isSaving = ref(false);
 
 // Watch for changes in initial data
 watch(() => props.initialData, (newData) => {
@@ -84,13 +84,13 @@ const handleSubmit = async () => {
     if (!validate()) return;
 
     try {
-        saving.value = true;
+        isSaving.value = true;
         emit("submit", {
             title: formData.value.title,
             description: formData.value.description
         });
     } finally {
-        saving.value = false;
+        isSaving.value = false;
     }
 };
 </script>

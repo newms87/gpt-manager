@@ -28,38 +28,15 @@
                 <label class="text-sm font-medium text-slate-700">Description</label>
                 <p class="mt-1 text-slate-800 whitespace-pre-wrap">{{ demand.description }}</p>
             </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="text-sm font-medium text-slate-700">Status</label>
-                    <div class="mt-1">
-                        <UiStatusBadge :status="demand.status || 'Draft'" />
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-sm font-medium text-slate-700">Progress</label>
-                    <div class="mt-1">
-                        <UiProgressBar
-                            :value="progressPercentage"
-                            :color="progressColor"
-                            size="sm"
-                            :animated="false"
-                        />
-                    </div>
-                </div>
-            </div>
         </div>
     </UiCard>
 </template>
 
 <script setup lang="ts">
 import { ActionButton } from "quasar-ui-danx";
-import { computed } from "vue";
 import { DemandForm } from "../";
-import { UiCard, UiProgressBar, UiStatusBadge } from "../../../shared";
+import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
-import { getDemandProgressPercentage, getDemandStatusColor } from "../../config";
 
 const props = defineProps<{
     demand: UiDemand | null;
@@ -70,14 +47,4 @@ defineEmits<{
     "update": [data: { title: string; description: string; files?: any[] }];
     "cancel-edit": [];
 }>();
-
-const progressColor = computed(() => {
-    if (!props.demand) return "blue";
-    return getDemandStatusColor(props.demand.status);
-});
-
-const progressPercentage = computed(() => {
-    if (!props.demand) return 0;
-    return getDemandProgressPercentage(props.demand.status);
-});
 </script>

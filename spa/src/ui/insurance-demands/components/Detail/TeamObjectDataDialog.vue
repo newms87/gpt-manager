@@ -47,12 +47,12 @@
 </template>
 
 <script setup lang="ts">
-import type { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
 import { useTeamObjectUpdates } from "@/components/Modules/TeamObjects/composables/useTeamObjectUpdates";
+import type { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
 import TeamObjectDetailView from "@/components/Modules/TeamObjects/TeamObjectDetailView.vue";
 import TeamObjectTreeView from "@/components/Modules/TeamObjects/TeamObjectTreeView.vue";
 import { FullScreenDialog } from "quasar-ui-danx";
-import { ref, watch, onUnmounted } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 
 const emit = defineEmits<{
     close: [];
@@ -63,31 +63,31 @@ const props = defineProps<{
 }>();
 
 const selectedObject = ref<TeamObject | null>(null);
-const parentObject = ref<TeamObject | null>(null);
+const parentObject = computed(() => {
+    // If selectedObject is null, we are at the root level
+    if (!selectedObject.value) return null;
+
+    // Find parent by checking relations of the selected object
+    const findParent = (obj: TeamObject, targetId: string): TeamObject | null => {
+        for (const relatedList of Object.values(obj.relations || {})) {
+            for (const related of relatedList) {
+                if (related.id === targetId) {
+                    return obj;
+                }
+                const parent = findParent(related, targetId);
+                if (parent) return parent;
+            }
+        }
+        return null;
+    };
+
+    return props.teamObject ? findParent(props.teamObject, selectedObject.value.id) : null;
+});
 
 // Initialize the TeamObject updates composable
 const { subscribeToTeamObjectUpdates, unsubscribeFromAllUpdates } = useTeamObjectUpdates();
 
 const onSelectObject = (object: TeamObject) => {
-    // Track parent navigation
-    if (selectedObject.value && object.id !== selectedObject.value.id) {
-        // Check if this is a child of current selection
-        const isChild = Object.values(selectedObject.value.relations || {})
-            .flat()
-            .some(related => related.id === object.id);
-
-        if (isChild) {
-            // Going deeper, current selection becomes parent
-            parentObject.value = selectedObject.value;
-        } else if (parentObject.value && parentObject.value.id === object.id) {
-            // Going back up to parent
-            parentObject.value = null;
-        } else {
-            // Lateral navigation or jumping to unrelated object
-            parentObject.value = null;
-        }
-    }
-
     selectedObject.value = object;
 };
 
@@ -96,8 +96,7 @@ watch(() => props.teamObject, (newTeamObject) => {
     if (newTeamObject) {
         // Only reset navigation state, don't copy the object reference
         selectedObject.value = null; // This will make template use teamObject
-        parentObject.value = null;
-        
+
         // Subscribe to real-time updates for the root team object
         subscribeToTeamObjectUpdates(newTeamObject);
     }
