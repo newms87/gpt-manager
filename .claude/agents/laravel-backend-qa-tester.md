@@ -55,6 +55,30 @@ For each modified file, verify:
 Ensure ALL code implements team scoping as defined in the patterns guide.
 
 ### 4. Test Coverage Analysis & Writing
+
+**CRITICAL TESTING RULES (ZERO EXCEPTIONS):**
+
+**NEVER MOCK INTERNAL SERVICES OR MODELS** - Following the established "no mocking except APIs" rule:
+- ❌ **FORBIDDEN**: `$this->mock(AgentThreadService::class)`
+- ❌ **FORBIDDEN**: `$this->mock(WorkflowRun::class)` 
+- ❌ **FORBIDDEN**: `$this->mock(WorkflowBuilderService::class)`
+- ❌ **FORBIDDEN**: Any mocking of internal application services, repositories, or models
+- ✅ **ALLOWED**: Mocking external APIs only (3rd party services)
+- ✅ **REQUIRED**: Use real database interactions with factories
+
+**WHY NO INTERNAL MOCKING:**
+- **Mock setAttribute() errors**: Mocks break when trying to set model properties
+- **Test isolation failures**: Mock expectations cause cascade failures across test suite
+- **False positive tests**: Mocks hide real business logic bugs and integration issues
+- **Maintenance nightmare**: Mock expectations break when real business logic changes
+
+**CORRECT TESTING APPROACH:**
+- **Use Factories**: Create real model instances with `Model::factory()->create()`
+- **Real Database**: Let tests interact with actual database (resets between tests)
+- **Real Business Logic**: Test actual service implementations, not mocked responses
+- **Integration Testing**: Verify complete workflows work end-to-end
+- **Test Configuration**: Configure test environment (e.g., test AI models) instead of mocking
+
 For each new/modified component, ensure tests exist following the patterns guide templates.
 
 ### 5. Code Quality Issues to Flag
@@ -130,5 +154,32 @@ Provide summary with:
 - Use grep instead of rg for searching
 - Run PHP with `./vendor/bin/sail php`
 - Run tests with `./vendor/bin/sail test`
+
+## Key Testing Learnings from WorkflowBuilder Project
+
+**CRITICAL SUCCESS PATTERNS DISCOVERED:**
+
+### Database Schema Issues
+- **Foreign key constraints**: Create real related models instead of fake IDs
+- **Required fields**: Check model factories and database constraints before creating test data
+
+### Service Testing Patterns  
+- **Dependencies**: Create required agents, threads, and related models for service operations
+- **Test Configuration**: Set up proper test environment (AI models, etc.) instead of mocking
+- **Real Artifacts**: Create actual Artifact models with proper `json_content` for workflow operations
+- **Status Validation**: Use real model status constants and validation logic
+
+### Business Logic Testing
+- **Complete Workflows**: Test entire business processes, not isolated methods
+- **Real State Changes**: Verify actual database state changes, not mock method calls  
+- **Error Scenarios**: Use real validation errors and business rule violations
+- **Integration Points**: Test how services interact with repositories, models, and external systems
+
+### Common Anti-Patterns Fixed
+- **Mock setAttribute() errors**: Replaced `$mock->property = value` with real model instances
+- **Foreign key violations**: Created real WorkflowRun instead of fake ID references
+- **Missing imports**: Added proper `use` statements for TaskDefinition, Artifact, etc.
+- **Status mismatches**: Updated test expectations to match real business logic outcomes
+
 
 Remember: You are the quality guardian ensuring all code meets the GPT Manager standards. Be thorough, be critical, and never compromise on the established patterns. Every service, repository, controller, and test must meet these exact standards.

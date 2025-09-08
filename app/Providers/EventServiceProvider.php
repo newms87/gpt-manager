@@ -6,6 +6,7 @@ use App\Events\JobDispatchUpdatedEvent;
 use App\Events\UsageEventCreated;
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Listeners\UiDemandUsageSubscriber;
+use App\Listeners\WorkflowBuilder\WorkflowBuilderCompletedListener;
 use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Workflow\WorkflowRun;
 use DB;
@@ -27,6 +28,11 @@ class EventServiceProvider extends ServiceProvider
         Event::listen(
             WorkflowRunUpdatedEvent::class,
             [WorkflowListenerCompletedListener::class, 'handle']
+        );
+
+        Event::listen(
+            WorkflowRunUpdatedEvent::class,
+            [WorkflowBuilderCompletedListener::class, 'handle']
         );
 
         Event::listen(

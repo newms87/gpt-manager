@@ -1,0 +1,763 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Task Builder Response Schema",
+  "description": "Schema for individual task builder responses when creating or modifying task definitions",
+  "type": "object",
+  "properties": {
+    "task_analysis": {
+      "type": "object",
+      "description": "Analysis of the task requirements",
+      "properties": {
+        "specification_understanding": {
+          "type": "object",
+          "description": "Understanding of the task specification",
+          "properties": {
+            "task_purpose": {
+              "type": "string",
+              "description": "Primary purpose of this task"
+            },
+            "input_expectations": {
+              "type": "string",
+              "description": "What input this task expects to receive"
+            },
+            "output_requirements": {
+              "type": "string",
+              "description": "What output this task should produce"
+            },
+            "processing_approach": {
+              "type": "string",
+              "description": "How this task will process the input to produce output"
+            }
+          },
+          "required": ["task_purpose", "input_expectations", "output_requirements", "processing_approach"],
+          "additionalProperties": false
+        },
+        "workflow_context": {
+          "type": "object",
+          "description": "Context within the workflow",
+          "properties": {
+            "position_in_workflow": {
+              "type": "string",
+              "enum": ["start", "middle", "end"],
+              "description": "Position of this task in the workflow"
+            },
+            "upstream_dependencies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Tasks this task depends on"
+            },
+            "downstream_consumers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Tasks that will consume this task's output"
+            },
+            "critical_path": {
+              "type": "boolean",
+              "description": "Whether this task is on the critical path for workflow completion"
+            }
+          },
+          "required": ["position_in_workflow", "upstream_dependencies", "downstream_consumers", "critical_path"],
+          "additionalProperties": false
+        },
+        "complexity_assessment": {
+          "type": "object",
+          "description": "Assessment of task complexity and requirements",
+          "properties": {
+            "cognitive_complexity": {
+              "type": "string",
+              "enum": ["low", "medium", "high"],
+              "description": "Level of reasoning/analysis required"
+            },
+            "data_complexity": {
+              "type": "string",
+              "enum": ["simple", "moderate", "complex"],
+              "description": "Complexity of data structures involved"
+            },
+            "processing_volume": {
+              "type": "string",
+              "enum": ["low", "medium", "high"],
+              "description": "Expected volume of data to process"
+            },
+            "time_sensitivity": {
+              "type": "string",
+              "enum": ["low", "medium", "high"],
+              "description": "How time-sensitive this task is"
+            }
+          },
+          "required": ["cognitive_complexity", "data_complexity", "processing_volume", "time_sensitivity"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["specification_understanding", "workflow_context", "complexity_assessment"],
+      "additionalProperties": false
+    },
+    "task_definition": {
+      "type": "object",
+      "description": "The complete task definition",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Task name optimized for clarity and workflow context"
+        },
+        "description": {
+          "type": "string",
+          "description": "Comprehensive description of the task's purpose and functionality"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Carefully crafted prompt following best practices for the selected agent"
+        },
+        "task_runner_name": {
+          "type": "string",
+          "enum": [
+            "AI Agent",
+            "Claude AI",
+            "Workflow Input",
+            "Workflow Output",
+            "Load from Database",
+            "Save to Database",
+            "Load CSV",
+            "Filter Artifacts",
+            "Split Artifacts",
+            "Merge Artifacts",
+            "Categorize Artifacts",
+            "Classifier",
+            "Image to Text Transcoder",
+            "Page Organizer",
+            "Sequential Category Matcher",
+            "Artifact Level Projection",
+            "Run Workflow",
+            "Google Docs Template"
+          ],
+          "description": "Selected task runner based on requirements analysis"
+        },
+        "task_runner_config": {
+          "type": ["object", "null"],
+          "description": "Optimized configuration for the selected task runner",
+          "additionalProperties": true
+        },
+        "response_format": {
+          "type": ["string", "null"],
+          "enum": ["json_schema", "text", null],
+          "description": "Response format based on output requirements"
+        },
+        "input_artifact_mode": {
+          "type": ["string", "null"],
+          "enum": ["split", null],
+          "description": "Input processing mode optimized for the task requirements"
+        },
+        "input_artifact_levels": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Artifact levels to include as input"
+        },
+        "output_artifact_mode": {
+          "type": ["string", "null"],
+          "enum": ["", "Per Process", "Group All", null],
+          "description": "Output mode based on downstream requirements"
+        },
+        "output_artifact_levels": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Artifact levels to generate as output"
+        },
+        "timeout_after_seconds": {
+          "type": ["integer", "null"],
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "Timeout optimized for task complexity and expected processing time"
+        },
+        "agent_selection": {
+          "type": ["object", "null"],
+          "description": "Agent selection and rationale",
+          "properties": {
+            "selected_agent": {
+              "type": "string",
+              "description": "Name of the selected agent"
+            },
+            "selection_rationale": {
+              "type": "string",
+              "description": "Why this agent was selected"
+            },
+            "alternative_agents": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "agent_name": {
+                    "type": "string"
+                  },
+                  "pros": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "cons": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["agent_name", "pros", "cons"],
+                "additionalProperties": false
+              },
+              "description": "Alternative agents considered"
+            }
+          },
+          "required": ["selected_agent", "selection_rationale"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "task_runner_name",
+        "response_format",
+        "input_artifact_mode",
+        "output_artifact_mode"
+      ],
+      "additionalProperties": false
+    },
+    "schema_definition": {
+      "type": ["object", "null"],
+      "description": "Schema definition for structured outputs",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Schema name that clearly indicates its purpose"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of what this schema represents"
+        },
+        "schema_rationale": {
+          "type": "string",
+          "description": "Explanation of why this schema structure was chosen"
+        },
+        "schema": {
+          "type": "object",
+          "description": "The JSON schema definition",
+          "properties": {
+            "$schema": {
+              "type": "string",
+              "default": "http://json-schema.org/draft-07/schema#"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "properties": {
+              "type": "object"
+            },
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["type"],
+          "additionalProperties": true
+        },
+        "validation_strategy": {
+          "type": "string",
+          "description": "How to validate outputs against this schema"
+        }
+      },
+      "required": ["name", "description", "schema_rationale", "schema", "validation_strategy"],
+      "additionalProperties": false
+    },
+    "directives": {
+      "type": "array",
+      "description": "Additional directives for the task",
+      "items": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": ["top", "bottom"],
+            "description": "Placement of the directive"
+          },
+          "content": {
+            "type": "string",
+            "description": "Directive content"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "Why this directive is needed"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Position within the section"
+          }
+        },
+        "required": ["section", "content", "purpose"],
+        "additionalProperties": false
+      }
+    },
+    "optimization_analysis": {
+      "type": "object",
+      "description": "Analysis of optimization opportunities",
+      "properties": {
+        "performance_optimizations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "optimization": {
+                "type": "string",
+                "description": "Description of the optimization"
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"],
+                "description": "Expected impact of this optimization"
+              },
+              "implementation_effort": {
+                "type": "string",
+                "enum": ["low", "medium", "high"],
+                "description": "Effort required to implement"
+              }
+            },
+            "required": ["optimization", "impact", "implementation_effort"],
+            "additionalProperties": false
+          },
+          "description": "Performance optimization opportunities"
+        },
+        "cost_optimizations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Cost optimization opportunities"
+        },
+        "quality_improvements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Quality improvement opportunities"
+        },
+        "scalability_considerations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scalability considerations for this task"
+        }
+      },
+      "required": ["performance_optimizations", "cost_optimizations", "quality_improvements", "scalability_considerations"],
+      "additionalProperties": false
+    },
+    "testing_strategy": {
+      "type": "object",
+      "description": "Strategy for testing this task",
+      "properties": {
+        "test_scenarios": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "scenario": {
+                "type": "string",
+                "description": "Test scenario description"
+              },
+              "input_description": {
+                "type": "string",
+                "description": "Description of test input"
+              },
+              "expected_behavior": {
+                "type": "string",
+                "description": "Expected behavior/output"
+              },
+              "validation_method": {
+                "type": "string",
+                "description": "How to validate the results"
+              }
+            },
+            "required": ["scenario", "input_description", "expected_behavior", "validation_method"],
+            "additionalProperties": false
+          },
+          "description": "Key test scenarios for this task"
+        },
+        "edge_cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "case": {
+                "type": "string",
+                "description": "Edge case description"
+              },
+              "expected_handling": {
+                "type": "string",
+                "description": "How the task should handle this case"
+              }
+            },
+            "required": ["case", "expected_handling"],
+            "additionalProperties": false
+          },
+          "description": "Edge cases to test"
+        },
+        "performance_benchmarks": {
+          "type": "object",
+          "description": "Performance benchmarks for this task",
+          "properties": {
+            "expected_processing_time": {
+              "type": "integer",
+              "description": "Expected processing time in seconds"
+            },
+            "memory_requirements": {
+              "type": "string",
+              "enum": ["low", "medium", "high"],
+              "description": "Expected memory requirements"
+            },
+            "throughput_expectations": {
+              "type": "string",
+              "description": "Expected throughput (items per hour/minute)"
+            }
+          },
+          "required": ["expected_processing_time", "memory_requirements"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["test_scenarios", "edge_cases", "performance_benchmarks"],
+      "additionalProperties": false
+    },
+    "integration_requirements": {
+      "type": "object",
+      "description": "Requirements for integrating this task into the workflow",
+      "properties": {
+        "prerequisite_tasks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tasks that must be completed before this task"
+        },
+        "data_dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "dependency": {
+                "type": "string",
+                "description": "What data dependency is required"
+              },
+              "source": {
+                "type": "string",
+                "description": "Where this data comes from"
+              },
+              "format_requirements": {
+                "type": "string",
+                "description": "Required format for the data"
+              }
+            },
+            "required": ["dependency", "source", "format_requirements"],
+            "additionalProperties": false
+          },
+          "description": "Data dependencies for this task"
+        },
+        "connection_requirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "connection_type": {
+                "type": "string",
+                "enum": ["input", "output"],
+                "description": "Type of connection"
+              },
+              "connected_task": {
+                "type": "string",
+                "description": "Name of the connected task"
+              },
+              "data_format": {
+                "type": "string",
+                "description": "Format of data being passed"
+              },
+              "transformation_needed": {
+                "type": "boolean",
+                "description": "Whether data transformation is needed"
+              }
+            },
+            "required": ["connection_type", "connected_task", "data_format", "transformation_needed"],
+            "additionalProperties": false
+          },
+          "description": "Connection requirements with other tasks"
+        }
+      },
+      "required": ["prerequisite_tasks", "data_dependencies", "connection_requirements"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "task_analysis",
+    "task_definition",
+    "optimization_analysis",
+    "testing_strategy",
+    "integration_requirements"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "task_analysis": {
+        "specification_understanding": {
+          "task_purpose": "Analyze document content to extract key insights and themes",
+          "input_expectations": "Text content from documents in artifact format",
+          "output_requirements": "Structured JSON with themes, insights, and confidence scores",
+          "processing_approach": "Use AI agent to perform content analysis with structured output schema"
+        },
+        "workflow_context": {
+          "position_in_workflow": "middle",
+          "upstream_dependencies": ["Document Input Handler"],
+          "downstream_consumers": ["Report Generator"],
+          "critical_path": true
+        },
+        "complexity_assessment": {
+          "cognitive_complexity": "high",
+          "data_complexity": "moderate",
+          "processing_volume": "medium",
+          "time_sensitivity": "medium"
+        }
+      },
+      "task_definition": {
+        "name": "Content Insight Analyzer",
+        "description": "Analyzes document content using AI to extract key insights, identify main themes, and generate actionable recommendations with confidence scoring",
+        "prompt": "Analyze the provided document content and extract:\n\n1. **Main Themes**: Identify 3-5 primary themes or topics covered in the document\n2. **Key Insights**: Extract 5-10 important insights or findings\n3. **Recommendations**: Provide 3-5 actionable recommendations based on the content\n\nFor each item, include:\n- Clear, concise description\n- Confidence score (1-10)\n- Supporting evidence from the document\n\nFocus on practical, actionable information that would be valuable to decision-makers.",
+        "task_runner_name": "AI Agent",
+        "task_runner_config": {
+          "timeout": 120,
+          "include_text_sources": true,
+          "deduplicate_names": false
+        },
+        "response_format": "json_schema",
+        "input_artifact_mode": "split",
+        "input_artifact_levels": ["document", "page"],
+        "output_artifact_mode": "Per Process",
+        "output_artifact_levels": ["analysis"],
+        "timeout_after_seconds": 180,
+        "agent_selection": {
+          "selected_agent": "GPT-4 Analysis Agent",
+          "selection_rationale": "GPT-4 provides the best balance of analytical capability and consistency for complex content analysis tasks",
+          "alternative_agents": [
+            {
+              "agent_name": "Claude Analysis Agent",
+              "pros": ["Large context window", "Strong analytical skills"],
+              "cons": ["Higher cost", "Potentially slower responses"]
+            },
+            {
+              "agent_name": "GPT-3.5 Turbo",
+              "pros": ["Fast processing", "Lower cost"],
+              "cons": ["Less sophisticated analysis", "May miss nuanced insights"]
+            }
+          ]
+        }
+      },
+      "schema_definition": {
+        "name": "Document Analysis Results",
+        "description": "Structured output for document content analysis including themes, insights, and recommendations",
+        "schema_rationale": "Schema designed to capture both quantitative (confidence scores) and qualitative (text descriptions) aspects of analysis while maintaining clear structure for downstream processing",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Document Analysis Results",
+          "type": "object",
+          "properties": {
+            "main_themes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "theme": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "confidence": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 10
+                  },
+                  "supporting_evidence": {
+                    "type": "string"
+                  }
+                },
+                "required": ["theme", "description", "confidence", "supporting_evidence"]
+              },
+              "minItems": 3,
+              "maxItems": 5
+            },
+            "key_insights": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "insight": {
+                    "type": "string"
+                  },
+                  "confidence": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 10
+                  },
+                  "supporting_evidence": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": ["financial", "operational", "strategic", "risk", "opportunity", "other"]
+                  }
+                },
+                "required": ["insight", "confidence", "supporting_evidence", "category"]
+              },
+              "minItems": 5,
+              "maxItems": 10
+            },
+            "recommendations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "recommendation": {
+                    "type": "string"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"]
+                  },
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "estimated_impact": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"]
+                  }
+                },
+                "required": ["recommendation", "priority", "rationale", "estimated_impact"]
+              },
+              "minItems": 3,
+              "maxItems": 5
+            }
+          },
+          "required": ["main_themes", "key_insights", "recommendations"]
+        },
+        "validation_strategy": "Validate required fields presence, confidence score ranges, and enum values. Check minimum/maximum array lengths."
+      },
+      "directives": [
+        {
+          "section": "top",
+          "content": "You are an expert business analyst with extensive experience in document analysis and insight extraction. Your goal is to provide actionable intelligence from business documents.",
+          "purpose": "Establish expert persona and context for high-quality analysis",
+          "position": 0
+        },
+        {
+          "section": "bottom",
+          "content": "Ensure all insights are specific and actionable. Avoid generic statements. Base all confidence scores on the strength of supporting evidence in the document.",
+          "purpose": "Emphasize quality and specificity requirements",
+          "position": 0
+        }
+      ],
+      "optimization_analysis": {
+        "performance_optimizations": [
+          {
+            "optimization": "Implement document chunking for very large documents",
+            "impact": "high",
+            "implementation_effort": "medium"
+          },
+          {
+            "optimization": "Cache analysis patterns for similar document types",
+            "impact": "medium",
+            "implementation_effort": "high"
+          }
+        ],
+        "cost_optimizations": [
+          "Use GPT-3.5 for simple documents and escalate to GPT-4 only for complex analysis",
+          "Implement smart chunking to reduce token usage for large documents"
+        ],
+        "quality_improvements": [
+          "Add validation step for confidence score consistency",
+          "Implement cross-reference checking between themes and insights"
+        ],
+        "scalability_considerations": [
+          "Task supports parallel processing via split input mode",
+          "Per-process output mode enables granular result tracking",
+          "Consider rate limiting for high-volume scenarios"
+        ]
+      },
+      "testing_strategy": {
+        "test_scenarios": [
+          {
+            "scenario": "Standard business document analysis",
+            "input_description": "10-page business report with clear structure and content",
+            "expected_behavior": "Extract 3-5 themes, 5-10 insights, 3-5 recommendations with appropriate confidence scores",
+            "validation_method": "Manual review of extracted insights for accuracy and relevance"
+          },
+          {
+            "scenario": "Technical document with complex terminology",
+            "input_description": "Technical specification document with specialized language",
+            "expected_behavior": "Maintain accuracy while explaining technical concepts in business terms",
+            "validation_method": "Subject matter expert review of technical accuracy"
+          }
+        ],
+        "edge_cases": [
+          {
+            "case": "Document with minimal content",
+            "expected_handling": "Return fewer items but maintain quality thresholds, flag low content volume"
+          },
+          {
+            "case": "Document with contradictory information",
+            "expected_handling": "Note contradictions in insights, provide balanced analysis with appropriate confidence scores"
+          }
+        ],
+        "performance_benchmarks": {
+          "expected_processing_time": 120,
+          "memory_requirements": "medium",
+          "throughput_expectations": "30 documents per hour"
+        }
+      },
+      "integration_requirements": {
+        "prerequisite_tasks": ["Document Input Handler"],
+        "data_dependencies": [
+          {
+            "dependency": "Document text content",
+            "source": "Document Input Handler task output",
+            "format_requirements": "Plain text artifacts with document structure preserved"
+          }
+        ],
+        "connection_requirements": [
+          {
+            "connection_type": "input",
+            "connected_task": "Document Input Handler",
+            "data_format": "text_content artifacts",
+            "transformation_needed": false
+          },
+          {
+            "connection_type": "output",
+            "connected_task": "Report Generator",
+            "data_format": "json_content with analysis schema",
+            "transformation_needed": true
+          }
+        ]
+      }
+    }
+  ]
+}

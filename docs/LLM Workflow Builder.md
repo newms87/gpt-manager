@@ -1,5 +1,38 @@
 # Simplified LLM Workflow Builder - Implementation Plan
 
+## Overview & Purpose
+
+The LLM Workflow Builder is a comprehensive system that enables users to create and modify complex workflow definitions through natural language conversations with AI agents. Instead of manually configuring workflow nodes, task definitions, connections, and prompts, users can simply describe what they want to accomplish, and the system will intelligently design, build, and implement the complete workflow structure.
+
+### Key Goals:
+1. **Natural Language Interface**: Users interact through conversational prompts rather than technical configuration
+2. **Intelligent Workflow Design**: AI analyzes requirements and designs optimal workflow structures
+3. **Automated Implementation**: System creates all necessary models (WorkflowDefinition, TaskDefinition, WorkflowNode, etc.)
+4. **Iterative Refinement**: Chat-based interface allows continuous improvement and modification
+5. **Integration with Existing System**: Leverages current workflow engine without disruption
+
+### How It Works:
+The system operates in three distinct phases:
+
+**Phase 1: Requirements Gathering** - User provides natural language description of their workflow needs. AI engages in conversation to understand requirements, clarify ambiguities, and propose a high-level workflow plan.
+
+**Phase 2: Workflow Building** - Once the plan is approved, the system uses a specialized "Workflow Builder" workflow to automatically create all technical components: task definitions with appropriate prompts, agents, schema definitions, workflow connections, and artifact flow configurations.
+
+**Phase 3: Result Evaluation** - After the workflow is built, AI analyzes the results, explains what was created, and provides recommendations. Users can then request modifications or start building additional workflows.
+
+### User Experience:
+Users interact through an artisan command that provides a chat-like interface:
+```bash
+php artisan workflow:build "Create a content analysis workflow that extracts key insights"
+```
+
+The system guides users through the process, displays progress, and provides clear feedback about what was built and how to use it.
+
+### Technical Architecture:
+Built on the existing workflow engine, the system uses specialized task runners, direct AgentThreadService integration, and event-driven completion handling to provide a seamless experience while maintaining clean separation of concerns and reusability.
+
+---
+
 ## 1. Documentation Structure (LLM Knowledge Base)
 
 **Directory**: `docs/workflow-builder-prompts/`

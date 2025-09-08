@@ -31,6 +31,19 @@
     - READ FULL FILES of similar implementations to understand complete patterns
     - It is CRITICAL you understand what you are doing before you do it
 
+**🚨 CRITICAL MODEL & DATABASE INTERACTION RULES (ZERO TOLERANCE):**
+
+**NEVER MODIFY MODELS WITHOUT COMPLETE UNDERSTANDING:**
+- ❌ **FORBIDDEN**: Adding fields to $fillable without verifying they should be user-modifiable
+- ❌ **FORBIDDEN**: Adding security fields like `team_id`, `user_id` to $fillable arrays
+- ❌ **FORBIDDEN**: Adding foreign keys to $fillable (they should be set programmatically)
+- ❌ **FORBIDDEN**: Adding fields to factories that don't exist in database schema
+- ❌ **FORBIDDEN**: Guessing field names or assuming they exist
+- ✅ **MANDATORY**: Read the model file completely before ANY changes
+- ✅ **MANDATORY**: Check migration files to verify fields exist in database
+- ✅ **MANDATORY**: Check existing factory to understand field structure
+- ✅ **MANDATORY**: $fillable should ONLY contain fields end users should modify
+
 **CRITICALLY IMPORTANT: Before each code change, make a TODO list with the FIRST STEP stating:**
 *"I will follow the best practices and standards: DRY Principles, no Legacy/backwards compatibility, and use the correct
 patterns."*
@@ -86,8 +99,16 @@ You MUST use the specialized Laravel agents for any backend work:
     - Reviewing Laravel backend code after creation or modification
     - Ensuring comprehensive test coverage and quality standards
     - Quality assurance of all Laravel backend code
+    - **EXCLUSIVE AUTHORITY FOR TEST WRITING**: This agent is the ONLY agent authorized to write, modify, or run tests
 
-**DO NOT** attempt to write Laravel services, repositories, controllers, or models directly. Always delegate to the
+**🚨 CRITICAL TEST WRITING RULE:**
+- **NEVER write tests yourself** - Always delegate to `laravel-backend-qa-tester` agent
+- **NEVER modify existing tests** - Always use the QA testing agent 
+- **NEVER run test commands** - Only the QA testing agent should run tests
+- **ONLY the QA agent** understands the "no mocking except APIs" rule and proper testing patterns
+- This prevents poorly designed tests, mock-heavy anti-patterns, and test maintenance issues
+
+**DO NOT** attempt to write Laravel services, repositories, controllers, models, or **TESTS** directly. Always delegate to the
 appropriate specialized agent to ensure consistency, quality, and adherence to the established
 Service-Repository-Controller pattern with danx integration.
 
