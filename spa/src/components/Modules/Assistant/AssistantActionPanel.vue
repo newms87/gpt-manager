@@ -1,7 +1,7 @@
 <template>
     <div class="assistant-action-panel bg-gray-50">
         <!-- Header - Click anywhere to toggle -->
-        <div 
+        <div
             class="panel-header bg-gray-100 px-4 py-2 border-b border-gray-200 cursor-pointer select-none"
             @click="toggleCollapse"
         >
@@ -66,20 +66,15 @@
 </template>
 
 <script setup lang="ts">
+import { useAssistantChat } from "@/composables/useAssistantChat";
+import { FaSolidChevronDown, FaSolidChevronUp, FaSolidGears, FaSolidWandMagicSparkles } from "danx-icon";
 import { computed, ref } from "vue";
-import {
-    FaSolidChevronDown,
-    FaSolidChevronUp,
-    FaSolidGears,
-    FaSolidWandMagicSparkles,
-} from "danx-icon";
 import AssistantActionBox from "./AssistantActionBox.vue";
 import AssistantActionPreview from "./AssistantActionPreview.vue";
 import { AssistantAction } from "./types";
-import { useAssistantChat } from "@/composables/useAssistantChat";
 
 // Get thread and methods from composable - use thread actions directly
-const { currentThread, approveAction, cancelAction } = useAssistantChat();
+const { currentThread } = useAssistantChat();
 
 // Props
 interface Props {
@@ -91,7 +86,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     threadId: undefined,
     collapsible: true,
-    defaultCollapsed: false,
+    defaultCollapsed: false
 });
 
 // State
@@ -106,7 +101,7 @@ const isCollapsible = computed(() => props.collapsible);
 const threadActions = computed(() => currentThread.value?.actions || []);
 
 const activeActionsCount = computed(() => {
-    return threadActions.value.filter(action => 
+    return threadActions.value.filter(action =>
         action.is_pending || action.is_in_progress
     ).length;
 });
@@ -120,16 +115,16 @@ const sortedActions = computed(() => {
             pending: 4,
             failed: 3,
             completed: 2,
-            cancelled: 1,
+            cancelled: 1
         };
-        
+
         const aPriority = statusPriority[a.status as keyof typeof statusPriority] || 0;
         const bPriority = statusPriority[b.status as keyof typeof statusPriority] || 0;
-        
+
         if (aPriority !== bPriority) {
             return bPriority - aPriority;
         }
-        
+
         // If same status, sort by creation time (newest first)
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
@@ -157,15 +152,15 @@ function closePreview(): void {
         &::-webkit-scrollbar {
             width: 4px;
         }
-        
+
         &::-webkit-scrollbar-track {
             background: #f1f1f1;
         }
-        
+
         &::-webkit-scrollbar-thumb {
             background: #c1c1c1;
             border-radius: 2px;
-            
+
             &:hover {
                 background: #a1a1a1;
             }
@@ -174,7 +169,7 @@ function closePreview(): void {
 
     .action-item {
         animation: slideIn 0.3s ease-out;
-        
+
         @keyframes slideIn {
             from {
                 opacity: 0;
@@ -189,7 +184,7 @@ function closePreview(): void {
 
     .panel-header {
         transition: all 0.2s ease;
-        
+
         &:hover {
             background-color: #f3f4f6;
         }

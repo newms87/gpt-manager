@@ -332,4 +332,129 @@ class TaskDefinitionToAgentThreadMapperTest extends TestCase
         $this->assertStringContainsString('--- PRIMARY ARTIFACTS ---', $messageTexts);
         $this->assertStringNotContainsString('--- CONTEXT AFTER ---', $messageTexts);
     }
+
+    #[Test]
+    public function it_adds_prompt_to_agent_thread_when_present()
+    {
+        $taskDefinitionWithPrompt = TaskDefinition::factory()->create([
+            'team_id'  => $this->team->id,
+            'agent_id' => $this->agent->id,
+            'prompt'   => 'You are an expert analyst. Focus on accuracy and detail.',
+        ]);
+
+        $primaryArtifacts = collect([
+            Artifact::factory()->create(['position' => 5, 'text_content' => 'Primary artifact']),
+        ]);
+
+        $mapper      = new TaskDefinitionToAgentThreadMapper();
+        $agentThread = $mapper
+            ->setTaskRun($this->taskRun)
+            ->setTaskDefinition($taskDefinitionWithPrompt)
+            ->setArtifacts($primaryArtifacts)
+            ->map();
+
+        $messages     = $agentThread->messages;
+        $messageTexts = $messages->pluck('content');
+
+        // Verify prompt is included in the messages
+        $promptFound = $messageTexts->contains('You are an expert analyst. Focus on accuracy and detail.');
+        $this->assertTrue($promptFound, 'Prompt was not found in agent thread messages');
+    }
+
+    #[Test]
+    public function it_handles_null_prompt_gracefully()
+    {
+        $taskDefinitionWithoutPrompt = TaskDefinition::factory()->create([
+            'team_id'  => $this->team->id,
+            'agent_id' => $this->agent->id,
+            'prompt'   => null,
+        ]);
+
+        $primaryArtifacts = collect([
+            Artifact::factory()->create(['position' => 5, 'text_content' => 'Primary artifact']),
+        ]);
+
+        $mapper      = new TaskDefinitionToAgentThreadMapper();
+        $agentThread = $mapper
+            ->setTaskRun($this->taskRun)
+            ->setTaskDefinition($taskDefinitionWithoutPrompt)
+            ->setArtifacts($primaryArtifacts)
+            ->map();
+
+        $this->assertNotNull($agentThread);
+        
+        // Should not throw an exception and thread should be created successfully
+        $messages = $agentThread->messages;
+        $this->assertGreaterThan(0, $messages->count());
+    }
+
+    #[Test]
+    public function it_adds_prompt_before_artifacts_in_correct_order()
+    {
+        $taskDefinitionWithPrompt = TaskDefinition::factory()->create([
+            'team_id'  => $this->team->id,
+            'agent_id' => $this->agent->id,
+            'prompt'   => 'Custom task prompt for testing order.',
+        ]);
+
+        $primaryArtifacts = collect([
+            Artifact::factory()->create(['position' => 5, 'text_content' => 'Primary artifact content']),
+        ]);
+
+        $mapper      = new TaskDefinitionToAgentThreadMapper();
+        $agentThread = $mapper
+            ->setTaskRun($this->taskRun)
+            ->setTaskDefinition($taskDefinitionWithPrompt)
+            ->setArtifacts($primaryArtifacts)
+            ->map();
+
+        $messages     = $agentThread->messages;
+        $messageTexts = $messages->pluck('content')->toArray();
+
+        // Find positions of prompt and artifacts
+        $promptPosition = null;
+        $artifactPosition = null;
+
+        foreach ($messageTexts as $index => $text) {
+            if (str_contains($text, 'Custom task prompt for testing order')) {
+                $promptPosition = $index;
+            }
+            if (str_contains($text, '--- PRIMARY ARTIFACTS ---')) {
+                $artifactPosition = $index;
+            }
+        }
+
+        // Verify prompt appears before artifacts
+        $this->assertNotNull($promptPosition, 'Prompt not found in messages');
+        $this->assertNotNull($artifactPosition, 'Artifacts section not found in messages');
+        $this->assertLessThan($artifactPosition, $promptPosition, 'Prompt should appear before artifacts');
+    }
+
+    #[Test]
+    public function it_handles_empty_prompt_string_as_null()
+    {
+        $taskDefinitionWithEmptyPrompt = TaskDefinition::factory()->create([
+            'team_id'  => $this->team->id,
+            'agent_id' => $this->agent->id,
+            'prompt'   => '',
+        ]);
+
+        $primaryArtifacts = collect([
+            Artifact::factory()->create(['position' => 5, 'text_content' => 'Primary artifact']),
+        ]);
+
+        $mapper      = new TaskDefinitionToAgentThreadMapper();
+        $agentThread = $mapper
+            ->setTaskRun($this->taskRun)
+            ->setTaskDefinition($taskDefinitionWithEmptyPrompt)
+            ->setArtifacts($primaryArtifacts)
+            ->map();
+
+        $messages     = $agentThread->messages;
+        $messageTexts = $messages->pluck('content');
+
+        // Empty string prompt should not be added to messages
+        $emptyPromptFound = $messageTexts->contains('');
+        $this->assertFalse($emptyPromptFound, 'Empty prompt should not be added to messages');
+    }
 }

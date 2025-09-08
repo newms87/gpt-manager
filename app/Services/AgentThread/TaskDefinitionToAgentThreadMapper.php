@@ -89,6 +89,7 @@ class TaskDefinitionToAgentThreadMapper
         $agentThread = app(ThreadRepository::class)->create($agent, $threadName);
 
         $this->addDirectives($agentThread, $this->taskDefinition->beforeThreadDirectives()->with('directive')->get());
+        $this->addPrompt($agentThread);
         $this->addArtifacts($agentThread);
         $this->appendMessages($agentThread);
         $this->addDirectives($agentThread, $this->taskDefinition->afterThreadDirectives()->with('directive')->get());
@@ -130,6 +131,17 @@ class TaskDefinitionToAgentThreadMapper
             if ($taskDefinitionDirective->directive->directive_text) {
                 app(ThreadRepository::class)->addMessageToThread($agentThread, $taskDefinitionDirective->directive->directive_text);
             }
+        }
+    }
+
+    /**
+     * Add the prompt from the task definition to the thread if it exists
+     */
+    protected function addPrompt(AgentThread $agentThread): void
+    {
+        if ($this->taskDefinition->prompt) {
+            static::log("\tAdding prompt from task definition");
+            app(ThreadRepository::class)->addMessageToThread($agentThread, $this->taskDefinition->prompt);
         }
     }
 

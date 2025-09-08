@@ -1,4 +1,4 @@
-import { ref, computed, Ref } from "vue";
+import { computed, ref } from "vue";
 
 export interface AssistantContextData {
     context: string;
@@ -20,36 +20,36 @@ export function useAssistantGlobalContext() {
     const activeContext = computed<AssistantContextData | null>(() => {
         if (activeContextProviders.value.size === 0) {
             return {
-                context: 'general-chat'
+                context: "general-chat"
             };
         }
-        
+
         // Get all providers and sort by priority (descending)
         const providers = Array.from(activeContextProviders.value.values());
         providers.sort((a, b) => b.priority - a.priority);
-        
+
         // Return the highest priority context
         return providers[0]?.data || null;
     });
-    
+
     // Current context values
-    const currentContext = computed(() => activeContext.value?.context || 'general-chat');
+    const currentContext = computed(() => activeContext.value?.context || "general-chat");
     const currentObject = computed(() => activeContext.value?.object || null);
     const currentMetadata = computed(() => activeContext.value?.metadata || {});
-    
+
     // Context display names
     const contextDisplayNames: Record<string, string> = {
-        'schema-editor': 'Schema Editor',
-        'workflow-editor': 'Workflow Editor',
-        'agent-management': 'Agent Management',
-        'task-management': 'Task Management',
-        'general-chat': 'General Chat',
+        "schema-editor": "Schema Editor",
+        "workflow-editor": "Workflow Editor",
+        "agent-management": "Agent Management",
+        "task-management": "Task Management",
+        "general-chat": "General Chat"
     };
-    
+
     const contextDisplayName = computed(() => {
-        return contextDisplayNames[currentContext.value] || 'AI Assistant';
+        return contextDisplayNames[currentContext.value] || "AI Assistant";
     });
-    
+
     // Register a context provider
     function registerContextProvider(id: string, priority: number, data: AssistantContextData): void {
         activeContextProviders.value.set(id, {
@@ -58,12 +58,12 @@ export function useAssistantGlobalContext() {
             data
         });
     }
-    
+
     // Unregister a context provider
     function unregisterContextProvider(id: string): void {
         activeContextProviders.value.delete(id);
     }
-    
+
     // Update context data for an existing provider
     function updateContextProvider(id: string, data: Partial<AssistantContextData>): void {
         const provider = activeContextProviders.value.get(id);
@@ -73,35 +73,35 @@ export function useAssistantGlobalContext() {
             activeContextProviders.value = new Map(activeContextProviders.value);
         }
     }
-    
+
     // Check if a specific context is active
     function isContextActive(context: string): boolean {
         return currentContext.value === context;
     }
-    
+
     // Get all active contexts (useful for debugging)
     function getActiveContexts(): ContextProvider[] {
         return Array.from(activeContextProviders.value.values());
     }
-    
+
     return {
         // Current context state
         currentContext,
         currentObject,
         currentMetadata,
         contextDisplayName,
-        
+
         // Context management
         registerContextProvider,
         unregisterContextProvider,
         updateContextProvider,
-        
+
         // Helpers
         isContextActive,
         getActiveContexts,
-        
+
         // Constants
-        contextDisplayNames,
+        contextDisplayNames
     };
 }
 

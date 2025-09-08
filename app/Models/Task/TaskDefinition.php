@@ -39,6 +39,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
     protected $fillable = [
         'name',
         'description',
+        'prompt',
         'task_runner_name',
         'task_runner_config',
         'response_format',
@@ -189,6 +190,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         return $service->register($this, [
             'name'                   => $this->name,
             'description'            => $this->description,
+            'prompt'                 => $this->prompt,
             'task_runner_name'       => $this->task_runner_name,
             'task_runner_config'     => $this->task_runner_config,
             'schema_definition_id'   => $service->registerRelatedModel($this->schemaDefinition),
