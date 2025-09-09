@@ -72,6 +72,41 @@ Ensure ALL code implements team scoping as defined in the patterns guide.
 - **False positive tests**: Mocks hide real business logic bugs and integration issues
 - **Maintenance nightmare**: Mock expectations break when real business logic changes
 
+**🚨 CRITICAL MODEL MODIFICATION RULES (ABSOLUTE ZERO TOLERANCE):**
+
+**NEVER MODIFY $fillable ARRAYS TO FIX TEST ISSUES:**
+- ❌ **FORBIDDEN**: Adding `team_id` to $fillable to make tests pass
+- ❌ **FORBIDDEN**: Adding foreign keys (`task_definition_id`, `workflow_id`, etc.) to $fillable
+- ❌ **FORBIDDEN**: Adding security-sensitive fields to $fillable
+- ❌ **FORBIDDEN**: Adding fields that don't exist in database schema
+- ✅ **SECURITY RULE**: $fillable should ONLY contain fields end users should modify via forms/APIs
+
+**MANDATORY MODEL UNDERSTANDING BEFORE ANY CHANGES:**
+1. **ALWAYS READ THE MODEL FILE COMPLETELY** before making any changes
+2. **VERIFY DATABASE SCHEMA** - Check migrations to confirm fields exist
+3. **CHECK EXISTING $fillable** - Understand what fields are intentionally fillable
+4. **READ FACTORY FILE** - Understand proper field structure and relationships
+5. **NEVER GUESS FIELD NAMES** - Only use fields that demonstrably exist
+
+**🚨 CRITICAL FACTORY MODIFICATION RULES (ABSOLUTE ZERO TOLERANCE):**
+
+**NEVER ADD NON-EXISTENT FIELDS TO FACTORIES:**
+- ❌ **FORBIDDEN**: Adding ANY field without verifying it exists in the database
+- ✅ **VERIFICATION REQUIRED**: Check migration files to confirm every field exists
+
+**FACTORY FIELD VERIFICATION PROCESS:**
+1. **READ MIGRATION FILES** for the model's table to see actual database schema
+2. **COMPARE WITH EXISTING FACTORY** to understand current field structure
+3. **NEVER ADD FIELDS** without confirming they exist in database schema
+4. **USE ONLY DOCUMENTED FIELDS** from migrations or database structure
+5. **TEST WITH REAL DATABASE** to ensure factory creates valid records
+
+**CORRECT TESTING PATTERNS FOR NON-FILLABLE FIELDS:**
+- ✅ **Use Factories**: `Model::factory()->create()` - Primary approach
+- ✅ **Direct Assignment**: `$model->team_id = value; $model->save()` 
+- ✅ **Force Fill in Tests**: `$model->forceFill(['team_id' => value])->save()`
+- ❌ **NEVER**: Modify $fillable to make mass assignment work
+
 **CORRECT TESTING APPROACH:**
 - **Use Factories**: Create real model instances with `Model::factory()->create()`
 - **Real Database**: Let tests interact with actual database (resets between tests)

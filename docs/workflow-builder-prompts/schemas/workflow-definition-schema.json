@@ -1,0 +1,339 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Workflow Definition Modification Schema",
+  "description": "Schema for creating or modifying WorkflowDefinitions and their associated nodes and connections",
+  "type": "object",
+  "properties": {
+    "workflow_definition": {
+      "type": "object",
+      "description": "The main workflow definition properties",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Unique name for the workflow within the team",
+          "pattern": "^[a-zA-Z0-9\\s\\-_]+$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the workflow's purpose and functionality"
+        },
+        "max_workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20,
+          "description": "Maximum number of parallel task processes that can run simultaneously"
+        }
+      },
+      "required": ["name", "description"],
+      "additionalProperties": false
+    },
+    "nodes": {
+      "type": "array",
+      "description": "Array of workflow nodes to create or modify",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": ["string", "null"],
+            "description": "Existing node ID for updates, null for new nodes"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Descriptive name for the node"
+          },
+          "task_definition_name": {
+            "type": "string",
+            "description": "Name of the associated task definition"
+          },
+          "settings": {
+            "type": ["object", "null"],
+            "description": "Node-specific settings and configuration",
+            "additionalProperties": true
+          },
+          "params": {
+            "type": ["object", "null"],
+            "description": "Node-specific parameters",
+            "additionalProperties": true
+          },
+          "position": {
+            "type": "object",
+            "description": "Node position in workflow diagram",
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "Horizontal position"
+              },
+              "y": {
+                "type": "number",
+                "description": "Vertical position"
+              }
+            },
+            "required": ["x", "y"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["name", "task_definition_name"],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "connections": {
+      "type": "array",
+      "description": "Array of connections between workflow nodes",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": ["string", "null"],
+            "description": "Existing connection ID for updates, null for new connections"
+          },
+          "name": {
+            "type": ["string", "null"],
+            "maxLength": 80,
+            "description": "Optional descriptive name for the connection"
+          },
+          "source_node_name": {
+            "type": "string",
+            "description": "Name of the source node (must match a node in the nodes array)"
+          },
+          "target_node_name": {
+            "type": "string",
+            "description": "Name of the target node (must match a node in the nodes array)"
+          },
+          "source_output_port": {
+            "type": ["string", "null"],
+            "description": "Specific output port from source node (optional)"
+          },
+          "target_input_port": {
+            "type": ["string", "null"],
+            "description": "Specific input port on target node (optional)"
+          }
+        },
+        "required": ["source_node_name", "target_node_name"],
+        "additionalProperties": false
+      }
+    },
+    "actions": {
+      "type": "array",
+      "description": "Actions to perform on the workflow",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["create", "update", "delete"],
+            "description": "Type of action to perform"
+          },
+          "target": {
+            "type": "string",
+            "enum": ["workflow", "node", "connection"],
+            "description": "Target of the action"
+          },
+          "identifier": {
+            "type": ["string", "null"],
+            "description": "Identifier for the target (name for creates, ID for updates/deletes)"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Explanation of why this action is being performed"
+          }
+        },
+        "required": ["type", "target", "reason"],
+        "additionalProperties": false
+      }
+    },
+    "validation_results": {
+      "type": "object",
+      "description": "Validation results for the workflow structure",
+      "properties": {
+        "is_valid": {
+          "type": "boolean",
+          "description": "Whether the workflow structure is valid"
+        },
+        "errors": {
+          "type": "array",
+          "description": "Array of validation errors",
+          "items": {
+            "type": "string"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "description": "Array of validation warnings",
+          "items": {
+            "type": "string"
+          }
+        },
+        "acyclicity_check": {
+          "type": "boolean",
+          "description": "Whether the workflow is acyclic (no circular dependencies)"
+        },
+        "connectivity_check": {
+          "type": "boolean",
+          "description": "Whether all nodes are properly connected"
+        },
+        "task_compatibility": {
+          "type": "array",
+          "description": "Task compatibility analysis results",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_task": {
+                "type": "string"
+              },
+              "target_task": {
+                "type": "string"
+              },
+              "compatible": {
+                "type": "boolean"
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["source_task", "target_task", "compatible"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["is_valid", "errors", "warnings", "acyclicity_check", "connectivity_check"],
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata about the workflow modification",
+      "properties": {
+        "created_by": {
+          "type": "string",
+          "description": "Name or identifier of who created this workflow"
+        },
+        "creation_timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this workflow was created/modified"
+        },
+        "version": {
+          "type": "string",
+          "description": "Version identifier for this workflow"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags for categorizing and organizing workflows",
+          "items": {
+            "type": "string"
+          }
+        },
+        "estimated_execution_time": {
+          "type": "integer",
+          "description": "Estimated execution time in seconds"
+        },
+        "resource_requirements": {
+          "type": "object",
+          "description": "Estimated resource requirements",
+          "properties": {
+            "cpu_intensive": {
+              "type": "boolean"
+            },
+            "memory_intensive": {
+              "type": "boolean"
+            },
+            "io_intensive": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["workflow_definition", "nodes", "connections", "validation_results"],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "workflow_definition": {
+        "name": "Document Analysis Pipeline",
+        "description": "Analyzes documents for key insights and generates summaries",
+        "max_workers": 15
+      },
+      "nodes": [
+        {
+          "id": null,
+          "name": "Document Input",
+          "task_definition_name": "Workflow Input",
+          "position": {
+            "x": 100,
+            "y": 100
+          }
+        },
+        {
+          "id": null,
+          "name": "Extract Key Insights",
+          "task_definition_name": "Content Analysis Agent",
+          "position": {
+            "x": 300,
+            "y": 100
+          }
+        },
+        {
+          "id": null,
+          "name": "Generate Summary",
+          "task_definition_name": "Summary Generator",
+          "position": {
+            "x": 500,
+            "y": 100
+          }
+        }
+      ],
+      "connections": [
+        {
+          "id": null,
+          "source_node_name": "Document Input",
+          "target_node_name": "Extract Key Insights"
+        },
+        {
+          "id": null,
+          "source_node_name": "Extract Key Insights",
+          "target_node_name": "Generate Summary"
+        }
+      ],
+      "actions": [
+        {
+          "type": "create",
+          "target": "workflow",
+          "reason": "Creating new document analysis workflow as requested"
+        }
+      ],
+      "validation_results": {
+        "is_valid": true,
+        "errors": [],
+        "warnings": [],
+        "acyclicity_check": true,
+        "connectivity_check": true,
+        "task_compatibility": [
+          {
+            "source_task": "Workflow Input",
+            "target_task": "Content Analysis Agent",
+            "compatible": true,
+            "issues": []
+          }
+        ]
+      },
+      "metadata": {
+        "tags": ["document-processing", "analysis", "automation"],
+        "estimated_execution_time": 300,
+        "resource_requirements": {
+          "cpu_intensive": true,
+          "memory_intensive": false,
+          "io_intensive": false
+        }
+      }
+    }
+  ]
+}

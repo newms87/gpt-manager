@@ -1,0 +1,580 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Workflow Builder Main Response Schema",
+  "description": "Schema for the main orchestrator response when building or modifying workflows",
+  "type": "object",
+  "properties": {
+    "analysis": {
+      "type": "object",
+      "description": "Analysis of the workflow building request",
+      "properties": {
+        "intent_understanding": {
+          "type": "object",
+          "description": "Understanding of user's intent",
+          "properties": {
+            "primary_goal": {
+              "type": "string",
+              "description": "Main objective the user wants to achieve"
+            },
+            "workflow_type": {
+              "type": "string",
+              "enum": [
+                "data_processing",
+                "content_analysis",
+                "document_workflow",
+                "automation_pipeline",
+                "integration_workflow",
+                "custom_workflow"
+              ],
+              "description": "Type of workflow being requested"
+            },
+            "complexity_level": {
+              "type": "string",
+              "enum": ["simple", "moderate", "complex"],
+              "description": "Assessed complexity of the requested workflow"
+            },
+            "key_requirements": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Key requirements extracted from the request"
+            }
+          },
+          "required": ["primary_goal", "workflow_type", "complexity_level", "key_requirements"],
+          "additionalProperties": false
+        },
+        "input_analysis": {
+          "type": "object",
+          "description": "Analysis of expected input data",
+          "properties": {
+            "input_types": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["text", "documents", "csv", "json", "images", "structured_data", "api_data"]
+              },
+              "description": "Types of input data expected"
+            },
+            "input_format": {
+              "type": "string",
+              "description": "Expected format of input data"
+            },
+            "volume_estimate": {
+              "type": "string",
+              "enum": ["small", "medium", "large", "very_large"],
+              "description": "Estimated volume of input data"
+            }
+          },
+          "required": ["input_types", "input_format", "volume_estimate"],
+          "additionalProperties": false
+        },
+        "output_analysis": {
+          "type": "object",
+          "description": "Analysis of expected output requirements",
+          "properties": {
+            "output_format": {
+              "type": "string",
+              "description": "Required output format"
+            },
+            "output_structure": {
+              "type": "string",
+              "enum": ["structured", "unstructured", "mixed"],
+              "description": "Structure type of output"
+            },
+            "delivery_method": {
+              "type": "string",
+              "enum": ["json", "document", "database", "api", "file"],
+              "description": "How output should be delivered"
+            }
+          },
+          "required": ["output_format", "output_structure", "delivery_method"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["intent_understanding", "input_analysis", "output_analysis"],
+      "additionalProperties": false
+    },
+    "workflow_plan": {
+      "type": "object",
+      "description": "High-level plan for the workflow",
+      "properties": {
+        "workflow_name": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Proposed name for the workflow"
+        },
+        "workflow_description": {
+          "type": "string",
+          "description": "Detailed description of what the workflow will do"
+        },
+        "processing_stages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stage_name": {
+                "type": "string",
+                "description": "Name of the processing stage"
+              },
+              "stage_description": {
+                "type": "string",
+                "description": "What happens in this stage"
+              },
+              "stage_type": {
+                "type": "string",
+                "enum": ["input", "processing", "analysis", "transformation", "output"],
+                "description": "Type of processing stage"
+              },
+              "parallel_processing": {
+                "type": "boolean",
+                "description": "Whether this stage can process items in parallel"
+              },
+              "estimated_time": {
+                "type": "integer",
+                "description": "Estimated processing time in seconds"
+              }
+            },
+            "required": ["stage_name", "stage_description", "stage_type", "parallel_processing"],
+            "additionalProperties": false
+          },
+          "minItems": 2
+        },
+        "data_flow": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from_stage": {
+                "type": "string",
+                "description": "Source stage name"
+              },
+              "to_stage": {
+                "type": "string",
+                "description": "Target stage name"
+              },
+              "data_type": {
+                "type": "string",
+                "description": "Type of data being passed"
+              },
+              "transformation_required": {
+                "type": "boolean",
+                "description": "Whether data transformation is needed"
+              }
+            },
+            "required": ["from_stage", "to_stage", "data_type", "transformation_required"],
+            "additionalProperties": false
+          }
+        },
+        "resource_requirements": {
+          "type": "object",
+          "description": "Estimated resource requirements",
+          "properties": {
+            "max_workers": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Recommended max_workers setting"
+            },
+            "memory_intensive_stages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Stages that require more memory"
+            },
+            "cpu_intensive_stages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Stages that require more CPU"
+            },
+            "estimated_total_time": {
+              "type": "integer",
+              "description": "Estimated total execution time in seconds"
+            }
+          },
+          "required": ["max_workers", "estimated_total_time"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["workflow_name", "workflow_description", "processing_stages", "data_flow", "resource_requirements"],
+      "additionalProperties": false
+    },
+    "task_specifications": {
+      "type": "array",
+      "description": "Detailed specifications for each task to be created",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task_name": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Name for the task definition"
+          },
+          "task_description": {
+            "type": "string",
+            "description": "Detailed description of the task"
+          },
+          "task_runner": {
+            "type": "string",
+            "enum": [
+              "AI Agent",
+              "Claude AI",
+              "Workflow Input",
+              "Workflow Output",
+              "Load from Database",
+              "Save to Database",
+              "Load CSV",
+              "Filter Artifacts",
+              "Split Artifacts",
+              "Merge Artifacts",
+              "Categorize Artifacts",
+              "Classifier",
+              "Image to Text Transcoder",
+              "Page Organizer",
+              "Sequential Category Matcher",
+              "Artifact Level Projection",
+              "Run Workflow",
+              "Google Docs Template"
+            ],
+            "description": "Task runner to use for this task"
+          },
+          "prompt_outline": {
+            "type": ["string", "null"],
+            "description": "Outline of the prompt that will be developed for this task"
+          },
+          "agent_requirements": {
+            "type": ["object", "null"],
+            "description": "Requirements for agent selection",
+            "properties": {
+              "complexity_level": {
+                "type": "string",
+                "enum": ["simple", "moderate", "complex"]
+              },
+              "specialized_skills": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "context_window_needs": {
+                "type": "string",
+                "enum": ["small", "medium", "large"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "schema_requirements": {
+            "type": ["object", "null"],
+            "description": "Schema requirements for structured output",
+            "properties": {
+              "requires_schema": {
+                "type": "boolean"
+              },
+              "schema_complexity": {
+                "type": "string",
+                "enum": ["simple", "moderate", "complex"]
+              },
+              "key_fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["requires_schema"],
+            "additionalProperties": false
+          },
+          "artifact_processing": {
+            "type": "object",
+            "description": "Artifact processing configuration",
+            "properties": {
+              "input_mode": {
+                "type": ["string", "null"],
+                "enum": ["split", null]
+              },
+              "output_mode": {
+                "type": ["string", "null"],
+                "enum": ["", "Per Process", "Group All", null]
+              },
+              "parallel_capable": {
+                "type": "boolean"
+              }
+            },
+            "required": ["parallel_capable"],
+            "additionalProperties": false
+          },
+          "estimated_execution_time": {
+            "type": "integer",
+            "description": "Estimated execution time for this task in seconds"
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Names of tasks this task depends on"
+          }
+        },
+        "required": [
+          "task_name",
+          "task_description", 
+          "task_runner",
+          "artifact_processing",
+          "estimated_execution_time",
+          "dependencies"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 2
+    },
+    "implementation_strategy": {
+      "type": "object",
+      "description": "Strategy for implementing the workflow",
+      "properties": {
+        "creation_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Order in which tasks should be created"
+        },
+        "testing_strategy": {
+          "type": "object",
+          "description": "Strategy for testing the workflow",
+          "properties": {
+            "test_data_requirements": {
+              "type": "string",
+              "description": "What test data is needed"
+            },
+            "validation_checkpoints": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Key validation points in the workflow"
+            }
+          },
+          "required": ["test_data_requirements", "validation_checkpoints"],
+          "additionalProperties": false
+        },
+        "potential_challenges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "challenge": {
+                "type": "string",
+                "description": "Description of the potential challenge"
+              },
+              "mitigation": {
+                "type": "string",
+                "description": "How to mitigate this challenge"
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              }
+            },
+            "required": ["challenge", "mitigation", "severity"],
+            "additionalProperties": false
+          }
+        },
+        "optimization_opportunities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Opportunities for optimization"
+        }
+      },
+      "required": ["creation_order", "testing_strategy", "potential_challenges"],
+      "additionalProperties": false
+    },
+    "next_steps": {
+      "type": "object",
+      "description": "Next steps for workflow implementation",
+      "properties": {
+        "immediate_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Actions to take immediately"
+        },
+        "validation_requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "What needs to be validated before proceeding"
+        },
+        "user_input_needed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item": {
+                "type": "string",
+                "description": "What input is needed from the user"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why this input is needed"
+              }
+            },
+            "required": ["item", "reason"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["immediate_actions", "validation_requirements"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["analysis", "workflow_plan", "task_specifications", "implementation_strategy", "next_steps"],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "analysis": {
+        "intent_understanding": {
+          "primary_goal": "Create a workflow that analyzes documents for key insights and generates actionable reports",
+          "workflow_type": "content_analysis",
+          "complexity_level": "moderate",
+          "key_requirements": [
+            "Document content analysis",
+            "Insight extraction",
+            "Report generation",
+            "Structured output"
+          ]
+        },
+        "input_analysis": {
+          "input_types": ["documents", "text"],
+          "input_format": "PDF documents and text files",
+          "volume_estimate": "medium"
+        },
+        "output_analysis": {
+          "output_format": "Structured analysis report with insights and recommendations",
+          "output_structure": "structured",
+          "delivery_method": "json"
+        }
+      },
+      "workflow_plan": {
+        "workflow_name": "Document Insight Analysis Pipeline",
+        "workflow_description": "Analyzes documents to extract key insights, identify themes, and generate actionable recommendations in a structured format",
+        "processing_stages": [
+          {
+            "stage_name": "Document Input",
+            "stage_description": "Receive and validate input documents",
+            "stage_type": "input",
+            "parallel_processing": false,
+            "estimated_time": 5
+          },
+          {
+            "stage_name": "Content Analysis",
+            "stage_description": "Extract key insights and themes from document content",
+            "stage_type": "analysis",
+            "parallel_processing": true,
+            "estimated_time": 120
+          },
+          {
+            "stage_name": "Report Generation",
+            "stage_description": "Generate structured analysis report",
+            "stage_type": "output",
+            "parallel_processing": false,
+            "estimated_time": 30
+          }
+        ],
+        "data_flow": [
+          {
+            "from_stage": "Document Input",
+            "to_stage": "Content Analysis",
+            "data_type": "document_content",
+            "transformation_required": false
+          },
+          {
+            "from_stage": "Content Analysis",
+            "to_stage": "Report Generation",
+            "data_type": "analysis_results",
+            "transformation_required": true
+          }
+        ],
+        "resource_requirements": {
+          "max_workers": 15,
+          "memory_intensive_stages": ["Content Analysis"],
+          "cpu_intensive_stages": ["Content Analysis"],
+          "estimated_total_time": 180
+        }
+      },
+      "task_specifications": [
+        {
+          "task_name": "Document Input Handler",
+          "task_description": "Handles initial document input and validation",
+          "task_runner": "Workflow Input",
+          "prompt_outline": null,
+          "agent_requirements": null,
+          "schema_requirements": {
+            "requires_schema": false
+          },
+          "artifact_processing": {
+            "input_mode": null,
+            "output_mode": "",
+            "parallel_capable": false
+          },
+          "estimated_execution_time": 5,
+          "dependencies": []
+        },
+        {
+          "task_name": "Content Insight Analyzer",
+          "task_description": "Analyzes document content to extract key insights, themes, and actionable information",
+          "task_runner": "AI Agent",
+          "prompt_outline": "Analyze documents for main themes, extract key insights, identify actionable recommendations",
+          "agent_requirements": {
+            "complexity_level": "moderate",
+            "specialized_skills": ["document_analysis", "insight_extraction"],
+            "context_window_needs": "large"
+          },
+          "schema_requirements": {
+            "requires_schema": true,
+            "schema_complexity": "moderate",
+            "key_fields": ["themes", "insights", "recommendations", "confidence_scores"]
+          },
+          "artifact_processing": {
+            "input_mode": "split",
+            "output_mode": "Per Process",
+            "parallel_capable": true
+          },
+          "estimated_execution_time": 120,
+          "dependencies": ["Document Input Handler"]
+        }
+      ],
+      "implementation_strategy": {
+        "creation_order": ["Document Input Handler", "Content Insight Analyzer", "Report Generator"],
+        "testing_strategy": {
+          "test_data_requirements": "Sample documents of varying lengths and complexity",
+          "validation_checkpoints": ["Input validation", "Analysis quality", "Output format compliance"]
+        },
+        "potential_challenges": [
+          {
+            "challenge": "Large documents may exceed token limits",
+            "mitigation": "Implement document chunking and context management",
+            "severity": "medium"
+          }
+        ],
+        "optimization_opportunities": ["Parallel processing of multiple documents", "Caching of common analysis patterns"]
+      },
+      "next_steps": {
+        "immediate_actions": ["Create task definitions", "Set up workflow structure", "Configure agent assignments"],
+        "validation_requirements": ["Test with sample documents", "Validate output schema", "Check processing times"],
+        "user_input_needed": [
+          {
+            "item": "Sample documents for testing",
+            "reason": "Need representative data to validate workflow performance"
+          }
+        ]
+      }
+    }
+  ]
+}

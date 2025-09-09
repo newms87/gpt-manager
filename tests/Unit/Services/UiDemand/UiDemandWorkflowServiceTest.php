@@ -85,7 +85,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->expectException(ValidationError::class);
-        $this->expectExceptionMessage('Cannot extract data for this demand. Check status and existing workflows.');
+        $this->expectExceptionMessage('No input files attached to the demand.');
 
         // When
         $this->service->extractData($uiDemand);
@@ -125,7 +125,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->expectException(ValidationError::class);
-        $this->expectExceptionMessage('Cannot extract data for this demand. Check status and existing workflows.');
+        $this->expectExceptionMessage('Cannot extract data for this demand. Make sure a workflow is not already running for this demand.');
 
         // When
         $this->service->extractData($uiDemand);
