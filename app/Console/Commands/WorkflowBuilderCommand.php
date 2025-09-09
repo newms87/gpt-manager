@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Events\WorkflowBuilderChatUpdatedEvent;
-use App\Models\Team;
+use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowDefinition;
-use App\Models\WorkflowBuilder\WorkflowBuilderChat;
+use App\Models\Workflow\WorkflowBuilderChat;
 use App\Services\WorkflowBuilder\WorkflowBuilderService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Event;
@@ -163,12 +163,18 @@ class WorkflowBuilderCommand extends Command
         $this->line("Prompt: {$prompt}");
         $this->line('');
 
-        $this->chat = app(WorkflowBuilderService::class)->startRequirementsGathering(
-            $prompt,
-            null, // No existing workflow
-            null, // No existing chat
-            $this->team
-        );
+        try {
+            $this->chat = app(WorkflowBuilderService::class)->startRequirementsGathering(
+                $prompt,
+                null, // No existing workflow
+                null, // No existing chat
+                $this->team
+            );
+        } catch (\Exception $e) {
+            $this->error("Service error: " . $e->getMessage());
+            $this->error("Stack trace: " . $e->getTraceAsString());
+            throw $e;
+        }
 
         $this->info("✅ Created workflow builder chat session (ID: {$this->chat->id})");
         $this->line('');

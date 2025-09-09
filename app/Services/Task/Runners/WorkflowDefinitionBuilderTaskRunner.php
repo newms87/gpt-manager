@@ -210,7 +210,7 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
         $agentThread->messages()->create([
             'role' => 'user',
             'content' => $prompt,
-            'team_id' => team()->id
+            'team_id' => $this->taskRun->taskDefinition->team_id
         ]);
 
         // Get timeout from configuration
@@ -261,7 +261,7 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
     protected function getOrganizationSchemaDefinition(): ?SchemaDefinition
     {
         // Look for existing organization schema
-        $schema = SchemaDefinition::where('team_id', team()->id)
+        $schema = SchemaDefinition::where('team_id', $this->taskRun->taskDefinition->team_id)
             ->where('name', 'Workflow Organization Schema')
             ->first();
 
@@ -269,7 +269,7 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
             // Create basic schema if it doesn't exist
             $schema = SchemaDefinition::create([
                 'name' => 'Workflow Organization Schema',
-                'team_id' => team()->id,
+                'team_id' => $this->taskRun->taskDefinition->team_id,
                 'schema' => [
                     'type' => 'object',
                     'title' => 'WorkflowOrganization',

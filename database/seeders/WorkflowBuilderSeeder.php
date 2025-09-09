@@ -20,9 +20,10 @@ class WorkflowBuilderSeeder extends Seeder
     {
         // Use the first available team (Team Dan from TestingSeeder)
         $team = Team::first();
-        
+
         if (!$team) {
             $this->command->error('No team found. Run TestingSeeder first.');
+
             return;
         }
 
@@ -32,7 +33,7 @@ class WorkflowBuilderSeeder extends Seeder
         // Create the LLM Workflow Builder WorkflowDefinition
         $workflowDefinition = WorkflowDefinition::firstOrCreate(
             [
-                'name' => 'LLM Workflow Builder',
+                'name'    => 'LLM Workflow Builder',
                 'team_id' => $team->id,
             ],
             [
@@ -43,35 +44,35 @@ class WorkflowBuilderSeeder extends Seeder
 
         // Create Task Definitions for each node
         $workflowInputTaskDef = $this->createTaskDefinition($team, [
-            'name' => 'Workflow Builder Input',
-            'description' => 'Accepts user input and requirements for workflow building',
+            'name'             => 'Workflow Builder Input',
+            'description'      => 'Accepts user input and requirements for workflow building',
             'task_runner_name' => WorkflowInputTaskRunner::RUNNER_NAME,
-            'prompt' => null,
+            'prompt'           => null,
         ]);
 
         $workflowOrchestratorTaskDef = $this->createTaskDefinition($team, [
-            'name' => 'Workflow Orchestrator',
-            'description' => 'Analyzes requirements and creates task specifications for the workflow',
-            'task_runner_name' => WorkflowDefinitionBuilderTaskRunner::RUNNER_NAME,
-            'prompt' => 'Analyze the user requirements and current workflow state to create a comprehensive plan with individual task specifications.',
-            'output_artifact_mode' => 'split',
+            'name'                  => 'Workflow Orchestrator',
+            'description'           => 'Analyzes requirements and creates task specifications for the workflow',
+            'task_runner_name'      => WorkflowDefinitionBuilderTaskRunner::RUNNER_NAME,
+            'prompt'                => 'Analyze the user requirements and current workflow state to create a comprehensive plan with individual task specifications.',
+            'output_artifact_mode'  => 'split',
             'timeout_after_seconds' => 120,
         ]);
 
         $taskBuilderTaskDef = $this->createTaskDefinition($team, [
-            'name' => 'Task Definition Builder',
-            'description' => 'Creates individual task definitions from specifications',
-            'task_runner_name' => TaskDefinitionBuilderTaskRunner::RUNNER_NAME,
-            'prompt' => 'Create a complete task definition based on the provided specification and workflow context.',
-            'input_artifact_mode' => 'split',
+            'name'                  => 'Task Definition Builder',
+            'description'           => 'Creates individual task definitions from specifications',
+            'task_runner_name'      => TaskDefinitionBuilderTaskRunner::RUNNER_NAME,
+            'prompt'                => 'Create a complete task definition based on the provided specification and workflow context.',
+            'input_artifact_mode'   => 'split',
             'timeout_after_seconds' => 60,
         ]);
 
         $workflowOutputTaskDef = $this->createTaskDefinition($team, [
-            'name' => 'Workflow Builder Output',
-            'description' => 'Collects completed task definitions and outputs final workflow artifacts',
+            'name'             => 'Workflow Builder Output',
+            'description'      => 'Collects completed task definitions and outputs final workflow artifacts',
             'task_runner_name' => WorkflowOutputTaskRunner::RUNNER_NAME,
-            'prompt' => null,
+            'prompt'           => null,
         ]);
 
         // Create Workflow Nodes
@@ -115,15 +116,14 @@ class WorkflowBuilderSeeder extends Seeder
         // Create Workflow Planner agent
         Agent::firstOrCreate(
             [
-                'name' => 'Workflow Planner',
+                'name'    => 'Workflow Planner',
                 'team_id' => $team->id,
             ],
             [
                 'description' => 'Specialized agent for analyzing user requirements and creating workflow plans',
-                'model' => 'claude-3-5-sonnet-20241022',
+                'model'       => 'gpt-5',
                 'api_options' => [
-                    'temperature' => 0.3, // Lower temperature for more structured planning
-                    'max_tokens' => 4000,
+                    'reasoning' => ['effort' => 'medium'],
                 ],
             ]
         );
@@ -131,15 +131,14 @@ class WorkflowBuilderSeeder extends Seeder
         // Create Workflow Evaluator agent
         Agent::firstOrCreate(
             [
-                'name' => 'Workflow Evaluator',
+                'name'    => 'Workflow Evaluator',
                 'team_id' => $team->id,
             ],
             [
                 'description' => 'Specialized agent for evaluating completed workflow builds and providing user-friendly summaries',
-                'model' => 'claude-3-5-sonnet-20241022',
+                'model'       => 'gpt-5',
                 'api_options' => [
-                    'temperature' => 0.5, // Balanced temperature for evaluation and communication
-                    'max_tokens' => 3000,
+                    'reasoning' => ['effort' => 'medium'],
                 ],
             ]
         );
@@ -150,22 +149,22 @@ class WorkflowBuilderSeeder extends Seeder
     private function createTaskDefinition(Team $team, array $attributes): TaskDefinition
     {
         $defaults = [
-            'team_id' => $team->id,
-            'task_runner_config' => null,
-            'response_format' => null,
-            'input_artifact_mode' => null,
-            'input_artifact_levels' => null,
-            'output_artifact_mode' => null,
+            'team_id'                => $team->id,
+            'task_runner_config'     => null,
+            'response_format'        => null,
+            'input_artifact_mode'    => null,
+            'input_artifact_levels'  => null,
+            'output_artifact_mode'   => null,
             'output_artifact_levels' => null,
-            'timeout_after_seconds' => 300,
-            'schema_definition_id' => null,
-            'agent_id' => null,
-            'task_queue_type_id' => null,
+            'timeout_after_seconds'  => 300,
+            'schema_definition_id'   => null,
+            'agent_id'               => null,
+            'task_queue_type_id'     => null,
         ];
 
         return TaskDefinition::firstOrCreate(
             [
-                'name' => $attributes['name'],
+                'name'    => $attributes['name'],
                 'team_id' => $team->id,
             ],
             array_merge($defaults, $attributes)
@@ -176,16 +175,16 @@ class WorkflowBuilderSeeder extends Seeder
     {
         $defaults = [
             'workflow_definition_id' => $workflowDefinition->id,
-            'task_definition_id' => $taskDefinition->id,
-            'settings' => null,
-            'params' => null,
+            'task_definition_id'     => $taskDefinition->id,
+            'settings'               => null,
+            'params'                 => null,
         ];
 
         return WorkflowNode::firstOrCreate(
             [
                 'workflow_definition_id' => $workflowDefinition->id,
-                'task_definition_id' => $taskDefinition->id,
-                'name' => $attributes['name'],
+                'task_definition_id'     => $taskDefinition->id,
+                'name'                   => $attributes['name'],
             ],
             array_merge($defaults, $attributes)
         );
@@ -195,17 +194,17 @@ class WorkflowBuilderSeeder extends Seeder
     {
         $defaults = [
             'workflow_definition_id' => $workflowDefinition->id,
-            'source_node_id' => $sourceNode->id,
-            'target_node_id' => $targetNode->id,
-            'source_output_port' => null,
-            'target_input_port' => null,
+            'source_node_id'         => $sourceNode->id,
+            'target_node_id'         => $targetNode->id,
+            'source_output_port'     => null,
+            'target_input_port'      => null,
         ];
 
         return WorkflowConnection::firstOrCreate(
             [
                 'workflow_definition_id' => $workflowDefinition->id,
-                'source_node_id' => $sourceNode->id,
-                'target_node_id' => $targetNode->id,
+                'source_node_id'         => $sourceNode->id,
+                'target_node_id'         => $targetNode->id,
             ],
             array_merge($defaults, $attributes)
         );

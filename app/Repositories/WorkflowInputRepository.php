@@ -48,24 +48,31 @@ class WorkflowInputRepository extends ActionRepository
 
     public function createWorkflowInput(?array $data = []): WorkflowInput
     {
-        $data            = $data ?: [];
-        $data['team_id'] = team()->id;
-        $data['user_id'] = user()->id;
-        $data            += [
+        $data = $data ?: [];
+        $data += [
             'name' => 'New Workflow Input',
         ];
 
         // Extract associations before creating the model
         $associations = $data['associations'] ?? null;
-        unset($data['associations']); // Remove from model data
 
-        $workflowInput       = WorkflowInput::make()->forceFill($data);
+        // Extract security fields that should not be mass-assigned
+        $teamId = team()?->id;
+        $userId = user()?->id;
+
+        // Create model with user-fillable fields only
+        $workflowInput = WorkflowInput::make($data);
+
+        // Set security fields directly (not through mass assignment)
+        $workflowInput->team_id = $teamId;
+        $workflowInput->user_id = $userId;
+
         $workflowInput->name = ModelHelper::getNextModelName($workflowInput);
 
         $workflowInput->validate()->save();
 
         $this->syncStoredFiles($workflowInput, $data);
-        
+
         // Pass associations separately
         if ($associations) {
             $this->attachToAssociable($workflowInput, $associations);
@@ -79,11 +86,11 @@ class WorkflowInputRepository extends ActionRepository
         // Extract associations before updating the model
         $associations = $data['associations'] ?? null;
         unset($data['associations']); // Remove from model data
-        
+
         $workflowInput->fill($data)->validate();
         $workflowInput->save($data);
         $this->syncStoredFiles($workflowInput, $data);
-        
+
         // Handle associations if provided
         if ($associations) {
             // For updates, we might want to replace existing associations
@@ -110,11 +117,11 @@ class WorkflowInputRepository extends ActionRepository
      */
     protected function attachToAssociable(WorkflowInput $workflowInput, array $associations): void
     {
-        foreach ($associations as $association) {
+        foreach($associations as $association) {
             $workflowInput->associations()->create([
                 'associable_type' => $association['associable_type'],
-                'associable_id' => $association['associable_id'],
-                'category' => $association['category'],
+                'associable_id'   => $association['associable_id'],
+                'category'        => $association['category'],
             ]);
         }
     }

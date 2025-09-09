@@ -107,7 +107,7 @@ class WorkflowBuilderChat extends Model implements AuditableContract
 
         $meta = $this->meta ?? [];
         $meta['current_phase'] = $phase;
-        $meta['phase_data'] = array_merge($meta['phase_data'] ?? [], $data);
+        $meta['build_state'] = array_merge($meta['build_state'] ?? [], $data);
         $meta['updated_at'] = now()->toISOString();
 
         $this->update([

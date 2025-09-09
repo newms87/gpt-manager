@@ -229,7 +229,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
         $agentThread->messages()->create([
             'role' => 'user',
             'content' => $prompt,
-            'team_id' => team()->id
+            'team_id' => $this->taskRun->taskDefinition->team_id
         ]);
 
         // Get timeout from configuration
@@ -280,7 +280,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
     protected function getTaskBuilderSchemaDefinition(): ?SchemaDefinition
     {
         // Look for existing task builder schema
-        $schema = SchemaDefinition::where('team_id', team()->id)
+        $schema = SchemaDefinition::where('team_id', $this->taskRun->taskDefinition->team_id)
             ->where('name', 'Task Builder Schema')
             ->first();
 
@@ -288,7 +288,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
             // Create task builder schema if it doesn't exist
             $schema = SchemaDefinition::create([
                 'name' => 'Task Builder Schema',
-                'team_id' => team()->id,
+                'team_id' => $this->taskRun->taskDefinition->team_id,
                 'schema' => [
                     'type' => 'object',
                     'title' => 'TaskDefinitionBuilder',
@@ -361,13 +361,13 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
             // Resolve agent if specified
             $agent = null;
             if (!empty($taskDefData['agent_name'])) {
-                $agent = Agent::where('team_id', team()->id)
+                $agent = Agent::where('team_id', $this->taskRun->taskDefinition->team_id)
                     ->where('name', $taskDefData['agent_name'])
                     ->first();
                 
                 if (!$agent) {
                     // Find first available agent as fallback
-                    $agent = Agent::where('team_id', team()->id)->first();
+                    $agent = Agent::where('team_id', $this->taskRun->taskDefinition->team_id)->first();
                 }
             }
 
@@ -424,7 +424,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
         $taskDefinition = new TaskDefinition(array_merge($data, [
             'agent_id' => $agent?->id,
         ]));
-        $taskDefinition->team_id = team()->id;
+        $taskDefinition->team_id = $this->taskRun->taskDefinition->team_id;
         $taskDefinition->save();
 
         $this->createTaskDefinitionDirectives($taskDefinition, $directivesData);
@@ -438,7 +438,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
      */
     protected function updateTaskDefinition(array $data, ?Agent $agent, array $directivesData): ?TaskDefinition
     {
-        $taskDefinition = TaskDefinition::where('team_id', team()->id)
+        $taskDefinition = TaskDefinition::where('team_id', $this->taskRun->taskDefinition->team_id)
             ->where('name', $data['name'])
             ->first();
 
@@ -464,7 +464,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
      */
     protected function deleteTaskDefinition(array $data): void
     {
-        $taskDefinition = TaskDefinition::where('team_id', team()->id)
+        $taskDefinition = TaskDefinition::where('team_id', $this->taskRun->taskDefinition->team_id)
             ->where('name', $data['name'])
             ->first();
 

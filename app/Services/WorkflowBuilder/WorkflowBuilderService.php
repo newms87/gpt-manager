@@ -5,6 +5,7 @@ namespace App\Services\WorkflowBuilder;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Task\TaskDefinition;
+use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowBuilderChat;
 use App\Models\Workflow\WorkflowConnection;
 use App\Models\Workflow\WorkflowDefinition;
@@ -23,22 +24,17 @@ class WorkflowBuilderService
     /**
      * Start the requirements gathering phase for workflow building
      */
-    public function startRequirementsGathering(string $prompt, ?int $workflowDefinitionId = null, ?int $chatId = null): WorkflowBuilderChat
+    public function startRequirementsGathering(string $prompt, ?int $workflowDefinitionId = null, ?int $chatId = null, ?Team $team = null): WorkflowBuilderChat
     {
-        $this->validateRequirementsGatheringInput($prompt, $workflowDefinitionId, $chatId);
+        $this->validateRequirementsGatheringInput($prompt, $workflowDefinitionId, $chatId, $team);
 
-        return DB::transaction(function () use ($prompt, $workflowDefinitionId, $chatId) {
+        return DB::transaction(function () use ($prompt, $workflowDefinitionId, $chatId, $team) {
             // Create or retrieve existing chat
             if ($chatId) {
                 $chat = $this->retrieveExistingChat($chatId);
             } else {
-                $chat = $this->createNewChat($prompt, $workflowDefinitionId);
+                $chat = $this->createNewChat($prompt, $workflowDefinitionId, $team);
             }
-
-            // Create AgentThread for planning conversation
-            $agentThread = $this->createPlanningAgentThread($chat, $prompt);
-            $chat->agentThread()->associate($agentThread);
-            $chat->save();
 
             // Initiate planning phase with LLM
             $this->initiatePlanningConversation($chat, $prompt);
@@ -97,7 +93,7 @@ class WorkflowBuilderService
             $artifacts = $this->prepareBuildArtifacts($chat);
             
             // Get the builder workflow definition
-            $builderWorkflowDefinition = $this->getBuilderWorkflowDefinition();
+            $builderWorkflowDefinition = $this->getBuilderWorkflowDefinition($chat);
             
             // Start workflow build via WorkflowRunnerService
             $workflowRun = WorkflowRunnerService::start($builderWorkflowDefinition, $artifacts);
@@ -190,17 +186,23 @@ class WorkflowBuilderService
     /**
      * Validate input parameters for requirements gathering
      */
-    protected function validateRequirementsGatheringInput(string $prompt, ?int $workflowDefinitionId, ?int $chatId): void
+    protected function validateRequirementsGatheringInput(string $prompt, ?int $workflowDefinitionId, ?int $chatId, ?Team $team = null): void
     {
         if (empty($prompt)) {
             throw new ValidationError('Prompt cannot be empty', 400);
         }
 
-        if ($workflowDefinitionId && !WorkflowDefinition::where('team_id', team()->id)->find($workflowDefinitionId)) {
+        $currentTeam = $team ?: team();
+        if (!$currentTeam) {
+            // Skip team-based validation if no team context
+            return;
+        }
+
+        if ($workflowDefinitionId && !WorkflowDefinition::where('team_id', $currentTeam->id)->find($workflowDefinitionId)) {
             throw new ValidationError('Workflow definition not found or not accessible', 404);
         }
 
-        if ($chatId && !WorkflowBuilderChat::where('team_id', team()->id)->find($chatId)) {
+        if ($chatId && !WorkflowBuilderChat::where('team_id', $currentTeam->id)->find($chatId)) {
             throw new ValidationError('Workflow builder chat not found or not accessible', 404);
         }
     }
@@ -208,17 +210,28 @@ class WorkflowBuilderService
     /**
      * Create a new workflow builder chat
      */
-    protected function createNewChat(string $prompt, ?int $workflowDefinitionId): WorkflowBuilderChat
+    protected function createNewChat(string $prompt, ?int $workflowDefinitionId, ?Team $team = null): WorkflowBuilderChat
     {
+        // Use provided team or fall back to team() helper
+        $currentTeam = $team ?: team();
+        if (!$currentTeam) {
+            throw new ValidationError('No team context available', 400);
+        }
+
+        // Get a user for the team (needed for console context)
+        $teamUser = $currentTeam->users()->first();
+        
         // Create WorkflowInput for the prompt
         $workflowInput = app(WorkflowInputRepository::class)->createWorkflowInput([
             'name' => 'Workflow Builder: ' . substr($prompt, 0, 50),
             'content' => $prompt,
             'description' => 'User prompt for workflow building',
+            'team_id' => $currentTeam->id,
+            'user_id' => $teamUser?->id,
         ]);
 
         // Create AgentThread for the planning conversation
-        $planningAgent = Agent::where('team_id', team()->id)->where('name', 'Workflow Planner')->first();
+        $planningAgent = Agent::where('team_id', $currentTeam->id)->where('name', 'Workflow Planner')->first();
         if (!$planningAgent) {
             throw new ValidationError('Workflow Planner agent not found. Please run WorkflowBuilderSeeder.', 400);
         }
@@ -226,7 +239,7 @@ class WorkflowBuilderService
         $agentThread = AgentThread::create([
             'agent_id' => $planningAgent->id,
             'name' => 'Workflow Planning: ' . substr($prompt, 0, 40),
-            'team_id' => team()->id,
+            'team_id' => $currentTeam->id,
         ]);
 
         return WorkflowBuilderChat::create([
@@ -234,7 +247,7 @@ class WorkflowBuilderService
             'workflow_definition_id' => $workflowDefinitionId,
             'agent_thread_id' => $agentThread->id,
             'status' => WorkflowBuilderChat::STATUS_REQUIREMENTS_GATHERING,
-            'team_id' => team()->id,
+            'team_id' => $currentTeam->id,
             'meta' => [
                 'original_prompt' => $prompt,
                 'created_at' => now()->toISOString(),
@@ -247,7 +260,12 @@ class WorkflowBuilderService
      */
     protected function retrieveExistingChat(int $chatId): WorkflowBuilderChat
     {
-        $chat = WorkflowBuilderChat::where('team_id', team()->id)
+        $currentTeam = team();
+        if (!$currentTeam) {
+            throw new ValidationError('No team context available', 400);
+        }
+        
+        $chat = WorkflowBuilderChat::where('team_id', $currentTeam->id)
             ->where('id', $chatId)
             ->first();
 
@@ -265,10 +283,15 @@ class WorkflowBuilderService
     {
         $planningAgent = $this->getPlanningAgent();
         
+        $currentTeam = team();
+        if (!$currentTeam) {
+            throw new ValidationError('No team context available', 400);
+        }
+        
         $agentThread = AgentThread::create([
             'name' => 'Workflow Planning: ' . substr($prompt, 0, 50),
             'agent_id' => $planningAgent->id,
-            'team_id' => team()->id,
+            'team_id' => $currentTeam->id,
         ]);
 
         return $agentThread;
@@ -279,7 +302,12 @@ class WorkflowBuilderService
      */
     protected function getPlanningAgent(): Agent
     {
-        $agent = Agent::where('team_id', team()->id)
+        $currentTeam = team();
+        if (!$currentTeam) {
+            throw new ValidationError('No team context available', 400);
+        }
+        
+        $agent = Agent::where('team_id', $currentTeam->id)
             ->where('name', 'Workflow Planner')
             ->first();
 
@@ -295,8 +323,18 @@ class WorkflowBuilderService
      */
     protected function initiatePlanningConversation(WorkflowBuilderChat $chat, string $prompt): void
     {
+        $workflowDefinition = $chat->workflowDefinition;
         $planningContext = app(WorkflowBuilderDocumentationService::class)
-            ->getPlanningContext($chat->workflowDefinition);
+            ->getPlanningContext($workflowDefinition);
+
+        // Ensure agentThread is loaded
+        if (!$chat->agentThread) {
+            $chat->load('agentThread');
+        }
+        
+        if (!$chat->agentThread) {
+            throw new ValidationError('AgentThread not found for chat', 500);
+        }
 
         // Add initial planning context
         $chat->agentThread->messages()->create([
@@ -461,6 +499,7 @@ class WorkflowBuilderService
                 'name' => 'Approved Workflow Plan',
                 'content' => json_encode($buildState['generated_plan']),
                 'description' => 'User-approved workflow plan for building',
+                'team_id' => $chat->team_id,
             ]);
             $artifacts[] = $planInput->toArtifact();
         }
@@ -471,6 +510,7 @@ class WorkflowBuilderService
                 'name' => 'Current Workflow State',
                 'content' => json_encode($chat->workflowDefinition->toArray()),
                 'description' => 'Current workflow definition state for modification',
+                'team_id' => $chat->team_id,
             ]);
             $artifacts[] = $workflowStateInput->toArtifact();
         }
@@ -481,9 +521,20 @@ class WorkflowBuilderService
     /**
      * Get the builder workflow definition
      */
-    protected function getBuilderWorkflowDefinition(): WorkflowDefinition
+    protected function getBuilderWorkflowDefinition(?WorkflowBuilderChat $chat = null): WorkflowDefinition
     {
-        $builderWorkflow = WorkflowDefinition::where('team_id', team()->id)
+        // Get team from chat if available, otherwise use team() helper
+        if ($chat && $chat->team_id) {
+            $teamId = $chat->team_id;
+        } else {
+            $currentTeam = team();
+            if (!$currentTeam) {
+                throw new ValidationError('No team context available', 400);
+            }
+            $teamId = $currentTeam->id;
+        }
+        
+        $builderWorkflow = WorkflowDefinition::where('team_id', $teamId)
             ->where('name', 'LLM Workflow Builder')
             ->first();
 
