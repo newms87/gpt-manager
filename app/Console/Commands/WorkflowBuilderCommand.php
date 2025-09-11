@@ -3,11 +3,14 @@
 namespace App\Console\Commands;
 
 use App\Events\WorkflowBuilderChatUpdatedEvent;
+use App\Models\Agent\Agent;
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowBuilderChat;
 use App\Services\WorkflowBuilder\WorkflowBuilderService;
+use Database\Seeders\WorkflowBuilderSeeder;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Newms87\Danx\Exceptions\ValidationError;
 
@@ -120,6 +123,7 @@ class WorkflowBuilderCommand extends Command
      * 
      * Sets up the team context based on the --team option or defaults to the first
      * available team. All workflow operations will be scoped to this team.
+     * Also ensures the LLM Workflow Builder workflow exists by running the seeder if needed.
      * 
      * @return bool True if team context successfully established, false otherwise
      */
@@ -143,6 +147,76 @@ class WorkflowBuilderCommand extends Command
 
         $this->info("Using team: {$this->team->name} ({$this->team->uuid})");
         $this->line('');
+
+        // Check if the LLM Workflow Builder workflow exists
+        if (!$this->ensureWorkflowBuilderExists()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Ensure the LLM Workflow Builder workflow exists in the database.
+     * 
+     * Checks if the LLM Workflow Builder workflow definition and required agents exist for the current team.
+     * If not, automatically runs the WorkflowBuilderSeeder to create them.
+     * 
+     * @return bool True if workflow exists or was successfully created
+     */
+    private function ensureWorkflowBuilderExists(): bool
+    {
+        // Check if the LLM Workflow Builder workflow already exists for this team
+        $workflowExists = WorkflowDefinition::where('name', 'LLM Workflow Builder')
+            ->where('team_id', $this->team->id)
+            ->exists();
+
+        // Check if required agents exist
+        $workflowPlannerExists = Agent::where('name', 'Workflow Planner')
+            ->where('team_id', $this->team->id)
+            ->exists();
+            
+        $workflowEvaluatorExists = Agent::where('name', 'Workflow Evaluator')
+            ->where('team_id', $this->team->id)
+            ->exists();
+
+        $needsSeeding = !$workflowExists || !$workflowPlannerExists || !$workflowEvaluatorExists;
+
+        if ($needsSeeding) {
+            $missingComponents = [];
+            if (!$workflowExists) {
+                $missingComponents[] = 'LLM Workflow Builder workflow';
+            }
+            if (!$workflowPlannerExists) {
+                $missingComponents[] = 'Workflow Planner agent';
+            }
+            if (!$workflowEvaluatorExists) {
+                $missingComponents[] = 'Workflow Evaluator agent';
+            }
+
+            $this->info('🔧 Missing components detected: ' . implode(', ', $missingComponents));
+            $this->line('Setting up required components...');
+            $this->line('');
+
+            try {
+                // Run the WorkflowBuilderSeeder
+                $seeder = new WorkflowBuilderSeeder();
+                $seeder->setCommand($this);
+                $seeder->run();
+
+                $this->info('✅ All required components have been successfully created!');
+                $this->line('');
+
+                return true;
+            } catch (\Exception $e) {
+                $this->error('Failed to create required components: ' . $e->getMessage());
+                $this->line('');
+                $this->line('Please run the seeder manually:');
+                $this->line('  php artisan db:seed --class=WorkflowBuilderSeeder');
+                
+                return false;
+            }
+        }
 
         return true;
     }
