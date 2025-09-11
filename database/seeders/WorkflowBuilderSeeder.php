@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Agent\Agent;
 use App\Models\Task\TaskDefinition;
-use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowConnection;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
@@ -18,23 +17,14 @@ class WorkflowBuilderSeeder extends Seeder
 {
     public function run(): void
     {
-        // Use the first available team (Team Dan from TestingSeeder)
-        $team = Team::first();
+        // Create required system agents (no team ownership)
+        $this->createRequiredAgents();
 
-        if (!$team) {
-            $this->command->error('No team found. Run TestingSeeder first.');
-
-            return;
-        }
-
-        // Create required agents for workflow building
-        $this->createRequiredAgents($team);
-
-        // Create the LLM Workflow Builder WorkflowDefinition
+        // Create the LLM Workflow Builder WorkflowDefinition (system-owned)
         $workflowDefinition = WorkflowDefinition::firstOrCreate(
             [
                 'name'    => 'LLM Workflow Builder',
-                'team_id' => $team->id,
+                'team_id' => null, // System-owned workflow
             ],
             [
                 'description' => 'Automated system for creating and modifying workflow definitions through natural language conversations with AI agents.',
@@ -42,15 +32,15 @@ class WorkflowBuilderSeeder extends Seeder
             ]
         );
 
-        // Create Task Definitions for each node
-        $workflowInputTaskDef = $this->createTaskDefinition($team, [
+        // Create Task Definitions for each node (system-owned)
+        $workflowInputTaskDef = $this->createTaskDefinition([
             'name'             => 'Workflow Builder Input',
             'description'      => 'Accepts user input and requirements for workflow building',
             'task_runner_name' => WorkflowInputTaskRunner::RUNNER_NAME,
             'prompt'           => null,
         ]);
 
-        $workflowOrchestratorTaskDef = $this->createTaskDefinition($team, [
+        $workflowOrchestratorTaskDef = $this->createTaskDefinition([
             'name'                  => 'Workflow Orchestrator',
             'description'           => 'Analyzes requirements and creates task specifications for the workflow',
             'task_runner_name'      => WorkflowDefinitionBuilderTaskRunner::RUNNER_NAME,
@@ -59,7 +49,7 @@ class WorkflowBuilderSeeder extends Seeder
             'timeout_after_seconds' => 120,
         ]);
 
-        $taskBuilderTaskDef = $this->createTaskDefinition($team, [
+        $taskBuilderTaskDef = $this->createTaskDefinition([
             'name'                  => 'Task Definition Builder',
             'description'           => 'Creates individual task definitions from specifications',
             'task_runner_name'      => TaskDefinitionBuilderTaskRunner::RUNNER_NAME,
@@ -68,7 +58,7 @@ class WorkflowBuilderSeeder extends Seeder
             'timeout_after_seconds' => 60,
         ]);
 
-        $workflowOutputTaskDef = $this->createTaskDefinition($team, [
+        $workflowOutputTaskDef = $this->createTaskDefinition([
             'name'             => 'Workflow Builder Output',
             'description'      => 'Collects completed task definitions and outputs final workflow artifacts',
             'task_runner_name' => WorkflowOutputTaskRunner::RUNNER_NAME,
@@ -109,15 +99,15 @@ class WorkflowBuilderSeeder extends Seeder
     }
 
     /**
-     * Create the required agents for workflow building
+     * Create the required system agents for workflow building (no team ownership)
      */
-    private function createRequiredAgents(Team $team): void
+    private function createRequiredAgents(): void
     {
-        // Create Workflow Planner agent
+        // Create Workflow Planner agent (system-owned)
         Agent::firstOrCreate(
             [
                 'name'    => 'Workflow Planner',
-                'team_id' => $team->id,
+                'team_id' => null, // System-owned agent
             ],
             [
                 'description' => 'Specialized agent for analyzing user requirements and creating workflow plans',
@@ -128,11 +118,11 @@ class WorkflowBuilderSeeder extends Seeder
             ]
         );
 
-        // Create Workflow Evaluator agent
+        // Create Workflow Evaluator agent (system-owned)
         Agent::firstOrCreate(
             [
                 'name'    => 'Workflow Evaluator',
-                'team_id' => $team->id,
+                'team_id' => null, // System-owned agent
             ],
             [
                 'description' => 'Specialized agent for evaluating completed workflow builds and providing user-friendly summaries',
@@ -143,13 +133,13 @@ class WorkflowBuilderSeeder extends Seeder
             ]
         );
 
-        $this->command->info("Created Workflow Planner and Workflow Evaluator agents.");
+        $this->command->info("Created system-owned Workflow Planner and Workflow Evaluator agents.");
     }
 
-    private function createTaskDefinition(Team $team, array $attributes): TaskDefinition
+    private function createTaskDefinition(array $attributes): TaskDefinition
     {
         $defaults = [
-            'team_id'                => $team->id,
+            'team_id'                => null, // System-owned task definition
             'task_runner_config'     => null,
             'response_format'        => null,
             'input_artifact_mode'    => null,
@@ -165,7 +155,7 @@ class WorkflowBuilderSeeder extends Seeder
         return TaskDefinition::firstOrCreate(
             [
                 'name'    => $attributes['name'],
-                'team_id' => $team->id,
+                'team_id' => null, // System-owned
             ],
             array_merge($defaults, $attributes)
         );

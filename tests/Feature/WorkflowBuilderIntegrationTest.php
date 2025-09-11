@@ -289,14 +289,14 @@ class WorkflowBuilderIntegrationTest extends AuthenticatedTestCase
     private function createTestAgents(): array
     {
         $planner = Agent::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned agent
             'name' => 'Workflow Planner',
             'description' => 'Test planning agent',
             'model' => 'test-model',
         ]);
 
         $evaluator = Agent::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned agent
             'name' => 'Workflow Evaluator',
             'description' => 'Test evaluation agent',
             'model' => 'test-model',

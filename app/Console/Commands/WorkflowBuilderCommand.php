@@ -46,7 +46,8 @@ class WorkflowBuilderCommand extends Command
                            {prompt? : Natural language description of what you want to build or modify}
                            {--chat= : Continue existing chat session by ID}
                            {--workflow= : Modify existing workflow by ID}
-                           {--team= : Team UUID (optional, defaults to first team)}';
+                           {--team= : Team UUID (optional, defaults to first team)}
+                           {--auto-approve : Automatically approve the generated plan without prompting}';
 
     /**
      * The console command description.
@@ -166,18 +167,18 @@ class WorkflowBuilderCommand extends Command
      */
     private function ensureWorkflowBuilderExists(): bool
     {
-        // Check if the LLM Workflow Builder workflow already exists for this team
+        // Check if the system-owned LLM Workflow Builder workflow exists
         $workflowExists = WorkflowDefinition::where('name', 'LLM Workflow Builder')
-            ->where('team_id', $this->team->id)
+            ->whereNull('team_id')
             ->exists();
 
-        // Check if required agents exist
+        // Check if required system agents exist
         $workflowPlannerExists = Agent::where('name', 'Workflow Planner')
-            ->where('team_id', $this->team->id)
+            ->whereNull('team_id')
             ->exists();
             
         $workflowEvaluatorExists = Agent::where('name', 'Workflow Evaluator')
-            ->where('team_id', $this->team->id)
+            ->whereNull('team_id')
             ->exists();
 
         $needsSeeding = !$workflowExists || !$workflowPlannerExists || !$workflowEvaluatorExists;
@@ -199,7 +200,7 @@ class WorkflowBuilderCommand extends Command
             $this->line('');
 
             try {
-                // Run the WorkflowBuilderSeeder
+                // Run the WorkflowBuilderSeeder to create system-owned components
                 $seeder = new WorkflowBuilderSeeder();
                 $seeder->setCommand($this);
                 $seeder->run();
@@ -300,8 +301,12 @@ class WorkflowBuilderCommand extends Command
         $this->line("Modifications: {$prompt}");
         $this->line('');
 
+        // Allow access to both team-owned and system-owned workflows
         $workflow = WorkflowDefinition::where('id', $workflowId)
-            ->where('team_id', $this->team->id)
+            ->where(function($query) {
+                $query->where('team_id', $this->team->id)
+                      ->orWhereNull('team_id'); // System-owned workflows
+            })
             ->first();
 
         if (!$workflow) {
@@ -450,6 +455,12 @@ class WorkflowBuilderCommand extends Command
         $this->line('');
         $this->line('===============================');
         $this->line('');
+
+        // Check for auto-approve option
+        if ($this->option('auto-approve')) {
+            $this->info('🤖 Auto-approving plan...');
+            return $this->startWorkflowBuild();
+        }
 
         // Get user approval
         $response = $this->choice(

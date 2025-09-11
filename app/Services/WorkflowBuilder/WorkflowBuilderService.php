@@ -16,7 +16,6 @@ use App\Repositories\WorkflowInputRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\Workflow\WorkflowRunnerService;
 use Exception;
-use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class WorkflowBuilderService
@@ -28,19 +27,17 @@ class WorkflowBuilderService
     {
         $this->validateRequirementsGatheringInput($prompt, $workflowDefinitionId, $chatId, $team);
 
-        return DB::transaction(function () use ($prompt, $workflowDefinitionId, $chatId, $team) {
-            // Create or retrieve existing chat
-            if ($chatId) {
-                $chat = $this->retrieveExistingChat($chatId);
-            } else {
-                $chat = $this->createNewChat($prompt, $workflowDefinitionId, $team);
-            }
+        // Create or retrieve existing chat
+        if ($chatId) {
+            $chat = $this->retrieveExistingChat($chatId);
+        } else {
+            $chat = $this->createNewChat($prompt, $workflowDefinitionId, $team);
+        }
 
-            // Initiate planning phase with LLM
-            $this->initiatePlanningConversation($chat, $prompt);
+        // Initiate planning phase with LLM
+        $this->initiatePlanningConversation($chat, $prompt);
 
-            return $chat->fresh();
-        });
+        return $chat->fresh();
     }
 
     /**
@@ -50,35 +47,46 @@ class WorkflowBuilderService
     {
         $this->validateChatForPlanGeneration($chat);
 
-        return DB::transaction(function () use ($chat, $userInput) {
-            // Add user input to thread
-            $chat->agentThread->messages()->create([
-                'role' => 'user',
-                'content' => $userInput,
-            ]);
+        // Add user input to thread
+        $chat->agentThread->messages()->create([
+            'role' => 'user',
+            'content' => $userInput,
+        ]);
 
-            // Load existing workflow context if modifying
-            $planningContext = app(WorkflowBuilderDocumentationService::class)
-                ->getPlanningContext($chat->workflowDefinition);
+        // Load existing workflow context if modifying
+        $planningContext = app(WorkflowBuilderDocumentationService::class)
+            ->getPlanningContext($chat->workflowDefinition);
 
-            // Use AgentThreadService to generate plan
-            $agentThreadRun = app(AgentThreadService::class)->run($chat->agentThread);
+        // Use AgentThreadService to generate plan
+        $agentThreadRun = app(AgentThreadService::class)->run($chat->agentThread);
 
-            if (!$agentThreadRun->isCompleted()) {
-                throw new ValidationError('Failed to generate workflow plan', 500);
-            }
+        if (!$agentThreadRun->isCompleted()) {
+            throw new ValidationError('Failed to generate workflow plan', 500);
+        }
 
-            // Extract plan from response
-            $plan = $this->extractPlanFromResponse($agentThreadRun->lastMessage);
-            
-            // Update chat meta with plan state
+        // Extract plan from response
+        $plan = $this->extractPlanFromResponse($agentThreadRun->lastMessage);
+        
+        // Update chat meta with plan state (only transition if not already in analyzing_plan)
+        if ($chat->status !== WorkflowBuilderChat::STATUS_ANALYZING_PLAN) {
             $chat->updatePhase(WorkflowBuilderChat::STATUS_ANALYZING_PLAN, [
                 'generated_plan' => $plan,
                 'plan_generated_at' => now()->toISOString(),
             ]);
+        } else {
+            // Already in analyzing_plan phase, just update the meta without phase transition
+            $chat->update([
+                'meta' => array_merge($chat->meta ?? [], [
+                    'phase_data' => array_merge($chat->meta['phase_data'] ?? [], [
+                        'generated_plan' => $plan,
+                        'plan_generated_at' => now()->toISOString(),
+                        'plan_modified_at' => now()->toISOString(),
+                    ])
+                ])
+            ]);
+        }
 
-            return $plan;
-        });
+        return $plan;
     }
 
     /**
@@ -88,25 +96,23 @@ class WorkflowBuilderService
     {
         $this->validateChatForWorkflowBuild($chat);
 
-        return DB::transaction(function () use ($chat) {
-            // Prepare build artifacts
-            $artifacts = $this->prepareBuildArtifacts($chat);
-            
-            // Get the builder workflow definition
-            $builderWorkflowDefinition = $this->getBuilderWorkflowDefinition($chat);
-            
-            // Start workflow build via WorkflowRunnerService
-            $workflowRun = WorkflowRunnerService::start($builderWorkflowDefinition, $artifacts);
-            
-            // Associate workflow run with chat
-            $chat->currentWorkflowRun()->associate($workflowRun);
-            $chat->updatePhase(WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW, [
-                'workflow_run_id' => $workflowRun->id,
-                'build_started_at' => now()->toISOString(),
-            ]);
+        // Prepare build artifacts
+        $artifacts = $this->prepareBuildArtifacts($chat);
+        
+        // Get the builder workflow definition
+        $builderWorkflowDefinition = $this->getBuilderWorkflowDefinition($chat);
+        
+        // Start workflow build via WorkflowRunnerService
+        $workflowRun = WorkflowRunnerService::start($builderWorkflowDefinition, $artifacts);
+        
+        // Associate workflow run with chat
+        $chat->currentWorkflowRun()->associate($workflowRun);
+        $chat->updatePhase(WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW, [
+            'workflow_run_id' => $workflowRun->id,
+            'build_started_at' => now()->toISOString(),
+        ]);
 
-            return $workflowRun;
-        });
+        return $workflowRun;
     }
 
     /**
@@ -116,29 +122,27 @@ class WorkflowBuilderService
     {
         $this->validateWorkflowCompletion($chat, $completedRun);
 
-        DB::transaction(function () use ($chat, $completedRun) {
-            if (!$completedRun->isCompleted()) {
-                $this->handleWorkflowBuildFailure($chat, $completedRun);
-                return;
-            }
+        if (!$completedRun->isCompleted()) {
+            $this->handleWorkflowBuildFailure($chat, $completedRun);
+            return;
+        }
 
-            // Extract build artifacts from completed workflow
-            $buildArtifacts = $this->extractBuildArtifacts($completedRun);
-            
-            // Apply changes to WorkflowDefinition/TaskDefinitions
-            $workflowDefinition = $this->applyWorkflowChanges($chat, $buildArtifacts);
-            
-            // Update chat with artifacts and status
-            $chat->attachArtifacts($buildArtifacts);
-            $chat->workflowDefinition()->associate($workflowDefinition);
-            $chat->updatePhase(WorkflowBuilderChat::STATUS_EVALUATING_RESULTS, [
-                'build_completed_at' => now()->toISOString(),
-                'workflow_definition_id' => $workflowDefinition->id,
-            ]);
+        // Extract build artifacts from completed workflow
+        $buildArtifacts = $this->extractBuildArtifacts($completedRun);
+        
+        // Apply changes to WorkflowDefinition/TaskDefinitions
+        $workflowDefinition = $this->applyWorkflowChanges($chat, $buildArtifacts);
+        
+        // Update chat with artifacts and status
+        $chat->attachArtifacts($buildArtifacts);
+        $chat->workflowDefinition()->associate($workflowDefinition);
+        $chat->updatePhase(WorkflowBuilderChat::STATUS_EVALUATING_RESULTS, [
+            'build_completed_at' => now()->toISOString(),
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
 
-            // Trigger evaluation step
-            $this->evaluateAndCommunicateResults($chat);
-        });
+        // Trigger evaluation step
+        $this->evaluateAndCommunicateResults($chat);
     }
 
     /**
@@ -148,39 +152,37 @@ class WorkflowBuilderService
     {
         $this->validateChatForEvaluation($chat);
 
-        DB::transaction(function () use ($chat) {
-            // Create new AgentThread for result evaluation
-            $evaluationThread = $this->createEvaluationAgentThread($chat);
+        // Create new AgentThread for result evaluation
+        $evaluationThread = $this->createEvaluationAgentThread($chat);
+        
+        // Load evaluation context
+        $evaluationContext = app(WorkflowBuilderDocumentationService::class)
+            ->getEvaluationContext($chat->getLatestArtifacts());
             
-            // Load evaluation context
-            $evaluationContext = app(WorkflowBuilderDocumentationService::class)
-                ->getEvaluationContext($chat->getLatestArtifacts());
-                
-            // Add evaluation context to thread
-            $evaluationThread->messages()->create([
-                'role' => 'user', 
-                'content' => $evaluationContext,
-            ]);
+        // Add evaluation context to thread
+        $evaluationThread->messages()->create([
+            'role' => 'user', 
+            'content' => $evaluationContext,
+        ]);
 
-            // Use AgentThreadService to analyze build artifacts
-            $agentThreadRun = app(AgentThreadService::class)->run($evaluationThread);
+        // Use AgentThreadService to analyze build artifacts
+        $agentThreadRun = app(AgentThreadService::class)->run($evaluationThread);
 
-            if (!$agentThreadRun->isCompleted()) {
-                throw new ValidationError('Failed to evaluate workflow build results', 500);
-            }
+        if (!$agentThreadRun->isCompleted()) {
+            throw new ValidationError('Failed to evaluate workflow build results', 500);
+        }
 
-            // Generate user-friendly summary
-            $summary = $this->generateResultSummary($chat, $agentThreadRun->lastMessage);
-            
-            // Add summary to main chat thread
-            $chat->addThreadMessage($summary['message'], $summary['data']);
-            
-            // Update chat with final results and complete process
-            $chat->updatePhase(WorkflowBuilderChat::STATUS_COMPLETED, [
-                'evaluation_completed_at' => now()->toISOString(),
-                'result_summary' => $summary,
-            ]);
-        });
+        // Generate user-friendly summary
+        $summary = $this->generateResultSummary($chat, $agentThreadRun->lastMessage);
+        
+        // Add summary to main chat thread
+        $chat->addThreadMessage($summary['message'], $summary['data']);
+        
+        // Update chat with final results and complete process
+        $chat->updatePhase(WorkflowBuilderChat::STATUS_COMPLETED, [
+            'evaluation_completed_at' => now()->toISOString(),
+            'result_summary' => $summary,
+        ]);
     }
 
     /**
@@ -231,7 +233,7 @@ class WorkflowBuilderService
         ]);
 
         // Create AgentThread for the planning conversation
-        $planningAgent = Agent::where('team_id', $currentTeam->id)->where('name', 'Workflow Planner')->first();
+        $planningAgent = Agent::whereNull('team_id')->where('name', 'Workflow Planner')->first();
         if (!$planningAgent) {
             throw new ValidationError('Workflow Planner agent not found. Please run WorkflowBuilderSeeder.', 400);
         }
@@ -307,7 +309,7 @@ class WorkflowBuilderService
             throw new ValidationError('No team context available', 400);
         }
         
-        $agent = Agent::where('team_id', $currentTeam->id)
+        $agent = Agent::whereNull('team_id')
             ->where('name', 'Workflow Planner')
             ->first();
 
@@ -534,7 +536,7 @@ class WorkflowBuilderService
             $teamId = $currentTeam->id;
         }
         
-        $builderWorkflow = WorkflowDefinition::where('team_id', $teamId)
+        $builderWorkflow = WorkflowDefinition::whereNull('team_id')
             ->where('name', 'LLM Workflow Builder')
             ->first();
 
@@ -810,12 +812,12 @@ class WorkflowBuilderService
         
         // Try to find specific agents first
         if (str_contains($lowercaseReq, 'planner') || str_contains($lowercaseReq, 'planning')) {
-            $agent = Agent::where('team_id', team()->id)->where('name', 'Workflow Planner')->first();
+            $agent = Agent::whereNull('team_id')->where('name', 'Workflow Planner')->first();
             if ($agent) return $agent;
         }
         
         if (str_contains($lowercaseReq, 'evaluator') || str_contains($lowercaseReq, 'evaluation')) {
-            $agent = Agent::where('team_id', team()->id)->where('name', 'Workflow Evaluator')->first();
+            $agent = Agent::whereNull('team_id')->where('name', 'Workflow Evaluator')->first();
             if ($agent) return $agent;
         }
 
@@ -856,7 +858,7 @@ class WorkflowBuilderService
      */
     protected function getEvaluationAgent(): Agent
     {
-        $agent = Agent::where('team_id', team()->id)
+        $agent = Agent::whereNull('team_id')
             ->where('name', 'Workflow Evaluator')
             ->first();
 

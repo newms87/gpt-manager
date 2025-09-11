@@ -37,7 +37,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
         
@@ -94,7 +94,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
 
@@ -120,7 +120,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
 
@@ -156,13 +156,13 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
 
         // Create required agents
         \App\Models\Agent\Agent::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned agent
             'name' => 'Workflow Evaluator',
             'description' => 'Agent for evaluating workflow build results',
             'model' => 'test-model',
@@ -218,7 +218,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
     {
         // Given - Create a chat that will cause the service to fail naturally
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
 
@@ -250,7 +250,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
 
@@ -301,7 +301,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
 
@@ -325,12 +325,12 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         $this->assertNull($result);
     }
 
-    public function test_findWorkflowBuilderChat_withWrongTeam_returnsNull(): void
+    public function test_findWorkflowBuilderChat_withDifferentTeam_findsChat(): void
     {
-        // Given
+        // Given - System-owned LLM Workflow Builder can be used by any team
         $otherTeam = \App\Models\Team\Team::factory()->create();
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
 
@@ -339,7 +339,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         ]);
 
         $chat = WorkflowBuilderChat::factory()->create([
-            'team_id' => $otherTeam->id, // Different team
+            'team_id' => $otherTeam->id, // Different team can use system workflow
             'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $workflowRun->id,
         ]);
@@ -350,15 +350,16 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         $method->setAccessible(true);
         $result = $method->invoke($this->listener, $workflowRun);
 
-        // Then
-        $this->assertNull($result);
+        // Then - Should find the chat since workflow_run_id matches and system workflow can be used by any team
+        $this->assertInstanceOf(WorkflowBuilderChat::class, $result);
+        $this->assertEquals($chat->id, $result->id);
     }
 
     public function test_findWorkflowBuilderChat_withWrongWorkflowRunId_returnsNull(): void
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
 
@@ -390,13 +391,13 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
 
         // Create required agents
         \App\Models\Agent\Agent::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned agent
             'name' => 'Workflow Evaluator',
             'description' => 'Agent for evaluating workflow build results',
             'model' => 'test-model',
@@ -470,13 +471,13 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         $this->assertContains(\App\Traits\HasDebugLogging::class, class_uses($this->listener));
     }
 
-    public function test_teamBasedAccessControl_ensuresSecureDataAccess(): void
+    public function test_systemWorkflowAccessControl_allowsAnyTeamAccess(): void
     {
-        // Given
+        // Given - System-owned workflows can be used by any team
         $otherTeam = \App\Models\Team\Team::factory()->create();
         
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
 
@@ -484,8 +485,8 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
 
-        // Create chat for other team with same workflow run ID (security test)
-        WorkflowBuilderChat::factory()->create([
+        // Create chat for team using system workflow
+        $chat = WorkflowBuilderChat::factory()->create([
             'team_id' => $otherTeam->id,
             'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $workflowRun->id,
@@ -497,7 +498,8 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         $method->setAccessible(true);
         $result = $method->invoke($this->listener, $workflowRun);
 
-        // Then - should not find chat from other team even with matching workflow run ID
-        $this->assertNull($result);
+        // Then - Should find chat since system workflows are accessible by any team
+        $this->assertInstanceOf(WorkflowBuilderChat::class, $result);
+        $this->assertEquals($chat->id, $result->id);
     }
 }

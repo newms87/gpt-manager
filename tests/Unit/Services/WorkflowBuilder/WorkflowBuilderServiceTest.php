@@ -47,7 +47,7 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
         $prompt = "Create a workflow for data processing";
         $workflowDefinition = WorkflowDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $planningAgent = Agent::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned agent
             'name' => 'Workflow Planner'
         ]);
 
@@ -96,7 +96,7 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
         $prompt = "Update the workflow";
         $existingChat = WorkflowBuilderChat::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $planningAgent = Agent::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned agent
             'name' => 'Workflow Planner'
         ]);
 
@@ -172,7 +172,7 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
 
         // Create required Workflow Planner agent
         $plannerAgent = \App\Models\Agent\Agent::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned agent
             'name' => 'Workflow Planner',
             'description' => 'Agent for planning workflows',
             'model' => 'test-model',
@@ -250,7 +250,7 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
     {
         // Given
         $plannerAgent = Agent::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned agent
             'name' => 'Workflow Planner',
             'model' => 'test-model'
         ]);
@@ -279,7 +279,7 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
     {
         // Given
         $builderWorkflow = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned workflow
             'name' => 'LLM Workflow Builder'
         ]);
         
@@ -369,7 +369,7 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
         
         // Create required Workflow Evaluator agent
         $evaluatorAgent = Agent::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned agent
             'name' => 'Workflow Evaluator',
             'model' => 'test-model'
         ]);
@@ -484,7 +484,7 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
     {
         // Given
         $evaluationAgent = Agent::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id' => null, // System-owned agent
             'name' => 'Workflow Evaluator',
             'model' => 'test-model' // Use configured test model
         ]);
@@ -606,28 +606,477 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
         $this->service->startRequirementsGathering($prompt, $otherTeamWorkflowDefinition->id);
     }
 
-    public function test_dbTransactions_rollbackOnFailure(): void
-    {
-        // Given
-        $prompt = "Test prompt";
-        
-        // Force a database error by creating invalid data
-        DB::shouldReceive('transaction')->once()->andThrow(new \Exception('Database error'));
 
-        // When & Then
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Database error');
-        
-        $this->service->startRequirementsGathering($prompt);
-        
-        // Verify no partial data was created
-        $this->assertDatabaseMissing('workflow_builder_chats', [
+    // COMPREHENSIVE INTEGRATION TESTS FOR WORKFLOW MODIFICATION FLOW
+
+    public function test_fullWorkflowModificationFlow_withExistingWorkflow_modifiesWorkflowSuccessfully(): void
+    {
+        // Given - Create an existing workflow to modify (simulating workflow ID 9)
+        $existingWorkflow = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
+            'name' => 'Original Workflow',
+            'description' => 'Original description',
+            'max_workers' => 3
+        ]);
+
+        // Add some existing nodes to the workflow
+        $existingTaskDef1 = TaskDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Original Task 1',
+            'task_runner_name' => 'AgentThreadTaskRunner'
         ]);
         
-        $this->assertDatabaseMissing('workflow_inputs', [
+        $existingTaskDef2 = TaskDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'content' => $prompt,
+            'name' => 'Original Task 2',
+            'task_runner_name' => 'WorkflowInputTaskRunner'
+        ]);
+
+        $existingNode1 = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $existingWorkflow->id,
+            'task_definition_id' => $existingTaskDef1->id,
+            'name' => 'Original Task 1'
+        ]);
+
+        $existingNode2 = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $existingWorkflow->id,
+            'task_definition_id' => $existingTaskDef2->id,
+            'name' => 'Original Task 2'
+        ]);
+
+        // Create required agents
+        $plannerAgent = Agent::factory()->create([
+            'team_id' => null, // System-owned agent
+            'name' => 'Workflow Planner',
+            'model' => 'test-model'
+        ]);
+
+        $evaluatorAgent = Agent::factory()->create([
+            'team_id' => null, // System-owned agent
+            'name' => 'Workflow Evaluator',
+            'model' => 'test-model'
+        ]);
+
+        // Create LLM Workflow Builder workflow (this is the builder workflow)
+        $builderWorkflow = WorkflowDefinition::factory()->create([
+            'team_id' => null, // System-owned workflow
+            'name' => 'LLM Workflow Builder'
+        ]);
+
+        // Create a starting node for the builder workflow
+        $builderTaskDef = TaskDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'task_runner_name' => 'Workflow Input'
+        ]);
+
+        WorkflowNode::factory()->create([
+            'workflow_definition_id' => $builderWorkflow->id,
+            'task_definition_id' => $builderTaskDef->id
+        ]);
+
+        $modificationPrompt = "Please modify this workflow to add data validation and error handling steps";
+
+        // STEP 1: Start requirements gathering
+        $chat = $this->service->startRequirementsGathering($modificationPrompt, $existingWorkflow->id);
+        
+        // Verify chat creation
+        $this->assertInstanceOf(WorkflowBuilderChat::class, $chat);
+        $this->assertEquals(WorkflowBuilderChat::STATUS_REQUIREMENTS_GATHERING, $chat->status);
+        $this->assertEquals($existingWorkflow->id, $chat->workflow_definition_id);
+        $this->assertEquals($this->user->currentTeam->id, $chat->team_id);
+
+        // STEP 2: Generate workflow plan
+        $userInput = "Add validation before processing and error handling after each step";
+        $plan = $this->service->generateWorkflowPlan($chat, $userInput);
+        
+        // Verify plan generation
+        $this->assertIsArray($plan);
+        $this->assertArrayHasKey('workflow_name', $plan);
+        $this->assertArrayHasKey('tasks', $plan);
+        $this->assertNotEmpty($plan['tasks']);
+        
+        // Verify chat status updated
+        $updatedChat = $chat->fresh();
+        $this->assertEquals(WorkflowBuilderChat::STATUS_ANALYZING_PLAN, $updatedChat->status);
+        $this->assertNotNull($updatedChat->meta['phase_data']['generated_plan']);
+
+        // STEP 3: Start workflow build (this is where the transaction error occurs)
+        $workflowRun = $this->service->startWorkflowBuild($updatedChat);
+        
+        // Verify workflow run creation
+        $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
+        $this->assertEquals($builderWorkflow->id, $workflowRun->workflow_definition_id);
+        $this->assertNotNull($workflowRun->started_at);
+        
+        // Verify chat status updated
+        $buildingChat = $updatedChat->fresh();
+        $this->assertEquals(WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW, $buildingChat->status);
+        $this->assertEquals($workflowRun->id, $buildingChat->current_workflow_run_id);
+
+        // STEP 4: Simulate workflow completion with build artifacts
+        $completedWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $builderWorkflow->id,
+            'status' => 'Completed',
+            'completed_at' => now(),
+            'has_run_all_tasks' => true
+        ]);
+
+        // Create output artifacts that contain new workflow structure
+        $buildArtifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Workflow Organization',
+            'json_content' => [
+                'workflow_definition' => [
+                    'name' => 'Enhanced Data Processing Workflow',
+                    'description' => 'Original workflow enhanced with validation and error handling',
+                    'max_workers' => 5
+                ],
+                'task_specifications' => [
+                    [
+                        'name' => 'Input Validation',
+                        'description' => 'Validate input data before processing',
+                        'runner_type' => 'AgentThreadTaskRunner',
+                        'agent_requirements' => 'Validation specialist'
+                    ],
+                    [
+                        'name' => 'Data Processing',
+                        'description' => 'Process the validated data',
+                        'runner_type' => 'AgentThreadTaskRunner',
+                        'agent_requirements' => 'Data processing agent'
+                    ],
+                    [
+                        'name' => 'Error Handler',
+                        'description' => 'Handle any processing errors',
+                        'runner_type' => 'AgentThreadTaskRunner',
+                        'agent_requirements' => 'Error handling specialist'
+                    ]
+                ],
+                'connections' => [
+                    [
+                        'source' => 'Input Validation',
+                        'target' => 'Data Processing',
+                        'name' => 'Validated Data'
+                    ],
+                    [
+                        'source' => 'Data Processing',
+                        'target' => 'Error Handler',
+                        'name' => 'Processing Results'
+                    ]
+                ]
+            ]
+        ]);
+
+        $completedWorkflowRun->addOutputArtifacts([$buildArtifact]);
+        
+        // Update chat to reference the completed workflow run
+        $buildingChat->update(['current_workflow_run_id' => $completedWorkflowRun->id]);
+
+        // Record initial task/node counts
+        $initialTaskCount = $existingWorkflow->workflowNodes()->count();
+        $initialWorkflowName = $existingWorkflow->name;
+
+        // STEP 5: Process workflow completion (this should modify the existing workflow)
+        $this->service->processWorkflowCompletion($buildingChat, $completedWorkflowRun);
+        
+        // VERIFY WORKFLOW WAS ACTUALLY MODIFIED
+        $modifiedWorkflow = $existingWorkflow->fresh();
+        
+        // Check that workflow metadata was updated (description comes from the build artifact)
+        $this->assertEquals('Original workflow enhanced with validation and error handling', $modifiedWorkflow->description);
+        $this->assertEquals(5, $modifiedWorkflow->max_workers);
+        
+        // Check that new tasks were added to the existing workflow
+        $finalTaskCount = $modifiedWorkflow->workflowNodes()->count();
+        $this->assertGreaterThan($initialTaskCount, $finalTaskCount, 'New tasks should have been added to the workflow');
+        
+        // Verify specific new tasks exist
+        $newTaskNames = $modifiedWorkflow->workflowNodes()->with('taskDefinition')->get()->pluck('taskDefinition.name')->toArray();
+        $this->assertContains('Input Validation', $newTaskNames);
+        $this->assertContains('Data Processing', $newTaskNames);
+        $this->assertContains('Error Handler', $newTaskNames);
+        
+        // Verify workflow connections were created
+        $connections = $modifiedWorkflow->workflowConnections()->count();
+        $this->assertGreaterThan(0, $connections, 'Workflow connections should have been created');
+        
+        // Verify chat completed the full flow (processWorkflowCompletion automatically calls evaluation)
+        $completedChat = $buildingChat->fresh();
+        $this->assertEquals(WorkflowBuilderChat::STATUS_COMPLETED, $completedChat->status);
+        $this->assertNotNull($completedChat->meta['phase_data']['build_completed_at']);
+        $this->assertNotNull($completedChat->meta['phase_data']['evaluation_completed_at']);
+        $this->assertEquals($modifiedWorkflow->id, $completedChat->workflow_definition_id);
+    }
+
+    public function test_nestedTransactionError_reproduced_whenWorkflowRunnerFailsInsideTransaction(): void
+    {
+        // Given - Setup that will cause WorkflowRunnerService::start to fail inside the transaction
+        $existingWorkflow = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Target Workflow'
+        ]);
+
+        $plannerAgent = Agent::factory()->create([
+            'team_id' => null, // System-owned agent
+            'name' => 'Workflow Planner',
+            'model' => 'test-model'
+        ]);
+
+        // Create LLM Workflow Builder workflow WITHOUT any starting nodes
+        // This will cause WorkflowRunnerService::start to throw ValidationError
+        $builderWorkflow = WorkflowDefinition::factory()->create([
+            'team_id' => null, // System-owned workflow
+            'name' => 'LLM Workflow Builder'
+            // No starting nodes - this will cause the error
+        ]);
+
+        // Setup chat in proper state for workflow build
+        $chat = WorkflowBuilderChat::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'status' => WorkflowBuilderChat::STATUS_ANALYZING_PLAN,
+            'workflow_definition_id' => $existingWorkflow->id,
+            'meta' => [
+                'build_state' => [
+                    'generated_plan' => [
+                        'workflow_name' => 'Test Workflow',
+                        'tasks' => [['name' => 'Test Task', 'description' => 'Test']]
+                    ]
+                ]
+            ]
+        ]);
+
+        // When & Then - This should still reproduce the error, but without transaction abort
+        $this->expectException(ValidationError::class);
+        $this->expectExceptionMessage('Workflow does not have any starting nodes');
+        
+        // WorkflowRunnerService::start should fail with validation error
+        $this->service->startWorkflowBuild($chat);
+    }
+
+    public function test_transactionIsolation_withNestedServiceCalls_handlesErrorsCorrectly(): void
+    {
+        // Given - Setup for testing transaction boundaries
+        $existingWorkflow = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Target Workflow'
+        ]);
+
+        $plannerAgent = Agent::factory()->create([
+            'team_id' => null, // System-owned agent
+            'name' => 'Workflow Planner',
+            'model' => 'test-model'
+        ]);
+
+        // Create a valid builder workflow with starting nodes
+        $builderWorkflow = WorkflowDefinition::factory()->create([
+            'team_id' => null, // System-owned workflow
+            'name' => 'LLM Workflow Builder'
+        ]);
+
+        $builderTaskDef = TaskDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'task_runner_name' => 'Workflow Input'
+        ]);
+
+        WorkflowNode::factory()->create([
+            'workflow_definition_id' => $builderWorkflow->id,
+            'task_definition_id' => $builderTaskDef->id
+        ]);
+
+        $chat = WorkflowBuilderChat::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'status' => WorkflowBuilderChat::STATUS_ANALYZING_PLAN,
+            'workflow_definition_id' => $existingWorkflow->id,
+            'meta' => [
+                'build_state' => [
+                    'generated_plan' => [
+                        'workflow_name' => 'Test Workflow',
+                        'tasks' => [['name' => 'Test Task', 'description' => 'Test']]
+                    ]
+                ]
+            ]
+        ]);
+
+        // When - This should work without transaction conflicts
+        $workflowRun = $this->service->startWorkflowBuild($chat);
+        
+        // Then - Verify successful execution
+        $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
+        $this->assertEquals($builderWorkflow->id, $workflowRun->workflow_definition_id);
+        
+        $updatedChat = $chat->fresh();
+        $this->assertEquals(WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW, $updatedChat->status);
+        $this->assertEquals($workflowRun->id, $updatedChat->current_workflow_run_id);
+    }
+
+    public function test_workflowModificationWithRealData_verifyDatabaseChanges(): void
+    {
+        // Given - Create a specific workflow setup similar to production workflow ID 9
+        $targetWorkflow = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Production Workflow 9',
+            'description' => 'Original production workflow',
+            'max_workers' => 2
+        ]);
+
+        // Add some existing complex structure
+        $originalTasks = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $taskDef = TaskDefinition::factory()->create([
+                'team_id' => $this->user->currentTeam->id,
+                'name' => "Original Task {$i}",
+                'task_runner_name' => $i === 1 ? 'WorkflowInputTaskRunner' : 'AgentThreadTaskRunner'
+            ]);
+            
+            $originalTasks[] = WorkflowNode::factory()->create([
+                'workflow_definition_id' => $targetWorkflow->id,
+                'task_definition_id' => $taskDef->id,
+                'name' => "Original Task {$i}"
+            ]);
+        }
+
+        // Create required infrastructure
+        $plannerAgent = Agent::factory()->create([
+            'team_id' => null, // System-owned agent
+            'name' => 'Workflow Planner',
+            'model' => 'test-model'
+        ]);
+
+        $evaluatorAgent = Agent::factory()->create([
+            'team_id' => null, // System-owned agent
+            'name' => 'Workflow Evaluator',
+            'model' => 'test-model'
+        ]);
+
+        $builderWorkflow = WorkflowDefinition::factory()->create([
+            'team_id' => null, // System-owned workflow
+            'name' => 'LLM Workflow Builder'
+        ]);
+
+        $builderTaskDef = TaskDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'task_runner_name' => 'Workflow Input'
+        ]);
+
+        WorkflowNode::factory()->create([
+            'workflow_definition_id' => $builderWorkflow->id,
+            'task_definition_id' => $builderTaskDef->id
+        ]);
+
+        // Record initial state
+        $initialNodeCount = $targetWorkflow->workflowNodes()->count();
+        $initialConnectionCount = $targetWorkflow->workflowConnections()->count();
+        $initialDescription = $targetWorkflow->description;
+        $initialMaxWorkers = $targetWorkflow->max_workers;
+
+        // Execute full workflow modification
+        $modificationPrompt = "Add advanced error recovery and monitoring to this workflow";
+        
+        // Start requirements gathering
+        $chat = $this->service->startRequirementsGathering($modificationPrompt, $targetWorkflow->id);
+        
+        // Generate plan
+        $plan = $this->service->generateWorkflowPlan($chat, "Add error recovery nodes and monitoring capabilities");
+        
+        // Start build
+        $workflowRun = $this->service->startWorkflowBuild($chat->fresh());
+        
+        // Create completion artifacts with specific new structure
+        $completedRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $builderWorkflow->id,
+            'status' => 'Completed',
+            'completed_at' => now(),
+            'has_run_all_tasks' => true
+        ]);
+
+        $buildArtifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name' => 'Workflow Organization',
+            'json_content' => [
+                'workflow_definition' => [
+                    'name' => 'Enhanced Production Workflow 9',
+                    'description' => 'Production workflow enhanced with error recovery and monitoring',
+                    'max_workers' => 8
+                ],
+                'task_specifications' => [
+                    [
+                        'name' => 'Health Check',
+                        'description' => 'Monitor workflow health',
+                        'runner_type' => 'AgentThreadTaskRunner',
+                        'agent_requirements' => 'Monitoring specialist'
+                    ],
+                    [
+                        'name' => 'Error Recovery',
+                        'description' => 'Recover from processing errors',
+                        'runner_type' => 'AgentThreadTaskRunner',
+                        'agent_requirements' => 'Error recovery specialist'
+                    ],
+                    [
+                        'name' => 'Final Validation',
+                        'description' => 'Validate final results',
+                        'runner_type' => 'AgentThreadTaskRunner',
+                        'agent_requirements' => 'Quality assurance'
+                    ]
+                ]
+            ]
+        ]);
+
+        $completedRun->addOutputArtifacts([$buildArtifact]);
+        $chat->update(['current_workflow_run_id' => $completedRun->id]);
+        
+        // Process completion
+        $this->service->processWorkflowCompletion($chat->fresh(), $completedRun);
+        
+        // VERIFY REAL DATABASE CHANGES
+        $modifiedWorkflow = $targetWorkflow->fresh();
+        
+        // Verify workflow metadata changes
+        $this->assertEquals('Production workflow enhanced with error recovery and monitoring', $modifiedWorkflow->description);
+        $this->assertEquals(8, $modifiedWorkflow->max_workers);
+        $this->assertNotEquals($initialDescription, $modifiedWorkflow->description);
+        $this->assertNotEquals($initialMaxWorkers, $modifiedWorkflow->max_workers);
+        
+        // Verify new nodes were added
+        $finalNodeCount = $modifiedWorkflow->workflowNodes()->count();
+        $this->assertGreaterThan($initialNodeCount, $finalNodeCount);
+        $this->assertEquals($initialNodeCount + 3, $finalNodeCount); // Original + 3 new tasks
+        
+        // Verify specific new tasks exist
+        $allTaskNames = $modifiedWorkflow->workflowNodes()->with('taskDefinition')->get()
+            ->pluck('taskDefinition.name')->toArray();
+        
+        $this->assertContains('Health Check', $allTaskNames);
+        $this->assertContains('Error Recovery', $allTaskNames);
+        $this->assertContains('Final Validation', $allTaskNames);
+        
+        // Verify original tasks still exist
+        $this->assertContains('Original Task 1', $allTaskNames);
+        $this->assertContains('Original Task 2', $allTaskNames);
+        $this->assertContains('Original Task 3', $allTaskNames);
+        
+        // Verify team-based access control
+        $this->assertEquals($this->user->currentTeam->id, $modifiedWorkflow->team_id);
+        
+        // Verify all new task definitions exist and are accessible to the team
+        $newTaskDefinitions = TaskDefinition::whereIn('name', ['Health Check', 'Error Recovery', 'Final Validation'])->get();
+        
+        // Check if any new tasks were created
+        $this->assertGreaterThan(0, $newTaskDefinitions->count(), 'New task definitions should have been created');
+        $this->assertEquals(3, $newTaskDefinitions->count(), 'Should have created exactly 3 new task definitions');
+        
+        // Verify database consistency
+        $this->assertDatabaseHas('workflow_definitions', [
+            'id' => $targetWorkflow->id,
+            'team_id' => $this->user->currentTeam->id,
+            'description' => 'Production workflow enhanced with error recovery and monitoring',
+            'max_workers' => 8
+        ]);
+        
+        $this->assertDatabaseHas('task_definitions', [
+            'name' => 'Health Check'
+        ]);
+        
+        $this->assertDatabaseHas('task_definitions', [
+            'name' => 'Error Recovery'
         ]);
     }
 }

@@ -84,10 +84,10 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
             return null;
         }
 
-        // Find the WorkflowBuilderChat that's waiting for this specific workflow run
+        // Since the LLM Workflow Builder is system-owned (team_id = null) but can be used by any team,
+        // we find the WorkflowBuilderChat by the workflow run ID without team restriction
         return WorkflowBuilderChat::where('current_workflow_run_id', $workflowRun->id)
             ->where('status', WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW)
-            ->where('team_id', $workflowRun->workflowDefinition->team_id)
             ->first();
     }
 }
