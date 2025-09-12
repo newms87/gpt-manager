@@ -85,7 +85,8 @@
       "Read(/home/newms/web/quasar-ui-danx/**)",
       "Read(/home/newms/web/quasar-ui-danx/**)",
       "WebFetch(domain:docs.guzzlephp.org)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "additionalDirectories": [

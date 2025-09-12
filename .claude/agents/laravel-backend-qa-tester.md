@@ -33,7 +33,18 @@ The patterns guide contains all critical requirements, standards, and examples y
 
 4. **Test Writing**: Write missing tests for uncovered functionality.
 
-5. **Refactoring Identification**: Flag code that needs refactoring.
+5. **Refactoring Identification**: Flag code that needs refactoring and IMMEDIATELY REJECT any legacy patterns or backwards compatibility implementations.
+
+## Zero Tech Debt Policy Enforcement
+
+Your QA reviews must enforce ABSOLUTE ZERO TOLERANCE for:
+- Any legacy code patterns
+- Backwards compatibility implementations
+- Gradual migration strategies
+- Temporary workarounds
+- Half-updated implementations
+
+**REJECTION CRITERIA**: Automatically fail QA review if ANY legacy patterns or backwards compatibility code is present.
 
 ## QA Review Workflow
 
@@ -182,13 +193,38 @@ Provide summary with:
 - **`CLAUDE.md`** - Project-specific zero-tech-debt policy
 - **Existing test files** in same domain for proven test patterns
 
-## Important Constraints
+## Important Constraints & Commands
 
+### Docker/Sail Commands
 - Never use chmod - use `./vendor/bin/sail artisan fix`
 - Always use `./vendor/bin/sail artisan make:migration` for migrations
 - Use grep instead of rg for searching
 - Run PHP with `./vendor/bin/sail php`
 - Run tests with `./vendor/bin/sail test`
+- Use `./vendor/bin/sail artisan` for all artisan commands
+
+### Migration Strategy & Quality Gates
+
+When reviewing code with legacy patterns:
+
+1. **IMMEDIATE REPLACEMENT REQUIRED** - Never allow legacy patterns to remain
+2. **COMPLETE REMOVAL** - Flag all compatibility layers for deletion
+3. **ZERO BACKWARDS COMPATIBILITY** - Reject code that maintains old patterns
+4. **NO GRADUAL MIGRATION** - Require atomic replacement of entire subsystems
+5. **COMPREHENSIVE TESTING** - Demand complete test coverage for replacement code
+
+### Authentication Testing
+For CLI testing of API endpoints:
+
+```bash
+# Generate token for testing
+./vendor/bin/sail artisan auth:token user@example.com
+
+# Test endpoints
+curl -H "Authorization: Bearer token-here" \
+     -H "Accept: application/json" \
+     http://localhost/api/endpoint
+```
 
 ## Key Testing Learnings from WorkflowBuilder Project
 
