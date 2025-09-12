@@ -16,6 +16,7 @@ use App\Repositories\WorkflowInputRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\Workflow\WorkflowRunnerService;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class WorkflowBuilderService
@@ -477,6 +478,121 @@ class WorkflowBuilderService
         if (empty($buildState['generated_plan'] ?? null)) {
             throw new ValidationError('No approved plan found for workflow build', 400);
         }
+
+        // Validate the plan structure and content
+        $this->validateWorkflowPlan($buildState['generated_plan']);
+    }
+
+    /**
+     * Validate workflow plan structure and content before building.
+     * 
+     * Ensures the plan has all required components and valid structure
+     * to prevent build failures from malformed plans.
+     * 
+     * @param array $plan The workflow plan to validate
+     * @throws ValidationError If plan is invalid or incomplete
+     * @return void
+     */
+    protected function validateWorkflowPlan(array $plan): void
+    {
+        // Validate essential plan structure
+        if (empty($plan['workflow_name'])) {
+            throw new ValidationError('Workflow plan is missing a workflow name', 400);
+        }
+
+        if (empty($plan['tasks']) || !is_array($plan['tasks'])) {
+            throw new ValidationError('Workflow plan must contain at least one task', 400);
+        }
+
+        // Validate each task structure
+        foreach ($plan['tasks'] as $index => $task) {
+            $taskNumber = $index + 1;
+            
+            if (empty($task['name'])) {
+                throw new ValidationError("Task {$taskNumber} is missing a name", 400);
+            }
+
+            if (empty($task['runner_type'])) {
+                throw new ValidationError("Task {$taskNumber} ('{$task['name']}') is missing a runner type", 400);
+            }
+
+            // Validate runner type is a known type
+            $validRunnerTypes = [
+                'AgentThreadTaskRunner',
+                'CustomTaskRunner',
+                'ScriptTaskRunner',
+                'HttpTaskRunner'
+            ];
+            
+            if (!in_array($task['runner_type'], $validRunnerTypes)) {
+                throw new ValidationError(
+                    "Task {$taskNumber} ('{$task['name']}') has invalid runner type: {$task['runner_type']}. " .
+                    "Valid types: " . implode(', ', $validRunnerTypes),
+                    400
+                );
+            }
+        }
+
+        // Validate connections for multi-task workflows
+        $taskCount = count($plan['tasks']);
+        if ($taskCount > 1) {
+            $connections = $plan['connections'] ?? [];
+            
+            if (empty($connections)) {
+                throw new ValidationError(
+                    "Multi-task workflow ({$taskCount} tasks) must define connections between tasks. " .
+                    "No connections were specified in the plan.",
+                    400
+                );
+            }
+
+            // Validate connection structure
+            foreach ($connections as $index => $connection) {
+                $connectionNumber = $index + 1;
+                
+                if (empty($connection['source']) || empty($connection['target'])) {
+                    throw new ValidationError(
+                        "Connection {$connectionNumber} is missing source or target task names",
+                        400
+                    );
+                }
+
+                // Verify source and target tasks exist in plan
+                $taskNames = array_column($plan['tasks'], 'name');
+                
+                if (!in_array($connection['source'], $taskNames)) {
+                    throw new ValidationError(
+                        "Connection {$connectionNumber} references unknown source task: {$connection['source']}",
+                        400
+                    );
+                }
+
+                if (!in_array($connection['target'], $taskNames)) {
+                    throw new ValidationError(
+                        "Connection {$connectionNumber} references unknown target task: {$connection['target']}",
+                        400
+                    );
+                }
+            }
+        }
+
+        // Validate workflow configuration
+        if (isset($plan['max_workers'])) {
+            $maxWorkers = (int) $plan['max_workers'];
+            if ($maxWorkers < 1 || $maxWorkers > 50) {
+                throw new ValidationError(
+                    "max_workers must be between 1 and 50, got: {$maxWorkers}",
+                    400
+                );
+            }
+        }
+
+        // Log successful validation
+        Log::info('Workflow plan validation passed', [
+            'workflow_name' => $plan['workflow_name'],
+            'task_count' => count($plan['tasks']),
+            'connection_count' => count($plan['connections'] ?? []),
+        ]);
     }
 
     /**
@@ -562,22 +678,116 @@ class WorkflowBuilderService
     }
 
     /**
-     * Handle workflow build failure
+     * Handle workflow build failure with detailed error capture
      */
     protected function handleWorkflowBuildFailure(WorkflowBuilderChat $chat, WorkflowRun $failedRun): void
     {
-        $errorMessage = "Workflow build failed with status: {$failedRun->status}";
+        // Collect detailed failure information
+        $failureData = $this->extractFailureDetails($failedRun);
+        
+        $errorMessage = $this->buildDetailedErrorMessage($failedRun, $failureData);
         
         $chat->updatePhase(WorkflowBuilderChat::STATUS_FAILED, [
             'build_failed_at' => now()->toISOString(),
             'failure_reason' => $failedRun->status,
             'workflow_run_id' => $failedRun->id,
+            'error' => $failureData['primary_error'] ?? 'Unknown error',
+            'failure_phase' => $failureData['failed_phase'] ?? 'workflow_build',
+            'detailed_errors' => $failureData['all_errors'] ?? [],
         ]);
 
         $chat->addThreadMessage($errorMessage, [
             'error_type' => 'workflow_build_failure',
             'workflow_run_id' => $failedRun->id,
+            'failure_details' => $failureData,
         ]);
+
+        // Log detailed failure for debugging
+        Log::error('Workflow build failure', [
+            'chat_id' => $chat->id,
+            'workflow_run_id' => $failedRun->id,
+            'status' => $failedRun->status,
+            'failure_data' => $failureData,
+        ]);
+    }
+
+    /**
+     * Extract detailed failure information from a failed workflow run.
+     * 
+     * @param WorkflowRun $failedRun The failed workflow run
+     * @return array Detailed failure information
+     */
+    protected function extractFailureDetails(WorkflowRun $failedRun): array
+    {
+        $failureData = [
+            'primary_error' => null,
+            'failed_phase' => 'workflow_build',
+            'all_errors' => [],
+            'failed_task_names' => [],
+        ];
+
+        // Check for workflow-level errors
+        if ($failedRun->error_message) {
+            $failureData['primary_error'] = $failedRun->error_message;
+            $failureData['all_errors'][] = [
+                'type' => 'workflow_error',
+                'message' => $failedRun->error_message,
+            ];
+        }
+
+        // Check individual task run failures
+        $taskRuns = $failedRun->taskRuns()->where('status', 'failed')->get();
+        foreach ($taskRuns as $taskRun) {
+            if ($taskRun->error_message) {
+                $failureData['all_errors'][] = [
+                    'type' => 'task_error',
+                    'task_name' => $taskRun->taskDefinition?->name ?? 'Unknown Task',
+                    'message' => $taskRun->error_message,
+                ];
+                $failureData['failed_task_names'][] = $taskRun->taskDefinition?->name ?? 'Unknown Task';
+            }
+        }
+
+        // If no specific error found, use status as fallback
+        if (!$failureData['primary_error'] && !empty($failureData['all_errors'])) {
+            $failureData['primary_error'] = $failureData['all_errors'][0]['message'];
+        } elseif (!$failureData['primary_error']) {
+            $failureData['primary_error'] = "Workflow build failed with status: {$failedRun->status}";
+        }
+
+        return $failureData;
+    }
+
+    /**
+     * Build a detailed error message for users.
+     * 
+     * @param WorkflowRun $failedRun The failed workflow run
+     * @param array $failureData Extracted failure details
+     * @return string User-friendly error message
+     */
+    protected function buildDetailedErrorMessage(WorkflowRun $failedRun, array $failureData): string
+    {
+        $message = "Workflow build failed: {$failureData['primary_error']}";
+
+        if (!empty($failureData['failed_task_names'])) {
+            $taskNames = implode(', ', array_unique($failureData['failed_task_names']));
+            $message .= "\n\nFailed tasks: {$taskNames}";
+        }
+
+        if (count($failureData['all_errors']) > 1) {
+            $message .= "\n\nAdditional errors:";
+            foreach (array_slice($failureData['all_errors'], 1, 3) as $error) {
+                $taskInfo = isset($error['task_name']) ? " (Task: {$error['task_name']})" : '';
+                $message .= "\n• {$error['message']}{$taskInfo}";
+            }
+            
+            if (count($failureData['all_errors']) > 4) {
+                $remaining = count($failureData['all_errors']) - 4;
+                $message .= "\n• ... and {$remaining} more errors";
+            }
+        }
+
+        return $message;
     }
 
     /**

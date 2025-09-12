@@ -908,6 +908,288 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
         $this->assertEquals($workflowRun->id, $updatedChat->current_workflow_run_id);
     }
 
+    // ==============================================
+    // COMPREHENSIVE PHASE TRANSITION TESTS
+    // Tests for the recent fixes to phase transition logic
+    // ==============================================
+
+    public function test_generateWorkflowPlan_multipleCallsInAnalyzingPlanPhase_doesNotAttemptDoubleTransition(): void
+    {
+        // Given - Chat already in analyzing_plan phase
+        $agentThread = AgentThread::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $plannerAgent = Agent::factory()->create([
+            'team_id' => null,
+            'name' => 'Workflow Planner',
+            'model' => 'test-model'
+        ]);
+        $agentThread->update(['agent_id' => $plannerAgent->id]);
+        
+        $chat = WorkflowBuilderChat::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'agent_thread_id' => $agentThread->id,
+            'status' => WorkflowBuilderChat::STATUS_ANALYZING_PLAN, // Already in target phase
+            'meta' => [
+                'phase_data' => [
+                    'generated_plan' => [
+                        'workflow_name' => 'Initial Plan',
+                        'tasks' => [['name' => 'Task 1', 'description' => 'Initial task']]
+                    ]
+                ]
+            ]
+        ]);
+
+        // When - Call generateWorkflowPlan multiple times (simulating user modifications)
+        $firstCall = $this->service->generateWorkflowPlan($chat, "Add data validation");
+        $chat = $chat->fresh();
+        $secondCall = $this->service->generateWorkflowPlan($chat, "Also add error handling");
+        $chat = $chat->fresh();
+        $thirdCall = $this->service->generateWorkflowPlan($chat, "Include monitoring too");
+
+        // Then - All calls should succeed without phase transition errors
+        $this->assertIsArray($firstCall);
+        $this->assertIsArray($secondCall);
+        $this->assertIsArray($thirdCall);
+        
+        // Verify chat remains in analyzing_plan phase throughout
+        $finalChat = $chat->fresh();
+        $this->assertEquals(WorkflowBuilderChat::STATUS_ANALYZING_PLAN, $finalChat->status);
+        
+        // Verify plan was updated with modification timestamp
+        $this->assertArrayHasKey('phase_data', $finalChat->meta);
+        $this->assertArrayHasKey('plan_modified_at', $finalChat->meta['phase_data']);
+        $this->assertNotNull($finalChat->meta['phase_data']['plan_modified_at']);
+        
+        // Verify multiple user messages were added to the thread
+        $messages = $agentThread->fresh()->messages;
+        $userMessages = $messages->where('role', 'user');
+        $this->assertGreaterThanOrEqual(3, $userMessages->count());
+    }
+
+    public function test_generateWorkflowPlan_transitionFromRequirementsGatheringToAnalyzingPlan_worksCorrectly(): void
+    {
+        // Given - Chat in requirements_gathering phase
+        $agentThread = AgentThread::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $plannerAgent = Agent::factory()->create([
+            'team_id' => null,
+            'name' => 'Workflow Planner',
+            'model' => 'test-model'
+        ]);
+        $agentThread->update(['agent_id' => $plannerAgent->id]);
+        
+        $chat = WorkflowBuilderChat::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'agent_thread_id' => $agentThread->id,
+            'status' => WorkflowBuilderChat::STATUS_REQUIREMENTS_GATHERING, // Starting phase
+        ]);
+
+        // When - Call generateWorkflowPlan for the first time
+        $result = $this->service->generateWorkflowPlan($chat, "Create a workflow for data processing");
+
+        // Then - Should successfully transition to analyzing_plan phase
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('workflow_name', $result);
+        $this->assertArrayHasKey('tasks', $result);
+        
+        $updatedChat = $chat->fresh();
+        $this->assertEquals(WorkflowBuilderChat::STATUS_ANALYZING_PLAN, $updatedChat->status);
+        $this->assertNotNull($updatedChat->meta['phase_data']['generated_plan']);
+        $this->assertNotNull($updatedChat->meta['phase_data']['plan_generated_at']);
+        $this->assertArrayNotHasKey('plan_modified_at', $updatedChat->meta['phase_data']);
+    }
+
+    public function test_generateWorkflowPlan_resumingAnalyzingPlanPhase_continuesWithoutError(): void
+    {
+        // Given - Chat in analyzing_plan phase that was interrupted (simulating resume scenario)
+        $agentThread = AgentThread::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $plannerAgent = Agent::factory()->create([
+            'team_id' => null,
+            'name' => 'Workflow Planner',
+            'model' => 'test-model'
+        ]);
+        $agentThread->update(['agent_id' => $plannerAgent->id]);
+        
+        $chat = WorkflowBuilderChat::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'agent_thread_id' => $agentThread->id,
+            'status' => WorkflowBuilderChat::STATUS_ANALYZING_PLAN,
+            'meta' => [
+                'phase_data' => [
+                    'generated_plan' => [
+                        'workflow_name' => 'Previous Plan',
+                        'tasks' => [['name' => 'Previous Task', 'description' => 'Task from before']]
+                    ],
+                    'plan_generated_at' => now()->subMinutes(10)->toISOString()
+                ]
+            ]
+        ]);
+
+        // Add some previous messages to simulate conversation history
+        $agentThread->messages()->create([
+            'role' => 'user',
+            'content' => 'Original request'
+        ]);
+        $agentThread->messages()->create([
+            'role' => 'assistant',
+            'content' => 'Previous response'
+        ]);
+
+        // When - Resume with new input (this was causing infinite loops)
+        $result = $this->service->generateWorkflowPlan($chat, "Please refine the workflow plan");
+
+        // Then - Should work without hanging or errors
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('workflow_name', $result);
+        
+        $updatedChat = $chat->fresh();
+        $this->assertEquals(WorkflowBuilderChat::STATUS_ANALYZING_PLAN, $updatedChat->status);
+        $this->assertNotNull($updatedChat->meta['phase_data']['plan_modified_at']);
+        
+        // Verify new user message was added
+        $messages = $agentThread->fresh()->messages;
+        $latestUserMessage = $messages->where('role', 'user')->last();
+        $this->assertEquals('Please refine the workflow plan', $latestUserMessage->content);
+    }
+
+    public function test_generateWorkflowPlan_phaseDataPreservation_maintainsPreviousData(): void
+    {
+        // Given - Chat with existing phase data that should be preserved
+        $agentThread = AgentThread::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $plannerAgent = Agent::factory()->create([
+            'team_id' => null,
+            'name' => 'Workflow Planner',
+            'model' => 'test-model'
+        ]);
+        $agentThread->update(['agent_id' => $plannerAgent->id]);
+        
+        $originalPhaseData = [
+            'generated_plan' => [
+                'workflow_name' => 'Original Plan',
+                'tasks' => [['name' => 'Original Task', 'description' => 'Original']]
+            ],
+            'plan_generated_at' => now()->subHours(1)->toISOString(),
+            'custom_metadata' => 'should_be_preserved',
+            'user_preferences' => ['theme' => 'dark', 'notifications' => true]
+        ];
+        
+        $chat = WorkflowBuilderChat::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'agent_thread_id' => $agentThread->id,
+            'status' => WorkflowBuilderChat::STATUS_ANALYZING_PLAN,
+            'meta' => [
+                'phase_data' => $originalPhaseData,
+                'other_metadata' => 'should_also_be_preserved'
+            ]
+        ]);
+
+        // When - Update the plan
+        $result = $this->service->generateWorkflowPlan($chat, "Modify the workflow");
+
+        // Then - Previous phase data should be preserved while plan gets updated
+        $updatedChat = $chat->fresh();
+        $phaseData = $updatedChat->meta['phase_data'];
+        
+        // Check that new plan was generated
+        $this->assertArrayHasKey('generated_plan', $phaseData);
+        $this->assertNotEquals($originalPhaseData['generated_plan'], $phaseData['generated_plan']);
+        
+        // Note: Current implementation updates plan_generated_at on modifications
+        // This is acceptable behavior - the timestamp reflects when the current plan was generated
+        $this->assertNotEquals($originalPhaseData['plan_generated_at'], $phaseData['plan_generated_at']);
+        
+        // Check that modification timestamp was added
+        $this->assertArrayHasKey('plan_modified_at', $phaseData);
+        $this->assertNotNull($phaseData['plan_modified_at']);
+        
+        // Check that custom metadata was preserved
+        $this->assertEquals('should_be_preserved', $phaseData['custom_metadata']);
+        $this->assertEquals(['theme' => 'dark', 'notifications' => true], $phaseData['user_preferences']);
+        
+        // Check that other metadata outside phase_data was preserved
+        $this->assertEquals('should_also_be_preserved', $updatedChat->meta['other_metadata']);
+    }
+
+    public function test_generateWorkflowPlan_edgeCaseEmptyMeta_handlesGracefully(): void
+    {
+        // Given - Chat with null or empty meta (edge case)
+        $agentThread = AgentThread::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $plannerAgent = Agent::factory()->create([
+            'team_id' => null,
+            'name' => 'Workflow Planner',
+            'model' => 'test-model'
+        ]);
+        $agentThread->update(['agent_id' => $plannerAgent->id]);
+        
+        $chat = WorkflowBuilderChat::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'agent_thread_id' => $agentThread->id,
+            'status' => WorkflowBuilderChat::STATUS_ANALYZING_PLAN,
+            'meta' => null // Edge case: null meta
+        ]);
+
+        // When - Call generateWorkflowPlan
+        $result = $this->service->generateWorkflowPlan($chat, "Create new workflow");
+
+        // Then - Should handle gracefully and create proper meta structure
+        $this->assertIsArray($result);
+        
+        $updatedChat = $chat->fresh();
+        $this->assertNotNull($updatedChat->meta);
+        $this->assertArrayHasKey('phase_data', $updatedChat->meta);
+        $this->assertArrayHasKey('generated_plan', $updatedChat->meta['phase_data']);
+        $this->assertArrayHasKey('plan_modified_at', $updatedChat->meta['phase_data']);
+    }
+
+    public function test_generateWorkflowPlan_rapidSuccessiveCalls_allSucceedWithoutConflicts(): void
+    {
+        // Given - Setup for rapid successive calls (stress test)
+        $agentThread = AgentThread::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $plannerAgent = Agent::factory()->create([
+            'team_id' => null,
+            'name' => 'Workflow Planner',
+            'model' => 'test-model'
+        ]);
+        $agentThread->update(['agent_id' => $plannerAgent->id]);
+        
+        $chat = WorkflowBuilderChat::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'agent_thread_id' => $agentThread->id,
+            'status' => WorkflowBuilderChat::STATUS_ANALYZING_PLAN,
+        ]);
+
+        // When - Make rapid successive calls (simulating user quickly making changes)
+        $inputs = [
+            "Add validation step",
+            "Include error handling",
+            "Add monitoring",
+            "Include logging",
+            "Add cleanup step"
+        ];
+        
+        $results = [];
+        foreach ($inputs as $input) {
+            $results[] = $this->service->generateWorkflowPlan($chat->fresh(), $input);
+        }
+
+        // Then - All calls should succeed
+        $this->assertCount(5, $results);
+        foreach ($results as $result) {
+            $this->assertIsArray($result);
+            $this->assertArrayHasKey('workflow_name', $result);
+        }
+        
+        // Verify final state is correct
+        $finalChat = $chat->fresh();
+        $this->assertEquals(WorkflowBuilderChat::STATUS_ANALYZING_PLAN, $finalChat->status);
+        
+        // Verify all user inputs were recorded
+        $userMessages = $agentThread->fresh()->messages->where('role', 'user');
+        $this->assertGreaterThanOrEqual(5, $userMessages->count());
+        
+        // Verify last input matches
+        $lastUserMessage = $userMessages->last();
+        $this->assertEquals("Add cleanup step", $lastUserMessage->content);
+    }
+
     public function test_workflowModificationWithRealData_verifyDatabaseChanges(): void
     {
         // Given - Create a specific workflow setup similar to production workflow ID 9
