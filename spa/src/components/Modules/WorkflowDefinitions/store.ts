@@ -1,5 +1,6 @@
 import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/config";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
+import { authTeam } from "@/helpers/auth";
 import { usePusher } from "@/helpers/pusher";
 import {
     TaskDefinition,
@@ -11,21 +12,33 @@ import {
     WorkflowRun
 } from "@/types";
 import { getItem, setItem } from "quasar-ui-danx";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { Router } from "vue-router";
 
 const ACTIVE_WORKFLOW_DEFINITION_KEY = "dx-active-workflow-definition-id";
 
 const isLoadingWorkflowDefinitions = ref(false);
+const workflowLoadError = ref<string | null>(null);
 const activeWorkflowDefinition = ref<WorkflowDefinition>(null);
 const activeWorkflowRun = ref<WorkflowRun>(null);
-const workflowDefinitions = ref([]);
+const workflowDefinitions = ref<WorkflowDefinition[]>([]);
+
+// Computed property for read-only access control
+const isReadOnly = computed(() => {
+    if (!activeWorkflowDefinition.value || !authTeam.value) return false;
+
+    // System workflows (team_id === null) are read-only for non-system teams
+    if (activeWorkflowDefinition.value.team_id === null) return true;
+
+    // Workflows from other teams are read-only
+    return activeWorkflowDefinition.value.team_id !== authTeam.value.id;
+});
 
 async function refreshActiveWorkflowDefinition() {
     await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value);
 }
 
-async function setActiveWorkflowDefinition(workflowDefinition: string | number | WorkflowDefinition | null, router?: Router) {
+async function setActiveWorkflowDefinition(workflowDefinition: string | number | WorkflowDefinition | null, router?: Router, fromUrl: boolean = false) {
     const workflowDefinitionId = typeof workflowDefinition === "object" ? workflowDefinition?.id : workflowDefinition;
     setItem(ACTIVE_WORKFLOW_DEFINITION_KEY, workflowDefinitionId);
 
@@ -34,10 +47,14 @@ async function setActiveWorkflowDefinition(workflowDefinition: string | number |
         activeWorkflowRun.value = null;
     }
 
-    activeWorkflowDefinition.value = workflowDefinitions.value.find((tw) => tw.id === workflowDefinitionId) || null;
+    // Clear previous error state
+    workflowLoadError.value = null;
 
-    // Update URL if router provided and ID changed
-    if (router && workflowDefinitionId && activeWorkflowDefinition.value) {
+    // Find workflow in loaded list (with null check)
+    activeWorkflowDefinition.value = workflowDefinitions.value?.find((tw) => tw.id === workflowDefinitionId) || null;
+
+    // Only update URL if not already coming from URL navigation
+    if (router && workflowDefinitionId && activeWorkflowDefinition.value && !fromUrl) {
         await router.push({
             name: "workflow-definitions",
             params: { id: workflowDefinitionId.toString() }
@@ -50,18 +67,88 @@ async function setActiveWorkflowDefinition(workflowDefinition: string | number |
     }
 }
 
+async function fetchWorkflowById(workflowId: number): Promise<WorkflowDefinition | null> {
+    try {
+        // Use the direct HTTP request method from danx to ensure proper auth and avoid store updates
+        const API_URL = import.meta.env.VITE_API_URL + "/workflow-definitions";
+        const { request } = await import("quasar-ui-danx");
+        const response = await request.get(`${API_URL}/${workflowId}`);
+
+        // Validate that we got a proper workflow object
+        const workflow = response.item || response;
+        if (!workflow || !workflow.id || workflow.error) {
+            throw new Error('Invalid workflow response');
+        }
+
+        // Only return the workflow if the request was successful
+        // Do NOT add to workflowDefinitions list - keep list pure (team-only workflows)
+        return workflow as WorkflowDefinition;
+    } catch (error) {
+        console.error(`Failed to fetch workflow ${workflowId}:`, error);
+
+        // Set appropriate error message based on error type
+        if (error.response?.status === 404 || error.message?.includes('404')) {
+            workflowLoadError.value = `Workflow ${workflowId} not found`;
+        } else if (error.response?.status === 403 || error.message?.includes('403')) {
+            workflowLoadError.value = `You don't have permission to view workflow ${workflowId}`;
+        } else {
+            workflowLoadError.value = `Failed to load workflow ${workflowId}`;
+        }
+
+        return null;
+    }
+}
+
 async function initWorkflowState(urlWorkflowId?: number, router?: Router) {
     await loadWorkflowDefinitions();
-    // Priority: URL param > localStorage > first available
-    const workflowId = urlWorkflowId || getItem(ACTIVE_WORKFLOW_DEFINITION_KEY);
-    await setActiveWorkflowDefinition(workflowId, router);
+
+    // URL has absolute priority - NEVER redirect if URL contains a workflow ID
+    if (urlWorkflowId) {
+        // First try to find in loaded list (team workflows)
+        const existingWorkflow = workflowDefinitions.value?.find(w => w.id === urlWorkflowId);
+
+        if (existingWorkflow) {
+            // Found in team list - set it normally
+            await setActiveWorkflowDefinition(urlWorkflowId, router, true);
+        } else {
+            // Not in team list - try to fetch directly (might be system workflow)
+            const fetchedWorkflow = await fetchWorkflowById(urlWorkflowId);
+            if (fetchedWorkflow) {
+                // Successfully fetched (system or accessible workflow)
+                activeWorkflowDefinition.value = fetchedWorkflow;
+                setItem(ACTIVE_WORKFLOW_DEFINITION_KEY, urlWorkflowId);
+                await loadWorkflowRuns();
+            } else {
+                // Failed to fetch - error already set by fetchWorkflowById
+                activeWorkflowDefinition.value = null;
+                // Clear localStorage since this workflow doesn't exist or isn't accessible
+                setItem(ACTIVE_WORKFLOW_DEFINITION_KEY, null);
+            }
+        }
+    } else {
+        // No URL workflow ID - fall back to localStorage or first available
+        const storedId = getItem(ACTIVE_WORKFLOW_DEFINITION_KEY);
+        if (storedId && workflowDefinitions.value?.find(w => w.id === storedId)) {
+            await setActiveWorkflowDefinition(storedId, router);
+        } else if (workflowDefinitions.value?.length > 0) {
+            await setActiveWorkflowDefinition(workflowDefinitions.value[0], router);
+        }
+    }
 }
 
 async function loadWorkflowDefinitions() {
-    isLoadingWorkflowDefinitions.value = true;
-    const result = await dxWorkflowDefinition.routes.list();
-    workflowDefinitions.value = result.data;
-    isLoadingWorkflowDefinitions.value = false;
+    try {
+        isLoadingWorkflowDefinitions.value = true;
+        workflowLoadError.value = null;
+        const result = await dxWorkflowDefinition.routes.list();
+        workflowDefinitions.value = result.data || [];
+    } catch (error) {
+        console.error("Failed to load workflow definitions:", error);
+        workflowLoadError.value = "Failed to load workflow definitions";
+        workflowDefinitions.value = [];
+    } finally {
+        isLoadingWorkflowDefinitions.value = false;
+    }
 }
 
 async function loadWorkflowRuns() {
@@ -144,6 +231,8 @@ async function createWorkflowRun(workflowInput?: WorkflowInput) {
 export {
     isLoadingWorkflowDefinitions,
     isCreatingWorkflowRun,
+    workflowLoadError,
+    isReadOnly,
     activeWorkflowDefinition,
     activeWorkflowRun,
     workflowDefinitions,
@@ -154,5 +243,6 @@ export {
     loadWorkflowDefinitions,
     loadWorkflowRuns,
     setActiveWorkflowDefinition,
-    addWorkflowNode
+    addWorkflowNode,
+    fetchWorkflowById
 };

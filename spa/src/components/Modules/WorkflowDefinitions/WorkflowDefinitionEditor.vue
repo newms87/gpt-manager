@@ -5,6 +5,7 @@
             :model-value="activeWorkflowDefinition"
             :workflow-run="activeWorkflowRun"
             :loading="isCreatingWorkflowRun"
+            :readonly="props.isReadOnly"
             class="w-full h-full"
             @node-position="onNodePosition"
             @node-copy="node => copyNodeAction.trigger(node)"
@@ -18,7 +19,7 @@
             @refresh="refreshActiveWorkflowDefinition"
         />
         <TaskDefinitionConfigDialog
-            v-if="nodeToEdit?.taskDefinition"
+            v-if="nodeToEdit?.taskDefinition && !props.isReadOnly"
             :task-definition="nodeToEdit.taskDefinition"
             :workflow-node="nodeToEdit"
             @close="nodeToEdit = null"
@@ -41,6 +42,12 @@ import { dxWorkflowConnection } from "@/components/Modules/WorkflowDefinitions/W
 import { dxWorkflowNode } from "@/components/Modules/WorkflowDefinitions/WorkflowNodes/config";
 import { WorkflowConnection, WorkflowDefinition, WorkflowNode } from "@/types";
 import { ref } from "vue";
+
+const props = withDefaults(defineProps<{
+    isReadOnly?: boolean;
+}>(), {
+    isReadOnly: false
+});
 
 const nodeToEdit = ref<WorkflowNode>(null);
 
