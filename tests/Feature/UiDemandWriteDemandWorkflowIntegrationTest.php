@@ -175,7 +175,6 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // STEP 6: Complete write medical summary workflow
         $writeMedicalSummaryWorkflowRun->update([
-            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -205,7 +204,6 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // STEP 8: Complete write demand letter workflow
         $writeDemandLetterWorkflowRun->update([
-            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -273,7 +271,6 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         // Create completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -284,7 +281,6 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         // Create completed write medical summary workflow run (REQUIRED for write demand letter)
         $writeMedicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $writeMedicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -354,7 +350,6 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -379,7 +374,6 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         // Create completed medical summary workflow run for completed demand
         $completedMedicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now()->subHour(),
         ]);
 
@@ -447,7 +441,6 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 

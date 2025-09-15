@@ -85,7 +85,7 @@ class UiDemandTest extends AuthenticatedTestCase
 
         $runningWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'Running',
+            'started_at'             => now(),
         ]);
 
         $uiDemand = UiDemand::factory()->create([
@@ -189,7 +189,7 @@ class UiDemandTest extends AuthenticatedTestCase
 
         $runningMedicalSummaryRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'Running',
+            'started_at'             => now(),
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -318,7 +318,7 @@ class UiDemandTest extends AuthenticatedTestCase
 
         $runningDemandLetterRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'Running',
+            'started_at'             => now(),
         ]);
 
         $teamObject = TeamObject::factory()->create([
@@ -420,7 +420,7 @@ class UiDemandTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'Running',
+            'started_at'             => now(),
         ]);
 
         $uiDemand = UiDemand::factory()->create([
@@ -449,7 +449,7 @@ class UiDemandTest extends AuthenticatedTestCase
 
         $runningRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'Running',
+            'started_at'             => now(),
         ]);
 
         $completedRun = WorkflowRun::factory()->create([

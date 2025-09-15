@@ -167,7 +167,7 @@ class WorkflowBuilderChatTest extends AuthenticatedTestCase
         $workflowDefinition = WorkflowDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'Running'
+            'started_at' => now()
         ]);
         $chat = WorkflowBuilderChat::factory()->create([
             'team_id' => $this->user->currentTeam->id,
@@ -188,7 +188,6 @@ class WorkflowBuilderChatTest extends AuthenticatedTestCase
         $workflowDefinition = WorkflowDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'Completed',
             'completed_at' => now()
         ]);
         $chat = WorkflowBuilderChat::factory()->create([
@@ -210,7 +209,7 @@ class WorkflowBuilderChatTest extends AuthenticatedTestCase
         $workflowDefinition = WorkflowDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'Running'
+            'started_at' => now()
         ]);
         $chat = WorkflowBuilderChat::factory()->create([
             'team_id' => $this->user->currentTeam->id,

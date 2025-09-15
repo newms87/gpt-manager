@@ -69,7 +69,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         // Create completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -80,7 +79,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         // Create completed write medical summary workflow run (REQUIRED prerequisite)
         $writeMedicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $writeMedicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -138,7 +136,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         // Create completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -149,7 +146,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         // Create completed write medical summary workflow run (REQUIRED prerequisite)
         $writeMedicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $writeMedicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -162,7 +158,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
 
         // Simulate workflow completion
         $firstWorkflowRun->update([
-            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -216,7 +211,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         // Create completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -227,7 +221,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         // Create completed write medical summary workflow run (REQUIRED prerequisite)
         $writeMedicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $writeMedicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -240,7 +233,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
 
         // Simulate workflow failure
         $firstWorkflowRun->update([
-            'status'    => 'failed',
             'failed_at' => now(),
         ]);
 
@@ -294,7 +286,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         // Create completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -305,7 +296,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         // Create completed write medical summary workflow run (REQUIRED prerequisite)
         $writeMedicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $writeMedicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -358,7 +348,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         // Create completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflow->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -369,7 +358,6 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         // Create completed write medical summary workflow run (REQUIRED for write demand letter)
         $writeMedicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $writeMedicalSummaryWorkflow->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 

@@ -80,7 +80,6 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Simulate extract data completion
         $extractDataWorkflowRun->update([
-            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -107,7 +106,6 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Simulate medical summary completion
         $writeMedicalSummaryWorkflowRun->update([
-            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -128,7 +126,6 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Simulate demand letter completion
         $writeDemandLetterWorkflowRun->update([
-            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -182,7 +179,6 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -201,7 +197,6 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -238,7 +233,6 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $workflowRun = $this->service->extractData($uiDemand);
 
         $workflowRun->update([
-            'status'    => 'failed',
             'failed_at' => now(),
         ]);
 
@@ -273,14 +267,12 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         // Create multiple extract data workflow runs
         $firstRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'failed',
             'failed_at'              => now()->subHour(),
             'created_at'             => now()->subHour(),
         ]);
 
         $secondRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
             'created_at'             => now(), // Latest
         ]);
@@ -310,7 +302,6 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -374,13 +365,11 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $extractDataWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -443,7 +432,7 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'Running',
+            'started_at'             => now(),
         ]);
 
         $uiDemand = UiDemand::factory()->create([

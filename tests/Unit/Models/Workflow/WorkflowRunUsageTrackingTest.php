@@ -97,7 +97,6 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         // When - Update status to failed
         $workflowRun->update([
             'failed_at' => now(),
-            'status' => 'Task execution failed with timeout',
         ]);
         
         // Manually trigger usage event update

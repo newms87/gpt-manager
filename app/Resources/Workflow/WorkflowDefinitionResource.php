@@ -17,6 +17,7 @@ class WorkflowDefinitionResource extends ActionResource
             'max_workers' => $workflowDefinition->max_workers,
             'created_at'  => $workflowDefinition->created_at,
             'updated_at'  => $workflowDefinition->updated_at,
+            'team_id'     => $workflowDefinition->team_id,
 
             'nodes'       => fn($fields) => WorkflowNodeResource::collection($workflowDefinition->workflowNodes, $fields),
             'connections' => fn($fields) => WorkflowConnectionResource::collection($workflowDefinition->workflowConnections, $fields),

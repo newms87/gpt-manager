@@ -102,7 +102,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // 5. Create workflow run and task run
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'running',
+            'started_at'             => now(),
         ]);
 
         $taskRun = TaskRun::factory()->create([
@@ -219,7 +219,6 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Simulate workflow completion
         $workflowRun->update([
-            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -312,7 +311,6 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // First workflow run
         $firstWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -367,7 +365,6 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Second workflow run (reusing the same document)
         $secondWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -475,7 +472,6 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $failedWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'failed',
             'failed_at'              => now(),
         ]);
 
@@ -523,7 +519,6 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 

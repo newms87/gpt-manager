@@ -521,7 +521,6 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'failed',
             'failed_at'              => now(),
         ]);
 

@@ -100,7 +100,6 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'Completed',
             'completed_at' => now()
         ]);
 
@@ -126,7 +125,6 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'Completed',
             'completed_at' => now()
         ]);
 
@@ -170,7 +168,6 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'Completed',
             'completed_at' => now()
         ]);
 
@@ -224,7 +221,6 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => 'Failed', // This should cause processing to fail
             'failed_at' => now()
         ]);
 

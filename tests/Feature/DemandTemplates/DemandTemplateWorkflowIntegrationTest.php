@@ -78,7 +78,6 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Create completed medical summary workflow run (prerequisite for demand letter)
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -145,7 +144,6 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Create completed medical summary workflow run (prerequisite for demand letter)
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 
@@ -200,7 +198,6 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Create completed medical summary workflow run (prerequisite for demand letter)
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
-            'status'                 => 'completed',
             'completed_at'           => now(),
         ]);
 

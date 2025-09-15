@@ -24,7 +24,6 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
-            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -57,7 +56,6 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
         Event::fake();
 
         $workflowRun = WorkflowRun::factory()->create([
-            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
@@ -90,7 +88,7 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
 
         // Test with running workflow (should not trigger)
         $runningWorkflowRun = WorkflowRun::factory()->create([
-            'status' => 'running',
+            'started_at' => now(),
         ]);
 
         WorkflowListener::createForListener(
@@ -114,7 +112,6 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
 
         // Test with completed workflow (should trigger)
         $completedWorkflowRun = WorkflowRun::factory()->create([
-            'status'       => 'completed',
             'completed_at' => now(),
         ]);
 
