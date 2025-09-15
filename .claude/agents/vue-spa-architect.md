@@ -101,3 +101,11 @@ Before each architectural plan, your FIRST consideration must be:
 
 Always read and understand existing components/patterns BEFORE planning modifications. Never assume behavior - verify by
 examining the actual implementation.
+
+## Testing & Validation Requirements
+
+### MANDATORY Build Commands:
+
+- **Build Validation**: ALWAYS specify `yarn build` from the spa directory in your plans
+- **NEVER recommend `npm run dev` or `npm run type-check`** - ONLY `yarn build` is allowed
+- **Testing**: Include `yarn build` as a validation step in your implementation plans

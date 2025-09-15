@@ -159,6 +159,7 @@ Your reviews must enforce ABSOLUTE ZERO TOLERANCE for:
 ### MANDATORY Build Validation:
 
 - **Always verify build passes**: Run `yarn build` from spa directory after any non-trivial changes
+- **NEVER use `npm run dev` or `npm run type-check`** - ONLY `yarn build` is allowed
 - **Include build status in review**: Flag if changes will break the build
 - **DO NOT use command-line linting**: Linting is handled manually via IDE
 

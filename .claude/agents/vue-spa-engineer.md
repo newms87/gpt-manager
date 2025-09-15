@@ -382,6 +382,7 @@ async function handleAction() {
 ### MANDATORY for non-trivial frontend changes:
 
 - **Build Validation**: ALWAYS run `yarn build` from the spa directory to ensure build passes
+- **NEVER use `npm run dev` or `npm run type-check`** - ONLY `yarn build` is allowed
 - **Linting**: DO NOT use command-line linting tools - linting is handled manually via the IDE
 - Check for proper error handling and loading states
 

@@ -15,5 +15,21 @@ import {
 	WorkflowDefinitionHeaderBar,
 	WorkflowDefinitionSelectionBar
 } from "@/components/Modules/WorkflowDefinitions";
-import { activeWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/store";
+import { activeWorkflowDefinition, initWorkflowState, setActiveWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/store";
+import { useRoute, useRouter } from "vue-router";
+import { onMounted, watch } from "vue";
+
+const route = useRoute();
+const router = useRouter();
+
+onMounted(() => {
+	const workflowId = route.params.id ? parseInt(route.params.id as string) : null;
+	initWorkflowState(workflowId, router);
+});
+
+watch(() => route.params.id, (newId) => {
+	if (newId) {
+		setActiveWorkflowDefinition(parseInt(newId as string), router);
+	}
+});
 </script>

@@ -66,21 +66,25 @@ class WorkflowBuilderSeeder extends Seeder
         ]);
 
         // Create Workflow Nodes
-        $inputNode = $this->createWorkflowNode($workflowDefinition, $workflowInputTaskDef, [
-            'name' => 'Workflow Input',
-        ]);
+        $inputNode = $this->createWorkflowNode($workflowDefinition, $workflowInputTaskDef,
+            ['name' => 'Workflow Input'],
+            ['x' => 0, 'y' => 0]
+        );
 
-        $orchestratorNode = $this->createWorkflowNode($workflowDefinition, $workflowOrchestratorTaskDef, [
-            'name' => 'Workflow Orchestrator',
-        ]);
+        $orchestratorNode = $this->createWorkflowNode($workflowDefinition, $workflowOrchestratorTaskDef,
+            ['name' => 'Workflow Orchestrator'],
+            ['x' => 400, 'y' => 0]
+        );
 
-        $taskBuilderNode = $this->createWorkflowNode($workflowDefinition, $taskBuilderTaskDef, [
-            'name' => 'Task Definition Builder',
-        ]);
+        $taskBuilderNode = $this->createWorkflowNode($workflowDefinition, $taskBuilderTaskDef,
+            ['name' => 'Task Definition Builder'],
+            ['x' => 800, 'y' => 0]
+        );
 
-        $outputNode = $this->createWorkflowNode($workflowDefinition, $workflowOutputTaskDef, [
-            'name' => 'Workflow Output',
-        ]);
+        $outputNode = $this->createWorkflowNode($workflowDefinition, $workflowOutputTaskDef,
+            ['name' => 'Workflow Output',],
+            ['x' => 1200, 'y' => 0]
+        );
 
         // Create Workflow Connections
         $this->createWorkflowConnection($workflowDefinition, $inputNode, $orchestratorNode, [
@@ -161,12 +165,12 @@ class WorkflowBuilderSeeder extends Seeder
         );
     }
 
-    private function createWorkflowNode(WorkflowDefinition $workflowDefinition, TaskDefinition $taskDefinition, array $attributes): WorkflowNode
+    private function createWorkflowNode(WorkflowDefinition $workflowDefinition, TaskDefinition $taskDefinition, array $attributes, array $settings = []): WorkflowNode
     {
         $defaults = [
             'workflow_definition_id' => $workflowDefinition->id,
             'task_definition_id'     => $taskDefinition->id,
-            'settings'               => null,
+            'settings'               => $settings,
             'params'                 => null,
         ];
 
@@ -186,8 +190,8 @@ class WorkflowBuilderSeeder extends Seeder
             'workflow_definition_id' => $workflowDefinition->id,
             'source_node_id'         => $sourceNode->id,
             'target_node_id'         => $targetNode->id,
-            'source_output_port'     => null,
-            'target_input_port'      => null,
+            'source_output_port'     => 'default',
+            'target_input_port'      => 'default',
         ];
 
         return WorkflowConnection::firstOrCreate(

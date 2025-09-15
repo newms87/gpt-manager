@@ -44,6 +44,16 @@
 - Always delegate technical work to specialized agents
 - Each agent has comprehensive guidelines for their domain
 
+**MANDATORY BUILD COMMANDS:**
+- **ONLY use `yarn build`** for Vue frontend builds - NEVER `npm run dev` or `npm run type-check`
+- **ONLY use `./vendor/bin/sail test`** for Laravel backend testing
+- Follow these commands exactly - NO EXCEPTIONS
+
+**AGENT DOCUMENTATION LOCATION:**
+- **Agent files are located at:** `@.claude/agents/*.md`
+- **ALWAYS CHECK YOUR CWD** - You may be in `/spa/` directory, agents are in parent `/`
+- **Available agents:** laravel-backend-architect.md, laravel-backend-engineer.md, laravel-backend-qa-tester.md, vue-spa-architect.md, vue-spa-engineer.md, vue-spa-reviewer.md
+
 ## Agent Workflow
 
 **For All Technical Work:**

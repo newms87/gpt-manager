@@ -12,6 +12,7 @@ import {
 } from "@/types";
 import { getItem, setItem } from "quasar-ui-danx";
 import { ref } from "vue";
+import { Router } from "vue-router";
 
 const ACTIVE_WORKFLOW_DEFINITION_KEY = "dx-active-workflow-definition-id";
 
@@ -24,7 +25,7 @@ async function refreshActiveWorkflowDefinition() {
     await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value);
 }
 
-async function setActiveWorkflowDefinition(workflowDefinition: string | number | WorkflowDefinition | null) {
+async function setActiveWorkflowDefinition(workflowDefinition: string | number | WorkflowDefinition | null, router?: Router) {
     const workflowDefinitionId = typeof workflowDefinition === "object" ? workflowDefinition?.id : workflowDefinition;
     setItem(ACTIVE_WORKFLOW_DEFINITION_KEY, workflowDefinitionId);
 
@@ -35,15 +36,25 @@ async function setActiveWorkflowDefinition(workflowDefinition: string | number |
 
     activeWorkflowDefinition.value = workflowDefinitions.value.find((tw) => tw.id === workflowDefinitionId) || null;
 
+    // Update URL if router provided and ID changed
+    if (router && workflowDefinitionId && activeWorkflowDefinition.value) {
+        await router.push({
+            name: "workflow-definitions",
+            params: { id: workflowDefinitionId.toString() }
+        });
+    }
+
     if (activeWorkflowDefinition.value) {
         await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value);
         await loadWorkflowRuns();
     }
 }
 
-async function initWorkflowState() {
+async function initWorkflowState(urlWorkflowId?: number, router?: Router) {
     await loadWorkflowDefinitions();
-    await setActiveWorkflowDefinition(getItem(ACTIVE_WORKFLOW_DEFINITION_KEY));
+    // Priority: URL param > localStorage > first available
+    const workflowId = urlWorkflowId || getItem(ACTIVE_WORKFLOW_DEFINITION_KEY);
+    await setActiveWorkflowDefinition(workflowId, router);
 }
 
 async function loadWorkflowDefinitions() {

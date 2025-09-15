@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'email' => 'dan@sagesweeper.com',
+    'email' => 'dan@gpt.com',
 ];

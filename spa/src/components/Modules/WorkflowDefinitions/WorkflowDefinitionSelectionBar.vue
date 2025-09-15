@@ -10,7 +10,7 @@
             label-class="text-slate-300"
             :options="workflowDefinitions"
             :loading="isLoadingWorkflowDefinitions"
-            @update:selected="(workflowDefinition: WorkflowDefinition) => setActiveWorkflowDefinition(workflowDefinition)"
+            @update:selected="(workflowDefinition: WorkflowDefinition) => setActiveWorkflowDefinition(workflowDefinition, router)"
             @create="createAction.trigger"
             @update="input => updateAction.trigger(activeWorkflowDefinition, input)"
             @delete="workflowDefinition => deleteAction.trigger(workflowDefinition)"
@@ -55,8 +55,17 @@ import { WorkflowDefinition } from "@/types";
 import { FaSolidAnkh as WorkflowIcon } from "danx-icon";
 import { ActionButton, download, FlashMessages, importJson, SelectionMenuField } from "quasar-ui-danx";
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
-onMounted(initWorkflowState);
+const router = useRouter();
+
+onMounted(() => {
+    // Let the parent view handle initialization with route params
+    // Only init if not already called from parent
+    if (!activeWorkflowDefinition.value && !workflowDefinitions.value.length) {
+        initWorkflowState(null, router);
+    }
+});
 
 const createAction = dxWorkflowDefinition.getAction("create", { onFinish: loadWorkflowDefinitions });
 const updateAction = dxWorkflowDefinition.getAction("update");
@@ -95,7 +104,7 @@ async function onImportFromJson(event: Event) {
 
         if (workflowDefinition?.id) {
             await loadWorkflowDefinitions();
-            await setActiveWorkflowDefinition(workflowDefinition);
+            await setActiveWorkflowDefinition(workflowDefinition, router);
         } else {
             FlashMessages.error("The import failed for an unknown reason. The data was empty.");
         }
