@@ -69,20 +69,20 @@ async function setActiveWorkflowDefinition(workflowDefinition: string | number |
 
 async function fetchWorkflowById(workflowId: number): Promise<WorkflowDefinition | null> {
     try {
-        // Use the direct HTTP request method from danx to ensure proper auth and avoid store updates
-        const API_URL = import.meta.env.VITE_API_URL + "/workflow-definitions";
-        const { request } = await import("quasar-ui-danx");
-        const response = await request.get(`${API_URL}/${workflowId}`);
+        // Create a temporary workflow object to use with the details route
+        const tempWorkflow = { id: workflowId } as WorkflowDefinition;
+
+        // Use the same details route that all other workflows use
+        const response = await dxWorkflowDefinition.routes.details(tempWorkflow);
 
         // Validate that we got a proper workflow object
-        const workflow = response.item || response;
-        if (!workflow || !workflow.id || workflow.error) {
+        if (!response || !response.id || response.error) {
             throw new Error('Invalid workflow response');
         }
 
-        // Only return the workflow if the request was successful
+        // Return the fetched workflow
         // Do NOT add to workflowDefinitions list - keep list pure (team-only workflows)
-        return workflow as WorkflowDefinition;
+        return response as WorkflowDefinition;
     } catch (error) {
         console.error(`Failed to fetch workflow ${workflowId}:`, error);
 

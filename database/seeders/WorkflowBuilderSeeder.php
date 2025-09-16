@@ -18,7 +18,7 @@ class WorkflowBuilderSeeder extends Seeder
     public function run(): void
     {
         // Create required system agents (no team ownership)
-        $this->createRequiredAgents();
+        [$workflowPlannerAgent, $workflowEvaluatorAgent] = $this->createRequiredAgents();
 
         // Create the LLM Workflow Builder WorkflowDefinition (system-owned)
         $workflowDefinition = WorkflowDefinition::firstOrCreate(
@@ -47,6 +47,7 @@ class WorkflowBuilderSeeder extends Seeder
             'prompt'                => 'Analyze the user requirements and current workflow state to create a comprehensive plan with individual task specifications.',
             'output_artifact_mode'  => 'split',
             'timeout_after_seconds' => 120,
+            'agent_id'              => $workflowPlannerAgent->id,
         ]);
 
         $taskBuilderTaskDef = $this->createTaskDefinition([
@@ -63,6 +64,7 @@ class WorkflowBuilderSeeder extends Seeder
             'description'      => 'Collects completed task definitions and outputs final workflow artifacts',
             'task_runner_name' => WorkflowOutputTaskRunner::RUNNER_NAME,
             'prompt'           => null,
+            'agent_id'         => $workflowEvaluatorAgent->id,
         ]);
 
         // Create Workflow Nodes
@@ -104,11 +106,13 @@ class WorkflowBuilderSeeder extends Seeder
 
     /**
      * Create the required system agents for workflow building (no team ownership)
+     *
+     * @return array{0: Agent, 1: Agent} Returns [workflowPlannerAgent, workflowEvaluatorAgent]
      */
-    private function createRequiredAgents(): void
+    private function createRequiredAgents(): array
     {
         // Create Workflow Planner agent (system-owned)
-        Agent::firstOrCreate(
+        $workflowPlannerAgent = Agent::firstOrCreate(
             [
                 'name'    => 'Workflow Planner',
                 'team_id' => null, // System-owned agent
@@ -123,7 +127,7 @@ class WorkflowBuilderSeeder extends Seeder
         );
 
         // Create Workflow Evaluator agent (system-owned)
-        Agent::firstOrCreate(
+        $workflowEvaluatorAgent = Agent::firstOrCreate(
             [
                 'name'    => 'Workflow Evaluator',
                 'team_id' => null, // System-owned agent
@@ -138,6 +142,8 @@ class WorkflowBuilderSeeder extends Seeder
         );
 
         $this->command->info("Created system-owned Workflow Planner and Workflow Evaluator agents.");
+
+        return [$workflowPlannerAgent, $workflowEvaluatorAgent];
     }
 
     private function createTaskDefinition(array $attributes): TaskDefinition
@@ -161,7 +167,7 @@ class WorkflowBuilderSeeder extends Seeder
                 'name'    => $attributes['name'],
                 'team_id' => null, // System-owned
             ],
-            array_merge($defaults, $attributes)
+            $attributes + $defaults
         );
     }
 
@@ -180,7 +186,7 @@ class WorkflowBuilderSeeder extends Seeder
                 'task_definition_id'     => $taskDefinition->id,
                 'name'                   => $attributes['name'],
             ],
-            array_merge($defaults, $attributes)
+            $attributes + $defaults
         );
     }
 
@@ -200,7 +206,7 @@ class WorkflowBuilderSeeder extends Seeder
                 'source_node_id'         => $sourceNode->id,
                 'target_node_id'         => $targetNode->id,
             ],
-            array_merge($defaults, $attributes)
+            $attributes + $defaults
         );
     }
 }

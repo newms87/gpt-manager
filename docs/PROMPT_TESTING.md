@@ -5,6 +5,7 @@ A comprehensive testing framework for real API calls and prompt engineering vali
 ## Overview
 
 This framework provides:
+
 - **Real API Testing**: Make actual API calls to test prompts and models
 - **MCP Server Testing**: Test MCP server integrations with real endpoints
 - **Organized Structure**: Well-organized tests by category and purpose
@@ -14,39 +15,43 @@ This framework provides:
 ## Quick Start
 
 ### 1. List Available Tests
+
 ```bash
-php artisan prompt:list
+sail artisan prompt:list
 ```
 
 ### 2. List Available Resources
+
 ```bash
-php artisan prompt:resources
+sail artisan prompt:resources
 ```
 
 ### 3. Run Tests
+
 ```bash
 # Run all tests
-php artisan prompt:test --agent=1 --mcp-server=1
+sail artisan prompt:test --agent=1 --mcp-server=1
 
 # Run all tests with detailed output
-php artisan prompt:test --agent=1 --mcp-server=1 --detailed
+sail artisan prompt:test --agent=1 --mcp-server=1 --detailed
 
 # Run all tests and continue even if some fail
-php artisan prompt:test --agent=1 --mcp-server=1 --continue-on-failure
+sail artisan prompt:test --agent=1 --mcp-server=1 --continue-on-failure
 
 # Run a specific test
-php artisan prompt:test McpServer/BasicMcp --agent=1 --mcp-server=1
+sail artisan prompt:test McpServer/BasicMcp --agent=1 --mcp-server=1
 
 # Run a specific test (short name format)
-php artisan prompt:test BasicMcp --agent=1 --mcp-server=1
+sail artisan prompt:test BasicMcp --agent=1 --mcp-server=1
 
 # Save results to database
-php artisan prompt:test --save-results --agent=1 --mcp-server=1
+sail artisan prompt:test --save-results --agent=1 --mcp-server=1
 ```
 
 ## Test Structure
 
 ### Directory Organization
+
 ```
 app/Services/PromptTesting/
 ├── Tests/
@@ -60,6 +65,7 @@ app/Services/PromptTesting/
 ```
 
 ### Test Categories
+
 - **McpServer**: Tests for MCP server integrations
 - **Agent**: Tests for agent-specific functionality
 - **Workflow**: Tests for workflow and task automation
@@ -68,11 +74,13 @@ app/Services/PromptTesting/
 ## Writing Tests
 
 ### Create a New Test
+
 1. Create a test class extending `BasePromptTest`
 2. Implement the `run()` method
 3. Use assertion methods to validate results
 
 ### Example Test
+
 ```php
 <?php
 
@@ -102,6 +110,7 @@ class MyTest extends BasePromptTest
 ```
 
 ### Available Assertion Methods
+
 - `assert(bool $condition, string $description, string $errorMessage = '')`: Basic assertion
 - `assertContains(string $needle, string $haystack, string $description)`: Check if text contains substring
 - `assertNotEmpty(string $value, string $description)`: Check if value is not empty
@@ -110,6 +119,7 @@ class MyTest extends BasePromptTest
 ## Test Results
 
 ### Metrics Included
+
 - **Success/Failure**: Overall test result
 - **Duration**: Test execution time
 - **Token Usage**: Input/output tokens consumed
@@ -118,6 +128,7 @@ class MyTest extends BasePromptTest
 - **Assertions**: Individual assertion results
 
 ### Example Output
+
 ```
 === Test Results ===
 ✅ Test PASSED
@@ -146,26 +157,31 @@ Tool Call 2: get_tool_description
 ## Best Practices
 
 ### 1. Test Organization
+
 - Group related tests in subdirectories
 - Use descriptive test names
 - Include meaningful assertions
 
 ### 2. Prompt Design
+
 - Make prompts clear and specific
 - Include expected behavior descriptions
 - Test edge cases and variations
 
 ### 3. Assertions
+
 - Test both positive and negative cases
 - Check for expected content and structure
 - Verify tool calls and API interactions
 
 ### 4. Resource Management
+
 - Use appropriate agents for different test types
 - Configure MCP servers properly
 - Monitor token usage and costs
 
 ### 5. Debugging
+
 - Use `--verbose` flag for detailed output
 - Save results for later analysis
 - Check logs for error details
@@ -173,30 +189,36 @@ Tool Call 2: get_tool_description
 ## Advanced Usage
 
 ### Running All Tests
+
 ```bash
 # Run all available tests
-php artisan prompt:test --agent=1 --mcp-server=1
+sail artisan prompt:test --agent=1 --mcp-server=1
 
 # Run all tests with detailed output and continue on failures
-php artisan prompt:test --agent=1 --mcp-server=1 --detailed --continue-on-failure
+sail artisan prompt:test --agent=1 --mcp-server=1 --detailed --continue-on-failure
 
 # Run all tests and save results
-php artisan prompt:test --save-results --agent=1 --mcp-server=1
+sail artisan prompt:test --save-results --agent=1 --mcp-server=1
 ```
 
 ### Test Execution Control
+
 - **Stop on First Failure** (default): Tests stop when the first test fails
 - **Continue on Failure**: Use `--continue-on-failure` to run all tests regardless of failures
 - **Detailed Output**: Use `--detailed` to see full response content and tool call details
 
 ### Test Summary Output
+
 When running all tests, you'll see:
+
 - Individual test results with pass/fail status and duration
 - Aggregate metrics: total duration, tokens used, cost, and success rate
 - Detailed breakdown when using `--detailed` flag
 
 ### Custom Configuration
+
 Tests can be configured with custom settings:
+
 ```php
 public function setUp(array $config): void
 {
@@ -208,26 +230,30 @@ public function setUp(array $config): void
 ```
 
 ### Saving Results
+
 Results can be saved to database or log files:
+
 ```bash
-php artisan prompt:test MyTest --save-results
+sail artisan prompt:test MyTest --save-results
 ```
 
 ## Troubleshooting
 
 ### Common Issues
+
 1. **Test Class Not Found**: Ensure class name matches file name and extends BasePromptTest
-2. **Agent Not Found**: Check agent ID with `php artisan prompt:resources`
+2. **Agent Not Found**: Check agent ID with `sail artisan prompt:resources`
 3. **MCP Server Issues**: Verify MCP server configuration and connectivity
 4. **Token Limits**: Monitor token usage to avoid rate limits
 
 ### Debug Commands
+
 ```bash
 # List available resources
-php artisan prompt:resources
+sail artisan prompt:resources
 
 # Run with verbose output
-php artisan prompt:test MyTest --verbose
+sail artisan prompt:test MyTest --verbose
 
 # Check logs
 tail -f storage/logs/laravel.log
@@ -236,11 +262,13 @@ tail -f storage/logs/laravel.log
 ## Contributing
 
 ### Adding New Test Categories
+
 1. Create new subdirectory in `Tests/`
 2. Add tests following naming convention
 3. Update documentation
 
 ### Extending Base Functionality
+
 1. Add new assertion methods to `BasePromptTest`
 2. Extend `PromptTestRunner` for new features
 3. Update CLI commands as needed
