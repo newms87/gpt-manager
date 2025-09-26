@@ -26,6 +26,11 @@ class WorkflowDefinitionRepository extends ActionRepository
      */
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
+        // Prevent modifying system workflows
+        if ($model && $model->team_id === null && in_array($action, ['update', 'delete', 'add-node', 'add-connection'])) {
+            throw new ValidationError('System workflows cannot be modified');
+        }
+
         return match ($action) {
             'create' => $this->createWorkflowDefinition($data ?? []),
             'update' => $this->updateWorkflowDefinition($model, $data),
@@ -56,6 +61,11 @@ class WorkflowDefinitionRepository extends ActionRepository
      */
     public function updateWorkflowDefinition(WorkflowDefinition $workflowDefinition, array $data): WorkflowDefinition
     {
+        // Prevent modifying system workflows
+        if ($workflowDefinition->team_id === null) {
+            throw new ValidationError('System workflows cannot be modified');
+        }
+
         $workflowDefinition->fill($data)->validate()->save($data);
 
         return $workflowDefinition;
@@ -66,6 +76,11 @@ class WorkflowDefinitionRepository extends ActionRepository
      */
     public function addNode(WorkflowDefinition $workflowDefinition, ?array $input = []): WorkflowNode
     {
+        // Prevent modifying system workflows
+        if ($workflowDefinition->team_id === null) {
+            throw new ValidationError('System workflows cannot be modified');
+        }
+
         // First we must guarantee we have an agent (from the users team) selected to add to the definition
         $taskDefinition = team()->taskDefinitions()->find($input['task_definition_id'] ?? null);
         $taskRunnerName = $input['task_runner_name'] ?? null;
@@ -103,6 +118,11 @@ class WorkflowDefinitionRepository extends ActionRepository
      */
     public function addConnection(WorkflowDefinition $workflowDefinition, ?array $input = []): WorkflowConnection
     {
+        // Prevent modifying system workflows
+        if ($workflowDefinition->team_id === null) {
+            throw new ValidationError('System workflows cannot be modified');
+        }
+
         $sourceNode = $workflowDefinition->workflowNodes()->find($input['source_node_id'] ?? null);
         $targetNode = $workflowDefinition->workflowNodes()->find($input['target_node_id'] ?? null);
 
