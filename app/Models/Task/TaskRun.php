@@ -40,6 +40,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         'failed_at',
         'skipped_at',
         'task_input_id',
+        'task_process_error_count',
     ];
 
     public array $relationCounters = [

@@ -41,6 +41,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         'percent_complete',
         'activity',
         'meta',
+        'error_count',
     ];
 
     protected array $keywordFields = [

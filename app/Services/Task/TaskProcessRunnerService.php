@@ -11,6 +11,7 @@ use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowStatesContract;
+use App\Services\Task\TaskProcessErrorTrackingService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as EloquentCollection;
@@ -168,6 +169,9 @@ class TaskProcessRunnerService
             static::log("TaskProcess finished running: $taskProcess");
         } catch(Throwable $throwable) {
             static::log("TaskProcess failed: $taskProcess\n" . $throwable->getMessage());
+
+            // Update error counts before setting failure status (fallback in case JobDispatch event doesn't catch it)
+            app(TaskProcessErrorTrackingService::class)->updateTaskProcessErrorCount($taskProcess);
 
             if ($throwable instanceof NoTokenFoundException) {
                 $taskProcess->failed_at = now();

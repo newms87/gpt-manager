@@ -9,7 +9,7 @@ use App\Listeners\UiDemandUsageSubscriber;
 use App\Listeners\WorkflowBuilder\WorkflowBuilderCompletedListener;
 use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Workflow\WorkflowRun;
-use DB;
+use App\Services\Task\TaskProcessErrorTrackingService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Newms87\Danx\Helpers\ModelHelper;
@@ -51,19 +51,19 @@ class EventServiceProvider extends ServiceProvider
         });
 
         JobDispatch::updated(function (JobDispatch $jobDispatch) {
-            // Notify the WorkflowRuns when a job dispatch worker has changed state
+            // Check for errors on ANY status change - errors can occur at any point
             if ($jobDispatch->wasChanged('status')) {
-                $dispatchable = DB::table('job_dispatchables')
-                    ->where('job_dispatch_id', $jobDispatch->id)
-                    ->where('model_type', WorkflowRun::class)
-                    ->first();
+                // Update error counts for any associated TaskProcesses
+                app(TaskProcessErrorTrackingService::class)
+                    ->updateErrorCountsForJobDispatch($jobDispatch);
 
-                if ($dispatchable) {
-                    $workflowRun = WorkflowRun::find($dispatchable->model_id);
+                // Notify the WorkflowRuns when a job dispatch worker has changed state
+                $workflowRuns = WorkflowRun::whereHas('jobDispatches', function ($query) use ($jobDispatch) {
+                    $query->where('job_dispatch.id', $jobDispatch->id);
+                })->get();
 
-                    if ($workflowRun) {
-                        $workflowRun->updateActiveWorkersCount();
-                    }
+                foreach ($workflowRuns as $workflowRun) {
+                    $workflowRun->updateActiveWorkersCount();
                 }
             }
 

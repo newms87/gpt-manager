@@ -30,9 +30,9 @@ class JobDispatchUpdatedEvent extends ModelSavedEvent
             $workflowRun = WorkflowRun::find($dispatchable->model_id);
 
             if ($workflowRun) {
-                $userIds = $workflowRun->workflowDefinition->team->users
+                $userIds = $workflowRun->workflowDefinition->team?->users
                     ->pluck('user_id')
-                    ->toArray();
+                    ->toArray() ?? [];
 
                 foreach($userIds as $userId) {
                     if (cache()->get('subscribe:workflow-job-dispatches:' . $userId . ':' . $workflowRun->id)) {
