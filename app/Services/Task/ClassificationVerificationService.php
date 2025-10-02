@@ -33,7 +33,6 @@ class ClassificationVerificationService
             [
                 'model'       => $model,
                 'description' => 'Automated agent for classification verification and correction',
-                'api_options' => ['temperature' => 0],
                 'retry_count' => 2,
             ]
         );
@@ -287,6 +286,7 @@ class ClassificationVerificationService
         // Run the thread with JSON schema response format
         $threadRun = (new AgentThreadService())
             ->withResponseFormat($responseSchema)
+            ->withTimeout(config('ai.classification_verification.timeout'))
             ->run($agentThread);
 
         if (!$threadRun->lastMessage || !$threadRun->lastMessage->content) {

@@ -91,7 +91,6 @@ class ClassificationVerificationServiceTest extends TestCase
         $this->assertNotNull($agent);
         $this->assertEquals('Test Classification Verification Agent', $agent->name);
         $this->assertEquals('test-model', $agent->model);
-        $this->assertEquals(0, $agent->api_options['temperature']);
     }
 
     #[Test]

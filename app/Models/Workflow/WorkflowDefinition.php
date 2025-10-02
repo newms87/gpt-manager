@@ -7,6 +7,7 @@ use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Team\Team;
 use App\Services\Task\Runners\WorkflowInputTaskRunner;
 use App\Services\Workflow\WorkflowExportService;
+use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,7 +22,7 @@ use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class WorkflowDefinition extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use ActionModelTrait, HasFactory, AuditableTrait, HasRelationCountersTrait, ResourcePackageableTrait, SoftDeletes;
+    use ActionModelTrait, HasFactory, AuditableTrait, HasRelationCountersTrait, ResourcePackageableTrait, SoftDeletes, HasDebugLogging;
 
     protected $fillable = [
         'name',

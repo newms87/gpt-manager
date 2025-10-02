@@ -111,14 +111,8 @@ class TaskProcessErrorTrackingTest extends TestCase
         // Create a job dispatch with errors
         $jobDispatch = $this->createJobDispatchWithErrors(2);
 
-        // Associate the job dispatch with the task process via job_dispatchables
-        \DB::table('job_dispatchables')->insert([
-            'job_dispatch_id' => $jobDispatch->id,
-            'model_type' => TaskProcess::class,
-            'model_id' => $this->taskProcess->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Associate the job dispatch with the task process
+        $this->taskProcess->jobDispatches()->attach($jobDispatch->id);
 
         // Update error count from job dispatch
         $this->service->updateErrorCountsForJobDispatch($jobDispatch);
@@ -176,13 +170,7 @@ class TaskProcessErrorTrackingTest extends TestCase
         ]);
 
         // Associate with task process
-        \DB::table('job_dispatchables')->insert([
-            'job_dispatch_id' => $jobDispatch->id,
-            'model_type' => TaskProcess::class,
-            'model_id' => $this->taskProcess->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $this->taskProcess->jobDispatches()->attach($jobDispatch->id);
 
         // Create audit request and log errors
         $auditRequest = AuditRequest::create([

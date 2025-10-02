@@ -34,11 +34,9 @@ class ClassificationDeduplicationService
                 'model'       => $model,
                 'description' => 'Automated agent for data value deduplication and normalization',
                 'api_options' => [
-                    'temperature' => 0,
-                    'reasoning'   => [
+                    'reasoning' => [
                         'effort' => 'medium',
                     ],
-                    'timeout'     => 180,
                 ],
                 'retry_count' => 2,
             ]
@@ -221,6 +219,7 @@ class ClassificationDeduplicationService
         // Run the thread with JSON schema response format
         $threadRun = (new AgentThreadService())
             ->withResponseFormat($responseSchema)
+            ->withTimeout(config('ai.classification_deduplication.timeout'))
             ->run($agentThread);
 
         if (!$threadRun->lastMessage || !$threadRun->lastMessage->content) {

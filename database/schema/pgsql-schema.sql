@@ -209,7 +209,7 @@ ALTER SEQUENCE gpt_manager.agent_thread_runs_id_seq OWNED BY gpt_manager.agent_t
 
 CREATE TABLE gpt_manager.agent_threads (
     id bigint NOT NULL,
-    team_id bigint,
+    team_id bigint NULL,
     user_id bigint,
     agent_id bigint,
     name text,

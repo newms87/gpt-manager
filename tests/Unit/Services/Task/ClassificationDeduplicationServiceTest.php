@@ -95,7 +95,6 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $this->assertNotNull($agent);
         $this->assertEquals('Test Data Normalization Agent', $agent->name);
         $this->assertEquals('test-model', $agent->model);
-        $this->assertEquals(0, $agent->api_options['temperature']);
     }
 
     #[Test]

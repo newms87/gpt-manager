@@ -15,12 +15,14 @@ return [
     'classification_deduplication' => [
         'agent_name' => 'Data Normalization Agent',
         'model'      => env('AI_CLASSIFICATION_DEDUP_MODEL', 'gpt-5'),
+        'timeout'    => env('AI_CLASSIFICATION_DEDUP_TIMEOUT', 600),
     ],
 
     // Classification verification agent configuration
     'classification_verification'  => [
         'agent_name' => 'Classification Verification Agent',
         'model'      => env('AI_CLASSIFICATION_VERIFICATION_MODEL', 'gpt-5'),
+        'timeout'    => env('AI_CLASSIFICATION_VERIFICATION_TIMEOUT', 300),
     ],
     'models'                       => [
         'gpt-5'                             => [
