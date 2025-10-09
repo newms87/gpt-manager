@@ -5,10 +5,10 @@
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <h1 class="text-2xl font-bold text-slate-800">
-                            Instruction Templates
+                            Instructions
                         </h1>
                         <p class="text-slate-600 mt-1">
-                            Create and manage instruction templates for writing the medical treatment summaries
+                            Create and manage instructions for writing the medical treatment summaries
                         </p>
                     </div>
 
@@ -37,7 +37,7 @@
                 <div class="bg-white rounded-lg p-8 max-w-md mx-auto border border-slate-200 shadow-sm">
                     <FaSolidFileLines class="w-16 h-16 text-slate-400 mx-auto mb-4" />
                     <h3 class="text-lg font-medium text-slate-800 mb-2">No templates yet</h3>
-                    <p class="text-slate-600 mb-4">Get started by creating your first instruction template</p>
+                    <p class="text-slate-600 mb-4">Get started by creating your first instruction</p>
                     <ActionButton
                         class="mt-4"
                         type="create"
@@ -89,7 +89,7 @@ const instructionTemplates = ref<WorkflowInput[]>([]);
 const isLoading = ref(false);
 const templateToDelete = ref<WorkflowInput | null>(null);
 
-// Load instruction templates with proper filtering
+// Load instructions with proper filtering
 const loadInstructionTemplates = async () => {
     try {
         isLoading.value = true;
@@ -102,7 +102,7 @@ const loadInstructionTemplates = async () => {
 
         instructionTemplates.value = response.data;
     } catch (error) {
-        console.error("Error loading instruction templates:", error);
+        console.error("Error loading instructions:", error);
         instructionTemplates.value = [];
     } finally {
         isLoading.value = false;
@@ -124,7 +124,7 @@ const visibleTemplates = computed(() =>
 
 const generateTemplateName = () => {
     const count = instructionTemplates.value.length + 1;
-    return `Instruction Template ${count}`;
+    return `Instruction ${count}`;
 };
 
 const newTemplateData = computed(() => ({

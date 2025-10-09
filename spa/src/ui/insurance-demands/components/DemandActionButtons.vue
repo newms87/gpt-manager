@@ -37,7 +37,7 @@
             @click="showDemandTemplateSelector = true"
         />
 
-        <!-- Instruction Template Selector Dialog -->
+        <!-- Instruction Selector Dialog -->
         <InstructionTemplateSelector
             v-if="showInstructionTemplateSelector"
             :demand="demand"

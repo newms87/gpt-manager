@@ -1,7 +1,7 @@
 <template>
     <ConfirmDialog
         class="ui-mode"
-        :title="currentView === 'selector' ? 'Select an Instruction Template for Writing Medical Summary' : 'Manage Instruction Templates'"
+        :title="currentView === 'selector' ? 'Select an Instruction for Writing Medical Summary' : 'Manage Instructions'"
         content-class="w-[90vw] max-w-4xl"
         :confirm-text="currentView === 'selector' ? 'Write Medical Summary' : 'Done'"
         cancel-text="Cancel"
@@ -24,7 +24,7 @@
             <!-- Loading State -->
             <div v-if="isLoadingInstructionTemplates" class="flex flex-col items-center justify-center py-16">
                 <QSpinner size="lg" color="green-500" />
-                <div class="text-gray-600 mt-4 font-medium">Loading instruction templates...</div>
+                <div class="text-gray-600 mt-4 font-medium">Loading instructions...</div>
             </div>
 
             <!-- Empty State -->
@@ -33,8 +33,8 @@
                 class="flex flex-col items-center justify-center py-16 bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl shadow-lg"
             >
                 <FaSolidFile class="w-16 text-green-500 mb-4" />
-                <div class="text-xl font-semibold text-gray-900 mb-2">No instruction templates available</div>
-                <div class="text-gray-600 mb-6">Create your first instruction template to get started</div>
+                <div class="text-xl font-semibold text-gray-900 mb-2">No instructions available</div>
+                <div class="text-gray-600 mb-6">Create your first instruction to get started</div>
                 <ActionButton
                     type="create"
                     label="Create Template"
@@ -45,10 +45,10 @@
 
             <!-- Templates Grid -->
             <div v-else class="space-y-6">
-                <!-- Instruction Templates Section -->
+                <!-- Instructions Section -->
                 <div>
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-900">Instruction Templates</h3>
+                        <h3 class="text-lg font-semibold text-gray-900">Instructions</h3>
                         <ActionButton
                             type="create"
                             label="Manage Templates"
@@ -94,7 +94,7 @@
                     </div>
 
                     <div v-if="instructionTemplates.length > 0" class="text-xs text-slate-500 mt-2">
-                        Select an instruction template (optional) to provide specific guidance for writing the medical
+                        Select an instruction (optional) to provide specific guidance for writing the medical
                         summary.
                     </div>
                 </div>
@@ -151,12 +151,12 @@ const loadedInstructionTemplates = ref<WorkflowInput[]>([]);
 const currentView = ref<"selector" | "manager">("selector");
 const templateManagerRef = ref<InstanceType<typeof InstructionTemplateManager> | null>(null);
 
-// Computed properties for instruction templates
+// Computed properties for instruction
 const instructionTemplates = computed(() => {
     return loadedInstructionTemplates.value;
 });
 
-// Load global instruction templates for medical summary
+// Load global instructions for medical summary
 const loadInstructionTemplates = async () => {
     try {
         isLoadingInstructionTemplates.value = true;
@@ -169,7 +169,7 @@ const loadInstructionTemplates = async () => {
 
         loadedInstructionTemplates.value = result.data || [];
     } catch (error) {
-        console.error("Error loading instruction templates:", error);
+        console.error("Error loading instructions:", error);
         loadedInstructionTemplates.value = [];
     } finally {
         isLoadingInstructionTemplates.value = false;

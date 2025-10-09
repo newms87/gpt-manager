@@ -2,7 +2,7 @@
     <div class="space-y-6">
         <!-- Header -->
         <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">Manage Instruction Templates</h3>
+            <h3 class="text-lg font-semibold text-gray-900">Manage Instructions</h3>
             <ActionButton
                 type="create"
                 label="New Template"
@@ -24,7 +24,7 @@
             <div class="bg-white rounded-lg p-8 border border-slate-200 shadow-sm">
                 <FaSolidFileLines class="w-16 h-16 text-slate-400 mx-auto mb-4" />
                 <h3 class="text-lg font-medium text-slate-800 mb-2">No templates yet</h3>
-                <p class="text-slate-600 mb-4">Get started by creating your first instruction template</p>
+                <p class="text-slate-600 mb-4">Get started by creating your first instruction</p>
                 <ActionButton
                     class="mt-4"
                     type="create"
@@ -78,7 +78,7 @@ const instructionTemplates = ref<WorkflowInput[]>([]);
 const isLoading = ref(false);
 const templateToDelete = ref<WorkflowInput | null>(null);
 
-// Load instruction templates with proper filtering
+// Load instructions with proper filtering
 const loadInstructionTemplates = async () => {
     try {
         isLoading.value = true;
@@ -92,7 +92,7 @@ const loadInstructionTemplates = async () => {
         instructionTemplates.value = response.data;
         emit("templates-updated");
     } catch (error) {
-        console.error("Error loading instruction templates:", error);
+        console.error("Error loading instructions:", error);
         instructionTemplates.value = [];
     } finally {
         isLoading.value = false;
@@ -114,7 +114,7 @@ const visibleTemplates = computed(() =>
 
 const generateTemplateName = () => {
     const count = instructionTemplates.value.length + 1;
-    return `Instruction Template ${count}`;
+    return `Instruction ${count}`;
 };
 
 const newTemplateData = computed(() => ({
