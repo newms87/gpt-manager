@@ -3,7 +3,6 @@
 namespace App\Events;
 
 use App\Models\Demand\UiDemand;
-use App\Resources\UiDemandResource;
 use Illuminate\Broadcasting\PrivateChannel;
 use Newms87\Danx\Events\ModelSavedEvent;
 
@@ -26,6 +25,11 @@ class UiDemandUpdatedEvent extends ModelSavedEvent
 
     public function data(): array
     {
-        return UiDemandResource::make($this->uiDemand);
+        return [
+            'id'     => $this->uiDemand->id,
+            'name'   => $this->uiDemand->name,
+            'status' => $this->uiDemand->status,
+            '__type' => 'UiDemandResource',
+        ];
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
 use App\Models\Demand\TemplateVariable;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
 use App\Resources\TeamObject\TeamObjectForAgentsResource;
@@ -275,8 +276,13 @@ class TemplateVariableResolutionService
         $agent        = $this->findOrCreateVariableExtractorAgent($teamId);
         $thread       = $this->createAgentThread($agent, $teamId, $instructions, $artifacts);
 
+        // Get the response schema
+        $responseSchema = $this->getVariableResolutionResponseSchema();
+
         // Run the agent
-        $threadRun = app(AgentThreadService::class)->run($thread);
+        $threadRun = app(AgentThreadService::class)
+            ->withResponseFormat($responseSchema)
+            ->run($thread);
 
         if (!$threadRun->isCompleted()) {
             throw new ValidationError('AI variable resolution failed: ' . $threadRun->error_message, 500);
@@ -286,8 +292,18 @@ class TemplateVariableResolutionService
         $response     = $this->getAssistantResponse($thread);
         $responseData = $this->parseAiResponse($response);
 
+        // Convert array of {name, value} objects to name => value map
+        $variableValues = [];
+        if (isset($responseData['variables']) && is_array($responseData['variables'])) {
+            foreach ($responseData['variables'] as $variable) {
+                if (isset($variable['name']) && isset($variable['value'])) {
+                    $variableValues[$variable['name']] = $variable['value'];
+                }
+            }
+        }
+
         return [
-            'values' => $responseData['variables'] ?? [],
+            'values' => $variableValues,
             'title'  => $responseData['title'] ?? '',
         ];
     }
@@ -319,12 +335,8 @@ class TemplateVariableResolutionService
             $instructions .= "\n";
         }
 
-        $instructions .= "Also generate an appropriate title for this demand based on the extracted variables.\n\n";
-        $instructions .= "Return your response as JSON with this structure:\n";
-        $instructions .= "{\n";
-        $instructions .= "  \"variables\": {\"variable_name\": \"value\", ...},\n";
-        $instructions .= "  \"title\": \"Generated Title\"\n";
-        $instructions .= "}";
+        $instructions .= "Also generate an appropriate title for this demand based on the extracted variables. ";
+        $instructions .= "Generate appropriate values for all variables and create a descriptive title based on the extracted information.";
 
         return $instructions;
     }
@@ -497,5 +509,50 @@ class TemplateVariableResolutionService
         }
 
         return '';
+    }
+
+    /**
+     * Get the JSON schema for variable resolution responses
+     */
+    protected function getVariableResolutionResponseSchema(): SchemaDefinition
+    {
+        $schema = [
+            'type' => 'object',
+            'properties' => [
+                'variables' => [
+                    'type' => 'array',
+                    'description' => 'Array of extracted variable values',
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'name' => [
+                                'type' => 'string',
+                                'description' => 'The variable name',
+                            ],
+                            'value' => [
+                                'type' => 'string',
+                                'description' => 'The extracted value for the variable',
+                            ],
+                        ],
+                        'required' => ['name', 'value'],
+                        'additionalProperties' => false,
+                    ],
+                ],
+                'title' => [
+                    'type' => 'string',
+                    'description' => 'Generated title for the demand'
+                ]
+            ],
+            'required' => ['variables', 'title'],
+            'additionalProperties' => false,
+        ];
+
+        return SchemaDefinition::firstOrCreate([
+            'team_id' => null,
+            'name' => 'Template Variable Resolution Response',
+        ], [
+            'description' => 'JSON schema for template variable resolution responses',
+            'schema' => $schema,
+        ]);
     }
 }

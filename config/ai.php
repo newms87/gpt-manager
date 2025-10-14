@@ -24,6 +24,14 @@ return [
         'model'      => env('AI_CLASSIFICATION_VERIFICATION_MODEL', 'gpt-5'),
         'timeout'    => env('AI_CLASSIFICATION_VERIFICATION_TIMEOUT', 300),
     ],
+
+    // Artifact naming configuration
+    'artifact_naming'              => [
+        'model'                  => env('ARTIFACT_NAMING_MODEL', 'gpt-5-nano'),
+        'timeout'                => env('ARTIFACT_NAMING_TIMEOUT', 120),
+        'max_batch_size'         => env('ARTIFACT_NAMING_MAX_BATCH_SIZE', 20),
+        'content_preview_length' => 500,
+    ],
     'models'                       => [
         'gpt-5'                             => [
             'api'          => OpenAiApi::class,

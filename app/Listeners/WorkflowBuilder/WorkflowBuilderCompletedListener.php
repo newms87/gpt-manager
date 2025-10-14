@@ -9,6 +9,7 @@ use App\Traits\HasDebugLogging;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Newms87\Danx\Helpers\LockHelper;
 
 class WorkflowBuilderCompletedListener implements ShouldQueue
 {
@@ -36,41 +37,72 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
             return;
         }
 
+        // Check if already completed or failed - prevents re-processing
+        if ($workflowBuilderChat->status === WorkflowBuilderChat::STATUS_COMPLETED ||
+            $workflowBuilderChat->status === WorkflowBuilderChat::STATUS_FAILED) {
+            static::log('already_completed', [
+                'workflow_run_id' => $workflowRun->id,
+                'chat_id'         => $workflowBuilderChat->id,
+                'status'          => $workflowBuilderChat->status,
+            ]);
+            return;
+        }
+
         // Verify this is the expected workflow run for the chat
         if ($workflowBuilderChat->current_workflow_run_id !== $workflowRun->id) {
             static::log('workflow_run_mismatch', [
                 'workflow_run_id' => $workflowRun->id,
                 'expected_run_id' => $workflowBuilderChat->current_workflow_run_id,
-                'chat_id' => $workflowBuilderChat->id,
+                'chat_id'         => $workflowBuilderChat->id,
             ]);
             return;
         }
 
+        // Acquire lock to prevent race conditions
+        LockHelper::acquire($workflowBuilderChat);
+
         try {
-            // Call WorkflowBuilderService to process the completion
-            app(WorkflowBuilderService::class)->processWorkflowCompletion($workflowBuilderChat, $workflowRun);
+            // Refresh and double-check after acquiring lock
+            $workflowBuilderChat->refresh();
 
-            static::log('processed_completion', [
-                'workflow_run_id' => $workflowRun->id,
-                'chat_id' => $workflowBuilderChat->id,
-                'new_status' => $workflowBuilderChat->fresh()->status,
-            ]);
-        } catch (Exception $e) {
-            static::log('processing_failed', [
-                'workflow_run_id' => $workflowRun->id,
-                'chat_id' => $workflowBuilderChat->id,
-                'error' => $e->getMessage(),
-                'error_class' => get_class($e),
-            ]);
+            if ($workflowBuilderChat->status === WorkflowBuilderChat::STATUS_COMPLETED ||
+                $workflowBuilderChat->status === WorkflowBuilderChat::STATUS_FAILED) {
+                static::log('completed_by_another_job', [
+                    'workflow_run_id' => $workflowRun->id,
+                    'chat_id'         => $workflowBuilderChat->id,
+                    'status'          => $workflowBuilderChat->status,
+                ]);
+                return;
+            }
 
-            // Update chat status to failed if processing fails
-            $workflowBuilderChat->updatePhase(WorkflowBuilderChat::STATUS_FAILED, [
-                'processing_error' => $e->getMessage(),
-                'processing_failed_at' => now()->toISOString(),
-            ]);
+            try {
+                // Call WorkflowBuilderService to process the completion
+                app(WorkflowBuilderService::class)->processWorkflowCompletion($workflowBuilderChat, $workflowRun);
 
-            // Re-throw to ensure the queue job fails and can be retried
-            throw $e;
+                static::log('processed_completion', [
+                    'workflow_run_id' => $workflowRun->id,
+                    'chat_id'         => $workflowBuilderChat->id,
+                    'new_status'      => $workflowBuilderChat->fresh()->status,
+                ]);
+            } catch (Exception $e) {
+                static::log('processing_failed', [
+                    'workflow_run_id' => $workflowRun->id,
+                    'chat_id'         => $workflowBuilderChat->id,
+                    'error'           => $e->getMessage(),
+                    'error_class'     => get_class($e),
+                ]);
+
+                // Update chat status to failed if processing fails
+                $workflowBuilderChat->updatePhase(WorkflowBuilderChat::STATUS_FAILED, [
+                    'processing_error'      => $e->getMessage(),
+                    'processing_failed_at'  => now()->toISOString(),
+                ]);
+
+                // Re-throw to ensure the queue job fails and can be retried
+                throw $e;
+            }
+        } finally {
+            LockHelper::release($workflowBuilderChat);
         }
     }
 

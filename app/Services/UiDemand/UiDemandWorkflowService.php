@@ -153,8 +153,8 @@ TEXT;
 
     protected function handleWorkflowSuccess(UiDemand $uiDemand, WorkflowRun $workflowRun): void
     {
-        $workflowName    = $workflowRun->workflowDefinition->name;
-        $outputArtifacts = $workflowRun->collectFinalOutputArtifacts();
+        $workflowName        = $workflowRun->workflowDefinition->name;
+        $outputArtifacts     = $workflowRun->collectFinalOutputArtifacts();
 
         if ($workflowName === config('ui-demands.workflows.extract_data')) {
             $metadata = [

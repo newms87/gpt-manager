@@ -26,11 +26,11 @@ class TeamObjectUpdatedEvent extends ModelSavedEvent
     public function data(): array
     {
         return [
-            'id' => $this->teamObject->id,
-            'root_object_id' => $this->teamObject->root_object_id ?? $this->teamObject->id,
+            'id'                   => $this->teamObject->id,
+            'root_object_id'       => $this->teamObject->root_object_id ?? $this->teamObject->id,
             'schema_definition_id' => $this->teamObject->schema_definition_id,
-            'updated_at' => $this->teamObject->updated_at,
-            '__type' => 'TeamObjectEvent',
+            'updated_at'           => $this->teamObject->updated_at,
+            '__type'               => 'TeamObjectEvent',
         ];
     }
 }

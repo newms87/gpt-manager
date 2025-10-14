@@ -15,9 +15,11 @@ class AgentThreadMessageStreamEvent implements ShouldBroadcast
 
     public function __construct(
         protected AgentThreadMessage $message,
-        protected string $content,
-        protected bool $isComplete = false
-    ) {}
+        protected string             $content,
+        protected bool               $isComplete = false
+    )
+    {
+    }
 
     /**
      * Get the channels the event should broadcast on.
@@ -35,11 +37,11 @@ class AgentThreadMessageStreamEvent implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'message_id' => $this->message->id,
-            'thread_id' => $this->message->agent_thread_id,
-            'content' => $this->content,
+            'message_id'  => $this->message->id,
+            'thread_id'   => $this->message->agent_thread_id,
+            'content'     => $this->content,
             'is_complete' => $this->isComplete,
-            'timestamp' => now()->toIso8601String(),
+            'timestamp'   => now()->toIso8601String(),
         ];
     }
 

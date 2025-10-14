@@ -22,6 +22,9 @@ class AgentThreadUpdatedEvent extends ModelSavedEvent
     public function data(): array
     {
         // Send minimal thread data via WebSocket, frontend will fetch full data as needed
-        return AgentThreadResource::make($this->agentThread);
+        $data = AgentThreadResource::make($this->agentThread);
+        unset($data['logs']);
+
+        return $data;
     }
 }
