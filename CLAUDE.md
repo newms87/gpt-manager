@@ -97,28 +97,32 @@
    - **Vue changes**: Use `vue-spa-reviewer` for quality assurance
    - **Laravel changes**: Use `laravel-backend-qa-tester` for testing and QA
 
-## 🚨 CRITICAL: Preventing Infinite Agent Loops
+## 🚨 CRITICAL: Agent Behavior and Instructions
 
-**WHEN CALLING ANY AGENT, YOU MUST ALWAYS INCLUDE THIS IN YOUR PROMPT:**
+**ALL AGENTS NOW READ `AGENT_CORE_BEHAVIORS.md` AUTOMATICALLY**
 
-```
-CRITICAL: You are already running as a specialized agent. DO NOT call any other agents or use the Task tool. You have direct access to all tools you need (Read, Write, Edit, Bash, etc.). Make all changes directly using these tools.
-```
+Every agent has been configured to read `AGENT_CORE_BEHAVIORS.md` as their FIRST task, which contains:
+- Anti-infinite-loop instructions (NEVER call other agents)
+- Git operations restrictions (READ ONLY)
+- Zero tech debt policy
+- Build commands and tool usage guidelines
 
-**Why This Is Required:**
-- Agents calling agents creates infinite loops
-- Each agent already has full access to all necessary tools
-- Agents should work directly with files, not delegate further
+**YOU DO NOT NEED TO INCLUDE THESE INSTRUCTIONS IN YOUR PROMPTS ANYMORE**
+
+The agents will automatically:
+1. Add "Read AGENT_CORE_BEHAVIORS.md in full" to their todo list
+2. Add "Read [domain-specific guide]" to their todo list
+3. Read both files before starting work
+4. Follow all the rules defined in those guides
 
 **Example of CORRECT agent call:**
 ```
 Task(vue-spa-engineer): "Change AI Instructions field to use MarkdownEditor.
 
-CRITICAL: You are already running as a specialized agent. DO NOT call any other agents or use the Task tool. Make all changes directly using Read, Write, Edit tools.
-
 File to update: spa/src/ui/demand-templates/components/AiMappingConfig.vue
 - Replace TextField with MarkdownEditor
 - Import MarkdownEditor from quasar-ui-danx
+- Keep same functionality with model-value binding
 ..."
 ```
 
