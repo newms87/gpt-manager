@@ -273,4 +273,80 @@ class DemandTemplateTest extends AuthenticatedTestCase
         // Then
         $this->assertNull($docId);
     }
+
+    // =====================================================
+    // TEMPLATE VARIABLES RELATIONSHIP TESTS
+    // =====================================================
+
+    public function test_templateVariables_relationship_exists(): void
+    {
+        // Given
+        $template = DemandTemplate::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+        $variable1 = \App\Models\Demand\TemplateVariable::factory()->create([
+            'demand_template_id' => $template->id,
+            'name' => 'Variable 1',
+        ]);
+        $variable2 = \App\Models\Demand\TemplateVariable::factory()->create([
+            'demand_template_id' => $template->id,
+            'name' => 'Variable 2',
+        ]);
+
+        // When
+        $variables = $template->templateVariables;
+
+        // Then
+        $this->assertCount(2, $variables);
+        $this->assertTrue($variables->contains($variable1));
+        $this->assertTrue($variables->contains($variable2));
+    }
+
+    public function test_templateVariables_ordered_by_name(): void
+    {
+        // Given
+        $template = DemandTemplate::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+        $varZ = \App\Models\Demand\TemplateVariable::factory()->create([
+            'demand_template_id' => $template->id,
+            'name' => 'Zebra',
+        ]);
+        $varA = \App\Models\Demand\TemplateVariable::factory()->create([
+            'demand_template_id' => $template->id,
+            'name' => 'Apple',
+        ]);
+        $varM = \App\Models\Demand\TemplateVariable::factory()->create([
+            'demand_template_id' => $template->id,
+            'name' => 'Mango',
+        ]);
+
+        // When
+        $variables = $template->templateVariables;
+
+        // Then
+        $this->assertCount(3, $variables);
+        $this->assertEquals('Apple', $variables->get(0)->name);
+        $this->assertEquals('Mango', $variables->get(1)->name);
+        $this->assertEquals('Zebra', $variables->get(2)->name);
+    }
+
+    public function test_template_variables_json_property_not_in_fillable(): void
+    {
+        // Given
+        $fillable = (new DemandTemplate())->getFillable();
+
+        // Then
+        $this->assertNotContains('template_variables', $fillable);
+    }
+
+    public function test_template_variables_not_in_casts(): void
+    {
+        // Given
+        $template = new DemandTemplate();
+        $casts = $template->getCasts();
+
+        // Then
+        $this->assertArrayNotHasKey('template_variables', $casts);
+    }
 }

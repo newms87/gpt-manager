@@ -335,13 +335,12 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'created_at'  => now()->toIsoString(),
         ];
 
-        $refinedMapping = [
-            'title'     => 'Test Document',
-            'variables' => [
+        $resolution = [
+            'values' => [
                 'client_name' => 'John Doe',
                 'date'        => '2024-01-01',
             ],
-            'reasoning' => 'Mapped based on available data',
+            'title' => 'Test Document',
         ];
 
         // When - Use reflection to test the protected method
@@ -349,7 +348,7 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $method     = $reflection->getMethod('createOutputArtifact');
         $method->setAccessible(true);
 
-        $result = $method->invoke($runner, $newDocument, $refinedMapping);
+        $result = $method->invoke($runner, $newDocument, $resolution);
 
         // Then
         $this->assertInstanceOf(Artifact::class, $result);
@@ -357,6 +356,7 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertStringContainsString('Successfully created Google Docs document', $result->text_content);
         $this->assertEquals($newDocument['url'], $result->meta['google_doc_url']);
         $this->assertEquals($newDocument['document_id'], $result->meta['google_doc_id']);
-        $this->assertEquals($refinedMapping['variables'], $result->meta['variable_mapping']);
+        $this->assertEquals($resolution['values'], $result->meta['variable_mapping']);
+        $this->assertEquals($resolution['title'], $result->meta['resolved_title']);
     }
 }

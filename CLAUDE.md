@@ -49,6 +49,27 @@
 - **ONLY use `./vendor/bin/sail test`** for Laravel backend testing
 - Follow these commands exactly - NO EXCEPTIONS
 
+**🚨 CRITICAL: GIT OPERATIONS - READ ONLY!**
+- **NEVER USE GIT COMMANDS THAT MAKE CHANGES**
+- **ONLY READ-ONLY GIT COMMANDS ALLOWED:**
+  - `git status` ✅
+  - `git log` ✅
+  - `git diff` ✅
+  - `git show` ✅
+  - `git branch` (list only) ✅
+- **ABSOLUTELY FORBIDDEN:**
+  - `git add` ❌
+  - `git commit` ❌
+  - `git push` ❌
+  - `git pull` ❌
+  - `git merge` ❌
+  - `git rebase` ❌
+  - `git reset` ❌
+  - `git checkout` ❌
+  - `git stash` ❌
+  - ANY command that modifies repository state ❌
+- **User handles ALL git operations that modify the repository**
+
 **AGENT DOCUMENTATION LOCATION:**
 - **Agent files are located at:** `@.claude/agents/*.md`
 - **ALWAYS CHECK YOUR CWD** - You may be in `/spa/` directory, agents are in parent `/`
@@ -75,6 +96,31 @@
 4. **Review Phase** (QA agents):
    - **Vue changes**: Use `vue-spa-reviewer` for quality assurance
    - **Laravel changes**: Use `laravel-backend-qa-tester` for testing and QA
+
+## 🚨 CRITICAL: Preventing Infinite Agent Loops
+
+**WHEN CALLING ANY AGENT, YOU MUST ALWAYS INCLUDE THIS IN YOUR PROMPT:**
+
+```
+CRITICAL: You are already running as a specialized agent. DO NOT call any other agents or use the Task tool. You have direct access to all tools you need (Read, Write, Edit, Bash, etc.). Make all changes directly using these tools.
+```
+
+**Why This Is Required:**
+- Agents calling agents creates infinite loops
+- Each agent already has full access to all necessary tools
+- Agents should work directly with files, not delegate further
+
+**Example of CORRECT agent call:**
+```
+Task(vue-spa-engineer): "Change AI Instructions field to use MarkdownEditor.
+
+CRITICAL: You are already running as a specialized agent. DO NOT call any other agents or use the Task tool. Make all changes directly using Read, Write, Edit tools.
+
+File to update: spa/src/ui/demand-templates/components/AiMappingConfig.vue
+- Replace TextField with MarkdownEditor
+- Import MarkdownEditor from quasar-ui-danx
+..."
+```
 
 ## Reference Information
 

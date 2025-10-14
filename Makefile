@@ -42,4 +42,4 @@ horizon-restart:
 	./horizon-restart.sh
 
 ngrok:
-	ngrok http --url=painfully-optimum-cricket.ngrok-free.app 80
+	ngrok --config /home/newms/snap/ngrok/315/.config/ngrok/ngrok.newms87.yml http --url=painfully-optimum-cricket.ngrok-free.app 80

@@ -86,7 +86,8 @@
       "WebFetch(domain:docs.guzzlephp.org)",
       "WebFetch(domain:github.com)",
       "Bash(awk:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(/home/newms/web/gpt-manager/vendor/bin/sail test --filter=TemplateVariableTest)"
     ],
     "deny": [],
     "additionalDirectories": [

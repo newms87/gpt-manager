@@ -22,7 +22,7 @@ export function useDemandTemplates() {
     const loadActiveTemplates = async () => {
         isLoading.value = true;
         try {
-            templates.value = (await dxDemandTemplate.routes.list())?.data || [];
+            templates.value = (await dxDemandTemplate.routes.list({ fields: { template_variables: true } }))?.data || [];
         } finally {
             isLoading.value = false;
         }

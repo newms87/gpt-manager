@@ -212,17 +212,16 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
             'created_at'  => now()->toIsoString(),
         ];
 
-        $refinedMapping = [
-            'title'     => 'Test Document',
-            'variables' => [
+        $resolution = [
+            'values' => [
                 'client_name' => 'John Doe',
                 'date'        => '2024-01-01',
             ],
-            'reasoning' => 'Mapped based on available data',
+            'title' => 'Test Document',
         ];
 
         // When
-        $artifact = $this->invokeMethod($this->runner, 'createOutputArtifact', [$newDocument, $refinedMapping]);
+        $artifact = $this->invokeMethod($this->runner, 'createOutputArtifact', [$newDocument, $resolution]);
 
         // Then
         $this->assertInstanceOf(Artifact::class, $artifact);
@@ -230,7 +229,8 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         $this->assertStringContainsString('Successfully created Google Docs document', $artifact->text_content);
         $this->assertEquals($newDocument['url'], $artifact->meta['google_doc_url']);
         $this->assertEquals($newDocument['document_id'], $artifact->meta['google_doc_id']);
-        $this->assertEquals($refinedMapping['variables'], $artifact->meta['variable_mapping']);
+        $this->assertEquals($resolution['values'], $artifact->meta['variable_mapping']);
+        $this->assertEquals($resolution['title'], $artifact->meta['resolved_title']);
     }
 
     public function test_createGoogleDocsStoredFile_withValidData_createsStoredFileWithCorrectProperties(): void

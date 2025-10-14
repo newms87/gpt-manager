@@ -5,18 +5,11 @@ namespace App\Services\DemandTemplate;
 use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\Demand\DemandTemplate;
 use App\Services\GoogleDocs\GoogleDocsFileService;
-use Exception;
+use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class DemandTemplateService
 {
-    public function __construct(
-        private readonly GoogleDocsFileService $googleDocsFileService,
-        private readonly GoogleDocsApi         $googleDocsApi
-    )
-    {
-    }
-
     /**
      * Create a new demand template
      */
@@ -27,7 +20,7 @@ class DemandTemplateService
 
         // Handle Google Docs template URL if provided
         if (isset($data['template_url']) && !empty($data['template_url'])) {
-            $storedFileId           = $this->googleDocsFileService->createFromUrl($data['template_url'], $data['name']);
+            $storedFileId           = app(GoogleDocsFileService::class)->createFromUrl($data['template_url'], $data['name']);
             $data['stored_file_id'] = $storedFileId;
         }
 
@@ -50,7 +43,7 @@ class DemandTemplateService
         // Handle template_url by creating StoredFile if provided
         if (isset($data['template_url']) && !empty($data['template_url'])) {
             $name                   = $data['name'] ?? $template->name;
-            $storedFileId           = $this->googleDocsFileService->createFromUrl($data['template_url'], $name);
+            $storedFileId           = app(GoogleDocsFileService::class)->createFromUrl($data['template_url'], $name);
             $data['stored_file_id'] = $storedFileId;
         }
 
@@ -60,12 +53,32 @@ class DemandTemplateService
         $template->validate();
         $template->save();
 
-        // Sync template variables to StoredFile if they were updated
-        if (isset($data['template_variables'])) {
-            $this->syncVariablesToStoredFile($template);
+        return $template;
+    }
+
+    /**
+     * Fetch template variables from Google Docs template
+     */
+    public function fetchTemplateVariables(DemandTemplate $template): Collection
+    {
+        $this->validateOwnership($template);
+        
+        if (!$template->storedFile) {
+            throw new ValidationError('Demand template does not have a stored file', 400);
         }
 
-        return $template;
+        // Extract document ID from stored file URL/filepath
+        $documentId = app(GoogleDocsFileService::class)->extractDocumentId($template->storedFile->filepath);
+        if (!$documentId) {
+            throw new ValidationError('Stored file does not have a valid Google Docs document ID', 400);
+        }
+
+        // Extract variable names from Google Docs template
+        $variableNames = app(GoogleDocsApi::class)->extractTemplateVariables($documentId);
+
+        // Use TemplateVariableService to sync variables
+        return app(\App\Services\Demand\TemplateVariableService::class)
+            ->syncVariablesFromGoogleDoc($template, $variableNames);
     }
 
     /**
@@ -77,57 +90,5 @@ class DemandTemplateService
         if (!$currentTeam || $template->team_id !== $currentTeam->id) {
             throw new ValidationError('You do not have permission to access this demand template', 403);
         }
-    }
-
-    /**
-     * Fetch template variables from Google Docs and merge with existing variables
-     */
-    public function fetchTemplateVariables(DemandTemplate $template): DemandTemplate
-    {
-        $this->validateOwnership($template);
-
-        $googleDocId = $template->extractGoogleDocId();
-        if (!$googleDocId) {
-            throw new ValidationError('Template does not have a valid Google Docs URL', 400);
-        }
-
-        // Get new variables from Google Docs (returns array of variable names)
-        $newVariableNames = $this->googleDocsApi->extractTemplateVariables($googleDocId);
-
-        // Get existing template variables (associative array of variable => description)
-        $existingVariables = $template->template_variables ?? [];
-
-        // Merge: keep existing variables with their descriptions, add new ones with empty descriptions
-        $mergedVariables = $existingVariables;
-        foreach($newVariableNames as $variableName) {
-            if (!isset($mergedVariables[$variableName])) {
-                $mergedVariables[$variableName] = '';
-            }
-        }
-
-        $template->template_variables = $mergedVariables;
-        $template->save();
-
-        // Sync to StoredFile meta for TaskRunner consumption
-        $this->syncVariablesToStoredFile($template);
-
-        return $template->fresh();
-    }
-
-    /**
-     * Sync template variables to StoredFile meta field
-     */
-    public function syncVariablesToStoredFile(DemandTemplate $template): void
-    {
-        if (!$template->storedFile || !$template->template_variables) {
-            throw new Exception('Template does not have a stored file or template variables are empty: ' . $template->storedFile?->url . ' - ' . json_encode($template->template_variables), 400);
-        }
-
-        $storedFile                 = $template->storedFile;
-        $meta                       = $storedFile->meta ?? [];
-        $meta['template_variables'] = $template->template_variables;
-
-        $storedFile->meta = $meta;
-        $storedFile->save();
     }
 }

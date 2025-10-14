@@ -51,7 +51,7 @@
             <!-- Templates List -->
             <div v-else class="space-y-4">
                 <TemplateCard
-                    v-for="template in visibleTemplates"
+                    v-for="template in templates"
                     :key="template.id"
                     :template="template"
                     @update="handleTemplateUpdate"
@@ -77,31 +77,29 @@
 import { FaSolidClipboard } from "danx-icon";
 import { QSpinner } from "quasar";
 import { ActionButton, ConfirmDialog } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { UiMainLayout } from "../../shared";
 import TemplateCard from "../components/TemplateCard.vue";
 import { dxDemandTemplate } from "../config";
 import type { DemandTemplate } from "../types";
 
-dxDemandTemplate.initialize();
 
 // State
 const templateToDelete = ref<DemandTemplate | null>(null);
+const templates = ref([] as DemandTemplate[]);
+// Reload list function
+const reloadList = async () => {
+    templates.value = (await dxDemandTemplate.routes.list({ fields: { template_variables: true } }))?.data || [];
+    console.log("templates", templates.value);
+};
+
+// Load templates with variables on mount
+onMounted(reloadList);
 
 // Actions
-const createAction = dxDemandTemplate.getAction("create", { onFinish: dxDemandTemplate.loadList });
+const createAction = dxDemandTemplate.getAction("create", { onFinish: reloadList });
 const updateAction = dxDemandTemplate.getAction("update");
-const deleteAction = dxDemandTemplate.getAction("delete", { onFinish: dxDemandTemplate.loadList });
-
-// Computed properties
-const templates = computed(() => {
-    const pagedData = dxDemandTemplate.pagedItems.value;
-    return pagedData?.data || [];
-});
-
-const visibleTemplates = computed(() =>
-    templates.value.filter((template: DemandTemplate) => !template.deleted_at)
-);
+const deleteAction = dxDemandTemplate.getAction("delete", { onFinish: reloadList });
 
 const generateTemplateName = () => {
     const count = templates.value.length + 1;

@@ -3,12 +3,14 @@
 namespace App\Services\Task\Runners;
 
 use App\Api\GoogleDocs\GoogleDocsApi;
-use App\Models\Agent\AgentThread;
+use App\Models\Demand\DemandTemplate;
 use App\Models\Task\Artifact;
-use App\Repositories\ThreadRepository;
+use App\Models\TeamObject\TeamObject;
 use App\Services\ContentSearch\ContentSearchRequest;
 use App\Services\ContentSearch\ContentSearchService;
+use App\Services\Demand\TemplateVariableResolutionService;
 use Exception;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
 class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
@@ -23,38 +25,54 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
             throw new Exception("Template could not be resolved. No Google Docs template found in artifacts, text content, or directives.");
         }
 
-        // Extract Google Doc ID from the stored file URL
+        // Step 2: Extract Google Doc ID from the stored file URL
         $googleDocFileId = $this->extractGoogleDocIdFromStoredFile($storedFile);
         if (!$googleDocFileId) {
             throw new Exception("Could not extract Google Doc ID from StoredFile URL: {$storedFile->url}");
         }
 
-        // Step 2: Get pre-resolved template variables from StoredFile meta
-        $templateVariables = $this->getTemplateVariablesFromStoredFile($storedFile, $googleDocFileId);
+        // Step 3: Find DemandTemplate by stored_file_id
+        $template = $this->findDemandTemplate($storedFile);
 
-        static::log('Template variables retrieved', [
-            'variables' => array_keys($templateVariables),
-            'source'    => $storedFile->meta['template_variables'] ?? null ? 'pre_resolved' : 'dynamic_extraction',
+        // Step 4: Load template variables from database
+        $templateVariables = $template->templateVariables;
+
+        static::log('Template variables loaded from database', [
+            'template_id' => $template->id,
+            'variables_count' => $templateVariables->count(),
         ]);
 
-        $agentThread     = $this->setupAgentThread($this->taskProcess->inputArtifacts);
-        $variableMapping = $this->executeVariableMappingWithAgent($agentThread, $templateVariables);
+        // Step 5: Find TeamObject from input artifacts (if present)
+        $teamObject = $this->findTeamObjectFromArtifacts($this->taskProcess->inputArtifacts);
 
-        // Step 6: Create document from template
+        // Step 6: Resolve variables using TemplateVariableResolutionService
+        $resolution = app(TemplateVariableResolutionService::class)->resolveVariables(
+            $templateVariables,
+            $this->taskProcess->inputArtifacts,
+            $teamObject,
+            $this->taskDefinition->team_id
+        );
+
+        static::log('Variables resolved', [
+            'values_count' => count($resolution['values']),
+            'title' => $resolution['title'],
+        ]);
+
+        // Step 7: Create document from template
         $googleDocsApi = app(GoogleDocsApi::class);
-        $newDocument   = $googleDocsApi->createDocumentFromTemplate(
+        $newDocument = $googleDocsApi->createDocumentFromTemplate(
             $googleDocFileId,
-            $variableMapping['variables'],
-            $variableMapping['title']
+            $resolution['values'],
+            $resolution['title']
         );
 
         static::log('Document created', [
             'document_id' => $newDocument['document_id'],
-            'url'         => $newDocument['url'],
+            'url' => $newDocument['url'],
         ]);
 
-        // Create output artifact
-        $artifact = $this->createOutputArtifact($newDocument, $variableMapping);
+        // Step 8: Create output artifact
+        $artifact = $this->createOutputArtifact($newDocument, $resolution);
         $this->complete([$artifact]);
     }
 
@@ -87,43 +105,76 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Get template variables from StoredFile meta or extract dynamically as fallback
+     * Find DemandTemplate by stored_file_id
      */
-    protected function getTemplateVariablesFromStoredFile(StoredFile $storedFile, string $googleDocFileId): array
+    protected function findDemandTemplate(StoredFile $storedFile): DemandTemplate
     {
-        $meta = $storedFile->meta ?? [];
+        $template = DemandTemplate::with('templateVariables')
+            ->where('stored_file_id', $storedFile->id)
+            ->first();
 
-        if (!empty($meta['template_variables']) && is_array($meta['template_variables'])) {
-            return $meta['template_variables'];
+        if (!$template) {
+            throw new ValidationError(
+                "No DemandTemplate found for StoredFile ID {$storedFile->id}. Please create a template configuration first.",
+                404
+            );
         }
 
-        $googleDocsApi = app(GoogleDocsApi::class);
-        $variables     = $googleDocsApi->extractTemplateVariables($googleDocFileId);
-
-        $templateVariables = [];
-        foreach($variables as $variable) {
-            $templateVariables[$variable] = '';
-        }
-
-        return $templateVariables;
+        return $template;
     }
 
     /**
-     * Format template variables with descriptions for agent instructions
+     * Find TeamObject from input artifacts
      */
-    protected function formatTemplateVariablesForAgent(array $templateVariables): string
+    protected function findTeamObjectFromArtifacts($artifacts): ?TeamObject
     {
-        $formattedVariables = [];
+        foreach ($artifacts as $artifact) {
+            // Search in json_content
+            if ($artifact->json_content) {
+                $teamObjectId = $this->extractTeamObjectIdFromData($artifact->json_content);
+                if ($teamObjectId) {
+                    return TeamObject::find($teamObjectId);
+                }
+            }
 
-        foreach($templateVariables as $variable => $description) {
-            if (!empty($description)) {
-                $formattedVariables[] = "$variable: $description";
-            } else {
-                $formattedVariables[] = $variable;
+            // Search in meta
+            if ($artifact->meta) {
+                $teamObjectId = $this->extractTeamObjectIdFromData($artifact->meta);
+                if ($teamObjectId) {
+                    return TeamObject::find($teamObjectId);
+                }
             }
         }
 
-        return implode(', ', $formattedVariables);
+        return null;
+    }
+
+    /**
+     * Extract TeamObject ID from nested array data
+     */
+    protected function extractTeamObjectIdFromData(array $data): ?int
+    {
+        // Direct reference
+        if (isset($data['team_object_id'])) {
+            return (int) $data['team_object_id'];
+        }
+
+        // Nested object reference
+        if (isset($data['team_object']['id'])) {
+            return (int) $data['team_object']['id'];
+        }
+
+        // Search recursively
+        foreach ($data as $value) {
+            if (is_array($value)) {
+                $id = $this->extractTeamObjectIdFromData($value);
+                if ($id) {
+                    return $id;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -139,82 +190,27 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
         return null;
     }
 
-    /**
-     * Refine variable mapping and get document title using agent
-     */
-    protected function executeVariableMappingWithAgent(AgentThread $agentThread, array $templateVariables): array
-    {
-        $templateVariablesList = $this->formatTemplateVariablesForAgent($templateVariables);
-
-        $instructions = <<<INSTRUCTIONS
-You are helping to populate a Google Docs template with data. Please review the template variables and suggest the best mapping and document title.
-
-Template Variables Found: {$templateVariablesList}
-
-Please provide your response in the following JSON format:
-{
-    "title": "Suggested document title based on the data",
-    "variables": {
-        "variable1": "mapped_value1",
-        "variable2": "mapped_value2"
-    },
-    "reasoning": "Brief explanation of your mapping choices"
-}
-
-Requirements:
-1. Suggest an appropriate document title based on the available data
-2. Map each template variable to the most appropriate value from the available data
-3. Use the variable descriptions provided to understand what each variable should contain
-4. If no good mapping exists for a variable, use an empty string ""
-5. Provide brief reasoning for your choices
-
-IMPORTANT: Return ONLY valid JSON in the exact format shown above.
-INSTRUCTIONS;
-
-        app(ThreadRepository::class)->addMessageToThread($agentThread, $instructions);
-
-        // Run the agent thread to get refined mapping
-        $artifact = $this->runAgentThread($agentThread);
-
-        if (!$artifact || !$artifact->text_content) {
-            throw new Exception("Agent failed to provide variable mapping refinement");
-        }
-
-        // Parse JSON response
-        $response = json_decode($artifact->text_content, true);
-
-        if (!$response || !isset($response['title']) || !isset($response['variables'])) {
-            throw new Exception("Agent response was not in the expected JSON format");
-        }
-
-        static::log('Agent refinement completed', [
-            'title'           => $response['title'],
-            'variables_count' => count($response['variables']),
-        ]);
-
-        return $response;
-    }
 
     /**
      * Create output artifact with Google Docs information
      */
-    protected function createOutputArtifact(array $newDocument, array $refinedMapping): Artifact
+    protected function createOutputArtifact(array $newDocument, array $resolution): Artifact
     {
         $artifact = Artifact::create([
             'team_id'      => $this->taskDefinition->team_id,
             'name'         => 'Generated Google Doc: ' . $newDocument['title'],
-            'text_content' => "Successfully created Google Docs document from template.\n\nDocument Title: {$newDocument['title']}\nDocument URL: {$newDocument['url']}\n\nVariable Mapping:\n" . json_encode($refinedMapping['variables'], JSON_PRETTY_PRINT),
+            'text_content' => "Successfully created Google Docs document from template.\n\nDocument Title: {$newDocument['title']}\nDocument URL: {$newDocument['url']}\n\nVariable Mapping:\n" . json_encode($resolution['values'], JSON_PRETTY_PRINT),
             'meta'         => [
                 'google_doc_url'   => $newDocument['url'],
                 'google_doc_id'    => $newDocument['document_id'],
                 'document_title'   => $newDocument['title'],
                 'created_at'       => $newDocument['created_at'],
-                'variable_mapping' => $refinedMapping['variables'],
-                'reasoning'        => $refinedMapping['reasoning'] ?? null,
+                'variable_mapping' => $resolution['values'],
+                'resolved_title'   => $resolution['title'] ?? null,
             ],
             'json_content' => [
-                'document' => $newDocument,
-                'mapping'  => $refinedMapping,
+                'document'   => $newDocument,
+                'resolution' => $resolution,
             ],
         ]);
 

@@ -106,8 +106,14 @@ TEXT;
 
         // Add medical summary artifacts as additional input artifacts
         // These contain the generated medical summaries from the previous workflow step
-        $medicalSummaryArtifacts = $uiDemand->medicalSummaries()->get();
+        $medicalSummaryArtifacts = $uiDemand->medicalSummaries()->withPivot(['category'])->get();
+
+        // Store categories in artifact meta before passing to workflow
         foreach($medicalSummaryArtifacts as $artifact) {
+            $meta               = $artifact->meta ?? [];
+            $meta['__category'] = $artifact->pivot->category;
+            $artifact->meta     = $meta;
+            $artifact->save();
             $inputArtifacts[] = $artifact;
         }
 

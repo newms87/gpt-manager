@@ -30,6 +30,7 @@ use App\Http\Controllers\Assistant\UniversalAssistantController;
 use App\Http\Controllers\Audit\AuditRequestsController;
 use App\Http\Controllers\DemandTemplatesController;
 use App\Http\Controllers\Team\TeamsController;
+use App\Http\Controllers\TemplateVariableController;
 use App\Http\Controllers\UiDemandsController;
 use App\Http\Controllers\Usage\UsageEventsController;
 use Illuminate\Http\Request;
@@ -148,6 +149,9 @@ ActionRoute::routes('ui-demands', new UiDemandsController, function () {
 
 // Demand Templates
 ActionRoute::routes('demand-templates', new DemandTemplatesController);
+
+// Template Variables
+ActionRoute::routes('template-variables', new TemplateVariableController);
 
 // Billing & Subscriptions
 Route::prefix('billing')->group(function () {

@@ -16,6 +16,7 @@
 				<!-- Template Variables Button -->
 				<ActionButton
 					:icon="VariablesIcon"
+					:label="variableCountLabel"
 					tooltip="View Template Variables"
 					size="sm"
 					color="blue"
@@ -106,7 +107,7 @@ import {
 	FaSolidCodeBranch as VariablesIcon,
 	FaSolidUpRightFromSquare as OpenIcon
 } from "danx-icon";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import type { DemandTemplate } from "../types";
 import { dxDemandTemplate } from "../config";
 import UrlEditField from "./UrlEditField.vue";
@@ -127,6 +128,13 @@ const updateAction = dxDemandTemplate.getAction("update");
 
 const isUpdating = ref(false);
 const showVariablesDialog = ref(false);
+
+// Computed
+const variableCount = computed(() => props.template.template_variables?.length || 0);
+const variableCountLabel = computed(() => {
+	const count = variableCount.value;
+	return count === 1 ? "1 variable" : `${count} variables`;
+});
 
 const updateTemplate = (data: Partial<DemandTemplate>) => {
 	emit("update", props.template, data);

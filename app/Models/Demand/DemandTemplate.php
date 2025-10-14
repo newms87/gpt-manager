@@ -8,6 +8,7 @@ use App\Services\GoogleDocs\GoogleDocsFileService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -27,13 +28,11 @@ class DemandTemplate extends Model implements AuditableContract
         'category',
         'metadata',
         'is_active',
-        'template_variables',
     ];
 
     protected $casts = [
-        'metadata'           => 'array',
-        'template_variables' => 'array',
-        'is_active'          => 'boolean',
+        'metadata'  => 'array',
+        'is_active' => 'boolean',
     ];
 
     public function team(): BelongsTo
@@ -49,6 +48,11 @@ class DemandTemplate extends Model implements AuditableContract
     public function storedFile(): BelongsTo
     {
         return $this->belongsTo(StoredFile::class, 'stored_file_id');
+    }
+
+    public function templateVariables(): HasMany
+    {
+        return $this->hasMany(TemplateVariable::class)->orderBy('name');
     }
 
     public function scopeActive($query)
@@ -73,11 +77,10 @@ class DemandTemplate extends Model implements AuditableContract
                 'max:255',
                 TeamScopedUniqueRule::make('demand_templates', 'name')->ignore($this),
             ],
-            'description'        => ['nullable', 'string'],
-            'category'           => ['nullable', 'string', 'max:255'],
-            'metadata'           => ['nullable', 'array'],
-            'template_variables' => ['nullable', 'array'],
-            'is_active'          => ['boolean'],
+            'description' => ['nullable', 'string'],
+            'category'    => ['nullable', 'string', 'max:255'],
+            'metadata'    => ['nullable', 'array'],
+            'is_active'   => ['boolean'],
         ])->validate();
 
         return $this;
