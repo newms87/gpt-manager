@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Http\Resources\Auth\AuthTokenResource;
 use App\Models\Auth\AuthToken;
 use App\Repositories\Auth\AuthTokenRepository;
-use App\Http\Resources\Auth\AuthTokenResource;
 use App\Services\Auth\OAuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +13,7 @@ use Newms87\Danx\Http\Controllers\ActionController;
 
 class OAuthController extends ActionController
 {
-    public static ?string $repo = AuthTokenRepository::class;
+    public static ?string $repo     = AuthTokenRepository::class;
     public static ?string $resource = AuthTokenResource::class;
 
     /**
@@ -22,7 +22,7 @@ class OAuthController extends ActionController
     public function authorize(Request $request, string $service): JsonResponse
     {
         $request->validate([
-            'redirect_after_auth' => 'sometimes|url'
+            'redirect_after_auth' => 'sometimes|url',
         ]);
 
         $oauthService = app(OAuthService::class);
@@ -38,9 +38,9 @@ class OAuthController extends ActionController
 
         // Use team ID and service as state parameter for security
         $state = base64_encode(json_encode([
-            'service' => $service,
-            'team_id' => $currentTeam->id,
-            'timestamp' => time(),
+            'service'             => $service,
+            'team_id'             => $currentTeam->id,
+            'timestamp'           => time(),
             'redirect_after_auth' => $request->input('redirect_after_auth'),
         ]));
 
@@ -48,8 +48,8 @@ class OAuthController extends ActionController
 
         return response()->json([
             'authorization_url' => $authUrl,
-            'service' => $service,
-            'state' => $state,
+            'service'           => $service,
+            'state'             => $state,
         ]);
     }
 
@@ -58,86 +58,42 @@ class OAuthController extends ActionController
      */
     public function callback(Request $request)
     {
-        $code = $request->input('code');
+        $code  = $request->input('code');
         $state = $request->input('state');
         $error = $request->input('error');
-        $dashboardUrl = config('app.spa_url');
 
         if ($error) {
-            // Redirect with error message
-            return redirect($dashboardUrl . '?' . http_build_query([
-                'oauth_error' => true,
-                'message' => 'OAuth authorization failed: ' . $error
-            ]));
+            throw new ValidationError('OAuth authorization failed: ' . $error, 400);
         }
 
         if (!$code) {
-            // Redirect with error message
-            return redirect($dashboardUrl . '?' . http_build_query([
-                'oauth_error' => true,
-                'message' => 'Missing authorization code in OAuth callback'
-            ]));
+            throw new ValidationError('Missing authorization code in OAuth callback', 400);
         }
 
         if (!$state) {
-            // Redirect with error message  
-            return redirect($dashboardUrl . '?' . http_build_query([
-                'oauth_error' => true,
-                'message' => 'Missing state parameter in OAuth callback'
-            ]));
+            throw new ValidationError('Missing state parameter in OAuth callback', 400);
         }
 
         // Validate state parameter and extract service/team info
         $validationResult = $this->validateState($state);
         if (is_array($validationResult) && isset($validationResult['error'])) {
-            // Redirect with error message
-            return redirect($dashboardUrl . '?' . http_build_query([
-                'oauth_error' => true,
-                'message' => $validationResult['message']
-            ]));
+            throw new ValidationError($validationResult['message'], $validationResult['status']);
         }
         [$service, $team, $redirectUrl] = $validationResult;
 
         $oauthService = app(OAuthService::class);
 
-        try {
-            // Exchange code for token
-            $oauthTokenData = $oauthService->exchangeCodeForToken($service, $code);
+        // Exchange code for token
+        $oauthTokenData = $oauthService->exchangeCodeForToken($service, $code);
 
-            // Store token for the team from state
-            $token = $oauthService->storeToken($service, $oauthTokenData, $team);
+        // Store token for the team from state
+        $oauthService->storeToken($service, $oauthTokenData, $team);
 
-            // Redirect to dashboard with success message
-            $successMessage = "Successfully connected {$service} for team {$team->name}";
-            
-            // If a specific redirect URL was provided in state, use it
-            // Otherwise redirect to the SPA dashboard
-            $dashboardUrl = $redirectUrl ?: config('app.spa_url');
-            
-            // Add success message as query parameter
-            $redirectTo = $dashboardUrl . '?' . http_build_query([
-                'oauth_success' => true,
-                'service' => $service,
-                'message' => $successMessage
-            ]);
-            
-            return redirect($redirectTo);
+        // If a specific redirect URL was provided in state, use it
+        // Otherwise redirect to the SPA dashboard
+        $dashboardUrl = $redirectUrl ?: config('app.spa_url');
 
-        } catch (\Exception $e) {
-            // Redirect with error message
-            $errorMessage = $e instanceof ValidationError 
-                ? $e->getMessage() 
-                : 'Failed to complete OAuth flow: ' . $e->getMessage();
-            
-            // Get the dashboard URL again since we're in catch block
-            $dashboardUrl = config('app.spa_url');
-                
-            return redirect($dashboardUrl . '?' . http_build_query([
-                'oauth_error' => true,
-                'service' => $service ?? 'unknown',
-                'message' => $errorMessage
-            ]));
-        }
+        return redirect($dashboardUrl);
     }
 
     /**
@@ -146,21 +102,21 @@ class OAuthController extends ActionController
     public function status(string $service): JsonResponse
     {
         $oauthService = app(OAuthService::class);
-        $token = $oauthService->getToken($service);
+        $token        = $oauthService->getToken($service);
 
         if (!$token) {
             return response()->json([
-                'has_token' => false,
+                'has_token'     => false,
                 'is_configured' => $oauthService->isConfigured($service),
-                'service' => $service,
+                'service'       => $service,
             ]);
         }
 
         return response()->json([
-            'has_token' => true,
+            'has_token'     => true,
             'is_configured' => $oauthService->isConfigured($service),
-            'service' => $service,
-            'token' => AuthTokenResource::data($token),
+            'service'       => $service,
+            'token'         => AuthTokenResource::data($token),
         ]);
     }
 
@@ -170,7 +126,7 @@ class OAuthController extends ActionController
     public function revoke(string $service): JsonResponse
     {
         $oauthService = app(OAuthService::class);
-        $success = $oauthService->revokeToken($service);
+        $success      = $oauthService->revokeToken($service);
 
         return response()->json([
             'success' => $success,
@@ -187,11 +143,11 @@ class OAuthController extends ActionController
     public function refresh(string $service)
     {
         $oauthService = app(OAuthService::class);
-        $token = $oauthService->getToken($service);
+        $token        = $oauthService->getToken($service);
 
         if (!$token) {
             return response()->json([
-                'message' => "No OAuth token found for service: {$service}"
+                'message' => "No OAuth token found for service: {$service}",
             ], 404);
         }
 
@@ -200,7 +156,7 @@ class OAuthController extends ActionController
 
             return response()->json(AuthTokenResource::data($refreshedToken));
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             if ($e instanceof ValidationError) {
                 throw $e;
             }
@@ -215,11 +171,11 @@ class OAuthController extends ActionController
     {
         $request->validate([
             'service' => 'sometimes|string',
-            'type' => 'sometimes|in:oauth,api_key',
+            'type'    => 'sometimes|in:oauth,api_key',
         ]);
 
         $repository = app(AuthTokenRepository::class);
-        $tokens = $repository->getTokensForTeam();
+        $tokens     = $repository->getTokensForTeam();
 
         // Filter by service if provided
         if ($request->filled('service')) {
@@ -232,7 +188,7 @@ class OAuthController extends ActionController
         }
 
         return response()->json([
-            'data' => AuthTokenResource::collection($tokens),
+            'data'  => AuthTokenResource::collection($tokens),
             'count' => $tokens->count(),
         ]);
     }
@@ -243,14 +199,14 @@ class OAuthController extends ActionController
     public function storeApiKey(Request $request): JsonResponse
     {
         $request->validate([
-            'service' => 'required|string|max:50',
-            'api_key' => 'required|string',
-            'name' => 'nullable|string|max:100',
+            'service'  => 'required|string|max:50',
+            'api_key'  => 'required|string',
+            'name'     => 'nullable|string|max:100',
             'metadata' => 'sometimes|array',
         ]);
 
         $repository = app(AuthTokenRepository::class);
-        
+
         $token = $repository->storeApiKey(
             $request->input('service'),
             $request->input('api_key'),
@@ -274,8 +230,8 @@ class OAuthController extends ActionController
         }
 
         $service = $authToken->service;
-        $type = $authToken->type;
-        
+        $type    = $authToken->type;
+
         $authToken->delete();
 
         return response()->json([
@@ -308,7 +264,7 @@ class OAuthController extends ActionController
                 if (!$team) {
                     return ['error' => true, 'message' => 'Invalid team ID in OAuth callback state', 'status' => 403];
                 }
-            } catch (\Exception $e) {
+            } catch(\Exception $e) {
                 return ['error' => true, 'message' => 'Invalid team ID in OAuth callback state', 'status' => 403];
             }
 
@@ -321,7 +277,7 @@ class OAuthController extends ActionController
 
             return [$service, $team, $redirectUrl];
 
-        } catch (\Exception $e) {
+        } catch(\Exception $e) {
             return ['error' => true, 'message' => 'Failed to validate OAuth state parameter', 'status' => 400];
         }
     }

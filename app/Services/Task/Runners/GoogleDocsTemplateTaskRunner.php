@@ -58,7 +58,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
             'title' => $resolution['title'],
         ]);
 
-        // Step 7: Create document from template
+        // Step 7: Create document from template (GoogleDocsApi will handle markdown formatting)
         $googleDocsApi = app(GoogleDocsApi::class);
         $newDocument = $googleDocsApi->createDocumentFromTemplate(
             $googleDocFileId,

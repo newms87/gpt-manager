@@ -6,6 +6,7 @@ use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Agent\Agent;
+use App\Models\Demand\DemandTemplate;
 use App\Models\Demand\UiDemand;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
@@ -89,6 +90,13 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $templateStoredFile->user_id = $this->user->id;
         $templateStoredFile->save();
 
+        // 3b. Create DemandTemplate linked to the StoredFile
+        $template = DemandTemplate::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'stored_file_id' => $templateStoredFile->id,
+            'name' => 'Integration Test Template',
+        ]);
+
         // 4. Create workflow definition and setup
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
@@ -158,32 +166,8 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // When - Execute the GoogleDocsTemplateTaskRunner
 
-        // Create mock agent response artifact
-        $agentResponseArtifact = Artifact::factory()->create([
-            'team_id'      => $taskDefinition->team_id,
-            'text_content' => json_encode([
-                'title'     => 'Generated Demand Document',
-                'variables' => [
-                    'client_name' => 'Test Client',
-                    'title'       => 'Integration Test Demand',
-                    'amount'      => '$10,000',
-                ],
-                'reasoning' => 'Mapped variables from input data',
-            ]),
-        ]);
-
-        // Create a partial mock that only mocks the runAgentThread method
-        $runner = $this->getMockBuilder(GoogleDocsTemplateTaskRunner::class)
-            ->onlyMethods(['runAgentThread'])
-            ->getMock();
-
-        $runner->expects($this->once())
-            ->method('runAgentThread')
-            ->willReturn($agentResponseArtifact);
-
-        $runner->setTaskRun($taskRun)
-            ->setTaskProcess($taskProcess);
-
+        // The runner now uses TemplateVariableResolutionService which doesn't require mocking
+        $runner = $taskProcess->getRunner();
         $runner->run();
 
         // After GoogleDocsTemplateTaskRunner completes, run WorkflowOutputTaskRunner to collect outputs

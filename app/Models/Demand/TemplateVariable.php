@@ -112,7 +112,7 @@ class TemplateVariable extends Model implements AuditableContract
 
         // Type-specific validation
         // Artifact mapping: categories and fragment_selector are optional - user can select all artifacts
-        // TeamObject mapping: configuration fields (team_object_schema_association_id) are optional - user can save incomplete configuration
+        // TeamObject mapping: team_object_schema_association_id is optional - user can save incomplete configuration
         // AI mapping does not require ai_instructions - it's optional
 
         validator($this->toArray(), $rules)->validate();

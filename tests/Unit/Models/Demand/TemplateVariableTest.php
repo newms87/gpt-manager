@@ -346,9 +346,9 @@ class TemplateVariableTest extends AuthenticatedTestCase
         $this->assertInstanceOf(TemplateVariable::class, $result);
     }
 
-    public function test_validate_teamObjectMapping_withoutSchemaAssociation_throwsValidationError(): void
+    public function test_validate_teamObjectMapping_withoutSchemaAssociation_isValid(): void
     {
-        // Given
+        // Given - TeamObject mapping without schema association (incomplete configuration is allowed)
         $template = DemandTemplate::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
@@ -361,12 +361,11 @@ class TemplateVariableTest extends AuthenticatedTestCase
             'multi_value_separator' => ', ',
         ]);
 
-        // Then
-        $this->expectException(ValidationError::class);
-        $this->expectExceptionMessage('Team object mapping requires team_object_schema_association_id');
-
         // When
-        $variable->validate();
+        $result = $variable->validate();
+
+        // Then - Should pass validation (user can save incomplete configuration)
+        $this->assertInstanceOf(TemplateVariable::class, $result);
     }
 
 

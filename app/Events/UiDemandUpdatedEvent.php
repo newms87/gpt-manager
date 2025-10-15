@@ -30,6 +30,12 @@ class UiDemandUpdatedEvent extends ModelSavedEvent
             'name'   => $this->uiDemand->name,
             'status' => $this->uiDemand->status,
             '__type' => 'UiDemandResource',
+
+            // Workflow state helpers
+            'can_extract_data' => $this->uiDemand->canExtractData(),
+            'can_write_demand_letter' => $this->uiDemand->canWriteDemandLetter(),
+            'is_extract_data_running' => $this->uiDemand->isExtractDataRunning(),
+            'is_write_demand_letter_running' => $this->uiDemand->isWriteDemandLetterRunning(),
         ];
     }
 }

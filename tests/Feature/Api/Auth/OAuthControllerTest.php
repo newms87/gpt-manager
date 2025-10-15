@@ -105,7 +105,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         $this->assertEquals($redirectUrl, $stateData['redirect_after_auth']);
     }
 
-    public function test_callback_withValidCode_returnsRedirectWithSuccess(): void
+    public function test_callback_withValidCode_returnsRedirectWithoutQueryParams(): void
     {
         // Given
         $code = 'test_authorization_code';
@@ -131,10 +131,13 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertRedirect();
         $location = $response->headers->get('Location');
-        $this->assertStringContainsString('oauth_success=1', $location);
-        $this->assertStringContainsString('service=google', $location);
-        $this->assertStringContainsString('message=', $location);
-        
+
+        // Verify redirect does NOT contain error query parameters
+        $this->assertStringNotContainsString('oauth_success', $location);
+        $this->assertStringNotContainsString('oauth_error', $location);
+        $this->assertStringNotContainsString('message=', $location);
+        $this->assertStringNotContainsString('service=', $location);
+
         // Verify token was stored
         $this->assertDatabaseHas('auth_tokens', [
             'team_id' => $this->user->currentTeam->id,
@@ -144,7 +147,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         ]);
     }
 
-    public function test_callback_withRedirectUrl_redirectsToSpecifiedUrl(): void
+    public function test_callback_withRedirectUrl_redirectsToSpecifiedUrlWithoutQueryParams(): void
     {
         // Given
         $code = 'test_authorization_code';
@@ -172,76 +175,216 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertRedirect();
         $location = $response->headers->get('Location');
-        $this->assertStringStartsWith($redirectUrl, $location);
-        $this->assertStringContainsString('oauth_success=1', $location);
-        $this->assertStringContainsString('service=google', $location);
+
+        // Verify redirect is exactly to the specified URL without query parameters
+        $this->assertEquals($redirectUrl, $location);
+        $this->assertStringNotContainsString('oauth_success', $location);
+        $this->assertStringNotContainsString('service=', $location);
     }
 
-    public function test_callback_withError_redirectsWithError(): void
+    public function test_callback_withError_throwsValidationError(): void
     {
         // Given
         $error = 'access_denied';
 
-        // When - callback endpoint doesn't require authentication according to routes  
-        $response = $this->get("/api/oauth/callback?error=$error");
+        // When - Use getJson() to get JSON error response instead of exception
+        // Note: AuditingMiddleware catches exceptions and returns generic 500 error
+        $response = $this->getJson("/api/oauth/callback?error=$error");
 
-        // Then - Should redirect with error
-        $response->assertRedirect();
-        $location = $response->headers->get('Location');
-        $this->assertStringContainsString('oauth_error=1', $location);
-        $this->assertStringContainsString('message=', $location);
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+
+        // Verify it does NOT redirect with query parameters (the old behavior)
+        $this->assertFalse($response->isRedirect());
     }
 
-    public function test_callback_withoutCode_redirectsWithError(): void
+    public function test_callback_withoutCode_throwsValidationError(): void
     {
-        // When
-        $response = $this->get('/api/oauth/callback');
+        // Given
+        $state = base64_encode(json_encode([
+            'service' => $this->service,
+            'team_id' => $this->user->currentTeam->id,
+            'timestamp' => time()
+        ]));
 
-        // Then
-        $response->assertRedirect();
-        $location = $response->headers->get('Location');
-        $this->assertStringContainsString('oauth_error=1', $location);
-        $this->assertStringContainsString('Missing+authorization+code', $location);
+        // When - Use getJson() to get JSON error response
+        $response = $this->getJson("/api/oauth/callback?state=$state");
+
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+        $this->assertFalse($response->isRedirect());
     }
 
-    public function test_callback_withInvalidState_redirectsWithError(): void
+    public function test_callback_withInvalidState_throwsValidationError(): void
     {
         // Given
         $code = 'test_code';
         $invalidState = base64_encode(json_encode([
             'service' => $this->service,
-            'team_id' => 'wrong_team_id',
+            'team_id' => 99999, // Non-existent team ID
             'timestamp' => time()
         ]));
 
-        // When
-        $response = $this->get("/api/oauth/callback?code=$code&state=$invalidState");
+        // When - Use getJson() to get JSON error response
+        $response = $this->getJson("/api/oauth/callback?code=$code&state=$invalidState");
 
-        // Then
-        $response->assertRedirect();
-        $location = $response->headers->get('Location');
-        $this->assertStringContainsString('oauth_error=1', $location);
-        $this->assertStringContainsString('Invalid+team+ID', $location);
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+        $this->assertFalse($response->isRedirect());
     }
 
-    public function test_callback_withExpiredState_redirectsWithError(): void
+    public function test_callback_withExpiredState_throwsValidationError(): void
     {
         // Given
         $code = 'test_code';
         $expiredState = base64_encode(json_encode([
             'service' => $this->service,
             'team_id' => $this->user->currentTeam->id,
-            'timestamp' => time() - 700 // More than 10 minutes ago
+            'timestamp' => time() - 700 // More than 10 minutes ago (600 seconds)
         ]));
 
-        // When
-        $response = $this->get("/api/oauth/callback?code=$code&state=$expiredState");
+        // When - Use getJson() to get JSON error response
+        $response = $this->getJson("/api/oauth/callback?code=$code&state=$expiredState");
 
-        // Then
-        $response->assertRedirect();
-        $location = $response->headers->get('Location');
-        $this->assertStringContainsString('oauth_error=1', $location);
-        $this->assertStringContainsString('expired', $location);
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+        $this->assertFalse($response->isRedirect());
+    }
+
+    public function test_callback_withoutState_throwsValidationError(): void
+    {
+        // Given
+        $code = 'test_code';
+
+        // When - Use getJson() to get JSON error response
+        $response = $this->getJson("/api/oauth/callback?code=$code");
+
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+        $this->assertFalse($response->isRedirect());
+    }
+
+    public function test_callback_withMalformedState_throwsValidationError(): void
+    {
+        // Given
+        $code = 'test_code';
+        $malformedState = 'not_valid_base64_json';
+
+        // When - Use getJson() to get JSON error response
+        $response = $this->getJson("/api/oauth/callback?code=$code&state=$malformedState");
+
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+        $this->assertFalse($response->isRedirect());
+    }
+
+    public function test_callback_withStateMissingService_throwsValidationError(): void
+    {
+        // Given
+        $code = 'test_code';
+        $invalidState = base64_encode(json_encode([
+            // Missing 'service' field
+            'team_id' => $this->user->currentTeam->id,
+            'timestamp' => time()
+        ]));
+
+        // When - Use getJson() to get JSON error response
+        $response = $this->getJson("/api/oauth/callback?code=$code&state=$invalidState");
+
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+        $this->assertFalse($response->isRedirect());
+    }
+
+    public function test_callback_withStateMissingTeamId_throwsValidationError(): void
+    {
+        // Given
+        $code = 'test_code';
+        $invalidState = base64_encode(json_encode([
+            'service' => $this->service,
+            // Missing 'team_id' field
+            'timestamp' => time()
+        ]));
+
+        // When - Use getJson() to get JSON error response
+        $response = $this->getJson("/api/oauth/callback?code=$code&state=$invalidState");
+
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+        $this->assertFalse($response->isRedirect());
+    }
+
+    public function test_callback_withStateMissingTimestamp_throwsValidationError(): void
+    {
+        // Given
+        $code = 'test_code';
+        $invalidState = base64_encode(json_encode([
+            'service' => $this->service,
+            'team_id' => $this->user->currentTeam->id,
+            // Missing 'timestamp' field
+        ]));
+
+        // When - Use getJson() to get JSON error response
+        $response = $this->getJson("/api/oauth/callback?code=$code&state=$invalidState");
+
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+        $this->assertFalse($response->isRedirect());
+    }
+
+    public function test_callback_withStateEmptyService_throwsValidationError(): void
+    {
+        // Given
+        $code = 'test_code';
+        $invalidState = base64_encode(json_encode([
+            'service' => '', // Empty service
+            'team_id' => $this->user->currentTeam->id,
+            'timestamp' => time()
+        ]));
+
+        // When - Use getJson() to get JSON error response
+        $response = $this->getJson("/api/oauth/callback?code=$code&state=$invalidState");
+
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+        $this->assertFalse($response->isRedirect());
+    }
+
+    public function test_callback_withTokenExchangeFailure_bubblesException(): void
+    {
+        // Given
+        $code = 'test_code';
+        $state = base64_encode(json_encode([
+            'service' => $this->service,
+            'team_id' => $this->user->currentTeam->id,
+            'timestamp' => time()
+        ]));
+
+        // Mock HTTP failure from token exchange
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response([
+                'error' => 'invalid_grant',
+                'error_description' => 'Invalid authorization code'
+            ], 400)
+        ]);
+
+        // When - Use getJson() to get JSON error response
+        $response = $this->getJson("/api/oauth/callback?code=$code&state=$state");
+
+        // Then - Verify error is returned (not redirect with query parameters)
+        $response->assertStatus(500);
+        $response->assertJsonStructure(['message']);
+        $this->assertFalse($response->isRedirect());
     }
 
     public function test_status_withExistingToken_returnsTokenInfo(): void

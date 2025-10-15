@@ -2,14 +2,15 @@
 
 namespace Tests\Unit\Services\Task\Runners;
 
+use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\Agent\Agent;
+use App\Models\Agent\AgentThread;
+use App\Models\Agent\AgentThreadMessage;
+use App\Models\Demand\DemandTemplate;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Api\GoogleDocs\GoogleDocsApi;
-use App\Models\Agent\AgentThread;
-use App\Models\Agent\AgentThreadMessage;
 use App\Services\ContentSearch\ContentSearchRequest;
 use App\Services\ContentSearch\ContentSearchResult;
 use App\Services\ContentSearch\ContentSearchService;
@@ -291,12 +292,14 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         $storedFile = StoredFile::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'url'     => 'https://docs.google.com/document/d/1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg/edit',
-            'meta'    => [
-                'template_variables' => [
-                    'client_name' => 'Name of the client',
-                    'date'        => 'Current date',
-                ],
-            ],
+        ]);
+
+        // Create a DemandTemplate linked to the StoredFile (required by GoogleDocsTemplateTaskRunner)
+        $template = DemandTemplate::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'stored_file_id' => $storedFile->id,
+            'name' => 'Test Template',
         ]);
 
         // Mock GoogleDocsApi for external API calls (this is a 3rd party service)
@@ -317,39 +320,19 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
             )
             ->andReturn($newDocument);
 
-        // Create AgentThread and mock its execution (complex workflow, so partial mock is justified)
-        $agentThread = AgentThread::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'agent_id' => $this->agent->id,
-        ]);
-
-        // Mock agent response for variable mapping
-        $agentResponse = [
+        // Mock TemplateVariableResolutionService for variable resolution
+        $resolution = [
             'title' => 'Generated Test Document',
-            'variables' => [
+            'values' => [
                 'client_name' => 'John Doe',
                 'date'        => '2024-01-01',
             ],
-            'reasoning' => 'Mapped variables based on available data',
         ];
 
-        $responseArtifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'text_content' => json_encode($agentResponse),
-        ]);
-
-        // Mock the complex agent workflow parts
-        $runner = $this->mock(GoogleDocsTemplateTaskRunner::class)->makePartial();
-        $runner->shouldAllowMockingProtectedMethods();
-        $runner->shouldReceive('runAgentThread')
+        $this->mock(\App\Services\Demand\TemplateVariableResolutionService::class)
+            ->shouldReceive('resolveVariables')
             ->once()
-            ->andReturn($responseArtifact);
-        $runner->shouldReceive('setupAgentThread')
-            ->once()
-            ->andReturn($agentThread);
-
-        $runner->setTaskRun($this->taskRun);
-        $runner->setTaskProcess($this->taskProcess);
+            ->andReturn($resolution);
 
         // Create input artifact with direct reference to StoredFile ID
         $artifact = Artifact::factory()->create([
@@ -363,20 +346,20 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         $this->taskProcess->refresh();
 
         // When
-        $runner->run();
+        $this->runner->run();
 
         // Then - Verify output artifacts were created
         $this->taskProcess->refresh();
         $outputArtifacts = $this->taskProcess->outputArtifacts;
-        
+
         $this->assertCount(1, $outputArtifacts);
         $outputArtifact = $outputArtifacts->first();
-        
+
         $this->assertStringContainsString('Generated Test Document', $outputArtifact->name);
         $this->assertStringContainsString('Successfully created Google Docs document', $outputArtifact->text_content);
         $this->assertEquals($newDocument['url'], $outputArtifact->meta['google_doc_url']);
         $this->assertEquals($newDocument['document_id'], $outputArtifact->meta['google_doc_id']);
-        
+
         // Verify StoredFile was attached
         $this->assertCount(1, $outputArtifact->storedFiles);
         $attachedStoredFile = $outputArtifact->storedFiles->first();
