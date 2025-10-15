@@ -17,6 +17,7 @@ class WorkflowRunResource extends ActionResource
             'status'                 => $workflowRun->status,
             'workflow_definition_id' => $workflowRun->workflow_definition_id,
             'active_workers_count'   => $workflowRun->active_workers_count,
+            'error_count'            => $workflowRun->error_count,
             'progress_percent'       => $workflowRun->calculateProgress(),
             'total_nodes'            => $workflowRun->workflowDefinition->workflowNodes()->count(),
             'completed_tasks'        => $workflowRun->taskRuns()

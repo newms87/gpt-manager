@@ -73,6 +73,7 @@ export interface TaskRun extends TaskRunner {
 	step: string;
 	percent_complete: number;
 	process_count: number;
+	error_count?: number;
 	job_dispatch_count: number;
 	processes?: TaskProcess[];
 	workflow_run_id: number;

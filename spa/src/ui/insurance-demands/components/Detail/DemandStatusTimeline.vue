@@ -43,6 +43,14 @@
                         </div>
 
                         <div class="ml-4 flex items-center gap-2">
+                            <!-- Error Badge -->
+                            <ErrorBadge
+                                v-if="status.workflowRun"
+                                :error-count="status.workflowRun.error_count"
+                                :url="dxWorkflowRun.routes.errorsUrl(status.workflowRun)"
+                                :animate="status.isActive || status.failed"
+                            />
+
                             <ActionButton
                                 v-if="status.workflowRun"
                                 type="view"
@@ -109,6 +117,7 @@
 </template>
 
 <script setup lang="ts">
+import ErrorBadge from "@/components/Shared/ErrorBadge.vue";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { FaSolidCheck, FaSolidClock, FaSolidTriangleExclamation } from "danx-icon";
 import { ActionButton, DateTime, fDateTime, fDuration, fPercent, LabelPillWidget } from "quasar-ui-danx";

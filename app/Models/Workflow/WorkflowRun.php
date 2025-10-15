@@ -42,6 +42,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         'completed_at',
         'failed_at',
         'active_workers_count',
+        'error_count',
     ];
 
     public function casts(): array
@@ -259,9 +260,49 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         $this->update(['active_workers_count' => $this->activeWorkers()->count()]);
     }
 
+    /**
+     * Update the error count by summing all task run error counts
+     */
+    public function updateErrorCount(): void
+    {
+        $totalErrors = $this->taskRuns()->sum('task_process_error_count');
+
+        if ($this->error_count !== $totalErrors) {
+            $this->update(['error_count' => $totalErrors]);
+        }
+    }
+
     public function refreshUsageFromTaskRuns(): void
     {
         $this->aggregateChildUsage('taskRuns');
+    }
+
+    /**
+     * Get all error log entries for this workflow run
+     * Traverses: WorkflowRun -> TaskRuns -> TaskProcesses -> JobDispatches -> AuditRequests -> ErrorLogEntries
+     */
+    public function getErrorLogEntries()
+    {
+        // Get all task process IDs for this workflow run
+        $taskProcessIds = \DB::table('task_processes')
+            ->whereIn('task_run_id', $this->taskRuns()->pluck('id'))
+            ->pluck('id');
+
+        // Get all job dispatch IDs for those processes
+        $jobDispatchIds = \DB::table('job_dispatchables')
+            ->whereIn('model_id', $taskProcessIds)
+            ->where('model_type', \App\Models\Task\TaskProcess::class)
+            ->pluck('job_dispatch_id');
+
+        // Get error log entries from audit requests associated with those job dispatches
+        return \Newms87\Danx\Models\Audit\ErrorLogEntry::whereHas('auditRequest', function ($query) use ($jobDispatchIds) {
+            $query->whereIn('id', function ($subquery) use ($jobDispatchIds) {
+                $subquery->select('running_audit_request_id')
+                    ->from('job_dispatch')
+                    ->whereIn('id', $jobDispatchIds)
+                    ->whereNotNull('running_audit_request_id');
+            });
+        })->with(['errorLog', 'auditRequest'])->orderByDesc('created_at')->get();
     }
 
     /**
@@ -508,7 +549,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
                 };
             }
 
-            if ($workflowRun->wasChanged(['status', 'active_workers_count', 'name'])) {
+            if ($workflowRun->wasChanged(['status', 'active_workers_count', 'name', 'error_count'])) {
                 WorkflowRunUpdatedEvent::broadcast($workflowRun);
             }
         });

@@ -3,8 +3,18 @@
         <div v-if="loading" class="absolute-top-left w-56 h-24 left-[-1rem] flex items-center justify-center z-[2000]">
             <LoadingSandLottie class="w-32" autoplay />
         </div>
+
+        <!-- Error Badge -->
+        <ErrorBadge
+            v-if="taskRun"
+            :error-count="taskRun.error_count"
+            :url="dxTaskRun.routes.errorsUrl(taskRun)"
+            :animate="isTaskRunning || isTaskFailed"
+            badge-class="absolute top-[-0.5rem] right-[-0.5rem] z-20"
+        />
+
         <div
-            class="node-content relative border  rounded-xl text-lg h-24"
+            class="node-content relative border rounded-xl text-lg h-24"
             :class="nodeClass"
         >
             <NodeHeaderBar
@@ -55,9 +65,11 @@
 <script setup lang="ts">
 import LoadingSandLottie from "@/assets/dotlottie/LoadingSandLottie";
 import { BaseTaskRunnerNode } from "@/components/Modules/TaskDefinitions/TaskRunners/Nodes";
+import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
 import { useWorkflowNode } from "@/components/Modules/WorkflowCanvas/useWorkflowNode";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
+import ErrorBadge from "@/components/Shared/ErrorBadge.vue";
 import { TaskRun, WorkflowDefinition, WorkflowRun } from "@/types";
 import { Node } from "@vue-flow/core";
 import { computed } from "vue";

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Ai;
 
 use App\Models\Workflow\WorkflowRun;
 use App\Repositories\WorkflowRunRepository;
+use App\Resources\Audit\ErrorLogEntryResource;
 use App\Resources\Audit\JobDispatchResource;
 use App\Resources\Workflow\WorkflowRunResource;
 use App\Services\Task\TaskProcessDispatcherService;
@@ -37,5 +38,10 @@ class WorkflowRunsController extends ActionController
         cache()->put('subscribe:workflow-job-dispatches:' . user()->id . ':' . $workflowRun->id, true, 60);
 
         return ['success' => true];
+    }
+
+    public function errors(WorkflowRun $workflowRun)
+    {
+        return ErrorLogEntryResource::collection($workflowRun->getErrorLogEntries());
     }
 }

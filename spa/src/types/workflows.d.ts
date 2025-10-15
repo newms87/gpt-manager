@@ -39,6 +39,7 @@ export interface WorkflowNodeSettings {
 export interface WorkflowRun extends TaskRunner {
 	workflow_definition_id?: number;
 	active_workers_count?: number;
+	error_count?: number;
 	taskRuns?: TaskRun[];
 	progress_percent?: number;
 	total_nodes?: number;

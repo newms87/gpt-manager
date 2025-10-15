@@ -78,6 +78,7 @@ ActionRoute::routes('task-artifact-filters', new TaskArtifactFiltersController);
 ActionRoute::routes('task-inputs', new TaskInputsController);
 ActionRoute::routes('task-runs', new TaskRunsController, function () {
     Route::get('{taskRun}/subscribe-to-processes', [TaskRunsController::class, 'subscribeToProcesses']);
+    Route::get('{taskRun}/errors', [TaskRunsController::class, 'errors']);
 });
 ActionRoute::routes('task-processes', new TaskProcessesController);
 
@@ -94,6 +95,7 @@ ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
     Route::get('{workflowRun}/active-job-dispatches', [WorkflowRunsController::class, 'activeJobDispatches'])->name('workflow-runs.active-job-dispatches');
     Route::post('{workflowRun}/dispatch-workers', [WorkflowRunsController::class, 'dispatchWorkers'])->name('workflow-runs.dispatch-workers');
     Route::get('{workflowRun}/subscribe-to-job-dispatches', [WorkflowRunsController::class, 'subscribeToJobDispatches'])->name('workflow-runs.subscribe-to-job-dispatches');
+    Route::get('{workflowRun}/errors', [WorkflowRunsController::class, 'errors']);
 });
 ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
 

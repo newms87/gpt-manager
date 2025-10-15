@@ -5,6 +5,9 @@ namespace Tests\Unit\Services\Task;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
+use App\Models\Workflow\WorkflowDefinition;
+use App\Models\Workflow\WorkflowNode;
+use App\Models\Workflow\WorkflowRun;
 use App\Services\Task\TaskProcessErrorTrackingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Newms87\Danx\Audit\AuditDriver;
@@ -194,6 +197,154 @@ class TaskProcessErrorTrackingTest extends TestCase
 
         $this->taskProcess->refresh();
         $this->assertEquals(1, $this->taskProcess->error_count);
+    }
+
+    public function test_workflow_run_aggregates_error_counts_from_task_runs()
+    {
+        // Create a workflow
+        $workflowDefinition = WorkflowDefinition::factory()->create(['name' => 'Test Workflow']);
+        $workflowNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+        $workflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+
+        // Create multiple task runs with different error counts
+        $taskRun1 = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'workflow_run_id' => $workflowRun->id,
+            'workflow_node_id' => $workflowNode->id,
+        ]);
+        $taskRun2 = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'workflow_run_id' => $workflowRun->id,
+            'workflow_node_id' => $workflowNode->id,
+        ]);
+        $taskRun3 = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'workflow_run_id' => $workflowRun->id,
+            'workflow_node_id' => $workflowNode->id,
+        ]);
+
+        // Create task processes with errors for each task run
+        $taskProcess1 = TaskProcess::factory()->create(['task_run_id' => $taskRun1->id]);
+        $taskProcess2 = TaskProcess::factory()->create(['task_run_id' => $taskRun2->id]);
+        $taskProcess3 = TaskProcess::factory()->create(['task_run_id' => $taskRun3->id]);
+
+        // Create job dispatches with errors
+        $jobDispatch1 = $this->createJobDispatchWithErrors(2);
+        $jobDispatch2 = $this->createJobDispatchWithErrors(3);
+        $jobDispatch3 = $this->createJobDispatchWithErrors(1);
+
+        // Associate job dispatches with task processes
+        $taskProcess1->jobDispatches()->attach($jobDispatch1->id);
+        $taskProcess2->jobDispatches()->attach($jobDispatch2->id);
+        $taskProcess3->jobDispatches()->attach($jobDispatch3->id);
+
+        // Update error counts for task processes (this should cascade to task runs)
+        $this->service->updateTaskProcessErrorCount($taskProcess1);
+        $this->service->updateTaskProcessErrorCount($taskProcess2);
+        $this->service->updateTaskProcessErrorCount($taskProcess3);
+
+        // Refresh task runs to see updated error counts
+        $taskRun1->refresh();
+        $taskRun2->refresh();
+        $taskRun3->refresh();
+
+        // Verify task run error counts
+        $this->assertEquals(2, $taskRun1->task_process_error_count);
+        $this->assertEquals(3, $taskRun2->task_process_error_count);
+        $this->assertEquals(1, $taskRun3->task_process_error_count);
+
+        // Update workflow run error count
+        $workflowRun->updateErrorCount();
+        $workflowRun->refresh();
+
+        // Total errors should be 2 + 3 + 1 = 6
+        $this->assertEquals(6, $workflowRun->error_count);
+    }
+
+    public function test_workflow_run_error_count_updates_when_task_run_error_count_changes()
+    {
+        // Create a workflow
+        $workflowDefinition = WorkflowDefinition::factory()->create(['name' => 'Test Workflow']);
+        $workflowNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+        $workflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+
+        // Create a task run
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'workflow_run_id' => $workflowRun->id,
+            'workflow_node_id' => $workflowNode->id,
+        ]);
+
+        // Initially no errors
+        $this->assertEquals(0, $workflowRun->error_count);
+
+        // Create task process with errors
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $taskRun->id]);
+        $jobDispatch = $this->createJobDispatchWithErrors(5);
+        $taskProcess->jobDispatches()->attach($jobDispatch->id);
+
+        // Update task process error count
+        $this->service->updateTaskProcessErrorCount($taskProcess);
+
+        // Refresh task run
+        $taskRun->refresh();
+        $this->assertEquals(5, $taskRun->task_process_error_count);
+
+        // The booted method should have automatically updated workflow run error count
+        $workflowRun->refresh();
+        $this->assertEquals(5, $workflowRun->error_count);
+    }
+
+    public function test_get_error_log_entries_for_task_run()
+    {
+        // Create task process with errors
+        $jobDispatch = $this->createJobDispatchWithErrors(3);
+        $this->taskProcess->jobDispatches()->attach($jobDispatch->id);
+
+        // Get error log entries
+        $errors = $this->taskRun->getErrorLogEntries();
+
+        $this->assertCount(3, $errors);
+        $this->assertStringContainsString('Test error', $errors->first()->full_message);
+    }
+
+    public function test_get_error_log_entries_for_workflow_run()
+    {
+        // Create a workflow
+        $workflowDefinition = WorkflowDefinition::factory()->create(['name' => 'Test Workflow']);
+        $workflowNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+        $workflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+
+        // Create task run and task process with errors
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'workflow_run_id' => $workflowRun->id,
+            'workflow_node_id' => $workflowNode->id,
+        ]);
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $taskRun->id]);
+        $jobDispatch = $this->createJobDispatchWithErrors(4);
+        $taskProcess->jobDispatches()->attach($jobDispatch->id);
+
+        // Get error log entries for workflow run
+        $errors = $workflowRun->getErrorLogEntries();
+
+        $this->assertCount(4, $errors);
+        $this->assertStringContainsString('Test error', $errors->first()->full_message);
     }
 
     /**

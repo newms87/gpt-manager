@@ -237,6 +237,29 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         $this->aggregateChildUsage('taskProcesses');
     }
 
+    /**
+     * Get all error log entries for this task run
+     * Traverses: TaskRun -> TaskProcesses -> JobDispatches -> AuditRequests -> ErrorLogEntries
+     */
+    public function getErrorLogEntries()
+    {
+        // Get all job dispatch IDs for this task run's processes
+        $jobDispatchIds = \DB::table('job_dispatchables')
+            ->whereIn('model_id', $this->taskProcesses()->pluck('id'))
+            ->where('model_type', \App\Models\Task\TaskProcess::class)
+            ->pluck('job_dispatch_id');
+
+        // Get error log entries from audit requests associated with those job dispatches
+        return \Newms87\Danx\Models\Audit\ErrorLogEntry::whereHas('auditRequest', function ($query) use ($jobDispatchIds) {
+            $query->whereIn('id', function ($subquery) use ($jobDispatchIds) {
+                $subquery->select('running_audit_request_id')
+                    ->from('job_dispatch')
+                    ->whereIn('id', $jobDispatchIds)
+                    ->whereNotNull('running_audit_request_id');
+            });
+        })->with(['errorLog', 'auditRequest'])->orderByDesc('created_at')->get();
+    }
+
     public static function booted(): void
     {
         static::saving(function (TaskRun $taskRun) {
@@ -261,7 +284,12 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 }
             }
 
-            if ($taskRun->wasRecentlyCreated || $taskRun->wasChanged(['status', 'input_artifacts_count', 'output_artifacts_count', 'percent_complete'])) {
+            // Update the workflow run's error count when this task run's error count changes
+            if ($taskRun->wasChanged('task_process_error_count')) {
+                $taskRun->workflowRun?->updateErrorCount();
+            }
+
+            if ($taskRun->wasRecentlyCreated || $taskRun->wasChanged(['status', 'input_artifacts_count', 'output_artifacts_count', 'percent_complete', 'task_process_error_count'])) {
                 // If this is a task process job, we want to broadcast the changes immediately to provide a better user experience
                 // No need to spin up another job just to broadcast the status
                 if (Job::$runningJob) {
