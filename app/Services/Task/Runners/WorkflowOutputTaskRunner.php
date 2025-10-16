@@ -18,10 +18,19 @@ class WorkflowOutputTaskRunner extends BaseTaskRunner
         // Get all input artifacts for this output node
         $inputArtifacts = $this->taskProcess->inputArtifacts;
 
+        // Check if artifact naming is enabled in config
+        $enableNaming = $this->config('enable_artifact_naming', false);
+
         // Intelligently name artifacts using LLM before attaching to workflow
-        if ($inputArtifacts->isNotEmpty()) {
+        if ($enableNaming && $inputArtifacts->isNotEmpty()) {
             $workflowDefinition = $this->taskRun->workflowRun->workflowDefinition;
             $contextDescription = $workflowDefinition->name . "\n" . $workflowDefinition->description;
+
+            // Prepend custom instructions if provided
+            $customInstructions = $this->config('artifact_naming_instructions', '');
+            if ($customInstructions) {
+                $contextDescription = $customInstructions . "\n\n" . $contextDescription;
+            }
 
             $this->step('Naming ' . $inputArtifacts->count() . ' artifacts', 50);
 

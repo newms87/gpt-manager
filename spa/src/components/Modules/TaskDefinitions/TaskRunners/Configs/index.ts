@@ -14,3 +14,4 @@ export { default as RunWorkflowTaskRunnerConfig } from "./RunWorkflowTaskRunnerC
 export { default as SequentialCategoryMatcherTaskRunnerConfig } from "./SequentialCategoryMatcherTaskRunnerConfig.vue";
 export { default as SplitArtifactsTaskRunnerConfig } from "./SplitArtifactsTaskRunnerConfig.vue";
 export { default as SplitByFileTaskRunnerConfig } from "./SplitByFileTaskRunnerConfig.vue";
+export { default as WorkflowOutputTaskRunnerConfig } from "./WorkflowOutputTaskRunnerConfig.vue";

@@ -33,7 +33,8 @@ import {
 	RunWorkflowTaskRunnerConfig,
 	SequentialCategoryMatcherTaskRunnerConfig,
 	SplitArtifactsTaskRunnerConfig,
-	SplitByFileTaskRunnerConfig
+	SplitByFileTaskRunnerConfig,
+	WorkflowOutputTaskRunnerConfig
 } from "./Configs";
 import { WorkflowInputTaskRunnerNode, WorkflowOutputTaskRunnerNode } from "./Nodes";
 
@@ -161,7 +162,7 @@ export const TaskRunnerClasses = {
 		description: "Collects input artifacts and attaches them to the workflow as final output artifacts.",
 		lottie: DeliveryBoyLottie,
 		node: { is: WorkflowOutputTaskRunnerNode },
-		config: BaseTaskRunnerConfig
+		config: WorkflowOutputTaskRunnerConfig
 	},
 	"Google Docs Template": {
 		name: "Google Docs Template",
