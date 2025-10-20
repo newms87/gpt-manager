@@ -10,8 +10,6 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
-use App\Models\Workflow\WorkflowStatesContract;
-use App\Services\Task\TaskProcessErrorTrackingService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as EloquentCollection;
@@ -38,7 +36,6 @@ class TaskProcessRunnerService
         $taskProcess    = $taskRun->taskProcesses()->create([
             'name'     => $name,
             'activity' => "Preparing $name...",
-            'status'   => WorkflowStatesContract::STATUS_PENDING,
         ]);
 
         LockHelper::acquire($taskProcess);

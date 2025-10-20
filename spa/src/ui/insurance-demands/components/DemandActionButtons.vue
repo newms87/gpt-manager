@@ -64,7 +64,7 @@ import { ActionButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import { useGoogleDocsAuth } from "../../shared/composables/useGoogleDocsAuth";
 import type { UiDemand } from "../../shared/types";
-import { useDemands, isWorkflowActive } from "../composables";
+import { useDemands, isWorkflowActive, isWorkflowCompleted } from "../composables";
 
 const props = withDefaults(defineProps<{
     demand: UiDemand;
@@ -107,32 +107,63 @@ const isWritingDemandLetterComputed = computed(() => {
 	return isWorkflowActive(props.demand?.write_demand_letter_workflow_run) || isWritingDemandLetter.value;
 });
 
-// Use backend-provided capability flags for consistency
+// Calculate disabled state based on workflow completion (single source of truth)
 const canWriteMedicalSummary = computed(() => {
-    return Boolean(props.demand?.can_write_medical_summary);
+    // Medical Summary can be written only when Extract Data workflow is completed
+    return isWorkflowCompleted(props.demand?.extract_data_workflow_run);
 });
 
 const writeMedicalSummaryTooltip = computed(() => {
     if (!canWriteMedicalSummary.value) {
-        const extractDataFailed = props.demand.extract_data_workflow_run?.status === "Failed";
-        if (extractDataFailed) {
+        const extractDataRun = props.demand?.extract_data_workflow_run;
+
+        if (!extractDataRun) {
+            return "Extract data first before writing medical summary";
+        }
+
+        if (extractDataRun.status === "Failed") {
             return "Extract data failed - please retry extraction before writing medical summary";
         }
+
+        if (extractDataRun.status === "Stopped") {
+            return "Extract data was stopped - please resume or restart before writing medical summary";
+        }
+
+        if (isWorkflowActive(extractDataRun)) {
+            return "Extract data is currently running - please wait for completion";
+        }
+
         return "Extract data first before writing medical summary";
     }
     return undefined;
 });
 
+// Calculate disabled state based on workflow completion (single source of truth)
 const canWriteDemandLetter = computed(() => {
-    return Boolean(props.demand?.can_write_demand_letter);
+    // Demand Letter can be written only when Medical Summary workflow is completed
+    return isWorkflowCompleted(props.demand?.write_medical_summary_workflow_run);
 });
 
 const writeDemandLetterTooltip = computed(() => {
     if (!canWriteDemandLetter.value) {
-        const medicalSummaryFailed = props.demand.write_medical_summary_workflow_run?.status === "Failed";
-        if (medicalSummaryFailed) {
+        const medicalSummaryRun = props.demand?.write_medical_summary_workflow_run;
+
+        if (!medicalSummaryRun) {
+            return "Write medical summary first before writing demand letter";
+        }
+
+        if (medicalSummaryRun.status === "Failed") {
             return "Medical summary failed - please retry before writing demand letter";
         }
+
+        if (medicalSummaryRun.status === "Stopped") {
+            return "Medical summary was stopped - please resume or restart before writing demand letter";
+        }
+
+        if (isWorkflowActive(medicalSummaryRun)) {
+            return "Medical summary is currently running - please wait for completion";
+        }
+
         return "Write medical summary first before writing demand letter";
     }
     return undefined;
