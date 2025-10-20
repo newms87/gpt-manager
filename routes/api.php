@@ -125,6 +125,7 @@ Route::prefix('oauth')->group(function () {
     Route::get('{service}/authorize', [OAuthController::class, 'authorize']);
     Route::get('callback', [OAuthController::class, 'callback'])->withoutMiddleware('auth:sanctum');
     Route::get('{service}/status', [OAuthController::class, 'status']);
+    Route::post('{service}/validate', [OAuthController::class, 'validate']);
     Route::post('{service}/refresh', [OAuthController::class, 'refresh']);
     Route::delete('{service}/revoke', [OAuthController::class, 'revoke']);
 

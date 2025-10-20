@@ -1,21 +1,13 @@
 <template>
-    <div class="google-docs-auth">
+    <div :class="compact ? '' : 'google-docs-auth'">
         <!-- Loading State -->
-        <div v-if="isLoading" class="flex items-center space-x-2 text-gray-500">
+        <div v-if="isValidating" class="flex items-center space-x-2 text-gray-500">
             <div class="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
             <span class="text-sm">Checking Google Docs...</span>
         </div>
 
-        <!-- Error State -->
-        <div v-else-if="error" class="text-red-500 text-sm">
-            <div class="flex items-center space-x-2">
-                <FaSolidTriangleExclamation class="w-4 h-4" />
-                <span>Error checking Google Docs</span>
-            </div>
-        </div>
-
         <!-- Authorized State -->
-        <div v-else-if="isAuthorized" class="space-y-1">
+        <div v-else-if="isAuthorized" :class="compact ? 'inline-flex items-center space-x-2' : 'space-y-1'">
             <div class="flex items-center space-x-2 text-green-600">
                 <FaSolidCheck class="w-4 h-4" />
                 <span class="text-sm font-medium">Linked to Google Docs</span>
@@ -28,13 +20,18 @@
                     <FaSolidArrowsRotate class="w-3 h-3" :class="{ 'animate-spin': isConnecting }" />
                 </button>
             </div>
-            <div v-if="authDate" class="text-xs text-gray-500 ml-6">
+            <div v-if="authDate && !compact" class="text-xs text-gray-500 ml-6">
                 Connected {{ formattedAuthDate }}
             </div>
         </div>
 
-        <!-- Unauthorized State -->
-        <div v-else>
+        <!-- Error State (unexpected errors only) -->
+        <div v-else-if="error" class="space-y-2">
+            <div class="flex items-center space-x-2 text-red-500 text-sm">
+                <FaSolidTriangleExclamation class="w-4 h-4" />
+                <span>{{ error }}</span>
+            </div>
+            <!-- Still show connect button even on error -->
             <button
                 :disabled="isConnecting"
                 class="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -46,46 +43,54 @@
         </span>
             </button>
         </div>
+
+        <!-- Unauthorized State (no token or expired) -->
+        <div v-else class="space-y-2">
+            <button
+                :disabled="isConnecting"
+                class="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                @click="handleConnect"
+            >
+                <FaSolidLink class="w-4 h-4" />
+                <span class="text-sm font-medium">
+          {{ isConnecting ? "Connecting..." : "Connect Google Docs" }}
+        </span>
+            </button>
+            <!-- Optional note if token is expired -->
+            <div v-if="tokenExpired && !compact" class="text-xs text-gray-500">
+                Connection expired - please reconnect
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { FaSolidArrowsRotate, FaSolidCheck, FaSolidLink, FaSolidTriangleExclamation } from "danx-icon";
 import { request } from "quasar-ui-danx";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
+import { useGoogleDocsAuth } from "../composables/useGoogleDocsAuth";
+
+// Props
+withDefaults(defineProps<{
+    compact?: boolean;
+}>(), {
+    compact: false
+});
 
 // Types
-interface OAuthStatusResponse {
-    has_token: boolean;
-    is_configured: boolean;
-    service: string;
-    token?: {
-        created_at: string;
-        [key: string]: any;
-    };
-}
-
 interface OAuthAuthorizeResponse {
     authorization_url: string;
     service: string;
     state: string;
 }
 
-// State
-const isLoading = ref(true);
+// Use shared auth state composable
+const { isAuthorized, isValidating, error, authDate, tokenExpired, validateAuth } = useGoogleDocsAuth();
+
+// Local state
 const isConnecting = ref(false);
-const error = ref<string | null>(null);
-const oauthStatus = ref<OAuthStatusResponse | null>(null);
 
 // Computed
-const isAuthorized = computed(() =>
-    oauthStatus.value?.has_token && oauthStatus.value?.is_configured
-);
-
-const authDate = computed(() =>
-    oauthStatus.value?.token?.created_at
-);
-
 const formattedAuthDate = computed(() => {
     if (!authDate.value) return "";
 
@@ -111,21 +116,6 @@ const formattedAuthDate = computed(() => {
 });
 
 // Methods
-async function checkOAuthStatus(): Promise<void> {
-    try {
-        isLoading.value = true;
-        error.value = null;
-
-        const response = await request.get("oauth/google/status");
-        oauthStatus.value = response;
-    } catch (err) {
-        console.error("Error checking OAuth status:", err);
-        error.value = "Failed to check Google Docs connection";
-    } finally {
-        isLoading.value = false;
-    }
-}
-
 async function handleConnect(): Promise<void> {
     try {
         isConnecting.value = true;
@@ -147,11 +137,6 @@ async function handleConnect(): Promise<void> {
         isConnecting.value = false;
     }
 }
-
-// Lifecycle
-onMounted(() => {
-    checkOAuthStatus();
-});
 </script>
 
 <style lang="scss" scoped>

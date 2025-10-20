@@ -99,10 +99,25 @@ class OAuthController extends ActionController
     /**
      * Get current OAuth status for a service
      */
-    public function status(string $service): JsonResponse
+    public function status(Request $request, string $service): JsonResponse
     {
         $oauthService = app(OAuthService::class);
-        $token        = $oauthService->getToken($service);
+        $shouldValidate = $request->query('validate') === 'true';
+
+        // If validation is requested, use the full API validation
+        if ($shouldValidate) {
+            $result = $oauthService->validateTokenWithApi($service);
+
+            return response()->json([
+                'has_token'     => $result['valid'],
+                'is_configured' => $oauthService->isConfigured($service),
+                'service'       => $service,
+                'validation'    => $result,
+            ]);
+        }
+
+        // Otherwise, just check if token exists
+        $token = $oauthService->getToken($service);
 
         if (!$token) {
             return response()->json([
@@ -118,6 +133,17 @@ class OAuthController extends ActionController
             'service'       => $service,
             'token'         => AuthTokenResource::data($token),
         ]);
+    }
+
+    /**
+     * Validate OAuth token by testing with actual API
+     */
+    public function validate(string $service): JsonResponse
+    {
+        $oauthService = app(OAuthService::class);
+        $result = $oauthService->validateTokenWithApi($service);
+
+        return response()->json($result);
     }
 
     /**

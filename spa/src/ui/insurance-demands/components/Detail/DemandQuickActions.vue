@@ -7,6 +7,17 @@
         </template>
 
         <div class="flex flex-col space-y-2">
+            <!-- Google Docs Auth Warning -->
+            <div v-if="!isAuthorized" class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start space-x-2">
+                <FaSolidTriangleExclamation class="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm text-yellow-800 mb-2">
+                        Connect Google Docs to enable Extract Data, Medical Summary, and Demand Letter actions
+                    </p>
+                    <GoogleDocsAuth :compact="true" />
+                </div>
+            </div>
+
             <DemandActionButtons
                 :demand="demand"
                 size="md"
@@ -57,10 +68,12 @@
 </template>
 
 <script setup lang="ts">
+import { FaSolidTriangleExclamation } from "danx-icon";
 import { ActionButton, ConfirmDialog } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { UiCard } from "../../../shared";
+import { GoogleDocsAuth, UiCard } from "../../../shared";
+import { useGoogleDocsAuth } from "../../../shared/composables/useGoogleDocsAuth";
 import type { UiDemand } from "../../../shared/types";
 import { useDemands } from "../../composables";
 import { DEMAND_STATUS } from "../../config";
@@ -76,6 +89,7 @@ const props = defineProps<{
 
 const router = useRouter();
 const { updateDemand, deleteDemand: deleteDemandAction } = useDemands();
+const { isAuthorized } = useGoogleDocsAuth();
 
 // Local loading states
 const isCompleting = ref(false);

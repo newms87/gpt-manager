@@ -883,4 +883,377 @@ class OAuthServiceTest extends AuthenticatedTestCase
         $this->assertTrue($result);
         $this->assertTrue($token->fresh()->trashed());
     }
+
+    // Tests for validateTokenWithApi method
+
+    public function test_validateTokenWithApi_withNoToken_returnsInvalid(): void
+    {
+        // Given - no token exists
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertFalse($result['valid']);
+        $this->assertEquals('no_token', $result['reason']);
+        $this->assertArrayNotHasKey('token', $result);
+    }
+
+    public function test_validateTokenWithApi_withValidToken_returnsValid(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'valid_token',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        // Mock successful Google API validation
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/about*' => Http::response([
+                'user' => ['emailAddress' => 'test@example.com']
+            ], 200)
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertTrue($result['valid']);
+        $this->assertEquals('valid', $result['reason']);
+        $this->assertArrayHasKey('token', $result);
+        $this->assertEquals($token->id, $result['token']['id']);
+
+        // Token should NOT be soft deleted
+        $this->assertFalse($token->fresh()->trashed());
+    }
+
+    public function test_validateTokenWithApi_withExpiredTokenNoRefresh_returnsExpired(): void
+    {
+        // Given
+        AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'expired_token',
+            'refresh_token' => null,
+            'expires_at' => now()->subHour(),
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertFalse($result['valid']);
+        $this->assertEquals('expired', $result['reason']);
+        $this->assertArrayNotHasKey('token', $result);
+    }
+
+    public function test_validateTokenWithApi_withExpiredTokenValidRefresh_refreshesAndValidates(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'expired_token',
+            'refresh_token' => 'valid_refresh_token',
+            'expires_at' => now()->subHour(),
+        ]);
+
+        // Mock token refresh
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'new_access_token',
+                'expires_in' => 3600,
+            ], 200),
+            'https://www.googleapis.com/drive/v3/about*' => Http::response([
+                'user' => ['emailAddress' => 'test@example.com']
+            ], 200)
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertTrue($result['valid']);
+        $this->assertEquals('valid', $result['reason']);
+        $this->assertArrayHasKey('token', $result);
+
+        // Verify token was refreshed
+        $token->refresh();
+        $this->assertEquals('new_access_token', $token->access_token);
+        $this->assertFalse($token->trashed());
+    }
+
+    public function test_validateTokenWithApi_withExpiredTokenRefreshFails_returnsExpired(): void
+    {
+        // Given
+        AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'expired_token',
+            'refresh_token' => 'invalid_refresh_token',
+            'expires_at' => now()->subHour(),
+        ]);
+
+        // Mock failed token refresh
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response([
+                'error' => 'invalid_grant',
+                'error_description' => 'Token has been revoked'
+            ], 400)
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertFalse($result['valid']);
+        $this->assertEquals('expired', $result['reason']);
+        $this->assertArrayNotHasKey('token', $result);
+    }
+
+    public function test_validateTokenWithApi_withRevokedToken_deletesTokenAndReturnsRevoked(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'revoked_token',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        // Mock failed Google API validation (revoked token)
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/about*' => Http::response([
+                'error' => [
+                    'code' => 401,
+                    'message' => 'Invalid Credentials'
+                ]
+            ], 401)
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertFalse($result['valid']);
+        $this->assertEquals('revoked', $result['reason']);
+        $this->assertArrayNotHasKey('token', $result);
+
+        // Token should be soft deleted
+        $this->assertTrue($token->fresh()->trashed());
+    }
+
+    public function test_validateTokenWithApi_withApiError_returnsRevoked(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'valid_token',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        // Mock network/API error - GoogleDocsApi catches exceptions and returns false
+        // which is treated as failed validation (revoked)
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/about*' => function () {
+                throw new \Exception('Connection timed out after 30 seconds');
+            }
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertFalse($result['valid']);
+        // GoogleDocsApi catches the exception and returns false, which is treated as "revoked"
+        $this->assertEquals('revoked', $result['reason']);
+
+        // Token WILL be deleted since GoogleDocsApi returns false (validation failed)
+        $this->assertTrue($token->fresh()->trashed());
+    }
+
+    public function test_validateTokenWithApi_with401Error_deletesToken(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'unauthorized_token',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        // Mock 401 error in exception message
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/about*' => function () {
+                throw new \Exception('HTTP 401 Unauthorized');
+            }
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertFalse($result['valid']);
+        $this->assertEquals('revoked', $result['reason']);
+
+        // Token should be deleted for 401 errors
+        $this->assertTrue($token->fresh()->trashed());
+    }
+
+    public function test_validateTokenWithApi_with403Error_deletesToken(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'forbidden_token',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        // Mock 403 error in exception message
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/about*' => function () {
+                throw new \Exception('HTTP 403 Forbidden');
+            }
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertFalse($result['valid']);
+        $this->assertEquals('revoked', $result['reason']);
+
+        // Token should be deleted for 403 errors
+        $this->assertTrue($token->fresh()->trashed());
+    }
+
+    public function test_validateTokenWithApi_withRevokedInErrorMessage_deletesToken(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'revoked_token',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        // Mock error with "revoked" in message
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/about*' => function () {
+                throw new \Exception('Token has been revoked by user');
+            }
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertFalse($result['valid']);
+        $this->assertEquals('revoked', $result['reason']);
+
+        // Token should be deleted when "revoked" is in error message
+        $this->assertTrue($token->fresh()->trashed());
+    }
+
+    public function test_validateTokenWithApi_withNonAuthError_deletesToken(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'valid_token',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        // Mock generic error (e.g., network timeout)
+        // GoogleDocsApi catches exceptions and returns false, which is treated as validation failed
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/about*' => function () {
+                throw new \Exception('Connection timed out - temporary network issue');
+            }
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertFalse($result['valid']);
+        // GoogleDocsApi returns false for all errors, so it's treated as "revoked"
+        $this->assertEquals('revoked', $result['reason']);
+
+        // Token WILL be deleted since GoogleDocsApi returns false
+        $this->assertTrue($token->fresh()->trashed());
+    }
+
+    public function test_validateTokenWithApi_withDefaultTeam_usesCurrentTeam(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'valid_token',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        // Mock successful validation
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/about*' => Http::response([
+                'user' => ['emailAddress' => 'test@example.com']
+            ], 200)
+        ]);
+
+        // When - Don't pass team parameter
+        $result = $this->service->validateTokenWithApi($this->testService);
+
+        // Then
+        $this->assertIsArray($result);
+        $this->assertTrue($result['valid']);
+        $this->assertEquals($token->id, $result['token']['id']);
+    }
+
+    public function test_validateTokenWithApi_withUnsupportedService_returnsApiError(): void
+    {
+        // Given
+        $token = AuthToken::factory()->forService('unsupported_service')->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'valid_token',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi('unsupported_service', $this->user->currentTeam);
+
+        // Then - The ValidationError is caught and returned as api_error
+        $this->assertIsArray($result);
+        $this->assertFalse($result['valid']);
+        $this->assertEquals('api_error', $result['reason']);
+
+        // Token should NOT be deleted (unsupported service, not an auth issue)
+        $this->assertFalse($token->fresh()->trashed());
+    }
+
+    public function test_validateTokenWithApi_includesTokenResourceInResponse(): void
+    {
+        // Given
+        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
+            'access_token' => 'valid_token',
+            'expires_at' => now()->addHour(),
+            'scopes' => ['https://www.googleapis.com/auth/documents'],
+        ]);
+
+        // Mock successful validation
+        Http::fake([
+            'https://www.googleapis.com/drive/v3/about*' => Http::response([
+                'user' => ['emailAddress' => 'test@example.com']
+            ], 200)
+        ]);
+
+        // When
+        $result = $this->service->validateTokenWithApi($this->testService, $this->user->currentTeam);
+
+        // Then
+        $this->assertTrue($result['valid']);
+        $this->assertArrayHasKey('token', $result);
+
+        // Verify token resource structure
+        $tokenData = $result['token'];
+        $this->assertEquals($token->id, $tokenData['id']);
+        $this->assertEquals($token->team_id, $tokenData['team_id']);
+        $this->assertEquals($token->service, $tokenData['service']);
+        $this->assertEquals($token->type, $tokenData['type']);
+        $this->assertArrayHasKey('is_valid', $tokenData);
+        $this->assertArrayHasKey('is_expired', $tokenData);
+    }
 }

@@ -2,9 +2,11 @@
 
 namespace App\Services\Auth;
 
+use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Exceptions\Auth\NoTokenFoundException;
 use App\Exceptions\Auth\TokenExpiredException;
 use App\Exceptions\Auth\TokenRevokedException;
+use App\Http\Resources\Auth\AuthTokenResource;
 use App\Models\Auth\AuthToken;
 use App\Models\Team\Team;
 use App\Repositories\Auth\AuthTokenRepository;
@@ -331,6 +333,115 @@ class OAuthService
             ]);
 
             throw new ValidationError('Failed to refresh OAuth token: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Validate OAuth token by testing with actual API
+     */
+    public function validateTokenWithApi(string $service, ?Team $team = null): array
+    {
+        $team = $team ?: team();
+        $token = $this->repository->getOAuthToken($service, $team);
+
+        // No token exists
+        if (!$token) {
+            static::log('Token validation failed - no token found', [
+                'service' => $service,
+                'team_id' => $team?->id,
+            ]);
+
+            return [
+                'valid' => false,
+                'reason' => 'no_token',
+            ];
+        }
+
+        // Check if token is expired
+        if ($token->isExpired()) {
+            static::log('Token validation - attempting refresh for expired token', [
+                'service' => $service,
+                'team_id' => $token->team_id,
+            ]);
+
+            // Try to refresh the token first
+            if ($token->canBeRefreshed()) {
+                try {
+                    $token = $this->refreshToken($service, $token);
+                } catch (\Exception $e) {
+                    static::log('Token validation - refresh failed', [
+                        'service' => $service,
+                        'team_id' => $token->team_id,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    return [
+                        'valid' => false,
+                        'reason' => 'expired',
+                    ];
+                }
+            } else {
+                return [
+                    'valid' => false,
+                    'reason' => 'expired',
+                ];
+            }
+        }
+
+        // Call the appropriate API's validateToken method
+        try {
+            $isValid = match ($service) {
+                'google' => app(GoogleDocsApi::class)->validateToken(),
+                default => throw new ValidationError("Token validation not implemented for service: {$service}", 400),
+            };
+
+            if ($isValid) {
+                static::log('Token validation successful', [
+                    'service' => $service,
+                    'team_id' => $token->team_id,
+                ]);
+
+                return [
+                    'valid' => true,
+                    'reason' => 'valid',
+                    'token' => AuthTokenResource::data($token),
+                ];
+            }
+
+            // Token validation failed - mark as invalid
+            static::log('Token validation failed - marking as invalid', [
+                'service' => $service,
+                'team_id' => $token->team_id,
+            ]);
+
+            $token->markAsInvalid();
+
+            return [
+                'valid' => false,
+                'reason' => 'revoked',
+            ];
+
+        } catch (\Exception $e) {
+            static::log('Token validation API error', [
+                'service' => $service,
+                'team_id' => $token->team_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Don't mark token as invalid on network errors (might be temporary)
+            // Only mark invalid on clear revocation/auth errors
+            if (str_contains($e->getMessage(), '401') || str_contains($e->getMessage(), '403') || str_contains($e->getMessage(), 'revoked')) {
+                $token->markAsInvalid();
+                return [
+                    'valid' => false,
+                    'reason' => 'revoked',
+                ];
+            }
+
+            return [
+                'valid' => false,
+                'reason' => 'api_error',
+            ];
         }
     }
 

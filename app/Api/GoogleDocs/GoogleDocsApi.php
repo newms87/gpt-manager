@@ -297,6 +297,39 @@ class GoogleDocsApi extends Api
 
 
     /**
+     * Validate that the current OAuth token is valid by making a test API call
+     */
+    public function validateToken(): bool
+    {
+        try {
+            // Make a lightweight API call to Google Drive API to verify token
+            // Using the /about endpoint with minimal fields
+            $response = Http::withHeaders($this->getRequestHeaders())
+                ->get('https://www.googleapis.com/drive/v3/about?fields=user/emailAddress');
+
+            if ($response->successful()) {
+                static::log("OAuth token validated successfully", [
+                    'status' => $response->status(),
+                ]);
+                return true;
+            }
+
+            static::log("OAuth token validation failed", [
+                'status' => $response->status(),
+                'response' => $response->json(),
+            ]);
+
+            return false;
+
+        } catch(\Exception $e) {
+            static::log("OAuth token validation error", [
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Check if OAuth authentication is available for current team
      */
     public function hasOAuthToken(): bool
