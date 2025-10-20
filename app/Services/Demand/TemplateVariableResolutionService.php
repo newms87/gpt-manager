@@ -37,6 +37,9 @@ class TemplateVariableResolutionService
         int         $teamId = null
     ): array
     {
+        // Sort artifacts by name for consistent ordering in results
+        $artifacts = $artifacts->sortBy('name')->values();
+
         static::log('Starting variable resolution', [
             'variable_count' => $templateVariables->count(),
             'variable_names' => $templateVariables->pluck('name')->toArray(),
