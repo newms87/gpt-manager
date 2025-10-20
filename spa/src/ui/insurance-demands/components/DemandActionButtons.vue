@@ -1,7 +1,8 @@
 <template>
     <div>
-        <!-- Extract Data Button -->
+        <!-- Extract Data Button (Only shown when authorized) -->
         <ActionButton
+            v-if="isAuthorized"
             type="play"
             color="sky"
             :size="size"
@@ -11,8 +12,9 @@
             @click="handleExtractData"
         />
 
-        <!-- Write Medical Summary Button -->
+        <!-- Write Medical Summary Button (Only shown when authorized) -->
         <ActionButton
+            v-if="isAuthorized"
             type="edit"
             color="teal"
             :size="size"
@@ -24,8 +26,9 @@
             @click="showInstructionTemplateSelector = true"
         />
 
-        <!-- Write Demand Letter Button -->
+        <!-- Write Demand Letter Button (Only shown when authorized) -->
         <ActionButton
+            v-if="isAuthorized"
             type="document"
             color="green"
             :size="size"
@@ -59,8 +62,9 @@
 import { DemandTemplateSelector, InstructionTemplateSelector } from "@/ui/demand-templates/components";
 import { ActionButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
+import { useGoogleDocsAuth } from "../../shared/composables/useGoogleDocsAuth";
 import type { UiDemand } from "../../shared/types";
-import { useDemands } from "../composables";
+import { useDemands, isWorkflowActive } from "../composables";
 
 const props = withDefaults(defineProps<{
     demand: UiDemand;
@@ -80,18 +84,28 @@ const props = withDefaults(defineProps<{
 
 // Import composable for demand actions
 const { extractData, writeMedicalSummary, writeDemandLetter } = useDemands();
+const { isAuthorized } = useGoogleDocsAuth();
 
-// Local state
+// Local state for optimistic UI during API calls
 const isExtractingData = ref(false);
 const isWritingMedicalSummary = ref(false);
 const isWritingDemandLetter = ref(false);
 const showInstructionTemplateSelector = ref(false);
 const showDemandTemplateSelector = ref(false);
 
-// Computed loading states based on workflow status and local state
-const isExtractingDataComputed = computed(() => props.demand?.is_extract_data_running || isExtractingData.value);
-const isWritingMedicalSummaryComputed = computed(() => props.demand?.is_write_medical_summary_running || isWritingMedicalSummary.value);
-const isWritingDemandLetterComputed = computed(() => props.demand?.is_write_demand_letter_running || isWritingDemandLetter.value);
+// Computed loading states based on workflow_run.status (single source of truth)
+// Local state is only used for optimistic UI during the API call itself
+const isExtractingDataComputed = computed(() => {
+	return isWorkflowActive(props.demand?.extract_data_workflow_run) || isExtractingData.value;
+});
+
+const isWritingMedicalSummaryComputed = computed(() => {
+	return isWorkflowActive(props.demand?.write_medical_summary_workflow_run) || isWritingMedicalSummary.value;
+});
+
+const isWritingDemandLetterComputed = computed(() => {
+	return isWorkflowActive(props.demand?.write_demand_letter_workflow_run) || isWritingDemandLetter.value;
+});
 
 // Use backend-provided capability flags for consistency
 const canWriteMedicalSummary = computed(() => {

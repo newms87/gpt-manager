@@ -125,6 +125,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
 import { DEMAND_STATUS } from "../../config";
+import { isWorkflowActive, isWorkflowCompleted, isWorkflowFailed, isWorkflowStopped } from "../../composables";
 
 const props = defineProps<{
     demand: UiDemand | null;
@@ -167,12 +168,9 @@ const calculateRuntime = (workflowRun: any, isActive: boolean): string | null =>
 const hasActiveWorkflows = computed(() => {
     if (!props.demand) return false;
 
-    const extractDataActive = props.demand.extract_data_workflow_run?.status &&
-        ["Pending", "Running", "Incomplete"].includes(props.demand.extract_data_workflow_run.status);
-    const writeMedicalSummaryActive = props.demand.write_medical_summary_workflow_run?.status &&
-        ["Pending", "Running", "Incomplete"].includes(props.demand.write_medical_summary_workflow_run.status);
-    const writeDemandLetterActive = props.demand.write_demand_letter_workflow_run?.status &&
-        ["Pending", "Running", "Incomplete"].includes(props.demand.write_demand_letter_workflow_run.status);
+    const extractDataActive = isWorkflowActive(props.demand.extract_data_workflow_run);
+    const writeMedicalSummaryActive = isWorkflowActive(props.demand.write_medical_summary_workflow_run);
+    const writeDemandLetterActive = isWorkflowActive(props.demand.write_demand_letter_workflow_run);
 
     return extractDataActive || writeMedicalSummaryActive || writeDemandLetterActive;
 });
@@ -213,22 +211,20 @@ onUnmounted(() => {
 const statusTimeline = computed(() => {
     if (!props.demand) return [];
 
-    // Helper function to determine workflow state
-    const getWorkflowState = (status: string | undefined) => {
-        if (!status) return { completed: false, failed: false, active: false, stopped: false };
-
-        const completed = ["Skipped", "Completed"].includes(status);
-        const active = ["Pending", "Running", "Incomplete"].includes(status);
-        const stopped = status === "Stopped";
-        const failed = !completed && !active && !stopped; // Everything else is failed
-
-        return { completed, failed, active, stopped };
+    // Helper function to determine workflow state using shared logic
+    const getWorkflowState = (workflowRun?: any) => {
+        return {
+            completed: isWorkflowCompleted(workflowRun),
+            failed: isWorkflowFailed(workflowRun),
+            active: isWorkflowActive(workflowRun),
+            stopped: isWorkflowStopped(workflowRun)
+        };
     };
 
-    // Get workflow states
-    const extractDataState = getWorkflowState(props.demand.extract_data_workflow_run?.status);
-    const writeMedicalSummaryState = getWorkflowState(props.demand.write_medical_summary_workflow_run?.status);
-    const writeDemandLetterState = getWorkflowState(props.demand.write_demand_letter_workflow_run?.status);
+    // Get workflow states using shared helpers
+    const extractDataState = getWorkflowState(props.demand.extract_data_workflow_run);
+    const writeMedicalSummaryState = getWorkflowState(props.demand.write_medical_summary_workflow_run);
+    const writeDemandLetterState = getWorkflowState(props.demand.write_demand_letter_workflow_run);
     const hasFiles = props.demand.files && props.demand.files.length > 0;
 
     // Determine if steps should be grayed out
