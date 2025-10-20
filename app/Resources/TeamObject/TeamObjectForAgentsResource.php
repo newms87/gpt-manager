@@ -9,10 +9,12 @@ use Log;
 
 class TeamObjectForAgentsResource
 {
+    const array TEAM_OBJECT_FIELDS = ['id', 'type', 'name', 'date', 'description', 'url', 'meta'];
+
     public static function make(TeamObject $teamObject): array
     {
         // Filter out only desired and non-empty attributes
-        $loadedObject = collect($teamObject->toArray())->only(['id', 'url', 'date', 'type', 'name', 'meta', 'description'])->toArray();
+        $loadedObject = collect($teamObject->toArray())->only(static::TEAM_OBJECT_FIELDS)->toArray();
 
         $schema = $teamObject->schemaDefinition?->schema;
 
@@ -56,7 +58,7 @@ class TeamObjectForAgentsResource
             }
 
             $relatedSchema        = $schema['items']['properties'][$relationship->relationship_name] ?? $schema['properties'][$relationship->relationship_name] ?? [];
-            $arrayRelatedObject   = collect($relatedObject->toArray())->except(['created_at', 'updated_at', 'deleted_at'])->toArray();
+            $arrayRelatedObject   = collect($relatedObject->toArray())->only(static::TEAM_OBJECT_FIELDS)->toArray();
             $relatedRelationships = [];
             $relatedAttributes    = static::loadTeamObjectAttributes($relatedObject);
 

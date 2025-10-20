@@ -32,7 +32,19 @@ return [
         'max_batch_size'         => env('ARTIFACT_NAMING_MAX_BATCH_SIZE', 20),
         'content_preview_length' => 500,
     ],
-    'models'                       => [
+
+    'variable_extraction' => [
+        'name'        => 'Variable Extraction Agent',
+        'model'       => 'gpt-5-mini',
+        'api_options' => [
+            'reasoning' => [
+                'effort' => 'medium',
+            ],
+        ],
+        'timeout'     => 300,
+    ],
+
+    'models' => [
         'gpt-5'                             => [
             'api'          => OpenAiApi::class,
             'name'         => 'GPT 5',

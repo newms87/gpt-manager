@@ -4,11 +4,12 @@ namespace App\Services\Demand;
 
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
-use App\Models\Agent\AgentThreadMessage;
 use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
+use App\Models\Task\TaskArtifactFilter;
 use App\Models\TeamObject\TeamObject;
+use App\Repositories\ThreadRepository;
 use App\Resources\TeamObject\TeamObjectForAgentsResource;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\ArtifactFilterService;
@@ -276,7 +277,7 @@ class TemplateVariableResolutionService
     ): array
     {
         $instructions = $this->buildAiInstructions($aiVariables, $preResolvedValues);
-        $agent        = $this->findOrCreateVariableExtractorAgent($teamId);
+        $agent        = $this->findOrCreateVariableExtractorAgent();
         $thread       = $this->createAgentThread($agent, $teamId, $instructions, $artifacts);
 
         // Get the response schema
@@ -285,6 +286,7 @@ class TemplateVariableResolutionService
         // Run the agent
         $threadRun = app(AgentThreadService::class)
             ->withResponseFormat($responseSchema)
+            ->withTimeout(config('ai.variable_extraction.timeout'))
             ->run($thread);
 
         if (!$threadRun->isCompleted()) {
@@ -292,22 +294,33 @@ class TemplateVariableResolutionService
         }
 
         // Parse response
-        $response     = $this->getAssistantResponse($thread);
-        $responseData = $this->parseAiResponse($response);
+        $responseData = $threadRun->lastMessage->getJsonContent();
+        $variables    = $responseData['variables'] ?? null;
+        $title        = $responseData['title'] ?? '';
+
+        if (!$variables) {
+            throw new ValidationError('AI variable resolution returned invalid response format', 500);
+        }
+
+        static::log('AI returned variable resolution response', [
+            'variable_keys' => $variables,
+            'title'         => $title,
+        ]);
 
         // Convert array of {name, value} objects to name => value map
         $variableValues = [];
-        if (isset($responseData['variables']) && is_array($responseData['variables'])) {
-            foreach ($responseData['variables'] as $variable) {
-                if (isset($variable['name']) && isset($variable['value'])) {
-                    $variableValues[$variable['name']] = $variable['value'];
-                }
+        foreach($variables as $variable) {
+            $variableValue = $variable['value'] ?? null;
+            if ($variableValue === null) {
+                $variableValues[$variable['name']] = '{' . $variable['name'] . '}';
+            } else {
+                $variableValues[$variable['name']] = $variable['value'];
             }
         }
 
         return [
             'values' => $variableValues,
-            'title'  => $responseData['title'] ?? '',
+            'title'  => $title,
         ];
     }
 
@@ -340,6 +353,7 @@ class TemplateVariableResolutionService
 
         $instructions .= "Also generate an appropriate title for this demand based on the extracted variables. ";
         $instructions .= "Generate appropriate values for all variables and create a descriptive title based on the extracted information.";
+        $instructions .= "\nUse human readable formats for humans in the USA (ie: dates like May 25th, 2025, currency like $1,234.56, etc.).\n\n";
 
         return $instructions;
     }
@@ -347,19 +361,19 @@ class TemplateVariableResolutionService
     /**
      * Find or create the Template Variable Extractor agent
      */
-    protected function findOrCreateVariableExtractorAgent(int $teamId): Agent
+    protected function findOrCreateVariableExtractorAgent(): Agent
     {
         $agent = Agent::where('name', 'Template Variable Extractor')
-            ->where('team_id', $teamId)
+            ->whereNull('team_id')
             ->first();
 
         if (!$agent) {
-            $agent = Agent::create([
-                'name'         => 'Template Variable Extractor',
-                'team_id'      => $teamId,
-                'model'        => 'gpt-4o',
-                'instructions' => 'You are an expert at extracting structured data from documents.',
-                'api_options'  => [],
+            $config = config('ai.variable_extraction');
+            $agent  = Agent::create([
+                'name'        => $config['name'],
+                'team_id'     => null,
+                'model'       => $config['model'],
+                'api_options' => $config['api_options'] ?? [],
             ]);
         }
 
@@ -376,80 +390,31 @@ class TemplateVariableResolutionService
         Collection $artifacts
     ): AgentThread
     {
+        $artifactFilter = new TaskArtifactFilter([
+            'include_text'  => true,
+            'include_files' => false,
+            'include_json'  => true,
+            'include_meta'  => false,
+        ]);
+
         $thread = AgentThread::create([
             'name'     => 'Template Variable Resolution',
             'team_id'  => $teamId,
             'agent_id' => $agent->id,
         ]);
 
-        // Add instruction message
-        AgentThreadMessage::create([
-            'agent_thread_id' => $thread->id,
-            'role'            => 'user',
-            'content'         => $instructions,
-        ]);
+        $threadRepo    = app(ThreadRepository::class);
+        $filterService = app(ArtifactFilterService::class)->setFilter($artifactFilter);
 
         // Add artifacts as input
         foreach($artifacts as $artifact) {
-            AgentThreadMessage::create([
-                'agent_thread_id' => $thread->id,
-                'role'            => 'user',
-                'content'         => $artifact->text_content ?: "Artifact: {$artifact->name}",
-                'data'            => [
-                    'artifact_id' => $artifact->id,
-                ],
-            ]);
+            $message = $filterService->setArtifact($artifact)->filter();
+            $threadRepo->addMessageToThread($thread, $message);
         }
+
+        $threadRepo->addMessageToThread($thread, $instructions);
 
         return $thread;
-    }
-
-    /**
-     * Get assistant response from thread
-     */
-    protected function getAssistantResponse(AgentThread $thread): string
-    {
-        $assistantMessage = $thread->messages()
-            ->where('role', 'assistant')
-            ->orderBy('id')
-            ->first();
-
-        $response = $assistantMessage?->content;
-        if (!$response) {
-            throw new ValidationError('AI returned empty response for variable resolution', 500);
-        }
-
-        return $response;
-    }
-
-    /**
-     * Parse AI response to extract variables and title
-     */
-    protected function parseAiResponse(string $response): array
-    {
-        // Try to parse as JSON first
-        $decoded = json_decode($response, true);
-        if ($decoded !== null) {
-            return $decoded;
-        }
-
-        // Try to extract JSON from markdown code block
-        if (preg_match('/```json\s*(\{.*?\})\s*```/s', $response, $matches)) {
-            $decoded = json_decode($matches[1], true);
-            if ($decoded !== null) {
-                return $decoded;
-            }
-        }
-
-        // Try to extract any JSON object
-        if (preg_match('/(\{.*\})/s', $response, $matches)) {
-            $decoded = json_decode($matches[1], true);
-            if ($decoded !== null) {
-                return $decoded;
-            }
-        }
-
-        return ['variables' => [], 'title' => ''];
     }
 
     /**
@@ -520,42 +485,42 @@ class TemplateVariableResolutionService
     protected function getVariableResolutionResponseSchema(): SchemaDefinition
     {
         $schema = [
-            'type' => 'object',
-            'properties' => [
+            'type'                 => 'object',
+            'properties'           => [
                 'variables' => [
-                    'type' => 'array',
+                    'type'        => 'array',
                     'description' => 'Array of extracted variable values',
-                    'items' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'name' => [
-                                'type' => 'string',
+                    'items'       => [
+                        'type'                 => 'object',
+                        'properties'           => [
+                            'name'  => [
+                                'type'        => 'string',
                                 'description' => 'The variable name',
                             ],
                             'value' => [
-                                'type' => 'string',
+                                'type'        => 'string',
                                 'description' => 'The extracted value for the variable',
                             ],
                         ],
-                        'required' => ['name', 'value'],
+                        'required'             => ['name', 'value'],
                         'additionalProperties' => false,
                     ],
                 ],
-                'title' => [
-                    'type' => 'string',
-                    'description' => 'Generated title for the demand'
-                ]
+                'title'     => [
+                    'type'        => 'string',
+                    'description' => 'Generated title for the demand',
+                ],
             ],
-            'required' => ['variables', 'title'],
+            'required'             => ['variables', 'title'],
             'additionalProperties' => false,
         ];
 
         return SchemaDefinition::firstOrCreate([
             'team_id' => null,
-            'name' => 'Template Variable Resolution Response',
+            'name'    => 'Template Variable Resolution Response',
         ], [
             'description' => 'JSON schema for template variable resolution responses',
-            'schema' => $schema,
+            'schema'      => $schema,
         ]);
     }
 }
