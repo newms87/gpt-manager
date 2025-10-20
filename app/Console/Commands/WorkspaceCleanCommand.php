@@ -2,24 +2,29 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
+use App\Models\Agent\AgentThreadRun;
+use App\Models\Demand\UiDemand;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
-use DB;
+use App\Models\Task\TaskRun;
+use App\Models\Workflow\WorkflowRun;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class WorkspaceCleanCommand extends Command
 {
-    protected $signature   = 'workspace:clean {--team-objects} {--runs} {--inputs} {--auditing}';
-    protected $description = 'Deletes workspace data based on flags: team objects, all runs, agent threads and messages, ';
+    protected $signature   = 'workspace:clean {--user-data} {--runs} {--inputs} {--auditing}';
+    protected $description = 'Deletes workspace data based on flags: user data (UI demands, demand templates, and team objects), all runs, agent threads and messages';
 
     public function handle(): void
     {
         $this->info("Starting workspace cleaning\n\n");
 
-        if ($this->option('team-objects')) {
-            $this->cleanTeamObjects();
+        if ($this->option('user-data')) {
+            $this->cleanUserData();
         }
 
         if ($this->option('runs')) {
@@ -87,16 +92,45 @@ class WorkspaceCleanCommand extends Command
         $this->comment("Cleaning task process schema associations");
         SchemaAssociation::where('object_type', TaskProcess::class)->delete();
         DB::statement("DELETE FROM stored_file_storables WHERE storable_type IN ('" . AgentThreadMessage::class . "','" . Artifact::class . "')");
+
+        // Clean usage data for runs
+        $this->comment("Cleaning usage data for runs");
+        $runObjectTypes = [
+            AgentThread::class,
+            AgentThreadRun::class,
+            TaskRun::class,
+            TaskProcess::class,
+            WorkflowRun::class,
+        ];
+
+        // Delete usage_event_subscribers for run-related usage_events
+        $objectTypesString = implode("','", $runObjectTypes);
+        DB::statement("DELETE FROM usage_event_subscribers WHERE usage_event_id IN (SELECT id FROM usage_events WHERE object_type IN ('$objectTypesString'))");
+
+        // Delete usage_summaries for runs
+        foreach ($runObjectTypes as $objectType) {
+            DB::table('usage_summaries')->where('object_type', $objectType)->delete();
+        }
+
+        // Delete usage_events for runs
+        foreach ($runObjectTypes as $objectType) {
+            DB::table('usage_events')->where('object_type', $objectType)->delete();
+        }
+
         $this->resetCounts($counts);
 
         $this->info("All runs have been cleaned\n\n");
     }
 
-    private function cleanTeamObjects(): void
+    private function cleanUserData(): void
     {
-        $this->alert("Cleaning team objects");
+        $this->alert("Cleaning user data");
 
         $tables = [
+            'ui_demand_workflow_runs',
+            'ui_demands',
+            'template_variables',
+            'demand_templates',
             'team_object_attribute_sources',
             'team_object_relationships',
             'team_object_attributes',
@@ -105,7 +139,23 @@ class WorkspaceCleanCommand extends Command
 
         $this->truncateTables($tables);
 
-        $this->info("Team objects have been cleaned\n\n");
+        $this->comment("Cleaning stored_file_storables for UiDemand");
+        DB::statement("DELETE FROM stored_file_storables WHERE storable_type = '" . UiDemand::class . "'");
+
+        // Clean usage data for UI demands
+        $this->comment("Cleaning usage data for UI demands");
+        $demandObjectType = UiDemand::class;
+
+        // Delete usage_event_subscribers for UI demand usage_events
+        DB::statement("DELETE FROM usage_event_subscribers WHERE usage_event_id IN (SELECT id FROM usage_events WHERE object_type = ?)", [$demandObjectType]);
+
+        // Delete usage_summaries for UI demands
+        DB::table('usage_summaries')->where('object_type', $demandObjectType)->delete();
+
+        // Delete usage_events for UI demands
+        DB::table('usage_events')->where('object_type', $demandObjectType)->delete();
+
+        $this->info("User data has been cleaned\n\n");
     }
 
     private function cleanAuditing(): void
