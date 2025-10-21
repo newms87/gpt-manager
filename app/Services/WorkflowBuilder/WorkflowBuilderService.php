@@ -75,16 +75,23 @@ class WorkflowBuilderService
                 'plan_generated_at' => now()->toISOString(),
             ]);
         } else {
-            // Already in analyzing_plan phase, just update the meta without phase transition
-            $chat->update([
-                'meta' => array_merge($chat->meta ?? [], [
-                    'phase_data' => array_merge($chat->meta['phase_data'] ?? [], [
-                        'generated_plan' => $plan,
-                        'plan_generated_at' => now()->toISOString(),
-                        'plan_modified_at' => now()->toISOString(),
-                    ])
-                ])
+            // Already in analyzing_plan phase, update meta directly to avoid invalid transition
+            // Update plan_generated_at to reflect new plan generation, add plan_modified_at
+            $meta = $chat->meta ?? [];
+            $newTimestamp = now()->toISOString();
+            $meta['phase_data'] = array_merge($meta['phase_data'] ?? [], [
+                'generated_plan' => $plan,
+                'plan_generated_at' => $newTimestamp,
+                'plan_modified_at' => $newTimestamp,
             ]);
+            $meta['build_state'] = array_merge($meta['build_state'] ?? [], [
+                'generated_plan' => $plan,
+                'plan_generated_at' => $newTimestamp,
+                'plan_modified_at' => $newTimestamp,
+            ]);
+            $meta['updated_at'] = $newTimestamp;
+
+            $chat->update(['meta' => $meta]);
         }
 
         return $plan;

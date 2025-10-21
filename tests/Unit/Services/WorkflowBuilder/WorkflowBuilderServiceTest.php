@@ -299,7 +299,22 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
             'status' => WorkflowBuilderChat::STATUS_ANALYZING_PLAN,
             'workflow_definition_id' => $builderWorkflow->id,
             'meta' => [
-                'build_state' => ['generated_plan' => ['task1' => 'description']]
+                'build_state' => [
+                    'generated_plan' => [
+                        'workflow_name' => 'Test Workflow',
+                        'description' => 'Test workflow description',
+                        'tasks' => [
+                            [
+                                'name' => 'Test Task',
+                                'description' => 'Test task description',
+                                'runner_type' => 'AgentThreadTaskRunner',
+                                'agent_requirements' => 'General purpose agent'
+                            ]
+                        ],
+                        'connections' => [],
+                        'max_workers' => 5
+                    ]
+                ]
             ]
         ]);
 
@@ -350,7 +365,22 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'status' => WorkflowBuilderChat::STATUS_ANALYZING_PLAN,
             'meta' => [
-                'build_state' => ['generated_plan' => ['task1' => 'description']]
+                'build_state' => [
+                    'generated_plan' => [
+                        'workflow_name' => 'Test Workflow',
+                        'description' => 'Test workflow description',
+                        'tasks' => [
+                            [
+                                'name' => 'Test Task',
+                                'description' => 'Test task description',
+                                'runner_type' => 'AgentThreadTaskRunner',
+                                'agent_requirements' => 'General purpose agent'
+                            ]
+                        ],
+                        'connections' => [],
+                        'max_workers' => 5
+                    ]
+                ]
             ]
         ]);
         // No LLM Workflow Builder workflow exists
@@ -838,7 +868,17 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
                 'build_state' => [
                     'generated_plan' => [
                         'workflow_name' => 'Test Workflow',
-                        'tasks' => [['name' => 'Test Task', 'description' => 'Test']]
+                        'description' => 'Test workflow',
+                        'tasks' => [
+                            [
+                                'name' => 'Test Task',
+                                'description' => 'Test',
+                                'runner_type' => 'AgentThreadTaskRunner',
+                                'agent_requirements' => 'General purpose agent'
+                            ]
+                        ],
+                        'connections' => [],
+                        'max_workers' => 5
                     ]
                 ]
             ]
@@ -890,7 +930,17 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
                 'build_state' => [
                     'generated_plan' => [
                         'workflow_name' => 'Test Workflow',
-                        'tasks' => [['name' => 'Test Task', 'description' => 'Test']]
+                        'description' => 'Test workflow',
+                        'tasks' => [
+                            [
+                                'name' => 'Test Task',
+                                'description' => 'Test',
+                                'runner_type' => 'AgentThreadTaskRunner',
+                                'agent_requirements' => 'General purpose agent'
+                            ]
+                        ],
+                        'connections' => [],
+                        'max_workers' => 5
                     ]
                 ]
             ]

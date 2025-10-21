@@ -7,6 +7,7 @@ use App\Models\Agent\Agent;
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowBuilderChat;
 use App\Models\Workflow\WorkflowDefinition;
+use App\Models\Workflow\WorkflowRun;
 use App\Services\WorkflowBuilder\WorkflowBuilderService;
 use Database\Seeders\WorkflowBuilderSeeder;
 use Illuminate\Console\Command;
@@ -742,19 +743,41 @@ class WorkflowBuilderCommand extends Command
             // Simple monitoring for no-interaction mode - check status a few times then continue
             $maxChecks = 3;
             $checks = 0;
-            
+
             while ($this->chat->status === 'building_workflow' && $checks < $maxChecks) {
+                // CRITICAL FIX: Check WorkflowRun status directly in no-interaction mode too
+                if ($this->chat->current_workflow_run_id) {
+                    $workflowRun = WorkflowRun::find($this->chat->current_workflow_run_id);
+
+                    if ($workflowRun && $workflowRun->isFailed()) {
+                        // WorkflowRun failed - update chat and return failure
+                        $this->chat->updatePhase(WorkflowBuilderChat::STATUS_FAILED, [
+                            'error' => 'Workflow run failed',
+                            'failure_reason' => "WorkflowRun status: {$workflowRun->status}",
+                            'workflow_run_id' => $workflowRun->id,
+                        ]);
+
+                        $this->displayWorkflowRunFailureDetails();
+                        return false;
+                    }
+
+                    if ($workflowRun && $workflowRun->isCompleted()) {
+                        $this->line('✅ Workflow build completed!');
+                        return true;
+                    }
+                }
+
                 $this->chat->refresh();
                 $checks++;
                 usleep(50000); // 50ms
             }
-            
+
             // If still building after checks, assume it will complete
             if ($this->chat->status === 'building_workflow') {
                 $this->line('✅ Build initiated successfully (monitoring in background)');
                 return true;
             }
-            
+
             $this->line('✅ Workflow build completed!');
             return true;
         }
@@ -786,16 +809,40 @@ class WorkflowBuilderCommand extends Command
             $timeout = 300; // 5 minutes timeout
 
             while ($this->chat->status === 'building_workflow') {
+                // CRITICAL FIX: Check WorkflowRun status directly before displaying progress
+                if ($this->chat->current_workflow_run_id) {
+                    $workflowRun = WorkflowRun::find($this->chat->current_workflow_run_id);
+
+                    if ($workflowRun && $workflowRun->isFailed()) {
+                        // WorkflowRun failed but chat status not updated - fix it
+                        $this->output->write("\r"); // Clear progress line
+                        $this->chat->updatePhase(WorkflowBuilderChat::STATUS_FAILED, [
+                            'error' => 'Workflow run failed',
+                            'failure_reason' => "WorkflowRun status: {$workflowRun->status}",
+                            'workflow_run_id' => $workflowRun->id,
+                        ]);
+
+                        $this->displayWorkflowRunFailureDetails();
+                        return false;
+                    }
+
+                    if ($workflowRun && $workflowRun->isCompleted()) {
+                        $this->output->write("\r✅ Workflow build completed!            \n");
+                        $this->line('');
+                        return true;
+                    }
+                }
+
                 $char = $progressChars[$progressIndex % count($progressChars)];
                 $dotString = str_repeat('.', $dots % 4);
-                
+
                 $this->output->write("\r{$char} Building{$dotString}");
-                
+
                 $progressIndex++;
                 $dots++;
-                
+
                 usleep(500000); // 500ms
-                
+
                 $this->chat->refresh();
 
                 // Check for timeout
@@ -953,6 +1000,57 @@ class WorkflowBuilderCommand extends Command
         $this->line('• Retry with: sail artisan workflow:build --chat=' . $this->chat->id);
         $this->line('• Start over with a new prompt');
         $this->line('• Contact support if the issue persists');
+        $this->line('');
+    }
+
+    /**
+     * Display comprehensive WorkflowRun failure details for debugging
+     */
+    private function displayWorkflowRunFailureDetails(): void
+    {
+        // Return early if no current workflow run
+        if (!$this->chat->current_workflow_run_id) {
+            return;
+        }
+
+        // Load the workflow run
+        $workflowRun = WorkflowRun::find($this->chat->current_workflow_run_id);
+        if (!$workflowRun) {
+            return;
+        }
+
+        // Display header
+        $this->line('');
+        $this->error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        $this->error('Workflow Run Failure Details:');
+        $this->error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        // Display workflow run info
+        $this->line("Workflow Run ID: {$workflowRun->id}");
+        $this->line("Status: {$workflowRun->status}");
+        if ($workflowRun->failed_at) {
+            $this->line("Failed At: {$workflowRun->failed_at}");
+        }
+
+        // Show failed tasks with error messages
+        $failedTasks = $workflowRun->taskRuns()->where('status', 'Failed')->get();
+        if ($failedTasks->isNotEmpty()) {
+            $this->line('');
+            $this->line('Failed Tasks:');
+            foreach ($failedTasks as $taskRun) {
+                $taskName = $taskRun->name ?? $taskRun->taskDefinition?->name ?? 'Unknown Task';
+                $this->line("  • {$taskName} (ID: {$taskRun->id})");
+                if ($taskRun->error_message) {
+                    $this->line("    Error: {$taskRun->error_message}");
+                }
+            }
+        }
+
+        // Show next steps
+        $this->line('');
+        $this->line('Next Steps:');
+        $this->line("  • Check logs: tail -f storage/logs/laravel.log");
+        $this->line("  • Retry: sail artisan workflow:build --chat={$this->chat->id}");
         $this->line('');
     }
 
