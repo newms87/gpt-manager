@@ -5,8 +5,7 @@ namespace App\Services\Artifact;
 use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
-use App\Repositories\ThreadRepository;
-use App\Services\AgentThread\AgentThreadService;
+use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 
@@ -182,27 +181,22 @@ class ArtifactBatchNamingService
         // Build the prompt with JSON schema
         $prompt = $this->buildNamingPrompt($artifactData, $contextDescription);
 
-        // Create agent thread
-        $threadRepository = app(ThreadRepository::class);
-        $agentThread      = $threadRepository->create($agent, 'Artifact Batch Naming');
-
-        // Add system message
+        // System message
         $systemMessage = 'You are an intelligent artifact naming assistant. You generate clear, descriptive, professional names for workflow output artifacts based on their content and context. Always respond with valid JSON matching the specified schema.';
-        $threadRepository->addMessageToThread($agentThread, $systemMessage);
-
-        // Add user message with the prompt
-        $threadRepository->addMessageToThread($agentThread, $prompt);
 
         // Get the response schema
         $responseSchema = $this->getArtifactNamingResponseSchema();
 
-        // Run the thread with timeout
+        // Build and run the thread
         try {
             $timeout   = config('ai.artifact_naming.timeout', 120);
-            $threadRun = app(AgentThreadService::class)
-                ->withResponseFormat($responseSchema)
+            $threadRun = AgentThreadBuilderService::for($agent)
+                ->named('Artifact Batch Naming')
+                ->withSystemMessage($systemMessage)
+                ->withMessage($prompt)
+                ->withResponseSchema($responseSchema)
                 ->withTimeout($timeout)
-                ->run($agentThread);
+                ->run();
 
             if (!$threadRun->lastMessage) {
                 static::log("Failed to get response from LLM");

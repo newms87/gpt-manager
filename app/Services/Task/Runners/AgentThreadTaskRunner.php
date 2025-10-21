@@ -8,9 +8,9 @@ use App\Models\Schema\SchemaFragment;
 use App\Models\Task\Artifact;
 use App\Services\AgentThread\AgentThreadMessageToArtifactMapper;
 use App\Services\AgentThread\AgentThreadService;
-use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Services\Task\ArtifactDeduplicationService;
+use App\Services\Task\TaskAgentThreadBuilderService;
 use Exception;
 use Newms87\Danx\Helpers\StringHelper;
 
@@ -108,13 +108,11 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
         $this->activity("Setting up agent thread for: {$taskDefinition->agent->name}", 5);
 
-        $agentThread = app(TaskDefinitionToAgentThreadMapper::class)
-            ->setTaskRun($this->taskRun)
-            ->setTaskDefinition($this->taskRun->taskDefinition)
-            ->setArtifacts($artifacts)
-            ->setContextArtifacts($contextArtifacts)
+        // Build the agent thread using the task-specific builder
+        $agentThread = TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $this->taskRun)
+            ->withContextArtifacts($artifacts, $contextArtifacts)
             ->includePageNumbers($this->includePageNumbersInThread)
-            ->map();
+            ->build();
 
         $this->taskProcess->agentThread()->associate($agentThread)->save();
 
@@ -132,7 +130,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         // Get timeout from task_runner_config, with default of 60 seconds and maximum of 600 seconds
         $timeout = $this->config('timeout');
         if ($timeout !== null) {
-            $timeout = (int) $timeout;
+            $timeout = (int)$timeout;
             $timeout = max(1, min($timeout, 600)); // Ensure between 1 and 600 seconds
         }
 

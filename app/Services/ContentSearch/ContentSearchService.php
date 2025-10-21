@@ -3,11 +3,9 @@
 namespace App\Services\ContentSearch;
 
 use App\Models\Agent\Agent;
-use App\Models\Agent\AgentThread;
 use App\Models\Task\Artifact;
 use App\Repositories\ContentSearch\ContentSearchRepository;
-use App\Repositories\ThreadRepository;
-use App\Services\AgentThread\AgentThreadService;
+use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\ContentSearch\Exceptions\InvalidSearchParametersException;
 use App\Traits\HasDebugLogging;
 use Exception;
@@ -16,7 +14,7 @@ use Illuminate\Support\Arr;
 class ContentSearchService
 {
     use HasDebugLogging;
-    
+
     /**
      * Main search method - handles all search types based on request configuration
      */
@@ -234,57 +232,40 @@ class ContentSearchService
             'name'    => 'Content Search Agent: ' . $model,
         ], ['model' => $model]);
 
-        $agentThread = AgentThread::create([
-            'agent_id' => $agent->id,
-            'name'     => 'Content Search: ' . substr($query, 0, 30),
-        ]);
-
         $instructions = $this->buildLlmInstructions($query, $textContent);
 
-        app(ThreadRepository::class)->addMessageToThread($agentThread, $instructions);
+        // Build and run the agent thread
+        $threadRun = AgentThreadBuilderService::for($agent)
+            ->named('Content Search: ' . substr($query, 0, 30))
+            ->withMessage($instructions)
+            ->run();
 
-        // Run the agent thread
-        $artifact = $this->runAgentThread($agentThread);
+        $textContent = $threadRun->lastMessage?->getCleanContent();
 
-        if (!$artifact || !$artifact->text_content) {
+        if (!$textContent) {
             static::log('LLM agent failed to provide response');
 
             return ContentSearchResult::notFound('LLM agent failed to respond');
         }
 
-        $response = trim($artifact->text_content);
-        static::log('LLM agent response received', [
-            'response'        => $response,
-            'response_length' => strlen($response),
-        ]);
-
         // Handle "NONE" response
-        if (strtoupper($response) === 'NONE' || empty($response)) {
+        if (strtoupper($textContent) === 'NONE') {
             static::log('LLM found no content');
 
             return ContentSearchResult::notFound('LLM found no matching content');
         }
 
-        $result = ContentSearchResult::llmFound($response, $sourceArtifact, $model);
+        static::log('LLM agent response received', [
+            'response'        => $textContent,
+            'response_length' => strlen($textContent),
+        ]);
+
+        $result = ContentSearchResult::llmFound($textContent, $sourceArtifact, $model);
         $result->addMetadata('llm_instructions', $instructions);
 
         static::log('LLM extraction found a result matching the query');
 
         return $result;
-    }
-
-    /**
-     * Run agent thread and return the artifact
-     */
-    private function runAgentThread(AgentThread $agentThread): ?Artifact
-    {
-        $threadRun = app(AgentThreadService::class)->run($agentThread);
-
-        if ($threadRun->lastMessage) {
-            return $threadRun->lastMessage->artifact;
-        }
-
-        return null;
     }
 
     /**

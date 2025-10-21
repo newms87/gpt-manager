@@ -118,6 +118,35 @@ If you find legacy code or old patterns:
 - Skip tests for "simple" changes
 - Leave TODO comments without implementing
 - Add backwards compatibility layers
+- Use deprecated features or syntax
+
+## PHPUnit Testing Standards
+
+**CRITICAL: Never use deprecated PHPUnit features**
+
+- ❌ **FORBIDDEN**: `/** @test */` doc-comment annotations (deprecated in PHPUnit 12)
+- ✅ **REQUIRED**: `#[Test]` PHP attributes for test methods
+- ✅ **REQUIRED**: Add `use PHPUnit\Framework\Attributes\Test;` import
+
+**Example - CORRECT test method:**
+```php
+use PHPUnit\Framework\Attributes\Test;
+
+#[Test]
+public function user_can_create_team(): void
+{
+    // Test implementation
+}
+```
+
+**Example - WRONG (deprecated):**
+```php
+/** @test */
+public function user_can_create_team(): void
+{
+    // Test implementation - will cause deprecation warnings
+}
+```
 
 ## Reporting Back
 

@@ -4,7 +4,7 @@ namespace App\Services\Task\Runners;
 
 use App\Api\ImageToText\ImageToTextOcrApi;
 use App\Models\Task\Artifact;
-use App\Services\AgentThread\TaskDefinitionToAgentThreadMapper;
+use App\Services\Task\TaskAgentThreadBuilderService;
 use App\Services\Usage\UsageTrackingService;
 use Aws\S3\Exception\S3Exception;
 use Exception;
@@ -151,11 +151,10 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
             throw $e;
         }
 
-        $agentThread = app(TaskDefinitionToAgentThreadMapper::class)
-            ->setTaskDefinition($this->taskDefinition)
-            ->addMessage($ocrPrompt . $ocrContents)
-            ->addMessage(['files' => [$storedFile]])
-            ->map();
+        $agentThread = TaskAgentThreadBuilderService::fromTaskDefinition($this->taskDefinition, $this->taskRun)
+            ->withMessage($ocrPrompt . $ocrContents)
+            ->withMessage(['files' => [$storedFile]])
+            ->build();
 
         $this->taskProcess->agentThread()->associate($agentThread)->save();
 

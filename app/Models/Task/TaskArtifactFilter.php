@@ -5,6 +5,7 @@ namespace App\Models\Task;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Schema\SchemaFragment;
+use App\Services\AgentThread\ArtifactFilter;
 use App\Services\Workflow\WorkflowExportService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -40,6 +41,21 @@ class TaskArtifactFilter extends Model implements AuditableContract, ResourcePac
     public function schemaFragment(): BelongsTo|SchemaFragment
     {
         return $this->belongsTo(SchemaFragment::class);
+    }
+
+    /**
+     * Convert this DB-backed filter to a standard ArtifactFilter
+     */
+    public function toArtifactFilter(): ArtifactFilter
+    {
+        return new ArtifactFilter(
+            includeText: $this->include_text,
+            includeFiles: $this->include_files,
+            includeJson: $this->include_json,
+            includeMeta: $this->include_meta,
+            jsonFragmentSelector: $this->schemaFragment?->fragment_selector ?? [],
+            metaFragmentSelector: $this->meta_fragment_selector ?? []
+        );
     }
 
     public function sourceTaskDefinition(): BelongsTo|TaskDefinition

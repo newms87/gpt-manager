@@ -6,8 +6,7 @@ use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskRun;
-use App\Repositories\ThreadRepository;
-use App\Services\AgentThread\AgentThreadService;
+use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Helpers\LockHelper;
@@ -204,23 +203,28 @@ class ClassificationDeduplicationService
 
         $prompt = $this->buildClassificationDeduplicationPrompt($cleanedLabels);
 
-        $threadRepository = app(ThreadRepository::class);
-        $agent            = $this->getOrCreateClassificationDeduplicationAgent();
-        $agentThread      = $threadRepository->create($agent, 'Data Value Deduplication');
+        $agent = $this->getOrCreateClassificationDeduplicationAgent();
 
         $systemMessage = 'You are a data normalization assistant. Your job is to identify duplicate or similar values and normalize them to a consistent format.';
-        $threadRepository->addMessageToThread($agentThread, $systemMessage);
-
-        $threadRepository->addMessageToThread($agentThread, $prompt);
 
         // Get the response schema for deduplication
         $responseSchema = $this->getDeduplicationResponseSchema();
 
-        // Run the thread with JSON schema response format
-        $threadRun = (new AgentThreadService())
-            ->withResponseFormat($responseSchema)
-            ->withTimeout(config('ai.classification_deduplication.timeout'))
-            ->run($agentThread);
+        // Build the thread
+        $builder = AgentThreadBuilderService::for($agent)
+            ->named('Data Value Deduplication')
+            ->withSystemMessage($systemMessage)
+            ->withMessage($prompt)
+            ->withResponseSchema($responseSchema);
+
+        // Add timeout if configured
+        $timeout = config('ai.classification_deduplication.timeout');
+        if ($timeout) {
+            $builder->withTimeout($timeout);
+        }
+
+        // Run the thread
+        $threadRun = $builder->run();
 
         if (!$threadRun->lastMessage || !$threadRun->lastMessage->content) {
             static::log('Failed to get response from AI agent for classification deduplication');

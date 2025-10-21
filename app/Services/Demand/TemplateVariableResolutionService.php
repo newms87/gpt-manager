@@ -7,11 +7,10 @@ use App\Models\Agent\AgentThread;
 use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
-use App\Models\Task\TaskArtifactFilter;
 use App\Models\TeamObject\TeamObject;
-use App\Repositories\ThreadRepository;
 use App\Resources\TeamObject\TeamObjectForAgentsResource;
-use App\Services\AgentThread\AgentThreadService;
+use App\Services\AgentThread\AgentThreadBuilderService;
+use App\Services\AgentThread\ArtifactFilter;
 use App\Services\AgentThread\ArtifactFilterService;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
@@ -278,16 +277,26 @@ class TemplateVariableResolutionService
     {
         $instructions = $this->buildAiInstructions($aiVariables, $preResolvedValues);
         $agent        = $this->findOrCreateVariableExtractorAgent();
-        $thread       = $this->createAgentThread($agent, $teamId, $instructions, $artifacts);
 
         // Get the response schema
         $responseSchema = $this->getVariableResolutionResponseSchema();
 
-        // Run the agent
-        $threadRun = app(AgentThreadService::class)
-            ->withResponseFormat($responseSchema)
+        // Create artifact filter
+        $artifactFilter = new ArtifactFilter(
+            includeText: true,
+            includeFiles: false,
+            includeJson: true,
+            includeMeta: false
+        );
+
+        // Build and run the agent thread
+        $threadRun = AgentThreadBuilderService::for($agent, $teamId)
+            ->named('Template Variable Resolution')
+            ->withArtifacts($artifacts, $artifactFilter)
+            ->withMessage($instructions)
+            ->withResponseSchema($responseSchema)
             ->withTimeout(config('ai.variable_extraction.timeout'))
-            ->run($thread);
+            ->run();
 
         if (!$threadRun->isCompleted()) {
             throw new ValidationError('AI variable resolution failed: ' . $threadRun->error_message, 500);
@@ -378,43 +387,6 @@ class TemplateVariableResolutionService
         }
 
         return $agent;
-    }
-
-    /**
-     * Create agent thread with instructions and artifacts
-     */
-    protected function createAgentThread(
-        Agent      $agent,
-        int        $teamId,
-        string     $instructions,
-        Collection $artifacts
-    ): AgentThread
-    {
-        $artifactFilter = new TaskArtifactFilter([
-            'include_text'  => true,
-            'include_files' => false,
-            'include_json'  => true,
-            'include_meta'  => false,
-        ]);
-
-        $thread = AgentThread::create([
-            'name'     => 'Template Variable Resolution',
-            'team_id'  => $teamId,
-            'agent_id' => $agent->id,
-        ]);
-
-        $threadRepo    = app(ThreadRepository::class);
-        $filterService = app(ArtifactFilterService::class)->setFilter($artifactFilter);
-
-        // Add artifacts as input
-        foreach($artifacts as $artifact) {
-            $message = $filterService->setArtifact($artifact)->filter();
-            $threadRepo->addMessageToThread($thread, $message);
-        }
-
-        $threadRepo->addMessageToThread($thread, $instructions);
-
-        return $thread;
     }
 
     /**
