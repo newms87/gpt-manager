@@ -36,10 +36,10 @@ class WorkflowImportService
     protected function resolveResourcePackage(string $id, string $teamUuid, string $name, string $resourceType, string $resourceId): ResourcePackage
     {
         return ResourcePackage::firstOrCreate(['id' => $id], [
-            'name'          => $name,
-            'team_uuid'     => $teamUuid,
-            'resource_type' => $resourceType,
-            'resource_id'   => $resourceId,
+            'name'              => $name,
+            'creator_team_uuid' => $teamUuid,
+            'resource_type'     => $resourceType,
+            'resource_id'       => $resourceId,
         ]);
     }
 
@@ -66,10 +66,12 @@ class WorkflowImportService
     protected function resolveImport(string $objectType, string $sourceId): ResourcePackageImport
     {
         return ResourcePackageImport::firstOrCreate([
-            'team_uuid'           => team()->uuid,
             'resource_package_id' => $this->resourcePackage->id,
+            'team_id'             => team()->id,
             'object_type'         => $objectType,
             'source_object_id'    => $sourceId,
+        ], [
+            'creator_team_uuid' => $this->resourcePackage->creator_team_uuid,
         ]);
     }
 
@@ -80,7 +82,7 @@ class WorkflowImportService
     {
         $resourcePackageId        = $workflowDefinitionJson['resource_package_id'] ?? null;
         $resourcePackageVersionId = $workflowDefinitionJson['resource_package_version_id'] ?? null;
-        $teamUuid                 = $workflowDefinitionJson['team_uuid'] ?? null;
+        $teamUuid                 = $workflowDefinitionJson['creator_team_uuid'] ?? null;
         $name                     = $workflowDefinitionJson['name'] ?? null;
         $resourceType             = $workflowDefinitionJson['resource_type'] ?? null;
         $resourceId               = $workflowDefinitionJson['resource_id'] ?? null;
@@ -153,7 +155,7 @@ class WorkflowImportService
         $localObject           = $resourcePackageImport->getLocalObject();
 
         if (!$localObject) {
-            $localObject = $resourcePackageImport->resolveLocalObjectByUniqueKeys($this, $definition);
+            $localObject = $resourcePackageImport->resolveLocalObjectByUniqueKeys($this, $definition, $isTeam);
         }
 
         if (!$localObject) {

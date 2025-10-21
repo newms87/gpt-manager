@@ -17,7 +17,8 @@ class ResourcePackageImport extends Model implements AuditableContract
     use AuditableTrait, SoftDeletes, HasUuids;
 
     protected $fillable = [
-        'team_uuid',
+        'team_id',
+        'creator_team_uuid',
         'resource_package_id',
         'object_type',
         'source_object_id',
@@ -25,12 +26,12 @@ class ResourcePackageImport extends Model implements AuditableContract
 
     public function canView(): bool
     {
-        return $this->resourcePackage->team_uuid === team()->uuid || $this->can_view;
+        return $this->resourcePackage->creator_team_uuid === team()->uuid || $this->can_view;
     }
 
     public function canEdit(): bool
     {
-        return $this->resourcePackage->team_uuid === team()->uuid || $this->can_edit;
+        return $this->resourcePackage->creator_team_uuid === team()->uuid || $this->can_edit;
     }
 
     public function resourcePackage(): BelongsTo|ResourcePackage
@@ -63,7 +64,7 @@ class ResourcePackageImport extends Model implements AuditableContract
      * NOTE: This is used to avoid trying to create a duplicate record if the local instance already has this resource
      * defined and would throw an error if we tried to create the same object
      */
-    public function resolveLocalObjectByUniqueKeys(WorkflowImportService $service, array $definition): Model|null
+    public function resolveLocalObjectByUniqueKeys(WorkflowImportService $service, array $definition, bool $isTeam): Model|null
     {
         $table = (new $this->object_type)->getTable();
 
@@ -88,6 +89,10 @@ class ResourcePackageImport extends Model implements AuditableContract
         // If we don't have any unique keys with values, we can't resolve the object
         if (empty($conditions)) {
             return null;
+        }
+
+        if ($isTeam) {
+            $conditions['team_id'] = team()->id;
         }
 
         // Try to find an existing object with the same unique key values

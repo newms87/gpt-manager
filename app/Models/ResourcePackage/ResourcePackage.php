@@ -15,7 +15,7 @@ class ResourcePackage extends Model implements AuditableContract
 {
     use AuditableTrait, SoftDeletes, HasUuids;
 
-    protected $fillable = ['id', 'name', 'team_uuid', 'resource_type', 'resource_id'];
+    protected $fillable = ['id', 'name', 'creator_team_uuid', 'resource_type', 'resource_id'];
 
     public function team(): BelongsTo|Team
     {

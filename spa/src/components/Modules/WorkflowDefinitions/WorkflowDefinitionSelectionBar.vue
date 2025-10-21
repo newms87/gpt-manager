@@ -101,12 +101,13 @@ async function onImportFromJson(event: Event) {
     try {
         const jsonData = await importJson(files[0]);
         const workflowDefinition = await dxWorkflowDefinition.routes.importFromJson(jsonData);
-
         if (workflowDefinition?.id) {
             await loadWorkflowDefinitions();
             await setActiveWorkflowDefinition(workflowDefinition, router);
+        } else if (workflowDefinition?.error) {
+            FlashMessages.error(workflowDefinition.message || "Import failed for an unknown reason.");
         } else {
-            FlashMessages.error("The import failed for an unknown reason. The data was empty.");
+            FlashMessages.error("The import failed: The response data was empty.");
         }
     } finally {
         isImporting.value = false;

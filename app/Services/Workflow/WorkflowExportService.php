@@ -19,9 +19,9 @@ class WorkflowExportService
     protected function resolveResourcePackage(WorkflowDefinition $workflowDefinition): ResourcePackage
     {
         return ResourcePackage::firstOrCreate([
-            'team_uuid'     => team()->uuid,
-            'resource_type' => WorkflowDefinition::class,
-            'resource_id'   => $workflowDefinition->id,
+            'creator_team_uuid' => team()->uuid,
+            'resource_type'     => WorkflowDefinition::class,
+            'resource_id'       => $workflowDefinition->id,
         ], [
             'name' => $workflowDefinition->name,
         ]);
@@ -72,7 +72,7 @@ class WorkflowExportService
             'resource_package_version_id' => $resourcePackageVersion->id,
             'resource_type'               => WorkflowDefinition::class,
             'resource_id'                 => $workflowDefinition->id,
-            'team_uuid'                   => team()->uuid,
+            'creator_team_uuid'           => team()->uuid,
             'name'                        => $resourcePackage->name,
             'version'                     => $resourcePackageVersion->version,
             'definitions'                 => $this->definitions,
