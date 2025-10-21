@@ -104,8 +104,8 @@ class WorkspaceCleanCommand extends Command
         ];
 
         // Delete usage_event_subscribers for run-related usage_events
-        $objectTypesString = implode("','", $runObjectTypes);
-        DB::statement("DELETE FROM usage_event_subscribers WHERE usage_event_id IN (SELECT id FROM usage_events WHERE object_type IN ('$objectTypesString'))");
+        $placeholders = implode(',', array_fill(0, count($runObjectTypes), '?'));
+        DB::statement("DELETE FROM usage_event_subscribers WHERE usage_event_id IN (SELECT id FROM usage_events WHERE object_type IN ($placeholders))", $runObjectTypes);
 
         // Delete usage_summaries for runs
         foreach ($runObjectTypes as $objectType) {
