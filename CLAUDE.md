@@ -40,9 +40,23 @@
 
 **CRITICAL RULES:**
 - Always read existing implementations BEFORE any code work
-- Never create custom patterns when established ones exist  
+- Never create custom patterns when established ones exist
 - Always delegate technical work to specialized agents
 - Each agent has comprehensive guidelines for their domain
+
+**🚨 ABSOLUTE REQUIREMENT: RELATIVE PATHS ONLY! 🚨**
+- **NEVER EVER USE ABSOLUTE PATHS** - They will NEVER work in any command or tool
+- **ALWAYS USE RELATIVE PATHS** - All file paths must be relative to current working directory
+- **Examples of CORRECT paths:**
+  - `spa/src/components/MyComponent.vue` ✅
+  - `app/Services/MyService.php` ✅
+  - `config/google-docs.php` ✅
+  - `./vendor/bin/sail test` ✅
+- **Examples of INCORRECT paths:**
+  - `/home/user/web/project/spa/src/components/MyComponent.vue` ❌
+  - `/home/newms/web/gpt-manager/app/Services/MyService.php` ❌
+  - `/var/www/config/google-docs.php` ❌
+- **This applies to ALL tools and ALL agents** - No exceptions!
 
 **MANDATORY BUILD COMMANDS:**
 - **ONLY use `yarn build`** for Vue frontend builds - NEVER `npm run dev` or `npm run type-check`
@@ -115,7 +129,7 @@ The agents will automatically:
 3. Read both files before starting work
 4. Follow all the rules defined in those guides
 
-**Example of CORRECT agent call:**
+**Example of CORRECT agent call with RELATIVE PATHS:**
 ```
 Task(vue-spa-engineer): "Change AI Instructions field to use MarkdownEditor.
 
@@ -123,7 +137,10 @@ File to update: spa/src/ui/demand-templates/components/AiMappingConfig.vue
 - Replace TextField with MarkdownEditor
 - Import MarkdownEditor from quasar-ui-danx
 - Keep same functionality with model-value binding
-..."
+...
+
+CRITICAL: Use ONLY relative paths like 'spa/src/...' NOT absolute paths like '/home/user/...'
+"
 ```
 
 ## Reference Information

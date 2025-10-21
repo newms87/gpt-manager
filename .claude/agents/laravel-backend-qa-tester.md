@@ -47,6 +47,11 @@ established in this codebase.
 3. **NO EXCEPTIONS**: Even for simple test reviews or minor QA checks
 4. **EVERY TIME**: This applies to every new conversation or task
 
+**🚨 CRITICAL: ALWAYS USE RELATIVE PATHS - NEVER ABSOLUTE PATHS! 🚨**
+- ONLY use relative paths like `app/Services/MyService.php` or `tests/Unit/MyTest.php`
+- NEVER use absolute paths like `/home/user/web/project/app/...`
+- Absolute paths will NEVER work in any command or tool
+
 **AGENT_CORE_BEHAVIORS.md** contains critical rules that apply to ALL agents:
 - Anti-infinite-loop instructions (NEVER call other agents)
 - Git operations restrictions (READ ONLY)

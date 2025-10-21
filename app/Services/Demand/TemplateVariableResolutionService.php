@@ -3,7 +3,6 @@
 namespace App\Services\Demand;
 
 use App\Models\Agent\Agent;
-use App\Models\Agent\AgentThread;
 use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
@@ -425,7 +424,7 @@ class TemplateVariableResolutionService
         }
 
         $options = [
-            'decimals' => $variable->decimal_places ?? 2,
+            'decimals'     => $variable->decimal_places ?? 2,
             'currencyCode' => $variable->currency_code ?? 'USD',
         ];
 

@@ -39,9 +39,14 @@ management, and styling best practices.
 **BEFORE ANY IMPLEMENTATION WORK**: You MUST read both guide files in full (100%). This is non-negotiable.
 
 1. **FIRST TASK ON TODO LIST**: "Read AGENT_CORE_BEHAVIORS.md in full"
-2. **SECOND TASK ON TODO LIST**: "Read `/home/newms/web/gpt-manager/spa/SPA_PATTERNS_GUIDE.md` in full"
+2. **SECOND TASK ON TODO LIST**: "Read spa/SPA_PATTERNS_GUIDE.md in full"
 3. **NO EXCEPTIONS**: Even for single-line changes or simple component modifications
 4. **EVERY TIME**: This applies to every new conversation or task
+
+**🚨 CRITICAL: ALWAYS USE RELATIVE PATHS - NEVER ABSOLUTE PATHS! 🚨**
+- ONLY use relative paths like `spa/src/components/MyComponent.vue`
+- NEVER use absolute paths like `/home/user/web/project/spa/...`
+- Absolute paths will NEVER work in any command or tool
 
 **AGENT_CORE_BEHAVIORS.md** contains critical rules that apply to ALL agents:
 - Anti-infinite-loop instructions (NEVER call other agents)
@@ -270,7 +275,7 @@ await request.post('/api/endpoint', data);
 
 **FIRST STEP: Before writing any Vue code, read the comprehensive SPA patterns guide:**
 
-- Read `/home/dan/web/gpt-manager/spa/SPA_PATTERNS_GUIDE.md` for complete component examples and patterns
+- Read `spa/SPA_PATTERNS_GUIDE.md` for complete component examples and patterns
 - This guide contains detailed usage examples for all available components, state management, API patterns, styling
   conventions, and common patterns
 - Reference this guide to identify reusable components and established patterns before creating new code
