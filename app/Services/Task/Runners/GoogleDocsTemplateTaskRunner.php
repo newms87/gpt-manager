@@ -9,6 +9,7 @@ use App\Models\TeamObject\TeamObject;
 use App\Services\ContentSearch\ContentSearchRequest;
 use App\Services\ContentSearch\ContentSearchService;
 use App\Services\Demand\TemplateVariableResolutionService;
+use App\Services\GoogleDocs\GoogleDriveFolderService;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -58,12 +59,25 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
             'title' => $resolution['title'],
         ]);
 
-        // Step 7: Create document from template (GoogleDocsApi will handle markdown formatting)
+        // Step 7: Find or create output folder
         $googleDocsApi = app(GoogleDocsApi::class);
+        $outputFolderName = config('google-docs.output_folder_name', 'Output Documents');
+        $folderId = app(GoogleDriveFolderService::class)->findOrCreateFolder(
+            $googleDocsApi,
+            $outputFolderName
+        );
+
+        static::log('Output folder resolved', [
+            'folder_name' => $outputFolderName,
+            'folder_id' => $folderId,
+        ]);
+
+        // Step 8: Create document from template (GoogleDocsApi will handle markdown formatting)
         $newDocument = $googleDocsApi->createDocumentFromTemplate(
             $googleDocFileId,
             $resolution['values'],
-            $resolution['title']
+            $resolution['title'],
+            $folderId
         );
 
         static::log('Document created', [
@@ -71,7 +85,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
             'url' => $newDocument['url'],
         ]);
 
-        // Step 8: Create output artifact
+        // Step 9: Create output artifact
         $artifact = $this->createOutputArtifact($newDocument, $resolution);
         $this->complete([$artifact]);
     }

@@ -30,6 +30,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Output Folder Name
+    |--------------------------------------------------------------------------
+    |
+    | Name of the folder where generated documents from templates will be
+    | stored. This folder will be automatically created if it doesn't exist.
+    |
+    */
+
+    'output_folder_name' => env('GOOGLE_DOCS_OUTPUT_FOLDER', 'Output Documents'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Document Permissions
     |--------------------------------------------------------------------------
     */

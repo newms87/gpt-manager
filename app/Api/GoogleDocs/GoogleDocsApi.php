@@ -295,6 +295,17 @@ class GoogleDocsApi extends Api
             ->post($driveApiUrl . $endpoint, $data);
     }
 
+    /**
+     * Make a GET request to Google Drive API
+     */
+    public function getToDriveApi(string $endpoint, array $params = []): Response
+    {
+        $driveApiUrl = 'https://www.googleapis.com/drive/v3/';
+
+        return Http::withHeaders($this->getRequestHeaders())
+            ->get($driveApiUrl . $endpoint, $params);
+    }
+
 
     /**
      * Validate that the current OAuth token is valid by making a test API call
