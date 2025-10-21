@@ -12,7 +12,9 @@ use App\Resources\TeamObject\TeamObjectForAgentsResource;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\ArtifactFilter;
 use App\Services\AgentThread\ArtifactFilterService;
+use App\Services\ArrayAggregationService;
 use App\Services\JsonSchema\JsonSchemaService;
+use App\Services\ValueFormattingService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -121,13 +123,16 @@ class TemplateVariableResolutionService
             $variable->multi_value_separator
         );
 
+        // Apply formatting
+        $formatted = $this->formatValue($result, $variable);
+
         static::log('Variable resolved', [
             'variable_name'  => $variable->name,
-            'result_length'  => strlen($result),
-            'result_preview' => substr($result, 0, 200),
+            'result_length'  => strlen($formatted),
+            'result_preview' => substr($formatted, 0, 200),
         ]);
 
-        return $result;
+        return $formatted;
     }
 
     /**
@@ -402,8 +407,33 @@ class TemplateVariableResolutionService
             TemplateVariable::STRATEGY_FIRST => $this->convertToString($values[0] ?? ''),
             TemplateVariable::STRATEGY_UNIQUE => implode($separator, array_unique(array_map([$this, 'convertToString'], $values))),
             TemplateVariable::STRATEGY_JOIN => implode($separator, array_map([$this, 'convertToString'], $values)),
+            TemplateVariable::STRATEGY_MAX => app(ArrayAggregationService::class)->max($values),
+            TemplateVariable::STRATEGY_MIN => app(ArrayAggregationService::class)->min($values),
+            TemplateVariable::STRATEGY_AVG => app(ArrayAggregationService::class)->avg($values),
+            TemplateVariable::STRATEGY_SUM => app(ArrayAggregationService::class)->sum($values),
             default => $this->convertToString($values[0] ?? ''),
         };
+    }
+
+    /**
+     * Format a value based on the variable's format settings
+     */
+    protected function formatValue(string $value, TemplateVariable $variable): string
+    {
+        if (empty($value)) {
+            return $value;
+        }
+
+        $options = [
+            'decimals' => $variable->decimal_places ?? 2,
+            'currencyCode' => $variable->currency_code ?? 'USD',
+        ];
+
+        return app(ValueFormattingService::class)->format(
+            $value,
+            $variable->value_format_type ?? TemplateVariable::FORMAT_TEXT,
+            $options
+        );
     }
 
     /**

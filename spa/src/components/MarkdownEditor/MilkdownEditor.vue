@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defaultValueCtx, Editor, editorViewOptionsCtx, rootCtx } from "@milkdown/core";
+import { defaultValueCtx, Editor, editorViewCtx, editorViewOptionsCtx, rootCtx } from "@milkdown/core";
 import { block } from "@milkdown/plugin-block";
 import { clipboard } from "@milkdown/plugin-clipboard";
 import { history } from "@milkdown/plugin-history";
@@ -16,28 +16,34 @@ import "prosemirror-tables/style/tables.css";
 
 const content = defineModel({ type: String });
 const props = defineProps<{
-	readonly?: boolean
+    readonly?: boolean
 }>();
-useEditor((root) => {
-	return Editor.make()
-		.config(nord)
-		.config((ctx) => {
-			ctx.set(rootCtx, root);
-			ctx.set(defaultValueCtx, content.value || "");
-			ctx.get(listenerCtx).markdownUpdated((ctx, markdown) => {
-				content.value = markdown;
-			});
-			ctx.set(editorViewOptionsCtx, { editable: () => !props.readonly });
-		})
-		.use(history)
-		.use(clipboard)
-		.use(prism)
-		.use(block)
-		.use(listener)
-		.use(commonmark);
+const editor = useEditor((root) => {
+    return Editor.make()
+        .config(nord)
+        .config((ctx) => {
+            ctx.set(rootCtx, root);
+            ctx.set(defaultValueCtx, content.value || "");
+            ctx.get(listenerCtx).markdownUpdated((ctx, markdown) => {
+                content.value = markdown;
+            });
+            ctx.set(editorViewOptionsCtx, { editable: () => !props.readonly });
+        })
+        .use(history)
+        .use(clipboard)
+        .use(prism)
+        .use(block)
+        .use(listener)
+        .use(commonmark);
+});
+
+defineExpose({
+    focus: () => {
+        editor?.get()?.action(ctx => ctx.get(editorViewCtx).focus());
+    }
 });
 </script>
 
 <template>
-	<Milkdown />
+    <Milkdown />
 </template>

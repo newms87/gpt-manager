@@ -1,138 +1,145 @@
 .dx-field-label {
-	@apply text-xs mb-1.5 flex items-center space-x-1;
+    @apply text-xs mb-1.5 flex items-center space-x-1;
 
-	.dx-field-required {
-		@apply text-red-500 ml-0.5;
-	}
+    .dx-field-required {
+        @apply text-red-500 ml-0.5;
+    }
 }
 
 .q-field {
-	.q-field__inner {
-		.q-field__control {
-			@apply h-auto rounded pl-4 bg-slate-600 text-slate-200;
-		}
-	}
+    .q-field__append {
+        position: absolute;
+        right: 0.5em;
+        top: 50%;
+        margin-top: -8px;
+    }
+    
+    .q-field__inner {
+        .q-field__control {
+            @apply h-auto rounded px-0 text-slate-300;
+        }
+    }
 
-	.q-field__label {
-		@apply text-slate-400 transition-colors;
-	}
+    .q-field__label {
+        @apply text-slate-400 transition-colors;
+    }
 
-	.q-field__native {
-		@apply text-slate-200;
-	}
+    .q-field__native {
+        @apply bg-slate-600 text-inherit px-4 rounded;
+    }
 
-	&.q-field--focused {
-		.q-field__label {
-			@apply text-slate-300;
-		}
-	}
+    &.q-field--focused {
+        .q-field__label {
+            @apply text-slate-300;
+        }
+    }
 
-	&.q-input {
-		.q-field__native {
-			@apply py-3
-		}
+    &.q-input {
+        .q-field__native {
+            @apply py-3
+        }
 
-		&.dx-input-prepend-label {
-			.q-field__control {
-				@apply p-0 rounded overflow-hidden;
-			}
+        &.dx-input-prepend-label {
+            .q-field__control {
+                @apply p-0 rounded overflow-hidden;
+            }
 
-			.q-field__prepend {
-				@apply text-sm h-auto px-4 bg-slate-400 text-slate-800;
+            .q-field__prepend {
+                @apply text-sm h-auto px-4 bg-slate-400 text-slate-800;
 
-				.dx-field-label {
-					@apply mb-0;
-				}
-			}
+                .dx-field-label {
+                    @apply mb-0;
+                }
+            }
 
-			.q-field__native {
-				@apply text-right text-slate-200 pr-4;
-			}
-		}
-	}
+            .q-field__native {
+                @apply text-right text-slate-200 pr-4;
+            }
+        }
+    }
 
-	&.dx-select-field {
-		@apply pb-0;
+    &.dx-select-field {
+        @apply pb-0;
 
-		.q-field__native {
-			@apply py-3;
+        .q-field__native {
+            @apply py-3;
 
-			.dx-selected-label {
-				@apply py-1;
-			}
-		}
+            .dx-selected-label {
+                @apply py-1;
+            }
+        }
 
-		&.dx-select-field-dense {
-			.q-field__native {
-				@apply py-0;
-			}
-		}
+        &.dx-select-field-dense {
+            .q-field__native {
+                @apply py-0;
+            }
+        }
 
-		&.q-select--multiple {
-			.q-field__native {
+        &.q-select--multiple {
+            .q-field__native {
 
-				.dx-selected-chips {
-					@apply py-0;
-				}
+                .dx-selected-chips {
+                    @apply py-0;
+                }
 
-				.q-chip {
-					@apply h-auto px-4 py-1 m-0;
-				}
-			}
-		}
-	}
+                .q-chip {
+                    @apply h-auto px-4 py-1 m-0;
+                }
+            }
+        }
+    }
 }
 
 .dx-text-field.large-white {
-	.dx-field-label {
-		@apply m-0;
-	}
+    .dx-field-label {
+        @apply m-0;
+    }
 
-	.q-field {
-		.q-field__inner {
-			.q-field__control {
-				@apply bg-slate-200 text-slate-800 p-0;
-			}
+    .q-field {
+        .q-field__inner {
+            .q-field__control {
+                @apply bg-slate-200 text-slate-800 p-0;
+            }
 
-			.q-field__native {
-				@apply text-slate-800;
-			}
-		}
-	}
+            .q-field__native {
+                @apply text-slate-800;
+            }
+        }
+    }
 }
 
 .q-date {
-	@apply bg-slate-600 text-slate-200;
+    @apply bg-slate-600 text-slate-200;
 }
 
 .danx-input-chars {
-	@apply text-slate-400 text-right text-xs;
+    @apply text-slate-400 text-right text-xs;
 
-	&.danx-input-chars--error {
-		@apply text-red-500;
-	}
+    &.danx-input-chars--error {
+        @apply text-red-500;
+    }
 }
 
 .q-checkbox {
-	.q-checkbox__inner--truthy .q-checkbox__bg {
-		@apply bg-inherit;
-	}
+    .q-checkbox__inner--truthy .q-checkbox__bg {
+        @apply bg-inherit;
+    }
 }
 
 .form-input-indigo {
-	.q-field {
-		.q-field__inner {
-			.q-field__control {
-				@apply bg-indigo-400 text-indigo-200;
+    .q-field {
+        .q-field__inner {
+            .q-field__control {
+                @apply bg-indigo-400 text-indigo-200;
 
-				.q-chip {
-					@apply bg-indigo-700 text-indigo-300;
-				}
-			}
-		}
-	}
+                .q-chip {
+                    @apply bg-indigo-700 text-indigo-300;
+                }
+            }
+        }
+    }
 }
 
 .dx-slider-number-field {
-	@apply pb-6;
+    @apply pb-6;
 }

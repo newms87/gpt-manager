@@ -6,55 +6,55 @@
   // Input fields
   .ui-input, .q-field {
     margin-bottom: var(--ui-space-md);
-    
+
     .q-field__control {
       border-radius: var(--ui-radius-lg);
       background: var(--ui-neutral-50);
       border: 1px solid var(--ui-neutral-300);
       transition: all var(--ui-transition-fast);
-      
+
       &:hover {
         border-color: var(--ui-neutral-400);
         background: var(--ui-neutral-100);
       }
-      
+
       &.q-field__control--focused {
         border-color: var(--ui-primary-500);
         background: white;
         box-shadow: 0 0 0 3px var(--ui-primary-100);
       }
     }
-    
+
     .q-field__native {
       padding: var(--ui-space-md);
       font-size: var(--ui-font-size-base);
       color: var(--ui-neutral-900);
-      
+
       &::placeholder {
         color: var(--ui-neutral-500);
       }
     }
-    
+
     .q-field__label {
       color: var(--ui-neutral-700);
       font-weight: var(--ui-font-weight-medium);
       font-size: var(--ui-font-size-sm);
     }
-    
+
     // Error states
     &.q-field--error {
       .q-field__control {
         border-color: var(--ui-error-500);
         background: var(--ui-error-50);
       }
-      
+
       .q-field__messages {
         color: var(--ui-error-600);
         font-size: var(--ui-font-size-sm);
         margin-top: var(--ui-space-xs);
       }
     }
-    
+
     // Success states
     &.q-field--success {
       .q-field__control {
@@ -63,7 +63,7 @@
       }
     }
   }
-  
+
   // Textarea specific styles
   .ui-textarea {
     .q-field__native {
@@ -71,7 +71,7 @@
       resize: vertical;
     }
   }
-  
+
   // Select fields
   .ui-select {
     .q-field__append {
@@ -80,14 +80,14 @@
         transition: transform var(--ui-transition-fast);
       }
     }
-    
+
     &.q-field--focused {
       .q-field__append .q-icon {
         transform: rotate(180deg);
       }
     }
   }
-  
+
   // File upload (MultiFileField)
   .dx-multi-file-field {
     border: 2px dashed var(--ui-neutral-300);
@@ -97,43 +97,43 @@
     text-align: center;
     transition: all var(--ui-transition-normal);
     cursor: pointer;
-    
+
     &:hover {
       border-color: var(--ui-primary-400);
       background: var(--ui-primary-50);
     }
-    
+
     &.dx-multi-file-field--dragover {
       border-color: var(--ui-primary-500);
       background: var(--ui-primary-100);
       transform: scale(1.02);
     }
-    
+
     .dx-multi-file-field__content {
       color: var(--ui-neutral-700);
-      
+
       .dx-multi-file-field__icon {
         color: var(--ui-primary-500);
         font-size: 2rem;
         margin-bottom: var(--ui-space-md);
       }
-      
+
       .dx-multi-file-field__text {
         font-size: var(--ui-font-size-lg);
         font-weight: var(--ui-font-weight-medium);
         margin-bottom: var(--ui-space-sm);
       }
-      
+
       .dx-multi-file-field__hint {
         font-size: var(--ui-font-size-sm);
         color: var(--ui-neutral-500);
       }
     }
-    
+
     // File list
     .dx-multi-file-field__files {
       margin-top: var(--ui-space-lg);
-      
+
       .dx-multi-file-field__file {
         background: white;
         border: 1px solid var(--ui-neutral-200);
@@ -143,23 +143,23 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        
+
         .dx-multi-file-field__file-name {
           color: var(--ui-neutral-900);
           font-weight: var(--ui-font-weight-medium);
         }
-        
+
         .dx-multi-file-field__file-size {
           color: var(--ui-neutral-500);
           font-size: var(--ui-font-size-sm);
         }
-        
+
         .dx-multi-file-field__file-remove {
           color: var(--ui-error-500);
           cursor: pointer;
           padding: var(--ui-space-xs);
           border-radius: var(--ui-radius-md);
-          
+
           &:hover {
             background: var(--ui-error-50);
           }
@@ -167,7 +167,7 @@
       }
     }
   }
-  
+
   // Form labels
   label {
     color: var(--ui-neutral-700);
@@ -176,16 +176,16 @@
     margin-bottom: var(--ui-space-xs);
     display: block;
   }
-  
+
   // Form groups
   .form-group {
     margin-bottom: var(--ui-space-lg);
-    
+
     &:last-child {
       margin-bottom: 0;
     }
   }
-  
+
   // Form validation messages
   .form-error {
     color: var(--ui-error-600);
@@ -193,24 +193,24 @@
     margin-top: var(--ui-space-xs);
     display: flex;
     align-items: center;
-    
+
     .q-icon {
       margin-right: var(--ui-space-xs);
     }
   }
-  
+
   .form-success {
     color: var(--ui-success-600);
     font-size: var(--ui-font-size-sm);
     margin-top: var(--ui-space-xs);
     display: flex;
     align-items: center;
-    
+
     .q-icon {
       margin-right: var(--ui-space-xs);
     }
   }
-  
+
   // Required field indicator
   .required {
     &::after {

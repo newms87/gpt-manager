@@ -37,44 +37,23 @@
             </div>
         </div>
 
-        <!-- Multi-value Strategy -->
-        <div>
-            <label class="text-sm font-medium text-slate-700 mb-2 block">
-                Multi-value Strategy
-            </label>
-            <SelectField
-                :model-value="modelValue.multi_value_strategy || 'join'"
-                :options="multiValueStrategyOptions"
-                @update:model-value="updateMultiValueStrategy"
-            />
-            <div class="text-xs text-slate-500 mt-1">
-                How to handle multiple matching artifacts.
-            </div>
-        </div>
-
-        <!-- Separator (shown only for join/unique) -->
-        <div v-if="showSeparator">
-            <label class="text-sm font-medium text-slate-700 mb-2 block">
-                Separator
-            </label>
-            <TextField
-                :model-value="modelValue.multi_value_separator || ', '"
-                placeholder="e.g., , or ; or newline"
-                @update:model-value="updateSeparator"
-            />
-            <div class="text-xs text-slate-500 mt-1">
-                Separator to use when joining multiple values.
-            </div>
-        </div>
+        <!-- Formatting Fields -->
+        <TemplateVariableFormattingFields
+            v-model="modelValue"
+            multi-value-description="How to handle multiple matching artifacts."
+            @update:multi-value-strategy="emit('update:multi-value-strategy', $event)"
+            @update:multi-value-separator="emit('update:multi-value-separator', $event)"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
 import { useDebounceFn } from "@vueuse/core";
 import { FaSolidCircleInfo } from "danx-icon";
-import { SelectField, TextField } from "quasar-ui-danx";
+import { TextField } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 import FragmentSelectorConfigField from "@/components/Modules/TaskDefinitions/TaskRunners/Configs/Fields/FragmentSelectorConfigField.vue";
+import TemplateVariableFormattingFields from "./TemplateVariableFormattingFields.vue";
 import type { TemplateVariable } from "../types";
 import type { FragmentSelector } from "@/types/prompts";
 
@@ -92,21 +71,9 @@ const localFragmentSelector = ref<FragmentSelector | string | null>(
     modelValue.value.artifact_fragment_selector || null
 );
 
-// Multi-value strategy options
-const multiValueStrategyOptions = [
-    { label: "Join (concatenate all values)", value: "join" },
-    { label: "First (use first value only)", value: "first" },
-    { label: "Unique (join unique values only)", value: "unique" }
-];
-
 // Computed
 const categoriesString = computed(() => {
     return modelValue.value.artifact_categories?.join(", ") || "";
-});
-
-const showSeparator = computed(() => {
-    const strategy = modelValue.value.multi_value_strategy;
-    return strategy === "join" || strategy === "unique";
 });
 
 // Watch for external changes
@@ -136,23 +103,4 @@ const updateFragmentSelector = (value: FragmentSelector | string | null) => {
     modelValue.value.artifact_fragment_selector = selectorValue;
     emit("update:artifact-fragment-selector", selectorValue);
 };
-
-const updateMultiValueStrategy = (value: "join" | "first" | "unique") => {
-    modelValue.value.multi_value_strategy = value;
-    emit("update:multi-value-strategy", value);
-
-    // Set default separator if switching to join/unique
-    if ((value === "join" || value === "unique") && !modelValue.value.multi_value_separator) {
-        modelValue.value.multi_value_separator = ", ";
-        emit("update:multi-value-separator", ", ");
-    }
-};
-
-const updateSeparatorImmediate = (value: string) => {
-    const separatorValue = value || undefined;
-    modelValue.value.multi_value_separator = separatorValue;
-    emit("update:multi-value-separator", separatorValue);
-};
-
-const updateSeparator = useDebounceFn(updateSeparatorImmediate, 500);
 </script>

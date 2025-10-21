@@ -11,8 +11,11 @@ export interface TemplateVariable {
   team_object_schema_association_id?: number;
   schema_association?: SchemaAssociation;
   ai_instructions?: string;
-  multi_value_strategy?: 'join' | 'first' | 'unique';
+  multi_value_strategy?: 'join' | 'first' | 'unique' | 'max' | 'min' | 'avg' | 'sum';
   multi_value_separator?: string;
+  value_format_type?: 'text' | 'integer' | 'decimal' | 'currency' | 'percentage' | 'date';
+  decimal_places?: number;
+  currency_code?: string;
   created_at?: string;
   updated_at?: string;
 }

@@ -32,6 +32,19 @@
                     </div>
                 </div>
 
+
+                <!-- Description -->
+                <div>
+                    <label class="text-sm font-medium text-slate-700 mb-2 block">
+                        Description
+                    </label>
+                    <TextField
+                        v-model="localVariable.description"
+                        placeholder="Optional description for this variable"
+                        @update:model-value="debouncedUpdateDescription"
+                    />
+                </div>
+
                 <!-- Mapping Type -->
                 <div>
                     <label class="text-sm font-medium text-slate-700 mb-2 block">
@@ -54,18 +67,6 @@
                             <div class="text-xs text-slate-600">{{ type.description }}</div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Description -->
-                <div>
-                    <label class="text-sm font-medium text-slate-700 mb-2 block">
-                        Description
-                    </label>
-                    <TextField
-                        v-model="localVariable.description"
-                        placeholder="Optional description for this variable"
-                        @update:model-value="debouncedUpdateDescription"
-                    />
                 </div>
 
                 <!-- Conditional Configuration Panels -->

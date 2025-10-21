@@ -54,8 +54,11 @@ class TemplateVariableRepository extends ActionRepository
             'schema_definition_id'              => ['nullable', 'integer', 'exists:schema_definitions,id'],
             'schema_fragment_id'                => ['nullable', 'integer', 'exists:schema_fragments,id'],
             'ai_instructions'                   => ['nullable', 'string'],
-            'multi_value_strategy'              => ['nullable', 'in:join,first,unique'],
+            'multi_value_strategy'              => ['nullable', 'in:join,first,unique,max,min,avg,sum'],
             'multi_value_separator'             => ['nullable', 'string', 'max:255'],
+            'value_format_type'                 => ['nullable', 'in:text,integer,decimal,currency,percentage,date'],
+            'decimal_places'                    => ['nullable', 'integer', 'min:0', 'max:4'],
+            'currency_code'                     => ['nullable', 'string', 'size:3'],
         ];
 
         $validator = Validator::make($data, $rules);

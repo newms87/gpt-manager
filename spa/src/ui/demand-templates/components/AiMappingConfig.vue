@@ -15,6 +15,7 @@
                 :model-value="modelValue.ai_instructions || ''"
                 placeholder="e.g., Extract the patient's full name from the medical records..."
                 class="w-full"
+                editor-class="h-96 w-full bg-slate-300 text-slate-800"
                 @update:model-value="updateInstructions"
             />
             <div class="text-xs text-slate-500 mt-1">

@@ -24,6 +24,6 @@ trait ResourcePackageableTrait
 
     public function canEdit(): bool
     {
-        return $this->resource_package_import_id === null || can('edit_imported_schemas');
+        return $this->resource_package_import_id === null || $this->resourcePackageImport->canEdit() || can('edit_imported_schemas');
     }
 }

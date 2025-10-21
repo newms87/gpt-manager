@@ -4,239 +4,239 @@
 // Override Quasar components for UI consistency
 
 .ui-app {
-  // Quasar Card overrides
-  .q-card {
-    border-radius: var(--ui-radius-xl);
-    box-shadow: var(--ui-shadow-sm);
-    border: 1px solid var(--ui-neutral-200);
-    
-    &:hover {
-      box-shadow: var(--ui-shadow-md);
-    }
-    
-    .q-card__section {
-      &:first-child {
-        border-top-left-radius: var(--ui-radius-xl);
-        border-top-right-radius: var(--ui-radius-xl);
-      }
-      
-      &:last-child {
-        border-bottom-left-radius: var(--ui-radius-xl);
-        border-bottom-right-radius: var(--ui-radius-xl);
-      }
-    }
-  }
-  
-  // Quasar Input overrides
-  .q-field {
-    .q-field__control {
-      border-radius: var(--ui-radius-lg);
-      
-      &:before {
-        border-color: var(--ui-neutral-300);
-        transition: border-color var(--ui-transition-fast);
-      }
-      
-      &:hover:before {
-        border-color: var(--ui-neutral-400);
-      }
-      
-      &:after {
-        border-color: var(--ui-primary-500);
-      }
-    }
-    
-    .q-field__native {
-      color: var(--ui-neutral-900);
-      
-      &::placeholder {
-        color: var(--ui-neutral-500);
-      }
-    }
-    
-    .q-field__label {
-      color: var(--ui-neutral-600);
-      font-weight: var(--ui-font-weight-medium);
-    }
-    
-    // Error state
-    &.q-field--error {
-      .q-field__control:before {
-        border-color: var(--ui-error-500);
-      }
-      
-      .q-field__label {
-        color: var(--ui-error-600);
-      }
-    }
-  }
-  
-  // Quasar Select overrides
-  .q-select {
-    .q-field__append {
-      .q-icon {
-        color: var(--ui-neutral-500);
-        transition: transform var(--ui-transition-fast);
-      }
-    }
-    
-    &.q-field--focused {
-      .q-field__append .q-icon {
-        transform: rotate(180deg);
-      }
-    }
-  }
-  
-  // Quasar Menu/Dropdown overrides
-  .q-menu {
-    border-radius: var(--ui-radius-lg);
-    box-shadow: var(--ui-shadow-xl);
-    border: 1px solid var(--ui-neutral-200);
-    background: var(--ui-neutral-50);
-    
-    .q-item {
-      border-radius: var(--ui-radius-md);
-      margin: var(--ui-space-xs);
-      color: var(--ui-neutral-700);
-      transition: all var(--ui-transition-fast);
-      
-      &:hover {
-        background: var(--ui-primary-100);
-        color: var(--ui-primary-800);
-      }
-      
-      &.q-item--active {
-        background: var(--ui-primary-500);
-        color: white;
-      }
-    }
-  }
-  
-  // Quasar Tooltip overrides
-  .q-tooltip {
-    background: var(--ui-neutral-900);
-    color: white;
-    border-radius: var(--ui-radius-md);
-    font-size: var(--ui-font-size-sm);
-    padding: var(--ui-space-sm) var(--ui-space-md);
-    box-shadow: var(--ui-shadow-lg);
-  }
-  
-  // Quasar Chip overrides
-  .q-chip {
-    border-radius: var(--ui-radius-xl);
-    font-weight: var(--ui-font-weight-medium);
-    
-    &.q-chip--selected {
-      background: var(--ui-primary-500);
-      color: white;
-    }
-  }
-  
-  // Quasar Badge overrides
-  .q-badge {
-    border-radius: var(--ui-radius-xl);
-    font-weight: var(--ui-font-weight-medium);
-  }
-  
-  // Quasar Tab overrides
-  .q-tabs {
-    .q-tab {
-      border-radius: var(--ui-radius-lg);
-      color: var(--ui-neutral-600);
-      font-weight: var(--ui-font-weight-medium);
-      transition: all var(--ui-transition-fast);
-      
-      &:hover {
-        color: var(--ui-primary-600);
-        background: var(--ui-primary-50);
-      }
-      
-      &.q-tab--active {
-        color: var(--ui-primary-600);
-        background: var(--ui-primary-100);
-      }
-    }
-    
-    .q-tab-panels {
-      background: transparent;
-    }
-  }
-  
-  // Quasar Stepper overrides
-  .q-stepper {
-    background: transparent;
-    
-    .q-stepper__header {
-      border: none;
-      
-      .q-stepper__tab {
-        &.q-stepper__tab--active {
-          color: var(--ui-primary-600);
-        }
-        
-        &.q-stepper__tab--done {
-          color: var(--ui-success-600);
-        }
-      }
-      
-      .q-stepper__line {
-        &:before {
-          background: var(--ui-neutral-300);
-        }
-        
-        &:after {
-          background: var(--ui-primary-500);
-        }
-      }
-    }
-  }
-  
-  // Quasar Separator overrides
-  .q-separator {
-    background: var(--ui-neutral-200);
-  }
-  
-  // Quasar Expansion Item overrides
-  .q-expansion-item {
-    border-radius: var(--ui-radius-lg);
-    border: 1px solid var(--ui-neutral-200);
-    margin-bottom: var(--ui-space-md);
-    
-    .q-expansion-item__container {
-      .q-item {
-        border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
-        background: var(--ui-neutral-50);
-        
+    // Quasar Card overrides
+    .q-card {
+        border-radius: var(--ui-radius-xl);
+        box-shadow: var(--ui-shadow-sm);
+        border: 1px solid var(--ui-neutral-200);
+
         &:hover {
-          background: var(--ui-neutral-100);
+            box-shadow: var(--ui-shadow-md);
         }
-      }
+
+        .q-card__section {
+            &:first-child {
+                border-top-left-radius: var(--ui-radius-xl);
+                border-top-right-radius: var(--ui-radius-xl);
+            }
+
+            &:last-child {
+                border-bottom-left-radius: var(--ui-radius-xl);
+                border-bottom-right-radius: var(--ui-radius-xl);
+            }
+        }
     }
-    
-    .q-expansion-item__content {
-      border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
-      background: var(--ui-neutral-50);
+
+    // Quasar Input overrides
+    .q-field {
+        .q-field__control {
+            border-radius: var(--ui-radius-lg);
+
+            &:before {
+                border-color: var(--ui-neutral-300);
+                transition: border-color var(--ui-transition-fast);
+            }
+
+            &:hover:before {
+                border-color: var(--ui-neutral-400);
+            }
+
+            &:after {
+                border-color: var(--ui-primary-500);
+            }
+        }
+
+        .q-field__native {
+            color: var(--ui-neutral-900);
+
+            &::placeholder {
+                color: var(--ui-neutral-500);
+            }
+        }
+
+        .q-field__label {
+            color: var(--ui-neutral-600);
+            font-weight: var(--ui-font-weight-medium);
+        }
+
+        // Error state
+        &.q-field--error {
+            .q-field__control:before {
+                border-color: var(--ui-error-500);
+            }
+
+            .q-field__label {
+                color: var(--ui-error-600);
+            }
+        }
     }
-  }
-  
-  // Quasar Spinner overrides
-  .q-spinner {
-    color: var(--ui-primary-500);
-  }
-  
-  // Quasar Skeleton overrides
-  .q-skeleton {
-    background: var(--ui-neutral-200);
-    border-radius: var(--ui-radius-md);
-    
-    &:before {
-      background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.4),
-        transparent
-      );
+
+    // Quasar Select overrides
+    .q-select {
+        .q-field__append {
+            .q-icon {
+                color: var(--ui-neutral-500);
+                transition: transform var(--ui-transition-fast);
+            }
+        }
+
+        &.q-field--focused {
+            .q-field__append .q-icon {
+                transform: rotate(180deg);
+            }
+        }
     }
-  }
+
+    // Quasar Menu/Dropdown overrides
+    .q-menu {
+        border-radius: var(--ui-radius-lg);
+        box-shadow: var(--ui-shadow-xl);
+        border: 1px solid var(--ui-neutral-200);
+        background: var(--ui-neutral-50);
+
+        .q-item {
+            border-radius: var(--ui-radius-md);
+            margin: var(--ui-space-xs);
+            color: var(--ui-neutral-700);
+            transition: all var(--ui-transition-fast);
+
+            &:hover {
+                background: var(--ui-primary-100);
+                color: var(--ui-primary-800);
+            }
+
+            &.q-item--active {
+                background: var(--ui-primary-500);
+                color: white;
+            }
+        }
+    }
+
+    // Quasar Tooltip overrides
+    .q-tooltip {
+        background: var(--ui-neutral-900);
+        color: white;
+        border-radius: var(--ui-radius-md);
+        font-size: var(--ui-font-size-sm);
+        padding: var(--ui-space-sm) var(--ui-space-md);
+        box-shadow: var(--ui-shadow-lg);
+    }
+
+    // Quasar Chip overrides
+    .q-chip {
+        border-radius: var(--ui-radius-xl);
+        font-weight: var(--ui-font-weight-medium);
+
+        &.q-chip--selected {
+            background: var(--ui-primary-500);
+            color: white;
+        }
+    }
+
+    // Quasar Badge overrides
+    .q-badge {
+        border-radius: var(--ui-radius-xl);
+        font-weight: var(--ui-font-weight-medium);
+    }
+
+    // Quasar Tab overrides
+    .q-tabs {
+        .q-tab {
+            border-radius: var(--ui-radius-lg);
+            color: var(--ui-neutral-600);
+            font-weight: var(--ui-font-weight-medium);
+            transition: all var(--ui-transition-fast);
+
+            &:hover {
+                color: var(--ui-primary-600);
+                background: var(--ui-primary-50);
+            }
+
+            &.q-tab--active {
+                color: var(--ui-primary-600);
+                background: var(--ui-primary-100);
+            }
+        }
+
+        .q-tab-panels {
+            background: transparent;
+        }
+    }
+
+    // Quasar Stepper overrides
+    .q-stepper {
+        background: transparent;
+
+        .q-stepper__header {
+            border: none;
+
+            .q-stepper__tab {
+                &.q-stepper__tab--active {
+                    color: var(--ui-primary-600);
+                }
+
+                &.q-stepper__tab--done {
+                    color: var(--ui-success-600);
+                }
+            }
+
+            .q-stepper__line {
+                &:before {
+                    background: var(--ui-neutral-300);
+                }
+
+                &:after {
+                    background: var(--ui-primary-500);
+                }
+            }
+        }
+    }
+
+    // Quasar Separator overrides
+    .q-separator {
+        background: var(--ui-neutral-200);
+    }
+
+    // Quasar Expansion Item overrides
+    .q-expansion-item {
+        border-radius: var(--ui-radius-lg);
+        border: 1px solid var(--ui-neutral-200);
+        margin-bottom: var(--ui-space-md);
+
+        .q-expansion-item__container {
+            .q-item {
+                border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
+                background: var(--ui-neutral-50);
+
+                &:hover {
+                    background: var(--ui-neutral-100);
+                }
+            }
+        }
+
+        .q-expansion-item__content {
+            border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
+            background: var(--ui-neutral-50);
+        }
+    }
+
+    // Quasar Spinner overrides
+    .q-spinner {
+        color: var(--ui-primary-500);
+    }
+
+    // Quasar Skeleton overrides
+    .q-skeleton {
+        background: var(--ui-neutral-200);
+        border-radius: var(--ui-radius-md);
+
+        &:before {
+            background: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.4),
+                    transparent
+            );
+        }
+    }
 }

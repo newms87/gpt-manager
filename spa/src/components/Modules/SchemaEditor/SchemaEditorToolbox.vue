@@ -60,7 +60,7 @@
                                     v-model:editing="isEditingFragment"
                                     v-model:selected="activeFragment"
                                     selectable
-                                    :editable
+                                    editable
                                     creatable
                                     clearable
                                     deletable

@@ -26,6 +26,18 @@ class TemplateVariable extends Model implements AuditableContract
     public const STRATEGY_JOIN = 'join';
     public const STRATEGY_FIRST = 'first';
     public const STRATEGY_UNIQUE = 'unique';
+    public const STRATEGY_MAX = 'max';
+    public const STRATEGY_MIN = 'min';
+    public const STRATEGY_AVG = 'avg';
+    public const STRATEGY_SUM = 'sum';
+
+    // Format type constants
+    public const FORMAT_TEXT = 'text';
+    public const FORMAT_INTEGER = 'integer';
+    public const FORMAT_DECIMAL = 'decimal';
+    public const FORMAT_CURRENCY = 'currency';
+    public const FORMAT_PERCENTAGE = 'percentage';
+    public const FORMAT_DATE = 'date';
 
     protected $fillable = [
         'demand_template_id',
@@ -38,6 +50,9 @@ class TemplateVariable extends Model implements AuditableContract
         'ai_instructions',
         'multi_value_strategy',
         'multi_value_separator',
+        'value_format_type',
+        'decimal_places',
+        'currency_code',
     ];
 
     public function casts(): array
@@ -106,7 +121,10 @@ class TemplateVariable extends Model implements AuditableContract
             'artifact_fragment_selector' => ['nullable', 'array'],
             'team_object_schema_association_id' => ['nullable', 'exists:schema_associations,id'],
             'ai_instructions' => ['nullable', 'string'],
-            'multi_value_strategy' => ['required', 'in:' . self::STRATEGY_JOIN . ',' . self::STRATEGY_FIRST . ',' . self::STRATEGY_UNIQUE],
+            'multi_value_strategy' => ['required', 'in:' . self::STRATEGY_JOIN . ',' . self::STRATEGY_FIRST . ',' . self::STRATEGY_UNIQUE . ',' . self::STRATEGY_MAX . ',' . self::STRATEGY_MIN . ',' . self::STRATEGY_AVG . ',' . self::STRATEGY_SUM],
+            'value_format_type' => ['nullable', 'in:' . self::FORMAT_TEXT . ',' . self::FORMAT_INTEGER . ',' . self::FORMAT_DECIMAL . ',' . self::FORMAT_CURRENCY . ',' . self::FORMAT_PERCENTAGE . ',' . self::FORMAT_DATE],
+            'decimal_places' => ['nullable', 'integer', 'min:0', 'max:4'],
+            'currency_code' => ['nullable', 'string', 'size:3'],
             'multi_value_separator' => ['required', 'string', 'max:255'],
         ];
 

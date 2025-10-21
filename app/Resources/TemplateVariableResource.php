@@ -23,6 +23,9 @@ class TemplateVariableResource extends ActionResource
             'ai_instructions'                   => $variable->ai_instructions,
             'multi_value_strategy'              => $variable->multi_value_strategy,
             'multi_value_separator'             => $variable->multi_value_separator,
+            'value_format_type'                 => $variable->value_format_type,
+            'decimal_places'                    => $variable->decimal_places,
+            'currency_code'                     => $variable->currency_code,
             'created_at'                        => $variable->created_at,
             'updated_at'                        => $variable->updated_at,
 
