@@ -776,10 +776,11 @@ public function broadcastOn()
 ### After Writing Code
 
 1. **Verify all dependency injection uses app() helper** - no constructor injection
-2. Run `./vendor/bin/sail artisan fix` for permissions
-3. Run `./vendor/bin/sail test` to ensure all tests pass
-4. Verify no console errors
-5. Check for proper error handling
+2. **Run Laravel Pint linter** - `./vendor/bin/sail pint <file>` on all modified PHP files
+3. Run `./vendor/bin/sail artisan fix` for permissions
+4. Run `./vendor/bin/sail test` to ensure all tests pass
+5. Verify no console errors
+6. Check for proper error handling
 
 ---
 

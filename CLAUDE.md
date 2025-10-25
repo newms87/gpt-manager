@@ -61,6 +61,7 @@
 **MANDATORY BUILD COMMANDS:**
 - **ONLY use `yarn build`** for Vue frontend builds - NEVER `npm run dev` or `npm run type-check`
 - **ONLY use `./vendor/bin/sail test`** for Laravel backend testing
+- **ALWAYS run `./vendor/bin/sail pint <file>`** after modifying any PHP files to ensure proper code formatting
 - Follow these commands exactly - NO EXCEPTIONS
 
 **🚨 CRITICAL: GIT OPERATIONS - READ ONLY!**

@@ -98,6 +98,7 @@ When encountering legacy code:
 - Use app() helper for service resolution in controllers
 - Implement comprehensive validation with descriptive error messages
 - Use database transactions for multi-step operations
+- **ALWAYS run `./vendor/bin/sail pint <file>` after writing/modifying any PHP file** to ensure proper code formatting
 
 ### 2. When Reviewing Code
 - Check for team-based access control in all data operations

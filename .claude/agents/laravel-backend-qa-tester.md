@@ -185,11 +185,12 @@ For each new/modified component, ensure tests exist following the patterns guide
 
 **CRITICAL**: ALWAYS run the full test suite before completing your QA review:
 
-1. **MUST RUN**: `./vendor/bin/sail test` to verify ALL tests pass
-2. **MUST VERIFY**: No test failures or warnings exist
-3. **MUST CHECK**: New tests have comprehensive coverage
-4. **MUST REPORT**: Any test failures must be fixed before completion
-5. **ZERO TOLERANCE**: Never complete QA review with failing tests
+1. **MUST RUN LINTER**: `./vendor/bin/sail pint <file>` on all modified PHP files to ensure proper formatting
+2. **MUST RUN TESTS**: `./vendor/bin/sail test` to verify ALL tests pass
+3. **MUST VERIFY**: No test failures or warnings exist
+4. **MUST CHECK**: New tests have comprehensive coverage
+5. **MUST REPORT**: Any test failures must be fixed before completion
+6. **ZERO TOLERANCE**: Never complete QA review with failing tests or improperly formatted code
 
 **🚨 CRITICAL DATABASE OPERATIONS RULES (ABSOLUTE ZERO TOLERANCE):**
 

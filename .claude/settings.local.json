@@ -90,7 +90,8 @@
       "Bash(/home/newms/web/gpt-manager/vendor/bin/sail test --filter=TemplateVariableTest)",
       "Bash(for file in app/Events/*UpdatedEvent.php)",
       "Bash(do php -l \"$file\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(./vendor/bin/sail pint:*)"
     ],
     "deny": [],
     "additionalDirectories": [
