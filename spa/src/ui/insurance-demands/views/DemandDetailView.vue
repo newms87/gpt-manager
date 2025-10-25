@@ -1,10 +1,7 @@
 <template>
     <UiMainLayout>
         <template #header>
-            <DemandDetailHeader
-                :demand="demand"
-                @back="router.back()"
-            />
+            <DemandDetailHeader :demand="demand" />
         </template>
 
         <!-- Loading State -->
@@ -80,7 +77,7 @@ import { WorkflowRun } from "@/types";
 import { FaSolidExclamation } from "danx-icon";
 import { type StoredFile } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { UiLoadingSpinner, UiMainLayout } from "../../shared";
 import type { UiDemand } from "../../shared/types";
 import {
@@ -96,7 +93,6 @@ import { UsageDisplayContainer } from "../components/Usage";
 import { useDemands } from "../composables";
 
 const route = useRoute();
-const router = useRouter();
 
 const { updateDemand, loadDemand, subscribeToWorkflowRunUpdates, clearWorkflowSubscriptions } = useDemands();
 

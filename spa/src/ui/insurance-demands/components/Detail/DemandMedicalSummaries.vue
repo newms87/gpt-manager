@@ -24,7 +24,6 @@
                         :key="summary.id"
                         :summary="summary"
                         :index="index"
-                        :auto-expand="medicalSummaries.length === 1"
                         @update="saveSummary"
                         @delete="deleteSummary"
                     />

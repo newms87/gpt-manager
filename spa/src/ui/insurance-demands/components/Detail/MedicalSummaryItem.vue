@@ -96,20 +96,17 @@
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { FaSolidFile, FaSolidPencil as EditIcon } from "danx-icon";
 import { ActionButton, fDateTime, ShowHideButton } from "quasar-ui-danx";
-import { onMounted, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import type { Artifact } from "../../../shared/types";
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
     summary: Artifact;
     index: number;
-    autoExpand?: boolean;
-}>(), {
-    autoExpand: false
-});
+}>();
 
 const emit = defineEmits<{
-    'update': [summary: Artifact, content: string];
-    'delete': [summary: Artifact];
+    "update": [summary: Artifact, content: string];
+    "delete": [summary: Artifact];
 }>();
 
 // Local state
@@ -132,20 +129,13 @@ const cancelEditing = () => {
 
 // Save content
 const saveContent = () => {
-    emit('update', props.summary, editingContent.value);
+    emit("update", props.summary, editingContent.value);
     isEditing.value = false;
     editingContent.value = "";
 };
 
 // Delete item
 const deleteItem = () => {
-    emit('delete', props.summary);
+    emit("delete", props.summary);
 };
-
-// Auto-expand on mount if prop is set
-onMounted(() => {
-    if (props.autoExpand) {
-        isExpanded.value = true;
-    }
-});
 </script>
