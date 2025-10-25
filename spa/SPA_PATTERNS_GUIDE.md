@@ -549,15 +549,26 @@ pusher.onEvent("Model", "updated", (data) => {
 
 ## 9. Formatting Functions
 
-```typescript
-import { fDate, fDateTime, fNumber, fCurrency, fPercent } from "quasar-ui-danx";
+**CRITICAL: Formatters MUST be used 100% of the time for all data display - NEVER use raw values or create custom formatting**
 
+All formatting utilities come from `quasar-ui-danx/helpers/formats/` module, organized into:
+- `datetime.ts` - Date/time formatting (fDate, fDateTime, fTimeAgo, fDuration)
+- `numbers.ts` - Number formatting (fNumber, fShortNumber, fPercent)
+- `currency.ts` - Currency formatting (fCurrency, fCurrencyNoCents, fShortCurrency)
+- `strings.ts` - String utilities (fBoolean, fPhone, fShortSize)
+- `parsers.ts` - Parsing utilities (parseDate, parseNumber, etc.)
+
+**Usage:**
+```typescript
+import { fDate, fCurrency, fNumber } from "quasar-ui-danx";
+
+// In template or computed
 fDate(date);              // "Jan 1, 2024"
-fDateTime(date);          // "Jan 1, 2024 3:45 PM"
-fNumber(1234.56);         // "1,234.56"
 fCurrency(1234.56);       // "$1,234.56"
-fPercent(0.85);           // "85%"
+fNumber(1234.56);         // "1,234.56"
 ```
+
+**For complete function signatures and all available formatters, read the source files in quasar-ui-danx/helpers/formats/**
 
 ## 10. TypeScript Patterns
 

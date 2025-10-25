@@ -24,7 +24,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class Agent extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, AuditableTrait, HasRelationCountersTrait, SoftDeletes, ResourcePackageableTrait, KeywordSearchTrait, ActionModelTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasRelationCountersTrait, KeywordSearchTrait, ResourcePackageableTrait, SoftDeletes;
 
     protected $fillable = [
         'team_id',

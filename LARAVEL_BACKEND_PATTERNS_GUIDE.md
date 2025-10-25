@@ -590,6 +590,158 @@ tests/
 
 ---
 
+## 7. Broadcasting and Events
+
+All model update events extend `ModelSavedEvent` from the danx library, which provides subscription-based broadcasting with resource-type extraction and team-based filtering.
+
+### ModelSavedEvent Base Class
+
+The danx library's `ModelSavedEvent` (`../danx/src/Events/ModelSavedEvent.php`) provides:
+
+- **Automatic resource type extraction** from Resource class names
+- **Team ID resolution** (simple via constructor, complex via override)
+- **Subscription-based broadcasting** via `BroadcastsWithSubscriptions` trait integration
+- **Lock-based duplicate prevention** to avoid multiple broadcasts
+- **Static helper methods** for easy event dispatch
+
+### Event Structure Template
+
+```php
+<?php
+
+namespace App\Events;
+
+use App\Models\[Domain]\[Model];
+use App\Resources\[Domain]\[Model]Resource;
+use Newms87\Danx\Events\ModelSavedEvent;
+
+class [Model]UpdatedEvent extends ModelSavedEvent
+{
+    public function __construct(protected [Model] $model, protected string $event)
+    {
+        parent::__construct(
+            $model,
+            $event,
+            [Model]Resource::class,  // Resource class for type extraction
+            $model->team_id           // Team ID (or null for complex resolution)
+        );
+    }
+
+    public function data(): array
+    {
+        // Return lightweight payload - IDs, status, timestamps only
+        return [Model]Resource::make($this->model, [
+            'id' => true,
+            'name' => true,
+            'status' => true,
+            'created_at' => true,
+            'updated_at' => true,
+            // NO relationships, NO large fields (logs, content, etc.)
+        ]);
+    }
+}
+```
+
+### Complex Team ID Resolution
+
+For models where team_id requires traversing relationships or polymorphic resolution:
+
+```php
+class JobDispatchUpdatedEvent extends ModelSavedEvent
+{
+    public function __construct(protected JobDispatch $jobDispatch, protected string $event)
+    {
+        // Don't pass team_id - will be resolved via getTeamId()
+        parent::__construct(
+            $jobDispatch,
+            $event,
+            JobDispatchResource::class
+        );
+    }
+
+    protected function getTeamId(): ?int
+    {
+        // Custom team ID resolution logic
+        $dispatchable = DB::table('job_dispatchables')
+            ->where('job_dispatch_id', $this->jobDispatch->id)
+            ->first();
+
+        if (!$dispatchable) return null;
+
+        $model = $dispatchable->model_type::find($dispatchable->model_id);
+        return $model?->team_id;
+    }
+
+    public function data(): array
+    {
+        return JobDispatchResource::make($this->jobDispatch, [
+            'id' => true,
+            'status' => true,
+            // ... lightweight fields only
+        ]);
+    }
+}
+```
+
+### Broadcasting Payloads - CRITICAL Rules
+
+**ALWAYS use lightweight payloads in data() method:**
+
+✅ **INCLUDE:**
+- IDs (primary keys, foreign keys)
+- Status/state fields
+- Timestamps
+- Simple strings (name, title, type)
+- Simple counts
+
+❌ **EXCLUDE:**
+- Relationships (NEVER include nested objects)
+- Large text fields (logs, content, raw_data)
+- Binary/JSON blobs
+- Computed attributes requiring queries
+
+### Triggering Events
+
+Events are automatically triggered via model observers, but can be manually dispatched:
+
+```php
+use App\Events\WorkflowRunUpdatedEvent;
+
+// Manual dispatch with lock (prevents duplicates)
+WorkflowRunUpdatedEvent::dispatch($workflowRun);
+
+// Manual broadcast (without lock)
+WorkflowRunUpdatedEvent::broadcast($workflowRun);
+```
+
+### Custom broadcastOn() Implementation
+
+If you need custom subscription logic, override `broadcastOn()`:
+
+```php
+public function broadcastOn()
+{
+    $resourceType = $this->getResourceType(); // Auto-extracted from Resource class
+    $teamId = $this->getTeamId();
+
+    if (!$teamId) {
+        return [];
+    }
+
+    // Custom subscription logic here
+    $userIds = $this->getSubscribedUsers($resourceType, $teamId, $this->model, $this->model::class);
+
+    return $this->getSubscribedChannels($resourceType, $teamId, $userIds);
+}
+```
+
+### Event Examples
+
+- **Simple:** `WorkflowRunUpdatedEvent`, `TaskRunUpdatedEvent` - team_id from direct relationship
+- **Complex:** `JobDispatchUpdatedEvent`, `UsageSummaryUpdatedEvent` - team_id from polymorphic/nested relationships
+
+---
+
 ## CRITICAL Requirements Checklist
 
 1. **ALWAYS use team-based access control** in repositories and services

@@ -84,6 +84,16 @@
   - ANY command that modifies repository state ❌
 - **User handles ALL git operations that modify the repository**
 
+**DANX LIBRARY:**
+- **Danx library source is at:** `../danx/` (relative to this project)
+- **YOU CAN AND SHOULD modify danx library code when necessary**
+- **NEVER modify `vendor/newms87/danx`** - that's the installed package
+- **Modify `../danx/src/` directly** - it's our library, not a third-party dependency
+- **Common danx modifications:**
+  - `../danx/src/Events/ModelSavedEvent.php` - Base event class
+  - `../danx/src/Resources/` - Base resource classes
+  - `../danx/src/Services/` - Base service classes
+
 **AGENT DOCUMENTATION LOCATION:**
 - **Agent files are located at:** `@.claude/agents/*.md`
 - **ALWAYS CHECK YOUR CWD** - You may be in `/spa/` directory, agents are in parent `/`
