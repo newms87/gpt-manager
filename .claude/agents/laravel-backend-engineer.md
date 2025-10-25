@@ -151,6 +151,31 @@ When encountering legacy code:
 - Test with real database
 - Follow Given-When-Then structure
 
+**🚨 CRITICAL DATABASE OPERATIONS RULES (ABSOLUTE ZERO TOLERANCE):**
+
+**NEVER EVER DROP OR MODIFY DATABASES DIRECTLY:**
+- ❌ **FORBIDDEN**: `./vendor/bin/sail artisan db:wipe`
+- ❌ **FORBIDDEN**: `./vendor/bin/sail artisan migrate:fresh`
+- ❌ **FORBIDDEN**: `./vendor/bin/sail artisan migrate:reset`
+- ❌ **FORBIDDEN**: Direct SQL operations on database (DROP, TRUNCATE, ALTER, etc.)
+- ❌ **FORBIDDEN**: Any command that drops or modifies database structure
+- ✅ **ALLOWED**: Only Laravel migrations for schema changes
+- ✅ **ALLOWED**: Reading database schema for verification
+
+**PARALLEL TEST EXECUTION - DATABASE CONFLICTS:**
+- Tests often run in parallel causing apparent database issues
+- Database errors like "relation already exists" or "duplicate column" are USUALLY parallel test conflicts
+- **FIRST RESPONSE**: Retry the test command - most "database issues" resolve on retry
+- **SECOND RESPONSE**: Only if repeated failures occur, then investigate actual code issues
+- **NEVER**: Drop or reset databases as a solution
+
+**CORRECT RESPONSE TO DATABASE ERRORS IN TESTS:**
+1. ✅ **Retry the test** - Run `./vendor/bin/sail test --filter=TestName` again
+2. ✅ **Check for parallel conflicts** - If error mentions migrations/tables, likely parallel execution issue
+3. ✅ **Wait and retry** - Give database a moment, then retry test
+4. ✅ **Only if persistent** - Investigate actual test code or migration issues
+5. ❌ **NEVER drop/reset database** - This is NEVER the solution
+
 ## Reference Documentation
 
 **CRITICAL**: You MUST have already read `LARAVEL_BACKEND_PATTERNS_GUIDE.md` in full before reaching this section.

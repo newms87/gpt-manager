@@ -150,7 +150,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER]);
 
-        // 8. Mock GoogleDocsApi to simulate document creation
+        // 8. Mock GoogleDocsApi to simulate document creation and folder operations
         $this->mock(GoogleDocsApi::class, function ($mock) {
             $mock->shouldReceive('extractTemplateVariables')
                 ->andReturn(['client_name', 'title', 'amount']);
@@ -162,6 +162,20 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
                     'url'         => 'https://docs.google.com/document/d/generated-doc-456/edit',
                     'created_at'  => '2023-01-01T12:00:00Z',
                 ]);
+
+            // Mock folder search - return no folders found
+            $mock->shouldReceive('getToDriveApi')
+                ->with('files', \Mockery::type('array'))
+                ->andReturn(new \Illuminate\Http\Client\Response(
+                    new \GuzzleHttp\Psr7\Response(200, [], json_encode(['files' => []]))
+                ));
+
+            // Mock folder creation - return created folder ID
+            $mock->shouldReceive('postToDriveApi')
+                ->with('files', \Mockery::type('array'))
+                ->andReturn(new \Illuminate\Http\Client\Response(
+                    new \GuzzleHttp\Psr7\Response(200, [], json_encode(['id' => 'test-folder-123']))
+                ));
         });
 
         // When - Execute the GoogleDocsTemplateTaskRunner

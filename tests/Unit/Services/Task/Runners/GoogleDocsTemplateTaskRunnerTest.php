@@ -147,14 +147,14 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
 
     public function test_extractGoogleDocIdFromStoredFile_withValidUrl_returnsDocId(): void
     {
-        // Given
-        $storedFile = StoredFile::create([
+        // Given - Use factory to avoid HTTP calls in StoredFile::booted()
+        $storedFile = StoredFile::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
             'disk'     => 'google',
             'filename' => 'Test Template',
             'url'      => 'https://docs.google.com/document/d/1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg/edit',
             'mime'     => 'application/vnd.google-apps.document',
-            'size'     => 0,
+            'size'     => 1024, // Provide size to prevent HTTP call
         ]);
 
         // When
@@ -166,14 +166,14 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
 
     public function test_extractGoogleDocIdFromStoredFile_withDirectId_returnsNull(): void
     {
-        // Given
-        $storedFile = StoredFile::create([
+        // Given - Use factory to avoid HTTP calls in StoredFile::booted()
+        $storedFile = StoredFile::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
             'disk'     => 'google',
             'filename' => 'Test Template',
             'url'      => '1BxCtQqrAQXYZ2345abcdefghijklmnop', // Direct Google Doc ID - not supported by reverted method
             'mime'     => 'application/vnd.google-apps.document',
-            'size'     => 0,
+            'size'     => 1024, // Provide size to prevent HTTP call
         ]);
 
         // When
@@ -185,14 +185,14 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
 
     public function test_extractGoogleDocIdFromStoredFile_withInvalidUrl_returnsNull(): void
     {
-        // Given
-        $storedFile = StoredFile::create([
+        // Given - Use factory to avoid HTTP calls in StoredFile::booted()
+        $storedFile = StoredFile::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
             'disk'     => 'local',
             'filename' => 'Test Template',
             'url'      => 'https://example.com/not-a-google-doc',
             'mime'     => 'application/pdf',
-            'size'     => 0,
+            'size'     => 2048, // Provide size to prevent HTTP call
         ]);
 
         // When
@@ -310,13 +310,44 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
             'created_at'  => '2024-01-01T12:00:00Z',
         ];
 
-        $this->mock(GoogleDocsApi::class)
-            ->shouldReceive('createDocumentFromTemplate')
+        $mockApi = $this->mock(GoogleDocsApi::class);
+
+        // Mock the folder search (returns empty to trigger folder creation)
+        $mockApi->shouldReceive('getToDriveApi')
+            ->once()
+            ->with(
+                'files',
+                \Mockery::type('array') // query parameters
+            )
+            ->andReturn(new \Illuminate\Http\Client\Response(
+                new \GuzzleHttp\Psr7\Response(200, [], json_encode([
+                    'files' => [] // No existing folder found
+                ]))
+            ));
+
+        // Mock the folder creation
+        $mockApi->shouldReceive('postToDriveApi')
+            ->once()
+            ->with(
+                'files',
+                \Mockery::type('array') // folder metadata
+            )
+            ->andReturn(new \Illuminate\Http\Client\Response(
+                new \GuzzleHttp\Psr7\Response(200, [], json_encode([
+                    'id' => 'test-folder-id-123',
+                    'name' => 'Output Documents',
+                    'mimeType' => 'application/vnd.google-apps.folder'
+                ]))
+            ));
+
+        // Mock the document creation from template
+        $mockApi->shouldReceive('createDocumentFromTemplate')
             ->once()
             ->with(
                 '1hT7xB0npDUHmtWEzldE_qJNDoSNDVxLRQMcFkmdmiSg',
                 \Mockery::type('array'), // variable mapping
-                \Mockery::type('string')  // document title
+                \Mockery::type('string'), // document title
+                'test-folder-id-123'      // folder ID
             )
             ->andReturn($newDocument);
 

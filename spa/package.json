@@ -37,6 +37,7 @@
     "@wysimark/vue": "^3.0.20",
     "caniuse-lite": "^1.0.30001718",
     "danx-icon": "^1.0.2",
+    "js-md5": "^0.8.3",
     "prism-themes": "^1.9.0",
     "pusher-js": "^8.4.0",
     "quasar": "^2.15.2",
