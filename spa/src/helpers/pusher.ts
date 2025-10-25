@@ -156,7 +156,7 @@ export function usePusher() {
 	 *  This is used to get updates on the processes of a task run.
 	 */
 	async function subscribeToProcesses(taskRun: TaskRun) {
-		subscribeToChannel("TaskProcess", authUser.value.id, ["updated", "created"]);
+		subscribeToChannel("TaskProcess", authTeam.value.id, ["updated", "created"]);
 		await addUserSubscription("task-processes", { endpoint: dxTaskRun.routes.subscribeToProcesses, params: taskRun });
 	}
 
@@ -165,7 +165,7 @@ export function usePusher() {
 	}
 
 	async function subscribeToWorkflowJobDispatches(workflowRun: WorkflowRun) {
-		subscribeToChannel("JobDispatch", authUser.value.id, ["updated", "created"]);
+		subscribeToChannel("JobDispatch", authTeam.value.id, ["updated", "created"]);
 		await addUserSubscription("workflow-job-dispatches", {
 			endpoint: dxWorkflowRun.routes.subscribeToJobDispatches,
 			params: workflowRun

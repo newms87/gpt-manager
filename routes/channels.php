@@ -3,46 +3,16 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::channel('WorkflowRun.{teamId}', function (User $user, $teamId) {
-    return (bool)$user->teams()->find($teamId);
-});
+$broadcastAuthTeam = fn(User $user, $teamId) => (bool)$user->teams()->find($teamId);
 
-Broadcast::channel('TaskRun.{teamId}', function (User $user, $teamId) {
-    return (bool)$user->teams()->find($teamId);
-});
-
-Broadcast::channel('AgentThreadRun.{teamId}', function (User $user, $teamId) {
-    return (bool)$user->teams()->find($teamId);
-});
-
-Broadcast::channel('AgentThread.{teamId}', function (User $user, $teamId) {
-    return (bool)$user->teams()->find($teamId);
-});
-
-Broadcast::channel('TaskProcess.{userId}', function (User $user, $userId) {
-    return $user->id === (int)$userId;
-});
-
-Broadcast::channel('StoredFile.{userId}', function (User $user, $userId) {
-    return $user->id === (int)$userId;
-});
-
-Broadcast::channel('JobDispatch.{userId}', function (User $user, $userId) {
-    return $user->id === (int)$userId;
-});
-
-Broadcast::channel('ClaudeCodeGeneration.{teamId}', function (User $user, $teamId) {
-    return (bool)$user->teams()->find($teamId);
-});
-
-Broadcast::channel('UsageSummary.{teamId}', function (User $user, $teamId) {
-    return (bool)$user->teams()->find($teamId);
-});
-
-Broadcast::channel('TeamObject.{teamId}', function (User $user, $teamId) {
-    return (bool)$user->teams()->find($teamId);
-});
-
-Broadcast::channel('UiDemand.{teamId}', function (User $user, $teamId) {
-    return (bool)$user->teams()->find($teamId);
-});
+Broadcast::channel('WorkflowRun.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('TaskRun.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('AgentThreadRun.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('AgentThread.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('TaskProcess.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('StoredFile.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('JobDispatch.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('ClaudeCodeGeneration.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('UsageSummary.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('TeamObject.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('UiDemand.{teamId}', $broadcastAuthTeam);

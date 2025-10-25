@@ -25,6 +25,7 @@ class JobDispatchUpdatedEvent extends ModelSavedEvent
             ->where('model_type', WorkflowRun::class)
             ->first();
 
+        // TODO: make sure all this was implemented correctly
         if ($dispatchable) {
             // Check which users are subscribed to this workflow's job dispatches
             $workflowRun = WorkflowRun::find($dispatchable->model_id);
