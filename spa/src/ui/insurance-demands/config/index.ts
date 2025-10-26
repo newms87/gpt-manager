@@ -1,12 +1,11 @@
+import { apiUrls } from '@/api';
 import { useActionRoutes, request } from 'quasar-ui-danx';
 import type { UiDemand } from '../../shared/types';
 
-const API_URL = import.meta.env.VITE_API_URL + "/ui-demands";
-
-export const demandRoutes = useActionRoutes(API_URL, {
-  extractData: async (demand: UiDemand) => request.post(`${API_URL}/${demand.id}/extract-data`),
-  writeMedicalSummary: async (demand: UiDemand, data?: any) => request.post(`${API_URL}/${demand.id}/write-medical-summary`, data || {}),
-  writeDemandLetter: async (demand: UiDemand, data?: any) => request.post(`${API_URL}/${demand.id}/write-demand-letter`, data || {})
+export const demandRoutes = useActionRoutes(apiUrls.demands.uiDemands, {
+  extractData: async (demand: UiDemand) => request.post(`${apiUrls.demands.uiDemands}/${demand.id}/extract-data`),
+  writeMedicalSummary: async (demand: UiDemand, data?: any) => request.post(`${apiUrls.demands.uiDemands}/${demand.id}/write-medical-summary`, data || {}),
+  writeDemandLetter: async (demand: UiDemand, data?: any) => request.post(`${apiUrls.demands.uiDemands}/${demand.id}/write-demand-letter`, data || {})
 });
 
 // Status constants matching backend UiDemand::STATUS_* constants

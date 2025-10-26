@@ -46,6 +46,7 @@ export interface JobDispatch {
 
 export interface ErrorLogEntry {
     id: string;
+    audit_request_id: string | null;
     error_class: string;
     code: string;
     level: string;

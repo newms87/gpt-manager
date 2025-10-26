@@ -1,5 +1,4 @@
+import { apiUrls } from "@/api";
 import { useActionRoutes } from "quasar-ui-danx";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-export const routes = useActionRoutes(API_URL + "/messages");
+export const routes = useActionRoutes(apiUrls.assistant.messages);

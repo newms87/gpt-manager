@@ -67,6 +67,7 @@
 <script setup lang="ts">
 import { FaSolidArrowsRotate, FaSolidCheck, FaSolidLink, FaSolidTriangleExclamation } from "danx-icon";
 import { fTimeAgo, request } from "quasar-ui-danx";
+import { apiUrls } from "@/api";
 import { computed, ref } from "vue";
 import { useGoogleDocsAuth } from "../composables/useGoogleDocsAuth";
 
@@ -101,7 +102,7 @@ async function handleConnect(): Promise<void> {
 
         const redirectUrl = window.location.href;
 
-        const authData: OAuthAuthorizeResponse = await request.get("oauth/google/authorize", {
+        const authData: OAuthAuthorizeResponse = await request.get(apiUrls.oauth.googleAuthorize, {
             params: {
                 redirect_after_auth: redirectUrl
             }

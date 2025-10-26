@@ -185,10 +185,22 @@ async function refreshWorkflowRun(workflowRun?: WorkflowRun) {
 }
 
 /**
- *  Whenever a task run has been created for the workflow run, refresh the workflow to get the latest taskRuns list
+ * GLOBAL SUBSCRIPTION - TaskRun "created" events
+ *
+ * This subscription intentionally lives for the entire app lifecycle to capture
+ * TaskRun "created" events across all workflows. This is appropriate for a global
+ * store and does NOT require cleanup - the subscription persists throughout the
+ * user's session.
+ *
+ * Client-side filtering is applied in the event handler to only process events
+ * for the currently active workflow run.
  */
 const pusher = usePusher();
 if (pusher) {
+    pusher.subscribeToModel("TaskRun", ["created"], true).catch(error => {
+        console.error("Failed to subscribe to TaskRun events:", error);
+    });
+
     pusher.onEvent("TaskRun", "created", async (taskRun: TaskRun) => {
         if (taskRun.workflow_run_id === activeWorkflowRun.value?.id) {
             await refreshWorkflowRun(activeWorkflowRun.value);

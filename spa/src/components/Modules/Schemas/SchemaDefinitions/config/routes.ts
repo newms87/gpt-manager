@@ -1,11 +1,9 @@
+import { apiUrls } from "@/api";
 import { SchemaDefinition, SchemaDefinitionRoutes } from "@/types";
 import { request, useActionRoutes } from "quasar-ui-danx";
 
-
-const baseUrl = import.meta.env.VITE_API_URL + "/schemas/definitions";
-
-export const routes = useActionRoutes(baseUrl, {
+export const routes = useActionRoutes(apiUrls.schemas.definitions, {
 	history(target: SchemaDefinition) {
-		return request.get(`${baseUrl}/${target.id}/history`);
+		return request.get(`${apiUrls.schemas.definitions}/${target.id}/history`);
 	}
 }) as SchemaDefinitionRoutes;

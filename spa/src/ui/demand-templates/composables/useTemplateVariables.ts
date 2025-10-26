@@ -1,11 +1,10 @@
+import { apiUrls } from "@/api";
 import { useActionRoutes } from "quasar-ui-danx";
 import { ref } from "vue";
 import type { TemplateVariable } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL + "/template-variables";
-
 export function useTemplateVariables() {
-    const routes = useActionRoutes(API_URL);
+    const routes = useActionRoutes(apiUrls.demands.templateVariables);
     const isLoading = ref(false);
     const error = ref<string | null>(null);
 

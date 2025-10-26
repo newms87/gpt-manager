@@ -46,6 +46,7 @@ import TeamObjectCard from "@/components/Modules/TeamObjects/TeamObjectCard";
 import TeamObjectMergeDialog from "@/components/Modules/TeamObjects/TeamObjectMergeDialog.vue";
 import { JsonSchema } from "@/types";
 import { FaSolidPlus as CreateIcon } from "danx-icon";
+import { apiUrls } from "@/api";
 import { request, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
@@ -106,7 +107,7 @@ function showMergeDialog(teamObject: TeamObject) {
 
 async function performMerge(sourceObject: TeamObject, targetObject: TeamObject) {
 	try {
-		const response = await request.post(`team-objects/${sourceObject.id}/merge/${targetObject.id}`);
+		const response = await request.post(apiUrls.teams.mergeObjects({ sourceId: sourceObject.id, targetId: targetObject.id }));
 
 		if (response) {
 			showMergeDialogRef.value = false;

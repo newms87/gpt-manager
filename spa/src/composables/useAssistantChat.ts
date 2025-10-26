@@ -1,4 +1,5 @@
 // Removed useAssistantState - using thread actions directly
+import { apiUrls } from "@/api";
 import { AssistantThread } from "@/components/Modules/Assistant/types";
 import { useAssistantGlobalContext } from "@/composables/useAssistantGlobalContext";
 import { usePusher } from "@/helpers/pusher";
@@ -19,6 +20,7 @@ const localErrorMessages = ref<Array<{
     created_at: string
 }>>([]);
 const hasLoadedFromStorage = ref(false);
+const subscribedThreadId = ref<number | null>(null);
 
 // Global computed properties
 const currentThread = computed(() => {
@@ -108,14 +110,14 @@ export function useAssistantChat() {
 
             if (currentThread.value?.id) {
                 // Continue existing chat - use existing thread API
-                response = await request.post(`assistant/threads/${currentThread.value.id}/chat`, {
+                response = await request.post(apiUrls.assistant.threadChat({ threadId: currentThread.value.id }), {
                     message,
                     context: currentContext.value,
                     context_data: contextData.value
                 });
             } else {
                 // Start new chat
-                response = await request.post("assistant/start-chat", {
+                response = await request.post(apiUrls.assistant.startChat, {
                     message,
                     context: currentContext.value,
                     context_data: contextData.value
@@ -142,7 +144,7 @@ export function useAssistantChat() {
         }
     }
 
-    function startNewChat(): void {
+    async function startNewChat(): Promise<void> {
 
         localStorage.removeItem(STORAGE_KEY);
         storedThreadId.value = null;
@@ -151,7 +153,7 @@ export function useAssistantChat() {
 
         // Actions are cleared automatically when thread is cleared
 
-        unsubscribeFromThread();
+        await unsubscribeFromThread();
     }
 
     async function loadStoredThread(): Promise<void> {
@@ -165,7 +167,7 @@ export function useAssistantChat() {
 
         if (savedThreadId) {
             try {
-                const response = await request.get(`threads/${savedThreadId}/details?fields[actions]=true`);
+                const response = await request.get(apiUrls.assistant.threadDetails({ threadId: parseInt(savedThreadId) }) + '?fields[actions]=true');
                 storedThreads.value = storeObjects([response]);
                 const thread = storedThreads.value[0];
                 storedThreadId.value = thread.id;
@@ -179,35 +181,52 @@ export function useAssistantChat() {
         }
     }
 
-    function subscribeToThread(thread: AssistantThread): void {
+    async function subscribeToThread(thread: AssistantThread): Promise<void> {
         if (!pusher) return;
 
+        // Unsubscribe from previous thread if any
+        await unsubscribeFromThread();
 
-        pusher.onEvent("AgentThread", "updated", async (minimalThread: any) => {
+        // Subscribe to the new thread
+        try {
+            await pusher.subscribeToModel("AgentThread", ["updated"], thread.id);
+            subscribedThreadId.value = thread.id;
 
-            if (minimalThread.id === thread.id) {
-                const existingThreadIndex = storedThreads.value.findIndex(t => t.id === minimalThread.id);
-                if (existingThreadIndex >= 0) {
-                    storedThreads.value = storedThreads.value.map(t =>
-                        t.id === minimalThread.id ? { ...t, ...minimalThread } : t
-                    );
-                }
+            // Set up event handler for updates
+            pusher.onEvent("AgentThread", "updated", async (minimalThread: any) => {
+                if (minimalThread.id === thread.id) {
+                    const existingThreadIndex = storedThreads.value.findIndex(t => t.id === minimalThread.id);
+                    if (existingThreadIndex >= 0) {
+                        storedThreads.value = storedThreads.value.map(t =>
+                            t.id === minimalThread.id ? { ...t, ...minimalThread } : t
+                        );
+                    }
 
-                if (!minimalThread.is_running) {
-                    try {
-                        const response = await request.get(`threads/${minimalThread.id}/details?fields[actions]=true`);
-                        storedThreads.value = storeObjects([response]);
+                    if (!minimalThread.is_running) {
+                        try {
+                            const response = await request.get(apiUrls.assistant.threadDetails({ threadId: minimalThread.id }) + '?fields[actions]=true');
+                            storedThreads.value = storeObjects([response]);
 
-                        // Actions are handled directly through thread.actions - no separate state needed
-                    } catch (error) {
+                            // Actions are handled directly through thread.actions - no separate state needed
+                        } catch (error) {
+                        }
                     }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error("Failed to subscribe to thread:", error);
+        }
     }
 
-    function unsubscribeFromThread(): void {
-        // Pusher cleanup is handled automatically by the library
+    async function unsubscribeFromThread(): Promise<void> {
+        if (!pusher || subscribedThreadId.value === null) return;
+
+        try {
+            await pusher.unsubscribeFromModel("AgentThread", ["updated"], subscribedThreadId.value);
+            subscribedThreadId.value = null;
+        } catch (error) {
+            console.error("Failed to unsubscribe from thread:", error);
+        }
     }
 
     return {
@@ -227,7 +246,7 @@ export function useAssistantChat() {
         // Action methods - using ActionController patterns
         async approveAction(action: any) {
             try {
-                await request.post(`assistant/actions/${action.id}`, { status: "approved" });
+                await request.post(apiUrls.assistant.action({ actionId: action.id }), { status: "approved" });
                 // Thread will be updated via websocket
             } catch (error) {
             }
@@ -235,7 +254,7 @@ export function useAssistantChat() {
 
         async cancelAction(action: any) {
             try {
-                await request.post(`assistant/actions/${action.id}`, { status: "cancelled" });
+                await request.post(apiUrls.assistant.action({ actionId: action.id }), { status: "cancelled" });
                 // Thread will be updated via websocket
             } catch (error) {
             }

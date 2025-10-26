@@ -60,6 +60,7 @@ import { dxTeamObject, TeamObjectCard } from "@/components/Modules/TeamObjects";
 import { TeamObject } from "@/components/Modules/TeamObjects/team-objects";
 import TeamObjectMergeDialog from "@/components/Modules/TeamObjects/TeamObjectMergeDialog.vue";
 import { JsonSchema, SchemaDefinition } from "@/types";
+import { apiUrls } from "@/api";
 import { ActionButton, ListTransition, PanelsDrawer, request } from "quasar-ui-danx";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -122,7 +123,7 @@ function showMergeDialog(teamObject: TeamObject) {
 
 async function performMerge(sourceObject: TeamObject, targetObject: TeamObject) {
     try {
-        const response = await request.post(`team-objects/${sourceObject.id}/merge/${targetObject.id}`);
+        const response = await request.post(apiUrls.teams.mergeObjects({ sourceId: sourceObject.id, targetId: targetObject.id }));
 
         if (response) {
             showMergeDialogRef.value = false;

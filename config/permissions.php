@@ -8,6 +8,7 @@ return [
         'edit_imported_workflows' => ['Edit Imported Workflows', 'Can edit workflows that were imported from other teams in a resource package'],
         'export_workflows'        => ['Export Workflows', 'Can export workflows to a resource package'],
         'import_workflows'        => ['Import Workflows', 'Can import workflows from a resource package'],
+        'view_developer_tools'    => ['View Developer Tools', 'Can access developer debug tools including Pusher subscription panel'],
     ],
     'roles'       => [
         'dev'                    => [
@@ -19,6 +20,7 @@ return [
                 'edit_imported_workflows',
                 'export_workflows',
                 'import_workflows',
+                'view_developer_tools',
             ],
         ],
         'prompt-engineer-tester' => [

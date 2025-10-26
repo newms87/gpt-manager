@@ -1,3 +1,4 @@
+import { apiUrls } from "@/api";
 import { ref, computed } from "vue";
 import { request, storeObject, storeObjects } from "quasar-ui-danx";
 import { AssistantAction, AssistantCapability, CapabilitiesResponse } from "@/components/Modules/Assistant/types";
@@ -28,16 +29,16 @@ export function useAssistantState() {
 
     // Action management
     async function approveAction(actionId: number): Promise<void> {
-        
+
         try {
-            const response = await request.post(`assistant/actions/${actionId}/approve`);
+            const response = await request.post(apiUrls.assistant.approveAction({ actionId }));
             const updatedAction = storeObject(response);
-            
+
             // Update in our local array
-            activeActions.value = activeActions.value.map(a => 
+            activeActions.value = activeActions.value.map(a =>
                 a.id === actionId ? updatedAction : a
             );
-            
+
             // Remove completed actions after delay
             if (updatedAction.is_finished) {
                 setTimeout(() => {
@@ -50,16 +51,16 @@ export function useAssistantState() {
     }
 
     async function cancelAction(actionId: number): Promise<void> {
-        
+
         try {
-            const response = await request.post(`assistant/actions/${actionId}/cancel`);
+            const response = await request.post(apiUrls.assistant.cancelAction({ actionId }));
             const updatedAction = storeObject(response);
-            
+
             // Update in our local array
-            activeActions.value = activeActions.value.map(a => 
+            activeActions.value = activeActions.value.map(a =>
                 a.id === actionId ? updatedAction : a
             );
-            
+
             // Remove cancelled actions after delay
             setTimeout(() => {
                 activeActions.value = activeActions.value.filter(a => a.id !== actionId);
@@ -83,12 +84,12 @@ export function useAssistantState() {
     // Capabilities management
     async function loadCapabilities(context: string): Promise<void> {
         if (capabilitiesLoaded.value || isLoadingCapabilities.value) return;
-        
+
         isLoadingCapabilities.value = true;
-        
+
         try {
-            const response = await request.get<CapabilitiesResponse>(`assistant/capabilities/${context}`);
-            
+            const response = await request.get<CapabilitiesResponse>(apiUrls.assistant.capabilities({ context }));
+
             // Transform the key-value response into capability objects
             contextCapabilities.value = Object.entries(response).map(([key, label]) => ({
                 key,
@@ -96,7 +97,7 @@ export function useAssistantState() {
                 description: undefined,
                 icon: undefined
             }));
-            
+
             capabilitiesLoaded.value = true;
         } catch (error) {
             contextCapabilities.value = [];

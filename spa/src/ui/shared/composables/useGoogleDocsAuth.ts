@@ -1,3 +1,4 @@
+import { apiUrls } from "@/api";
 import { ref } from "vue";
 import { request } from "quasar-ui-danx";
 
@@ -32,7 +33,7 @@ export function useGoogleDocsAuth() {
 			error.value = null;
 			tokenExpired.value = false;
 
-			const response: OAuthValidationResponse = await request.post("oauth/google/validate");
+			const response: OAuthValidationResponse = await request.post(apiUrls.oauth.googleValidate);
 
 			if (response.valid) {
 				isAuthorized.value = true;

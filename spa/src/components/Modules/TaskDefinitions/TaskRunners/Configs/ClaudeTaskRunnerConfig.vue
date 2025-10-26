@@ -118,6 +118,7 @@ import { usePusher } from "@/helpers/pusher";
 import { TaskDefinition } from "@/types";
 import { FaSolidCircleInfo, FaSolidCode, FaSolidPlay } from "danx-icon";
 import { fDate, request } from "quasar-ui-danx";
+import { apiUrls } from "@/api";
 import { computed, onUnmounted, ref } from "vue";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig.vue";
 
@@ -192,7 +193,7 @@ async function generateCodeNow() {
 		setupCodeGenerationListeners();
 
 		// Start the code generation process
-		const response = await request.post(`/api/task-definitions/${props.taskDefinition.id}/generate-claude-code`, {
+		const response = await request.post(apiUrls.tasks.generateClaudeCode({ id: props.taskDefinition.id }), {
 			task_description: taskDescription
 		});
 
