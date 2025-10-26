@@ -19,7 +19,6 @@ class TaskProcessResource extends ActionResource
         }
 
         return [
-            'id'                    => $taskProcess->id,
             'name'                  => $taskProcess->name,
             'activity'              => $taskProcess->activity,
             'percent_complete'      => $taskProcess->percent_complete,

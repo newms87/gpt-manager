@@ -10,7 +10,6 @@ class JobDispatchResource extends ActionResource
     public static function data(JobDispatch $jobDispatch): array
     {
         return [
-            'id'                        => $jobDispatch->id,
             'name'                      => $jobDispatch->name,
             'ref'                       => $jobDispatch->ref,
             'job_batch_id'              => $jobDispatch->job_batch_id,

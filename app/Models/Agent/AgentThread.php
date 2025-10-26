@@ -40,7 +40,7 @@ class AgentThread extends Model implements AuditableContract
 
             $runs = $this->runs()->whereHas('responseSchema.resourcePackageImport')->with('responseSchema.resourcePackageImport.resourcePackage')->get();
 
-            foreach($runs as $run) {
+            foreach ($runs as $run) {
                 if (!$run->responseSchema->canView()) {
                     $this->can['view'] = false;
                 }

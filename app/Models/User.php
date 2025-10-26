@@ -52,7 +52,7 @@ class User extends Authenticatable
     {
         $abilities = (array)$abilities;
 
-        foreach($abilities as $ability) {
+        foreach ($abilities as $ability) {
             if ($this->hasPermission($ability)) {
                 return true;
             }
@@ -75,7 +75,7 @@ class User extends Authenticatable
     {
         $permissions = $this->getCachedPermissions();
 
-        foreach($permissions as $rolePermissions) {
+        foreach ($permissions as $rolePermissions) {
             if (in_array($permission, $rolePermissions)) {
                 return true;
             }

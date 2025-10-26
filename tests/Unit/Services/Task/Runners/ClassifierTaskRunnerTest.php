@@ -346,6 +346,7 @@ class ClassifierTaskRunnerTest extends TestCase
         // Set task definition with no context config
         $this->taskDefinition->task_runner_config = [];
         $this->taskDefinition->save();
+        $this->taskRun->refresh();
 
         foreach($artifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
@@ -393,6 +394,9 @@ class ClassifierTaskRunnerTest extends TestCase
         $this->taskDefinition->task_runner_config = ['context_before' => 3];
         $this->taskDefinition->save();
 
+        // Refresh taskRun to clear cached taskDefinition relationship
+        $this->taskRun->refresh();
+
         foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
@@ -437,6 +441,7 @@ class ClassifierTaskRunnerTest extends TestCase
         // Set task definition with context_after = 3
         $this->taskDefinition->task_runner_config = ['context_after' => 3];
         $this->taskDefinition->save();
+        $this->taskRun->refresh();
 
         foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
@@ -493,6 +498,7 @@ class ClassifierTaskRunnerTest extends TestCase
             'context_after'  => 2,
         ];
         $this->taskDefinition->save();
+        $this->taskRun->refresh();
 
         foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
@@ -536,6 +542,7 @@ class ClassifierTaskRunnerTest extends TestCase
             'context_after'  => 10,
         ];
         $this->taskDefinition->save();
+        $this->taskRun->refresh();
 
         foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
@@ -590,6 +597,7 @@ class ClassifierTaskRunnerTest extends TestCase
             'context_after'  => 3,
         ];
         $this->taskDefinition->save();
+        $this->taskRun->refresh();
 
         foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
@@ -639,6 +647,7 @@ class ClassifierTaskRunnerTest extends TestCase
             'context_after'  => 3,
         ];
         $this->taskDefinition->save();
+        $this->taskRun->refresh();
 
         foreach($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);

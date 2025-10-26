@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Events\WorkflowBuilderChatUpdatedEvent;
 use App\Models\Agent\Agent;
 use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowBuilderChat;
@@ -11,7 +10,6 @@ use App\Models\Workflow\WorkflowRun;
 use App\Services\WorkflowBuilder\WorkflowBuilderService;
 use Database\Seeders\WorkflowBuilderSeeder;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Event;
 use Newms87\Danx\Exceptions\ValidationError;
 
 /**
@@ -112,11 +110,11 @@ class WorkflowBuilderCommand extends Command
 
             return 1;
 
-        } catch(ValidationError $e) {
+        } catch (ValidationError $e) {
             $this->error("Validation Error: {$e->getMessage()}");
 
             return 1;
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             $this->error("Unexpected error: {$e->getMessage()}");
             if ($this->option('verbose')) {
                 $this->error($e->getTraceAsString());
@@ -181,7 +179,7 @@ class WorkflowBuilderCommand extends Command
             }
 
             // Handle different statuses without entering the complex chat loop
-            switch($chat->status) {
+            switch ($chat->status) {
                 case 'completed':
                     $this->info('🎉 Workflow Build Completed Successfully!');
 
@@ -321,7 +319,7 @@ class WorkflowBuilderCommand extends Command
                 $this->line('');
 
                 return true;
-            } catch(\Exception $e) {
+            } catch (\Exception $e) {
                 $this->error('Failed to create required components: ' . $e->getMessage());
                 $this->line('');
                 $this->line('Please run the seeder manually:');
@@ -341,7 +339,7 @@ class WorkflowBuilderCommand extends Command
      * gathering phase where the AI will engage in conversation to understand
      * what the user wants to build.
      *
-     * @param string $prompt Natural language description of desired workflow
+     * @param  string  $prompt  Natural language description of desired workflow
      * @return int Command exit code
      */
     private function startNewWorkflowBuild(string $prompt): int
@@ -357,10 +355,10 @@ class WorkflowBuilderCommand extends Command
                 null, // No existing chat
                 $this->team
             );
-        } catch(\Exception $e) {
-            $this->error("Service error: " . $e->getMessage());
+        } catch (\Exception $e) {
+            $this->error('Service error: ' . $e->getMessage());
             if ($this->option('verbose')) {
-                $this->error("Stack trace: " . $e->getTraceAsString());
+                $this->error('Stack trace: ' . $e->getTraceAsString());
             }
             throw $e;
         }
@@ -377,7 +375,7 @@ class WorkflowBuilderCommand extends Command
      * Loads the specified chat session and resumes from the current phase,
      * handling any necessary error recovery if the session was interrupted.
      *
-     * @param int $chatId The ID of the existing chat session
+     * @param  int  $chatId  The ID of the existing chat session
      * @return int Command exit code
      */
     private function continueExistingChat(int $chatId): int
@@ -406,8 +404,8 @@ class WorkflowBuilderCommand extends Command
      * Loads the specified workflow and starts a new chat session focused on
      * modifying the existing workflow structure based on the provided prompt.
      *
-     * @param int    $workflowId The ID of the workflow to modify
-     * @param string $prompt     Description of desired modifications
+     * @param  int  $workflowId  The ID of the workflow to modify
+     * @param  string  $prompt  Description of desired modifications
      * @return int Command exit code
      */
     private function modifyExistingWorkflow(int $workflowId, string $prompt): int
@@ -460,11 +458,11 @@ class WorkflowBuilderCommand extends Command
         $maxIterations = 10; // Prevent infinite loops
         $iterations    = 0;
 
-        while($iterations < $maxIterations) {
+        while ($iterations < $maxIterations) {
             $iterations++;
             $this->chat->refresh();
 
-            switch($this->chat->status) {
+            switch ($this->chat->status) {
                 case 'requirements_gathering':
                     if (!$this->handleRequirementsGathering()) {
                         return 1;
@@ -537,7 +535,7 @@ class WorkflowBuilderCommand extends Command
 
             return $this->displayPlanAndAwaitApproval($plan);
 
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             $this->error("Failed to generate plan: {$e->getMessage()}");
 
             return false;
@@ -550,7 +548,7 @@ class WorkflowBuilderCommand extends Command
      * Shows the AI-generated plan in a user-friendly format and prompts for
      * approval, corrections, or additional requirements.
      *
-     * @param array $plan The generated workflow plan
+     * @param  array  $plan  The generated workflow plan
      * @return bool True to continue, false to exit
      */
     private function displayPlanAndAwaitApproval(array $plan): bool
@@ -571,9 +569,9 @@ class WorkflowBuilderCommand extends Command
         if (isset($plan['tasks']) && is_array($plan['tasks'])) {
             $this->line('');
             $this->line('Tasks:');
-            foreach($plan['tasks'] as $i => $task) {
-                $taskName = $task['name'] ?? "Task " . ($i + 1);
-                $this->line("  " . ($i + 1) . ". {$taskName}");
+            foreach ($plan['tasks'] as $i => $task) {
+                $taskName = $task['name'] ?? 'Task ' . ($i + 1);
+                $this->line('  ' . ($i + 1) . ". {$taskName}");
                 if (isset($task['description'])) {
                     $this->line("     {$task['description']}");
                 }
@@ -609,7 +607,7 @@ class WorkflowBuilderCommand extends Command
             'approve'
         );
 
-        switch($response) {
+        switch ($response) {
             case 'approve':
                 return $this->startWorkflowBuild();
 
@@ -632,7 +630,7 @@ class WorkflowBuilderCommand extends Command
                     app(WorkflowBuilderService::class)->generateWorkflowPlan($this->chat, $modifications);
 
                     return true; // Continue the loop
-                } catch(\Exception $e) {
+                } catch (\Exception $e) {
                     $this->error("Failed to apply modifications: {$e->getMessage()}");
 
                     return false;
@@ -667,7 +665,7 @@ class WorkflowBuilderCommand extends Command
 
             return true;
 
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             $this->error("Failed to start workflow build: {$e->getMessage()}");
 
             return false;
@@ -705,10 +703,10 @@ class WorkflowBuilderCommand extends Command
 
     /**
      * Handle the workflow building phase.
-     * 
+     *
      * Monitors the progress of the automated workflow construction process,
      * displaying real-time updates to the user.
-     * 
+     *
      * @return bool True to continue, false to exit
      */
     private function handleWorkflowBuilding(): bool
@@ -722,10 +720,10 @@ class WorkflowBuilderCommand extends Command
 
     /**
      * Monitor the progress of the workflow building process.
-     * 
+     *
      * Displays real-time progress updates while the workflow is being constructed
      * by the specialized task runners. Shows build status and any intermediate results.
-     * 
+     *
      * @return bool True when build completes successfully, false on error
      */
     private function monitorWorkflowProgress(): bool
@@ -733,16 +731,17 @@ class WorkflowBuilderCommand extends Command
         // CRITICAL FIX: Skip progress monitoring in test/no-interaction mode
         if ($this->option('no-interaction') || app()->environment('testing')) {
             $this->line('⏳ Building workflow components...');
-            
+
             // In test environment, immediately assume success to prevent hanging
             if (app()->environment('testing')) {
                 $this->line('✅ Build completed (test mode)');
+
                 return true;
             }
-            
+
             // Simple monitoring for no-interaction mode - check status a few times then continue
             $maxChecks = 3;
-            $checks = 0;
+            $checks    = 0;
 
             while ($this->chat->status === 'building_workflow' && $checks < $maxChecks) {
                 // CRITICAL FIX: Check WorkflowRun status directly in no-interaction mode too
@@ -752,17 +751,19 @@ class WorkflowBuilderCommand extends Command
                     if ($workflowRun && $workflowRun->isFailed()) {
                         // WorkflowRun failed - update chat and return failure
                         $this->chat->updatePhase(WorkflowBuilderChat::STATUS_FAILED, [
-                            'error' => 'Workflow run failed',
-                            'failure_reason' => "WorkflowRun status: {$workflowRun->status}",
+                            'error'           => 'Workflow run failed',
+                            'failure_reason'  => "WorkflowRun status: {$workflowRun->status}",
                             'workflow_run_id' => $workflowRun->id,
                         ]);
 
                         $this->displayWorkflowRunFailureDetails();
+
                         return false;
                     }
 
                     if ($workflowRun && $workflowRun->isCompleted()) {
                         $this->line('✅ Workflow build completed!');
+
                         return true;
                     }
                 }
@@ -775,108 +776,92 @@ class WorkflowBuilderCommand extends Command
             // If still building after checks, assume it will complete
             if ($this->chat->status === 'building_workflow') {
                 $this->line('✅ Build initiated successfully (monitoring in background)');
+
                 return true;
             }
 
             $this->line('✅ Workflow build completed!');
+
             return true;
         }
-        
+
         $progressChars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
         $progressIndex = 0;
-        $dots = 0;
-        $lastStatus = '';
+        $dots          = 0;
 
         $this->line('⏳ Building workflow components...');
 
-        // Listen for workflow builder chat updates
-        $listener = function(WorkflowBuilderChatUpdatedEvent $event) use (&$lastStatus) {
-            if ($event->chat->id === $this->chat->id) {
-                $newStatus = $event->updateType;
-                if ($newStatus !== $lastStatus) {
-                    $this->line('');
-                    $this->info("📡 {$newStatus}");
-                    $lastStatus = $newStatus;
-                }
-            }
-        };
+        // Monitor progress with timeout
+        $startTime = time();
+        $timeout   = 300; // 5 minutes timeout
 
-        Event::listen(WorkflowBuilderChatUpdatedEvent::class, $listener);
+        while ($this->chat->status === 'building_workflow') {
+            // CRITICAL FIX: Check WorkflowRun status directly before displaying progress
+            if ($this->chat->current_workflow_run_id) {
+                $workflowRun = WorkflowRun::find($this->chat->current_workflow_run_id);
 
-        try {
-            // Monitor progress with timeout
-            $startTime = time();
-            $timeout = 300; // 5 minutes timeout
+                if ($workflowRun && $workflowRun->isFailed()) {
+                    // WorkflowRun failed but chat status not updated - fix it
+                    $this->output->write("\r"); // Clear progress line
+                    $this->chat->updatePhase(WorkflowBuilderChat::STATUS_FAILED, [
+                        'error'           => 'Workflow run failed',
+                        'failure_reason'  => "WorkflowRun status: {$workflowRun->status}",
+                        'workflow_run_id' => $workflowRun->id,
+                    ]);
 
-            while ($this->chat->status === 'building_workflow') {
-                // CRITICAL FIX: Check WorkflowRun status directly before displaying progress
-                if ($this->chat->current_workflow_run_id) {
-                    $workflowRun = WorkflowRun::find($this->chat->current_workflow_run_id);
+                    $this->displayWorkflowRunFailureDetails();
 
-                    if ($workflowRun && $workflowRun->isFailed()) {
-                        // WorkflowRun failed but chat status not updated - fix it
-                        $this->output->write("\r"); // Clear progress line
-                        $this->chat->updatePhase(WorkflowBuilderChat::STATUS_FAILED, [
-                            'error' => 'Workflow run failed',
-                            'failure_reason' => "WorkflowRun status: {$workflowRun->status}",
-                            'workflow_run_id' => $workflowRun->id,
-                        ]);
-
-                        $this->displayWorkflowRunFailureDetails();
-                        return false;
-                    }
-
-                    if ($workflowRun && $workflowRun->isCompleted()) {
-                        $this->output->write("\r✅ Workflow build completed!            \n");
-                        $this->line('');
-                        return true;
-                    }
+                    return false;
                 }
 
-                $char = $progressChars[$progressIndex % count($progressChars)];
-                $dotString = str_repeat('.', $dots % 4);
-
-                $this->output->write("\r{$char} Building{$dotString}");
-
-                $progressIndex++;
-                $dots++;
-
-                usleep(500000); // 500ms
-
-                $this->chat->refresh();
-
-                // Check for timeout
-                if (time() - $startTime > $timeout) {
+                if ($workflowRun && $workflowRun->isCompleted()) {
+                    $this->output->write("\r✅ Workflow build completed!            \n");
                     $this->line('');
-                    $this->warn('⚠️  Build is taking longer than expected. You can continue monitoring or cancel.');
-                    
-                    // CRITICAL FIX: Handle no-interaction for confirm() calls
-                    if ($this->option('no-interaction') || !$this->confirm('Continue waiting?', true)) {
-                        $this->line('Build continues in background. Use --chat=' . $this->chat->id . ' to resume monitoring.');
-                        return false;
-                    }
-                    
-                    $startTime = time(); // Reset timeout
+
+                    return true;
                 }
             }
 
-            $this->output->write("\r✅ Workflow build completed!            \n");
-            $this->line('');
+            $char      = $progressChars[$progressIndex % count($progressChars)];
+            $dotString = str_repeat('.', $dots % 4);
 
-            return true;
+            $this->output->write("\r{$char} Building{$dotString}");
 
-        } finally {
-            // Clean up event listener
-            Event::forget(WorkflowBuilderChatUpdatedEvent::class);
+            $progressIndex++;
+            $dots++;
+
+            usleep(500000); // 500ms
+
+            $this->chat->refresh();
+
+            // Check for timeout
+            if (time() - $startTime > $timeout) {
+                $this->line('');
+                $this->warn('⚠️  Build is taking longer than expected. You can continue monitoring or cancel.');
+
+                // CRITICAL FIX: Handle no-interaction for confirm() calls
+                if ($this->option('no-interaction') || !$this->confirm('Continue waiting?', true)) {
+                    $this->line('Build continues in background. Use --chat=' . $this->chat->id . ' to resume monitoring.');
+
+                    return false;
+                }
+
+                $startTime = time(); // Reset timeout
+            }
         }
+
+        $this->output->write("\r✅ Workflow build completed!            \n");
+        $this->line('');
+
+        return true;
     }
 
     /**
      * Handle the result evaluation phase.
-     * 
+     *
      * Manages the phase where the AI analyzes the built workflow and generates
      * a user-friendly summary of what was created.
-     * 
+     *
      * @return bool True to continue, false to exit
      */
     private function handleResultEvaluation(): bool
@@ -891,7 +876,7 @@ class WorkflowBuilderCommand extends Command
 
             return true;
 
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             $this->error("Failed to evaluate results: {$e->getMessage()}");
 
             return false;
@@ -900,11 +885,9 @@ class WorkflowBuilderCommand extends Command
 
     /**
      * Handle a completed workflow builder session.
-     * 
+     *
      * Displays the final results, explains what was built, and provides
      * recommendations for next steps or additional workflows.
-     * 
-     * @return void
      */
     private function handleCompletedSession(): void
     {
@@ -915,7 +898,7 @@ class WorkflowBuilderCommand extends Command
 
         // Display results from the chat's artifacts
         $artifacts = $this->chat->getLatestArtifacts();
-        
+
         if (!empty($artifacts)) {
             $this->displayBuildResults($artifacts);
         } else {
@@ -949,8 +932,6 @@ class WorkflowBuilderCommand extends Command
      *
      * Displays detailed error information and provides actionable troubleshooting guidance
      * for workflow build failures.
-     *
-     * @return void
      */
     private function handleFailedSession(): void
     {
@@ -1049,7 +1030,7 @@ class WorkflowBuilderCommand extends Command
         // Show next steps
         $this->line('');
         $this->line('Next Steps:');
-        $this->line("  • Check logs: tail -f storage/logs/laravel.log");
+        $this->line('  • Check logs: tail -f storage/logs/laravel.log');
         $this->line("  • Retry: sail artisan workflow:build --chat={$this->chat->id}");
         $this->line('');
     }
@@ -1057,8 +1038,7 @@ class WorkflowBuilderCommand extends Command
     /**
      * Analyze build state and display specific failure guidance.
      *
-     * @param array $buildState The build state from chat meta
-     * @return void
+     * @param  array  $buildState  The build state from chat meta
      */
     private function analyzeAndDisplaySpecificFailures(array $buildState): void
     {
@@ -1074,9 +1054,9 @@ class WorkflowBuilderCommand extends Command
 
             // Check for invalid task runners
             if (isset($plan['tasks']) && is_array($plan['tasks'])) {
-                foreach($plan['tasks'] as $index => $task) {
+                foreach ($plan['tasks'] as $index => $task) {
                     if (!isset($task['runner_type']) || empty($task['runner_type'])) {
-                        $this->warn("⚠️  Task Issue: Task " . ($index + 1) . " has no runner type specified");
+                        $this->warn('⚠️  Task Issue: Task ' . ($index + 1) . ' has no runner type specified');
                     }
                 }
             }
@@ -1096,8 +1076,7 @@ class WorkflowBuilderCommand extends Command
     /**
      * Display actionable troubleshooting steps based on the failure.
      *
-     * @param array $buildState The build state from chat meta
-     * @return void
+     * @param  array  $buildState  The build state from chat meta
      */
     private function displayTroubleshootingSteps(array $buildState): void
     {
@@ -1133,13 +1112,11 @@ class WorkflowBuilderCommand extends Command
      *
      * Shows relevant information about the current state of the workflow builder
      * chat session, including phase, progress, and any relevant metadata.
-     * 
-     * @return void
      */
     private function displayChatStatus(): void
     {
         $this->line("Status: {$this->chat->status}");
-        
+
         if ($this->chat->workflow_definition_id) {
             $this->line("Target Workflow: {$this->chat->workflowDefinition->name}");
         }
@@ -1155,12 +1132,11 @@ class WorkflowBuilderCommand extends Command
 
     /**
      * Display the final build results in a user-friendly format.
-     * 
+     *
      * Takes the build artifacts from the completed workflow and presents them
      * in a clear, readable format explaining what was created.
-     * 
-     * @param array $artifacts The build artifacts to display
-     * @return void
+     *
+     * @param  array  $artifacts  The build artifacts to display
      */
     private function displayBuildResults(array $artifacts): void
     {
@@ -1180,9 +1156,9 @@ class WorkflowBuilderCommand extends Command
         if (isset($artifacts['tasks']) && is_array($artifacts['tasks'])) {
             $this->line('');
             $this->line('✅ Created Tasks:');
-            foreach($artifacts['tasks'] as $i => $task) {
-                $taskName = $task['name'] ?? "Task " . ($i + 1);
-                $this->line("   " . ($i + 1) . ". {$taskName}");
+            foreach ($artifacts['tasks'] as $i => $task) {
+                $taskName = $task['name'] ?? 'Task ' . ($i + 1);
+                $this->line('   ' . ($i + 1) . ". {$taskName}");
 
                 if (isset($task['runner_class'])) {
                     $this->line("      Runner: {$task['runner_class']}");

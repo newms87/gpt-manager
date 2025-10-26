@@ -76,6 +76,10 @@ class ArtifactLevelProjectionTaskRunnerTest extends AuthenticatedTestCase
             ],
         ]);
 
+        // Refresh taskRun to clear cached taskDefinition relationship
+        $this->taskRun->refresh();
+        $this->taskProcess->refresh(); // TaskProcess also caches taskRun relationship
+
         // When: We run the projection task
         $this->taskProcess->getRunner()->run();
 
@@ -125,6 +129,10 @@ class ArtifactLevelProjectionTaskRunnerTest extends AuthenticatedTestCase
                 'target_levels' => [0],
             ],
         ]);
+
+        // Refresh taskRun to clear cached taskDefinition relationship
+        $this->taskRun->refresh();
+        $this->taskProcess->refresh(); // TaskProcess also caches taskRun relationship
 
         // When: We run the projection task
         $this->taskProcess->getRunner()->run();
@@ -193,6 +201,10 @@ class ArtifactLevelProjectionTaskRunnerTest extends AuthenticatedTestCase
                 'target_levels' => [0],
             ],
         ]);
+
+        // Refresh taskRun to clear cached taskDefinition relationship
+        $this->taskRun->refresh();
+        $this->taskProcess->refresh(); // TaskProcess also caches taskRun relationship
 
         // When: We run the projection task
         $this->taskProcess->getRunner()->run();

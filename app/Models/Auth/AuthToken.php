@@ -26,9 +26,9 @@ class AuthToken extends Model
     ];
 
     protected $casts = [
-        'scopes' => 'array',
+        'scopes'     => 'array',
         'expires_at' => 'datetime',
-        'metadata' => 'array',
+        'metadata'   => 'array',
     ];
 
     protected $hidden = [
@@ -38,7 +38,7 @@ class AuthToken extends Model
     ];
 
     // Token types
-    public const TYPE_OAUTH = 'oauth';
+    public const TYPE_OAUTH   = 'oauth';
     public const TYPE_API_KEY = 'api_key';
 
     // Common services
@@ -194,7 +194,7 @@ class AuthToken extends Model
      */
     public function setMetadata(string $key, $value): void
     {
-        $metadata = is_array($this->metadata) ? $this->metadata : [];
+        $metadata       = is_array($this->metadata) ? $this->metadata : [];
         $metadata[$key] = $value;
         $this->metadata = $metadata;
     }
@@ -212,8 +212,8 @@ class AuthToken extends Model
      */
     public function isLikelyRevoked(): bool
     {
-        return $this->type === self::TYPE_OAUTH 
-            && $this->isExpired() 
+        return $this->type === self::TYPE_OAUTH
+            && $this->isExpired()
             && empty($this->refresh_token);
     }
 
@@ -231,16 +231,16 @@ class AuthToken extends Model
     public static function getValidationRules(string $context = 'create'): array
     {
         return [
-            'service' => 'required|string|max:50',
-            'type' => 'required|in:' . self::TYPE_OAUTH . ',' . self::TYPE_API_KEY,
-            'name' => 'nullable|string|max:100',
-            'access_token' => 'required|string',
+            'service'       => 'required|string|max:50',
+            'type'          => 'required|in:' . self::TYPE_OAUTH . ',' . self::TYPE_API_KEY,
+            'name'          => 'nullable|string|max:100',
+            'access_token'  => 'required|string',
             'refresh_token' => 'nullable|string',
-            'id_token' => 'nullable|string',
-            'scopes' => 'nullable|array',
-            'scopes.*' => 'string',
-            'expires_at' => 'nullable|date',
-            'metadata' => 'nullable|array',
+            'id_token'      => 'nullable|string',
+            'scopes'        => 'nullable|array',
+            'scopes.*'      => 'string',
+            'expires_at'    => 'nullable|date',
+            'metadata'      => 'nullable|array',
         ];
     }
 }

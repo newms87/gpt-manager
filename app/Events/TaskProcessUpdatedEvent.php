@@ -3,35 +3,47 @@
 namespace App\Events;
 
 use App\Models\Task\TaskProcess;
-use App\Models\Team\Team;
 use App\Resources\TaskDefinition\TaskProcessResource;
-use Illuminate\Broadcasting\PrivateChannel;
 use Newms87\Danx\Events\ModelSavedEvent;
 
 class TaskProcessUpdatedEvent extends ModelSavedEvent
 {
     public function __construct(protected TaskProcess $taskProcess, protected string $event)
     {
-        parent::__construct($taskProcess, $event);
+        parent::__construct(
+            $taskProcess,
+            $event,
+            TaskProcessResource::class,
+            $taskProcess->taskRun?->taskDefinition?->team_id
+        );
     }
 
-    public function broadcastOn()
+    protected function createdData(): array
     {
-        $channels = [];
-        $teamId   = $this->taskProcess->taskRun->taskDefinition->team_id;
-        $userIds  = Team::query()->where('teams.id', $teamId)->join('team_user', 'team_id', 'teams.id')->pluck('user_id')->toArray();
-
-        foreach($userIds as $userId) {
-            if (cache()->get('subscribe:task-run-processes:' . $userId)) {
-                $channels[] = new PrivateChannel('TaskProcess.' . $userId);
-            }
-        }
-
-        return $channels;
+        return TaskProcessResource::make($this->taskProcess, [
+            '*'          => false,
+            'name'       => true,
+            'status'     => true,
+            'created_at' => true,
+        ]);
     }
 
-    public function data(): array
+    protected function updatedData(): array
     {
-        return TaskProcessResource::make($this->taskProcess);
+        return TaskProcessResource::make($this->taskProcess, [
+            '*'                     => false,
+            'activity'              => true,
+            'percent_complete'      => true,
+            'status'                => true,
+            'started_at'            => true,
+            'stopped_at'            => true,
+            'failed_at'             => true,
+            'completed_at'          => true,
+            'timeout_at'            => true,
+            'job_dispatch_count'    => true,
+            'input_artifact_count'  => true,
+            'output_artifact_count' => true,
+            'updated_at'            => true,
+        ]);
     }
 }

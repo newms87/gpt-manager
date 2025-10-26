@@ -118,9 +118,16 @@ class UsageSubscriptionRealTimeIntegrationTest extends AuthenticatedTestCase
             'user_id' => $this->user->id,
         ]);
 
+        // Subscribe to UsageSummary events (required for BroadcastsWithSubscriptions)
+        $this->postJson('/api/pusher/subscribe', [
+            'resource_type'      => 'UsageSummary',
+            'model_id_or_filter' => true,
+        ]);
+
         $capturedChannel = null;
         Event::listen(UsageSummaryUpdatedEvent::class, function ($event) use (&$capturedChannel) {
-            $capturedChannel = $event->broadcastOn()->name;
+            $channels = $event->broadcastOn();
+            $capturedChannel = !empty($channels) ? $channels[0]->name : null;
         });
 
         // Create a usage summary to trigger the event

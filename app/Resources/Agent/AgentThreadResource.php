@@ -14,7 +14,6 @@ class AgentThreadResource extends ActionResource
     public static function data(AgentThread $agentThread): array
     {
         return [
-            'id'               => $agentThread->id,
             'name'             => $agentThread->name,
             'summary'          => $agentThread->summary,
             'is_running'       => $agentThread->isRunning(),
@@ -30,8 +29,8 @@ class AgentThreadResource extends ActionResource
             ) : [
                 new AgentThreadMessage([
                     'role'    => AgentThreadMessage::ROLE_USER,
-                    'title'   => "Not Authorized",
-                    'content' => "The contents of this message are hidden. You are not authorized to view this thread as it contains sensitive information belonging to another team",
+                    'title'   => 'Not Authorized',
+                    'content' => 'The contents of this message are hidden. You are not authorized to view this thread as it contains sensitive information belonging to another team',
                 ]),
             ],
             'actions'     => fn($fields) => AssistantActionResource::collection($agentThread->assistantActions, $fields),

@@ -17,8 +17,7 @@ class AgentThreadMessageStreamEvent implements ShouldBroadcast
         protected AgentThreadMessage $message,
         protected string             $content,
         protected bool               $isComplete = false
-    )
-    {
+    ) {
     }
 
     /**

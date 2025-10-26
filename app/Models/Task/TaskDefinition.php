@@ -235,13 +235,13 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
 
         static::saved(function (TaskDefinition $taskDefinition) {
             if ($taskDefinition->wasChanged('task_runner_name')) {
-                foreach($taskDefinition->taskDefinitionDirectives as $taskDefinitionDirective) {
+                foreach ($taskDefinition->taskDefinitionDirectives as $taskDefinitionDirective) {
                     $taskDefinitionDirective->delete();
                 }
             }
 
             if ($taskDefinition->wasChanged('schema_definition_id')) {
-                foreach($taskDefinition->schemaAssociations as $schemaAssociation) {
+                foreach ($taskDefinition->schemaAssociations as $schemaAssociation) {
                     if ($schemaAssociation->schema_definition_id != $taskDefinition->schema_definition_id) {
                         $schemaAssociation->delete();
                     }

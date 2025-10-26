@@ -26,11 +26,11 @@ class SubscriptionPlan extends Model implements AuditableContract
     {
         return [
             'monthly_price' => 'decimal:2',
-            'yearly_price' => 'decimal:2',
-            'is_active' => 'boolean',
-            'features' => 'json',
-            'usage_limits' => 'json',
-            'sort_order' => 'integer',
+            'yearly_price'  => 'decimal:2',
+            'is_active'     => 'boolean',
+            'features'      => 'json',
+            'usage_limits'  => 'json',
+            'sort_order'    => 'integer',
         ];
     }
 

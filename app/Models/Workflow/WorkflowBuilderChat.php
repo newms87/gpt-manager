@@ -2,7 +2,6 @@
 
 namespace App\Models\Workflow;
 
-use App\Events\WorkflowBuilderChatUpdatedEvent;
 use App\Models\Agent\AgentThread;
 use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,20 +17,25 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowBuilderChat extends Model implements AuditableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
-    // Status constants for enumeration 
+    // Status constants for enumeration
     public const STATUS_REQUIREMENTS_GATHERING = 'requirements_gathering';
-    public const STATUS_ANALYZING_PLAN = 'analyzing_plan';
-    public const STATUS_BUILDING_WORKFLOW = 'building_workflow';
-    public const STATUS_EVALUATING_RESULTS = 'evaluating_results';
-    public const STATUS_COMPLETED = 'completed';
-    public const STATUS_FAILED = 'failed';
+
+    public const STATUS_ANALYZING_PLAN         = 'analyzing_plan';
+
+    public const STATUS_BUILDING_WORKFLOW      = 'building_workflow';
+
+    public const STATUS_EVALUATING_RESULTS     = 'evaluating_results';
+
+    public const STATUS_COMPLETED              = 'completed';
+
+    public const STATUS_FAILED                 = 'failed';
 
     protected $fillable = [
         'workflow_input_id',
         'workflow_definition_id',
-        'agent_thread_id', 
+        'agent_thread_id',
         'status',
         'meta',
         'current_workflow_run_id',
@@ -41,7 +45,7 @@ class WorkflowBuilderChat extends Model implements AuditableContract
     public function casts(): array
     {
         return [
-            'meta' => 'json',
+            'meta'       => 'json',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -49,7 +53,7 @@ class WorkflowBuilderChat extends Model implements AuditableContract
 
     protected $attributes = [
         'status' => self::STATUS_REQUIREMENTS_GATHERING,
-        'meta' => '[]',
+        'meta'   => '[]',
     ];
 
     // Relationships
@@ -105,15 +109,15 @@ class WorkflowBuilderChat extends Model implements AuditableContract
     {
         $this->validatePhaseTransition($phase);
 
-        $meta = $this->meta ?? [];
+        $meta                  = $this->meta ?? [];
         $meta['current_phase'] = $phase;
-        $meta['phase_data'] = array_merge($meta['phase_data'] ?? [], $data);
-        $meta['build_state'] = array_merge($meta['build_state'] ?? [], $data);
-        $meta['updated_at'] = now()->toISOString();
+        $meta['phase_data']    = array_merge($meta['phase_data'] ?? [], $data);
+        $meta['build_state']   = array_merge($meta['build_state'] ?? [], $data);
+        $meta['updated_at']    = now()->toISOString();
 
         $this->update([
             'status' => $phase,
-            'meta' => $meta,
+            'meta'   => $meta,
         ]);
 
         return $this;
@@ -124,13 +128,11 @@ class WorkflowBuilderChat extends Model implements AuditableContract
      */
     public function attachArtifacts(array $artifacts): static
     {
-        $meta = $this->meta ?? [];
-        $meta['artifacts'] = array_merge($meta['artifacts'] ?? [], $artifacts);
+        $meta                         = $this->meta ?? [];
+        $meta['artifacts']            = array_merge($meta['artifacts'] ?? [], $artifacts);
         $meta['artifacts_updated_at'] = now()->toISOString();
 
         $this->update(['meta' => $meta]);
-
-        WorkflowBuilderChatUpdatedEvent::broadcast($this, 'artifacts', $artifacts);
 
         return $this;
     }
@@ -147,11 +149,9 @@ class WorkflowBuilderChat extends Model implements AuditableContract
         // Create the message via the AgentThread relationship
         $agentThreadMessage = $this->agentThread->messages()->create([
             'content' => $message,
-            'data' => $data,
-            'role' => 'assistant', // Assuming system messages
+            'data'    => $data,
+            'role'    => 'assistant', // Assuming system messages
         ]);
-
-        WorkflowBuilderChatUpdatedEvent::broadcast($this, 'messages', $agentThreadMessage->toArray());
 
         return $this;
     }
@@ -161,9 +161,9 @@ class WorkflowBuilderChat extends Model implements AuditableContract
      */
     public function isWaitingForWorkflow(): bool
     {
-        return $this->status === self::STATUS_BUILDING_WORKFLOW && 
-               $this->currentWorkflowRun && 
-               !$this->currentWorkflowRun->isFinished();
+        return $this->status === self::STATUS_BUILDING_WORKFLOW &&
+            $this->currentWorkflowRun                           &&
+            !$this->currentWorkflowRun->isFinished();
     }
 
     /**
@@ -185,24 +185,24 @@ class WorkflowBuilderChat extends Model implements AuditableContract
                 self::STATUS_BUILDING_WORKFLOW,
                 self::STATUS_FAILED,
             ],
-            self::STATUS_ANALYZING_PLAN => [
+            self::STATUS_ANALYZING_PLAN         => [
                 self::STATUS_REQUIREMENTS_GATHERING,
-                self::STATUS_BUILDING_WORKFLOW, 
+                self::STATUS_BUILDING_WORKFLOW,
                 self::STATUS_FAILED,
             ],
-            self::STATUS_BUILDING_WORKFLOW => [
+            self::STATUS_BUILDING_WORKFLOW      => [
                 self::STATUS_EVALUATING_RESULTS,
                 self::STATUS_FAILED,
             ],
-            self::STATUS_EVALUATING_RESULTS => [
+            self::STATUS_EVALUATING_RESULTS     => [
                 self::STATUS_COMPLETED,
                 self::STATUS_REQUIREMENTS_GATHERING,
                 self::STATUS_FAILED,
             ],
-            self::STATUS_COMPLETED => [
+            self::STATUS_COMPLETED              => [
                 self::STATUS_REQUIREMENTS_GATHERING, // Allow starting new conversation
             ],
-            self::STATUS_FAILED => [
+            self::STATUS_FAILED                 => [
                 self::STATUS_REQUIREMENTS_GATHERING, // Allow recovery
                 self::STATUS_ANALYZING_PLAN,
                 self::STATUS_BUILDING_WORKFLOW,
@@ -221,19 +221,21 @@ class WorkflowBuilderChat extends Model implements AuditableContract
     public function validate(): static
     {
         validator($this->toArray(), [
-            'workflow_input_id' => ['required', 'integer', 'exists:workflow_inputs,id'],
-            'workflow_definition_id' => ['nullable', 'integer', 'exists:workflow_definitions,id'],
-            'agent_thread_id' => ['required', 'integer', 'exists:agent_threads,id'],
-            'status' => ['required', 'string', 'in:' . implode(',', [
-                self::STATUS_REQUIREMENTS_GATHERING,
-                self::STATUS_ANALYZING_PLAN,
-                self::STATUS_BUILDING_WORKFLOW,
-                self::STATUS_EVALUATING_RESULTS,
-                self::STATUS_COMPLETED,
-                self::STATUS_FAILED,
-            ])],
+            'workflow_input_id'       => ['required', 'integer', 'exists:workflow_inputs,id'],
+            'workflow_definition_id'  => ['nullable', 'integer', 'exists:workflow_definitions,id'],
+            'agent_thread_id'         => ['required', 'integer', 'exists:agent_threads,id'],
+            'status'                  => [
+                'required', 'string', 'in:' . implode(',', [
+                    self::STATUS_REQUIREMENTS_GATHERING,
+                    self::STATUS_ANALYZING_PLAN,
+                    self::STATUS_BUILDING_WORKFLOW,
+                    self::STATUS_EVALUATING_RESULTS,
+                    self::STATUS_COMPLETED,
+                    self::STATUS_FAILED,
+                ]),
+            ],
             'current_workflow_run_id' => ['nullable', 'integer', 'exists:workflow_runs,id'],
-            'team_id' => ['required', 'integer', 'exists:teams,id'],
+            'team_id'                 => ['required', 'integer', 'exists:teams,id'],
         ])->validate();
 
         return $this;
@@ -241,15 +243,7 @@ class WorkflowBuilderChat extends Model implements AuditableContract
 
     public static function booted(): void
     {
-        static::saved(function (WorkflowBuilderChat $chat) {
-            // Broadcast updates when status or meta changes
-            if ($chat->wasChanged(['status', 'meta'])) {
-                WorkflowBuilderChatUpdatedEvent::broadcast($chat, 'status_update', [
-                    'status' => $chat->status,
-                    'meta' => $chat->meta,
-                ]);
-            }
-        });
+        // No event broadcasting needed - artisan command polls model directly
     }
 
     public function __toString()

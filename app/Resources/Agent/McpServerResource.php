@@ -11,14 +11,14 @@ class McpServerResource extends ActionResource
     public static function data(McpServer $mcpServer): array
     {
         return [
-            'id' => $mcpServer->id,
-            'name' => $mcpServer->name,
-            'description' => $mcpServer->description,
-            'server_url' => $mcpServer->server_url,
-            'headers' => $mcpServer->headers,
+            'id'            => $mcpServer->id,
+            'name'          => $mcpServer->name,
+            'description'   => $mcpServer->description,
+            'server_url'    => $mcpServer->server_url,
+            'headers'       => $mcpServer->headers,
             'allowed_tools' => $mcpServer->allowed_tools,
-            'created_at' => $mcpServer->created_at,
-            'updated_at' => $mcpServer->updated_at,
+            'created_at'    => $mcpServer->created_at,
+            'updated_at'    => $mcpServer->updated_at,
         ];
     }
 

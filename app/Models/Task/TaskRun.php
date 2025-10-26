@@ -4,7 +4,6 @@ namespace App\Models\Task;
 
 use App\Events\TaskRunUpdatedEvent;
 use App\Models\Traits\HasUsageTracking;
-use App\Models\Usage\UsageSummary;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
@@ -19,7 +18,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
@@ -171,7 +169,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 $this->started_at = now();
             }
 
-            foreach($taskProcesses as $taskProcess) {
+            foreach ($taskProcesses as $taskProcess) {
                 if ($taskProcess->isStopped()) {
                     $hasStoppedProcesses = true;
                 } elseif ($taskProcess->isFailedAndCannotBeRetried()) {
@@ -278,7 +276,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 $taskRun->workflowRun?->checkTaskRuns()->save();
 
                 if ($taskRun->workflowRun?->taskProcessListeners->isNotEmpty()) {
-                    foreach($taskRun->workflowRun->taskProcessListeners as $taskProcessListener) {
+                    foreach ($taskRun->workflowRun->taskProcessListeners as $taskProcessListener) {
                         TaskProcessRunnerService::eventTriggered($taskProcessListener);
                     }
                 }

@@ -12,16 +12,16 @@ class DemandTemplateResource extends ActionResource
     public static function data(DemandTemplate $demandTemplate): array
     {
         return [
-            'id'           => $demandTemplate->id,
-            'name'         => $demandTemplate->name,
-            'description'  => $demandTemplate->description,
-            'category'     => $demandTemplate->category,
-            'is_active'    => $demandTemplate->is_active,
-            'metadata'     => $demandTemplate->metadata,
-            'template_url' => $demandTemplate->getTemplateUrl(),
+            'id'            => $demandTemplate->id,
+            'name'          => $demandTemplate->name,
+            'description'   => $demandTemplate->description,
+            'category'      => $demandTemplate->category,
+            'is_active'     => $demandTemplate->is_active,
+            'metadata'      => $demandTemplate->metadata,
+            'template_url'  => $demandTemplate->getTemplateUrl(),
             'google_doc_id' => $demandTemplate->extractGoogleDocId(),
-            'created_at'   => $demandTemplate->created_at,
-            'updated_at'   => $demandTemplate->updated_at,
+            'created_at'    => $demandTemplate->created_at,
+            'updated_at'    => $demandTemplate->updated_at,
 
             'stored_file'        => fn($fields) => $demandTemplate->storedFile ? StoredFileResource::make($demandTemplate->storedFile, $fields) : null,
             'user'               => fn($fields) => $demandTemplate->user ? [

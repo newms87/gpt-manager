@@ -13,13 +13,6 @@ class TaskRunsController extends ActionController
     public static ?string $repo     = TaskRunRepository::class;
     public static ?string $resource = TaskRunResource::class;
 
-    public function subscribeToProcesses(TaskRun $taskRun)
-    {
-        cache()->put('subscribe:task-run-processes:' . user()->id, $taskRun->id, 60);
-
-        return ['success' => true];
-    }
-
     public function errors(TaskRun $taskRun)
     {
         return ErrorLogEntryResource::collection($taskRun->getErrorLogEntries());

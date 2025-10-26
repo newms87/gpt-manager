@@ -104,6 +104,31 @@ Ensure ALL code implements team scoping as defined in the patterns guide.
 
 ### 4. Test Coverage Analysis & Writing
 
+**🎯 TESTING PHILOSOPHY: Quality Over Quantity**
+
+**FOCUS ON VALUE, NOT METRICS:**
+- ❌ **DO NOT aim for 100% test coverage** - This leads to useless tests
+- ✅ **TEST CRITICAL BUSINESS LOGIC** - Focus on functionality that matters
+- ✅ **TEST BEHAVIOR, NOT STRUCTURE** - Verify outcomes, not implementation details
+- ✅ **EVERY TEST MUST BE USEFUL** - Can break when real bugs are introduced
+
+**🚫 NEVER WRITE THESE USELESS TESTS:**
+- **Resource field enumeration** - Testing Resource::make() returns specific fields (maintenance nightmare)
+- **Getter/setter tests** - Testing `$model->name = 'x'` makes `$model->name === 'x'` (obvious)
+- **Framework feature tests** - Relationships, casts, timestamps work (trust Laravel)
+- **Obvious mappings** - Testing a method returns what you passed in (pointless)
+- **Implementation details** - Private methods, internal structure, method names (brittle)
+- **Boilerplate validation** - Required fields are required (trust validation rules)
+- **Legacy code absence** - Testing old code doesn't exist (we have zero tech debt policy)
+
+**✅ ALWAYS WRITE THESE VALUABLE TESTS:**
+- **Business logic outcomes** - Complex calculations, data transformations, decision trees
+- **State changes** - Database updates, workflow transitions, status changes
+- **Edge cases & errors** - Boundary conditions, validation failures, error scenarios
+- **Security & authorization** - Team scoping, permissions, ownership checks
+- **Integration workflows** - Complete user journeys through multiple services
+- **Data integrity** - Relationships transfer correctly, constraints enforced, cascading works
+
 **CRITICAL TESTING RULES (ZERO EXCEPTIONS):**
 
 **NEVER MOCK INTERNAL SERVICES OR MODELS** - Following the established "no mocking except APIs" rule:
@@ -162,7 +187,14 @@ Ensure ALL code implements team scoping as defined in the patterns guide.
 - **Integration Testing**: Verify complete workflows work end-to-end
 - **Test Configuration**: Configure test environment (e.g., test AI models) instead of mocking
 
-For each new/modified component, ensure tests exist following the patterns guide templates.
+**WHEN TO WRITE TESTS:**
+- New service with complex business logic → Write tests
+- New workflow transitions or state changes → Write tests
+- New authorization/team scoping logic → Write tests
+- New validation with edge cases → Write tests
+- New Resource class → **DO NOT** write field enumeration tests
+- New model relationships → **DO NOT** write relationship tests (trust Laravel)
+- Simple getter/setter methods → **DO NOT** write tests
 
 ### 5. Code Quality Issues to Flag
 
@@ -188,7 +220,7 @@ For each new/modified component, ensure tests exist following the patterns guide
 1. **MUST RUN LINTER**: `./vendor/bin/sail pint <file>` on all modified PHP files to ensure proper formatting
 2. **MUST RUN TESTS**: `./vendor/bin/sail test` to verify ALL tests pass
 3. **MUST VERIFY**: No test failures or warnings exist
-4. **MUST CHECK**: New tests have comprehensive coverage
+4. **MUST CHECK**: New tests are useful (testing behavior) not useless (testing structure)
 5. **MUST REPORT**: Any test failures must be fixed before completion
 6. **ZERO TOLERANCE**: Never complete QA review with failing tests or improperly formatted code
 
@@ -222,7 +254,8 @@ For each new/modified component, ensure tests exist following the patterns guide
 Provide summary with:
 - **Architecture Compliance**: Which patterns are correctly implemented
 - **Team Access Control**: Verification of team-based scoping
-- **Test Coverage**: Tests written and coverage status
+- **Test Coverage**: Tests written for critical business logic (NOT aiming for 100%)
+- **Test Quality**: Are tests useful (testing behavior) or useless (testing structure)?
 - **TEST RESULTS**: **MANDATORY** - Report results of `./vendor/bin/sail test` execution
 - **Code Quality Issues**: Any problems found
 - **Refactoring Needs**: Code that needs architect review
@@ -235,7 +268,7 @@ Provide summary with:
 2. ✅ Service-Repository-Controller pattern separation
 3. ✅ danx library pattern compliance
 4. ✅ Database transactions for multi-step operations
-5. ✅ Comprehensive test coverage for all new code
+5. ✅ **Useful test coverage for critical business logic** (NOT comprehensive/100% coverage)
 6. ✅ **ALL TESTS MUST PASS** - Run `./vendor/bin/sail test` and verify 0 failures
 7. ✅ No inline class references - all imports at top of file
 
@@ -244,7 +277,8 @@ Provide summary with:
 - Missing team scoping in repositories
 - Not using danx patterns (ActionController, ActionRepository, ActionResource)
 - Legacy code patterns or backwards compatibility hacks
-- Missing tests for new functionality
+- Missing tests for critical business logic (complex workflows, state changes, security)
+- Writing useless tests (Resource field enumeration, getter/setter, framework features)
 - **ANY FAILING TESTS** - Automatic rejection if `./vendor/bin/sail test` shows failures
 - Inline class references with backslashes
 

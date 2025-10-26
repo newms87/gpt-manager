@@ -12,7 +12,6 @@ class WorkflowRunResource extends ActionResource
     public static function data(WorkflowRun $workflowRun): array
     {
         return [
-            'id'                     => $workflowRun->id,
             'name'                   => $workflowRun->name,
             'status'                 => $workflowRun->status,
             'workflow_definition_id' => $workflowRun->workflow_definition_id,
@@ -24,7 +23,7 @@ class WorkflowRunResource extends ActionResource
                 ->whereIn('status', [
                     WorkflowStatesContract::STATUS_COMPLETED,
                     WorkflowStatesContract::STATUS_FAILED,
-                    WorkflowStatesContract::STATUS_SKIPPED
+                    WorkflowStatesContract::STATUS_SKIPPED,
                 ])
                 ->count(),
             'started_at'             => $workflowRun->started_at,

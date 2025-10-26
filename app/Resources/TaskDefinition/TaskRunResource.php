@@ -12,7 +12,6 @@ class TaskRunResource extends ActionResource
     public static function data(TaskRun $taskRun): array
     {
         return [
-            'id'                     => $taskRun->id,
             'name'                   => $taskRun->name,
             'step'                   => $taskRun->step,
             'percent_complete'       => $taskRun->percent_complete,

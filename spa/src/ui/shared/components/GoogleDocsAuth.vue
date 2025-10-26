@@ -66,7 +66,7 @@
 
 <script setup lang="ts">
 import { FaSolidArrowsRotate, FaSolidCheck, FaSolidLink, FaSolidTriangleExclamation } from "danx-icon";
-import { request } from "quasar-ui-danx";
+import { fTimeAgo, request } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import { useGoogleDocsAuth } from "../composables/useGoogleDocsAuth";
 
@@ -91,29 +91,7 @@ const { isAuthorized, isValidating, error, authDate, tokenExpired, validateAuth 
 const isConnecting = ref(false);
 
 // Computed
-const formattedAuthDate = computed(() => {
-    if (!authDate.value) return "";
-
-    const date = new Date(authDate.value);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 1) {
-        return "yesterday";
-    } else if (diffDays < 7) {
-        return `${diffDays} days ago`;
-    } else if (diffDays < 30) {
-        const weeks = Math.floor(diffDays / 7);
-        return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
-    } else {
-        return date.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric"
-        });
-    }
-});
+const formattedAuthDate = computed(() => fTimeAgo(authDate.value));
 
 // Methods
 async function handleConnect(): Promise<void> {

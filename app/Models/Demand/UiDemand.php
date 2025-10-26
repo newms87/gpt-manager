@@ -146,8 +146,8 @@ class UiDemand extends Model implements Auditable
     {
         return $query->withCount([
             'inputFiles as input_files_count',
-            'outputFiles as output_files_count', 
-            'medicalSummaries as medical_summaries_count'
+            'outputFiles as output_files_count',
+            'medicalSummaries as medical_summaries_count',
         ]);
     }
 

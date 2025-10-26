@@ -142,5 +142,5 @@ export interface UsageSummary {
 export type TaskRunStatus = "Pending" | "Running" | "Failed" | "Skipped" | "Completed" | "Stopped" | "Timeout";
 
 export interface TaskRunRoutes extends ListControlsRoutes<TaskRun> {
-	subscribeToProcesses(target: TaskRun): Promise<void>;
+	// subscribeToProcesses removed - now using pusher.subscribeToModel
 }

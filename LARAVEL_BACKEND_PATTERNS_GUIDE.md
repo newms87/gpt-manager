@@ -365,20 +365,89 @@ return new class extends Migration
 
 ### CRITICAL Testing Principles
 
+**TEST PHILOSOPHY: Quality Over Quantity**
+- **NO 100% COVERAGE OBSESSION** - Focus on critical business logic, not coverage metrics
+- **TEST BEHAVIOR, NOT STRUCTURE** - Verify outcomes and state changes, not implementation details
+- **USEFUL TESTS ONLY** - Every test must verify actual functionality that could break
+
 **NEVER TEST CONTROLLERS DIRECTLY** - Due to Laravel configuration issues causing 503 errors, ALL controller testing is PROHIBITED.
 
-**NEVER:**
+**NEVER TEST (Pointless/Brittle):**
 - Use `Mockery::mock(...)` - ALWAYS use `$this->mock(...)`
 - Mock database interactions - USE THE DATABASE!
 - Test Laravel framework features (fillable, casts, relationships)
 - Use static mocking: `Mockery::mock('alias:' . StaticService::class)` - FORBIDDEN
+- **Resource field enumeration** - Testing that Resource classes return specific field lists
+- **Getters/setters** - Testing that `$model->name = 'foo'` results in `$model->name === 'foo'`
+- **Framework behavior** - Relationships work, casts work, timestamps work (trust Laravel)
+- **Obvious mappings** - Testing that a method returns exactly what you passed in
+- **Implementation details** - Method names, private methods, internal structure
+- **Boilerplate validation** - Testing that required fields are required (trust validation rules)
 
-**ALWAYS:**
+**ALWAYS TEST (Critical/Valuable):**
 - Use real database interactions with factories
 - Only mock 3rd party API calls
-- Test the complete system behavior
-- Verify database state changes
+- **Business logic outcomes** - Complex calculations, transformations, decision trees
+- **State changes** - Database updates, workflow transitions, status changes
+- **Edge cases & errors** - Boundary conditions, validation failures, error handling
+- **Security & authorization** - Team scoping, permissions, ownership validation
+- **Integration workflows** - Complete user journeys through multiple services
+- **Data integrity** - Relationships maintained, constraints enforced, cascading deletes
 - Run `./vendor/bin/sail test` before completing any work
+
+### What Makes a Good Test?
+
+**✅ GOOD TEST - Tests business logic:**
+```php
+public function test_merging_team_objects_transfers_all_relationships(): void
+{
+    // Tests actual business requirement: relationships must transfer on merge
+    $source = TeamObject::factory()->create();
+    $target = TeamObject::factory()->create();
+    $artifacts = Artifact::factory()->count(3)->create(['team_object_id' => $source->id]);
+
+    app(TeamObjectMergeService::class)->merge($source, $target);
+
+    // Verify business outcome: all artifacts moved to target
+    $this->assertEquals(3, $target->artifacts()->count());
+    $this->assertEquals(0, $source->artifacts()->count());
+}
+```
+
+**❌ BAD TEST - Tests structure:**
+```php
+public function test_resource_includes_expected_fields(): void
+{
+    // Pointless: Resources return fields - that's literally their only job
+    $data = TeamObjectResource::make($teamObject);
+    $this->assertArrayHasKey('id', $data);
+    $this->assertArrayHasKey('name', $data);
+    // This breaks every time you add/remove a field = maintenance nightmare
+}
+```
+
+**✅ GOOD TEST - Tests error handling:**
+```php
+public function test_merge_prevents_merging_objects_from_different_teams(): void
+{
+    // Tests security requirement: team isolation
+    $source = TeamObject::factory()->create(['team_id' => 1]);
+    $target = TeamObject::factory()->create(['team_id' => 2]);
+
+    $this->expectException(ValidationError::class);
+    app(TeamObjectMergeService::class)->merge($source, $target);
+}
+```
+
+**❌ BAD TEST - Tests framework:**
+```php
+public function test_team_object_has_artifacts_relationship(): void
+{
+    // Pointless: Testing Laravel's relationship system works
+    $teamObject = TeamObject::factory()->create();
+    $this->assertInstanceOf(HasMany::class, $teamObject->artifacts());
+}
+```
 
 ### Service Testing Template
 
@@ -606,6 +675,9 @@ The danx library's `ModelSavedEvent` (`../danx/src/Events/ModelSavedEvent.php`) 
 
 ### Event Structure Template
 
+**Events are ultra-simple - just a constructor. Broadcasting and data handled automatically by ModelSavedEvent.**
+
+**Option 1: Use Default (Full Resource Data)**
 ```php
 <?php
 
@@ -622,29 +694,60 @@ class [Model]UpdatedEvent extends ModelSavedEvent
         parent::__construct(
             $model,
             $event,
-            [Model]Resource::class,  // Resource class for type extraction
+            [Model]Resource::class,  // Resource class for automatic data
             $model->team_id           // Team ID (or null for complex resolution)
         );
     }
 
-    public function data(): array
+    // No data() method needed! ModelSavedEvent automatically calls Resource::make()
+}
+```
+
+**Option 2: Optimize Create vs Update Payloads** (Recommended for performance)
+```php
+class [Model]UpdatedEvent extends ModelSavedEvent
+{
+    public function __construct(protected [Model] $model, protected string $event)
     {
-        // Return lightweight payload - IDs, status, timestamps only
+        parent::__construct($model, $event, [Model]Resource::class, $model->team_id);
+    }
+
+    protected function createdData(): array
+    {
+        // Full context for new object - includes foreign keys, can permissions
         return [Model]Resource::make($this->model, [
             'id' => true,
             'name' => true,
             'status' => true,
+            'parent_id' => true,        // Foreign keys
             'created_at' => true,
+            'can' => true,              // Permissions
+        ]);
+    }
+
+    protected function updatedData(): array
+    {
+        // Minimal update - only what changes
+        return [Model]Resource::make($this->model, [
+            'id' => true,
+            'status' => true,           // Status changes
+            'progress_percent' => true, // Progress updates
+            'error_count' => true,      // Metrics
+            'completed_at' => true,     // Completion timestamps
             'updated_at' => true,
-            // NO relationships, NO large fields (logs, content, etc.)
         ]);
     }
 }
 ```
 
+**Broadcasting Logic:**
+- `broadcastOn()` automatically handled by ModelSavedEvent
+- `data()` automatically calls `createdData()` or `updatedData()` based on event type
+- Model class derived from `$this->model` - zero configuration!
+
 ### Complex Team ID Resolution
 
-For models where team_id requires traversing relationships or polymorphic resolution:
+For models where team_id requires traversing relationships or polymorphic resolution, override `getTeamId()`:
 
 ```php
 class JobDispatchUpdatedEvent extends ModelSavedEvent
@@ -683,19 +786,35 @@ class JobDispatchUpdatedEvent extends ModelSavedEvent
 }
 ```
 
-### Broadcasting Payloads - CRITICAL Rules
+**Note:** No `broadcastOn()` method needed - ModelSavedEvent handles it automatically!
 
-**ALWAYS use lightweight payloads in data() method:**
+### Broadcasting Payloads - Optimization Guidelines
 
+**CREATE Events** (full context for displaying new object):
 ✅ **INCLUDE:**
-- IDs (primary keys, foreign keys)
-- Status/state fields
-- Timestamps
-- Simple strings (name, title, type)
-- Simple counts
+- All IDs (id, foreign keys like parent_id, task_definition_id)
+- Name/title
+- Status
+- created_at timestamp
+- Permissions (can)
 
-❌ **EXCLUDE:**
-- Relationships (NEVER include nested objects)
+**UPDATE Events** (minimal - only what changes):
+✅ **INCLUDE:**
+- id (required for identifying object)
+- Status changes
+- Progress/percent_complete
+- Activity/step indicators
+- Counts (error_count, process_count)
+- Completion timestamps (completed_at, stopped_at, failed_at)
+- updated_at
+
+❌ **NEVER in Updates:**
+- Foreign keys (they don't change)
+- created_at (never changes)
+- Permissions (rarely change, refetch if needed)
+
+❌ **NEVER in Any Event:**
+- Relationships (nested objects)
 - Large text fields (logs, content, raw_data)
 - Binary/JSON blobs
 - Computed attributes requiring queries
@@ -714,26 +833,26 @@ WorkflowRunUpdatedEvent::dispatch($workflowRun);
 WorkflowRunUpdatedEvent::broadcast($workflowRun);
 ```
 
-### Custom broadcastOn() Implementation
+### Broadcasting Implementation (Fully Automatic)
 
-If you need custom subscription logic, override `broadcastOn()`:
+**Events require ZERO boilerplate** - everything handled by `ModelSavedEvent`.
 
-```php
-public function broadcastOn()
-{
-    $resourceType = $this->getResourceType(); // Auto-extracted from Resource class
-    $teamId = $this->getTeamId();
+**Automatic Features:**
+1. **Broadcasting** - `broadcastOn()` uses BroadcastsWithSubscriptions trait
+2. **Data Selection** - `data()` calls `createdData()` or `updatedData()` based on event type
+3. **Resource Type** - Auto-extracted from Resource class name
+4. **Team ID** - From constructor or overridden `getTeamId()` method
+5. **Model Class** - Derived via `get_class($this->model)` for filter subscriptions
 
-    if (!$teamId) {
-        return [];
-    }
+**What You Write:**
+- Constructor only (if using default full Resource data)
+- Constructor + `createdData()` + `updatedData()` (for optimized payloads)
 
-    // Custom subscription logic here
-    $userIds = $this->getSubscribedUsers($resourceType, $teamId, $this->model, $this->model::class);
-
-    return $this->getSubscribedChannels($resourceType, $teamId, $userIds);
-}
-```
+**What's Automatic:**
+- broadcastOn() - subscription checking
+- data() - event type routing
+- Resource type extraction
+- Model class derivation
 
 ### Event Examples
 

@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\Auth\OAuthController;
 use App\Http\Controllers\Api\BillingController;
 use App\Http\Controllers\Api\SubscriptionPlansController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
+use App\Http\Controllers\PusherSubscriptionController;
 use App\Http\Controllers\Assistant\AssistantActionsController;
 use App\Http\Controllers\Assistant\UniversalAssistantController;
 use App\Http\Controllers\Audit\AuditRequestsController;
@@ -77,7 +78,6 @@ ActionRoute::routes('task-definitions', new TaskDefinitionsController, function 
 ActionRoute::routes('task-artifact-filters', new TaskArtifactFiltersController);
 ActionRoute::routes('task-inputs', new TaskInputsController);
 ActionRoute::routes('task-runs', new TaskRunsController, function () {
-    Route::get('{taskRun}/subscribe-to-processes', [TaskRunsController::class, 'subscribeToProcesses']);
     Route::get('{taskRun}/errors', [TaskRunsController::class, 'errors']);
 });
 ActionRoute::routes('task-processes', new TaskProcessesController);
@@ -94,7 +94,6 @@ ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
     Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');
     Route::get('{workflowRun}/active-job-dispatches', [WorkflowRunsController::class, 'activeJobDispatches'])->name('workflow-runs.active-job-dispatches');
     Route::post('{workflowRun}/dispatch-workers', [WorkflowRunsController::class, 'dispatchWorkers'])->name('workflow-runs.dispatch-workers');
-    Route::get('{workflowRun}/subscribe-to-job-dispatches', [WorkflowRunsController::class, 'subscribeToJobDispatches'])->name('workflow-runs.subscribe-to-job-dispatches');
     Route::get('{workflowRun}/errors', [WorkflowRunsController::class, 'errors']);
 });
 ActionRoute::routes('workflow-inputs', new WorkflowInputsController);
@@ -183,4 +182,11 @@ Route::prefix('subscription-plans')->group(function () {
 // Websockets Pusher Broadcasting
 Route::post('broadcasting/auth', function (Request $request) {
     return Broadcast::auth($request);
+});
+
+// Pusher Subscriptions
+Route::prefix('pusher')->group(function () {
+    Route::post('subscribe', [PusherSubscriptionController::class, 'subscribe']);
+    Route::post('unsubscribe', [PusherSubscriptionController::class, 'unsubscribe']);
+    Route::post('keepalive', [PusherSubscriptionController::class, 'keepalive']);
 });

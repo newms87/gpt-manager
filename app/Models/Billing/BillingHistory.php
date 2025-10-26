@@ -28,16 +28,16 @@ class BillingHistory extends Model implements AuditableContract
     public function casts(): array
     {
         return [
-            'amount' => 'decimal:2',
-            'tax_amount' => 'decimal:2',
+            'amount'       => 'decimal:2',
+            'tax_amount'   => 'decimal:2',
             'total_amount' => 'decimal:2',
-            'line_items' => 'json',
+            'line_items'   => 'json',
             'period_start' => 'datetime',
-            'period_end' => 'datetime',
-            'due_date' => 'datetime',
-            'paid_at' => 'datetime',
+            'period_end'   => 'datetime',
+            'due_date'     => 'datetime',
+            'paid_at'      => 'datetime',
             'billing_date' => 'datetime',
-            'metadata' => 'json',
+            'metadata'     => 'json',
         ];
     }
 
@@ -98,10 +98,10 @@ class BillingHistory extends Model implements AuditableContract
 
     public function isOverdue(): bool
     {
-        return $this->type === 'invoice' && 
-               $this->status === 'overdue' && 
-               $this->due_date && 
-               $this->due_date->isPast();
+        return $this->type === 'invoice' &&
+            $this->status === 'overdue' &&
+            $this->due_date &&
+            $this->due_date->isPast();
     }
 
     public function getFormattedAmount(): string
@@ -137,6 +137,6 @@ class BillingHistory extends Model implements AuditableContract
     public function scopeOverdue($query)
     {
         return $query->where('status', 'overdue')
-                    ->where('due_date', '<', now());
+            ->where('due_date', '<', now());
     }
 }

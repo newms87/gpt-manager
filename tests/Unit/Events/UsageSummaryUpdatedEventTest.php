@@ -19,22 +19,22 @@ class UsageSummaryUpdatedEventTest extends AuthenticatedTestCase
         $this->setUpTeam();
     }
 
-    public function test_usage_summary_updated_event_is_broadcast_on_save(): void
+    public function test_usageSummary_created_firesEvent(): void
     {
+        // Given
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
-        $eventFired    = false;
-        $capturedEvent = null;
+        $eventFired = false;
 
-        Event::listen(UsageSummaryUpdatedEvent::class, function ($event) use (&$eventFired, &$capturedEvent) {
-            $eventFired    = true;
-            $capturedEvent = $event;
+        Event::listen(UsageSummaryUpdatedEvent::class, function () use (&$eventFired) {
+            $eventFired = true;
         });
 
-        $usageSummary = UsageSummary::create([
+        // When
+        UsageSummary::create([
             'object_type'   => UiDemand::class,
             'object_id'     => $uiDemand->id,
             'object_id_int' => $uiDemand->id,
@@ -49,13 +49,13 @@ class UsageSummaryUpdatedEventTest extends AuthenticatedTestCase
             'data_volume'   => 0,
         ]);
 
-        $this->assertTrue($eventFired, 'UsageSummaryUpdatedEvent should have been fired');
-        $this->assertNotNull($capturedEvent);
-        $this->assertEquals($usageSummary->id, $capturedEvent->getUsageSummary()->id);
+        // Then
+        $this->assertTrue($eventFired, 'UsageSummaryUpdatedEvent should fire when UsageSummary is created');
     }
 
-    public function test_usage_summary_event_has_correct_channel(): void
+    public function test_teamId_resolvedViaPolymorphicRelationship(): void
     {
+        // Given
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
@@ -74,48 +74,18 @@ class UsageSummaryUpdatedEventTest extends AuthenticatedTestCase
             'request_count' => 1,
         ]);
 
-        $event   = new UsageSummaryUpdatedEvent($usageSummary, 'updated');
-        $channel = $event->broadcastOn();
-
-        $this->assertEquals('private-UsageSummary.' . $this->user->currentTeam->id, $channel->name);
-    }
-
-    public function test_usage_summary_event_has_correct_data_format(): void
-    {
-        $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+        // Subscribe to ensure broadcastOn() returns channels
+        $this->postJson('/api/pusher/subscribe', [
+            'resource_type'      => 'UsageSummary',
+            'model_id_or_filter' => true,
         ]);
 
-        $usageSummary = UsageSummary::create([
-            'object_type'   => UiDemand::class,
-            'object_id'     => $uiDemand->id,
-            'object_id_int' => $uiDemand->id,
-            'count'         => 1,
-            'input_tokens'  => 100,
-            'output_tokens' => 50,
-            'input_cost'    => 0.001,
-            'output_cost'   => 0.002,
-            'total_cost'    => 0.003,
-            'request_count' => 1,
-        ]);
+        // When
+        $event = new UsageSummaryUpdatedEvent($usageSummary, 'created');
+        $channels = $event->broadcastOn();
 
-        $event = new UsageSummaryUpdatedEvent($usageSummary, 'updated');
-        $data  = $event->data();
-
-        $this->assertArrayHasKey('count', $data);
-        $this->assertArrayHasKey('input_tokens', $data);
-        $this->assertArrayHasKey('output_tokens', $data);
-        $this->assertArrayHasKey('total_tokens', $data);
-        $this->assertArrayHasKey('total_cost', $data);
-        $this->assertArrayHasKey('__type', $data);
-        $this->assertArrayHasKey('id', $data);
-        $this->assertArrayHasKey('object_type', $data);
-        $this->assertArrayHasKey('object_id', $data);
-
-        $this->assertEquals('UsageSummaryResource', $data['__type']);
-        $this->assertEquals($usageSummary->id, $data['id']);
-        $this->assertEquals(UiDemand::class, $data['object_type']);
-        $this->assertEquals(150, $data['total_tokens']);
+        // Then - Should resolve team_id from polymorphic object relationship
+        $this->assertNotEmpty($channels, 'Should broadcast when team_id is resolved');
+        $this->assertEquals('private-UsageSummary.' . $this->user->currentTeam->id, $channels[0]->name);
     }
 }

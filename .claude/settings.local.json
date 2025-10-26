@@ -91,7 +91,10 @@
       "Bash(for file in app/Events/*UpdatedEvent.php)",
       "Bash(do php -l \"$file\")",
       "Bash(done)",
-      "Bash(./vendor/bin/sail pint:*)"
+      "Bash(./vendor/bin/sail pint:*)",
+      "Bash(./vendor/bin/pint app/Events/)",
+      "Bash(./vendor/bin/pint:*)",
+      "Bash(exit 1)"
     ],
     "deny": [],
     "additionalDirectories": [

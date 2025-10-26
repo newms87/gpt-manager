@@ -68,19 +68,19 @@ class DemandTemplate extends Model implements AuditableContract
     public function validate(): static
     {
         validator($this->toArray(), [
-            'team_id'            => ['required', 'exists:teams,id'],
-            'user_id'            => ['required', 'exists:users,id'],
-            'stored_file_id'     => ['nullable', 'exists:stored_files,id'],
-            'name'               => [
+            'team_id'        => ['required', 'exists:teams,id'],
+            'user_id'        => ['required', 'exists:users,id'],
+            'stored_file_id' => ['nullable', 'exists:stored_files,id'],
+            'name'           => [
                 'required',
                 'string',
                 'max:255',
                 TeamScopedUniqueRule::make('demand_templates', 'name')->ignore($this),
             ],
-            'description' => ['nullable', 'string'],
-            'category'    => ['nullable', 'string', 'max:255'],
-            'metadata'    => ['nullable', 'array'],
-            'is_active'   => ['boolean'],
+            'description'    => ['nullable', 'string'],
+            'category'       => ['nullable', 'string', 'max:255'],
+            'metadata'       => ['nullable', 'array'],
+            'is_active'      => ['boolean'],
         ])->validate();
 
         return $this;

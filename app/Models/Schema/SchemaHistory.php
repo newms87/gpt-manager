@@ -11,7 +11,7 @@ use Newms87\Danx\Traits\ActionModelTrait;
 class SchemaHistory extends Model
 {
     use ActionModelTrait;
-    
+
     protected $table = 'schema_history';
 
     protected $guarded = [

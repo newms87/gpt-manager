@@ -3,34 +3,40 @@
 namespace App\Events;
 
 use App\Models\TeamObject\TeamObject;
-use Illuminate\Broadcasting\PrivateChannel;
+use App\Resources\TeamObject\TeamObjectResource;
 use Newms87\Danx\Events\ModelSavedEvent;
 
 class TeamObjectUpdatedEvent extends ModelSavedEvent
 {
     public function __construct(protected TeamObject $teamObject, protected string $event)
     {
-        parent::__construct($teamObject, $event);
+        parent::__construct(
+            $teamObject,
+            $event,
+            TeamObjectResource::class,
+            $teamObject->team_id
+        );
     }
 
-    public function getTeamObject(): TeamObject
+    protected function createdData(): array
     {
-        return $this->teamObject;
+        return TeamObjectResource::make($this->teamObject, [
+            '*'                    => false,
+            'type'                 => true,
+            'name'                 => true,
+            'root_object_id'       => true,
+            'schema_definition_id' => true,
+            'created_at'           => true,
+        ]);
     }
 
-    public function broadcastOn()
+    protected function updatedData(): array
     {
-        return new PrivateChannel('TeamObject.' . $this->teamObject->team_id);
-    }
-
-    public function data(): array
-    {
-        return [
-            'id'                   => $this->teamObject->id,
-            'root_object_id'       => $this->teamObject->root_object_id ?? $this->teamObject->id,
-            'schema_definition_id' => $this->teamObject->schema_definition_id,
-            'updated_at'           => $this->teamObject->updated_at,
-            '__type'               => 'TeamObjectEvent',
-        ];
+        return TeamObjectResource::make($this->teamObject, [
+            '*'                    => false,
+            'root_object_id'       => true,
+            'schema_definition_id' => true,
+            'updated_at'           => true,
+        ]);
     }
 }

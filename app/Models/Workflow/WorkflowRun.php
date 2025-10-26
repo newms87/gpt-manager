@@ -132,7 +132,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
     {
         // For all the target's source nodes, we want to check if they have all completed running in this workflow run.
         // If so, then we can run the target node
-        foreach($targetNode->connectionsAsTarget as $connectionAsTarget) {
+        foreach ($targetNode->connectionsAsTarget as $connectionAsTarget) {
             // Check if this workflow run has a task run for the source node that has completed.
             // If not, the target node is not ready to be executed
             $sourceTaskRun = $this->taskRuns()->where('workflow_node_id', $connectionAsTarget->source_node_id)->first();
@@ -209,7 +209,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
             $this->completed_at      = null;
         }
 
-        foreach($this->taskRuns()->get() as $taskRun) {
+        foreach ($this->taskRuns()->get() as $taskRun) {
             if ($taskRun->isStopped()) {
                 $hasStoppedTasks = true;
             } elseif ($taskRun->isFailed()) {
@@ -382,7 +382,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         $unreachableNodes = collect();
 
         // For each node without a TaskRun, check if it's unreachable due to blocking dependencies
-        foreach($nodesWithoutTaskRuns as $node) {
+        foreach ($nodesWithoutTaskRuns as $node) {
             if ($this->isNodeUnreachableDueToBlockingDependencies($node, $blockingNodeIds, $allNodes)) {
                 $unreachableNodes->push($node);
             }
@@ -400,7 +400,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
         $visited = collect();
         $toCheck = collect([$node->id]);
 
-        while($toCheck->isNotEmpty()) {
+        while ($toCheck->isNotEmpty()) {
             $currentNodeId = $toCheck->shift();
 
             if ($visited->contains($currentNodeId)) {
@@ -425,7 +425,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
                 ->get();
 
             // Add all source nodes to check queue
-            foreach($sourceConnections as $connection) {
+            foreach ($sourceConnections as $connection) {
                 if (!$visited->contains($connection->source_node_id)) {
                     $toCheck->push($connection->source_node_id);
                 }
@@ -543,7 +543,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
                 }
 
                 if ($workflowRun->taskProcessListeners->isNotEmpty()) {
-                    foreach($workflowRun->taskProcessListeners as $taskProcessListener) {
+                    foreach ($workflowRun->taskProcessListeners as $taskProcessListener) {
                         TaskProcessRunnerService::eventTriggered($taskProcessListener);
                     }
                 };

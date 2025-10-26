@@ -191,8 +191,7 @@ class WorkflowListener extends Model implements AuditableContract
         WorkflowRun $workflowRun,
         string      $workflowType,
         array       $metadata = []
-    ): self
-    {
+    ): self {
         return static::create([
             'team_id'         => $listener->team_id,
             'workflow_run_id' => $workflowRun->id,

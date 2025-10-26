@@ -46,7 +46,7 @@ class Team extends Model implements AuditableContract
     {
         return $this->hasMany(SchemaDefinition::class);
     }
-    
+
     public function taskDefinitions(): HasMany|TaskDefinition
     {
         return $this->hasMany(TaskDefinition::class);

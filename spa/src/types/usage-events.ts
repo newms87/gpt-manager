@@ -1,12 +1,10 @@
+import { AuthUser } from "@/types/user";
 import { ActionTargetItem } from "quasar-ui-danx";
 
 export interface UsageEvent extends ActionTargetItem {
     id: number;
     team_id: number;
     user_id: number | null;
-    object_type: string;
-    object_id: string;
-    object_id_int: number | null;
     event_type: string;
     api_name: string | null;
     run_time_ms: number | null;
@@ -22,11 +20,7 @@ export interface UsageEvent extends ActionTargetItem {
     deleted_at: string | null;
 
     // Relationships
-    user?: {
-        id: number;
-        name: string;
-        email: string;
-    };
+    user?: AuthUser | null;
 
     // Computed attributes
     total_cost?: number;

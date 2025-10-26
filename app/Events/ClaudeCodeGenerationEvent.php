@@ -3,24 +3,30 @@
 namespace App\Events;
 
 use App\Models\Task\TaskDefinition;
-use Illuminate\Broadcasting\PrivateChannel;
+use App\Traits\BroadcastsWithSubscriptions;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class ClaudeCodeGenerationEvent implements ShouldBroadcast
 {
-    use Dispatchable, SerializesModels;
+    use BroadcastsWithSubscriptions, Dispatchable, SerializesModels;
 
     public function __construct(
         public TaskDefinition $taskDefinition,
         public string $event,
         public array $data = []
-    ) {}
+    ) {
+    }
 
     public function broadcastOn()
     {
-        return new PrivateChannel('ClaudeCodeGeneration.' . $this->taskDefinition->team_id);
+        $resourceType = 'ClaudeCodeGeneration';
+        $teamId       = $this->taskDefinition->team_id;
+
+        $userIds = $this->getSubscribedUsers($resourceType, $teamId, $this->taskDefinition, TaskDefinition::class);
+
+        return $this->getSubscribedChannels($resourceType, $teamId, $userIds);
     }
 
     public function broadcastAs()
@@ -32,8 +38,8 @@ class ClaudeCodeGenerationEvent implements ShouldBroadcast
     {
         return array_merge([
             'task_definition_id' => $this->taskDefinition->id,
-            'event' => $this->event,
-            'timestamp' => now()->toISOString(),
+            'event'              => $this->event,
+            'timestamp'          => now()->toISOString(),
         ], $this->data);
     }
 }

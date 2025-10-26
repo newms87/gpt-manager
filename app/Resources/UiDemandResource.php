@@ -17,7 +17,6 @@ class UiDemandResource extends ActionResource
     public static function data(UiDemand $demand): array
     {
         return [
-            'id'                                 => $demand->id,
             'title'                              => $demand->title,
             'description'                        => $demand->description,
             'status'                             => $demand->status,
@@ -68,5 +67,4 @@ class UiDemandResource extends ActionResource
             'write_demand_letter_workflow_run'   => true,
         ]);
     }
-
 }

@@ -147,10 +147,34 @@ When encountering legacy code:
 - Load relationships conditionally
 
 ### Tests
+
+**🎯 TESTING PHILOSOPHY: Quality Over Quantity**
+- ❌ **NO 100% COVERAGE OBSESSION** - Focus on business logic, not metrics
+- ✅ **TEST BEHAVIOR, NOT STRUCTURE** - Verify outcomes, not implementation
+- ✅ **USEFUL TESTS ONLY** - Must verify functionality that could break
+
+**NEVER WRITE (Pointless/Brittle):**
+- Resource field enumeration tests
+- Getter/setter tests
+- Framework feature tests (relationships, casts)
+- Obvious mapping tests
+- Implementation detail tests
+- Legacy code absence tests
+
+**ALWAYS WRITE (Critical/Valuable):**
+- Business logic outcomes
+- State changes (database updates, workflow transitions)
+- Edge cases & error handling
+- Security & authorization (team scoping)
+- Integration workflows
+- Data integrity
+
+**Technical Requirements:**
 - Extend AuthenticatedTestCase
 - Use SetUpTeamTrait
 - Test with real database
 - Follow Given-When-Then structure
+- Mock only external APIs (never internal services/models)
 
 **🚨 CRITICAL DATABASE OPERATIONS RULES (ABSOLUTE ZERO TOLERANCE):**
 

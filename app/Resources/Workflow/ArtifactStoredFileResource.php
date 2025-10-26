@@ -7,8 +7,8 @@ use Newms87\Danx\Resources\ActionResource;
 
 class ArtifactStoredFileResource extends ActionResource
 {
-    static public bool $withTypedData = false;
-    
+    public static bool $withTypedData = false;
+
     public static function data(StoredFile $storedFile): array
     {
         return [

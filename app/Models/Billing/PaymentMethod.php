@@ -27,8 +27,8 @@ class PaymentMethod extends Model implements AuditableContract
     {
         return [
             'card_exp_month' => 'integer',
-            'card_exp_year' => 'integer',
-            'is_default' => 'boolean',
+            'card_exp_year'  => 'integer',
+            'is_default'     => 'boolean',
         ];
     }
 
@@ -53,7 +53,7 @@ class PaymentMethod extends Model implements AuditableContract
 
         // Validate card fields if type is card
         if ($this->type === 'card') {
-            if (!$this->card_brand || !$this->card_last_four || 
+            if (!$this->card_brand || !$this->card_last_four ||
                 !$this->card_exp_month || !$this->card_exp_year) {
                 throw new ValidationError("Card details are required for card payment methods", 400);
             }
@@ -86,6 +86,7 @@ class PaymentMethod extends Model implements AuditableContract
         }
 
         $expirationDate = \Carbon\Carbon::create($this->card_exp_year, $this->card_exp_month)->endOfMonth();
+
         return $expirationDate->isPast();
     }
 

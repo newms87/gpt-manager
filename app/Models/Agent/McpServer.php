@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Helpers\StringHelper;
 use Newms87\Danx\Traits\ActionModelTrait;
@@ -43,7 +42,7 @@ class McpServer extends Model implements AuditableContract, ResourcePackageableC
     public function casts(): array
     {
         return [
-            'headers' => 'json',
+            'headers'       => 'json',
             'allowed_tools' => 'json',
         ];
     }
@@ -56,13 +55,13 @@ class McpServer extends Model implements AuditableContract, ResourcePackageableC
     public function validate(): static
     {
         validator($this->toArray(), [
-            'name' => [
+            'name'          => [
                 'required',
                 'max:80',
                 'string',
             ],
-            'server_url' => 'required|url',
-            'headers' => 'nullable|array',
+            'server_url'    => 'required|url',
+            'headers'       => 'nullable|array',
             'allowed_tools' => 'nullable|array',
         ])->validate();
 
@@ -79,10 +78,10 @@ class McpServer extends Model implements AuditableContract, ResourcePackageableC
     public function exportToJson(WorkflowExportService $service): int
     {
         return $service->register($this, [
-            'name' => $this->name,
-            'description' => $this->description,
-            'server_url' => $this->server_url,
-            'headers' => $this->headers,
+            'name'          => $this->name,
+            'description'   => $this->description,
+            'server_url'    => $this->server_url,
+            'headers'       => $this->headers,
             'allowed_tools' => $this->allowed_tools,
         ]);
     }

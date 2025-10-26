@@ -52,7 +52,7 @@ class ResourcePackageImport extends Model implements AuditableContract
 
         try {
             return $this->object_type::find($this->local_object_id);
-        } catch(Throwable $throwable) {
+        } catch (Throwable $throwable) {
             // Handle the case where the object type is not found or any other error
             // This can happen when Models are renamed or removed
             return null;
@@ -77,7 +77,7 @@ class ResourcePackageImport extends Model implements AuditableContract
 
         // Now get the values from the $definition based on the keys in the $uniqueKeys list
         $conditions = [];
-        foreach($uniqueKeys as $key) {
+        foreach ($uniqueKeys as $key) {
             // Skip keys that aren't present in the definition
             if (!isset($definition[$key])) {
                 continue;
@@ -98,7 +98,7 @@ class ResourcePackageImport extends Model implements AuditableContract
         // Try to find an existing object with the same unique key values
         try {
             return $this->object_type::where($conditions)->first();
-        } catch(Throwable $throwable) {
+        } catch (Throwable $throwable) {
             // Handle any errors that might occur (e.g., column doesn't exist)
             return null;
         }

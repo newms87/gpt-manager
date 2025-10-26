@@ -27,15 +27,15 @@ class Subscription extends Model implements AuditableContract
     public function casts(): array
     {
         return [
-            'monthly_amount' => 'decimal:2',
-            'yearly_amount' => 'decimal:2',
-            'trial_ends_at' => 'datetime',
+            'monthly_amount'       => 'decimal:2',
+            'yearly_amount'        => 'decimal:2',
+            'trial_ends_at'        => 'datetime',
             'current_period_start' => 'datetime',
-            'current_period_end' => 'datetime',
-            'canceled_at' => 'datetime',
-            'ends_at' => 'datetime',
+            'current_period_end'   => 'datetime',
+            'canceled_at'          => 'datetime',
+            'ends_at'              => 'datetime',
             'cancel_at_period_end' => 'boolean',
-            'metadata' => 'json',
+            'metadata'             => 'json',
         ];
     }
 
@@ -88,16 +88,16 @@ class Subscription extends Model implements AuditableContract
 
     public function isOnTrial(): bool
     {
-        return $this->status === 'trialing' && 
-               $this->trial_ends_at && 
-               $this->trial_ends_at->isFuture();
+        return $this->status === 'trialing' &&
+            $this->trial_ends_at &&
+            $this->trial_ends_at->isFuture();
     }
 
     public function getCurrentAmount(): float
     {
-        return $this->billing_cycle === 'yearly' 
-            ? (float) ($this->yearly_amount ?? 0) 
-            : (float) ($this->monthly_amount ?? 0);
+        return $this->billing_cycle === 'yearly'
+            ? (float)($this->yearly_amount ?? 0)
+            : (float)($this->monthly_amount ?? 0);
     }
 
     public function scopeActive($query)

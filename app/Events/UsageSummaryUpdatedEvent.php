@@ -4,14 +4,18 @@ namespace App\Events;
 
 use App\Models\Usage\UsageSummary;
 use App\Resources\Usage\UsageSummaryResource;
-use Illuminate\Broadcasting\PrivateChannel;
 use Newms87\Danx\Events\ModelSavedEvent;
 
 class UsageSummaryUpdatedEvent extends ModelSavedEvent
 {
     public function __construct(protected UsageSummary $usageSummary, protected string $event)
     {
-        parent::__construct($usageSummary, $event);
+        // Team ID resolved in getTeamId() due to complex polymorphic relationship
+        parent::__construct(
+            $usageSummary,
+            $event,
+            UsageSummaryResource::class
+        );
     }
 
     public function getUsageSummary(): UsageSummary
@@ -19,26 +23,31 @@ class UsageSummaryUpdatedEvent extends ModelSavedEvent
         return $this->usageSummary;
     }
 
-    public function broadcastOn()
+    protected function getTeamId(): ?int
     {
-        // Get the team_id from the related object (UiDemand)
+        // Get the team_id from the related polymorphic object
         $relatedObject = $this->usageSummary->object;
-        $teamId = $relatedObject?->team_id ?? $relatedObject?->currentTeam?->id;
-        
-        return new PrivateChannel('UsageSummary.' . $teamId);
+
+        return $relatedObject?->team_id ?? $relatedObject?->currentTeam?->id;
     }
 
-    public function data(): array
+    protected function createdData(): array
     {
-        return array_merge(
-            UsageSummaryResource::make($this->usageSummary),
-            [
-                'id' => $this->usageSummary->id,
-                'object_type' => $this->usageSummary->object_type,
-                'object_id' => $this->usageSummary->object_id,
-                'object_id_int' => $this->usageSummary->object_id_int,
-                '__type' => 'UsageSummaryResource',
-            ]
-        );
+        return UsageSummaryResource::make($this->usageSummary);
+    }
+
+    protected function updatedData(): array
+    {
+        return UsageSummaryResource::make($this->usageSummary, [
+            '*'             => false,
+            'count'         => true,
+            'run_time_ms'   => true,
+            'input_tokens'  => true,
+            'output_tokens' => true,
+            'total_tokens'  => true,
+            'input_cost'    => true,
+            'output_cost'   => true,
+            'total_cost'    => true,
+        ]);
     }
 }

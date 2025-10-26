@@ -56,7 +56,7 @@ class PromptDirective extends Model implements AuditableContract, ResourcePackag
 
     public function delete(): bool
     {
-        foreach($this->taskDefinitionDirectives as $taskDefinitionDirective) {
+        foreach ($this->taskDefinitionDirectives as $taskDefinitionDirective) {
             $taskDefinitionDirective->delete();
         }
 

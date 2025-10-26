@@ -6,18 +6,18 @@ use App\Models\TeamObject\TeamObject;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Resources\ActionResource;
 
-abstract class TeamObjectResource extends ActionResource
+class TeamObjectResource extends ActionResource
 {
     public static function data(TeamObject $teamObject): array
     {
         return [
-            'id'                   => $teamObject->id,
             'type'                 => $teamObject->type,
             'name'                 => $teamObject->name,
             'description'          => $teamObject->description,
             'date'                 => $teamObject->date?->toDateTimeString(),
             'url'                  => $teamObject->url,
             'meta'                 => $teamObject->meta,
+            'root_object_id'       => $teamObject->root_object_id,
             'created_at'           => $teamObject->created_at,
             'updated_at'           => $teamObject->updated_at,
             'schema_definition_id' => $teamObject->schema_definition_id,
@@ -36,7 +36,7 @@ abstract class TeamObjectResource extends ActionResource
         $attributes = [];
 
         // Load the most recent or primary attributes for each attribute name
-        foreach($loadedAttributes as $loadedAttribute) {
+        foreach ($loadedAttributes as $loadedAttribute) {
             $name = $loadedAttribute->name;
             // If the attribute is for a specific date and we already have a newer attribute set for this object, skip it
             if (isset($attributes[$name]) && $loadedAttribute->date && (empty($attributes[$name]['date']) || $loadedAttribute->date->isBefore($attributes[$name]['date']))) {
@@ -55,7 +55,7 @@ abstract class TeamObjectResource extends ActionResource
         $deletedAtColumn = $teamObject->relationships()->make()->getQualifiedDeletedAtColumn();
         $relations       = $teamObject->relationships()->withTrashed()->where(fn(Builder $builder) => $builder->where($deletedAtColumn, '>', now()->subMinute())->orWhereNull($deletedAtColumn))->joinRelation('related')->orderBy('related.name')->get();
         $relatedObjects  = [];
-        foreach($relations as $relation) {
+        foreach ($relations as $relation) {
             // Always make sure the relationship name is set if this was recently deleted so FE can identify deleted resources
             if (!isset($relatedObjects[$relation->relationship_name])) {
                 $relatedObjects[$relation->relationship_name] = [];
