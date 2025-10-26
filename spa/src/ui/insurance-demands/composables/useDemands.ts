@@ -300,26 +300,29 @@ export function useDemands() {
 
 
     // Helper function to subscribe to a single workflow run
-    const subscribeToWorkflowRun = (workflowRun: WorkflowRun, demandId: number, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {
+    const subscribeToWorkflowRun = async (workflowRun: WorkflowRun, demandId: number, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {
         if (!pusher || !workflowRun?.id || subscribedWorkflowIds.value.has(workflowRun.id)) {
             return;
         }
 
-        subscribedWorkflowIds.value.add(workflowRun.id);
+        try {
+            // Subscribe using new subscription system
+            await pusher.subscribeToModel("WorkflowRun", ["updated"], workflowRun.id);
+            subscribedWorkflowIds.value.add(workflowRun.id);
 
-        pusher.onModelEvent(
-            workflowRun,
-            "updated",
-            async (updatedWorkflowRun: WorkflowRun) => {
-                if (updatedWorkflowRun.status === "Completed") {
+            // Set up event handler
+            pusher.onEvent("WorkflowRun", "updated", async (updatedWorkflowRun: WorkflowRun) => {
+                if (updatedWorkflowRun.id === workflowRun.id && updatedWorkflowRun.status === "Completed") {
                     // Reload the demand to get updated data
                     const updatedDemand = await loadDemand(demandId);
                     if (onDemandUpdate) {
                         onDemandUpdate(updatedDemand);
                     }
                 }
-            }
-        );
+            });
+        } catch (error) {
+            console.error("Failed to subscribe to workflow run:", error);
+        }
     };
 
     // Subscribe to workflow run updates for real-time status updates
@@ -343,7 +346,18 @@ export function useDemands() {
     };
 
     // Clear workflow subscriptions (useful when navigating away or changing demands)
-    const clearWorkflowSubscriptions = () => {
+    const clearWorkflowSubscriptions = async () => {
+        if (!pusher) return;
+
+        const unsubscribePromises = Array.from(subscribedWorkflowIds.value).map(async (workflowId) => {
+            try {
+                await pusher.unsubscribeFromModel("WorkflowRun", ["updated"], workflowId);
+            } catch (error) {
+                console.error(`Failed to unsubscribe from workflow run ${workflowId}:`, error);
+            }
+        });
+
+        await Promise.all(unsubscribePromises);
         subscribedWorkflowIds.value.clear();
     };
 

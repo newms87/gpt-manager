@@ -70,7 +70,7 @@ import { AiTokenUsageButton } from "@/components/Shared";
 import { usePusher } from "@/helpers/pusher";
 import { TaskRun } from "@/types";
 import { ActionButton, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 
 defineEmits(["deleted"]);
 const props = defineProps<{
@@ -82,11 +82,33 @@ const stopAction = dxTaskRun.getAction("stop");
 const deleteAction = dxTaskRun.getAction("delete-with-confirm");
 
 const isShowingProcesses = ref(false);
+const isSubscribedToProcesses = ref(false);
 const isStopped = computed(() => props.taskRun.status === "Stopped" || props.taskRun.status === "Pending");
 const isRunning = computed(() => props.taskRun.status === "Running");
 
 async function loadTaskProcesses() {
-    usePusher().subscribeToProcesses(props.taskRun);
+    const pusher = usePusher();
+    if (pusher && !isSubscribedToProcesses.value) {
+        try {
+            // Subscribe to all TaskProcess events (channel-wide)
+            await pusher.subscribeToModel("TaskProcess", ["updated", "created"], true);
+            isSubscribedToProcesses.value = true;
+        } catch (error) {
+            console.error("Failed to subscribe to task processes:", error);
+        }
+    }
     await dxTaskRun.routes.details(props.taskRun, { processes: true });
 }
+
+// Cleanup on unmount
+onUnmounted(async () => {
+    const pusher = usePusher();
+    if (pusher && isSubscribedToProcesses.value) {
+        try {
+            await pusher.unsubscribeFromModel("TaskProcess", ["updated", "created"], true);
+        } catch (error) {
+            console.error("Failed to unsubscribe from task processes:", error);
+        }
+    }
+});
 </script>

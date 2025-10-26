@@ -26,8 +26,8 @@ export function useTeamObjectUpdates() {
 	// Queue for requests that come in while an object is already loading
 	const requestQueues = ref<Map<number, QueuedRequest[]>>(new Map());
 	
-	// Track active subscriptions with their callbacks for cleanup
-	const activeSubscriptions = ref<Map<number, (data: TeamObjectEvent) => Promise<void>>>(new Map());
+	// Track active subscriptions (now tracked by object ID only, no callback needed)
+	const activeSubscriptions = ref<Set<number>>(new Set());
 
 	/**
 	 * Load a TeamObject with full relationships, with request queuing to prevent duplicates
@@ -85,42 +85,50 @@ export function useTeamObjectUpdates() {
 	/**
 	 * Subscribe to real-time updates for a TeamObject
 	 */
-	function subscribeToTeamObjectUpdates(teamObject: TeamObject) {
+	async function subscribeToTeamObjectUpdates(teamObject: TeamObject): Promise<void> {
 		if (!pusher || !teamObject?.id || activeSubscriptions.value.has(teamObject.id)) {
 			return;
 		}
 
-		// Create the callback function for handling lightweight TeamObjectEvent data
-		const updateCallback = async (eventData: TeamObjectEvent) => {
-			// Extract the root object ID (fallback to the event ID if not present)
-			const rootObjectId = eventData.root_object_id || eventData.id;
-			
-			// Load the root TeamObject with full relationships using the queuing system
-			await loadTeamObjectWithQueue(rootObjectId);
-		};
+		try {
+			// Subscribe to updates for this specific object using new subscription system
+			await pusher.subscribeToModel("TeamObject", ["updated"], teamObject.id);
 
-		// Store the callback for later cleanup
-		activeSubscriptions.value.set(teamObject.id, updateCallback);
+			// Track this subscription
+			activeSubscriptions.value.add(teamObject.id);
 
-		// Subscribe to updates for this specific object
-		pusher.onModelEvent(teamObject, "updated", updateCallback);
+			// Set up event handler for updates
+			pusher.onEvent("TeamObject", "updated", async (eventData: TeamObjectEvent) => {
+				if (eventData.id === teamObject.id) {
+					// Extract the root object ID (fallback to the event ID if not present)
+					const rootObjectId = eventData.root_object_id || eventData.id;
+
+					// Load the root TeamObject with full relationships using the queuing system
+					await loadTeamObjectWithQueue(rootObjectId);
+				}
+			});
+		} catch (error) {
+			console.error("Failed to subscribe to team object updates:", error);
+		}
 	}
 
 	/**
 	 * Unsubscribe from updates for a TeamObject
 	 */
-	function unsubscribeFromTeamObjectUpdates(teamObject?: TeamObject) {
-		if (!pusher || !teamObject?.id) {
+	async function unsubscribeFromTeamObjectUpdates(teamObject?: TeamObject): Promise<void> {
+		if (!pusher || !teamObject?.id || !activeSubscriptions.value.has(teamObject.id)) {
 			return;
 		}
 
-		// Get the stored callback
-		const callback = activeSubscriptions.value.get(teamObject.id);
-		if (callback) {
-			// Unsubscribe using the offModelEvent method
-			pusher.offModelEvent(teamObject, "updated", callback as any);
-			
+		try {
+			// Unsubscribe from the model using new subscription system
+			await pusher.unsubscribeFromModel("TeamObject", ["updated"], teamObject.id);
+
 			// Remove from active subscriptions
+			activeSubscriptions.value.delete(teamObject.id);
+		} catch (error) {
+			console.error("Failed to unsubscribe from team object updates:", error);
+			// Remove from tracking even if API call fails
 			activeSubscriptions.value.delete(teamObject.id);
 		}
 	}
@@ -128,19 +136,20 @@ export function useTeamObjectUpdates() {
 	/**
 	 * Unsubscribe from all active subscriptions
 	 */
-	function unsubscribeFromAllUpdates() {
+	async function unsubscribeFromAllUpdates(): Promise<void> {
 		if (pusher) {
 			// Unsubscribe from each active subscription
-			activeSubscriptions.value.forEach((callback, objectId) => {
-				// Create a minimal TeamObject with ID and __type for unsubscribing
-				const teamObject = { 
-					id: objectId,
-					__type: "TeamObjectResource"
-				} as TeamObject;
-				pusher.offModelEvent(teamObject, "updated", callback as any);
+			const unsubscribePromises = Array.from(activeSubscriptions.value).map(async (objectId) => {
+				try {
+					await pusher.unsubscribeFromModel("TeamObject", ["updated"], objectId);
+				} catch (error) {
+					console.error(`Failed to unsubscribe from team object ${objectId}:`, error);
+				}
 			});
+
+			await Promise.all(unsubscribePromises);
 		}
-		
+
 		// Clear all tracking
 		activeSubscriptions.value.clear();
 		// Clean up any pending queues

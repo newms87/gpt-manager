@@ -13,6 +13,10 @@ class UserResource extends ActionResource
             'id'    => $user->id,
             'name'  => $user->name,
             'email' => $user->email,
+            'can'   => [
+                'viewDeveloperTools' => $user->can('view_developer_tools'),
+                'viewAuditing'       => $user->can('view_auditing'),
+            ],
         ];
     }
 }

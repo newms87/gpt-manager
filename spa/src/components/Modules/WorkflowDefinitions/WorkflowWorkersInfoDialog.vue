@@ -182,6 +182,7 @@ import {
 } from "danx-icon";
 import { QSpinner } from "quasar";
 import { ActionButton, InfoDialog, LabelPillWidget, NumberField, request, storeObject } from "quasar-ui-danx";
+import { apiUrls } from "@/api";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
@@ -284,7 +285,7 @@ function onMaxWorkersChange() {
 
 			// Automatically dispatch workers if there are available slots
 			if (availableSlots.value > 0 && props.workflowRun) {
-				await request.post(`workflow-runs/${props.workflowRun.id}/dispatch-workers`);
+				await request.post(apiUrls.workflows.dispatchWorkers({ id: props.workflowRun.id }));
 			}
 		} catch (error) {
 		} finally {
@@ -299,12 +300,31 @@ watch(() => props.isShowing, async (showing) => {
 
 	const pusher = usePusher();
 
-	if (showing) {
-		await pusher.subscribeToWorkflowJobDispatches(props.workflowRun);
-		pusher.onEvent("JobDispatch", ["updated", "created"], storeObject);
-		await loadActiveJobDispatches();
-	} else {
-		pusher.unsubscribeFromWorkflowJobDispatches();
+	if (showing && pusher) {
+		try {
+			// Subscribe to JobDispatches for this specific workflow run using filter
+			await pusher.subscribeToModel("JobDispatch", ["updated", "created"], {
+				filter: {
+					'jobDispatchables.model_type': 'App\\Models\\Workflow\\WorkflowRun',
+					'jobDispatchables.model_id': props.workflowRun.id
+				}
+			});
+			pusher.onEvent("JobDispatch", ["updated", "created"], storeObject);
+			await loadActiveJobDispatches();
+		} catch (error) {
+			console.error("Failed to subscribe to job dispatches:", error);
+		}
+	} else if (!showing && pusher) {
+		try {
+			await pusher.unsubscribeFromModel("JobDispatch", ["updated", "created"], {
+				filter: {
+					'jobDispatchables.model_type': 'App\\Models\\Workflow\\WorkflowRun',
+					'jobDispatchables.model_id': props.workflowRun.id
+				}
+			});
+		} catch (error) {
+			console.error("Failed to unsubscribe from job dispatches:", error);
+		}
 	}
 });
 
@@ -320,7 +340,7 @@ async function loadActiveJobDispatches() {
 
 	isLoadingJobDispatches.value = true;
 	try {
-		const response = await request.get(`workflow-runs/${props.workflowRun.id}/active-job-dispatches`);
+		const response = await request.get(apiUrls.workflows.activeJobDispatches({ id: props.workflowRun.id }));
 		activeJobDispatches.value = response;
 	} catch (error) {
 		activeJobDispatches.value = [];
@@ -334,7 +354,7 @@ async function onDispatchWorkers() {
 
 	isDispatchingWorkers.value = true;
 	try {
-		await request.post(`workflow-runs/${props.workflowRun.id}/dispatch-workers`);
+		await request.post(apiUrls.workflows.dispatchWorkers({ id: props.workflowRun.id }));
 	} catch (error) {
 	} finally {
 		isDispatchingWorkers.value = false;

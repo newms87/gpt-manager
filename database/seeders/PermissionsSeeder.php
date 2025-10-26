@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Authorization\Permission;
 use App\Models\Authorization\Role;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Cache;
 
 class PermissionsSeeder extends Seeder
 {
@@ -31,5 +32,10 @@ class PermissionsSeeder extends Seeder
             ]);
             $roleModel->permissions()->sync(array_map(fn($name) => $permissionMap[$name], $rolePermissions));
         }
+
+        // Clear all user permission caches so changes take effect immediately
+        // User permissions are cached for 24 hours, so we need to flush the cache
+        // after seeding to ensure users see the updated permissions
+        Cache::flush();
     }
 }

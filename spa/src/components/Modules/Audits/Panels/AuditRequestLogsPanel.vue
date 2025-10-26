@@ -1,17 +1,13 @@
 <template>
 	<div class="p-6">
-		<div v-for="(log, index) in logItems" :key="auditRequest.id + '-' + index" class="py-1">
-			{{ log }}
-		</div>
+		<AuditRequestLogsCard :logs="auditRequest.logs" />
 	</div>
 </template>
 <script setup lang="ts">
 import { AuditRequest } from "@/components/Modules/Audits/audit-requests";
-import { computed } from "vue";
+import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
 
-const props = defineProps<{
+defineProps<{
 	auditRequest: AuditRequest,
 }>();
-
-const logItems = computed(() => props.auditRequest.logs?.split("\n") || []);
 </script>

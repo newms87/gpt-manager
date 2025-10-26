@@ -1,12 +1,16 @@
+import { openDebugPanel } from "@/composables/usePusherDebug";
+import { authUser } from "@/helpers/auth";
 import {
 	FaRegularFileLines as PromptsIcon,
 	FaSolidCloudBolt as DashboardIcon,
+	FaSolidCode as DeveloperToolsIcon,
 	FaSolidDatabase as SchemaDefinitionsIcon,
 	FaSolidDownload as WorkflowInputsIcon,
 	FaSolidPallet as WorkflowDefinitionsIcon,
 	FaSolidRobot as AgentsIcon,
 	FaSolidToiletPaperSlash as AuditsIcon
 } from "danx-icon";
+import { computed } from "vue";
 
 export default [
 	{
@@ -43,5 +47,11 @@ export default [
 		label: "Audits",
 		icon: AuditsIcon,
 		route: { name: "audit-requests" }
+	},
+	{
+		label: "Developer Tools",
+		icon: DeveloperToolsIcon,
+		onClick: () => openDebugPanel(),
+		hidden: computed(() => !authUser.value?.can?.viewDeveloperTools)
 	}
 ];

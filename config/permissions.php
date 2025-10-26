@@ -9,6 +9,7 @@ return [
         'export_workflows'        => ['Export Workflows', 'Can export workflows to a resource package'],
         'import_workflows'        => ['Import Workflows', 'Can import workflows from a resource package'],
         'view_developer_tools'    => ['View Developer Tools', 'Can access developer debug tools including Pusher subscription panel'],
+        'view_auditing'           => ['View Auditing', 'Can view audit requests and related debugging information'],
     ],
     'roles'       => [
         'dev'                    => [
@@ -21,6 +22,7 @@ return [
                 'export_workflows',
                 'import_workflows',
                 'view_developer_tools',
+                'view_auditing',
             ],
         ],
         'prompt-engineer-tester' => [

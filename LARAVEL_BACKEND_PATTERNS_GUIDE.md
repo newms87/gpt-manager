@@ -581,7 +581,68 @@ protected function validateOwnership([Model] $model): void
 
 ---
 
-## 11. Error Handling Patterns
+## 11. User Roles and Permissions
+
+Role-based permission system where users can have multiple roles, each containing a set of permissions. Permissions are cached for 24 hours for performance.
+
+### Configuration & Seeding
+
+**Config:** `config/permissions.php` - Define all permissions and roles with their assignments
+**Seeder:** `database/seeders/PermissionsSeeder.php` - Syncs config to database and clears all caches
+
+```bash
+./vendor/bin/sail artisan db:seed PermissionsSeeder
+```
+
+### Backend Implementation
+
+**Checking permissions:**
+```php
+$user->can('view_auditing');      // Check permission
+$user->hasRole('dev');            // Check role
+$user->getCachedPermissions();    // Get all cached permissions
+```
+
+See `app/Models/User.php` for implementation details.
+
+### Frontend Integration
+
+**Exposing to Frontend:**
+Add to `app/Resources/Auth/UserResource.php` in the `can` array:
+```php
+'can' => [
+    'viewAuditing' => $user->can('view_auditing'),  // Backend: snake_case → Frontend: camelCase
+]
+```
+
+**Frontend Type:** Add to `spa/src/types/user.d.ts`:
+```typescript
+can?: {
+    viewAuditing?: boolean;
+}
+```
+
+**Using in Components:**
+```vue
+<ActionButton v-if="authUser?.can?.viewAuditing" ... />
+```
+
+See `spa/src/components/ThePageHeader.vue` and `spa/src/navigation/adminNavigation.ts` for usage examples.
+
+### Adding New Permissions
+
+1. Add to `config/permissions.php` (permissions array and role assignments)
+2. Expose in `app/Resources/Auth/UserResource.php` (can array)
+3. Add type to `spa/src/types/user.d.ts`
+4. Run seeder: `./vendor/bin/sail artisan db:seed PermissionsSeeder`
+5. Use in components with `v-if="authUser?.can?.permissionName"`
+
+**Models:** `App\Models\Authorization\{Permission, Role}` | `App\Models\User`
+**Tables:** `permissions`, `roles`, `permission_role`, `role_user`
+
+---
+
+## 12. Error Handling Patterns
 
 ### Service-Level Validation
 
@@ -602,7 +663,7 @@ Controllers don't handle errors - they bubble up to Laravel's exception handler.
 
 ---
 
-## 12. Performance Patterns
+## 13. Performance Patterns
 
 ### Database Query Optimization
 
@@ -659,7 +720,7 @@ tests/
 
 ---
 
-## 7. Broadcasting and Events
+## 14. Broadcasting and Events
 
 All model update events extend `ModelSavedEvent` from the danx library, which provides subscription-based broadcasting with resource-type extraction and team-based filtering.
 

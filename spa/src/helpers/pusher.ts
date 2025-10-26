@@ -1,9 +1,10 @@
-import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
-import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
-import { authTeam, authToken, authUser } from "@/helpers";
-import { TaskRun, WorkflowRun } from "@/types";
+import { apiUrls } from "@/api";
+import { authTeam, authToken } from "@/helpers";
+import { PusherEvent } from "@/types/pusher-debug";
 import { Channel, default as Pusher } from "pusher-js";
-import { ActionTargetItem, AnyObject, storeObject } from "quasar-ui-danx";
+import { ActionTargetItem, request, storeObject } from "quasar-ui-danx";
+import { ref } from "vue";
+import md5 from "js-md5";
 
 export interface ChannelEventListener {
 	channel: string;
@@ -11,29 +12,137 @@ export interface ChannelEventListener {
 	callback: (data: ActionTargetItem) => void;
 }
 
-export interface UserSubscription {
-	endpoint: (params: AnyObject) => Promise<void>;
-	params: AnyObject;
+export interface Subscription {
+	resourceType: string;
+	events: string[];
+	modelIdOrFilter: number | true | { filter: object };
+}
+
+export interface SubscriptionPayload {
+	resource_type: string;
+	events: string[];
+	model_id_or_filter: number | true | { filter: object };
 }
 
 let pusher: Pusher;
 const channels: Channel[] = [];
 const listeners: ChannelEventListener[] = [];
-const userSubscriptionsMap: Map<string, UserSubscription> = new Map();
 // Track model event listeners separately for proper cleanup
 const modelEventListeners: Map<string, ChannelEventListener> = new Map();
 
-const defaultChannelNames = {
-	"WorkflowRun": ["updated"],
-	"TaskRun": ["updated", "created"],
-	"AgentThreadRun": ["updated"],
-	"AgentThread": ["updated"],
-	"StoredFile": ["updated"],
-	"JobDispatch": ["updated", "created"],
-	"ClaudeCodeGeneration": ["started", "progress", "code_chunk", "completed", "error"],
-	"UsageSummary": ["updated"],
-	"TeamObject": ["updated"]
-};
+// New subscription tracking
+const activeSubscriptions = ref<Map<string, Subscription>>(new Map());
+let keepaliveTimerId: NodeJS.Timeout | null = null;
+
+// Event tracking for debug panel
+const eventLog = ref<PusherEvent[]>([]);
+const eventCounts = ref<Map<string, number>>(new Map());
+// Track event counts per subscription (subscriptionKey => { eventName => count })
+const subscriptionEventCounts = ref<Map<string, Record<string, number>>>(new Map());
+
+/**
+ * Record an event in the debug log
+ */
+function recordEvent(resourceType: string, eventName: string, payload: any) {
+	// Extract model ID if available
+	const modelId = payload?.id;
+
+	// Add to event log (limit to 1000 events, FIFO)
+	const event: PusherEvent = {
+		timestamp: new Date(),
+		resourceType,
+		eventName,
+		modelId,
+		payload
+	};
+
+	eventLog.value.push(event);
+	if (eventLog.value.length > 1000) {
+		eventLog.value.shift(); // Remove oldest event
+	}
+
+	// Increment count for this event type
+	const countKey = `${resourceType}:${eventName}`;
+	const currentCount = eventCounts.value.get(countKey) || 0;
+	eventCounts.value.set(countKey, currentCount + 1);
+
+	// Track event counts per subscription
+	activeSubscriptions.value.forEach((subscription, subscriptionKey) => {
+		// Check if this event belongs to this subscription
+		if (subscription.resourceType === resourceType && subscription.events.includes(eventName)) {
+			// Check scope match
+			let scopeMatches = false;
+
+			if (subscription.modelIdOrFilter === true) {
+				// Channel-wide subscription - matches all events of this type
+				scopeMatches = true;
+			} else if (typeof subscription.modelIdOrFilter === "number") {
+				// Model-specific subscription - check if model ID matches
+				scopeMatches = modelId === subscription.modelIdOrFilter;
+			} else {
+				// Filter-based subscription - we can't easily check if it matches without backend logic
+				// For now, count all events for filter-based subscriptions
+				scopeMatches = true;
+			}
+
+			if (scopeMatches) {
+				// Get or create event counts for this subscription
+				const subEventCounts = subscriptionEventCounts.value.get(subscriptionKey) || {};
+				subEventCounts[eventName] = (subEventCounts[eventName] || 0) + 1;
+				subscriptionEventCounts.value.set(subscriptionKey, subEventCounts);
+			}
+		}
+	});
+}
+
+/**
+ * Clear the event log (keeps eventCounts for all-time stats)
+ */
+function clearEventLog() {
+	eventLog.value = [];
+}
+
+/**
+ * Recursively sort object keys for consistent hashing
+ */
+function sortObjectKeys(obj: any): any {
+	if (Array.isArray(obj)) {
+		return obj.map(sortObjectKeys);
+	} else if (obj !== null && typeof obj === "object") {
+		return Object.keys(obj)
+			.sort()
+			.reduce((result, key) => {
+				result[key] = sortObjectKeys(obj[key]);
+				return result;
+			}, {} as any);
+	}
+	return obj;
+}
+
+/**
+ * Generate MD5 hash of filter object (MUST match backend implementation)
+ */
+function hashFilter(filter: object): string {
+	const sorted = sortObjectKeys(filter);
+	const json = JSON.stringify(sorted);
+	return md5(json);
+}
+
+/**
+ * Generate subscription tracking key
+ */
+function getSubscriptionKey(resourceType: string, modelIdOrFilter: number | true | { filter: object }): string {
+	if (modelIdOrFilter === true) {
+		return `${resourceType}:all`;
+	}
+	if (typeof modelIdOrFilter === "number") {
+		return `${resourceType}:id:${modelIdOrFilter}`;
+	}
+	// It's a filter object
+	const filterObj = (modelIdOrFilter as { filter: object }).filter;
+	const hash = hashFilter(filterObj);
+	return `${resourceType}:filter:${hash}`;
+}
 
 function subscribeToChannel(channelName, id, events): boolean {
 	const fullName = "private-" + channelName + "." + id;
@@ -56,6 +165,9 @@ function subscribeToChannel(channelName, id, events): boolean {
 }
 
 function fireSubscriberEvents(channel: string, event: string, data: ActionTargetItem) {
+	// Record event for debug panel
+	recordEvent(channel, event, data);
+
 	for (const subscription of listeners) {
 		if ([channel, "private-" + channel].includes(subscription.channel) && subscription.events.includes(event)) {
 			subscription.callback(data);
@@ -64,56 +176,40 @@ function fireSubscriberEvents(channel: string, event: string, data: ActionTarget
 }
 
 /**
- *  Adds a user subscription to the list of subscriptions. A user subscription will notify the server every minute that it is listening while the subscription is active.
- *  This way only selective messages are sent to the client, instead of all messages for a channel.
+ * Start keepalive timer to refresh subscriptions every 60 seconds
  */
-async function addUserSubscription(name: string, userSubscription: UserSubscription) {
-	userSubscriptionsMap.set(name, userSubscription);
+function startKeepalive() {
+	if (keepaliveTimerId) return;
 
-	// Make sure we initialize the fireUserSubscriptions function
-	if (!cancelFireUserSubscriptionsId) {
-		await continuouslyFireUserSubscriptions();
-	} else {
-		await fireUserSubscription(userSubscription);
-	}
-}
-
-/**
- *  Removes a user subscription from the list of subscriptions.
- *  This will stop notifying the server that the client is listening to a specific event.
- */
-function removeUserSubscription(name: string) {
-	if (userSubscriptionsMap.has(name)) {
-		userSubscriptionsMap.delete(name);
-	}
-}
-
-/**
- * Fires the user subscription endpoint with the params. This is used to notify the server that the client is listening to a specific event.
- */
-async function fireUserSubscription(userSubscription: UserSubscription) {
-	await userSubscription.endpoint(userSubscription.params);
-}
-
-/**
- *  Fires all user subscriptions. This is used to notify the server that the client is listening to a specific event.
- *  This is done every minute to keep the subscription alive on the server
- */
-let cancelFireUserSubscriptionsId: NodeJS.Timeout | null = null;
-async function continuouslyFireUserSubscriptions() {
-	const promises = [];
-	for (const userSubscription of userSubscriptionsMap.values()) {
-		promises.push(fireUserSubscription(userSubscription));
-	}
-	try {
-		await Promise.all(promises);
-	} finally {
-		// Fire the user subscriptions once per minute while there are subscriptions active
-		if (userSubscriptionsMap.size > 0) {
-			cancelFireUserSubscriptionsId = setTimeout(continuouslyFireUserSubscriptions, 1000 * 60);
-		} else {
-			cancelFireUserSubscriptionsId = null;
+	keepaliveTimerId = setInterval(async () => {
+		if (activeSubscriptions.value.size === 0) {
+			stopKeepalive();
+			return;
 		}
+
+		// Build payload from active subscriptions
+		const payload = Array.from(activeSubscriptions.value.values()).map(sub => ({
+			resource_type: sub.resourceType,
+			events: sub.events,
+			model_id_or_filter: sub.modelIdOrFilter
+		}));
+
+		try {
+			await request.post(apiUrls.pusher.keepalive, { subscriptions: payload });
+		} catch (error) {
+			console.error("Keepalive failed:", error);
+			// Let subscriptions expire naturally - don't retry
+		}
+	}, 60000); // 60 seconds
+}
+
+/**
+ * Stop keepalive timer
+ */
+function stopKeepalive() {
+	if (keepaliveTimerId) {
+		clearInterval(keepaliveTimerId);
+		keepaliveTimerId = null;
 	}
 }
 
@@ -123,7 +219,7 @@ async function continuouslyFireUserSubscriptions() {
  *  It also provides methods to listen to events on channels and models.
  */
 export function usePusher() {
-	
+
 	if (!pusher) {
 		if (!authToken.value) {
 			return;
@@ -136,44 +232,116 @@ export function usePusher() {
 		// Initialize Pusher with the auth token and configured to use the auth endpoint
 		pusher = new Pusher(import.meta.env.VITE_PUSHER_API_KEY, {
 			cluster: "us2",
-			authEndpoint: import.meta.env.VITE_API_URL + "/broadcasting/auth",
+			authEndpoint: apiUrls.auth.broadcastingAuth,
 			auth: {
 				headers: {
 					Authorization: `Bearer ${authToken.value}`
 				}
 			}
 		});
+	}
 
-		// Subscribe to the default channels (every page session will subscribe to all of these channels)
-		for (const channelName of Object.keys(defaultChannelNames)) {
-			const events = defaultChannelNames[channelName];
-			subscribeToChannel(channelName, authTeam.value.id, events);
+	/**
+	 * Subscribe to model updates with optional filtering
+	 * @param resourceType - The model type (e.g., "WorkflowRun", "TaskRun")
+	 * @param events - Array of event names (e.g., ["updated", "created"])
+	 * @param modelIdOrFilter - Model ID (number), true for channel-wide, or { filter: {...} } for filter-based
+	 * @returns Promise<boolean> - true if subscribed, false if already subscribed
+	 */
+	async function subscribeToModel(
+		resourceType: string,
+		events: string[],
+		modelIdOrFilter: number | true | { filter: object }
+	): Promise<boolean> {
+		// Validate modelIdOrFilter is not null or undefined
+		if (modelIdOrFilter === null || modelIdOrFilter === undefined) {
+			throw new Error("modelIdOrFilter must not be null or undefined. Use true for channel-wide subscriptions.");
+		}
+
+		// Generate subscription key
+		const subscriptionKey = getSubscriptionKey(resourceType, modelIdOrFilter);
+
+		// Check if already subscribed
+		if (activeSubscriptions.value.has(subscriptionKey)) {
+			return false;
+		}
+
+		// Subscribe to Pusher channel
+		subscribeToChannel(resourceType, authTeam.value.id, events);
+
+		// Build payload for API call
+		const payload: SubscriptionPayload = {
+			resource_type: resourceType,
+			events,
+			model_id_or_filter: modelIdOrFilter
+		};
+
+		try {
+			// Call backend API to register subscription
+			await request.post(apiUrls.pusher.subscribe, payload);
+
+			// Add to active subscriptions
+			activeSubscriptions.value.set(subscriptionKey, {
+				resourceType,
+				events,
+				modelIdOrFilter
+			});
+
+			// Start keepalive timer if not already running
+			startKeepalive();
+
+			return true;
+		} catch (error) {
+			console.error("Failed to subscribe to model:", error);
+			throw error;
 		}
 	}
 
 	/**
-	 *  Subscribes to the processes of a task run.
-	 *  This is used to get updates on the processes of a task run.
+	 * Unsubscribe from model updates
+	 * @param resourceType - The model type (e.g., "WorkflowRun", "TaskRun")
+	 * @param events - Array of event names (e.g., ["updated", "created"])
+	 * @param modelIdOrFilter - Model ID (number), true for channel-wide, or { filter: {...} } for filter-based
 	 */
-	async function subscribeToProcesses(taskRun: TaskRun) {
-		subscribeToChannel("TaskProcess", authTeam.value.id, ["updated", "created"]);
-		await addUserSubscription("task-processes", { endpoint: dxTaskRun.routes.subscribeToProcesses, params: taskRun });
-	}
+	async function unsubscribeFromModel(
+		resourceType: string,
+		events: string[],
+		modelIdOrFilter: number | true | { filter: object }
+	): Promise<void> {
+		// Generate subscription key
+		const subscriptionKey = getSubscriptionKey(resourceType, modelIdOrFilter);
 
-	function unsubscribeFromProcesses() {
-		removeUserSubscription("task-processes");
-	}
+		// Check if subscribed
+		if (!activeSubscriptions.value.has(subscriptionKey)) {
+			return;
+		}
 
-	async function subscribeToWorkflowJobDispatches(workflowRun: WorkflowRun) {
-		subscribeToChannel("JobDispatch", authTeam.value.id, ["updated", "created"]);
-		await addUserSubscription("workflow-job-dispatches", {
-			endpoint: dxWorkflowRun.routes.subscribeToJobDispatches,
-			params: workflowRun
-		});
-	}
+		// Build payload for API call
+		const payload: SubscriptionPayload = {
+			resource_type: resourceType,
+			events,
+			model_id_or_filter: modelIdOrFilter
+		};
 
-	function unsubscribeFromWorkflowJobDispatches() {
-		removeUserSubscription("workflow-job-dispatches");
+		try {
+			// Call backend API to unregister subscription
+			await request.post(apiUrls.pusher.unsubscribe, payload);
+
+			// Remove from active subscriptions
+			activeSubscriptions.value.delete(subscriptionKey);
+
+			// Stop keepalive if no subscriptions remain
+			if (activeSubscriptions.value.size === 0) {
+				stopKeepalive();
+			}
+		} catch (error) {
+			console.error("Failed to unsubscribe from model:", error);
+			// Remove from tracking even if API call fails
+			activeSubscriptions.value.delete(subscriptionKey);
+			if (activeSubscriptions.value.size === 0) {
+				stopKeepalive();
+			}
+		}
 	}
 
 	function onEvent(channel: string, event: string | string[], callback: (data: ActionTargetItem) => void) {
@@ -262,13 +430,16 @@ export function usePusher() {
 	return {
 		pusher,
 		channels,
+		activeSubscriptions,
+		eventLog,
+		eventCounts,
+		subscriptionEventCounts,
+		clearEventLog,
+		subscribeToModel,
+		unsubscribeFromModel,
 		onEvent,
 		offEvent,
 		onModelEvent,
-		offModelEvent,
-		subscribeToProcesses,
-		unsubscribeFromProcesses,
-		subscribeToWorkflowJobDispatches,
-		unsubscribeFromWorkflowJobDispatches
+		offModelEvent
 	};
 }

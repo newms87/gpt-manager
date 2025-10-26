@@ -26,50 +26,28 @@
                     <div class="flex items-start gap-3">
                         <FaSolidTriangleExclamation class="w-5 h-5 text-red-600 flex-shrink-0 mt-1" />
                         <div class="flex-1 min-w-0">
-                            <!-- Error Message -->
-                            <div class="font-semibold text-red-900 mb-2">
-                                {{ error.message }}
-                            </div>
-
-                            <!-- Error Details -->
-                            <div class="text-sm space-y-1 mb-3">
-                                <div v-if="error.error_class" class="text-slate-700">
-                                    <span class="font-medium">Class:</span> {{ error.error_class }}
-                                </div>
-                                <div v-if="error.file" class="text-slate-700">
-                                    <span class="font-medium">File:</span> {{ error.file }}:{{ error.line }}
-                                </div>
-                                <div class="text-slate-600">
-                                    <span class="font-medium">Time:</span> {{ fDateTime(error.created_at) }}
-                                </div>
-                            </div>
-
-                            <!-- Stack Trace (Expandable) -->
-                            <div v-if="error.stack_trace && error.stack_trace.length > 0" class="mt-3">
-                                <ActionButton
-                                    type="chevron-right"
-                                    :type="expandedErrors[error.id] ? 'chevron-down' : 'chevron-right'"
-                                    label="Stack Trace"
-                                    size="xs"
+                            <!-- Time Pill + Error Message -->
+                            <div class="flex items-start gap-2 mb-2">
+                                <LabelPillWidget
+                                    :label="fDateTime(error.created_at)"
                                     color="slate"
-                                    @click="toggleStackTrace(error.id)"
+                                    size="xs"
                                 />
-                                <div
-                                    v-if="expandedErrors[error.id]"
-                                    class="mt-2 bg-slate-900 text-green-400 p-3 rounded text-xs font-mono overflow-x-auto max-h-96 overflow-y-auto"
-                                >
-                                    <div
-                                        v-for="(trace, index) in error.stack_trace"
-                                        :key="index"
-                                        class="mb-2 pb-2 border-b border-slate-700 last:border-0"
-                                    >
-                                        <div class="text-yellow-400">{{ trace.class }}{{ trace.type }}{{
-                                                trace.function
-                                            }}()
-                                        </div>
-                                        <div class="text-slate-400 text-xs">{{ trace.file }}:{{ trace.line }}</div>
-                                    </div>
+                                <div class="font-semibold text-red-900 flex-1">
+                                    {{ error.message }}
                                 </div>
+                            </div>
+
+                            <!-- Action Buttons Row -->
+                            <div class="flex gap-2 mt-4">
+                                <ActionButton
+                                    v-if="error.audit_request_id && authUser?.can?.viewAuditing"
+                                    type="view"
+                                    label="View Audit Request"
+                                    size="xs"
+                                    color="sky"
+                                    @click="showAuditRequest(error.audit_request_id)"
+                                />
                             </div>
 
                             <!-- Additional Data (Expandable) -->
@@ -94,12 +72,22 @@
             </div>
         </template>
     </InfoDialog>
+
+    <AuditRequestPanelsDialog
+        v-if="activeAuditRequestId && auditRequest"
+        :audit-request="auditRequest"
+        @close="onHideAuditRequest"
+    />
 </template>
 
 <script setup lang="ts">
-import { ErrorLogEntry } from "@/components/Modules/Audits/audit-requests";
+import { AuditRequest, ErrorLogEntry } from "@/components/Modules/Audits/audit-requests";
+import AuditRequestPanelsDialog from "@/components/Modules/Audits/AuditRequestPanelsDialog.vue";
+import { useAuditRequestPanels } from "@/components/Modules/Audits/composables/useAuditRequestPanels";
+import { dxAudit } from "@/components/Modules/Audits/config";
+import { authUser } from "@/helpers/auth";
 import { FaSolidCircleCheck, FaSolidTriangleExclamation } from "danx-icon";
-import { ActionButton, fDateTime, InfoDialog, request } from "quasar-ui-danx";
+import { ActionButton, fDateTime, InfoDialog, LabelPillWidget, request } from "quasar-ui-danx";
 import { onMounted, reactive, ref } from "vue";
 
 const props = defineProps<{
@@ -112,11 +100,22 @@ const emit = defineEmits<{
 
 const loading = ref(false);
 const errors = ref<ErrorLogEntry[]>([]);
-const expandedErrors = reactive<Record<number, boolean>>({});
 const expandedData = reactive<Record<number, boolean>>({});
 
-const toggleStackTrace = (errorId: number) => {
-    expandedErrors[errorId] = !expandedErrors[errorId];
+const { activeAuditRequestId, showAuditRequest: showAuditRequestPanel, hideAuditRequest } = useAuditRequestPanels();
+
+// Store the loaded audit request object
+const auditRequest = ref<AuditRequest | undefined>();
+
+const showAuditRequest = async (auditRequestId: string) => {
+    showAuditRequestPanel(auditRequestId);
+    // Load the audit request from the server and get the stored object
+    auditRequest.value = await dxAudit.routes.details({ id: auditRequestId } as AuditRequest);
+};
+
+const onHideAuditRequest = () => {
+    hideAuditRequest();
+    auditRequest.value = undefined;
 };
 
 const toggleData = (errorId: number) => {

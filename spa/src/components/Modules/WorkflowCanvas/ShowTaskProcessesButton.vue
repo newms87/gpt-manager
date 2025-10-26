@@ -181,14 +181,26 @@ async function batchRestart() {
 }
 
 // Toggle web socket subscription to task processes
-watch(isShowingTaskProcesses, () => {
-	if (isShowingTaskProcesses.value) {
-		usePusher().subscribeToProcesses(props.taskRun);
-		loadTaskProcesses();
-	} else {
-		usePusher().unsubscribeFromProcesses();
-		filters.value = defaultFilters;
-		selectedProcesses.value = [];
+watch(isShowingTaskProcesses, async () => {
+	const pusher = usePusher();
+	if (pusher) {
+		if (isShowingTaskProcesses.value) {
+			try {
+				// Subscribe to all TaskProcess events (channel-wide)
+				await pusher.subscribeToModel("TaskProcess", ["updated", "created"], true);
+			} catch (error) {
+				console.error("Failed to subscribe to task processes:", error);
+			}
+			loadTaskProcesses();
+		} else {
+			try {
+				await pusher.unsubscribeFromModel("TaskProcess", ["updated", "created"], true);
+			} catch (error) {
+				console.error("Failed to unsubscribe from task processes:", error);
+			}
+			filters.value = defaultFilters;
+			selectedProcesses.value = [];
+		}
 	}
 });
 </script>
