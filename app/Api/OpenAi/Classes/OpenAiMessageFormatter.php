@@ -20,13 +20,12 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
         return $messages;
     }
 
-
-    public function rawMessage(string $role, string|array $content, array $data = null): array
+    public function rawMessage(string $role, string|array $content, ?array $data = null): array
     {
         return [
-                'role'    => $role,
-                'content' => $content,
-            ] + ($data ?? []);
+            'role'    => $role,
+            'content' => $content,
+        ] + ($data ?? []);
     }
 
     /**
@@ -36,7 +35,7 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
     {
         $input = [];
 
-        foreach($rawMessages as $messageData) {
+        foreach ($rawMessages as $messageData) {
             if (!isset($messageData['role']) || !isset($messageData['content'])) {
                 continue;
             }
@@ -45,7 +44,7 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
 
             // Add text content with correct type based on role
             if (!empty($messageData['content'])) {
-                $textType = $messageData['role'] === 'assistant' ? 'output_text' : 'input_text';
+                $textType  = $messageData['role'] === 'assistant' ? 'output_text' : 'input_text';
                 $content[] = [
                     'type' => $textType,
                     'text' => $messageData['content'],
@@ -74,9 +73,9 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
         }
 
         // If only one user message with simple text content, return as string
-        if (count($input) === 1 &&
-            $input[0]['role'] === 'user' &&
-            count($input[0]['content']) === 1 &&
+        if (count($input)                   === 1      &&
+            $input[0]['role']               === 'user' &&
+            count($input[0]['content'])     === 1      &&
             $input[0]['content'][0]['type'] === 'input_text') {
             return $input[0]['content'][0]['text'];
         }
@@ -86,15 +85,16 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
 
     /**
      * Get Responses API format for image files
-     * @param StoredFile[]|array $storedFiles
+     *
+     * @param  StoredFile[]|array  $storedFiles
      */
     protected function formatFilesContent(array $storedFiles, $detail = 'high'): array
     {
-        Log::debug("\tappending " . count($storedFiles) . " files");
+        Log::debug("\tappending " . count($storedFiles) . ' files');
 
         $filesContent = [];
 
-        foreach($storedFiles as $storedFile) {
+        foreach ($storedFiles as $storedFile) {
             $url = $storedFile instanceof StoredFile ? $storedFile->url : $storedFile->url ?? $storedFile['url'] ?? null;
 
             if ($url) {
@@ -111,22 +111,23 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
     /**
      * Get the file name/url pairs for all images and split PDFs into individual images
      *
-     * @param StoredFile[] $files
+     * @param  StoredFile[]  $files
      * @return StoredFile[]
+     *
      * @throws Exception
      */
     public function getImageFiles($files): array
     {
         $imageFiles = [];
 
-        foreach($files as $file) {
+        foreach ($files as $file) {
             if ($file->isImage()) {
                 $imageFiles[] = $file;
             } elseif ($file->isPdf()) {
                 /** @var StoredFile[] $transcodes */
                 $transcodes = $file->transcodes()->where('transcode_name', TranscodeFileService::TRANSCODE_PDF_TO_IMAGES)->get();
 
-                foreach($transcodes as $transcode) {
+                foreach ($transcodes as $transcode) {
                     $imageFiles[] = $transcode;
                 }
             } else {

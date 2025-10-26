@@ -34,9 +34,11 @@ use Illuminate\Support\Collection;
  */
 class TaskAgentThreadBuilderService extends AgentThreadBuilderService
 {
-    protected ?TaskRun        $taskRun            = null;
+    protected ?TaskRun $taskRun            = null;
+
     protected ?TaskDefinition $taskDefinition     = null;
-    protected ?Collection     $primaryArtifacts   = null;
+
+    protected ?Collection $primaryArtifacts   = null;
 
     /**
      * Create builder from TaskDefinition with directives and prompt
@@ -66,15 +68,14 @@ class TaskAgentThreadBuilderService extends AgentThreadBuilderService
      */
     public function withArtifacts(
         array|Collection|EloquentCollection $artifacts,
-        ?ArtifactFilter                     $filter = null
-    ): static
-    {
+        ?ArtifactFilter $filter = null
+    ): static {
         // Store for context artifact positioning
         $this->primaryArtifacts = collect($artifacts);
 
         // If we have task context, check for specific artifact filters
         if ($this->taskRun && $this->taskDefinition && $this->primaryArtifacts->isNotEmpty()) {
-            foreach($this->primaryArtifacts as $artifact) {
+            foreach ($this->primaryArtifacts as $artifact) {
                 $resolvedFilter = $this->resolveTaskArtifactFilter($artifact) ?? $filter;
                 parent::withArtifacts([$artifact], $resolvedFilter);
             }
@@ -93,8 +94,7 @@ class TaskAgentThreadBuilderService extends AgentThreadBuilderService
     public function withContextArtifacts(
         array|Collection|EloquentCollection $artifacts,
         array|Collection|EloquentCollection $contextArtifacts
-    ): static
-    {
+    ): static {
         $artifacts        = collect($artifacts);
         $contextArtifacts = collect($contextArtifacts);
 
@@ -150,7 +150,7 @@ class TaskAgentThreadBuilderService extends AgentThreadBuilderService
         }
 
         // Add before-thread directives as messages
-        foreach($this->taskDefinition->beforeThreadDirectives()->with('directive')->get() as $directive) {
+        foreach ($this->taskDefinition->beforeThreadDirectives()->with('directive')->get() as $directive) {
             if ($directive->directive->directive_text) {
                 $this->withMessage($directive->directive->directive_text);
             }
@@ -162,7 +162,7 @@ class TaskAgentThreadBuilderService extends AgentThreadBuilderService
         }
 
         // Add after-thread directives as messages
-        foreach($this->taskDefinition->afterThreadDirectives()->with('directive')->get() as $directive) {
+        foreach ($this->taskDefinition->afterThreadDirectives()->with('directive')->get() as $directive) {
             if ($directive->directive->directive_text) {
                 $this->withMessage($directive->directive->directive_text);
             }
@@ -180,7 +180,7 @@ class TaskAgentThreadBuilderService extends AgentThreadBuilderService
         }
 
         // Check for specific artifact filters matching this artifact's source
-        foreach($this->taskDefinition->taskArtifactFiltersAsTarget as $taskFilter) {
+        foreach ($this->taskDefinition->taskArtifactFiltersAsTarget as $taskFilter) {
             if ($taskFilter->source_task_definition_id === $artifact->task_definition_id) {
                 // Convert TaskArtifactFilter to ArtifactFilter
                 return $taskFilter->toArtifactFilter();

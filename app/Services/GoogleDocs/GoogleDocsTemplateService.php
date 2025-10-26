@@ -19,7 +19,7 @@ class GoogleDocsTemplateService
 
         $variables = array_unique($matches[1] ?? []);
 
-        static::log("Parsed template variables", [
+        static::log('Parsed template variables', [
             'variables_found' => count($variables),
             'variables'       => $variables,
         ]);
@@ -32,17 +32,17 @@ class GoogleDocsTemplateService
      */
     public function replaceVariables(string $content, array $mappings): string
     {
-        foreach($mappings as $variable => $value) {
+        foreach ($mappings as $variable => $value) {
             // Handle arrays and objects by converting to JSON
             if (is_array($value) || is_object($value)) {
                 $stringValue = json_encode($value);
             } else {
                 $stringValue = (string)$value;
             }
-            $content = str_replace("{{" . $variable . "}}", $stringValue, $content);
+            $content = str_replace('{{' . $variable . '}}', $stringValue, $content);
         }
 
-        static::log("Variables replaced", [
+        static::log('Variables replaced', [
             'mappings_count' => count($mappings),
             'content_length' => strlen($content),
         ]);
@@ -69,7 +69,7 @@ class GoogleDocsTemplateService
             // Generate title if not provided
             $title = $newTitle ?? ('Document - ' . now()->format('Y-m-d H:i:s'));
 
-            static::log("Creating document from template", [
+            static::log('Creating document from template', [
                 'template_id'      => $templateId,
                 'title'            => $title,
                 'parent_folder_id' => $parentFolderId,
@@ -90,7 +90,7 @@ class GoogleDocsTemplateService
             $documentData = $response->json();
 
             // Log the response to debug
-            static::log("Drive API copy response", [
+            static::log('Drive API copy response', [
                 'status'   => $response->status(),
                 'response' => $documentData,
             ]);
@@ -118,7 +118,7 @@ class GoogleDocsTemplateService
 
             $documentUrl = "https://docs.google.com/document/d/{$documentId}/edit";
 
-            static::log("Document created from template successfully", [
+            static::log('Document created from template successfully', [
                 'document_id'  => $documentId,
                 'document_url' => $documentUrl,
             ]);
@@ -130,8 +130,8 @@ class GoogleDocsTemplateService
                 'created_at'  => now()->toISOString(),
             ];
 
-        } catch(\Exception $e) {
-            static::log("Failed to create document from template", [
+        } catch (\Exception $e) {
+            static::log('Failed to create document from template', [
                 'template_id' => $templateId,
                 'error'       => $e->getMessage(),
             ]);
@@ -147,12 +147,12 @@ class GoogleDocsTemplateService
     {
         try {
             $plainTextMappings = [];
-            $markdownMappings = [];
+            $markdownMappings  = [];
 
             $formattingService = app(GoogleDocsFormattingService::class);
 
             // Separate markdown values from plain text values
-            foreach($variableMappings as $variable => $value) {
+            foreach ($variableMappings as $variable => $value) {
                 $textValue = is_array($value) ? json_encode($value) : (string)$value;
 
                 // Check if value contains markdown syntax
@@ -170,13 +170,13 @@ class GoogleDocsTemplateService
 
             // Process markdown values with formatting
             if (!empty($markdownMappings)) {
-                foreach($markdownMappings as $variable => $markdownValue) {
+                foreach ($markdownMappings as $variable => $markdownValue) {
                     $formattingService->replaceVariableWithFormattedMarkdown($api, $documentId, $variable, $markdownValue);
                 }
             }
 
-        } catch(\Exception $e) {
-            static::log("Failed to replace variables in document", [
+        } catch (\Exception $e) {
+            static::log('Failed to replace variables in document', [
                 'document_id' => $documentId,
                 'error'       => $e->getMessage(),
             ]);

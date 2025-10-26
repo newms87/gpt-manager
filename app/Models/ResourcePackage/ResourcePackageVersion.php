@@ -12,7 +12,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class ResourcePackageVersion extends Model implements AuditableContract
 {
-    use AuditableTrait, SoftDeletes, HasUuids;
+    use AuditableTrait, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'id',

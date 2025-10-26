@@ -14,7 +14,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class BillingHistory extends Model implements AuditableContract
 {
-    use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     protected $table = 'billing_history';
 
@@ -54,25 +54,25 @@ class BillingHistory extends Model implements AuditableContract
     public function validate(): static
     {
         if (!$this->team_id) {
-            throw new ValidationError("Billing history must be associated with a team", 400);
+            throw new ValidationError('Billing history must be associated with a team', 400);
         }
 
         if (!$this->type) {
-            throw new ValidationError("Billing history type is required", 400);
+            throw new ValidationError('Billing history type is required', 400);
         }
 
         if (!in_array($this->type, ['invoice', 'payment', 'refund', 'usage_charge'])) {
-            throw new ValidationError("Invalid billing history type", 400);
+            throw new ValidationError('Invalid billing history type', 400);
         }
 
         if (!$this->status) {
-            throw new ValidationError("Billing history status is required", 400);
+            throw new ValidationError('Billing history status is required', 400);
         }
 
         $validStatuses = match ($this->type) {
-            'invoice' => ['draft', 'open', 'paid', 'void', 'overdue'],
-            'payment' => ['pending', 'succeeded', 'failed', 'canceled'],
-            'refund' => ['pending', 'succeeded', 'failed', 'canceled'],
+            'invoice'      => ['draft', 'open', 'paid', 'void', 'overdue'],
+            'payment'      => ['pending', 'succeeded', 'failed', 'canceled'],
+            'refund'       => ['pending', 'succeeded', 'failed', 'canceled'],
             'usage_charge' => ['pending', 'processed', 'failed'],
         };
 
@@ -81,11 +81,11 @@ class BillingHistory extends Model implements AuditableContract
         }
 
         if ($this->amount <= 0) {
-            throw new ValidationError("Amount must be greater than 0", 400);
+            throw new ValidationError('Amount must be greater than 0', 400);
         }
 
         if ($this->total_amount <= 0) {
-            throw new ValidationError("Total amount must be greater than 0", 400);
+            throw new ValidationError('Total amount must be greater than 0', 400);
         }
 
         return $this;
@@ -99,8 +99,8 @@ class BillingHistory extends Model implements AuditableContract
     public function isOverdue(): bool
     {
         return $this->type === 'invoice' &&
-            $this->status === 'overdue' &&
-            $this->due_date &&
+            $this->status  === 'overdue' &&
+            $this->due_date              &&
             $this->due_date->isPast();
     }
 

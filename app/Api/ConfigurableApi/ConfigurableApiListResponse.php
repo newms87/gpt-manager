@@ -9,9 +9,12 @@ use Newms87\Danx\Input\Input;
 class ConfigurableApiListResponse extends Input
 {
     protected ConfigurableApiConfig $apiConfig;
-    protected int                   $page;
-    protected int                   $total;
-    protected array                 $response;
+
+    protected int $page;
+
+    protected int $total;
+
+    protected array $response;
 
     public function __construct(ConfigurableApiConfig $apiConfig, array $response, int $page)
     {
@@ -19,7 +22,7 @@ class ConfigurableApiListResponse extends Input
         $totalField = $apiConfig->getTotalField();
 
         if (!Arr::has($response, $itemsField)) {
-            throw new ApiException("The response from the API did not contain the expected items field: " . $itemsField);
+            throw new ApiException('The response from the API did not contain the expected items field: ' . $itemsField);
         }
 
         $items = Arr::get($response, $itemsField) ?? [];
@@ -72,7 +75,7 @@ class ConfigurableApiListResponse extends Input
         $checkpointField = $this->apiConfig->getCheckpointField();
         $checkpoint      = null;
 
-        foreach($items as $item) {
+        foreach ($items as $item) {
             $itemCheckpoint = $item[$checkpointField] ?? null;
 
             if ($itemCheckpoint && $itemCheckpoint > $checkpoint) {

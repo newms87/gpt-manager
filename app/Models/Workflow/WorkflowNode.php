@@ -16,7 +16,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowNode extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait, ResourcePackageableTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, ResourcePackageableTrait;
 
     protected $fillable = [
         'task_definition_id',

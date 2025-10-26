@@ -4,10 +4,8 @@ namespace Tests\Unit\Services\Demand;
 
 use App\Models\Demand\TemplateVariable;
 use App\Models\Task\Artifact;
-use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Services\Demand\TemplateVariableResolutionService;
-use Illuminate\Support\Collection;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -29,17 +27,17 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given - Create artifact with category in meta.__category
         $artifact = Artifact::factory()->create([
-            'name' => 'Medical Report',
+            'name'         => 'Medical Report',
             'text_content' => 'Patient diagnosis details',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => ['input'], // Use category string, not class name
+            'artifact_categories'        => ['input'], // Use category string, not class name
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifacts = collect([$artifact]);
@@ -55,24 +53,24 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given - Create artifacts with different categories in meta.__category
         $artifact1 = Artifact::factory()->create([
-            'name' => 'TaskRun Artifact',
+            'name'         => 'TaskRun Artifact',
             'text_content' => 'TaskRun content',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'TaskProcess Artifact',
+            'name'         => 'TaskProcess Artifact',
             'text_content' => 'TaskProcess content',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'output'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'output'],
         ]);
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => ['input', 'output'], // Use category strings
+            'artifact_categories'        => ['input', 'output'], // Use category strings
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ' | ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ' | ',
         ]);
 
         $artifacts = collect([$artifact1, $artifact2]);
@@ -88,17 +86,17 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given - Create artifact with 'output' category but filter by 'input'
         $artifact = Artifact::factory()->create([
-            'name' => 'TaskProcess Artifact',
+            'name'         => 'TaskProcess Artifact',
             'text_content' => 'TaskProcess content',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'output'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'output'],
         ]);
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => ['input'], // Filter by 'input' category only
+            'artifact_categories'        => ['input'], // Filter by 'input' category only
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifacts = collect([$artifact]);
@@ -114,31 +112,31 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given - No category filter specified
         $artifact1 = Artifact::factory()->create([
-            'name' => 'Artifact 1',
+            'name'         => 'Artifact 1',
             'text_content' => 'Content 1',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'Artifact 2',
+            'name'         => 'Artifact 2',
             'text_content' => 'Content 2',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact3 = Artifact::factory()->create([
-            'name' => 'Artifact 3',
+            'name'         => 'Artifact 3',
             'text_content' => 'Content 3',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'output'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'output'],
         ]);
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null, // No filter - should include all
+            'artifact_categories'        => null, // No filter - should include all
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ' | ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ' | ',
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3]);
@@ -154,24 +152,24 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given - Empty array means no filter
         $artifact1 = Artifact::factory()->create([
-            'name' => 'Report 1',
+            'name'         => 'Report 1',
             'text_content' => 'Content 1',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'Report 2',
+            'name'         => 'Report 2',
             'text_content' => 'Content 2',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => [], // Empty array - should include all
+            'artifact_categories'        => [], // Empty array - should include all
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => '; ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => '; ',
         ]);
 
         $artifacts = collect([$artifact1, $artifact2]);
@@ -187,38 +185,38 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given - Create artifacts with different categories
         $artifact1 = Artifact::factory()->create([
-            'name' => 'TaskRun Artifact',
+            'name'         => 'TaskRun Artifact',
             'text_content' => 'TaskRun content',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'TaskProcess Artifact 1',
+            'name'         => 'TaskProcess Artifact 1',
             'text_content' => 'TaskProcess content 1',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact3 = Artifact::factory()->create([
-            'name' => 'TaskProcess Artifact 2',
+            'name'         => 'TaskProcess Artifact 2',
             'text_content' => 'TaskProcess content 2',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'output'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'output'],
         ]);
 
         $artifact4 = Artifact::factory()->create([
-            'name' => 'Other Artifact',
+            'name'         => 'Other Artifact',
             'text_content' => 'Other content',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             // No category - should be excluded
         ]);
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => ['input', 'output'], // Filter by categories
+            'artifact_categories'        => ['input', 'output'], // Filter by categories
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ' | ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ' | ',
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3, $artifact4]);
@@ -236,18 +234,18 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
         $taskRun = TaskRun::factory()->create();
 
         $artifact = Artifact::factory()->create([
-            'name' => 'Unassociated Artifact',
+            'name'         => 'Unassociated Artifact',
             'text_content' => 'Some content',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         // Do NOT associate artifact with anything - it stands alone
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => ['input'], // Filter by category
+            'artifact_categories'        => ['input'], // Filter by category
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifacts = collect([$artifact]);
@@ -267,16 +265,16 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_FIRST,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifact = Artifact::factory()->create([
-            'name' => 'Artifact Name',
+            'name'         => 'Artifact Name',
             'text_content' => 'This is the text content',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact]);
@@ -292,16 +290,16 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_FIRST,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifact = Artifact::factory()->create([
-            'name' => 'Fallback Artifact Name',
+            'name'         => 'Fallback Artifact Name',
             'text_content' => null,
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact]);
@@ -317,16 +315,16 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_FIRST,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifact = Artifact::factory()->create([
-            'name' => 'Empty Text Artifact',
+            'name'         => 'Empty Text Artifact',
             'text_content' => '',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact]);
@@ -342,28 +340,28 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ' | ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ' | ',
         ]);
 
         $artifact1 = Artifact::factory()->create([
-            'name' => 'Name 1',
+            'name'         => 'Name 1',
             'text_content' => 'Text Content 1',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'Name 2',
+            'name'         => 'Name 2',
             'text_content' => null,
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact3 = Artifact::factory()->create([
-            'name' => 'Name 3',
+            'name'         => 'Name 3',
             'text_content' => 'Text Content 3',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3]);
@@ -379,16 +377,16 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_FIRST,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifact = Artifact::factory()->create([
-            'name' => 'Whitespace Artifact',
+            'name'         => 'Whitespace Artifact',
             'text_content' => '   ',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact]);
@@ -408,28 +406,28 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ' | ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ' | ',
         ]);
 
         $artifact1 = Artifact::factory()->create([
-            'name' => 'Artifact 1',
+            'name'         => 'Artifact 1',
             'text_content' => 'Content 1',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'Artifact 2',
+            'name'         => 'Artifact 2',
             'text_content' => 'Content 2',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact3 = Artifact::factory()->create([
-            'name' => 'Artifact 3',
+            'name'         => 'Artifact 3',
             'text_content' => 'Content 3',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3]);
@@ -445,22 +443,22 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ' >> ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ' >> ',
         ]);
 
         $artifact1 = Artifact::factory()->create([
-            'name' => 'Artifact 1',
+            'name'         => 'Artifact 1',
             'text_content' => 'Value A',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'Artifact 2',
+            'name'         => 'Artifact 2',
             'text_content' => 'Value B',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact1, $artifact2]);
@@ -476,28 +474,28 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_FIRST,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifact1 = Artifact::factory()->create([
-            'name' => 'Artifact 1',
+            'name'         => 'Artifact 1',
             'text_content' => 'First Content',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'Artifact 2',
+            'name'         => 'Artifact 2',
             'text_content' => 'Second Content',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact3 = Artifact::factory()->create([
-            'name' => 'Artifact 3',
+            'name'         => 'Artifact 3',
             'text_content' => 'Third Content',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3]);
@@ -513,34 +511,34 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_UNIQUE,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_UNIQUE,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifact1 = Artifact::factory()->create([
-            'name' => 'Artifact 1',
+            'name'         => 'Artifact 1',
             'text_content' => 'Duplicate Content',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'Artifact 2',
+            'name'         => 'Artifact 2',
             'text_content' => 'Unique Content',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact3 = Artifact::factory()->create([
-            'name' => 'Artifact 3',
+            'name'         => 'Artifact 3',
             'text_content' => 'Duplicate Content',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact4 = Artifact::factory()->create([
-            'name' => 'Artifact 4',
+            'name'         => 'Artifact 4',
             'text_content' => 'Another Unique',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3, $artifact4]);
@@ -556,40 +554,40 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_UNIQUE,
-            'multi_value_separator' => ' | ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_UNIQUE,
+            'multi_value_separator'      => ' | ',
         ]);
 
         $artifact1 = Artifact::factory()->create([
-            'name' => 'Artifact 1',
+            'name'         => 'Artifact 1',
             'text_content' => 'Alpha',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'Artifact 2',
+            'name'         => 'Artifact 2',
             'text_content' => 'Beta',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact3 = Artifact::factory()->create([
-            'name' => 'Artifact 3',
+            'name'         => 'Artifact 3',
             'text_content' => 'Alpha',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact4 = Artifact::factory()->create([
-            'name' => 'Artifact 4',
+            'name'         => 'Artifact 4',
             'text_content' => 'Gamma',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact5 = Artifact::factory()->create([
-            'name' => 'Artifact 5',
+            'name'         => 'Artifact 5',
             'text_content' => 'Beta',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3, $artifact4, $artifact5]);
@@ -605,10 +603,10 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifacts = collect([]);
@@ -624,24 +622,24 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given - Create artifacts with 'output' category but filter by 'input'
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => ['input'], // Filter by 'input' category
+            'artifact_categories'        => ['input'], // Filter by 'input' category
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifact1 = Artifact::factory()->create([
-            'name' => 'TaskProcess Doc 1',
+            'name'         => 'TaskProcess Doc 1',
             'text_content' => 'TaskProcess content 1',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'output'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'output'],
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'TaskProcess Doc 2',
+            'name'         => 'TaskProcess Doc 2',
             'text_content' => 'TaskProcess content 2',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'output'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'output'],
         ]);
 
         $artifacts = collect([$artifact1, $artifact2]);
@@ -661,37 +659,37 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given - Create artifacts with categories in meta.__category
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => ['input', 'output'], // Filter by input and output categories
+            'artifact_categories'        => ['input', 'output'], // Filter by input and output categories
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => '; ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => '; ',
         ]);
 
         $artifact1 = Artifact::factory()->create([
-            'name' => 'TaskRun Report 1',
+            'name'         => 'TaskRun Report 1',
             'text_content' => 'TaskRun diagnosis A',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'TaskProcess Doc',
+            'name'         => 'TaskProcess Doc',
             'text_content' => 'TaskProcess terms',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact3 = Artifact::factory()->create([
-            'name' => 'TaskRun Report 2',
+            'name'         => 'TaskRun Report 2',
             'text_content' => 'TaskRun observation B',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'output'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'output'],
         ]);
 
         $artifact4 = Artifact::factory()->create([
-            'name' => 'Other Artifact',
+            'name'         => 'Other Artifact',
             'text_content' => 'Other data',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             // No category - should be excluded
         ]);
 
@@ -708,31 +706,31 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given - Create artifacts with categories in meta.__category
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => ['input'], // Filter by 'input' category
+            'artifact_categories'        => ['input'], // Filter by 'input' category
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_FIRST,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifact1 = Artifact::factory()->create([
-            'name' => 'TaskProcess Doc',
+            'name'         => 'TaskProcess Doc',
             'text_content' => 'TaskProcess content',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'output'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'output'],
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'TaskRun Report 1',
+            'name'         => 'TaskRun Report 1',
             'text_content' => 'First TaskRun content',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact3 = Artifact::factory()->create([
-            'name' => 'TaskRun Report 2',
+            'name'         => 'TaskRun Report 2',
             'text_content' => 'Second TaskRun content',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3]);
@@ -748,38 +746,38 @@ class TemplateVariableResolutionServiceTest extends AuthenticatedTestCase
     {
         // Given - Create artifacts with categories in meta.__category
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => ['input'], // Filter by 'input' category
+            'artifact_categories'        => ['input'], // Filter by 'input' category
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_UNIQUE,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_UNIQUE,
+            'multi_value_separator'      => ', ',
         ]);
 
         $artifact1 = Artifact::factory()->create([
-            'name' => 'TaskRun Report 1',
+            'name'         => 'TaskRun Report 1',
             'text_content' => 'Diagnosis: Condition X',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact2 = Artifact::factory()->create([
-            'name' => 'TaskProcess Doc',
+            'name'         => 'TaskProcess Doc',
             'text_content' => 'Diagnosis: Condition X',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'output'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'output'],
         ]);
 
         $artifact3 = Artifact::factory()->create([
-            'name' => 'TaskRun Report 2',
+            'name'         => 'TaskRun Report 2',
             'text_content' => 'Diagnosis: Condition Y',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifact4 = Artifact::factory()->create([
-            'name' => 'TaskRun Report 3',
+            'name'         => 'TaskRun Report 3',
             'text_content' => 'Diagnosis: Condition X',
-            'team_id' => $this->user->currentTeam->id,
-            'meta' => ['__category' => 'input'],
+            'team_id'      => $this->user->currentTeam->id,
+            'meta'         => ['__category' => 'input'],
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3, $artifact4]);

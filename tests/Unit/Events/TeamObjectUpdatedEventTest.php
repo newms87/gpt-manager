@@ -32,8 +32,8 @@ class TeamObjectUpdatedEventTest extends AuthenticatedTestCase
         // When
         TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'TestObject',
-            'name' => 'Test Object Name'
+            'type'    => 'TestObject',
+            'name'    => 'Test Object Name',
         ]);
 
         // Then
@@ -45,8 +45,8 @@ class TeamObjectUpdatedEventTest extends AuthenticatedTestCase
         // Given
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'TestObject',
-            'name' => 'Original Name'
+            'type'    => 'TestObject',
+            'name'    => 'Original Name',
         ]);
 
         $eventFired = false;
@@ -67,8 +67,8 @@ class TeamObjectUpdatedEventTest extends AuthenticatedTestCase
         // Given
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'TestObject',
-            'name' => 'Test Parent Object',
+            'type'    => 'TestObject',
+            'name'    => 'Test Parent Object',
         ]);
 
         $eventFired = false;
@@ -80,8 +80,8 @@ class TeamObjectUpdatedEventTest extends AuthenticatedTestCase
         // When
         TeamObjectAttribute::factory()->create([
             'team_object_id' => $teamObject->id,
-            'name' => 'test_attribute',
-            'text_value' => 'test_value'
+            'name'           => 'test_attribute',
+            'text_value'     => 'test_value',
         ]);
 
         // Then
@@ -93,14 +93,14 @@ class TeamObjectUpdatedEventTest extends AuthenticatedTestCase
         // Given
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'TestObject',
-            'name' => 'Test Parent Object',
+            'type'    => 'TestObject',
+            'name'    => 'Test Parent Object',
         ]);
 
         $relatedObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'RelatedObject',
-            'name' => 'Test Related Object'
+            'type'    => 'RelatedObject',
+            'name'    => 'Test Related Object',
         ]);
 
         $eventFired = false;
@@ -111,14 +111,12 @@ class TeamObjectUpdatedEventTest extends AuthenticatedTestCase
 
         // When
         TeamObjectRelationship::factory()->create([
-            'team_object_id' => $teamObject->id,
+            'team_object_id'         => $teamObject->id,
             'related_team_object_id' => $relatedObject->id,
-            'relationship_name' => 'related_to'
+            'relationship_name'      => 'related_to',
         ]);
 
         // Then
         $this->assertTrue($eventFired, 'TeamObjectUpdatedEvent should fire when TeamObjectRelationship is saved');
     }
-
-
 }

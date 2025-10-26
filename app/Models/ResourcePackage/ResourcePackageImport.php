@@ -14,7 +14,7 @@ use Throwable;
 
 class ResourcePackageImport extends Model implements AuditableContract
 {
-    use AuditableTrait, SoftDeletes, HasUuids;
+    use AuditableTrait, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'team_id',
@@ -44,7 +44,7 @@ class ResourcePackageImport extends Model implements AuditableContract
         return $this->belongsTo(ResourcePackageVersion::class);
     }
 
-    public function getLocalObject(): Model|null
+    public function getLocalObject(): ?Model
     {
         if (!$this->local_object_id) {
             return null;
@@ -64,7 +64,7 @@ class ResourcePackageImport extends Model implements AuditableContract
      * NOTE: This is used to avoid trying to create a duplicate record if the local instance already has this resource
      * defined and would throw an error if we tried to create the same object
      */
-    public function resolveLocalObjectByUniqueKeys(WorkflowImportService $service, array $definition, bool $isTeam): Model|null
+    public function resolveLocalObjectByUniqueKeys(WorkflowImportService $service, array $definition, bool $isTeam): ?Model
     {
         $table = (new $this->object_type)->getTable();
 

@@ -15,7 +15,7 @@ use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class TaskInput extends Model implements AuditableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait, HasRelationCountersTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasRelationCountersTrait;
 
     protected $fillable = [
         'task_definition_id',

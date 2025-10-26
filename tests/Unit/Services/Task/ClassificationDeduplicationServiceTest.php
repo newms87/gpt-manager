@@ -17,8 +17,10 @@ use Tests\TestCase;
 class ClassificationDeduplicationServiceTest extends TestCase
 {
     protected ClassificationDeduplicationService $service;
-    protected Team                               $team;
-    protected User                               $user;
+
+    protected Team $team;
+
+    protected User $user;
 
     /**
      * Mock the AI response with the new format
@@ -29,14 +31,14 @@ class ClassificationDeduplicationServiceTest extends TestCase
 
         // Convert old format test data to new format
         $grouped = [];
-        foreach($mappings as $incorrect => $correct) {
+        foreach ($mappings as $incorrect => $correct) {
             if (!isset($grouped[$correct])) {
                 $grouped[$correct] = [];
             }
             $grouped[$correct][] = $incorrect;
         }
 
-        foreach($grouped as $correct => $incorrects) {
+        foreach ($grouped as $correct => $incorrects) {
             $response['mappings'][] = [
                 'correct'   => $correct,
                 'incorrect' => $incorrects,
@@ -228,7 +230,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $service->deduplicateClassificationProperty($artifacts, 'provider');
 
         // Verify all artifacts were normalized
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $artifact->refresh();
             $this->assertEquals('University Orthopedic Care', $artifact->meta['classification']['provider']);
         }
@@ -261,7 +263,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
         ]);
 
         // Associate artifacts as output artifacts
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $taskRun->outputArtifacts()->attach($artifact->id);
         }
 
@@ -279,7 +281,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $this->assertContains('category', $processProperties);
 
         // Verify processes were created with correct names
-        foreach($processes as $process) {
+        foreach ($processes as $process) {
             $this->assertStringContainsString('Classification Deduplication:', $process->name);
             $this->assertArrayHasKey('classification_property', $process->meta);
         }
@@ -327,7 +329,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $service->deduplicateClassificationProperty($artifacts, 'company');
 
         // Artifacts should remain unchanged
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $this->assertArrayNotHasKey('classification', $artifact->fresh()->meta);
         }
     }
@@ -423,7 +425,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
             Artifact::factory()->create(['meta' => ['other' => 'data']]),
         ]);
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $taskRun->outputArtifacts()->attach($artifact->id);
         }
 
@@ -482,7 +484,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $service->deduplicateClassificationProperty($artifacts, 'company');
 
         // Verify all objects have normalized names
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $artifact->refresh();
             $this->assertArrayHasKey('company', $artifact->meta['classification']);
             $this->assertArrayHasKey('name', $artifact->meta['classification']['company']);
@@ -527,7 +529,7 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $service->deduplicateClassificationProperty($artifacts, 'provider');
 
         // Verify all objects have normalized ids
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $artifact->refresh();
             $this->assertArrayHasKey('provider', $artifact->meta['classification']);
             $this->assertArrayHasKey('id', $artifact->meta['classification']['provider']);

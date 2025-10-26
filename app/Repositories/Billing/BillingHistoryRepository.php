@@ -23,11 +23,11 @@ class BillingHistoryRepository extends ActionRepository
     public function applyAction(string $action, BillingHistory|Model|array|null $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createBillingRecord($data),
-            'update' => $this->updateBillingRecord($model, $data),
-            'mark-paid' => $this->markAsPaid($model, $data),
+            'create'      => $this->createBillingRecord($data),
+            'update'      => $this->updateBillingRecord($model, $data),
+            'mark-paid'   => $this->markAsPaid($model, $data),
             'mark-failed' => $this->markAsFailed($model),
-            default => parent::applyAction($action, $model, $data)
+            default       => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -55,7 +55,7 @@ class BillingHistoryRepository extends ActionRepository
             ->toArray();
     }
 
-    public function getTotalPaidAmountForTeam(\Carbon\Carbon $fromDate = null, \Carbon\Carbon $toDate = null): float
+    public function getTotalPaidAmountForTeam(?\Carbon\Carbon $fromDate = null, ?\Carbon\Carbon $toDate = null): float
     {
         $query = BillingHistory::forTeam(team()->id)
             ->paid()
@@ -81,58 +81,58 @@ class BillingHistoryRepository extends ActionRepository
     protected function createBillingRecord(array $data): BillingHistory
     {
         $this->validateTeamOwnership();
-        
+
         $data['team_id'] = team()->id;
-        
+
         $billingRecord = new BillingHistory($data);
         $billingRecord->validate();
         $billingRecord->save();
-        
+
         return $billingRecord->fresh(['subscription', 'subscription.subscriptionPlan']);
     }
 
     protected function updateBillingRecord(BillingHistory $billingRecord, array $data): BillingHistory
     {
         $this->validateOwnership($billingRecord);
-        
+
         $billingRecord->fill($data);
         $billingRecord->validate();
         $billingRecord->save();
-        
+
         return $billingRecord->fresh(['subscription', 'subscription.subscriptionPlan']);
     }
 
     protected function markAsPaid(BillingHistory $billingRecord, array $data): BillingHistory
     {
         $this->validateOwnership($billingRecord);
-        
+
         if ($billingRecord->type !== 'invoice') {
-            throw new ValidationError("Only invoices can be marked as paid", 400);
+            throw new ValidationError('Only invoices can be marked as paid', 400);
         }
 
         if ($billingRecord->status === 'paid') {
-            throw new ValidationError("Invoice is already marked as paid", 400);
+            throw new ValidationError('Invoice is already marked as paid', 400);
         }
 
         $billingRecord->update([
-            'status' => 'paid',
-            'paid_at' => $data['paid_at'] ?? now(),
+            'status'   => 'paid',
+            'paid_at'  => $data['paid_at'] ?? now(),
             'metadata' => array_merge($billingRecord->metadata ?? [], $data['metadata'] ?? []),
         ]);
-        
+
         return $billingRecord->fresh(['subscription', 'subscription.subscriptionPlan']);
     }
 
     protected function markAsFailed(BillingHistory $billingRecord): BillingHistory
     {
         $this->validateOwnership($billingRecord);
-        
+
         if ($billingRecord->type === 'invoice') {
             $billingRecord->update(['status' => 'void']);
         } else {
             $billingRecord->update(['status' => 'failed']);
         }
-        
+
         return $billingRecord->fresh(['subscription', 'subscription.subscriptionPlan']);
     }
 

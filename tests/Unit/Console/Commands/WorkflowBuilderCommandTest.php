@@ -20,7 +20,8 @@ class WorkflowBuilderCommandTest extends AuthenticatedTestCase
 {
     use SetUpTeamTrait;
 
-    private Team                   $team;
+    private Team $team;
+
     private WorkflowBuilderService $workflowBuilderService;
 
     public function setUp(): void
@@ -41,7 +42,6 @@ class WorkflowBuilderCommandTest extends AuthenticatedTestCase
         // CRITICAL FIX: Skip system component creation to prevent hanging in tests
         // The command's ensureWorkflowBuilderExists() method will handle missing components
         // during actual execution, but for tests we don't need them to exist in setup
-        return;
 
         // Original code disabled for now - was causing hanging
         /*
@@ -721,10 +721,10 @@ class WorkflowBuilderCommandTest extends AuthenticatedTestCase
         try {
             app(WorkflowBuilderService::class)->startWorkflowBuild($chat);
             $this->fail('Expected ValidationError for plan with no connections');
-        } catch(ValidationError $e) {
+        } catch (ValidationError $e) {
             // Then - Should get a validation error (message might vary depending on which validation fails first)
             $this->assertTrue(
-                str_contains($e->getMessage(), 'Multi-task workflow') ||
+                str_contains($e->getMessage(), 'Multi-task workflow')    ||
                 str_contains($e->getMessage(), 'No approved plan found') ||
                 str_contains($e->getMessage(), 'must define connections'),
                 'Should get a relevant validation error. Got: ' . $e->getMessage()
@@ -780,7 +780,7 @@ class WorkflowBuilderCommandTest extends AuthenticatedTestCase
 
             // Verify the plan has fallback structure even from bad AI response
             $this->assertNotEmpty($plan['tasks'], 'Should create at least one fallback task');
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             // This test may fail due to AI model configuration issues in test environment
             // The key is that it doesn't crash the system - it handles errors gracefully
             $this->assertTrue(true, 'Test passed - system handled AI error gracefully: ' . $e->getMessage());
@@ -805,22 +805,22 @@ class WorkflowBuilderCommandTest extends AuthenticatedTestCase
 
         $failedRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now()->subHour(),
-            'failed_at' => now(),
+            'started_at'             => now()->subHour(),
+            'failed_at'              => now(),
         ]);
 
         // Create a failed task run to populate all_errors
         $taskDefinition = \App\Models\Task\TaskDefinition::factory()->create([
             'team_id' => $this->team->id,
-            'name' => 'Test Task',
+            'name'    => 'Test Task',
         ]);
 
         $taskRun = \App\Models\Task\TaskRun::factory()->create([
-            'workflow_run_id' => $failedRun->id,
+            'workflow_run_id'    => $failedRun->id,
             'task_definition_id' => $taskDefinition->id,
-            'started_at' => now()->subMinute(),
-            'failed_at' => now(),
-            'status' => 'failed', // Lowercase to match WorkflowBuilderService query
+            'started_at'         => now()->subMinute(),
+            'failed_at'          => now(),
+            'status'             => 'failed', // Lowercase to match WorkflowBuilderService query
         ]);
 
         // When - Handle the failure using the service

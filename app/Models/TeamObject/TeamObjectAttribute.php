@@ -15,9 +15,10 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TeamObjectAttribute extends Model implements AuditableContract
 {
-    use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     protected $table   = 'team_object_attributes';
+
     protected $guarded = [
         'id',
         'created_at',
@@ -67,5 +68,4 @@ class TeamObjectAttribute extends Model implements AuditableContract
 
         return "<TeamObjectAttribute ($this->team_object_id) name='$this->name' value='$value' />";
     }
-
 }

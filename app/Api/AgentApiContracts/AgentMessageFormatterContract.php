@@ -9,6 +9,6 @@ interface AgentMessageFormatterContract
     public function messageList(array $messages): array;
 
     public function acceptsJsonSchema(): bool;
-    
+
     public function convertRawMessagesToResponsesApiInput(array $rawMessages): array|string;
 }

@@ -17,7 +17,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class DemandTemplate extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes, ActionModelTrait, AuditableTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'team_id',

@@ -26,10 +26,10 @@ class TaskProcessRunnerService
      * Prepare task processes for the task run. Each process will receive its own Artifacts / AgentThread
      * based on the input groups and the schema associations for the TaskDefinition
      */
-    public static function prepare(TaskRun $taskRun, SchemaAssociation $schemaAssociation = null, $artifacts = []): TaskProcess
+    public static function prepare(TaskRun $taskRun, ?SchemaAssociation $schemaAssociation = null, $artifacts = []): TaskProcess
     {
         $artifacts = collect($artifacts);
-        static::log("Prepare task process for $taskRun w/ " . $artifacts->count() . " artifacts" . ($schemaAssociation ? ' and schema association ' . $schemaAssociation->id : ''));
+        static::log("Prepare task process for $taskRun w/ " . $artifacts->count() . ' artifacts' . ($schemaAssociation ? ' and schema association ' . $schemaAssociation->id : ''));
 
         $taskDefinition = $taskRun->taskDefinition;
         $name           = ($schemaAssociation?->schemaFragment?->name ?: $taskDefinition->name);
@@ -60,7 +60,7 @@ class TaskProcessRunnerService
             }
 
             $taskProcess->getRunner()->prepareProcess();
-        } catch(Throwable $throwable) {
+        } catch (Throwable $throwable) {
             static::log("TaskProcess preparation failed: $taskProcess");
             $taskProcess->incomplete_at = now();
             $taskProcess->save();
@@ -80,13 +80,13 @@ class TaskProcessRunnerService
      * Copy the input artifacts for the task run. This will copy the artifacts to the new task run and assign the
      * task_definition_id
      *
-     * @param Artifact[]|Collection $artifacts
+     * @param  Artifact[]|Collection  $artifacts
      */
     public static function copyInputArtifactsForProcesses(TaskRun $taskRun, array|Collection|EloquentCollection $artifacts): array
     {
         $copiedArtifacts = [];
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             // If the current task does not own the artifact, we need to copy it
             if ($taskRun->task_definition_id !== $artifact->task_definition_id) {
                 $copiedArtifact                       = $artifact->replicate(['parent_artifact_id', 'child_artifacts_count']);
@@ -109,7 +109,6 @@ class TaskProcessRunnerService
 
         return $copiedArtifacts;
     }
-
 
     /**
      * Run the task process. This will execute the task process.
@@ -164,7 +163,7 @@ class TaskProcessRunnerService
         try {
             $taskProcess->getRunner()->run();
             static::log("TaskProcess finished running: $taskProcess");
-        } catch(Throwable $throwable) {
+        } catch (Throwable $throwable) {
             static::log("TaskProcess failed: $taskProcess\n" . $throwable->getMessage());
 
             // Update error counts before setting failure status (fallback in case JobDispatch event doesn't catch it)
@@ -200,7 +199,7 @@ class TaskProcessRunnerService
                 (new WorkflowApiInvocationWebhookJob($invocation))->dispatch();
             }
             static::log("TaskProcess finished handling event: $taskProcessListener");
-        } catch(Throwable $throwable) {
+        } catch (Throwable $throwable) {
             static::log("TaskProcess event handler failed: $taskProcess");
             $taskProcess->incomplete_at = now();
             $taskProcess->save();
@@ -219,7 +218,7 @@ class TaskProcessRunnerService
 
         try {
             if ($taskProcess->isStatusRunning()) {
-                throw new ValidationError("TaskProcess is currently running, cannot restart");
+                throw new ValidationError('TaskProcess is currently running, cannot restart');
             }
             $taskProcess->clearOutputArtifacts();
 
@@ -255,7 +254,7 @@ class TaskProcessRunnerService
 
         try {
             if (!$taskProcess->canResume()) {
-                static::log("TaskProcess is not in a resumable state, skipping resume");
+                static::log('TaskProcess is not in a resumable state, skipping resume');
 
                 return;
             }
@@ -287,7 +286,7 @@ class TaskProcessRunnerService
 
         try {
             if ($taskProcess->isStopped()) {
-                static::log("TaskProcess is already stopped");
+                static::log('TaskProcess is already stopped');
 
                 return;
             }
@@ -307,7 +306,7 @@ class TaskProcessRunnerService
      */
     public static function complete(TaskProcess $taskProcess): void
     {
-        static::log("TaskProcess completed w/ " . $taskProcess->outputArtifacts()->count() . " artifacts: $taskProcess");
+        static::log('TaskProcess completed w/ ' . $taskProcess->outputArtifacts()->count() . " artifacts: $taskProcess");
 
         LockHelper::acquire($taskProcess);
 
@@ -371,5 +370,4 @@ class TaskProcessRunnerService
             $taskProcess->agentThread->currentRun->save();
         }
     }
-
 }

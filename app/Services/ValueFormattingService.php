@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Services\ArrayAggregationService;
 use App\Traits\HasDebugLogging;
 
 /**
@@ -34,9 +33,9 @@ class ValueFormattingService
     /**
      * Format a value based on the specified format type
      *
-     * @param mixed $value The value to format
-     * @param string $formatType The format type: 'text', 'integer', 'decimal', 'currency', 'percentage', 'date'
-     * @param array $options Formatting options (decimals, currencyCode, dateFormat)
+     * @param  mixed  $value  The value to format
+     * @param  string  $formatType  The format type: 'text', 'integer', 'decimal', 'currency', 'percentage', 'date'
+     * @param  array  $options  Formatting options (decimals, currencyCode, dateFormat)
      * @return string The formatted value
      */
     public function format(
@@ -45,30 +44,30 @@ class ValueFormattingService
         array $options = []
     ): string {
         static::log('Formatting value', [
-            'format_type' => $formatType,
-            'value_type' => gettype($value),
+            'format_type'  => $formatType,
+            'value_type'   => gettype($value),
             'value_length' => is_string($value) ? strlen($value) : null,
         ]);
 
         return match ($formatType) {
-            'text' => $this->formatText($value),
-            'integer' => $this->formatInteger($value),
-            'decimal' => $this->formatDecimal($value, $options['decimals'] ?? 2),
+            'text'     => $this->formatText($value),
+            'integer'  => $this->formatInteger($value),
+            'decimal'  => $this->formatDecimal($value, $options['decimals'] ?? 2),
             'currency' => $this->formatCurrency(
                 $value,
                 $options['currencyCode'] ?? 'USD',
-                $options['decimals'] ?? 2
+                $options['decimals']     ?? 2
             ),
             'percentage' => $this->formatPercentage($value, $options['decimals'] ?? 2),
-            'date' => $this->formatDate($value),
-            default => $this->formatText($value),
+            'date'       => $this->formatDate($value),
+            default      => $this->formatText($value),
         };
     }
 
     /**
      * Format value as text (return as-is, converting to string if needed)
      *
-     * @param mixed $value The value to format
+     * @param  mixed  $value  The value to format
      * @return string The value as a string
      */
     public function formatText(mixed $value): string
@@ -91,7 +90,7 @@ class ValueFormattingService
     /**
      * Format value as integer with thousands separator
      *
-     * @param mixed $value The value to format
+     * @param  mixed  $value  The value to format
      * @return string The formatted integer (e.g., "1,234")
      */
     public function formatInteger(mixed $value): string
@@ -107,8 +106,8 @@ class ValueFormattingService
     /**
      * Format value as decimal with specified decimal places
      *
-     * @param mixed $value The value to format
-     * @param int $decimals Number of decimal places (default: 2)
+     * @param  mixed  $value  The value to format
+     * @param  int  $decimals  Number of decimal places (default: 2)
      * @return string The formatted decimal (e.g., "1,234.56")
      */
     public function formatDecimal(mixed $value, int $decimals = 2): string
@@ -124,9 +123,9 @@ class ValueFormattingService
     /**
      * Format value as currency
      *
-     * @param mixed $value The value to format
-     * @param string $currencyCode Currency code (e.g., 'USD', 'EUR', 'GBP')
-     * @param int $decimals Number of decimal places (default: 2)
+     * @param  mixed  $value  The value to format
+     * @param  string  $currencyCode  Currency code (e.g., 'USD', 'EUR', 'GBP')
+     * @param  int  $decimals  Number of decimal places (default: 2)
      * @return string The formatted currency (e.g., "$1,234.56", "1,234.56 €")
      */
     public function formatCurrency(mixed $value, string $currencyCode = 'USD', int $decimals = 2): string
@@ -161,8 +160,8 @@ class ValueFormattingService
      * - If value is less than 1, assumes it's a decimal (0.45 → 45%)
      * - If value is >= 1, assumes it's already a percentage (45 → 45%)
      *
-     * @param mixed $value The value to format
-     * @param int $decimals Number of decimal places (default: 2)
+     * @param  mixed  $value  The value to format
+     * @param  int  $decimals  Number of decimal places (default: 2)
      * @return string The formatted percentage (e.g., "45.00%")
      */
     public function formatPercentage(mixed $value, int $decimals = 2): string
@@ -187,7 +186,7 @@ class ValueFormattingService
      * Converts ISO date strings (YYYY-MM-DD) to human-readable format.
      * Format: "May 25th, 2025"
      *
-     * @param mixed $value The value to format (expects ISO date string)
+     * @param  mixed  $value  The value to format (expects ISO date string)
      * @return string The formatted date or original value if not a valid date
      */
     public function formatDate(mixed $value): string
@@ -204,12 +203,12 @@ class ValueFormattingService
         try {
             $date = new \DateTime($value);
             // Format as: May 25th, 2025
-            $day = (int)$date->format('j');
+            $day    = (int)$date->format('j');
             $suffix = match (true) {
                 $day % 10 === 1 && $day !== 11 => 'st',
                 $day % 10 === 2 && $day !== 12 => 'nd',
                 $day % 10 === 3 && $day !== 13 => 'rd',
-                default => 'th',
+                default                        => 'th',
             };
 
             return $date->format('F') . ' ' . $day . $suffix . ', ' . $date->format('Y');
@@ -218,6 +217,7 @@ class ValueFormattingService
                 'value' => $value,
                 'error' => $e->getMessage(),
             ]);
+
             return $value;
         }
     }

@@ -23,12 +23,12 @@ class SubscriptionRepository extends ActionRepository
     public function applyAction(string $action, Subscription|Model|array|null $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createSubscription($data),
-            'update' => $this->updateSubscription($model, $data),
+            'create'      => $this->createSubscription($data),
+            'update'      => $this->updateSubscription($model, $data),
             'change-plan' => $this->changePlan($model, $data),
-            'cancel' => $this->cancelSubscription($model, $data),
-            'reactivate' => $this->reactivateSubscription($model),
-            default => parent::applyAction($action, $model, $data)
+            'cancel'      => $this->cancelSubscription($model, $data),
+            'reactivate'  => $this->reactivateSubscription($model),
+            default       => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -45,87 +45,87 @@ class SubscriptionRepository extends ActionRepository
     protected function createSubscription(array $data): Subscription
     {
         $this->validateTeamOwnership();
-        
+
         $data['team_id'] = team()->id;
-        
+
         $subscription = new Subscription($data);
         $subscription->validate();
         $subscription->save();
-        
+
         return $subscription->fresh(['subscriptionPlan', 'team']);
     }
 
     protected function updateSubscription(Subscription $subscription, array $data): Subscription
     {
         $this->validateOwnership($subscription);
-        
+
         $subscription->fill($data);
         $subscription->validate();
         $subscription->save();
-        
+
         return $subscription->fresh(['subscriptionPlan', 'team']);
     }
 
     protected function changePlan(Subscription $subscription, array $data): Subscription
     {
         $this->validateOwnership($subscription);
-        
+
         if (!isset($data['subscription_plan_id'])) {
-            throw new ValidationError("New subscription plan ID is required", 400);
+            throw new ValidationError('New subscription plan ID is required', 400);
         }
 
         $newPlan = SubscriptionPlan::find($data['subscription_plan_id']);
         if (!$newPlan || !$newPlan->is_active) {
-            throw new ValidationError("Invalid or inactive subscription plan", 400);
+            throw new ValidationError('Invalid or inactive subscription plan', 400);
         }
 
         $subscription->fill([
             'subscription_plan_id' => $newPlan->id,
-            'monthly_amount' => $newPlan->monthly_price,
-            'yearly_amount' => $newPlan->yearly_price,
+            'monthly_amount'       => $newPlan->monthly_price,
+            'yearly_amount'        => $newPlan->yearly_price,
         ]);
 
         $subscription->validate();
         $subscription->save();
-        
+
         return $subscription->fresh(['subscriptionPlan', 'team']);
     }
 
     protected function cancelSubscription(Subscription $subscription, array $data): Subscription
     {
         $this->validateOwnership($subscription);
-        
+
         if ($subscription->isCanceled()) {
-            throw new ValidationError("Subscription is already canceled", 400);
+            throw new ValidationError('Subscription is already canceled', 400);
         }
 
         $subscription->update([
-            'status' => 'canceled',
+            'status'      => 'canceled',
             'canceled_at' => now(),
-            'ends_at' => $data['ends_at'] ?? $subscription->current_period_end ?? now(),
+            'ends_at'     => $data['ends_at'] ?? $subscription->current_period_end ?? now(),
         ]);
-        
+
         return $subscription->fresh(['subscriptionPlan', 'team']);
     }
 
     protected function reactivateSubscription(Subscription $subscription): Subscription
     {
         $this->validateOwnership($subscription);
-        
+
         if (!$subscription->isCanceled()) {
-            throw new ValidationError("Subscription is not canceled", 400);
+            throw new ValidationError('Subscription is not canceled', 400);
         }
 
         if ($subscription->ends_at && $subscription->ends_at->isPast()) {
-            throw new ValidationError("Cannot reactivate expired subscription", 400);
+            throw new ValidationError('Cannot reactivate expired subscription', 400);
         }
 
         $subscription->update([
-            'status' => 'active',
+            'status'      => 'active',
             'canceled_at' => null,
-            'ends_at' => null,
+            'ends_at'     => null,
         ]);
-        
+
         return $subscription->fresh(['subscriptionPlan', 'team']);
     }
 

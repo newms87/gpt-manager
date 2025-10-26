@@ -7,29 +7,36 @@ use InvalidArgumentException;
 class ResponsesApiOptions
 {
     public const string
-        REASONING_EFFORT_LOW = 'low',
+        REASONING_EFFORT_LOW    = 'low',
         REASONING_EFFORT_MEDIUM = 'medium',
-        REASONING_EFFORT_HIGH = 'high';
+        REASONING_EFFORT_HIGH   = 'high';
 
     public const string
-        REASONING_SUMMARY_AUTO = 'auto',
+        REASONING_SUMMARY_AUTO     = 'auto',
         REASONING_SUMMARY_DETAILED = 'detailed';
 
     public const string
-        SERVICE_TIER_AUTO = 'auto',
+        SERVICE_TIER_AUTO    = 'auto',
         SERVICE_TIER_DEFAULT = 'default',
-        SERVICE_TIER_FLEX = 'flex';
+        SERVICE_TIER_FLEX    = 'flex';
 
     protected ?array $reasoning = null;
 
-    protected string  $serviceTier        = self::SERVICE_TIER_AUTO;
-    protected bool    $stream             = false;
+    protected string $serviceTier        = self::SERVICE_TIER_AUTO;
+
+    protected bool $stream             = false;
+
     protected ?string $instructions       = null;
-    protected ?array  $textFormat         = null;
+
+    protected ?array $textFormat         = null;
+
     protected ?string $previousResponseId = null;
-    protected ?float  $temperature        = null;
-    protected ?array  $mcpServers         = null;
-    protected ?int    $timeout            = null;
+
+    protected ?float $temperature        = null;
+
+    protected ?array $mcpServers         = null;
+
+    protected ?int $timeout            = null;
 
     public function __construct(array $options = [])
     {
@@ -114,7 +121,7 @@ class ResponsesApiOptions
         return $this->setTextFormat([
             'format' => [
                 'type'   => 'json_schema',
-                'name'   => $jsonSchema['name'] ?? 'response',
+                'name'   => $jsonSchema['name']   ?? 'response',
                 'schema' => $jsonSchema['schema'] ?? $jsonSchema,
             ],
         ]);
@@ -180,7 +187,6 @@ class ResponsesApiOptions
         return $this;
     }
 
-
     public function getReasoning(): ?array
     {
         return $this->reasoning;
@@ -226,11 +232,10 @@ class ResponsesApiOptions
         return $this->timeout;
     }
 
-
     /**
      * Convert to array for API request
      */
-    public function toArray(string $model = null): array
+    public function toArray(?string $model = null): array
     {
         $options = [
             'service_tier' => $this->serviceTier,

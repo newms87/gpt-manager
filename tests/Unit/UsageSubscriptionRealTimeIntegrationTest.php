@@ -126,7 +126,7 @@ class UsageSubscriptionRealTimeIntegrationTest extends AuthenticatedTestCase
 
         $capturedChannel = null;
         Event::listen(UsageSummaryUpdatedEvent::class, function ($event) use (&$capturedChannel) {
-            $channels = $event->broadcastOn();
+            $channels        = $event->broadcastOn();
             $capturedChannel = !empty($channels) ? $channels[0]->name : null;
         });
 

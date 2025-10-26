@@ -16,8 +16,10 @@ class ContentSearchRepositoryTest extends AuthenticatedTestCase
     use SetUpTeamTrait;
 
     protected ContentSearchRepository $repository;
-    protected TaskDefinition          $taskDefinition;
-    protected Agent                   $agent;
+
+    protected TaskDefinition $taskDefinition;
+
+    protected Agent $agent;
 
     public function setUp(): void
     {

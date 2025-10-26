@@ -11,6 +11,7 @@ use Newms87\Danx\Http\Controllers\ActionController;
 class TaskRunsController extends ActionController
 {
     public static ?string $repo     = TaskRunRepository::class;
+
     public static ?string $resource = TaskRunResource::class;
 
     public function errors(TaskRun $taskRun)

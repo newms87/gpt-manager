@@ -74,13 +74,13 @@ interface StripePaymentServiceInterface
     /**
      * Validate webhook signature
      */
-    public function validateWebhookSignature(string $payload, string $signature, string $secret = null): ?array;
-    
+    public function validateWebhookSignature(string $payload, string $signature, ?string $secret = null): ?array;
+
     /**
      * Confirm a setup intent
      */
     public function confirmSetupIntent(string $setupIntentId): array;
-    
+
     /**
      * Create a charge
      */

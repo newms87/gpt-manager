@@ -37,21 +37,21 @@ class LoadCsvTaskRunner extends BaseTaskRunner
 
         $processedFiles = 0;
         $totalFiles     = count($allCsvFiles);
-        foreach($allCsvFiles as $csvFile) {
+        foreach ($allCsvFiles as $csvFile) {
             $this->activity('Processing file ' . $csvFile->filename);
 
             try {
                 $csvData        = FileHelper::parseCsvFile($csvFile->url, 0, 1, $selectedColumns);
                 $batchedCsvData = $this->splitIntoBatches($csvData, $batchSize);
 
-                foreach($batchedCsvData as $batchIndex => $batchedCsvDatum) {
+                foreach ($batchedCsvData as $batchIndex => $batchedCsvDatum) {
                     $outputArtifacts[] = $this->createArtifactWithCsvData($batchIndex, $batchSize, $batchedCsvDatum, $csvFile);
                 }
-            } catch(Exception $e) {
+            } catch (Exception $e) {
                 $this->activity('Error processing CSV file: ' . $e->getMessage());
             } finally {
                 $processedFiles++;
-                $this->activity("Finished processing file " . $csvFile->filename, 10 + ($processedFiles / $totalFiles) * 90);
+                $this->activity('Finished processing file ' . $csvFile->filename, 10 + ($processedFiles / $totalFiles) * 90);
             }
         }
 
@@ -66,7 +66,7 @@ class LoadCsvTaskRunner extends BaseTaskRunner
         $batchedCsvData = [];
         $currentBatch   = [];
 
-        foreach($csvData as $data) {
+        foreach ($csvData as $data) {
             if ($batchSize > 0 && count($currentBatch) >= $batchSize) {
                 $batchedCsvData[] = $currentBatch;
                 $currentBatch     = [];
@@ -85,9 +85,9 @@ class LoadCsvTaskRunner extends BaseTaskRunner
     /**
      * Create artifacts from the processed CSV data
      *
-     * @param array      $csvData    The processed CSV data
-     * @param StoredFile $sourceFile The source file that was processed
-     * @param int        $batchSize  The batch size used for processing
+     * @param  array  $csvData  The processed CSV data
+     * @param  StoredFile  $sourceFile  The source file that was processed
+     * @param  int  $batchSize  The batch size used for processing
      * @return array The created artifacts
      */
     protected function createArtifactWithCsvData(int $batchIndex, int $batchSize, array $csvData, StoredFile $sourceFile): Artifact

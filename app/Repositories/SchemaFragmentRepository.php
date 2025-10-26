@@ -24,7 +24,7 @@ class SchemaFragmentRepository extends ActionRepository
         return match ($action) {
             'create' => $this->createFragment($data),
             'update' => $this->updateFragment($model, $data),
-            default => parent::applyAction($action, $model, $data)
+            default  => parent::applyAction($action, $model, $data)
         };
     }
 

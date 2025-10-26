@@ -6,5 +6,4 @@ use App\Api\OpenAi\Classes\OpenAiResponsesResponse;
 
 class PerplexityAiResponsesResponse extends OpenAiResponsesResponse
 {
-
 }

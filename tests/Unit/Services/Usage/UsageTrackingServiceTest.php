@@ -18,6 +18,7 @@ use Tests\Traits\SetUpTeamTrait;
 class UsageTrackingServiceTest extends AuthenticatedTestCase
 {
     use SetUpTeamTrait;
+
     protected UsageTrackingService $service;
 
     public function setUp(): void
@@ -330,9 +331,9 @@ class UsageTrackingServiceTest extends AuthenticatedTestCase
         // Create workflow run and task runs manually since WorkflowRun factory doesn't exist
         $workflowDefinition = \App\Models\Workflow\WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Test Workflow'
+            'name'    => 'Test Workflow',
         ]);
-        
+
         $workflowRun = WorkflowRun::create([
             'name'                   => 'Test Workflow',
             'workflow_definition_id' => $workflowDefinition->id,

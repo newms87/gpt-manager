@@ -14,7 +14,8 @@ class TeamScopedUniqueRule implements ValidationRule
         private string $column = 'name',
         private ?Model $ignore = null,
         private array $additionalWhere = []
-    ) {}
+    ) {
+    }
 
     /**
      * Run the validation rule
@@ -71,6 +72,7 @@ class TeamScopedUniqueRule implements ValidationRule
     public function ignore(?Model $model): self
     {
         $this->ignore = $model;
+
         return $this;
     }
 
@@ -80,6 +82,7 @@ class TeamScopedUniqueRule implements ValidationRule
     public function where(array $conditions): self
     {
         $this->additionalWhere = array_merge($this->additionalWhere, $conditions);
+
         return $this;
     }
 }

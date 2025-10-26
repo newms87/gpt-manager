@@ -624,30 +624,30 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         ];
         $groupingKeys = [
             [
-                'type' => 'object',
-                'create' => false,
-                'update' => false,
+                'type'     => 'object',
+                'create'   => false,
+                'update'   => false,
                 'children' => [
                     'provider' => [
-                        'type' => 'array',
-                        'create' => false,
-                        'update' => false,
+                        'type'     => 'array',
+                        'create'   => false,
+                        'update'   => false,
                         'children' => [
                             'name' => [
-                                'type' => 'string'
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         // When & Then - This should not throw a TypeError
         $groups = (new ArtifactsToGroupsMapper)->useSplitMode()->setGroupingKeys($groupingKeys)->map($artifacts);
-        
+
         // Verify we get some groups (the exact structure doesn't matter as much as not crashing)
         $this->assertNotEmpty($groups, 'Should produce at least one group without throwing TypeError');
-        
+
         // Verify each group contains proper artifacts
         foreach ($groups as $group) {
             $this->assertNotEmpty($group, 'Each group should contain at least one artifact');
@@ -662,8 +662,8 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         // Given - Recreating the scenario where provider was originally an array but got converted to an object
         $jsonContent = [
             'provider' => [
-                'name' => 'Synergy Chiropractic Clinics',
-                'id' => 305,
+                'name'         => 'Synergy Chiropractic Clinics',
+                'id'           => 305,
                 'care_summary' => ['name' => 'Initial chiropractic evaluation'],
             ],
         ];
@@ -673,18 +673,18 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         ];
         $groupingKeys = [
             [
-                'type' => 'object',
+                'type'     => 'object',
                 'children' => [
                     'provider' => [
-                        'type' => 'array', // This expects array but we have an associative array (object)
+                        'type'     => 'array', // This expects array but we have an associative array (object)
                         'children' => [
                             'name' => [
-                                'type' => 'string'
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         // When - This should detect the associative array and treat it as a single-element array
@@ -694,10 +694,10 @@ class ArtifactsToGroupsMapperTest extends AuthenticatedTestCase
         /** @var Artifact[][] $groups */
         $groups = array_values($groups);
         $this->assertCount(1, $groups, 'Should produce 1 group since both artifacts have the same provider name');
-        
+
         // Verify the group contains both artifacts
         $this->assertCount(2, $groups[0], 'The single group should contain both artifacts');
-        
+
         // Verify the provider data is correctly structured
         $firstArtifact = $groups[0][0];
         $this->assertEquals('Synergy Chiropractic Clinics', $firstArtifact->json_content['provider']['name']);

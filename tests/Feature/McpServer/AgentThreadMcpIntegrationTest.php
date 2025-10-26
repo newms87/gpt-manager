@@ -17,9 +17,12 @@ use Tests\TestCase;
 
 class AgentThreadMcpIntegrationTest extends TestCase
 {
-    protected User               $user;
-    protected Team               $team;
-    protected Agent              $agent;
+    protected User $user;
+
+    protected Team $team;
+
+    protected Agent $agent;
+
     protected AgentThreadService $service;
 
     public function setUp(): void

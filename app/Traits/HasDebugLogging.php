@@ -8,8 +8,8 @@ trait HasDebugLogging
 {
     public static function log(string $message, array $data = []): void
     {
-        $loggerName = preg_replace("/.*\\\\/", '', static::class);
-        
+        $loggerName = preg_replace('/.*\\\\/', '', static::class);
+
         if (empty($data)) {
             Log::debug("[$loggerName] $message");
         } else {

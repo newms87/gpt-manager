@@ -19,8 +19,8 @@ class MessageRepository extends ActionRepository
         ];
 
         $message = $thread->messages()->create([
-                'role' => $role,
-            ] + $input);
+            'role' => $role,
+        ] + $input);
 
         $thread->touch();
 
@@ -39,7 +39,7 @@ class MessageRepository extends ActionRepository
     {
         return match ($action) {
             'save-files' => $this->saveFiles($model, $data['ids'] ?? []),
-            default => parent::applyAction($action, $model, $data)
+            default      => parent::applyAction($action, $model, $data)
         };
     }
 }

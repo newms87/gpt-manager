@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 class WorkspaceCleanCommand extends Command
 {
     protected $signature   = 'workspace:clean {--user-data} {--runs} {--inputs} {--auditing}';
+
     protected $description = 'Deletes workspace data based on flags: user data (UI demands, demand templates, and team objects), all runs, agent threads and messages';
 
     public function handle(): void
@@ -39,12 +40,12 @@ class WorkspaceCleanCommand extends Command
             $this->cleanAuditing();
         }
 
-        $this->info("Data cleaning completed successfully");
+        $this->info('Data cleaning completed successfully');
     }
 
     private function cleanInputs(): void
     {
-        $this->alert("Cleaning all inputs");
+        $this->alert('Cleaning all inputs');
 
         $tables = [
             'task_inputs',
@@ -60,7 +61,7 @@ class WorkspaceCleanCommand extends Command
 
     private function cleanRuns(): void
     {
-        $this->alert("Cleaning all runs and artifacts");
+        $this->alert('Cleaning all runs and artifacts');
 
         $tables = [
             'agent_thread_messageables',
@@ -89,12 +90,12 @@ class WorkspaceCleanCommand extends Command
             ],
         ];
 
-        $this->comment("Cleaning task process schema associations");
+        $this->comment('Cleaning task process schema associations');
         SchemaAssociation::where('object_type', TaskProcess::class)->delete();
         DB::statement("DELETE FROM stored_file_storables WHERE storable_type IN ('" . AgentThreadMessage::class . "','" . Artifact::class . "')");
 
         // Clean usage data for runs
-        $this->comment("Cleaning usage data for runs");
+        $this->comment('Cleaning usage data for runs');
         $runObjectTypes = [
             AgentThread::class,
             AgentThreadRun::class,
@@ -124,7 +125,7 @@ class WorkspaceCleanCommand extends Command
 
     private function cleanUserData(): void
     {
-        $this->alert("Cleaning user data");
+        $this->alert('Cleaning user data');
 
         $tables = [
             'ui_demand_workflow_runs',
@@ -139,15 +140,15 @@ class WorkspaceCleanCommand extends Command
 
         $this->truncateTables($tables);
 
-        $this->comment("Cleaning stored_file_storables for UiDemand");
+        $this->comment('Cleaning stored_file_storables for UiDemand');
         DB::statement("DELETE FROM stored_file_storables WHERE storable_type = '" . UiDemand::class . "'");
 
         // Clean usage data for UI demands
-        $this->comment("Cleaning usage data for UI demands");
+        $this->comment('Cleaning usage data for UI demands');
         $demandObjectType = UiDemand::class;
 
         // Delete usage_event_subscribers for UI demand usage_events
-        DB::statement("DELETE FROM usage_event_subscribers WHERE usage_event_id IN (SELECT id FROM usage_events WHERE object_type = ?)", [$demandObjectType]);
+        DB::statement('DELETE FROM usage_event_subscribers WHERE usage_event_id IN (SELECT id FROM usage_events WHERE object_type = ?)', [$demandObjectType]);
 
         // Delete usage_summaries for UI demands
         DB::table('usage_summaries')->where('object_type', $demandObjectType)->delete();
@@ -160,7 +161,7 @@ class WorkspaceCleanCommand extends Command
 
     private function cleanAuditing(): void
     {
-        $this->alert("Cleaning auditing");
+        $this->alert('Cleaning auditing');
 
         $tables = [
             'audits',
@@ -182,7 +183,7 @@ class WorkspaceCleanCommand extends Command
     {
         // Disable FK checks in postgres
         DB::statement('SET CONSTRAINTS ALL DEFERRED;');
-        foreach($tables as $table) {
+        foreach ($tables as $table) {
             $this->warn("Truncating table: $table");
             DB::table($table)->truncate();
         }
@@ -193,8 +194,8 @@ class WorkspaceCleanCommand extends Command
 
     private function resetCounts($counts): void
     {
-        foreach($counts as $table => $columns) {
-            foreach($columns as $column) {
+        foreach ($counts as $table => $columns) {
+            foreach ($columns as $column) {
                 $this->warn("Resetting counts for $table.$column");
                 DB::table($table)->update([$column => 0]);
             }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\MorphPivot;
 class Artifactable extends MorphPivot
 {
     protected $table   = 'artifactables';
+
     protected $guarded = [
         'id',
         'created_at',

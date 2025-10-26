@@ -22,7 +22,7 @@ class WorkflowInputFactory extends Factory
         ];
     }
 
-    public function withStoredFile(StoredFile $storedFile = null): static
+    public function withStoredFile(?StoredFile $storedFile = null): static
     {
         if (!$storedFile) {
             $storedFile = StoredFile::create([

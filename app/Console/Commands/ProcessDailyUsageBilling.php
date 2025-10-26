@@ -30,27 +30,28 @@ class ProcessDailyUsageBilling extends Command
     public function handle()
     {
         $this->info('Starting daily usage billing process...');
-        
+
         $teamId = $this->option('team');
         $dryRun = $this->option('dry-run');
-        
+
         if ($dryRun) {
             $this->warn('Running in DRY RUN mode - no charges will be created');
         }
-        
+
         try {
             $usageBillingService = app(UsageBillingService::class);
-            
+
             if ($teamId) {
                 $team = \App\Models\Team\Team::find($teamId);
-                
+
                 if (!$team) {
                     $this->error("Team with ID {$teamId} not found");
+
                     return Command::FAILURE;
                 }
-                
+
                 $this->info("Processing billing for team: {$team->name}");
-                
+
                 if (!$dryRun) {
                     $usageBillingService->processTeamBilling($team);
                 } else {
@@ -68,16 +69,16 @@ class ProcessDailyUsageBilling extends Command
                 }
             } else {
                 $this->info('Processing billing for all teams...');
-                
+
                 if (!$dryRun) {
                     $usageBillingService->processDailyBilling();
                 } else {
                     $this->info('Dry run mode - skipping actual billing process');
                 }
             }
-            
+
             $this->info('Daily usage billing process completed successfully');
-            
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $this->error('Failed to process daily usage billing: ' . $e->getMessage());
@@ -85,7 +86,7 @@ class ProcessDailyUsageBilling extends Command
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             return Command::FAILURE;
         }
     }

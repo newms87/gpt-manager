@@ -14,7 +14,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class PaymentMethod extends Model implements AuditableContract
 {
-    use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -40,30 +40,30 @@ class PaymentMethod extends Model implements AuditableContract
     public function validate(): static
     {
         if (!$this->team_id) {
-            throw new ValidationError("Payment method must be associated with a team", 400);
+            throw new ValidationError('Payment method must be associated with a team', 400);
         }
 
         if (!$this->stripe_payment_method_id) {
-            throw new ValidationError("Stripe payment method ID is required", 400);
+            throw new ValidationError('Stripe payment method ID is required', 400);
         }
 
         if (!$this->type) {
-            throw new ValidationError("Payment method type is required", 400);
+            throw new ValidationError('Payment method type is required', 400);
         }
 
         // Validate card fields if type is card
         if ($this->type === 'card') {
-            if (!$this->card_brand || !$this->card_last_four ||
+            if (!$this->card_brand     || !$this->card_last_four ||
                 !$this->card_exp_month || !$this->card_exp_year) {
-                throw new ValidationError("Card details are required for card payment methods", 400);
+                throw new ValidationError('Card details are required for card payment methods', 400);
             }
 
             if ($this->card_exp_month < 1 || $this->card_exp_month > 12) {
-                throw new ValidationError("Card expiration month must be between 1 and 12", 400);
+                throw new ValidationError('Card expiration month must be between 1 and 12', 400);
             }
 
             if ($this->card_exp_year < date('Y')) {
-                throw new ValidationError("Card expiration year cannot be in the past", 400);
+                throw new ValidationError('Card expiration year cannot be in the past', 400);
             }
         }
 

@@ -22,7 +22,7 @@ class SchemaAssociationRepository extends ActionRepository
     {
         return match ($action) {
             'update' => $this->updateAssociation($model, $data),
-            default => parent::applyAction($action, $model, $data)
+            default  => parent::applyAction($action, $model, $data)
         };
     }
 

@@ -15,7 +15,7 @@ class TaskArtifactFilterRepository extends ActionRepository
     {
         match ($action) {
             'create' => $this->create($data),
-            default => parent::applyAction($action, $model, $data)
+            default  => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -23,10 +23,10 @@ class TaskArtifactFilterRepository extends ActionRepository
     {
         $sourceTaskDefinitionId = $input['source_task_definition_id'] ?? null;
         $targetTaskDefinitionId = $input['target_task_definition_id'] ?? null;
-        $includeText            = $input['include_text'] ?? true;
-        $includeFiles           = $input['include_files'] ?? true;
-        $includeJson            = $input['include_json'] ?? true;
-        $includeMeta            = $input['include_meta'] ?? true;
+        $includeText            = $input['include_text']              ?? true;
+        $includeFiles           = $input['include_files']             ?? true;
+        $includeJson            = $input['include_json']              ?? true;
+        $includeMeta            = $input['include_meta']              ?? true;
 
         $taskArtifactFilter = TaskArtifactFilter::where([
             'source_task_definition_id' => $sourceTaskDefinitionId,
@@ -49,7 +49,6 @@ class TaskArtifactFilterRepository extends ActionRepository
         if (!$taskArtifactFilter->targetTaskDefinition) {
             throw new ValidationError('Target task definition not found');
         }
-
 
         $taskArtifactFilter->save();
 

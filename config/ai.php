@@ -49,7 +49,7 @@ return [
             'api'          => OpenAiApi::class,
             'name'         => 'GPT 5',
             'context'      => 400_000,
-            'input'        => 1.25 / $million,
+            'input'        => 1.25  / $million,
             'cached_input' => 0.125 / $million,
             'output'       => 10.00 / $million,
             'features'     => [
@@ -78,9 +78,9 @@ return [
             'api'          => OpenAiApi::class,
             'name'         => 'GPT 5 Mini',
             'context'      => 400_000,
-            'input'        => 0.25 / $million,
+            'input'        => 0.25  / $million,
             'cached_input' => 0.025 / $million,
-            'output'       => 2.00 / $million,
+            'output'       => 2.00  / $million,
             'features'     => [
                 'streaming'          => true,
                 'function_calling'   => true,
@@ -136,8 +136,8 @@ return [
             'api'          => OpenAiApi::class,
             'name'         => 'GPT‑4o',
             'context'      => 128_000,
-            'input'        => 2.50 / $million,
-            'cached_input' => 1.25 / $million,
+            'input'        => 2.50  / $million,
+            'cached_input' => 1.25  / $million,
             'output'       => 10.00 / $million,
             'features'     => [
                 'streaming'          => true,
@@ -165,9 +165,9 @@ return [
             'api'          => OpenAiApi::class,
             'name'         => 'GPT‑4o Mini',
             'context'      => 128_000,
-            'input'        => 0.15 / $million,
+            'input'        => 0.15  / $million,
             'cached_input' => 0.075 / $million,
-            'output'       => 0.60 / $million,
+            'output'       => 0.60  / $million,
             'features'     => [
                 'streaming'          => true,
                 'function_calling'   => false,
@@ -194,9 +194,9 @@ return [
             'api'          => OpenAiApi::class,
             'name'         => 'o4‑Mini',
             'context'      => 200_000,
-            'input'        => 1.10 / $million,
+            'input'        => 1.10  / $million,
             'cached_input' => 0.275 / $million,
-            'output'       => 4.40 / $million,
+            'output'       => 4.40  / $million,
             'features'     => [
                 'streaming'          => true,
                 'function_calling'   => true,
@@ -243,7 +243,7 @@ return [
             'name'         => 'o3‑Pro',
             'context'      => 200_000,
             'input'        => 20.00 / $million,
-            'cached_input' => 5.00 / $million,
+            'cached_input' => 5.00  / $million,
             'output'       => 80.00 / $million,
             'features'     => [
                 'streaming'          => true,
@@ -267,7 +267,7 @@ return [
             'context'     => 127072,
             'input'       => .2 / $million,
             'output'      => .2 / $million,
-            'per_request' => 5 / $thousand,
+            'per_request' => 5  / $thousand,
         ],
         'llama-3.1-sonar-large-128k-online' => [
             'api'         => PerplexityAiApi::class,

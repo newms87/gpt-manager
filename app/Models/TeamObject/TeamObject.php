@@ -17,9 +17,10 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TeamObject extends Model implements AuditableContract
 {
-    use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     protected $table   = 'team_objects';
+
     protected $guarded = [
         'id',
         'created_at',
@@ -72,7 +73,6 @@ class TeamObject extends Model implements AuditableContract
     {
         return $this->hasMany(TeamObjectAttribute::class, 'team_object_id');
     }
-
 
     public function delete()
     {

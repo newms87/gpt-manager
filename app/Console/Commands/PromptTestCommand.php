@@ -73,7 +73,7 @@ class PromptTestCommand extends Command
 
             return $result['success'] ? 0 : 1;
 
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             $this->error("Test failed: {$e->getMessage()}");
             if ($verbose) {
                 $this->error($e->getTraceAsString());
@@ -88,7 +88,7 @@ class PromptTestCommand extends Command
      */
     private function runAllTests(PromptTestRunner $runner, bool $continueOnFailure): int
     {
-        $this->info("Running all prompt tests...");
+        $this->info('Running all prompt tests...');
         $this->newLine();
 
         // Get all available tests
@@ -105,8 +105,8 @@ class PromptTestCommand extends Command
         $failedTests = 0;
         $results     = [];
 
-        foreach($tests as $i => $testName) {
-            $this->line("Running test " . ($i + 1) . "/{$totalTests}: {$testName}");
+        foreach ($tests as $i => $testName) {
+            $this->line('Running test ' . ($i + 1) . "/{$totalTests}: {$testName}");
 
             try {
                 $result    = $runner->runTest($testName);
@@ -120,16 +120,16 @@ class PromptTestCommand extends Command
                     $failedTests++;
 
                     if (!$continueOnFailure) {
-                        $this->error("Stopping test execution due to failure. Use --continue-on-failure to run all tests.");
+                        $this->error('Stopping test execution due to failure. Use --continue-on-failure to run all tests.');
                         break;
                     }
                 }
-            } catch(\Exception $e) {
+            } catch (\Exception $e) {
                 $this->error("❌ {$testName} ERROR: {$e->getMessage()}");
                 $failedTests++;
 
                 if (!$continueOnFailure) {
-                    $this->error("Stopping test execution due to error. Use --continue-on-failure to run all tests.");
+                    $this->error('Stopping test execution due to error. Use --continue-on-failure to run all tests.');
                     break;
                 }
             }
@@ -159,7 +159,7 @@ class PromptTestCommand extends Command
             new \RecursiveDirectoryIterator($testPath)
         );
 
-        foreach($iterator as $file) {
+        foreach ($iterator as $file) {
             if (!$file->isFile() || $file->getExtension() !== 'php') {
                 continue;
             }
@@ -212,7 +212,7 @@ class PromptTestCommand extends Command
         if ($this->option('detailed') && !empty($results)) {
             $this->newLine();
             $this->line('=== Individual Test Results ===');
-            foreach($results as $result) {
+            foreach ($results as $result) {
                 $status = $result['success'] ? '✅' : '❌';
                 $this->line("{$status} {$result['test_name']} - {$result['duration']}s");
             }
@@ -247,7 +247,7 @@ class PromptTestCommand extends Command
         if (isset($result['assertions'])) {
             $this->newLine();
             $this->line('=== Assertions ===');
-            foreach($result['assertions'] as $assertion) {
+            foreach ($result['assertions'] as $assertion) {
                 $status = $assertion['passed'] ? '✅' : '❌';
                 $this->line("{$status} {$assertion['description']}");
                 if (!$assertion['passed'] && isset($assertion['error'])) {
@@ -265,11 +265,11 @@ class PromptTestCommand extends Command
         if (isset($result['tool_calls']) && !empty($result['tool_calls'])) {
             $this->newLine();
             $this->line('=== Tool Calls ===');
-            foreach($result['tool_calls'] as $i => $toolCall) {
-                $this->line("Tool Call " . ($i + 1) . ": {$toolCall['tool_name']}");
+            foreach ($result['tool_calls'] as $i => $toolCall) {
+                $this->line('Tool Call ' . ($i + 1) . ": {$toolCall['tool_name']}");
                 if ($this->option('detailed')) {
-                    $this->line("  Arguments: " . json_encode($toolCall['arguments'], JSON_PRETTY_PRINT));
-                    $this->line("  Result: " . json_encode($toolCall['result'], JSON_PRETTY_PRINT));
+                    $this->line('  Arguments: ' . json_encode($toolCall['arguments'], JSON_PRETTY_PRINT));
+                    $this->line('  Result: ' . json_encode($toolCall['result'], JSON_PRETTY_PRINT));
                 }
             }
         }

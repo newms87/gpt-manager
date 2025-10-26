@@ -18,7 +18,7 @@ use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class SchemaFragment extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, ResourcePackageableTrait, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasRelationCountersTrait, ResourcePackageableTrait, SoftDeletes;
 
     protected $fillable = [
         'name',

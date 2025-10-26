@@ -22,14 +22,15 @@ class ScreenshotOneApi extends Api
     public function getRequestHeaders(): array
     {
         return [
-                'X-Access-Key' => $this->token,
-            ] + parent::getRequestHeaders();
+            'X-Access-Key' => $this->token,
+        ] + parent::getRequestHeaders();
     }
 
     /**
-     * @param string $url  The URL to take screenshot of
-     * @param string $path The path to store the screenshot
+     * @param  string  $url  The URL to take screenshot of
+     * @param  string  $path  The path to store the screenshot
      * @return string The URL of the stored screenshot
+     *
      * @throws ApiException
      * @throws ApiRequestException
      * @throws GuzzleException
@@ -50,7 +51,7 @@ class ScreenshotOneApi extends Api
 
             // Storage options
             'store'                     => true,
-            'storage_path'              => preg_replace("/\\.[a-z0-9]{2,3}$/", '', $path),
+            'storage_path'              => preg_replace('/\\.[a-z0-9]{2,3}$/', '', $path),
             'storage_bucket'            => config('screenshotone.s3_bucket'),
             'storage_return_location'   => true,
             'response_type'             => 'json',

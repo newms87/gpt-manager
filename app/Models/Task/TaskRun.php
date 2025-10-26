@@ -29,7 +29,7 @@ use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, HasDebugLogging, HasWorkflowStatesTrait, SoftDeletes, HasUsageTracking;
+    use ActionModelTrait, AuditableTrait, HasDebugLogging, HasFactory, HasRelationCountersTrait, HasUsageTracking, HasWorkflowStatesTrait, SoftDeletes;
 
     protected $fillable = [
         'started_at',
@@ -120,7 +120,6 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
     {
         return $this->artifacts()->withPivotValue('category', 'output');
     }
-
 
     public function addInputArtifacts($artifacts): static
     {

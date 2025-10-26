@@ -18,7 +18,7 @@ class PerplexityAiMessageFormatter extends OpenAiMessageFormatter
         $newMessages        = [];
         $prevMessageWasUser = null;
 
-        foreach($messages as $message) {
+        foreach ($messages as $message) {
             $role    = $message['role'];
             $content = $message['content'];
 

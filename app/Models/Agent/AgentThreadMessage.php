@@ -15,10 +15,10 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class AgentThreadMessage extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes, ActionModelTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     const string
-        ROLE_USER = 'user',
+        ROLE_USER      = 'user',
         ROLE_ASSISTANT = 'assistant';
 
     protected $fillable = [

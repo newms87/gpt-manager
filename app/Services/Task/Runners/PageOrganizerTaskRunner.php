@@ -33,7 +33,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
         // If we didn't receive an artifact from the agent, record the failure
         if (!$artifact) {
             $this->taskProcess->failed_at = now();
-            $this->activity("Failed to organize artifacts: No response from agent", 100);
+            $this->activity('Failed to organize artifacts: No response from agent', 100);
 
             return;
         }
@@ -52,7 +52,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
     /**
      * Organize the given artifact into groups based on the schema fragment as the defining grouping key
      */
-    public function organizeArtifactIntoGroups(AgentThread $agentThread, Artifact $artifact): array|null
+    public function organizeArtifactIntoGroups(AgentThread $agentThread, Artifact $artifact): ?array
     {
         $fragmentSelector = $this->taskProcess->outputSchemaAssociation->schemaFragment->fragment_selector;
 
@@ -62,7 +62,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
         $percentPerGroup = (100 - $percentComplete) / count($groups);
 
         $organizedArtifacts = [];
-        foreach($groups as $artifactsInGroup) {
+        foreach ($groups as $artifactsInGroup) {
             $inputArtifact = $artifactsInGroup[0];
             $this->activity("Organizing pages for group of artifact $inputArtifact->id", $percentComplete);
 
@@ -77,14 +77,14 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
             $pages = $results['pages'];
             sort($pages);
             $this->addPagesToArtifact($inputArtifact, $pages);
-            $inputArtifact->name = StringHelper::limitText(150, $results['name'], " [pages: " . StringHelper::formatPageRanges($pages) . "]");
+            $inputArtifact->name = StringHelper::limitText(150, $results['name'], ' [pages: ' . StringHelper::formatPageRanges($pages) . ']');
             $inputArtifact->save();
 
             $organizedArtifacts[] = $inputArtifact;
             $percentComplete      += $percentPerGroup;
         }
 
-        $this->activity("Pages have been organized into " . count($organizedArtifacts) . " artifacts", 100);
+        $this->activity('Pages have been organized into ' . count($organizedArtifacts) . ' artifacts', 100);
 
         return $organizedArtifacts;
     }
@@ -96,14 +96,14 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
      *
      * @return array|null The list of pages that belong to the group
      */
-    public function runOrganizingAgentThread(AgentThread $agentThread, Artifact $inputArtifact, $fragmentSelector = []): array|null
+    public function runOrganizingAgentThread(AgentThread $agentThread, Artifact $inputArtifact, $fragmentSelector = []): ?array
     {
         $filteredInput = app(JsonSchemaService::class)->filterDataByFragmentSelector($inputArtifact->json_content, $fragmentSelector);
         app(ThreadRepository::class)->addMessageToThread(
             $agentThread,
-            "List the pages that relate to the group defined by the values in this artifact: " . json_encode($filteredInput) .
-            "If there is no clear indicator on a given page that would correlate it to the group, you can assume that page is related to the preceding pages and should be added into the group." .
-            " For example if the group is defined by a date and page 1 has the date clearly stated, but page 2 and page 3 do not, include all 3 pages in the group indicated on page 1."
+            'List the pages that relate to the group defined by the values in this artifact: ' . json_encode($filteredInput) .
+            'If there is no clear indicator on a given page that would correlate it to the group, you can assume that page is related to the preceding pages and should be added into the group.' .
+            ' For example if the group is defined by a date and page 1 has the date clearly stated, but page 2 and page 3 do not, include all 3 pages in the group indicated on page 1.'
         );
 
         $schemaDefinition = SchemaDefinition::make([
@@ -154,7 +154,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
      */
     public function addPagesToArtifact(Artifact $artifact, array $pages): void
     {
-        static::log("Add pages to artifact: " . implode(', ', $pages));
+        static::log('Add pages to artifact: ' . implode(', ', $pages));
 
         $artifact->json_content = ($artifact->json_content ?? []) + ['pages' => $pages];
 
@@ -162,7 +162,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
         // NOTE: only record each input artifact once so we do not duplicate the artifacts text.
         // In the case an input artifact has more than 1 matching page, track the minimum page number for that artifact to sort the text content
         $pagesText = [];
-        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+        foreach ($this->taskProcess->inputArtifacts as $inputArtifact) {
             // If there is no organizable content in this artifact, then skip it
             if (!$inputArtifact->text_content && $inputArtifact->storedFiles->isEmpty()) {
                 continue;
@@ -172,7 +172,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
             $matchingPages         = [];
 
             if ($inputArtifact->storedFiles->isNotEmpty()) {
-                foreach($inputArtifact->storedFiles as $storedFile) {
+                foreach ($inputArtifact->storedFiles as $storedFile) {
                     if (in_array($storedFile->page_number, $pages)) {
                         $artifactMinPageNumber = min($storedFile->page_number, $artifactMinPageNumber);
                         static::log("Adding page $storedFile to $artifact");
@@ -202,10 +202,10 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
 
         ksort($pagesText);
 
-        foreach($pagesText as $match) {
+        foreach ($pagesText as $match) {
             $pageListStr = '';
-            foreach($match['pages'] as $pageItem) {
-                $pageListStr .= "### Page $pageItem[page_number]" . (!empty($pageItem['file_id']) ? " (file_id: $pageItem[file_id])" : "") . "\n";
+            foreach ($match['pages'] as $pageItem) {
+                $pageListStr .= "### Page $pageItem[page_number]" . (!empty($pageItem['file_id']) ? " (file_id: $pageItem[file_id])" : '') . "\n";
             }
             $artifact->text_content = ($artifact->text_content ? "$artifact->text_content\n\n" : '') . "---\n$pageListStr\n\n" . $match['content'];
         }

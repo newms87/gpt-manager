@@ -13,9 +13,10 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TeamObjectRelationship extends Model implements AuditableContract
 {
-    use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     protected $table   = 'team_object_relationships';
+
     protected $guarded = [
         'id',
         'created_at',

@@ -16,8 +16,10 @@ class SubscriptionRepositoryTest extends AuthenticatedTestCase
     use SetUpTeamTrait;
 
     private SubscriptionRepository $subscriptionRepository;
-    private Team                   $team;
-    private Team                   $differentTeam;
+
+    private Team $team;
+
+    private Team $differentTeam;
 
     public function setUp(): void
     {

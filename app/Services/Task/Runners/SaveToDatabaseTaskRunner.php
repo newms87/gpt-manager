@@ -13,9 +13,10 @@ class SaveToDatabaseTaskRunner extends BaseTaskRunner
     public function run(): void
     {
         $outputArtifacts = [];
-        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+        foreach ($this->taskProcess->inputArtifacts as $inputArtifact) {
             if (!$inputArtifact->schemaDefinition) {
                 $this->activity("No schema definition found for $inputArtifact");
+
                 continue;
             }
 
@@ -29,13 +30,13 @@ class SaveToDatabaseTaskRunner extends BaseTaskRunner
                 app(JSONSchemaDataToDatabaseMapper::class)
                     ->setSchemaDefinition($inputArtifact->schemaDefinition)
                     ->saveTeamObjectUsingSchema($inputArtifact->schemaDefinition->schema ?? [], $jsonContent, $threadRun);
-            } catch(ValidationError $e) {
-                $this->activity("Validation Error: " . $e->getMessage());
+            } catch (ValidationError $e) {
+                $this->activity('Validation Error: ' . $e->getMessage());
 
                 continue;
             }
 
-            $inputArtifact->name         .= " (saved to DB)";
+            $inputArtifact->name         .= ' (saved to DB)';
             $inputArtifact->json_content = $jsonContent;
 
             $outputArtifacts[] = $inputArtifact;

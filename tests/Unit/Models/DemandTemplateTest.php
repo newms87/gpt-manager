@@ -19,7 +19,6 @@ class DemandTemplateTest extends AuthenticatedTestCase
         $this->setUpTeam();
     }
 
-
     public function test_scopeActive_filtersActiveTemplatesOnly(): void
     {
         // Given
@@ -286,11 +285,11 @@ class DemandTemplateTest extends AuthenticatedTestCase
         ]);
         $variable1 = \App\Models\Demand\TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Variable 1',
+            'name'               => 'Variable 1',
         ]);
         $variable2 = \App\Models\Demand\TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Variable 2',
+            'name'               => 'Variable 2',
         ]);
 
         // When
@@ -310,15 +309,15 @@ class DemandTemplateTest extends AuthenticatedTestCase
         ]);
         $varZ = \App\Models\Demand\TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Zebra',
+            'name'               => 'Zebra',
         ]);
         $varA = \App\Models\Demand\TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Apple',
+            'name'               => 'Apple',
         ]);
         $varM = \App\Models\Demand\TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Mango',
+            'name'               => 'Mango',
         ]);
 
         // When
@@ -344,7 +343,7 @@ class DemandTemplateTest extends AuthenticatedTestCase
     {
         // Given
         $template = new DemandTemplate();
-        $casts = $template->getCasts();
+        $casts    = $template->getCasts();
 
         // Then
         $this->assertArrayNotHasKey('template_variables', $casts);

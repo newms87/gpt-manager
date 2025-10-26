@@ -28,28 +28,28 @@ class TemplateVariableAggregateResolutionServiceTest extends AuthenticatedTestCa
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_SUM,
-            'multi_value_separator' => ', ',
-            'value_format_type' => TemplateVariable::FORMAT_CURRENCY,
-            'currency_code' => 'USD',
-            'decimal_places' => 2,
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_SUM,
+            'multi_value_separator'      => ', ',
+            'value_format_type'          => TemplateVariable::FORMAT_CURRENCY,
+            'currency_code'              => 'USD',
+            'decimal_places'             => 2,
         ]);
 
         $artifact1 = Artifact::factory()->create([
             'text_content' => '$100.50',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact2 = Artifact::factory()->create([
             'text_content' => '$250.75',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact3 = Artifact::factory()->create([
             'text_content' => '$149.25',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3]);
@@ -66,27 +66,27 @@ class TemplateVariableAggregateResolutionServiceTest extends AuthenticatedTestCa
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_AVG,
-            'multi_value_separator' => ', ',
-            'value_format_type' => TemplateVariable::FORMAT_DECIMAL,
-            'decimal_places' => 3,
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_AVG,
+            'multi_value_separator'      => ', ',
+            'value_format_type'          => TemplateVariable::FORMAT_DECIMAL,
+            'decimal_places'             => 3,
         ]);
 
         $artifact1 = Artifact::factory()->create([
             'text_content' => '10.5',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact2 = Artifact::factory()->create([
             'text_content' => '20.7',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact3 = Artifact::factory()->create([
             'text_content' => '15.2',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3]);
@@ -103,26 +103,26 @@ class TemplateVariableAggregateResolutionServiceTest extends AuthenticatedTestCa
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_MAX,
-            'multi_value_separator' => ', ',
-            'value_format_type' => TemplateVariable::FORMAT_INTEGER,
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_MAX,
+            'multi_value_separator'      => ', ',
+            'value_format_type'          => TemplateVariable::FORMAT_INTEGER,
         ]);
 
         $artifact1 = Artifact::factory()->create([
             'text_content' => '1234.67',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact2 = Artifact::factory()->create([
             'text_content' => '5678.90',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact3 = Artifact::factory()->create([
             'text_content' => '3456.12',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact1, $artifact2, $artifact3]);
@@ -139,13 +139,13 @@ class TemplateVariableAggregateResolutionServiceTest extends AuthenticatedTestCa
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_SUM,
-            'multi_value_separator' => ', ',
-            'value_format_type' => TemplateVariable::FORMAT_CURRENCY,
-            'currency_code' => 'USD',
-            'decimal_places' => 2,
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_SUM,
+            'multi_value_separator'      => ', ',
+            'value_format_type'          => TemplateVariable::FORMAT_CURRENCY,
+            'currency_code'              => 'USD',
+            'decimal_places'             => 2,
         ]);
 
         $artifacts = collect([]);
@@ -162,23 +162,23 @@ class TemplateVariableAggregateResolutionServiceTest extends AuthenticatedTestCa
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_SUM,
-            'multi_value_separator' => ', ',
-            'value_format_type' => TemplateVariable::FORMAT_CURRENCY,
-            'currency_code' => 'USD',
-            'decimal_places' => 2,
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_SUM,
+            'multi_value_separator'      => ', ',
+            'value_format_type'          => TemplateVariable::FORMAT_CURRENCY,
+            'currency_code'              => 'USD',
+            'decimal_places'             => 2,
         ]);
 
         $artifact1 = Artifact::factory()->create([
             'text_content' => 'not a number',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifact2 = Artifact::factory()->create([
             'text_content' => 'also not a number',
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
         ]);
 
         $artifacts = collect([$artifact1, $artifact2]);

@@ -14,7 +14,7 @@ class PusherSubscriptionController extends Controller
     public function subscribe(Request $request)
     {
         $request->validate([
-            'resource_type' => 'required|string',
+            'resource_type'      => 'required|string',
             'model_id_or_filter' => 'required',
         ]);
 
@@ -41,7 +41,7 @@ class PusherSubscriptionController extends Controller
     public function unsubscribe(Request $request)
     {
         $request->validate([
-            'resource_type' => 'required|string',
+            'resource_type'      => 'required|string',
             'model_id_or_filter' => 'required',
         ]);
 
@@ -68,8 +68,8 @@ class PusherSubscriptionController extends Controller
     public function keepalive(Request $request)
     {
         $request->validate([
-            'subscriptions' => 'required|array',
-            'subscriptions.*.resource_type' => 'required|string',
+            'subscriptions'                      => 'required|array',
+            'subscriptions.*.resource_type'      => 'required|string',
             'subscriptions.*.model_id_or_filter' => 'required',
         ]);
 

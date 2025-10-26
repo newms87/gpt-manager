@@ -23,7 +23,7 @@ Be helpful, clear, and concise in your responses. If you don't know something, s
     {
         return [
             'answer_questions' => 'Answer general questions about the platform',
-            'provide_help' => 'Provide help and guidance',
+            'provide_help'     => 'Provide help and guidance',
             'explain_features' => 'Explain platform features and functionality',
         ];
     }
@@ -32,7 +32,7 @@ Be helpful, clear, and concise in your responses. If you don't know something, s
     {
         return [
             'success' => false,
-            'error' => 'General chat context does not support actions',
+            'error'   => 'General chat context does not support actions',
         ];
     }
 

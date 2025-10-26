@@ -17,17 +17,18 @@ class GoogleDriveFolderService
      */
     public function findOrCreateFolder(GoogleDocsApi $api, string $folderName, ?string $parentFolderId = null): string
     {
-        $teamId = team()->id;
+        $teamId   = team()->id;
         $cacheKey = $this->getCacheKey($teamId, $folderName, $parentFolderId);
 
         // Check cache first
         $cachedFolderId = Cache::get($cacheKey);
         if ($cachedFolderId) {
-            static::log("Using cached folder ID", [
+            static::log('Using cached folder ID', [
                 'folder_name' => $folderName,
-                'folder_id' => $cachedFolderId,
-                'team_id' => $teamId,
+                'folder_id'   => $cachedFolderId,
+                'team_id'     => $teamId,
             ]);
+
             return $cachedFolderId;
         }
 
@@ -36,17 +37,17 @@ class GoogleDriveFolderService
 
         // Create folder if not found
         if (!$folderId) {
-            static::log("Folder not found, creating new folder", [
-                'folder_name' => $folderName,
+            static::log('Folder not found, creating new folder', [
+                'folder_name'      => $folderName,
                 'parent_folder_id' => $parentFolderId,
-                'team_id' => $teamId,
+                'team_id'          => $teamId,
             ]);
             $folderId = $this->createFolder($api, $folderName, $parentFolderId);
         } else {
-            static::log("Found existing folder", [
+            static::log('Found existing folder', [
                 'folder_name' => $folderName,
-                'folder_id' => $folderId,
-                'team_id' => $teamId,
+                'folder_id'   => $folderId,
+                'team_id'     => $teamId,
             ]);
         }
 
@@ -63,7 +64,7 @@ class GoogleDriveFolderService
     {
         try {
             $metadata = [
-                'name' => $folderName,
+                'name'     => $folderName,
                 'mimeType' => 'application/vnd.google-apps.folder',
             ];
 
@@ -71,10 +72,10 @@ class GoogleDriveFolderService
                 $metadata['parents'] = [$parentFolderId];
             }
 
-            static::log("Creating folder via Drive API", [
-                'folder_name' => $folderName,
+            static::log('Creating folder via Drive API', [
+                'folder_name'      => $folderName,
                 'parent_folder_id' => $parentFolderId,
-                'metadata' => $metadata,
+                'metadata'         => $metadata,
             ]);
 
             $response = $api->postToDriveApi('files', $metadata);
@@ -82,8 +83,8 @@ class GoogleDriveFolderService
             $folderData = $response->json();
 
             // Log the response for debugging
-            static::log("Drive API create folder response", [
-                'status' => $response->status(),
+            static::log('Drive API create folder response', [
+                'status'   => $response->status(),
                 'response' => $folderData,
             ]);
 
@@ -97,17 +98,17 @@ class GoogleDriveFolderService
                 throw new ApiException('Failed to get folder ID from Drive API create response');
             }
 
-            static::log("Folder created successfully", [
+            static::log('Folder created successfully', [
                 'folder_name' => $folderName,
-                'folder_id' => $folderId,
+                'folder_id'   => $folderId,
             ]);
 
             return $folderId;
 
         } catch (\Exception $e) {
-            static::log("Failed to create folder", [
+            static::log('Failed to create folder', [
                 'folder_name' => $folderName,
-                'error' => $e->getMessage(),
+                'error'       => $e->getMessage(),
             ]);
 
             throw new ApiException('Failed to create Google Drive folder: ' . $e->getMessage());
@@ -127,23 +128,23 @@ class GoogleDriveFolderService
                 $query .= " and '" . addslashes($parentFolderId) . "' in parents";
             }
 
-            static::log("Searching for folder via Drive API", [
-                'folder_name' => $folderName,
+            static::log('Searching for folder via Drive API', [
+                'folder_name'      => $folderName,
                 'parent_folder_id' => $parentFolderId,
-                'query' => $query,
+                'query'            => $query,
             ]);
 
             $response = $api->getToDriveApi('files', [
-                'q' => $query,
-                'fields' => 'files(id, name)',
+                'q'        => $query,
+                'fields'   => 'files(id, name)',
                 'pageSize' => 1,
             ]);
 
             $searchData = $response->json();
 
             // Log the response for debugging
-            static::log("Drive API search folder response", [
-                'status' => $response->status(),
+            static::log('Drive API search folder response', [
+                'status'   => $response->status(),
                 'response' => $searchData,
             ]);
 
@@ -154,25 +155,26 @@ class GoogleDriveFolderService
             $files = $searchData['files'] ?? [];
 
             if (empty($files)) {
-                static::log("No folder found", [
+                static::log('No folder found', [
                     'folder_name' => $folderName,
                 ]);
+
                 return null;
             }
 
             $folderId = $files[0]['id'] ?? null;
 
-            static::log("Folder found", [
+            static::log('Folder found', [
                 'folder_name' => $folderName,
-                'folder_id' => $folderId,
+                'folder_id'   => $folderId,
             ]);
 
             return $folderId;
 
         } catch (\Exception $e) {
-            static::log("Failed to search for folder", [
+            static::log('Failed to search for folder', [
                 'folder_name' => $folderName,
-                'error' => $e->getMessage(),
+                'error'       => $e->getMessage(),
             ]);
 
             // Don't throw on search failure - just return null to trigger creation

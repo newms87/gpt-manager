@@ -62,7 +62,7 @@ class DemandTemplateService
     public function fetchTemplateVariables(DemandTemplate $template): Collection
     {
         $this->validateOwnership($template);
-        
+
         if (!$template->storedFile) {
             throw new ValidationError('Demand template does not have a stored file', 400);
         }

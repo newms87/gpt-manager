@@ -17,15 +17,11 @@ class AuthTokenTest extends AuthenticatedTestCase
         $this->setUpTeam();
     }
 
-
-
-
-
     public function test_isExpired_withExpiredOAuthToken_returnsTrue(): void
     {
         // Given
         $token = AuthToken::factory()->oauth()->create([
-            'expires_at' => now()->subHour()
+            'expires_at' => now()->subHour(),
         ]);
 
         // When & Then
@@ -36,7 +32,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $token = AuthToken::factory()->oauth()->create([
-            'expires_at' => now()->addHour()
+            'expires_at' => now()->addHour(),
         ]);
 
         // When & Then
@@ -57,7 +53,7 @@ class AuthTokenTest extends AuthenticatedTestCase
         // Given
         $token = AuthToken::factory()->oauth()->create([
             'access_token' => 'valid_access_token',
-            'expires_at' => now()->addHour()
+            'expires_at'   => now()->addHour(),
         ]);
 
         // When & Then
@@ -68,7 +64,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $token = AuthToken::factory()->apiKey()->create([
-            'access_token' => 'valid_api_key'
+            'access_token' => 'valid_api_key',
         ]);
 
         // When & Then
@@ -79,7 +75,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $token = AuthToken::factory()->oauth()->create([
-            'expires_at' => now()->subHour()
+            'expires_at' => now()->subHour(),
         ]);
 
         // When & Then
@@ -91,7 +87,7 @@ class AuthTokenTest extends AuthenticatedTestCase
         // Given
         $token = AuthToken::factory()->oauth()->create([
             'access_token' => '',
-            'expires_at' => now()->addHour()
+            'expires_at'   => now()->addHour(),
         ]);
 
         // When & Then
@@ -102,7 +98,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $token = AuthToken::factory()->oauth()->create([
-            'expires_at' => now()->addMinutes(3)
+            'expires_at' => now()->addMinutes(3),
         ]);
 
         // When & Then
@@ -113,7 +109,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $token = AuthToken::factory()->oauth()->create([
-            'expires_at' => now()->addMinutes(10)
+            'expires_at' => now()->addMinutes(10),
         ]);
 
         // When & Then
@@ -133,7 +129,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $scopes = ['scope1', 'scope2', 'scope3'];
-        $token = AuthToken::factory()->create(['scopes' => $scopes]);
+        $token  = AuthToken::factory()->create(['scopes' => $scopes]);
 
         // When & Then
         $this->assertTrue($token->hasScope('scope2'));
@@ -143,7 +139,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $scopes = ['scope1', 'scope2', 'scope3'];
-        $token = AuthToken::factory()->create(['scopes' => $scopes]);
+        $token  = AuthToken::factory()->create(['scopes' => $scopes]);
 
         // When & Then
         $this->assertFalse($token->hasScope('nonexistent_scope'));
@@ -153,7 +149,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $scopes = ['scope1', 'scope2', 'scope3'];
-        $token = AuthToken::factory()->create(['scopes' => $scopes]);
+        $token  = AuthToken::factory()->create(['scopes' => $scopes]);
 
         // When & Then
         $this->assertTrue($token->hasScopes(['scope1', 'scope3']));
@@ -163,7 +159,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $scopes = ['scope1', 'scope2', 'scope3'];
-        $token = AuthToken::factory()->create(['scopes' => $scopes]);
+        $token  = AuthToken::factory()->create(['scopes' => $scopes]);
 
         // When & Then
         $this->assertFalse($token->hasScopes(['scope1', 'nonexistent_scope']));
@@ -191,7 +187,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $metadata = ['key1' => 'value1', 'key2' => 'value2'];
-        $token = AuthToken::factory()->create(['metadata' => $metadata]);
+        $token    = AuthToken::factory()->create(['metadata' => $metadata]);
 
         // When & Then
         $this->assertEquals('value1', $token->getMetadata('key1'));
@@ -201,7 +197,7 @@ class AuthTokenTest extends AuthenticatedTestCase
     {
         // Given
         $metadata = ['key1' => 'value1'];
-        $token = AuthToken::factory()->create(['metadata' => $metadata]);
+        $token    = AuthToken::factory()->create(['metadata' => $metadata]);
 
         // When & Then
         $this->assertEquals('default_value', $token->getMetadata('nonexistent_key', 'default_value'));
@@ -234,7 +230,7 @@ class AuthTokenTest extends AuthenticatedTestCase
         // Then
         $this->assertEquals(1, $googleTokens->count());
         $this->assertEquals('google', $googleTokens->first()->service);
-        
+
         $this->assertEquals(1, $stripeTokens->count());
         $this->assertEquals('stripe', $stripeTokens->first()->service);
     }
@@ -246,13 +242,13 @@ class AuthTokenTest extends AuthenticatedTestCase
         AuthToken::factory()->apiKey()->forTeam($this->user->currentTeam)->create();
 
         // When
-        $oauthTokens = AuthToken::ofType(AuthToken::TYPE_OAUTH)->get();
+        $oauthTokens  = AuthToken::ofType(AuthToken::TYPE_OAUTH)->get();
         $apiKeyTokens = AuthToken::ofType(AuthToken::TYPE_API_KEY)->get();
 
         // Then
         $this->assertEquals(1, $oauthTokens->count());
         $this->assertEquals(AuthToken::TYPE_OAUTH, $oauthTokens->first()->type);
-        
+
         $this->assertEquals(1, $apiKeyTokens->count());
         $this->assertEquals(AuthToken::TYPE_API_KEY, $apiKeyTokens->first()->type);
     }
@@ -265,13 +261,13 @@ class AuthTokenTest extends AuthenticatedTestCase
         AuthToken::factory()->forTeam($otherTeam)->create();
 
         // When
-        $teamTokens = AuthToken::forTeam($this->user->currentTeam->id)->get();
+        $teamTokens      = AuthToken::forTeam($this->user->currentTeam->id)->get();
         $otherTeamTokens = AuthToken::forTeam($otherTeam->id)->get();
 
         // Then
         $this->assertEquals(1, $teamTokens->count());
         $this->assertEquals($this->user->currentTeam->id, $teamTokens->first()->team_id);
-        
+
         $this->assertEquals(1, $otherTeamTokens->count());
         $this->assertEquals($otherTeam->id, $otherTeamTokens->first()->team_id);
     }
@@ -281,21 +277,21 @@ class AuthTokenTest extends AuthenticatedTestCase
         // Given
         $validOAuth = AuthToken::factory()->oauth()->forTeam($this->user->currentTeam)->create([
             'access_token' => 'valid_token',
-            'expires_at' => now()->addHour()
+            'expires_at'   => now()->addHour(),
         ]);
-        
+
         $expiredOAuth = AuthToken::factory()->oauth()->forTeam($this->user->currentTeam)->create([
             'access_token' => 'expired_token',
-            'expires_at' => now()->subHour()
+            'expires_at'   => now()->subHour(),
         ]);
-        
+
         $validApiKey = AuthToken::factory()->apiKey()->forTeam($this->user->currentTeam)->create([
-            'access_token' => 'valid_api_key'
+            'access_token' => 'valid_api_key',
         ]);
-        
+
         $emptyAccessToken = AuthToken::factory()->oauth()->forTeam($this->user->currentTeam)->create([
             'access_token' => '',
-            'expires_at' => now()->addHour()
+            'expires_at'   => now()->addHour(),
         ]);
 
         // When
@@ -308,5 +304,4 @@ class AuthTokenTest extends AuthenticatedTestCase
         $this->assertFalse($validTokens->contains($expiredOAuth));
         $this->assertFalse($validTokens->contains($emptyAccessToken));
     }
-
 }

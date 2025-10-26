@@ -29,15 +29,15 @@ class DemandTemplateServiceTest extends AuthenticatedTestCase
     public function test_fetchTemplateVariables_withValidTemplate_createsNewVariablesWithDefaultAiMapping(): void
     {
         // Given
-        $docId = 'test-google-doc-id-123';
+        $docId      = 'test-google-doc-id-123';
         $storedFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filepath' => "https://docs.google.com/document/d/{$docId}/edit",
         ]);
 
         $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
@@ -57,48 +57,48 @@ class DemandTemplateServiceTest extends AuthenticatedTestCase
 
         // Verify all variables were created with correct defaults
         $this->assertDatabaseHas('template_variables', [
-            'demand_template_id' => $template->id,
-            'name' => 'patient_name',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
+            'demand_template_id'    => $template->id,
+            'name'                  => 'patient_name',
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
             'multi_value_separator' => ', ',
         ]);
 
         $this->assertDatabaseHas('template_variables', [
             'demand_template_id' => $template->id,
-            'name' => 'date_of_service',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
+            'name'               => 'date_of_service',
+            'mapping_type'       => TemplateVariable::MAPPING_TYPE_AI,
         ]);
 
         $this->assertDatabaseHas('template_variables', [
             'demand_template_id' => $template->id,
-            'name' => 'diagnosis',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
+            'name'               => 'diagnosis',
+            'mapping_type'       => TemplateVariable::MAPPING_TYPE_AI,
         ]);
     }
 
     public function test_fetchTemplateVariables_withExistingVariables_preservesExistingConfigurations(): void
     {
         // Given
-        $docId = 'test-google-doc-id-456';
+        $docId      = 'test-google-doc-id-456';
         $storedFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filepath' => "https://docs.google.com/document/d/{$docId}/edit",
         ]);
 
         $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
         // Create existing variable with custom configuration
         $existingVariable = TemplateVariable::factory()->artifactMapped()->create([
-            'demand_template_id' => $template->id,
-            'name' => 'patient_name',
-            'description' => 'Custom description',
-            'artifact_categories' => ['medical'],
-            'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
+            'demand_template_id'    => $template->id,
+            'name'                  => 'patient_name',
+            'description'           => 'Custom description',
+            'artifact_categories'   => ['medical'],
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_FIRST,
             'multi_value_separator' => ' | ',
         ]);
 
@@ -129,10 +129,10 @@ class DemandTemplateServiceTest extends AuthenticatedTestCase
 
         // Verify new variable was created with defaults
         $this->assertDatabaseHas('template_variables', [
-            'demand_template_id' => $template->id,
-            'name' => 'new_variable',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
+            'demand_template_id'    => $template->id,
+            'name'                  => 'new_variable',
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
             'multi_value_separator' => ', ',
         ]);
     }
@@ -140,32 +140,32 @@ class DemandTemplateServiceTest extends AuthenticatedTestCase
     public function test_fetchTemplateVariables_withOrphanedVariables_deletesRemovedVariables(): void
     {
         // Given
-        $docId = 'test-google-doc-id-789';
+        $docId      = 'test-google-doc-id-789';
         $storedFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filepath' => "https://docs.google.com/document/d/{$docId}/edit",
         ]);
 
         $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
         // Create variables that will be orphaned
         $keptVariable = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'kept_variable',
+            'name'               => 'kept_variable',
         ]);
 
         $orphanedVariable1 = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'orphaned_variable_1',
+            'name'               => 'orphaned_variable_1',
         ]);
 
         $orphanedVariable2 = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'orphaned_variable_2',
+            'name'               => 'orphaned_variable_2',
         ]);
 
         // Mock GoogleDocsApi to return only one variable (the kept one)
@@ -188,8 +188,8 @@ class DemandTemplateServiceTest extends AuthenticatedTestCase
 
         // Verify kept variable is still present
         $this->assertDatabaseHas('template_variables', [
-            'id' => $keptVariable->id,
-            'name' => 'kept_variable',
+            'id'         => $keptVariable->id,
+            'name'       => 'kept_variable',
             'deleted_at' => null,
         ]);
     }
@@ -197,27 +197,27 @@ class DemandTemplateServiceTest extends AuthenticatedTestCase
     public function test_fetchTemplateVariables_withEmptyVariableList_deletesAllVariables(): void
     {
         // Given
-        $docId = 'test-google-doc-id-empty';
+        $docId      = 'test-google-doc-id-empty';
         $storedFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filepath' => "https://docs.google.com/document/d/{$docId}/edit",
         ]);
 
         $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
         // Create variables that will be deleted
         $variable1 = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'variable_1',
+            'name'               => 'variable_1',
         ]);
 
         $variable2 = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'variable_2',
+            'name'               => 'variable_2',
         ]);
 
         // Mock GoogleDocsApi to return empty array
@@ -242,8 +242,8 @@ class DemandTemplateServiceTest extends AuthenticatedTestCase
     {
         // Given
         $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => null,
         ]);
 
@@ -260,13 +260,13 @@ class DemandTemplateServiceTest extends AuthenticatedTestCase
     {
         // Given
         $storedFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filepath' => '', // Empty filepath - cannot extract document ID
         ]);
 
         $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile->id,
         ]);
 
@@ -302,15 +302,15 @@ class DemandTemplateServiceTest extends AuthenticatedTestCase
     public function test_fetchTemplateVariables_callsTemplateVariableServiceSyncMethod(): void
     {
         // Given
-        $docId = 'test-google-doc-sync';
+        $docId      = 'test-google-doc-sync';
         $storedFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filepath' => "https://docs.google.com/document/d/{$docId}/edit",
         ]);
 
         $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile->id,
         ]);
 

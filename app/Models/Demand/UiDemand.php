@@ -23,19 +23,19 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class UiDemand extends Model implements Auditable
 {
-    use HasFactory, SoftDeletes, ActionModelTrait, AuditableTrait, HasUsageTracking;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasUsageTracking, SoftDeletes;
 
     // Status constants following platform pattern
     const string
-        STATUS_DRAFT = 'Draft',
+        STATUS_DRAFT     = 'Draft',
         STATUS_COMPLETED = 'Completed',
-        STATUS_FAILED = 'Failed';
+        STATUS_FAILED    = 'Failed';
 
     // Workflow type constants
     const string
-        WORKFLOW_TYPE_EXTRACT_DATA = 'extract_data',
+        WORKFLOW_TYPE_EXTRACT_DATA          = 'extract_data',
         WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY = 'write_medical_summary',
-        WORKFLOW_TYPE_WRITE_DEMAND_LETTER = 'write_demand_letter';
+        WORKFLOW_TYPE_WRITE_DEMAND_LETTER   = 'write_demand_letter';
 
     protected $fillable = [
         'team_id',
@@ -63,16 +63,16 @@ class UiDemand extends Model implements Auditable
         });
     }
 
-    public function validate(array $data = null): \Illuminate\Contracts\Validation\Validator
+    public function validate(?array $data = null): \Illuminate\Contracts\Validation\Validator
     {
         return Validator::make($data ?: $this->toArray(), [
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
             'status'      => 'required|in:' . implode(',', [
-                    self::STATUS_DRAFT,
-                    self::STATUS_COMPLETED,
-                    self::STATUS_FAILED,
-                ]),
+                self::STATUS_DRAFT,
+                self::STATUS_COMPLETED,
+                self::STATUS_FAILED,
+            ]),
         ]);
     }
 
@@ -121,7 +121,6 @@ class UiDemand extends Model implements Auditable
         return $this->belongsTo(TeamObject::class);
     }
 
-
     public function scopeActive($query)
     {
         return $query->whereIn('status', [self::STATUS_DRAFT, self::STATUS_COMPLETED]);
@@ -162,7 +161,7 @@ class UiDemand extends Model implements Auditable
     public function canExtractData(): bool
     {
         return $this->status === self::STATUS_DRAFT &&
-            $this->inputFiles()->count() > 0 &&
+            $this->inputFiles()->count() > 0        &&
             !$this->isExtractDataRunning();
     }
 
@@ -303,5 +302,4 @@ class UiDemand extends Model implements Auditable
 
         return $latestWorkflow->calculateProgress();
     }
-
 }

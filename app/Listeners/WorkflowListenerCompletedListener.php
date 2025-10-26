@@ -13,7 +13,7 @@ use Newms87\Danx\Helpers\LockHelper;
 
 class WorkflowListenerCompletedListener implements ShouldQueue
 {
-    use InteractsWithQueue, HasDebugLogging;
+    use HasDebugLogging, InteractsWithQueue;
 
     public function handle(WorkflowRunUpdatedEvent $event): void
     {
@@ -41,6 +41,7 @@ class WorkflowListenerCompletedListener implements ShouldQueue
                 'listener_id'     => $workflowListener->id,
                 'completed_at'    => $workflowListener->completed_at->toISOString(),
             ]);
+
             return;
         }
 
@@ -56,6 +57,7 @@ class WorkflowListenerCompletedListener implements ShouldQueue
                     'workflow_run_id' => $workflowRun->id,
                     'listener_id'     => $workflowListener->id,
                 ]);
+
                 return;
             }
 

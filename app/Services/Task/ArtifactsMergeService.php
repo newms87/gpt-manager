@@ -15,22 +15,22 @@ class ArtifactsMergeService
     public function merge($artifacts): Artifact
     {
         $pages = [];
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $pages[] = $artifact->position;
         }
         sort($pages);
         $mergedArtifact = Artifact::create([
-            'name'     => "Merged Artifact (Pages " . StringHelper::formatPageRanges($pages) . ")",
+            'name'     => 'Merged Artifact (Pages ' . StringHelper::formatPageRanges($pages) . ')',
             'position' => $pages[0] ?? 0,
         ]);
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             if ($artifact->storedFiles->isNotEmpty()) {
                 $mergedArtifact->storedFiles()->syncWithoutDetaching($artifact->storedFiles->pluck('id'));
             }
 
             if ($artifact->text_content) {
-                $mergedArtifact->text_content = ($mergedArtifact->text_content ? "$mergedArtifact->text_content\n\n-----\n\n" : "") .
+                $mergedArtifact->text_content = ($mergedArtifact->text_content ? "$mergedArtifact->text_content\n\n-----\n\n" : '') .
                     "# Page $artifact->position\n\n" . $artifact->text_content;
             }
 

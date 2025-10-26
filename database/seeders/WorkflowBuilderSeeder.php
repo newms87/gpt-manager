@@ -70,22 +70,22 @@ class WorkflowBuilderSeeder extends Seeder
         // Create Workflow Nodes
         $inputNode = $this->createWorkflowNode($workflowDefinition, $workflowInputTaskDef,
             ['name' => 'Workflow Input'],
-            ['x' => 0, 'y' => 0]
+            ['x'    => 0, 'y' => 0]
         );
 
         $orchestratorNode = $this->createWorkflowNode($workflowDefinition, $workflowOrchestratorTaskDef,
             ['name' => 'Workflow Orchestrator'],
-            ['x' => 400, 'y' => 0]
+            ['x'    => 400, 'y' => 0]
         );
 
         $taskBuilderNode = $this->createWorkflowNode($workflowDefinition, $taskBuilderTaskDef,
             ['name' => 'Task Definition Builder'],
-            ['x' => 800, 'y' => 0]
+            ['x'    => 800, 'y' => 0]
         );
 
         $outputNode = $this->createWorkflowNode($workflowDefinition, $workflowOutputTaskDef,
-            ['name' => 'Workflow Output',],
-            ['x' => 1200, 'y' => 0]
+            ['name' => 'Workflow Output'],
+            ['x'    => 1200, 'y' => 0]
         );
 
         // Create Workflow Connections
@@ -141,7 +141,7 @@ class WorkflowBuilderSeeder extends Seeder
             ]
         );
 
-        $this->command->info("Created system-owned Workflow Planner and Workflow Evaluator agents.");
+        $this->command->info('Created system-owned Workflow Planner and Workflow Evaluator agents.');
 
         return [$workflowPlannerAgent, $workflowEvaluatorAgent];
     }

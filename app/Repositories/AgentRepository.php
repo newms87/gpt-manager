@@ -21,14 +21,14 @@ class AgentRepository extends ActionRepository
     public function summaryQuery(array $filter = []): Builder|QueryBuilder
     {
         return parent::summaryQuery($filter)->addSelect([
-            DB::raw("SUM(threads_count) as threads_count"),
+            DB::raw('SUM(threads_count) as threads_count'),
         ]);
     }
 
     public function fieldOptions(?array $filter = []): array
     {
         $aiModels = [];
-        foreach(config('ai.models') as $modelName => $modelDetails) {
+        foreach (config('ai.models') as $modelName => $modelDetails) {
             $aiModels[] = [
                 'name'    => $modelName,
                 'api'     => $modelDetails['api'] ?? null,
@@ -42,16 +42,16 @@ class AgentRepository extends ActionRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createAgent($data),
-            'update' => $this->updateAgent($model, $data),
-            'copy' => $this->copyAgent($model),
+            'create'        => $this->createAgent($data),
+            'update'        => $this->updateAgent($model, $data),
+            'copy'          => $this->copyAgent($model),
             'create-thread' => app(ThreadRepository::class)->create($model),
-            default => parent::applyAction($action, $model, $data)
+            default         => parent::applyAction($action, $model, $data)
         };
     }
 

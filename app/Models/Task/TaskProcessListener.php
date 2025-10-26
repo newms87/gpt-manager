@@ -13,9 +13,9 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskProcessListener extends Model implements AuditableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory;
 
-    static array $allowedEventTypes = [
+    public static array $allowedEventTypes = [
         WorkflowRun::class,
         TaskRun::class,
         JobDispatch::class,

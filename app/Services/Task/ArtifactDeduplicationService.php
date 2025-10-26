@@ -24,17 +24,16 @@ class ArtifactDeduplicationService
     /**
      * Deduplicate names across artifacts by normalizing similar names
      *
-     * @param Collection|Artifact[] $artifacts
-     * @return void
+     * @param  Collection|Artifact[]  $artifacts
      */
     public function deduplicateArtifactNames(Collection $artifacts): void
     {
-        static::log("Starting deduplication for " . $artifacts->count() . " artifacts");
+        static::log('Starting deduplication for ' . $artifacts->count() . ' artifacts');
 
         // Extract names grouped by their path in the JSON structure
         $namesByPath = [];
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             if (!$artifact->json_content) {
                 continue;
             }
@@ -43,21 +42,21 @@ class ArtifactDeduplicationService
         }
 
         if (empty($namesByPath)) {
-            static::log("No records with names found for deduplication");
+            static::log('No records with names found for deduplication');
 
             return;
         }
 
-        static::log("Found names at " . count($namesByPath) . " different paths");
+        static::log('Found names at ' . count($namesByPath) . ' different paths');
 
         // Process each path separately
         $allMappings = [];
 
-        foreach($namesByPath as $path => $names) {
+        foreach ($namesByPath as $path => $names) {
             $newNames      = [];
             $existingNames = [];
 
-            foreach($names as $name => $info) {
+            foreach ($names as $name => $info) {
                 if ($info['has_new']) {
                     $newNames[$name] = true;
                 }
@@ -68,10 +67,11 @@ class ArtifactDeduplicationService
 
             if (empty($newNames)) {
                 static::log("No new names at path: $path");
+
                 continue;
             }
 
-            static::log("Processing path '$path': " . count($newNames) . " new names, " . count($existingNames) . " existing names");
+            static::log("Processing path '$path': " . count($newNames) . ' new names, ' . count($existingNames) . ' existing names');
 
             // Get normalized name mappings for this specific path
             $pathMappings = $this->getNormalizedNameMappings(
@@ -81,7 +81,7 @@ class ArtifactDeduplicationService
             );
 
             if ($pathMappings) {
-                foreach($pathMappings as $original => $normalized) {
+                foreach ($pathMappings as $original => $normalized) {
                     $allMappings[$path][$original] = $normalized;
                     static::log("Path '$path': Mapping '$original' => '$normalized'");
                 }
@@ -89,7 +89,7 @@ class ArtifactDeduplicationService
         }
 
         if (empty($allMappings)) {
-            static::log("No name mappings generated");
+            static::log('No name mappings generated');
 
             return;
         }
@@ -97,16 +97,11 @@ class ArtifactDeduplicationService
         // Apply normalized names to all artifacts
         $this->applyNormalizedNamesToArtifacts($artifacts, $allMappings);
 
-        static::log("Deduplication completed");
+        static::log('Deduplication completed');
     }
 
     /**
      * Extract names grouped by their path in the JSON structure
-     *
-     * @param array  $data
-     * @param string $currentPath
-     * @param array &$namesByPath
-     * @return void
      */
     protected function extractNamesGroupedByPath(array $data, string $currentPath, array &$namesByPath): void
     {
@@ -135,7 +130,7 @@ class ArtifactDeduplicationService
         }
 
         // Recursively search nested structures
-        foreach($data as $key => $value) {
+        foreach ($data as $key => $value) {
             if ($key === 'name' || $key === 'id') {
                 continue; // Skip these as we've already processed them
             }
@@ -145,7 +140,7 @@ class ArtifactDeduplicationService
                 if (isset($value[0]) && is_array($value[0])) {
                     // For arrays, we want to group all items at the same path
                     $arrayPath = $currentPath ? "$currentPath.$key" : $key;
-                    foreach($value as $item) {
+                    foreach ($value as $item) {
                         if (is_array($item)) {
                             $this->extractNamesGroupedByPath($item, $arrayPath, $namesByPath);
                         }
@@ -161,11 +156,6 @@ class ArtifactDeduplicationService
 
     /**
      * Get normalized name mappings from LLM
-     *
-     * @param array  $newNames
-     * @param array  $existingNames
-     * @param string $path
-     * @return array|null
      */
     protected function getNormalizedNameMappings(array $newNames, array $existingNames, string $path): ?array
     {
@@ -194,7 +184,7 @@ class ArtifactDeduplicationService
         // Parse the JSON response
         try {
             $content = $threadRun->lastMessage->content;
-            static::log("Raw LLM response: " . substr($content, 0, 500) . (strlen($content) > 500 ? '...' : ''));
+            static::log('Raw LLM response: ' . substr($content, 0, 500) . (strlen($content) > 500 ? '...' : ''));
 
             // Try to extract JSON from the response (in case it's wrapped in markdown or has extra text)
             // First try to extract from markdown code blocks
@@ -207,15 +197,15 @@ class ArtifactDeduplicationService
 
             $jsonContent = json_decode($content, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                static::log("Failed to parse JSON response: " . json_last_error_msg());
-                static::log("Content that failed to parse: " . $content);
+                static::log('Failed to parse JSON response: ' . json_last_error_msg());
+                static::log('Content that failed to parse: ' . $content);
 
                 return null;
             }
 
             return $jsonContent;
-        } catch(\Exception $e) {
-            static::log("Error parsing JSON response: " . $e->getMessage());
+        } catch (\Exception $e) {
+            static::log('Error parsing JSON response: ' . $e->getMessage());
 
             return null;
         }
@@ -223,11 +213,6 @@ class ArtifactDeduplicationService
 
     /**
      * Build the deduplication prompt
-     *
-     * @param array  $newNames
-     * @param array  $existingNames
-     * @param string $path
-     * @return string
      */
     protected function buildDeduplicationPrompt(array $newNames, array $existingNames, string $path): string
     {
@@ -281,9 +266,6 @@ PROMPT;
 
     /**
      * Get context description from path
-     *
-     * @param string $path
-     * @return string
      */
     protected function getContextFromPath(string $path): string
     {
@@ -308,22 +290,18 @@ PROMPT;
 
     /**
      * Apply normalized names to all artifacts
-     *
-     * @param Collection $artifacts
-     * @param array      $nameMappingsByPath
-     * @return void
      */
     protected function applyNormalizedNamesToArtifacts(Collection $artifacts, array $nameMappingsByPath): void
     {
         if (empty($nameMappingsByPath)) {
-            static::log("No name mappings to apply");
+            static::log('No name mappings to apply');
 
             return;
         }
 
         $totalUpdates = 0;
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             if (!$artifact->json_content) {
                 continue;
             }
@@ -339,7 +317,7 @@ PROMPT;
                 $artifact->save();
 
                 static::log("=== Updated artifact {$artifact->id} ===");
-                foreach($updates as $update) {
+                foreach ($updates as $update) {
                     static::log("  Path: {$update['path']} | '{$update['original']}' => '{$update['normalized']}'");
                     $totalUpdates++;
                 }
@@ -351,12 +329,6 @@ PROMPT;
 
     /**
      * Recursively update names in JSON content based on mappings
-     *
-     * @param array &$data
-     * @param string $currentPath
-     * @param array  $nameMappingsByPath
-     * @param array &$updates
-     * @return void
      */
     protected function updateNamesInJsonContent(array &$data, string $currentPath, array $nameMappingsByPath, array &$updates): void
     {
@@ -381,7 +353,7 @@ PROMPT;
         }
 
         // Recursively process nested structures
-        foreach($data as $key => &$value) {
+        foreach ($data as $key => &$value) {
             if ($key === 'name' || $key === 'id') {
                 continue; // Skip these as we've already processed them
             }
@@ -390,7 +362,7 @@ PROMPT;
                 // Handle arrays of objects
                 if (isset($value[0]) && is_array($value[0])) {
                     $arrayPath = $currentPath ? "$currentPath.$key" : $key;
-                    foreach($value as &$item) {
+                    foreach ($value as &$item) {
                         if (is_array($item)) {
                             $this->updateNamesInJsonContent($item, $arrayPath, $nameMappingsByPath, $updates);
                         }
@@ -403,5 +375,4 @@ PROMPT;
             }
         }
     }
-
 }

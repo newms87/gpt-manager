@@ -474,7 +474,7 @@ class BillingControllerTest extends AuthenticatedTestCase
             ['GET', '/api/billing/usage'],
         ];
 
-        foreach($endpoints as [$method, $endpoint]) {
+        foreach ($endpoints as [$method, $endpoint]) {
             $response = $this->call($method, $endpoint);
             // Sanctum redirects unauthenticated requests (302) for web guard, but API should return 401
             // Accept both 401 (proper API response) and 302 (redirect) for compatibility

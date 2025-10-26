@@ -22,8 +22,11 @@ class TaskProcessErrorTrackingTest extends TestCase
     use RefreshDatabase;
 
     protected TaskProcessErrorTrackingService $service;
+
     protected TaskDefinition $taskDefinition;
+
     protected TaskRun $taskRun;
+
     protected TaskProcess $taskProcess;
 
     public function setUp(): void
@@ -37,12 +40,12 @@ class TaskProcessErrorTrackingTest extends TestCase
 
         // Create test models
         $this->taskDefinition = TaskDefinition::factory()->create();
-        $this->taskRun = TaskRun::factory()->create([
+        $this->taskRun        = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
         ]);
         $this->taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
-            'name' => 'Test Process',
+            'name'        => 'Test Process',
         ]);
     }
 
@@ -58,8 +61,8 @@ class TaskProcessErrorTrackingTest extends TestCase
     {
         // Create a job dispatch
         $jobDispatch = JobDispatch::create([
-            'ref' => 'test-job-' . uniqid(),
-            'name' => 'TestJob',
+            'ref'    => 'test-job-' . uniqid(),
+            'name'   => 'TestJob',
             'status' => JobDispatch::STATUS_RUNNING,
             'ran_at' => now(),
         ]);
@@ -69,11 +72,11 @@ class TaskProcessErrorTrackingTest extends TestCase
 
         // Create an audit request for the job dispatch
         $auditRequest = AuditRequest::create([
-            'session_id' => 'test-session',
+            'session_id'  => 'test-session',
             'environment' => 'testing',
-            'url' => 'test-job',
-            'request' => [],
-            'time' => 0,
+            'url'         => 'test-job',
+            'request'     => [],
+            'time'        => 0,
         ]);
         AuditDriver::$auditRequest = $auditRequest;
         $jobDispatch->update(['running_audit_request_id' => $auditRequest->id]);
@@ -133,11 +136,11 @@ class TaskProcessErrorTrackingTest extends TestCase
         // Create additional task processes
         $taskProcess2 = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
-            'name' => 'Test Process 2',
+            'name'        => 'Test Process 2',
         ]);
         $taskProcess3 = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
-            'name' => 'Test Process 3',
+            'name'        => 'Test Process 3',
         ]);
 
         // Create job dispatches with different error counts
@@ -166,8 +169,8 @@ class TaskProcessErrorTrackingTest extends TestCase
     {
         // Create a job dispatch
         $jobDispatch = JobDispatch::create([
-            'ref' => 'test-job-' . uniqid(),
-            'name' => 'TestJob',
+            'ref'    => 'test-job-' . uniqid(),
+            'name'   => 'TestJob',
             'status' => JobDispatch::STATUS_RUNNING,
             'ran_at' => now(),
         ]);
@@ -177,11 +180,11 @@ class TaskProcessErrorTrackingTest extends TestCase
 
         // Create audit request and log errors
         $auditRequest = AuditRequest::create([
-            'session_id' => 'test-session',
+            'session_id'  => 'test-session',
             'environment' => 'testing',
-            'url' => 'test-job',
-            'request' => [],
-            'time' => 0,
+            'url'         => 'test-job',
+            'request'     => [],
+            'time'        => 0,
         ]);
         AuditDriver::$auditRequest = $auditRequest;
         $jobDispatch->update(['running_audit_request_id' => $auditRequest->id]);
@@ -203,9 +206,9 @@ class TaskProcessErrorTrackingTest extends TestCase
     {
         // Create a workflow
         $workflowDefinition = WorkflowDefinition::factory()->create(['name' => 'Test Workflow']);
-        $workflowNode = WorkflowNode::factory()->create([
+        $workflowNode       = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'     => $this->taskDefinition->id,
         ]);
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
@@ -214,18 +217,18 @@ class TaskProcessErrorTrackingTest extends TestCase
         // Create multiple task runs with different error counts
         $taskRun1 = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
-            'workflow_run_id' => $workflowRun->id,
-            'workflow_node_id' => $workflowNode->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
         ]);
         $taskRun2 = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
-            'workflow_run_id' => $workflowRun->id,
-            'workflow_node_id' => $workflowNode->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
         ]);
         $taskRun3 = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
-            'workflow_run_id' => $workflowRun->id,
-            'workflow_node_id' => $workflowNode->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
         ]);
 
         // Create task processes with errors for each task run
@@ -270,9 +273,9 @@ class TaskProcessErrorTrackingTest extends TestCase
     {
         // Create a workflow
         $workflowDefinition = WorkflowDefinition::factory()->create(['name' => 'Test Workflow']);
-        $workflowNode = WorkflowNode::factory()->create([
+        $workflowNode       = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'     => $this->taskDefinition->id,
         ]);
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
@@ -281,8 +284,8 @@ class TaskProcessErrorTrackingTest extends TestCase
         // Create a task run
         $taskRun = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
-            'workflow_run_id' => $workflowRun->id,
-            'workflow_node_id' => $workflowNode->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
         ]);
 
         // Initially no errors
@@ -322,9 +325,9 @@ class TaskProcessErrorTrackingTest extends TestCase
     {
         // Create a workflow
         $workflowDefinition = WorkflowDefinition::factory()->create(['name' => 'Test Workflow']);
-        $workflowNode = WorkflowNode::factory()->create([
+        $workflowNode       = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'task_definition_id' => $this->taskDefinition->id,
+            'task_definition_id'     => $this->taskDefinition->id,
         ]);
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
@@ -333,8 +336,8 @@ class TaskProcessErrorTrackingTest extends TestCase
         // Create task run and task process with errors
         $taskRun = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
-            'workflow_run_id' => $workflowRun->id,
-            'workflow_node_id' => $workflowNode->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
         ]);
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $taskRun->id]);
         $jobDispatch = $this->createJobDispatchWithErrors(4);
@@ -353,27 +356,27 @@ class TaskProcessErrorTrackingTest extends TestCase
     private function createJobDispatchWithErrors(int $errorCount): JobDispatch
     {
         $jobDispatch = JobDispatch::create([
-            'ref' => 'test-job-' . uniqid(),
-            'name' => 'TestJob',
-            'status' => JobDispatch::STATUS_COMPLETE,
-            'ran_at' => now(),
+            'ref'          => 'test-job-' . uniqid(),
+            'name'         => 'TestJob',
+            'status'       => JobDispatch::STATUS_COMPLETE,
+            'ran_at'       => now(),
             'completed_at' => now(),
         ]);
 
         // Create audit request
         $auditRequest = AuditRequest::create([
-            'session_id' => 'test-session',
+            'session_id'  => 'test-session',
             'environment' => 'testing',
-            'url' => 'test-job',
-            'request' => [],
-            'time' => 0,
+            'url'         => 'test-job',
+            'request'     => [],
+            'time'        => 0,
         ]);
         AuditDriver::$auditRequest = $auditRequest;
         $jobDispatch->update(['running_audit_request_id' => $auditRequest->id]);
 
         // Log errors
         for ($i = 0; $i < $errorCount; $i++) {
-            ErrorLog::logErrorMessage(ErrorLog::ERROR, "Test error " . ($i + 1));
+            ErrorLog::logErrorMessage(ErrorLog::ERROR, 'Test error ' . ($i + 1));
         }
 
         return $jobDispatch;

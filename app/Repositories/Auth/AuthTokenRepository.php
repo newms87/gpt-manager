@@ -5,7 +5,6 @@ namespace App\Repositories\Auth;
 use App\Models\Auth\AuthToken;
 use App\Models\Team\Team;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Repositories\ActionRepository;
 
 class AuthTokenRepository extends ActionRepository
@@ -26,7 +25,7 @@ class AuthTokenRepository extends ActionRepository
     public function getOAuthToken(string $service, ?Team $team = null): ?AuthToken
     {
         $team = $team ?: team();
-        
+
         if (!$team) {
             return null;
         }
@@ -47,7 +46,7 @@ class AuthTokenRepository extends ActionRepository
     public function getApiKey(string $service, ?string $name = null, ?Team $team = null): ?AuthToken
     {
         $team = $team ?: team();
-        
+
         if (!$team) {
             return null;
         }
@@ -74,7 +73,7 @@ class AuthTokenRepository extends ActionRepository
         array $metadata = []
     ): AuthToken {
         $team = $team ?: team();
-        
+
         if (!$team) {
             throw new \InvalidArgumentException('Team is required to store OAuth token');
         }
@@ -92,21 +91,21 @@ class AuthTokenRepository extends ActionRepository
 
         $scopes = [];
         if (isset($tokenData['scope'])) {
-            $scopes = is_array($tokenData['scope']) 
-                ? $tokenData['scope'] 
+            $scopes = is_array($tokenData['scope'])
+                ? $tokenData['scope']
                 : explode(' ', $tokenData['scope']);
         }
 
         return AuthToken::create([
-            'team_id' => $team->id,
-            'service' => $service,
-            'type' => AuthToken::TYPE_OAUTH,
-            'access_token' => $tokenData['access_token'],
+            'team_id'       => $team->id,
+            'service'       => $service,
+            'type'          => AuthToken::TYPE_OAUTH,
+            'access_token'  => $tokenData['access_token'],
             'refresh_token' => $tokenData['refresh_token'] ?? null,
-            'id_token' => $tokenData['id_token'] ?? null,
-            'scopes' => $scopes,
-            'expires_at' => $expiresAt,
-            'metadata' => $metadata,
+            'id_token'      => $tokenData['id_token']      ?? null,
+            'scopes'        => $scopes,
+            'expires_at'    => $expiresAt,
+            'metadata'      => $metadata,
         ]);
     }
 
@@ -121,18 +120,18 @@ class AuthTokenRepository extends ActionRepository
         array $metadata = []
     ): AuthToken {
         $team = $team ?: team();
-        
+
         if (!$team) {
             throw new \InvalidArgumentException('Team is required to store API key');
         }
 
         return AuthToken::create([
-            'team_id' => $team->id,
-            'service' => $service,
-            'type' => AuthToken::TYPE_API_KEY,
-            'name' => $name,
+            'team_id'      => $team->id,
+            'service'      => $service,
+            'type'         => AuthToken::TYPE_API_KEY,
+            'name'         => $name,
             'access_token' => $apiKey,
-            'metadata' => $metadata,
+            'metadata'     => $metadata,
         ]);
     }
 
@@ -154,13 +153,13 @@ class AuthTokenRepository extends ActionRepository
         }
 
         if (isset($tokenData['scope'])) {
-            $updateData['scopes'] = is_array($tokenData['scope']) 
-                ? $tokenData['scope'] 
+            $updateData['scopes'] = is_array($tokenData['scope'])
+                ? $tokenData['scope']
                 : explode(' ', $tokenData['scope']);
         }
 
         $token->update($updateData);
-        
+
         return $token->fresh();
     }
 
@@ -170,6 +169,7 @@ class AuthTokenRepository extends ActionRepository
     public function revokeToken(AuthToken $token): bool
     {
         $this->validateTokenOwnership($token);
+
         return $token->delete();
     }
 
@@ -179,6 +179,7 @@ class AuthTokenRepository extends ActionRepository
     public function permanentlyDeleteToken(AuthToken $token): bool
     {
         $this->validateTokenOwnership($token);
+
         return $token->forceDelete();
     }
 
@@ -188,7 +189,7 @@ class AuthTokenRepository extends ActionRepository
     public function softDeleteInvalidTokens(string $service, ?Team $team = null): int
     {
         $team = $team ?: team();
-        
+
         if (!$team) {
             return 0;
         }
@@ -209,7 +210,7 @@ class AuthTokenRepository extends ActionRepository
     public function getDeletedTokensForTeam(?Team $team = null): \Illuminate\Database\Eloquent\Collection
     {
         $team = $team ?: team();
-        
+
         if (!$team) {
             return collect();
         }
@@ -253,7 +254,7 @@ class AuthTokenRepository extends ActionRepository
     public function getTokensForTeam(?Team $team = null): \Illuminate\Database\Eloquent\Collection
     {
         $team = $team ?: team();
-        
+
         if (!$team) {
             return collect();
         }
@@ -271,7 +272,7 @@ class AuthTokenRepository extends ActionRepository
     public function getExpiringTokens(int $withinMinutes = 5): \Illuminate\Database\Eloquent\Collection
     {
         $expiresBefore = now()->addMinutes($withinMinutes);
-        
+
         return AuthToken::ofType(AuthToken::TYPE_OAUTH)
             ->where('expires_at', '<=', $expiresBefore)
             ->where('expires_at', '>', now())
@@ -295,16 +296,16 @@ class AuthTokenRepository extends ActionRepository
      */
     public function permanentlyCleanupOldDeletedTokens(int $daysOld = 90, ?Team $team = null): int
     {
-        $team = $team ?: team();
+        $team       = $team ?: team();
         $cutoffDate = now()->subDays($daysOld);
-        
+
         $query = AuthToken::onlyTrashed()
             ->where('deleted_at', '<', $cutoffDate);
-            
+
         if ($team) {
             $query->where('team_id', $team->id);
         }
-        
+
         return $query->forceDelete();
     }
 }

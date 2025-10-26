@@ -11,7 +11,6 @@ use App\Models\Schema\SchemaAssociation;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
-use Mockery;
 use Newms87\Danx\Exceptions\ValidationError;
 use Tests\AuthenticatedTestCase;
 use Tests\Feature\Api\TestAi\TestAiApi;
@@ -21,7 +20,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     public function setUp(): void
     {
         parent::setUp();
-        
+
         // Configure test-model for testing
         Config::set('ai.models.test-model', [
             'api'     => TestAiApi::class,

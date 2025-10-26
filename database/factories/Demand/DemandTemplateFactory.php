@@ -100,7 +100,7 @@ class DemandTemplateFactory extends Factory
     /**
      * Set the template to use a Google Docs URL.
      */
-    public function withGoogleDocsUrl(string $url = null): static
+    public function withGoogleDocsUrl(?string $url = null): static
     {
         $googleDocUrl = $url ?? 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit';
 

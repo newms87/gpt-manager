@@ -8,19 +8,19 @@ class TokenExpiredException extends ValidationError
 {
     public function __construct(string $service, ?string $teamId = null, ?string $expiresAt = null, int $code = 401)
     {
-        $teamContext = $teamId ? " for team {$teamId}" : "";
-        $expiredAt = $expiresAt ? " (expired at {$expiresAt})" : "";
-        $message = "OAuth token for {$service}{$teamContext} has expired{$expiredAt}. Token refresh failed - re-authorization required.";
-        
+        $teamContext = $teamId ? " for team {$teamId}" : '';
+        $expiredAt   = $expiresAt ? " (expired at {$expiresAt})" : '';
+        $message     = "OAuth token for {$service}{$teamContext} has expired{$expiredAt}. Token refresh failed - re-authorization required.";
+
         parent::__construct($message, $code);
-        
+
         // Set additional context for error handling
         $this->context = [
-            'service' => $service,
-            'team_id' => $teamId,
-            'expires_at' => $expiresAt,
-            'error_type' => 'token_expired',
-            'action_required' => 'oauth_authorization'
+            'service'         => $service,
+            'team_id'         => $teamId,
+            'expires_at'      => $expiresAt,
+            'error_type'      => 'token_expired',
+            'action_required' => 'oauth_authorization',
         ];
     }
 

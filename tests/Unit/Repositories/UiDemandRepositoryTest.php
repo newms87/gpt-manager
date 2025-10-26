@@ -81,7 +81,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
         $this->assertTrue($inputFiles->pluck('id')->contains($storedFile2->id));
 
         // Verify pivot table has correct category
-        foreach($inputFiles as $file) {
+        foreach ($inputFiles as $file) {
             $this->assertEquals('input', $file->pivot->category);
         }
     }
@@ -169,7 +169,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
         $this->assertFalse($inputFiles->pluck('id')->contains($initialFile->id));
 
         // Verify pivot table has correct category
-        foreach($inputFiles as $file) {
+        foreach ($inputFiles as $file) {
             $this->assertEquals('input', $file->pivot->category);
         }
     }
@@ -243,7 +243,7 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
         $this->assertTrue($inputFiles->pluck('id')->contains($file2->id));
 
         // Verify pivot table has correct category
-        foreach($inputFiles as $file) {
+        foreach ($inputFiles as $file) {
             $this->assertEquals('input', $file->pivot->category);
         }
     }
@@ -346,10 +346,10 @@ class UiDemandRepositoryTest extends AuthenticatedTestCase
                     'Demand',
                     'Test Demand Title',
                     \Mockery::on(function ($data) {
-                        return isset($data['demand_id']) &&
-                            isset($data['title']) &&
-                            isset($data['description']) &&
-                            $data['title'] === 'Test Demand Title' &&
+                        return isset($data['demand_id'])                 &&
+                            isset($data['title'])                        &&
+                            isset($data['description'])                  &&
+                            $data['title']       === 'Test Demand Title' &&
                             $data['description'] === 'Test Demand Description';
                     })
                 )

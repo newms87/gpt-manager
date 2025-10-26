@@ -23,11 +23,11 @@ class PaymentMethodRepository extends ActionRepository
     public function applyAction(string $action, PaymentMethod|Model|array|null $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createPaymentMethod($data),
-            'update' => $this->updatePaymentMethod($model, $data),
+            'create'       => $this->createPaymentMethod($data),
+            'update'       => $this->updatePaymentMethod($model, $data),
             'make-default' => $this->makeDefaultPaymentMethod($model),
-            'delete' => $this->deletePaymentMethod($model),
-            default => parent::applyAction($action, $model, $data)
+            'delete'       => $this->deletePaymentMethod($model),
+            default        => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -47,54 +47,54 @@ class PaymentMethodRepository extends ActionRepository
     protected function createPaymentMethod(array $data): PaymentMethod
     {
         $this->validateTeamOwnership();
-        
+
         $data['team_id'] = team()->id;
-        
+
         $paymentMethod = new PaymentMethod($data);
         $paymentMethod->validate();
         $paymentMethod->save();
-        
+
         // If this is the first payment method for the team, make it default
         $existingCount = PaymentMethod::forTeam(team()->id)->count();
         if ($existingCount === 1) {
             $paymentMethod->makeDefault();
         }
-        
+
         return $paymentMethod->fresh();
     }
 
     protected function updatePaymentMethod(PaymentMethod $paymentMethod, array $data): PaymentMethod
     {
         $this->validateOwnership($paymentMethod);
-        
+
         $paymentMethod->fill($data);
         $paymentMethod->validate();
         $paymentMethod->save();
-        
+
         return $paymentMethod->fresh();
     }
 
     protected function makeDefaultPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod
     {
         $this->validateOwnership($paymentMethod);
-        
+
         if ($paymentMethod->is_default) {
-            throw new ValidationError("Payment method is already the default", 400);
+            throw new ValidationError('Payment method is already the default', 400);
         }
 
         $paymentMethod->makeDefault();
-        
+
         return $paymentMethod->fresh();
     }
 
     protected function deletePaymentMethod(PaymentMethod $paymentMethod): bool
     {
         $this->validateOwnership($paymentMethod);
-        
+
         // Check if this is the only payment method
         $paymentMethodCount = PaymentMethod::forTeam($paymentMethod->team_id)->count();
         if ($paymentMethodCount === 1) {
-            throw new ValidationError("Cannot delete the only payment method", 400);
+            throw new ValidationError('Cannot delete the only payment method', 400);
         }
 
         // If this was the default, make another one default
@@ -102,12 +102,12 @@ class PaymentMethodRepository extends ActionRepository
             $nextPaymentMethod = PaymentMethod::forTeam($paymentMethod->team_id)
                 ->where('id', '!=', $paymentMethod->id)
                 ->first();
-                
+
             if ($nextPaymentMethod) {
                 $nextPaymentMethod->makeDefault();
             }
         }
-        
+
         return $paymentMethod->delete();
     }
 

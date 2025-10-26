@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Assistant;
 
 use App\Http\Resources\Assistant\AssistantActionResource;
 use App\Models\Agent\AgentThread;
-use App\Models\Assistant\AssistantAction;
 use App\Repositories\Assistant\UniversalAssistantRepository;
 use App\Resources\Agent\AgentThreadResource;
 use App\Services\Assistant\UniversalAssistantService;
@@ -15,6 +14,7 @@ use Newms87\Danx\Http\Controllers\ActionController;
 class UniversalAssistantController extends ActionController
 {
     public static ?string $repo     = UniversalAssistantRepository::class;
+
     public static ?string $resource = AssistantActionResource::class;
 
     public function startChat(Request $request)
@@ -55,7 +55,6 @@ class UniversalAssistantController extends ActionController
 
         return AgentThreadResource::make($result['thread'], ['actions' => true]);
     }
-
 
     public function getContextCapabilities(Request $request): JsonResponse
     {

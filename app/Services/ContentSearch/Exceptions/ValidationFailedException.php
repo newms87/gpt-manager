@@ -10,7 +10,7 @@ class ValidationFailedException extends ContentSearchException
         if ($validationReason) {
             $message .= ": {$validationReason}";
         }
-        
+
         parent::__construct($message);
     }
 }

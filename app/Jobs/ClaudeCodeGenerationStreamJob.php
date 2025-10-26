@@ -5,18 +5,19 @@ namespace App\Jobs;
 use App\Events\ClaudeCodeGenerationEvent;
 use App\Models\Task\TaskDefinition;
 use Exception;
-use Illuminate\Support\Facades\Process;
 use Newms87\Danx\Jobs\Job;
 
 class ClaudeCodeGenerationStreamJob extends Job
 {
     public TaskDefinition $taskDefinition;
+
     public string $taskDescription;
+
     public int $timeout = 1200; // 20 minutes for code generation
 
     public function __construct(TaskDefinition $taskDefinition, string $taskDescription)
     {
-        $this->taskDefinition = $taskDefinition;
+        $this->taskDefinition  = $taskDefinition;
         $this->taskDescription = $taskDescription;
         parent::__construct();
     }
@@ -31,17 +32,17 @@ class ClaudeCodeGenerationStreamJob extends Job
         try {
             // Notify frontend that generation is starting
             $this->broadcastEvent('started', [
-                'message' => 'Starting code generation...',
-                'progress' => 0
+                'message'  => 'Starting code generation...',
+                'progress' => 0,
             ]);
 
             // Generate the code using Claude with streaming
             $this->streamClaudeCodeGeneration();
-            
+
         } catch (Exception $e) {
             $this->broadcastEvent('error', [
-                'error' => $e->getMessage(),
-                'message' => 'Code generation failed'
+                'error'   => $e->getMessage(),
+                'message' => 'Code generation failed',
             ]);
             throw $e;
         }
@@ -53,76 +54,76 @@ class ClaudeCodeGenerationStreamJob extends Job
     private function streamClaudeCodeGeneration(): void
     {
         $this->broadcastEvent('progress', [
-            'message' => 'Preparing Claude prompt...',
-            'progress' => 10
+            'message'  => 'Preparing Claude prompt...',
+            'progress' => 10,
         ]);
 
         // Build the prompt
         $prompt = $this->buildClaudePrompt();
-        
+
         $this->broadcastEvent('progress', [
-            'message' => 'Sending request to Claude...',
-            'progress' => 20
+            'message'  => 'Sending request to Claude...',
+            'progress' => 20,
         ]);
 
         // Execute Claude with streaming output
         $descriptorspec = [
-            0 => ["pipe", "r"],  // stdin
-            1 => ["pipe", "w"],  // stdout
-            2 => ["pipe", "w"]   // stderr
+            0 => ['pipe', 'r'],  // stdin
+            1 => ['pipe', 'w'],  // stdout
+            2 => ['pipe', 'w'],   // stderr
         ];
 
         $process = proc_open(['claude', 'code', '--prompt', $prompt], $descriptorspec, $pipes);
-        
+
         if (is_resource($process)) {
             fclose($pipes[0]); // Close stdin
-            
+
             $generatedCode = '';
-            $progress = 30;
-            
+            $progress      = 30;
+
             // Stream the output via WebSocket
             while (!feof($pipes[1])) {
                 $chunk = fread($pipes[1], 1024);
                 if ($chunk) {
                     $generatedCode .= $chunk;
                     $progress = min(90, $progress + 2);
-                    
+
                     // Send progress updates with partial code via WebSocket
                     $this->broadcastEvent('code_chunk', [
-                        'chunk' => $chunk,
-                        'progress' => $progress,
-                        'total_code' => $generatedCode
+                        'chunk'      => $chunk,
+                        'progress'   => $progress,
+                        'total_code' => $generatedCode,
                     ]);
-                    
+
                     usleep(50000); // Small delay to prevent overwhelming the client
                 }
             }
-            
+
             fclose($pipes[1]);
             fclose($pipes[2]);
             proc_close($process);
-            
+
             // Extract PHP code from response
             $finalCode = $this->extractPhpCodeFromResponse($generatedCode);
-            
+
             if ($finalCode) {
                 $this->broadcastEvent('progress', [
-                    'message' => 'Saving generated code...',
-                    'progress' => 95
+                    'message'  => 'Saving generated code...',
+                    'progress' => 95,
                 ]);
-                
+
                 // Update the task definition with generated code
-                $config = $this->taskDefinition->task_runner_config ?? [];
-                $config['generated_code'] = $finalCode;
+                $config                      = $this->taskDefinition->task_runner_config ?? [];
+                $config['generated_code']    = $finalCode;
                 $config['code_generated_at'] = now()->toISOString();
-                $config['task_description'] = $this->taskDescription;
-                
+                $config['task_description']  = $this->taskDescription;
+
                 $this->taskDefinition->update(['task_runner_config' => $config]);
-                
+
                 $this->broadcastEvent('completed', [
-                    'code' => $finalCode,
+                    'code'     => $finalCode,
                     'progress' => 100,
-                    'message' => 'Code generation completed!'
+                    'message'  => 'Code generation completed!',
                 ]);
             } else {
                 throw new Exception('No valid PHP code generated by Claude');
@@ -170,17 +171,17 @@ The code should accomplish the task described above and create appropriate outpu
         if (preg_match('/```php\s*(.*?)\s*```/s', $response, $matches)) {
             return trim($matches[1]);
         }
-        
+
         // Look for code starting with <?php
         if (preg_match('/<\?php.*$/s', $response, $matches)) {
             return trim($matches[0]);
         }
-        
+
         // If response starts with <?php, use it as-is
         if (str_starts_with(trim($response), '<?php')) {
             return trim($response);
         }
-        
+
         // Last resort: wrap the response in <?php tags
         return "<?php\n\n" . trim($response);
     }

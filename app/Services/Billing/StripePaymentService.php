@@ -4,26 +4,26 @@ namespace App\Services\Billing;
 
 use App\Api\Stripe\StripeApi;
 use App\Models\Team\Team;
-use Newms87\Danx\Exceptions\ValidationError;
 
 class StripePaymentService implements StripePaymentServiceInterface
 {
     protected StripeApi $stripeApi;
+
     protected string $webhookSecret;
 
     public function __construct(StripeApi $stripeApi)
     {
-        $this->stripeApi = $stripeApi;
+        $this->stripeApi     = $stripeApi;
         $this->webhookSecret = config('services.stripe.webhook_secret') ?? '';
     }
 
     public function createCustomer(Team $team, array $customerData = []): array
     {
         return $this->stripeApi->createCustomer([
-            'email' => $customerData['email'] ?? null,
-            'name' => $customerData['name'] ?? $team->name,
+            'email'    => $customerData['email'] ?? null,
+            'name'     => $customerData['name']  ?? $team->name,
             'metadata' => [
-                'team_id' => (string) $team->id,
+                'team_id' => (string)$team->id,
             ],
         ]);
     }
@@ -32,7 +32,7 @@ class StripePaymentService implements StripePaymentServiceInterface
     {
         return $this->stripeApi->createSetupIntent([
             'customer' => $customerId,
-            'usage' => 'off_session',
+            'usage'    => 'off_session',
             'metadata' => $options['metadata'] ?? [],
         ]);
     }
@@ -50,26 +50,26 @@ class StripePaymentService implements StripePaymentServiceInterface
     public function createSubscription(string $customerId, string $priceId, array $options = []): array
     {
         return $this->stripeApi->createSubscription([
-            'customer' => $customerId,
-            'items' => [['price' => $priceId]],
+            'customer'          => $customerId,
+            'items'             => [['price' => $priceId]],
             'trial_period_days' => $options['trial_period_days'] ?? null,
-            'metadata' => $options['metadata'] ?? [],
+            'metadata'          => $options['metadata']          ?? [],
         ]);
     }
 
     public function updateSubscription(string $subscriptionId, array $options = []): array
     {
         $data = [];
-        
+
         if (isset($options['subscription_item_id']) && isset($options['price_id'])) {
             $data['items'] = [[
-                'id' => $options['subscription_item_id'],
+                'id'    => $options['subscription_item_id'],
                 'price' => $options['price_id'],
             ]];
         }
-        
+
         $data['proration_behavior'] = $options['proration_behavior'] ?? 'create_prorations';
-        
+
         return $this->stripeApi->updateSubscription($subscriptionId, $data);
     }
 
@@ -87,19 +87,19 @@ class StripePaymentService implements StripePaymentServiceInterface
     public function createInvoiceItem(string $customerId, float $amount, string $currency = 'USD', array $options = []): array
     {
         return $this->stripeApi->createInvoiceItem([
-            'customer' => $customerId,
-            'amount' => (int) round($amount * 100), // Convert to cents
-            'currency' => strtolower($currency),
+            'customer'    => $customerId,
+            'amount'      => (int)round($amount * 100), // Convert to cents
+            'currency'    => strtolower($currency),
             'description' => $options['description'] ?? 'Usage charges',
-            'metadata' => $options['metadata'] ?? [],
+            'metadata'    => $options['metadata']    ?? [],
         ]);
     }
 
     public function createInvoice(string $customerId, array $options = []): array
     {
         return $this->stripeApi->createInvoice([
-            'customer' => $customerId,
-            'auto_advance' => $options['auto_advance'] ?? true,
+            'customer'          => $customerId,
+            'auto_advance'      => $options['auto_advance']      ?? true,
             'collection_method' => $options['collection_method'] ?? 'charge_automatically',
         ]);
     }
@@ -126,7 +126,7 @@ class StripePaymentService implements StripePaymentServiceInterface
         return json_decode($payload, true);
     }
 
-    public function validateWebhookSignature(string $payload, string $signature, string $secret = null): ?array
+    public function validateWebhookSignature(string $payload, string $signature, ?string $secret = null): ?array
     {
         // Webhook validation needs Stripe SDK - for testing purposes, return parsed payload
         // In full implementation, would validate signature with Stripe SDK
@@ -136,18 +136,18 @@ class StripePaymentService implements StripePaymentServiceInterface
             return null;
         }
     }
-    
+
     public function confirmSetupIntent(string $setupIntentId): array
     {
         return $this->stripeApi->confirmSetupIntent($setupIntentId);
     }
-    
+
     public function createCharge(string $customerId, int $amountInCents, string $currency, string $description): array
     {
         return $this->stripeApi->createCharge([
-            'customer' => $customerId,
-            'amount' => $amountInCents,
-            'currency' => strtolower($currency),
+            'customer'    => $customerId,
+            'amount'      => $amountInCents,
+            'currency'    => strtolower($currency),
             'description' => $description,
         ]);
     }

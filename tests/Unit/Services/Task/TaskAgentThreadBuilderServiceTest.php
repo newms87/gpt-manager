@@ -28,7 +28,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function fromTaskDefinition_withTaskDefinition_includesDirectivesAndPrompt(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent          = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskDefinition = TaskDefinition::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
@@ -67,7 +67,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertInstanceOf(AgentThread::class, $thread);
-        $messages = $thread->messages;
+        $messages   = $thread->messages;
         $allContent = $messages->pluck('content')->join(' ');
 
         $this->assertStringContainsString('Before directive', $allContent);
@@ -79,7 +79,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function fromTaskDefinition_withTaskRun_setsTaskRunContext(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent          = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskDefinition = TaskDefinition::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
@@ -148,7 +148,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function withContextArtifacts_withNoContext_addsOnlyPrimaryArtifacts(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent          = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskDefinition = TaskDefinition::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
@@ -167,7 +167,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertInstanceOf(AgentThread::class, $thread);
-        $messages = $thread->messages;
+        $messages   = $thread->messages;
         $allContent = $messages->pluck('content')->join(' ');
 
         $this->assertStringContainsString('PRIMARY ARTIFACTS', $allContent);
@@ -179,7 +179,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function withContextArtifacts_withBeforeAndAfter_groupsByPosition(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent          = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskDefinition = TaskDefinition::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
@@ -220,7 +220,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertInstanceOf(AgentThread::class, $thread);
-        $messages = $thread->messages;
+        $messages   = $thread->messages;
         $allContent = $messages->pluck('content')->join(' ');
 
         $this->assertStringContainsString('CONTEXT BEFORE', $allContent);
@@ -228,9 +228,9 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
         $this->assertStringContainsString('CONTEXT AFTER', $allContent);
 
         // Verify order by checking positions in the combined content
-        $beforePos = strpos($allContent, 'CONTEXT BEFORE');
+        $beforePos  = strpos($allContent, 'CONTEXT BEFORE');
         $primaryPos = strpos($allContent, 'PRIMARY ARTIFACTS');
-        $afterPos = strpos($allContent, 'CONTEXT AFTER');
+        $afterPos   = strpos($allContent, 'CONTEXT AFTER');
 
         $this->assertLessThan($primaryPos, $beforePos);
         $this->assertLessThan($afterPos, $primaryPos);
@@ -240,7 +240,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function withContextArtifacts_withOnlyBefore_addsOnlyBeforeContext(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent          = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskDefinition = TaskDefinition::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
@@ -265,7 +265,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
 
         // Then
         $this->assertInstanceOf(AgentThread::class, $thread);
-        $messages = $thread->messages;
+        $messages   = $thread->messages;
         $allContent = $messages->pluck('content')->join(' ');
 
         $this->assertStringContainsString('CONTEXT BEFORE', $allContent);
@@ -277,7 +277,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function named_withCustomName_setsThreadName(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent          = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskDefinition = TaskDefinition::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
@@ -296,7 +296,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function includePageNumbers_withArtifacts_injectsPageNumbers(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent          = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskDefinition = TaskDefinition::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
@@ -317,7 +317,7 @@ class TaskAgentThreadBuilderServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertInstanceOf(AgentThread::class, $thread);
         $messages = $thread->messages;
-        $content = $messages->pluck('content')->join(' ');
+        $content  = $messages->pluck('content')->join(' ');
         $this->assertStringContainsString('Page 7', $content);
     }
 }

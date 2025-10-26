@@ -47,7 +47,7 @@ class WorkflowRunUpdatedEvent extends ModelSavedEvent
             'error_count'            => true,
             'completed_tasks'        => true,
             'stopped_at'             => true,
-            'failed_at'             => true,
+            'failed_at'              => true,
             'completed_at'           => true,
             'updated_at'             => true,
         ]);

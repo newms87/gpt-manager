@@ -46,7 +46,7 @@ trait HasObjectTags
 
     public function addObjectTags($category, $tagNames): static
     {
-        foreach($tagNames as $tagName) {
+        foreach ($tagNames as $tagName) {
             $this->addObjectTag($category, $tagName);
         }
 
@@ -56,7 +56,7 @@ trait HasObjectTags
     public function setObjectTags($category, $tagNames): static
     {
         $objectTagIds = [];
-        foreach($tagNames as $tagName) {
+        foreach ($tagNames as $tagName) {
             $objectTagIds[] = $this->createObjectTag($category, $tagName)->id;
         }
 

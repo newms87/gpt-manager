@@ -36,7 +36,7 @@ class TaskQueueTypeSeeder extends Seeder
             ],
         ];
 
-        foreach($queueTypes as $queueType) {
+        foreach ($queueTypes as $queueType) {
             TaskQueueType::updateOrCreate(
                 ['name' => $queueType['name']], // Find by name
                 $queueType // Update or create with these values

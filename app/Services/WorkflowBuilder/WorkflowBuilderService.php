@@ -50,7 +50,7 @@ class WorkflowBuilderService
 
         // Add user input to thread
         $chat->agentThread->messages()->create([
-            'role' => 'user',
+            'role'    => 'user',
             'content' => $userInput,
         ]);
 
@@ -67,27 +67,27 @@ class WorkflowBuilderService
 
         // Extract plan from response
         $plan = $this->extractPlanFromResponse($agentThreadRun->lastMessage);
-        
+
         // Update chat meta with plan state (only transition if not already in analyzing_plan)
         if ($chat->status !== WorkflowBuilderChat::STATUS_ANALYZING_PLAN) {
             $chat->updatePhase(WorkflowBuilderChat::STATUS_ANALYZING_PLAN, [
-                'generated_plan' => $plan,
+                'generated_plan'    => $plan,
                 'plan_generated_at' => now()->toISOString(),
             ]);
         } else {
             // Already in analyzing_plan phase, update meta directly to avoid invalid transition
             // Update plan_generated_at to reflect new plan generation, add plan_modified_at
-            $meta = $chat->meta ?? [];
-            $newTimestamp = now()->toISOString();
+            $meta               = $chat->meta ?? [];
+            $newTimestamp       = now()->toISOString();
             $meta['phase_data'] = array_merge($meta['phase_data'] ?? [], [
-                'generated_plan' => $plan,
+                'generated_plan'    => $plan,
                 'plan_generated_at' => $newTimestamp,
-                'plan_modified_at' => $newTimestamp,
+                'plan_modified_at'  => $newTimestamp,
             ]);
             $meta['build_state'] = array_merge($meta['build_state'] ?? [], [
-                'generated_plan' => $plan,
+                'generated_plan'    => $plan,
                 'plan_generated_at' => $newTimestamp,
-                'plan_modified_at' => $newTimestamp,
+                'plan_modified_at'  => $newTimestamp,
             ]);
             $meta['updated_at'] = $newTimestamp;
 
@@ -106,17 +106,17 @@ class WorkflowBuilderService
 
         // Prepare build artifacts
         $artifacts = $this->prepareBuildArtifacts($chat);
-        
+
         // Get the builder workflow definition
         $builderWorkflowDefinition = $this->getBuilderWorkflowDefinition($chat);
-        
+
         // Start workflow build via WorkflowRunnerService
         $workflowRun = WorkflowRunnerService::start($builderWorkflowDefinition, $artifacts);
-        
+
         // Associate workflow run with chat
         $chat->currentWorkflowRun()->associate($workflowRun);
         $chat->updatePhase(WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW, [
-            'workflow_run_id' => $workflowRun->id,
+            'workflow_run_id'  => $workflowRun->id,
             'build_started_at' => now()->toISOString(),
         ]);
 
@@ -132,20 +132,21 @@ class WorkflowBuilderService
 
         if (!$completedRun->isCompleted()) {
             $this->handleWorkflowBuildFailure($chat, $completedRun);
+
             return;
         }
 
         // Extract build artifacts from completed workflow
         $buildArtifacts = $this->extractBuildArtifacts($completedRun);
-        
+
         // Apply changes to WorkflowDefinition/TaskDefinitions
         $workflowDefinition = $this->applyWorkflowChanges($chat, $buildArtifacts);
-        
+
         // Update chat with artifacts and status
         $chat->attachArtifacts($buildArtifacts);
         $chat->workflowDefinition()->associate($workflowDefinition);
         $chat->updatePhase(WorkflowBuilderChat::STATUS_EVALUATING_RESULTS, [
-            'build_completed_at' => now()->toISOString(),
+            'build_completed_at'     => now()->toISOString(),
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
 
@@ -162,14 +163,14 @@ class WorkflowBuilderService
 
         // Create new AgentThread for result evaluation
         $evaluationThread = $this->createEvaluationAgentThread($chat);
-        
+
         // Load evaluation context
         $evaluationContext = app(WorkflowBuilderDocumentationService::class)
             ->getEvaluationContext($chat->getLatestArtifacts());
-            
+
         // Add evaluation context to thread
         $evaluationThread->messages()->create([
-            'role' => 'user', 
+            'role'    => 'user',
             'content' => $evaluationContext,
         ]);
 
@@ -182,14 +183,14 @@ class WorkflowBuilderService
 
         // Generate user-friendly summary
         $summary = $this->generateResultSummary($chat, $agentThreadRun->lastMessage);
-        
+
         // Add summary to main chat thread
         $chat->addThreadMessage($summary['message'], $summary['data']);
-        
+
         // Update chat with final results and complete process
         $chat->updatePhase(WorkflowBuilderChat::STATUS_COMPLETED, [
             'evaluation_completed_at' => now()->toISOString(),
-            'result_summary' => $summary,
+            'result_summary'          => $summary,
         ]);
     }
 
@@ -230,14 +231,14 @@ class WorkflowBuilderService
 
         // Get a user for the team (needed for console context)
         $teamUser = $currentTeam->users()->first();
-        
+
         // Create WorkflowInput for the prompt
         $workflowInput = app(WorkflowInputRepository::class)->createWorkflowInput([
-            'name' => 'Workflow Builder: ' . substr($prompt, 0, 50),
-            'content' => $prompt,
+            'name'        => 'Workflow Builder: ' . substr($prompt, 0, 50),
+            'content'     => $prompt,
             'description' => 'User prompt for workflow building',
-            'team_id' => $currentTeam->id,
-            'user_id' => $teamUser?->id,
+            'team_id'     => $currentTeam->id,
+            'user_id'     => $teamUser?->id,
         ]);
 
         // Create AgentThread for the planning conversation
@@ -248,19 +249,19 @@ class WorkflowBuilderService
 
         $agentThread = AgentThread::create([
             'agent_id' => $planningAgent->id,
-            'name' => 'Workflow Planning: ' . substr($prompt, 0, 40),
-            'team_id' => $currentTeam->id,
+            'name'     => 'Workflow Planning: ' . substr($prompt, 0, 40),
+            'team_id'  => $currentTeam->id,
         ]);
 
         return WorkflowBuilderChat::create([
-            'workflow_input_id' => $workflowInput->id,
+            'workflow_input_id'      => $workflowInput->id,
             'workflow_definition_id' => $workflowDefinitionId,
-            'agent_thread_id' => $agentThread->id,
-            'status' => WorkflowBuilderChat::STATUS_REQUIREMENTS_GATHERING,
-            'team_id' => $currentTeam->id,
-            'meta' => [
+            'agent_thread_id'        => $agentThread->id,
+            'status'                 => WorkflowBuilderChat::STATUS_REQUIREMENTS_GATHERING,
+            'team_id'                => $currentTeam->id,
+            'meta'                   => [
                 'original_prompt' => $prompt,
-                'created_at' => now()->toISOString(),
+                'created_at'      => now()->toISOString(),
             ],
         ]);
     }
@@ -274,7 +275,7 @@ class WorkflowBuilderService
         if (!$currentTeam) {
             throw new ValidationError('No team context available', 400);
         }
-        
+
         $chat = WorkflowBuilderChat::where('team_id', $currentTeam->id)
             ->where('id', $chatId)
             ->first();
@@ -292,16 +293,16 @@ class WorkflowBuilderService
     protected function createPlanningAgentThread(WorkflowBuilderChat $chat, string $prompt): AgentThread
     {
         $planningAgent = $this->getPlanningAgent();
-        
+
         $currentTeam = team();
         if (!$currentTeam) {
             throw new ValidationError('No team context available', 400);
         }
-        
+
         $agentThread = AgentThread::create([
-            'name' => 'Workflow Planning: ' . substr($prompt, 0, 50),
+            'name'     => 'Workflow Planning: ' . substr($prompt, 0, 50),
             'agent_id' => $planningAgent->id,
-            'team_id' => $currentTeam->id,
+            'team_id'  => $currentTeam->id,
         ]);
 
         return $agentThread;
@@ -316,7 +317,7 @@ class WorkflowBuilderService
         if (!$currentTeam) {
             throw new ValidationError('No team context available', 400);
         }
-        
+
         $agent = Agent::whereNull('team_id')
             ->where('name', 'Workflow Planner')
             ->first();
@@ -334,27 +335,27 @@ class WorkflowBuilderService
     protected function initiatePlanningConversation(WorkflowBuilderChat $chat, string $prompt): void
     {
         $workflowDefinition = $chat->workflowDefinition;
-        $planningContext = app(WorkflowBuilderDocumentationService::class)
+        $planningContext    = app(WorkflowBuilderDocumentationService::class)
             ->getPlanningContext($workflowDefinition);
 
         // Ensure agentThread is loaded
         if (!$chat->agentThread) {
             $chat->load('agentThread');
         }
-        
+
         if (!$chat->agentThread) {
             throw new ValidationError('AgentThread not found for chat', 500);
         }
 
         // Add initial planning context
         $chat->agentThread->messages()->create([
-            'role' => 'system',
+            'role'    => 'system',
             'content' => $planningContext,
         ]);
 
         // Add user prompt
         $chat->agentThread->messages()->create([
-            'role' => 'user', 
+            'role'    => 'user',
             'content' => $prompt,
         ]);
     }
@@ -368,7 +369,7 @@ class WorkflowBuilderService
             throw new ValidationError('No agent thread associated with chat', 400);
         }
 
-        if ($chat->status !== WorkflowBuilderChat::STATUS_REQUIREMENTS_GATHERING && 
+        if ($chat->status !== WorkflowBuilderChat::STATUS_REQUIREMENTS_GATHERING &&
             $chat->status !== WorkflowBuilderChat::STATUS_ANALYZING_PLAN) {
             throw new ValidationError('Chat is not in a valid state for plan generation', 400);
         }
@@ -379,34 +380,34 @@ class WorkflowBuilderService
      */
     protected function extractPlanFromResponse($lastMessage): array
     {
-        $content = $lastMessage->content ?? '';
+        $content     = $lastMessage->content      ?? '';
         $jsonContent = $lastMessage->json_content ?? null;
-        
+
         // Try to extract structured plan from JSON content first
         if ($jsonContent && is_array($jsonContent)) {
             $plan = [
                 'workflow_name' => $jsonContent['workflow_name'] ?? $jsonContent['name'] ?? 'Generated Workflow',
-                'description' => $jsonContent['description'] ?? '',
-                'tasks' => $jsonContent['tasks'] ?? $jsonContent['task_specifications'] ?? [],
-                'connections' => $jsonContent['connections'] ?? [],
-                'max_workers' => $jsonContent['max_workers'] ?? 5,
-                'extracted_at' => now()->toISOString(),
-                'message_id' => $lastMessage->id ?? null,
-                'source_type' => 'json'
+                'description'   => $jsonContent['description']   ?? '',
+                'tasks'         => $jsonContent['tasks']         ?? $jsonContent['task_specifications'] ?? [],
+                'connections'   => $jsonContent['connections']   ?? [],
+                'max_workers'   => $jsonContent['max_workers']   ?? 5,
+                'extracted_at'  => now()->toISOString(),
+                'message_id'    => $lastMessage->id ?? null,
+                'source_type'   => 'json',
             ];
-            
+
             // Validate that we have essential components
             if (!empty($plan['tasks'])) {
                 return $plan;
             }
         }
-        
+
         // Fallback to text-based extraction if JSON is not available or incomplete
-        $plan = $this->extractPlanFromText($content);
+        $plan                 = $this->extractPlanFromText($content);
         $plan['extracted_at'] = now()->toISOString();
-        $plan['message_id'] = $lastMessage->id ?? null;
-        $plan['source_type'] = 'text';
-        
+        $plan['message_id']   = $lastMessage->id ?? null;
+        $plan['source_type']  = 'text';
+
         return $plan;
     }
 
@@ -417,10 +418,10 @@ class WorkflowBuilderService
     {
         $plan = [
             'workflow_name' => 'Generated Workflow',
-            'description' => '',
-            'tasks' => [],
-            'connections' => [],
-            'max_workers' => 5
+            'description'   => '',
+            'tasks'         => [],
+            'connections'   => [],
+            'max_workers'   => 5,
         ];
 
         // Try to extract workflow name
@@ -437,21 +438,21 @@ class WorkflowBuilderService
         $taskPatterns = [
             '/(?:^|\n)(?:\d+\.|\*|-)\s*([^:\n]+):\s*(.+?)(?=\n(?:\d+\.|\*|-)|$)/ms',
             '/task\s*\d*:\s*(.+?)(?=\ntask|\n\n|$)/ims',
-            '/step\s*\d*:\s*(.+?)(?=\nstep|\n\n|$)/ims'
+            '/step\s*\d*:\s*(.+?)(?=\nstep|\n\n|$)/ims',
         ];
 
         foreach ($taskPatterns as $pattern) {
             if (preg_match_all($pattern, $content, $matches, PREG_SET_ORDER)) {
                 foreach ($matches as $match) {
-                    $taskName = trim($match[1]);
+                    $taskName        = trim($match[1]);
                     $taskDescription = trim($match[2] ?? '');
-                    
+
                     if (!empty($taskName)) {
                         $plan['tasks'][] = [
-                            'name' => $taskName,
-                            'description' => $taskDescription,
-                            'runner_type' => 'AgentThreadTaskRunner', // Default
-                            'agent_requirements' => 'General purpose agent'
+                            'name'               => $taskName,
+                            'description'        => $taskDescription,
+                            'runner_type'        => 'AgentThreadTaskRunner', // Default
+                            'agent_requirements' => 'General purpose agent',
                         ];
                     }
                 }
@@ -462,10 +463,10 @@ class WorkflowBuilderService
         // If no structured tasks found, create a basic task from the content
         if (empty($plan['tasks'])) {
             $plan['tasks'][] = [
-                'name' => 'Process User Request',
-                'description' => trim(substr($content, 0, 500)), // First 500 chars
-                'runner_type' => 'AgentThreadTaskRunner',
-                'agent_requirements' => 'General purpose agent'
+                'name'               => 'Process User Request',
+                'description'        => trim(substr($content, 0, 500)), // First 500 chars
+                'runner_type'        => 'AgentThreadTaskRunner',
+                'agent_requirements' => 'General purpose agent',
             ];
         }
 
@@ -492,13 +493,13 @@ class WorkflowBuilderService
 
     /**
      * Validate workflow plan structure and content before building.
-     * 
+     *
      * Ensures the plan has all required components and valid structure
      * to prevent build failures from malformed plans.
-     * 
-     * @param array $plan The workflow plan to validate
+     *
+     * @param  array  $plan  The workflow plan to validate
+     *
      * @throws ValidationError If plan is invalid or incomplete
-     * @return void
      */
     protected function validateWorkflowPlan(array $plan): void
     {
@@ -514,7 +515,7 @@ class WorkflowBuilderService
         // Validate each task structure
         foreach ($plan['tasks'] as $index => $task) {
             $taskNumber = $index + 1;
-            
+
             if (empty($task['name'])) {
                 throw new ValidationError("Task {$taskNumber} is missing a name", 400);
             }
@@ -528,13 +529,13 @@ class WorkflowBuilderService
                 'AgentThreadTaskRunner',
                 'CustomTaskRunner',
                 'ScriptTaskRunner',
-                'HttpTaskRunner'
+                'HttpTaskRunner',
             ];
-            
+
             if (!in_array($task['runner_type'], $validRunnerTypes)) {
                 throw new ValidationError(
                     "Task {$taskNumber} ('{$task['name']}') has invalid runner type: {$task['runner_type']}. " .
-                    "Valid types: " . implode(', ', $validRunnerTypes),
+                    'Valid types: ' . implode(', ', $validRunnerTypes),
                     400
                 );
             }
@@ -544,11 +545,11 @@ class WorkflowBuilderService
         $taskCount = count($plan['tasks']);
         if ($taskCount > 1) {
             $connections = $plan['connections'] ?? [];
-            
+
             if (empty($connections)) {
                 throw new ValidationError(
                     "Multi-task workflow ({$taskCount} tasks) must define connections between tasks. " .
-                    "No connections were specified in the plan.",
+                    'No connections were specified in the plan.',
                     400
                 );
             }
@@ -556,7 +557,7 @@ class WorkflowBuilderService
             // Validate connection structure
             foreach ($connections as $index => $connection) {
                 $connectionNumber = $index + 1;
-                
+
                 if (empty($connection['source']) || empty($connection['target'])) {
                     throw new ValidationError(
                         "Connection {$connectionNumber} is missing source or target task names",
@@ -566,7 +567,7 @@ class WorkflowBuilderService
 
                 // Verify source and target tasks exist in plan
                 $taskNames = array_column($plan['tasks'], 'name');
-                
+
                 if (!in_array($connection['source'], $taskNames)) {
                     throw new ValidationError(
                         "Connection {$connectionNumber} references unknown source task: {$connection['source']}",
@@ -585,7 +586,7 @@ class WorkflowBuilderService
 
         // Validate workflow configuration
         if (isset($plan['max_workers'])) {
-            $maxWorkers = (int) $plan['max_workers'];
+            $maxWorkers = (int)$plan['max_workers'];
             if ($maxWorkers < 1 || $maxWorkers > 50) {
                 throw new ValidationError(
                     "max_workers must be between 1 and 50, got: {$maxWorkers}",
@@ -596,8 +597,8 @@ class WorkflowBuilderService
 
         // Log successful validation
         Log::info('Workflow plan validation passed', [
-            'workflow_name' => $plan['workflow_name'],
-            'task_count' => count($plan['tasks']),
+            'workflow_name'    => $plan['workflow_name'],
+            'task_count'       => count($plan['tasks']),
             'connection_count' => count($plan['connections'] ?? []),
         ]);
     }
@@ -607,7 +608,7 @@ class WorkflowBuilderService
      */
     protected function prepareBuildArtifacts(WorkflowBuilderChat $chat): array
     {
-        $buildState = $chat->getCurrentBuildState();
+        $buildState    = $chat->getCurrentBuildState();
         $workflowInput = $chat->workflowInput;
 
         // Create comprehensive build artifacts
@@ -621,10 +622,10 @@ class WorkflowBuilderService
         // Plan artifact
         if (!empty($buildState['generated_plan'])) {
             $planInput = app(WorkflowInputRepository::class)->createWorkflowInput([
-                'name' => 'Approved Workflow Plan',
-                'content' => json_encode($buildState['generated_plan']),
+                'name'        => 'Approved Workflow Plan',
+                'content'     => json_encode($buildState['generated_plan']),
                 'description' => 'User-approved workflow plan for building',
-                'team_id' => $chat->team_id,
+                'team_id'     => $chat->team_id,
             ]);
             $artifacts[] = $planInput->toArtifact();
         }
@@ -632,10 +633,10 @@ class WorkflowBuilderService
         // Current workflow state artifact (if modifying existing)
         if ($chat->workflowDefinition) {
             $workflowStateInput = app(WorkflowInputRepository::class)->createWorkflowInput([
-                'name' => 'Current Workflow State',
-                'content' => json_encode($chat->workflowDefinition->toArray()),
+                'name'        => 'Current Workflow State',
+                'content'     => json_encode($chat->workflowDefinition->toArray()),
                 'description' => 'Current workflow definition state for modification',
-                'team_id' => $chat->team_id,
+                'team_id'     => $chat->team_id,
             ]);
             $artifacts[] = $workflowStateInput->toArtifact();
         }
@@ -658,7 +659,7 @@ class WorkflowBuilderService
             }
             $teamId = $currentTeam->id;
         }
-        
+
         $builderWorkflow = WorkflowDefinition::whereNull('team_id')
             ->where('name', 'LLM Workflow Builder')
             ->first();
@@ -691,53 +692,53 @@ class WorkflowBuilderService
     {
         // Collect detailed failure information
         $failureData = $this->extractFailureDetails($failedRun);
-        
+
         $errorMessage = $this->buildDetailedErrorMessage($failedRun, $failureData);
-        
+
         $chat->updatePhase(WorkflowBuilderChat::STATUS_FAILED, [
             'build_failed_at' => now()->toISOString(),
-            'failure_reason' => $failedRun->status,
+            'failure_reason'  => $failedRun->status,
             'workflow_run_id' => $failedRun->id,
-            'error' => $failureData['primary_error'] ?? 'Unknown error',
-            'failure_phase' => $failureData['failed_phase'] ?? 'workflow_build',
-            'detailed_errors' => $failureData['all_errors'] ?? [],
+            'error'           => $failureData['primary_error'] ?? 'Unknown error',
+            'failure_phase'   => $failureData['failed_phase']  ?? 'workflow_build',
+            'detailed_errors' => $failureData['all_errors']    ?? [],
         ]);
 
         $chat->addThreadMessage($errorMessage, [
-            'error_type' => 'workflow_build_failure',
+            'error_type'      => 'workflow_build_failure',
             'workflow_run_id' => $failedRun->id,
             'failure_details' => $failureData,
         ]);
 
         // Log detailed failure for debugging
         Log::error('Workflow build failure', [
-            'chat_id' => $chat->id,
+            'chat_id'         => $chat->id,
             'workflow_run_id' => $failedRun->id,
-            'status' => $failedRun->status,
-            'failure_data' => $failureData,
+            'status'          => $failedRun->status,
+            'failure_data'    => $failureData,
         ]);
     }
 
     /**
      * Extract detailed failure information from a failed workflow run.
-     * 
-     * @param WorkflowRun $failedRun The failed workflow run
+     *
+     * @param  WorkflowRun  $failedRun  The failed workflow run
      * @return array Detailed failure information
      */
     protected function extractFailureDetails(WorkflowRun $failedRun): array
     {
         $failureData = [
-            'primary_error' => null,
-            'failed_phase' => 'workflow_build',
-            'all_errors' => [],
+            'primary_error'     => null,
+            'failed_phase'      => 'workflow_build',
+            'all_errors'        => [],
             'failed_task_names' => [],
         ];
 
         // Check for workflow-level errors
         if ($failedRun->error_message) {
             $failureData['primary_error'] = $failedRun->error_message;
-            $failureData['all_errors'][] = [
-                'type' => 'workflow_error',
+            $failureData['all_errors'][]  = [
+                'type'    => 'workflow_error',
                 'message' => $failedRun->error_message,
             ];
         }
@@ -747,9 +748,9 @@ class WorkflowBuilderService
         foreach ($taskRuns as $taskRun) {
             if ($taskRun->error_message) {
                 $failureData['all_errors'][] = [
-                    'type' => 'task_error',
+                    'type'      => 'task_error',
                     'task_name' => $taskRun->taskDefinition?->name ?? 'Unknown Task',
-                    'message' => $taskRun->error_message,
+                    'message'   => $taskRun->error_message,
                 ];
                 $failureData['failed_task_names'][] = $taskRun->taskDefinition?->name ?? 'Unknown Task';
             }
@@ -767,9 +768,9 @@ class WorkflowBuilderService
 
     /**
      * Build a detailed error message for users.
-     * 
-     * @param WorkflowRun $failedRun The failed workflow run
-     * @param array $failureData Extracted failure details
+     *
+     * @param  WorkflowRun  $failedRun  The failed workflow run
+     * @param  array  $failureData  Extracted failure details
      * @return string User-friendly error message
      */
     protected function buildDetailedErrorMessage(WorkflowRun $failedRun, array $failureData): string
@@ -787,7 +788,7 @@ class WorkflowBuilderService
                 $taskInfo = isset($error['task_name']) ? " (Task: {$error['task_name']})" : '';
                 $message .= "\n• {$error['message']}{$taskInfo}";
             }
-            
+
             if (count($failureData['all_errors']) > 4) {
                 $remaining = count($failureData['all_errors']) - 4;
                 $message .= "\n• ... and {$remaining} more errors";
@@ -803,14 +804,14 @@ class WorkflowBuilderService
     protected function extractBuildArtifacts(WorkflowRun $completedRun): array
     {
         $outputArtifacts = $completedRun->collectFinalOutputArtifacts();
-        
+
         $buildArtifacts = [];
         foreach ($outputArtifacts as $artifact) {
             $buildArtifacts[] = [
-                'id' => $artifact->id,
-                'name' => $artifact->name,
-                'content' => $artifact->json_content ?: $artifact->text_content,
-                'type' => 'unknown', // Artifact model doesn't have type field
+                'id'           => $artifact->id,
+                'name'         => $artifact->name,
+                'content'      => $artifact->json_content ?: $artifact->text_content,
+                'type'         => 'unknown', // Artifact model doesn't have type field
                 'extracted_at' => now()->toISOString(),
             ];
         }
@@ -825,7 +826,7 @@ class WorkflowBuilderService
     {
         // Parse build artifacts to extract workflow and task definitions
         $workflowData = $this->parseWorkflowFromArtifacts($buildArtifacts);
-        
+
         if ($chat->workflowDefinition) {
             // Modifying existing workflow
             $workflowDefinition = $this->updateExistingWorkflow($chat->workflowDefinition, $workflowData);
@@ -843,16 +844,16 @@ class WorkflowBuilderService
     protected function parseWorkflowFromArtifacts(array $buildArtifacts): array
     {
         $workflowData = [
-            'name' => 'Generated Workflow',
+            'name'        => 'Generated Workflow',
             'description' => 'Generated via LLM Workflow Builder',
             'max_workers' => 5,
-            'tasks' => [],
+            'tasks'       => [],
             'connections' => [],
         ];
 
         foreach ($buildArtifacts as $artifact) {
             $content = $artifact['content'] ?? null;
-            
+
             if (is_string($content)) {
                 // Try to decode JSON content
                 $jsonContent = json_decode($content, true);
@@ -868,17 +869,17 @@ class WorkflowBuilderService
                     $workflowData['tasks'][] = $content['task_definition'];
                 } elseif (isset($content['workflow_definition'])) {
                     // This is a workflow organization artifact
-                    $workflowDef = $content['workflow_definition'];
-                    $workflowData['name'] = $workflowDef['name'] ?? $workflowData['name'];
+                    $workflowDef                 = $content['workflow_definition'];
+                    $workflowData['name']        = $workflowDef['name']        ?? $workflowData['name'];
                     $workflowData['description'] = $workflowDef['description'] ?? $workflowData['description'];
                     $workflowData['max_workers'] = $workflowDef['max_workers'] ?? $workflowData['max_workers'];
-                    
+
                     if (isset($content['task_specifications'])) {
                         foreach ($content['task_specifications'] as $taskSpec) {
                             $workflowData['tasks'][] = $this->normalizeTaskSpecification($taskSpec);
                         }
                     }
-                    
+
                     if (isset($content['connections'])) {
                         $workflowData['connections'] = array_merge($workflowData['connections'], $content['connections']);
                     }
@@ -895,15 +896,15 @@ class WorkflowBuilderService
     protected function normalizeTaskSpecification(array $taskSpec): array
     {
         return [
-            'name' => $taskSpec['name'] ?? 'Unnamed Task',
-            'description' => $taskSpec['description'] ?? '',
-            'prompt' => $taskSpec['prompt'] ?? null,
-            'task_runner_name' => $taskSpec['runner_type'] ?? $taskSpec['task_runner_name'] ?? 'AgentThreadTaskRunner',
-            'task_runner_config' => $taskSpec['configuration'] ?? null,
+            'name'                  => $taskSpec['name']                  ?? 'Unnamed Task',
+            'description'           => $taskSpec['description']           ?? '',
+            'prompt'                => $taskSpec['prompt']                ?? null,
+            'task_runner_name'      => $taskSpec['runner_type']           ?? $taskSpec['task_runner_name'] ?? 'AgentThreadTaskRunner',
+            'task_runner_config'    => $taskSpec['configuration']         ?? null,
             'timeout_after_seconds' => $taskSpec['timeout_after_seconds'] ?? 300,
-            'input_artifact_mode' => $taskSpec['input_artifact_mode'] ?? null,
-            'output_artifact_mode' => $taskSpec['output_artifact_mode'] ?? null,
-            'agent_requirements' => $taskSpec['agent_requirements'] ?? null,
+            'input_artifact_mode'   => $taskSpec['input_artifact_mode']   ?? null,
+            'output_artifact_mode'  => $taskSpec['output_artifact_mode']  ?? null,
+            'agent_requirements'    => $taskSpec['agent_requirements']    ?? null,
         ];
     }
 
@@ -913,15 +914,15 @@ class WorkflowBuilderService
     protected function createNewWorkflow(array $workflowData): WorkflowDefinition
     {
         $workflowDefinition = WorkflowDefinition::create([
-            'name' => $workflowData['name'],
+            'name'        => $workflowData['name'],
             'description' => $workflowData['description'],
             'max_workers' => $workflowData['max_workers'],
-            'team_id' => team()->id,
+            'team_id'     => team()->id,
         ]);
 
         // Debug: Check tasks before passing to createWorkflowTasks
         if (empty($workflowData['tasks'])) {
-            throw new Exception("createNewWorkflow: tasks array is empty in workflowData. Keys: " . implode(', ', array_keys($workflowData)));
+            throw new Exception('createNewWorkflow: tasks array is empty in workflowData. Keys: ' . implode(', ', array_keys($workflowData)));
         }
 
         $this->createWorkflowTasks($workflowDefinition, $workflowData['tasks']);
@@ -954,9 +955,9 @@ class WorkflowBuilderService
     protected function createWorkflowTasks(WorkflowDefinition $workflowDefinition, array $tasks): void
     {
         if (empty($tasks)) {
-            throw new Exception("createWorkflowTasks called with empty tasks array");
+            throw new Exception('createWorkflowTasks called with empty tasks array');
         }
-        
+
         foreach ($tasks as $index => $taskData) {
             // Find or create agent if specified
             $agent = null;
@@ -966,20 +967,20 @@ class WorkflowBuilderService
 
             // Create task definition
             $mergedData = array_merge($taskData, [
-                'team_id' => team()->id,
+                'team_id'  => team()->id,
                 'agent_id' => $agent?->id,
             ]);
-            
+
             try {
                 $taskDefinition = TaskDefinition::create($mergedData);
             } catch (Exception $e) {
-                throw new Exception("Failed to create TaskDefinition: " . $e->getMessage() . ". Data: " . json_encode($mergedData));
+                throw new Exception('Failed to create TaskDefinition: ' . $e->getMessage() . '. Data: ' . json_encode($mergedData));
             }
 
             // Create workflow node
             $workflowNode = new WorkflowNode([
                 'task_definition_id' => $taskDefinition->id,
-                'name' => $taskDefinition->name,
+                'name'               => $taskDefinition->name,
             ]);
             $workflowNode->workflow_definition_id = $workflowDefinition->id;
             $workflowNode->save();
@@ -998,11 +999,11 @@ class WorkflowBuilderService
             $targetName = $connection['target'] ?? null;
 
             if ($sourceName && $targetName) {
-                $sourceNode = $nodes->first(function($node) use ($sourceName) {
+                $sourceNode = $nodes->first(function ($node) use ($sourceName) {
                     return $node->taskDefinition && $node->taskDefinition->name === $sourceName;
                 });
-                
-                $targetNode = $nodes->first(function($node) use ($targetName) {
+
+                $targetNode = $nodes->first(function ($node) use ($targetName) {
                     return $node->taskDefinition && $node->taskDefinition->name === $targetName;
                 });
 
@@ -1010,7 +1011,7 @@ class WorkflowBuilderService
                     $workflowConnection = new WorkflowConnection([
                         'source_node_id' => $sourceNode->id,
                         'target_node_id' => $targetNode->id,
-                        'name' => $connection['name'] ?? "{$sourceName} to {$targetName}",
+                        'name'           => $connection['name'] ?? "{$sourceName} to {$targetName}",
                     ]);
                     $workflowConnection->workflow_definition_id = $workflowDefinition->id;
                     $workflowConnection->save();
@@ -1026,16 +1027,20 @@ class WorkflowBuilderService
     {
         // Simple matching logic - in a full implementation, you might use embeddings or more sophisticated matching
         $lowercaseReq = strtolower($requirements);
-        
+
         // Try to find specific agents first
         if (str_contains($lowercaseReq, 'planner') || str_contains($lowercaseReq, 'planning')) {
             $agent = Agent::whereNull('team_id')->where('name', 'Workflow Planner')->first();
-            if ($agent) return $agent;
+            if ($agent) {
+                return $agent;
+            }
         }
-        
+
         if (str_contains($lowercaseReq, 'evaluator') || str_contains($lowercaseReq, 'evaluation')) {
             $agent = Agent::whereNull('team_id')->where('name', 'Workflow Evaluator')->first();
-            if ($agent) return $agent;
+            if ($agent) {
+                return $agent;
+            }
         }
 
         // Fallback to first available agent
@@ -1062,11 +1067,11 @@ class WorkflowBuilderService
     protected function createEvaluationAgentThread(WorkflowBuilderChat $chat): AgentThread
     {
         $evaluationAgent = $this->getEvaluationAgent();
-        
+
         return AgentThread::create([
-            'name' => 'Workflow Evaluation: ' . $chat->id,
+            'name'     => 'Workflow Evaluation: ' . $chat->id,
             'agent_id' => $evaluationAgent->id,
-            'team_id' => team()->id,
+            'team_id'  => team()->id,
         ]);
     }
 
@@ -1092,13 +1097,13 @@ class WorkflowBuilderService
     protected function generateResultSummary(WorkflowBuilderChat $chat, $evaluationMessage): array
     {
         $content = $evaluationMessage->content ?? 'Workflow build completed successfully.';
-        
+
         return [
             'message' => $content,
-            'data' => [
+            'data'    => [
                 'evaluation_completed_at' => now()->toISOString(),
-                'workflow_definition_id' => $chat->workflow_definition_id,
-                'artifacts_count' => count($chat->getLatestArtifacts()),
+                'workflow_definition_id'  => $chat->workflow_definition_id,
+                'artifacts_count'         => count($chat->getLatestArtifacts()),
             ],
         ];
     }

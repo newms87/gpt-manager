@@ -11,9 +11,12 @@ use Tests\AuthenticatedTestCase;
 
 class FilterArtifactsTaskRunnerTest extends AuthenticatedTestCase
 {
-    protected TaskDefinition            $taskDefinition;
-    protected TaskRun                   $taskRun;
-    protected TaskProcess               $taskProcess;
+    protected TaskDefinition $taskDefinition;
+
+    protected TaskRun $taskRun;
+
+    protected TaskProcess $taskProcess;
+
     protected FilterArtifactsTaskRunner $taskRunner;
 
     public function setUp(): void

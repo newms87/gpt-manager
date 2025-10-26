@@ -29,20 +29,15 @@ class ConfigurableApi extends Api
     /**
      * Fetches a list of items from the API
      *
-     * @param string   $uri
-     * @param array    $params
-     * @param int      $page
-     * @param int|null $perPage
-     * @return ConfigurableApiListResponse
      * @throws ApiException
      * @throws ApiRequestException
      * @throws GuzzleException
      */
-    public function getItems(string $uri, array $params = [], int $page = 1, int $perPage = null): ConfigurableApiListResponse
+    public function getItems(string $uri, array $params = [], int $page = 1, ?int $perPage = null): ConfigurableApiListResponse
     {
         $perPage = $perPage ?: $this->config->getPerPage();
 
-        $params [$this->config->getPerPageField()] = $perPage;
+        $params[$this->config->getPerPageField()] = $perPage;
 
         if ($this->config->useOffset()) {
             $params[$this->config->getOffsetField()] = ($page - 1) * $perPage;
@@ -57,7 +52,7 @@ class ConfigurableApi extends Api
         }
 
         if (!$response) {
-            throw new ApiException("The response from the API was empty");
+            throw new ApiException('The response from the API was empty');
         }
 
         return new ConfigurableApiListResponse($this->config, $response, $page);

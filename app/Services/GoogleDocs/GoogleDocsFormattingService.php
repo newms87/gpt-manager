@@ -25,36 +25,36 @@ class GoogleDocsFormattingService
     public function parseMarkdown(string $markdown): array
     {
         $plainText = $markdown;
-        $formats = [];
-        $offset = 0; // Track position changes as we strip markdown syntax
+        $formats   = [];
+        $offset    = 0; // Track position changes as we strip markdown syntax
 
         // Split into lines to handle paragraph-level formatting
-        $lines = explode("\n", $markdown);
-        $processedLines = [];
+        $lines           = explode("\n", $markdown);
+        $processedLines  = [];
         $currentPosition = 0;
 
-        foreach($lines as $line) {
-            $lineStart = $currentPosition;
+        foreach ($lines as $line) {
+            $lineStart     = $currentPosition;
             $processedLine = $line;
-            $lineFormats = [];
+            $lineFormats   = [];
 
             // Check for headings (must be at start of line)
             if (preg_match('/^(#{1,3})\s+(.*)$/', $line, $matches)) {
-                $level = strlen($matches[1]);
+                $level         = strlen($matches[1]);
                 $processedLine = $matches[2];
 
                 $lineLength = strlen($processedLine);
-                $formats[] = [
-                    'type' => 'heading' . $level,
+                $formats[]  = [
+                    'type'  => 'heading' . $level,
                     'start' => $lineStart,
-                    'end' => $lineStart + $lineLength,
+                    'end'   => $lineStart + $lineLength,
                 ];
 
                 $currentPosition += $lineLength;
             } else {
                 // Process inline formatting (bold, italic)
                 $processedLine = $this->parseInlineFormatting($line, $lineStart, $lineFormats);
-                $formats = array_merge($formats, $lineFormats);
+                $formats       = array_merge($formats, $lineFormats);
                 $currentPosition += strlen($processedLine);
             }
 
@@ -70,7 +70,7 @@ class GoogleDocsFormattingService
 
         return [
             'plainText' => $plainText,
-            'formats' => $formats,
+            'formats'   => $formats,
         ];
     }
 
@@ -79,29 +79,29 @@ class GoogleDocsFormattingService
      */
     public function parseInlineFormatting(string $line, int $lineStart, array &$formats): string
     {
-        $result = $line;
+        $result     = $line;
         $allMatches = [];
 
         // Find all bold patterns (**text** or __text__)
         preg_match_all('/(\*\*|__)(.+?)\\1/', $line, $boldMatches, PREG_OFFSET_CAPTURE);
-        foreach($boldMatches[0] as $index => $match) {
+        foreach ($boldMatches[0] as $index => $match) {
             $allMatches[] = [
-                'type' => 'bold',
-                'position' => $match[1],
-                'fullMatch' => $match[0],
-                'text' => $boldMatches[2][$index][0],
+                'type'         => 'bold',
+                'position'     => $match[1],
+                'fullMatch'    => $match[0],
+                'text'         => $boldMatches[2][$index][0],
                 'markerLength' => strlen($boldMatches[1][$index][0]), // ** or __
             ];
         }
 
         // Find all italic patterns (*text* or _text_) - but not if it's part of bold
         preg_match_all('/(?<!\*|\w)(\*|_)([^*_]+?)\\1(?!\*|\w)/', $line, $italicMatches, PREG_OFFSET_CAPTURE);
-        foreach($italicMatches[0] as $index => $match) {
+        foreach ($italicMatches[0] as $index => $match) {
             $allMatches[] = [
-                'type' => 'italic',
-                'position' => $match[1],
-                'fullMatch' => $match[0],
-                'text' => $italicMatches[2][$index][0],
+                'type'         => 'italic',
+                'position'     => $match[1],
+                'fullMatch'    => $match[0],
+                'text'         => $italicMatches[2][$index][0],
                 'markerLength' => strlen($italicMatches[1][$index][0]), // * or _
             ];
         }
@@ -111,15 +111,15 @@ class GoogleDocsFormattingService
 
         // Strip markdown and calculate plain text positions
         $removedChars = 0;
-        foreach($allMatches as $match) {
+        foreach ($allMatches as $match) {
             // Calculate position in plain text after removing previous markdown
             $plainTextStart = $match['position'] - $removedChars;
-            $textLength = strlen($match['text']);
+            $textLength     = strlen($match['text']);
 
             $formats[] = [
-                'type' => $match['type'],
+                'type'  => $match['type'],
                 'start' => $lineStart + $plainTextStart,
-                'end' => $lineStart + $plainTextStart + $textLength,
+                'end'   => $lineStart + $plainTextStart + $textLength,
             ];
 
             // Track how many characters we've removed (opening + closing markers)
@@ -140,31 +140,31 @@ class GoogleDocsFormattingService
     {
         $requests = [];
 
-        static::log("applyFormattingToText: Starting", [
-            'base_index' => $baseIndex,
+        static::log('applyFormattingToText: Starting', [
+            'base_index'    => $baseIndex,
             'formats_count' => count($formats),
         ]);
 
-        foreach($formats as $formatIndex => $format) {
+        foreach ($formats as $formatIndex => $format) {
             $startIndex = $baseIndex + $format['start'];
-            $endIndex = $baseIndex + $format['end'];
+            $endIndex   = $baseIndex + $format['end'];
 
-            static::log("applyFormattingToText: Processing format", [
-                'format_index' => $formatIndex,
-                'type' => $format['type'],
-                'format_start' => $format['start'],
-                'format_end' => $format['end'],
+            static::log('applyFormattingToText: Processing format', [
+                'format_index'           => $formatIndex,
+                'type'                   => $format['type'],
+                'format_start'           => $format['start'],
+                'format_end'             => $format['end'],
                 'calculated_start_index' => $startIndex,
-                'calculated_end_index' => $endIndex,
+                'calculated_end_index'   => $endIndex,
             ]);
 
-            switch($format['type']) {
+            switch ($format['type']) {
                 case 'bold':
                     $requests[] = [
                         'updateTextStyle' => [
                             'range' => [
                                 'startIndex' => $startIndex,
-                                'endIndex' => $endIndex,
+                                'endIndex'   => $endIndex,
                             ],
                             'textStyle' => [
                                 'bold' => true,
@@ -179,7 +179,7 @@ class GoogleDocsFormattingService
                         'updateTextStyle' => [
                             'range' => [
                                 'startIndex' => $startIndex,
-                                'endIndex' => $endIndex,
+                                'endIndex'   => $endIndex,
                             ],
                             'textStyle' => [
                                 'italic' => true,
@@ -197,7 +197,7 @@ class GoogleDocsFormattingService
                         'updateParagraphStyle' => [
                             'range' => [
                                 'startIndex' => $startIndex,
-                                'endIndex' => $endIndex,
+                                'endIndex'   => $endIndex,
                             ],
                             'paragraphStyle' => [
                                 'namedStyleType' => $namedStyle,
@@ -210,9 +210,9 @@ class GoogleDocsFormattingService
         }
 
         if (!empty($requests)) {
-            static::log("applyFormattingToText: Sending batch update", [
+            static::log('applyFormattingToText: Sending batch update', [
                 'requests_count' => count($requests),
-                'requests' => $requests,
+                'requests'       => $requests,
             ]);
 
             $response = $api->post("documents/{$documentId}:batchUpdate", [
@@ -221,7 +221,7 @@ class GoogleDocsFormattingService
 
             $responseData = $response->json();
 
-            static::log("applyFormattingToText: Batch update response", [
+            static::log('applyFormattingToText: Batch update response', [
                 'response' => $responseData,
             ]);
 
@@ -229,8 +229,8 @@ class GoogleDocsFormattingService
                 throw new ApiException('Failed to apply formatting: ' . ($responseData['error']['message'] ?? 'Unknown error'));
             }
 
-            static::log("Formatting applied to text", [
-                'document_id' => $documentId,
+            static::log('Formatting applied to text', [
+                'document_id'     => $documentId,
                 'formats_applied' => count($requests),
             ]);
         }
@@ -242,40 +242,41 @@ class GoogleDocsFormattingService
     public function replaceVariableWithFormattedMarkdown(GoogleDocsApi $api, string $documentId, string $variable, string $markdownValue): void
     {
         try {
-            static::log("Replacing variable with formatted markdown", [
-                'document_id' => $documentId,
-                'variable'    => $variable,
+            static::log('Replacing variable with formatted markdown', [
+                'document_id'     => $documentId,
+                'variable'        => $variable,
                 'markdown_length' => strlen($markdownValue),
             ]);
 
             // Step 1: Convert literal \n (2 chars: backslash + n) to actual newlines
             $markdownValue = str_replace(chr(92) . 'n', "\n", $markdownValue);
 
-            $parsed = $this->parseMarkdown($markdownValue);
+            $parsed    = $this->parseMarkdown($markdownValue);
             $plainText = $parsed['plainText'];
-            $formats = $parsed['formats'];
+            $formats   = $parsed['formats'];
 
             // Step 2: Read document to find the variable placeholder position
-            $document = $api->get("documents/{$documentId}")->json();
-            $placeholder = '{{' . $variable . '}}';
+            $document            = $api->get("documents/{$documentId}")->json();
+            $placeholder         = '{{' . $variable . '}}';
             $placeholderPosition = app(GoogleDocsContentService::class)->findTextPosition($document, $placeholder);
 
             if ($placeholderPosition === null) {
-                static::log("Could not find variable placeholder, falling back to replaceAllText", [
-                    'variable' => $variable,
+                static::log('Could not find variable placeholder, falling back to replaceAllText', [
+                    'variable'    => $variable,
                     'placeholder' => $placeholder,
                 ]);
                 // Fallback to simple replacement
                 $this->replaceVariablesWithPlainText($api, $documentId, [$variable => $plainText]);
+
                 return;
             }
 
             $placeholderEndIndex = $placeholderPosition + strlen($placeholder);
 
-            static::log("Found placeholder position", [
+            static::log('Found placeholder position', [
                 'placeholder' => $placeholder,
                 'start_index' => $placeholderPosition,
-                'end_index' => $placeholderEndIndex,
+                'end_index'   => $placeholderEndIndex,
             ]);
 
             // Step 3: Build batch update request: delete placeholder and insert text with proper newlines
@@ -285,7 +286,7 @@ class GoogleDocsFormattingService
                     'deleteContentRange' => [
                         'range' => [
                             'startIndex' => $placeholderPosition,
-                            'endIndex' => $placeholderEndIndex,
+                            'endIndex'   => $placeholderEndIndex,
                         ],
                     ],
                 ],
@@ -293,7 +294,7 @@ class GoogleDocsFormattingService
                 [
                     'insertText' => [
                         'location' => ['index' => $placeholderPosition],
-                        'text' => $plainText,
+                        'text'     => $plainText,
                     ],
                 ],
             ];
@@ -308,16 +309,16 @@ class GoogleDocsFormattingService
                 throw new ApiException('Failed to replace variable: ' . ($responseData['error']['message'] ?? 'Unknown error'));
             }
 
-            static::log("Placeholder deleted and text inserted", [
+            static::log('Placeholder deleted and text inserted', [
                 'placeholder_position' => $placeholderPosition,
-                'text_length' => strlen($plainText),
+                'text_length'          => strlen($plainText),
             ]);
 
             // DEBUG: Log what we're about to format
-            static::log("About to apply formatting", [
-                'base_index' => $placeholderPosition,
+            static::log('About to apply formatting', [
+                'base_index'    => $placeholderPosition,
                 'formats_count' => count($formats),
-                'first_format' => $formats[0] ?? null,
+                'first_format'  => $formats[0] ?? null,
             ]);
 
             // Step 4: Apply formatting to the inserted text
@@ -328,17 +329,17 @@ class GoogleDocsFormattingService
                 $this->applyFormattingToText($api, $documentId, $formattingBaseIndex, $formats);
             }
 
-            static::log("Variable replaced with formatted markdown successfully", [
-                'document_id' => $documentId,
-                'variable' => $variable,
+            static::log('Variable replaced with formatted markdown successfully', [
+                'document_id'     => $documentId,
+                'variable'        => $variable,
                 'formats_applied' => count($formats),
             ]);
 
-        } catch(\Exception $e) {
-            static::log("Failed to replace variable with formatted markdown", [
+        } catch (\Exception $e) {
+            static::log('Failed to replace variable with formatted markdown', [
                 'document_id' => $documentId,
-                'variable' => $variable,
-                'error' => $e->getMessage(),
+                'variable'    => $variable,
+                'error'       => $e->getMessage(),
             ]);
             // Don't throw - fall back to plain text replacement
         }
@@ -351,7 +352,7 @@ class GoogleDocsFormattingService
     {
         $requests = [];
 
-        foreach($variableMappings as $variable => $textValue) {
+        foreach ($variableMappings as $variable => $textValue) {
             // Convert literal \n (2 chars: backslash + n) to actual newlines
             $textValue = str_replace(chr(92) . 'n', "\n", $textValue);
 
@@ -376,7 +377,7 @@ class GoogleDocsFormattingService
                 throw new ApiException('Failed to replace variables: ' . ($responseData['error']['message'] ?? 'Unknown error'));
             }
 
-            static::log("Plain text variables replaced in document", [
+            static::log('Plain text variables replaced in document', [
                 'document_id'        => $documentId,
                 'variables_replaced' => count($requests),
             ]);

@@ -42,7 +42,7 @@ class ContentSourceFetchService
             }
             $page++;
             sleep(2);
-        } while($apiListResponse->hasMore());
+        } while ($apiListResponse->hasMore());
 
         return true;
     }
@@ -51,7 +51,7 @@ class ContentSourceFetchService
     {
         $idField = $apiConfig->getItemIdField();
 
-        foreach($items as $item) {
+        foreach ($items as $item) {
             $recordId = Arr::get($item, $idField);
 
             // If no record ID is resolved, uniquely identify the content

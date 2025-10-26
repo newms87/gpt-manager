@@ -19,11 +19,11 @@ class GoogleDocsContentService
         $body    = $document['body'] ?? null;
 
         if ($body && isset($body['content']) && is_array($body['content'])) {
-            foreach($body['content'] as $element) {
+            foreach ($body['content'] as $element) {
                 if (isset($element['paragraph'])) {
                     $paragraph = $element['paragraph'];
                     if (isset($paragraph['elements']) && is_array($paragraph['elements'])) {
-                        foreach($paragraph['elements'] as $paragraphElement) {
+                        foreach ($paragraph['elements'] as $paragraphElement) {
                             if (isset($paragraphElement['textRun']['content'])) {
                                 $content .= $paragraphElement['textRun']['content'];
                             }
@@ -43,42 +43,44 @@ class GoogleDocsContentService
     {
         $body = $document['body'] ?? null;
         if (!$body || !isset($body['content'])) {
-            static::log("findTextPosition: No body content found");
+            static::log('findTextPosition: No body content found');
+
             return null;
         }
 
         // Search through document content
         $currentIndex = 1; // Google Docs uses 1-based indexing
-        $searchStart = substr($searchText, 0, 50);
+        $searchStart  = substr($searchText, 0, 50);
 
-        static::log("findTextPosition: Searching for text", [
-            'search_start' => $searchStart,
+        static::log('findTextPosition: Searching for text', [
+            'search_start'  => $searchStart,
             'search_length' => strlen($searchText),
         ]);
 
-        foreach($body['content'] as $elementIndex => $element) {
+        foreach ($body['content'] as $elementIndex => $element) {
             if (isset($element['paragraph']['elements'])) {
-                foreach($element['paragraph']['elements'] as $paragraphElementIndex => $paragraphElement) {
+                foreach ($element['paragraph']['elements'] as $paragraphElementIndex => $paragraphElement) {
                     if (isset($paragraphElement['textRun']['content'])) {
-                        $content = $paragraphElement['textRun']['content'];
+                        $content    = $paragraphElement['textRun']['content'];
                         $startIndex = $paragraphElement['startIndex'] ?? $currentIndex;
-                        $endIndex = $paragraphElement['endIndex'] ?? ($startIndex + strlen($content));
+                        $endIndex   = $paragraphElement['endIndex']   ?? ($startIndex + strlen($content));
 
-                        static::log("findTextPosition: Checking text run", [
-                            'element_index' => $elementIndex,
+                        static::log('findTextPosition: Checking text run', [
+                            'element_index'           => $elementIndex,
                             'paragraph_element_index' => $paragraphElementIndex,
-                            'start_index' => $startIndex,
-                            'end_index' => $endIndex,
-                            'content_preview' => substr($content, 0, 50),
-                            'content_length' => strlen($content),
+                            'start_index'             => $startIndex,
+                            'end_index'               => $endIndex,
+                            'content_preview'         => substr($content, 0, 50),
+                            'content_length'          => strlen($content),
                         ]);
 
                         // Check if this text run contains our search text
                         if (strpos($content, $searchStart) !== false) {
-                            static::log("findTextPosition: Found matching text", [
-                                'start_index' => $startIndex,
+                            static::log('findTextPosition: Found matching text', [
+                                'start_index'       => $startIndex,
                                 'found_at_position' => strpos($content, $searchStart),
                             ]);
+
                             return $startIndex + strpos($content, $searchStart);
                         }
 
@@ -88,7 +90,8 @@ class GoogleDocsContentService
             }
         }
 
-        static::log("findTextPosition: Text not found");
+        static::log('findTextPosition: Text not found');
+
         return null;
     }
 
@@ -98,11 +101,11 @@ class GoogleDocsContentService
     public function insertContentIntoDocument(GoogleDocsApi $api, string $documentId, string $content): void
     {
         try {
-            static::log("insertContentIntoDocument: start", [
-                'content_length' => strlen($content),
-                'has_newlines' => strpos($content, "\n") !== false,
+            static::log('insertContentIntoDocument: start', [
+                'content_length'          => strlen($content),
+                'has_newlines'            => strpos($content, "\n")       !== false,
                 'has_literal_backslash_n' => strpos($content, '\\' . 'n') !== false,
-                'content_preview' => substr($content, 0, 100),
+                'content_preview'         => substr($content, 0, 100),
             ]);
 
             $requests = [];
@@ -113,12 +116,12 @@ class GoogleDocsContentService
             // Split content into paragraphs and build requests
             $paragraphs = explode("\n", $content);
 
-            static::log("insertContentIntoDocument: after split", [
+            static::log('insertContentIntoDocument: after split', [
                 'paragraph_count' => count($paragraphs),
-                'paragraphs' => $paragraphs,
+                'paragraphs'      => $paragraphs,
             ]);
 
-            foreach($paragraphs as $paragraph) {
+            foreach ($paragraphs as $paragraph) {
                 // Insert all paragraphs including empty ones to preserve blank lines
                 // Empty paragraphs create blank lines when followed by \n
                 $requests[] = [
@@ -135,8 +138,8 @@ class GoogleDocsContentService
                 ]);
             }
 
-        } catch(\Exception $e) {
-            static::log("Failed to insert content", [
+        } catch (\Exception $e) {
+            static::log('Failed to insert content', [
                 'document_id' => $documentId,
                 'error'       => $e->getMessage(),
             ]);
@@ -149,7 +152,7 @@ class GoogleDocsContentService
     public function createDocument(GoogleDocsApi $api, string $title, string $content, ?string $parentFolderId = null): array
     {
         try {
-            static::log("Creating document", [
+            static::log('Creating document', [
                 'title'            => $title,
                 'parent_folder_id' => $parentFolderId,
                 'content_length'   => strlen($content),
@@ -172,7 +175,7 @@ class GoogleDocsContentService
             $documentData = $response->json();
 
             // Log the response to debug
-            static::log("Drive API response", [
+            static::log('Drive API response', [
                 'status'   => $response->status(),
                 'response' => $documentData,
             ]);
@@ -200,7 +203,7 @@ class GoogleDocsContentService
 
             $documentUrl = "https://docs.google.com/document/d/{$documentId}/edit";
 
-            static::log("Document created successfully", [
+            static::log('Document created successfully', [
                 'document_id'  => $documentId,
                 'document_url' => $documentUrl,
             ]);
@@ -212,8 +215,8 @@ class GoogleDocsContentService
                 'created_at'  => now()->toISOString(),
             ];
 
-        } catch(\Exception $e) {
-            static::log("Failed to create document", [
+        } catch (\Exception $e) {
+            static::log('Failed to create document', [
                 'title' => $title,
                 'error' => $e->getMessage(),
             ]);

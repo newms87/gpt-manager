@@ -10,7 +10,7 @@ class InvalidSearchParametersException extends ContentSearchException
         if ($reason) {
             $message .= " - {$reason}";
         }
-        
+
         parent::__construct($message);
     }
 }

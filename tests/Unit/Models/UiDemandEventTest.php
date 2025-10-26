@@ -18,7 +18,6 @@ class UiDemandEventTest extends AuthenticatedTestCase
         $this->setUpTeam();
     }
 
-
     public function test_uiDemand_updated_firesEvent(): void
     {
         // Given

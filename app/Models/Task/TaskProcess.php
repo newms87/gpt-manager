@@ -27,7 +27,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class TaskProcess extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait, HasWorkflowStatesTrait, HasUsageTracking;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasRelationCountersTrait, HasUsageTracking, HasWorkflowStatesTrait, KeywordSearchTrait, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -231,7 +231,6 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
     {
         return $this->taskRun->getRunner()->setTaskProcess($this);
     }
-
 
     public static function booted(): void
     {

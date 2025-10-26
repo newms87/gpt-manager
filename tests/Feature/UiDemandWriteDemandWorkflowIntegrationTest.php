@@ -162,9 +162,9 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertEquals(UiDemand::STATUS_DRAFT, $uiDemand->status);
         $this->assertArrayHasKey('extract_data_completed_at', $uiDemand->metadata);
 
-        // STEP 5: Start write medical summary workflow 
+        // STEP 5: Start write medical summary workflow
         $writeMedicalSummaryWorkflowRun = $service->writeMedicalSummary($uiDemand);
-        $uiDemand = $uiDemand->fresh();
+        $uiDemand                       = $uiDemand->fresh();
 
         // Verify medical summary is running
         $this->assertTrue($uiDemand->canExtractData()); // Still can extract data
@@ -192,7 +192,7 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // STEP 7: Start write demand letter workflow
         $writeDemandLetterWorkflowRun = $service->writeDemandLetter($uiDemand);
-        $uiDemand               = $uiDemand->fresh();
+        $uiDemand                     = $uiDemand->fresh();
 
         // Verify write demand letter is running
         $this->assertTrue($uiDemand->canExtractData()); // Still can extract data
@@ -347,7 +347,7 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Write Medical Summary',
         ]);
-        
+
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
             'completed_at'           => now(),
@@ -365,7 +365,7 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
             'metadata'       => [
                 'write_medical_summary_completed_at' => now()->subHour()->toIso8601String(),
-                'write_demand_letter_completed_at' => now()->toIso8601String(),
+                'write_demand_letter_completed_at'   => now()->toIso8601String(),
             ],
             'completed_at'   => now(),
             'title'          => 'Completed Demand',

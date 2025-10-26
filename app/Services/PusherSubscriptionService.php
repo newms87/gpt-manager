@@ -44,8 +44,8 @@ class PusherSubscriptionService
 
         self::log("User subscribed to {$resourceType}", [
             'cache_key' => $cacheKey,
-            'user_id' => $userId,
-            'team_id' => $teamId,
+            'user_id'   => $userId,
+            'team_id'   => $teamId,
         ]);
     }
 
@@ -82,8 +82,8 @@ class PusherSubscriptionService
 
         self::log("User unsubscribed from {$resourceType}", [
             'cache_key' => $cacheKey,
-            'user_id' => $userId,
-            'team_id' => $teamId,
+            'user_id'   => $userId,
+            'team_id'   => $teamId,
         ]);
     }
 
@@ -96,7 +96,7 @@ class PusherSubscriptionService
         $refreshedCount = 0;
 
         foreach ($subscriptions as $subscription) {
-            $resourceType = $subscription['resource_type'];
+            $resourceType    = $subscription['resource_type'];
             $modelIdOrFilter = $subscription['model_id_or_filter'];
 
             // Validate model_id_or_filter
@@ -115,7 +115,7 @@ class PusherSubscriptionService
                 // Also refresh filter definition TTL if exists
                 if (is_array($modelIdOrFilter) && isset($modelIdOrFilter['filter'])) {
                     $definitionKey = $cacheKey . ':definition';
-                    $filter = Cache::get($definitionKey);
+                    $filter        = Cache::get($definitionKey);
                     if ($filter !== null) {
                         Cache::put($definitionKey, $filter, self::TTL);
                     }
@@ -124,8 +124,8 @@ class PusherSubscriptionService
         }
 
         self::log("Keepalive refreshed {$refreshedCount} subscriptions", [
-            'user_id' => $userId,
-            'team_id' => $teamId,
+            'user_id'             => $userId,
+            'team_id'             => $teamId,
             'total_subscriptions' => count($subscriptions),
         ]);
 
@@ -169,6 +169,7 @@ class PusherSubscriptionService
 
         if (is_array($modelIdOrFilter) && isset($modelIdOrFilter['filter'])) {
             $hash = $this->hashFilter($modelIdOrFilter['filter']);
+
             return "{$prefix}:filter:{$hash}";
         }
 
@@ -181,7 +182,8 @@ class PusherSubscriptionService
     public function hashFilter(array $filter): string
     {
         $sorted = $this->sortArrayRecursively($filter);
-        $json = json_encode($sorted, JSON_UNESCAPED_SLASHES);
+        $json   = json_encode($sorted, JSON_UNESCAPED_SLASHES);
+
         return md5($json);
     }
 
@@ -207,7 +209,7 @@ class PusherSubscriptionService
     public function addToSubscriptionIndex(string $cacheKey): void
     {
         $indexKey = 'subscribe:_index';
-        $index = Cache::get($indexKey, []);
+        $index    = Cache::get($indexKey, []);
 
         if (!in_array($cacheKey, $index)) {
             $index[] = $cacheKey;
@@ -222,7 +224,7 @@ class PusherSubscriptionService
     public function removeFromSubscriptionIndex(string $cacheKey): void
     {
         $indexKey = 'subscribe:_index';
-        $index = Cache::get($indexKey, []);
+        $index    = Cache::get($indexKey, []);
 
         $index = array_values(array_filter($index, fn($key) => $key !== $cacheKey));
 

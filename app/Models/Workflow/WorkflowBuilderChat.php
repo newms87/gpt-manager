@@ -20,17 +20,12 @@ class WorkflowBuilderChat extends Model implements AuditableContract
     use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     // Status constants for enumeration
-    public const STATUS_REQUIREMENTS_GATHERING = 'requirements_gathering';
-
-    public const STATUS_ANALYZING_PLAN         = 'analyzing_plan';
-
-    public const STATUS_BUILDING_WORKFLOW      = 'building_workflow';
-
-    public const STATUS_EVALUATING_RESULTS     = 'evaluating_results';
-
-    public const STATUS_COMPLETED              = 'completed';
-
-    public const STATUS_FAILED                 = 'failed';
+    public const STATUS_REQUIREMENTS_GATHERING = 'requirements_gathering',
+        STATUS_ANALYZING_PLAN                  = 'analyzing_plan',
+        STATUS_BUILDING_WORKFLOW               = 'building_workflow',
+        STATUS_EVALUATING_RESULTS              = 'evaluating_results',
+        STATUS_COMPLETED                       = 'completed',
+        STATUS_FAILED                          = 'failed';
 
     protected $fillable = [
         'workflow_input_id',

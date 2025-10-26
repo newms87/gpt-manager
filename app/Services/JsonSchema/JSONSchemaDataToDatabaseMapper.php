@@ -25,16 +25,17 @@ class JSONSchemaDataToDatabaseMapper
     use HasDebugLogging;
 
     protected ?SchemaDefinition $schemaDefinition = null;
-    protected ?TeamObject       $rootObject       = null;
 
-    public function setSchemaDefinition(SchemaDefinition $schemaDefinition = null): static
+    protected ?TeamObject $rootObject       = null;
+
+    public function setSchemaDefinition(?SchemaDefinition $schemaDefinition = null): static
     {
         $this->schemaDefinition = $schemaDefinition;
 
         return $this;
     }
 
-    public function setRootObject(TeamObject $rootObject = null): static
+    public function setRootObject(?TeamObject $rootObject = null): static
     {
         $this->rootObject = $rootObject;
 
@@ -112,13 +113,13 @@ class JSONSchemaDataToDatabaseMapper
     /**
      * Update an existing team object
      */
-    function updateTeamObject(TeamObject $teamObject, $input = []): TeamObject
+    public function updateTeamObject(TeamObject $teamObject, $input = []): TeamObject
     {
         $fillableProps = ['name', 'date', 'description', 'url'];
 
         // Sometimes a user will choose to explicitly set these object properties as attributes to the object. In this case we want to convert from an object attribute to a string property so we can save it directly on the object.
         // NOTE: The attribute will still be saved as an object attribute related to the object, so this is duplicated information, but easier to access directly on the object, instead of as an object attribute.
-        foreach($fillableProps as $propName) {
+        foreach ($fillableProps as $propName) {
             if (!empty($input[$propName]) && is_array($input[$propName])) {
                 $input[$propName] = $input[$propName]['value'] ?? null;
             }
@@ -135,7 +136,7 @@ class JSONSchemaDataToDatabaseMapper
 
         try {
             $teamObject->fill($input)->validate();
-        } catch(ValidationError $exception) {
+        } catch (ValidationError $exception) {
             // If there is a naming conflict, then resolve the name
             if ($exception->getCode() === 409) {
                 $teamObject->name = ModelHelper::getNextModelName($teamObject);
@@ -154,7 +155,7 @@ class JSONSchemaDataToDatabaseMapper
     public function saveTeamObjectAttribute(TeamObject $teamObject, $name, $attribute, ?array $meta = []): ?TeamObjectAttribute
     {
         if (!$name) {
-            throw new Exception("Save Team Object Attribute requires a name");
+            throw new Exception('Save Team Object Attribute requires a name');
         }
 
         $value = $attribute['value'] ?? null;
@@ -162,9 +163,9 @@ class JSONSchemaDataToDatabaseMapper
         $propertyMeta = collect($meta)->firstWhere('property_name', $name);
 
         $citation   = $propertyMeta['citation'] ?? null;
-        $reason     = $citation['reason'] ?? null;
-        $confidence = $citation['confidence'] ?? $attribute['confidence'] ?? null;
-        $sources    = $citation['sources'] ?? [];
+        $reason     = $citation['reason']       ?? null;
+        $confidence = $citation['confidence']   ?? $attribute['confidence'] ?? null;
+        $sources    = $citation['sources']      ?? [];
 
         $jsonValue = StringHelper::safeJsonDecode($value, maxEntrySize: 100000, forceJson: false);
 
@@ -183,7 +184,7 @@ class JSONSchemaDataToDatabaseMapper
         if ($sources) {
             $teamObjectAttribute->sources()->delete();
         }
-        foreach($sources as $source) {
+        foreach ($sources as $source) {
             $this->saveTeamObjectAttributeSource($teamObjectAttribute, $source);
         }
 
@@ -195,19 +196,19 @@ class JSONSchemaDataToDatabaseMapper
      */
     public function saveTeamObjectAttributeSource(TeamObjectAttribute $teamObjectAttribute, array $source): TeamObjectAttributeSource
     {
-        $sourceUrl       = $source['url'] ?? null;
+        $sourceUrl       = $source['url']        ?? null;
         $sourceMessageId = $source['message_id'] ?? null;
-        $fileId          = $source['file_id'] ?? [];
+        $fileId          = $source['file_id']    ?? [];
         $storedFile      = null;
 
-        Log::debug("Saving citation: " . $teamObjectAttribute->name . ($sourceUrl ? " URL: $sourceUrl" : '') . ($sourceMessageId ? " AgentThreadMessage ID: $sourceMessageId" : ''));
+        Log::debug('Saving citation: ' . $teamObjectAttribute->name . ($sourceUrl ? " URL: $sourceUrl" : '') . ($sourceMessageId ? " AgentThreadMessage ID: $sourceMessageId" : ''));
 
         if ($sourceUrl) {
             $sourceUrl  = FileHelper::normalizeUrl($sourceUrl);
             $storedFile = StoredFile::firstWhere('url', $sourceUrl);
 
             if (!$storedFile) {
-                Log::debug("Creating Stored File for source URL");
+                Log::debug('Creating Stored File for source URL');
                 $storedFile = app(FileRepository::class)->createFileWithUrl($sourceUrl, $sourceUrl, ['disk' => 'web', 'mime' => FileHelper::getMimeFromExtension($sourceUrl)]);
             }
 
@@ -226,7 +227,7 @@ class JSONSchemaDataToDatabaseMapper
             $sourceId   = $fileId;
             $sourceType = 'file';
         } else {
-            throw new Exception("Save Team Object Attribute Source requires a File, URL or AgentThreadMessage ID");
+            throw new Exception('Save Team Object Attribute Source requires a File, URL or AgentThreadMessage ID');
         }
 
         $attributeSource = $teamObjectAttribute->sources()->updateOrCreate([
@@ -272,12 +273,12 @@ class JSONSchemaDataToDatabaseMapper
      *
      * @return TeamObject[]
      */
-    public function saveTeamObjectsUsingSchema(array $schema, array &$objects, AgentThreadRun $threadRun = null): array
+    public function saveTeamObjectsUsingSchema(array $schema, array &$objects, ?AgentThreadRun $threadRun = null): array
     {
-        Log::debug("Saving array of TeamObjects: " . count($objects));
+        Log::debug('Saving array of TeamObjects: ' . count($objects));
 
         $teamObjects = [];
-        foreach($objects as &$object) {
+        foreach ($objects as &$object) {
             if ($object) {
                 $teamObjects[] = $this->saveTeamObjectUsingSchema($schema, $object, $threadRun);
             }
@@ -291,10 +292,10 @@ class JSONSchemaDataToDatabaseMapper
      *
      * NOTE: object is passed as reference so we can update the ID after creating the object
      */
-    public function saveTeamObjectUsingSchema(array $schema, array &$object, AgentThreadRun $threadRun = null): TeamObject
+    public function saveTeamObjectUsingSchema(array $schema, array &$object, ?AgentThreadRun $threadRun = null): TeamObject
     {
-        $id           = $object['id'] ?? null;
-        $type         = $schema['title'] ?? $object['type'] ?? null;
+        $id           = $object['id']            ?? null;
+        $type         = $schema['title']         ?? $object['type'] ?? null;
         $name         = $object['name']['value'] ?? $object['name'] ?? null;
         $propertyMeta = $object['property_meta'] ?? null;
 
@@ -348,9 +349,9 @@ class JSONSchemaDataToDatabaseMapper
         }
 
         // Save the properties to the resolved team object
-        foreach($schema['properties'] as $propertyName => $property) {
-            $title  = $property['title'] ?? $propertyName;
-            $type   = $property['type'] ?? null;
+        foreach ($schema['properties'] as $propertyName => $property) {
+            $title  = $property['title']  ?? $propertyName;
+            $type   = $property['type']   ?? null;
             $format = $property['format'] ?? null;
 
             if (!$type) {
@@ -367,6 +368,7 @@ class JSONSchemaDataToDatabaseMapper
             // Make sure we keep referencing the object (don't create a new object in memory) so we can continue updating the IDs inline
             if ($object[$propertyName] === null) {
                 Log::debug("Skipping null entry for value of $propertyName");
+
                 continue;
             }
 
@@ -382,12 +384,13 @@ class JSONSchemaDataToDatabaseMapper
                 // NOTE: The object is still be referenced here and passing to the child as a reference so we can update the ID inline!
                 try {
                     $relatedObjects = $this->saveTeamObjectsUsingSchema($property['items'], $object[$propertyName], $threadRun);
-                } catch(Throwable $throwable) {
+                } catch (Throwable $throwable) {
                     static::log("Failed to save array of team objects: $propertyName: " . $throwable->getMessage());
+
                     continue;
                 }
 
-                foreach($relatedObjects as $relatedObject) {
+                foreach ($relatedObjects as $relatedObject) {
                     $this->saveTeamObjectRelationship($teamObject, $propertyName, $relatedObject);
                 }
             } elseif ($type === 'object') {
@@ -395,8 +398,9 @@ class JSONSchemaDataToDatabaseMapper
                 // NOTE: The object is still be referenced here and passing to the child as a reference so we can update the ID inline!
                 try {
                     $relatedObject = $this->saveTeamObjectUsingSchema($property, $object[$propertyName], $threadRun);
-                } catch(Throwable $throwable) {
+                } catch (Throwable $throwable) {
                     static::log("Failed to save Team Object: $propertyName: " . $throwable->getMessage());
+
                     continue;
                 }
 
@@ -413,6 +417,7 @@ class JSONSchemaDataToDatabaseMapper
                 // Skip saving this property if the value is null
                 if ($propertyValue['value'] === null) {
                     Log::debug("Skipping null value for $propertyName");
+
                     continue;
                 }
 
@@ -437,13 +442,13 @@ class JSONSchemaDataToDatabaseMapper
     public function formatPropertyValue($type, $format, $value): string|int|bool|float
     {
         return match ($format || $type) {
-            'string' => (string)$value,
-            'number' => (float)$value,
-            'integer' => (int)$value,
-            'boolean' => (bool)$value,
-            'date' => carbon($value)->toDateString(),
+            'string'    => (string)$value,
+            'number'    => (float)$value,
+            'integer'   => (int)$value,
+            'boolean'   => (bool)$value,
+            'date'      => carbon($value)->toDateString(),
             'date-time' => carbon($value)->toDateTimeString(),
-            default => $value,
+            default     => $value,
         };
     }
 }

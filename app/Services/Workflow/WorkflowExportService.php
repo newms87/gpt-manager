@@ -58,7 +58,6 @@ class WorkflowExportService
     {
         if ($workflowDefinition->resource_package_import_id) {
             throw new ValidationError('You do not own this workflow definition and cannot export it');
-
         }
 
         // This will load the definitions into the $this->definitions array
@@ -86,7 +85,7 @@ class WorkflowExportService
         return $model->id;
     }
 
-    public function registerRelatedModel(ResourcePackageableContract $model = null): string|null
+    public function registerRelatedModel(?ResourcePackageableContract $model = null): ?string
     {
         if (!$model) {
             return null;
@@ -105,7 +104,7 @@ class WorkflowExportService
      * NOTE: These models should associate themselves in their exportToJson() method to the model that has called this
      * method.
      *
-     * @param ResourcePackageableContract[] $models
+     * @param  ResourcePackageableContract[]  $models
      */
     public function registerRelatedModels($models): void
     {
@@ -113,7 +112,7 @@ class WorkflowExportService
             return;
         }
 
-        foreach($models as $model) {
+        foreach ($models as $model) {
             if (empty($this->definitions[$model::class][$model->id])) {
                 $model->exportToJson($this);
             }

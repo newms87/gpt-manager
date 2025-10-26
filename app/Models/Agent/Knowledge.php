@@ -10,7 +10,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class Knowledge extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes;
+    use AuditableTrait, HasFactory, SoftDeletes;
 
     public function agents()
     {

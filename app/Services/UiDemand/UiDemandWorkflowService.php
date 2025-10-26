@@ -24,7 +24,6 @@ class UiDemandWorkflowService
             throw new ValidationError('Cannot extract data for this demand. Make sure a workflow is not already running for this demand.');
         }
 
-
         $workflowDefinition = $this->getWorkflowDefinition('extract_data');
         $workflowInput      = $this->createWorkflowInputFromDemand($uiDemand, 'Extract Data');
 
@@ -109,7 +108,7 @@ TEXT;
         $medicalSummaryArtifacts = $uiDemand->medicalSummaries()->withPivot(['category'])->get();
 
         // Store categories in artifact meta before passing to workflow
-        foreach($medicalSummaryArtifacts as $artifact) {
+        foreach ($medicalSummaryArtifacts as $artifact) {
             $meta               = $artifact->meta ?? [];
             $meta['__category'] = $artifact->pivot->category;
             $artifact->meta     = $meta;
@@ -299,17 +298,16 @@ TEXT;
         ]);
     }
 
-
     /**
      * Attach output files from workflow artifacts to UiDemand
      */
     protected function attachOutputFilesFromWorkflow(UiDemand $uiDemand, $outputArtifacts): void
     {
-        foreach($outputArtifacts as $artifact) {
+        foreach ($outputArtifacts as $artifact) {
             // Get all StoredFiles attached to this artifact
             $artifactStoredFiles = $artifact->storedFiles;
 
-            foreach($artifactStoredFiles as $storedFile) {
+            foreach ($artifactStoredFiles as $storedFile) {
                 // Reuse the StoredFile from artifact and attach to UiDemand as output
                 $uiDemand->outputFiles()->syncWithoutDetaching([$storedFile->id => ['category' => 'output']]);
             }
@@ -321,7 +319,7 @@ TEXT;
      */
     protected function attachArtifactsToUiDemand(UiDemand $uiDemand, $artifacts, string $category): void
     {
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             // Attach artifact to UiDemand with specified category
             $uiDemand->artifacts()->syncWithoutDetaching([$artifact->id => ['category' => $category]]);
         }

@@ -27,7 +27,7 @@ class TaskDefinitionFactory extends Factory
         ];
     }
 
-    public function withSchemaDefinition(SchemaDefinition $schemaDefinition = null): static
+    public function withSchemaDefinition(?SchemaDefinition $schemaDefinition = null): static
     {
         return $this->state([
             'schema_definition_id' => $schemaDefinition ? $schemaDefinition->id : SchemaDefinition::factory()->create()->id,

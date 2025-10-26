@@ -17,13 +17,19 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
 {
     use SetUpTeamTrait;
 
-    protected TaskDefinition            $taskDefinition;
-    protected TaskRun                   $taskRun;
-    protected TaskProcess               $taskProcess;
-    protected WorkflowRun               $workflowRun;
-    protected WorkflowDefinition        $workflowDefinition;
-    protected WorkflowNode              $workflowNode;
-    protected WorkflowOutputTaskRunner  $taskRunner;
+    protected TaskDefinition $taskDefinition;
+
+    protected TaskRun $taskRun;
+
+    protected TaskProcess $taskProcess;
+
+    protected WorkflowRun $workflowRun;
+
+    protected WorkflowDefinition $workflowDefinition;
+
+    protected WorkflowNode $workflowNode;
+
+    protected WorkflowOutputTaskRunner $taskRunner;
 
     public function setUp(): void
     {
@@ -32,7 +38,7 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
 
         // Create workflow definition and run
         $this->workflowDefinition = WorkflowDefinition::factory()->create();
-        $this->workflowRun = WorkflowRun::factory()->create([
+        $this->workflowRun        = WorkflowRun::factory()->create([
             'workflow_definition_id' => $this->workflowDefinition->id,
         ]);
 
@@ -77,10 +83,10 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
         $this->taskProcess->refresh();
         $outputArtifacts = $this->taskProcess->outputArtifacts()->get();
         $this->assertCount(0, $outputArtifacts);
-        
+
         // Check that the process finished
         $this->assertNotNull($this->taskProcess->completed_at);
-        
+
         // Check that no workflow output artifacts were added
         $workflowOutputArtifacts = $this->workflowRun->outputArtifacts()->get();
         $this->assertCount(0, $workflowOutputArtifacts);
@@ -92,11 +98,11 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
         $artifact1 = Artifact::factory()->create([
             'name' => 'Final Document',
         ]);
-        
+
         $artifact2 = Artifact::factory()->create([
             'name' => 'Summary Report',
         ]);
-        
+
         $this->taskProcess->inputArtifacts()->attach([$artifact1->id, $artifact2->id]);
 
         // When we run the workflow output task
@@ -108,21 +114,21 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
         $this->assertCount(2, $processOutputArtifacts);
         $this->assertTrue($processOutputArtifacts->contains($artifact1));
         $this->assertTrue($processOutputArtifacts->contains($artifact2));
-        
+
         // And the task run should have the artifacts as output artifacts
         $this->taskRun->refresh();
         $taskRunOutputArtifacts = $this->taskRun->outputArtifacts()->get();
         $this->assertCount(2, $taskRunOutputArtifacts);
         $this->assertTrue($taskRunOutputArtifacts->contains($artifact1));
         $this->assertTrue($taskRunOutputArtifacts->contains($artifact2));
-        
+
         // And the workflow run should have the artifacts as output artifacts
         $this->workflowRun->refresh();
         $workflowOutputArtifacts = $this->workflowRun->outputArtifacts()->get();
         $this->assertCount(2, $workflowOutputArtifacts);
         $this->assertTrue($workflowOutputArtifacts->contains($artifact1));
         $this->assertTrue($workflowOutputArtifacts->contains($artifact2));
-        
+
         // Check that the process finished
         $this->assertNotNull($this->taskProcess->completed_at);
     }
@@ -134,20 +140,20 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
             'name'     => 'Chapter 1',
             'position' => 1,
         ]);
-        
+
         $artifact2 = Artifact::factory()->create([
-            'name'     => 'Chapter 2', 
+            'name'     => 'Chapter 2',
             'position' => 2,
         ]);
-        
+
         $artifact3 = Artifact::factory()->create([
             'name'     => 'Appendix',
             'position' => 3,
         ]);
-        
+
         $this->taskProcess->inputArtifacts()->attach([
             $artifact1->id,
-            $artifact2->id, 
+            $artifact2->id,
             $artifact3->id,
         ]);
 
@@ -158,7 +164,7 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
         $this->workflowRun->refresh();
         $workflowOutputArtifacts = $this->workflowRun->outputArtifacts()->orderBy('position')->get();
         $this->assertCount(3, $workflowOutputArtifacts);
-        
+
         // Verify the artifacts are in the correct order
         $this->assertEquals('Chapter 1', $workflowOutputArtifacts[0]->name);
         $this->assertEquals('Chapter 2', $workflowOutputArtifacts[1]->name);
@@ -180,19 +186,19 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
         ]);
 
         $standaloneRunner = $standaloneTaskProcess->getRunner();
-        
+
         // And we have input artifacts
         $artifact = Artifact::factory()->create([
             'name' => 'Standalone Output',
         ]);
-        
+
         $standaloneTaskProcess->inputArtifacts()->attach($artifact->id);
 
         // When we run the workflow output task on a standalone task
         // Then it should throw an exception
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('WorkflowOutputTaskRunner can only be used within a workflow context');
-        
+
         $standaloneRunner->run();
     }
 
@@ -201,7 +207,7 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
         // Given we have workflow output artifacts attached to the workflow run
         $artifact1 = Artifact::factory()->create(['name' => 'Final Output 1']);
         $artifact2 = Artifact::factory()->create(['name' => 'Final Output 2']);
-        
+
         $this->workflowRun->addOutputArtifacts([$artifact1, $artifact2]);
 
         // And we also have regular task run artifacts (these should be ignored)
@@ -239,7 +245,7 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
         // Given we have initial artifacts
         $artifact1 = Artifact::factory()->create(['name' => 'Output 1']);
         $artifact2 = Artifact::factory()->create(['name' => 'Output 2']);
-        
+
         $this->workflowRun->addOutputArtifacts([$artifact1]);
 
         // When we add more artifacts
@@ -257,9 +263,9 @@ class WorkflowOutputTaskRunnerTest extends AuthenticatedTestCase
         // Given we have workflow output artifacts
         $artifact1 = Artifact::factory()->create(['name' => 'Output 1']);
         $artifact2 = Artifact::factory()->create(['name' => 'Output 2']);
-        
+
         $this->workflowRun->addOutputArtifacts([$artifact1, $artifact2]);
-        
+
         // Verify they were added
         $this->assertCount(2, $this->workflowRun->outputArtifacts()->get());
 

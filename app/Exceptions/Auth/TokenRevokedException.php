@@ -8,19 +8,19 @@ class TokenRevokedException extends ValidationError
 {
     public function __construct(string $service, ?string $teamId = null, ?string $reason = null, int $code = 401)
     {
-        $teamContext = $teamId ? " for team {$teamId}" : "";
-        $reasonContext = $reason ? " Reason: {$reason}" : "";
-        $message = "OAuth token for {$service}{$teamContext} has been revoked or is invalid.{$reasonContext} Re-authorization required.";
-        
+        $teamContext   = $teamId ? " for team {$teamId}" : '';
+        $reasonContext = $reason ? " Reason: {$reason}" : '';
+        $message       = "OAuth token for {$service}{$teamContext} has been revoked or is invalid.{$reasonContext} Re-authorization required.";
+
         parent::__construct($message, $code);
-        
+
         // Set additional context for error handling
         $this->context = [
-            'service' => $service,
-            'team_id' => $teamId,
-            'revoke_reason' => $reason,
-            'error_type' => 'token_revoked',
-            'action_required' => 'oauth_authorization'
+            'service'         => $service,
+            'team_id'         => $teamId,
+            'revoke_reason'   => $reason,
+            'error_type'      => 'token_revoked',
+            'action_required' => 'oauth_authorization',
         ];
     }
 

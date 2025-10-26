@@ -21,8 +21,6 @@ class UsageSummaryTest extends TestCase
         $this->assertEquals(150, $summary->total_tokens);
     }
 
-
-
     #[Test]
     public function it_updates_from_usage_events()
     {
@@ -115,5 +113,4 @@ class UsageSummaryTest extends TestCase
 
         $this->assertEquals(0, $summary->total_tokens);
     }
-
 }

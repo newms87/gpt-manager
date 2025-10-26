@@ -400,7 +400,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
 
         // Should NOT be able to write demand letter yet - need medical summary first
         $this->assertFalse($uiDemand->canWriteDemandLetter());
-        
+
         // But should be able to write medical summary since extract data is completed
         $this->assertTrue($uiDemand->canWriteMedicalSummary());
 
@@ -650,7 +650,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         // When
         $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-medical-summary", [
             'instruction_template_id'  => $instructionTemplate->id,
-            'additional_instructions' => 'Focus on injury details',
+            'additional_instructions'  => 'Focus on injury details',
         ]);
 
         // Then

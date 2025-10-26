@@ -60,7 +60,7 @@ class ContentSearchService
         ]);
 
         if ($request->usesFieldPath()) {
-            foreach($artifacts as $artifact) {
+            foreach ($artifacts as $artifact) {
                 $result = $this->findInFieldPath($request->getFieldPath(), $artifact);
                 if ($result->isFound()) {
                     static::log('Found via field path', [
@@ -135,13 +135,13 @@ class ContentSearchService
             'model'               => $request->getLlmModel() ?: 'default',
         ]);
 
-        foreach($potentialArtifacts as $artifact) {
+        foreach ($potentialArtifacts as $artifact) {
             try {
                 $result = $this->extractWithLlm($artifact->text_content, $request, $artifact);
                 if ($result->isFound()) {
                     return $result;
                 }
-            } catch(Exception $e) {
+            } catch (Exception $e) {
                 static::log('LLM extraction failed for artifact', [
                     'artifact_id' => $artifact->id,
                     'error'       => $e->getMessage(),
@@ -166,7 +166,7 @@ class ContentSearchService
         }
 
         $directiveText = '';
-        foreach($directives as $directive) {
+        foreach ($directives as $directive) {
             // Handle both stdClass and Model instances
             if (is_object($directive)) {
                 if (property_exists($directive, 'directive_text')) {
@@ -199,7 +199,7 @@ class ContentSearchService
 
                 return $result;
             }
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             static::log('LLM extraction failed for directives', [
                 'error' => $e->getMessage(),
             ]);
@@ -224,7 +224,6 @@ class ContentSearchService
             'query'       => $query,
             'model'       => $model,
         ]);
-
 
         // Create detection agent
         $agent = Agent::firstOrCreate([
@@ -330,7 +329,7 @@ INSTRUCTIONS;
             }
 
             return true;
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             $result->setValidated(false, $e->getMessage());
 
             if ($request->isValidationRequired()) {
@@ -355,7 +354,7 @@ INSTRUCTIONS;
             return null;
         }
 
-        foreach($directives as $directive) {
+        foreach ($directives as $directive) {
             $directiveText = null;
 
             // Handle different directive structures

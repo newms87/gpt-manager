@@ -32,7 +32,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts = collect();
-        $context = "Test context";
+        $context   = 'Test context';
 
         // When
         $result = app(ArtifactBatchNamingService::class)->nameArtifacts($artifacts, $context);
@@ -47,21 +47,21 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
         // Given - Create artifacts with text content
         $artifacts = collect([
             Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
-                'name' => 'artifact_1',
+                'team_id'      => $this->user->currentTeam->id,
+                'name'         => 'artifact_1',
                 'text_content' => 'Medical summary document content',
             ]),
             Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
-                'name' => 'artifact_2',
+                'team_id'      => $this->user->currentTeam->id,
+                'name'         => 'artifact_2',
                 'text_content' => 'Patient demographics information',
             ]),
         ]);
 
         // Mock the agent and thread service
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent       = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $agentThread = AgentThread::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
         ]);
         $agentThreadRun = AgentThreadRun::factory()->create([
@@ -89,7 +89,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
             $agentThreadRun->lastMessage = $mockMessage;
         });
 
-        $context = "Medical case documents";
+        $context = 'Medical case documents';
 
         // When
         $result = app(ArtifactBatchNamingService::class)->nameArtifacts($artifacts, $context);
@@ -110,8 +110,8 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
         $artifacts = collect();
         for ($i = 1; $i <= 25; $i++) {
             $artifacts->push(Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
-                'name' => "artifact_{$i}",
+                'team_id'      => $this->user->currentTeam->id,
+                'name'         => "artifact_{$i}",
                 'text_content' => "Content for artifact {$i}",
             ]));
         }
@@ -120,7 +120,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
         $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
 
         $agentThread = AgentThread::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
         ]);
         $agentThreadRun = AgentThreadRun::factory()->create([
@@ -151,7 +151,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
             $agentThreadRun->lastMessage = $mockMessage;
         });
 
-        $context = "Test batch processing";
+        $context = 'Test batch processing';
 
         // When
         $result = app(ArtifactBatchNamingService::class)->nameArtifacts($artifacts, $context);
@@ -170,10 +170,10 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $originalName = 'original_artifact_name';
-        $artifacts = collect([
+        $artifacts    = collect([
             Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
-                'name' => $originalName,
+                'team_id'      => $this->user->currentTeam->id,
+                'name'         => $originalName,
                 'text_content' => 'Some content',
             ]),
         ]);
@@ -194,7 +194,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
                 ->andThrow(new \Exception('LLM service unavailable'));
         });
 
-        $context = "Test error handling";
+        $context = 'Test error handling';
 
         // When
         $result = app(ArtifactBatchNamingService::class)->nameArtifacts($artifacts, $context);
@@ -208,17 +208,17 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $originalName = 'original_name';
-        $artifacts = collect([
+        $artifacts    = collect([
             Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
-                'name' => $originalName,
+                'team_id'      => $this->user->currentTeam->id,
+                'name'         => $originalName,
                 'text_content' => 'Content',
             ]),
         ]);
 
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent       = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $agentThread = AgentThread::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
         ]);
         $agentThreadRun = AgentThreadRun::factory()->create([
@@ -243,7 +243,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
             $agentThreadRun->lastMessage = $mockMessage;
         });
 
-        $context = "Test invalid JSON";
+        $context = 'Test invalid JSON';
 
         // When
         $result = app(ArtifactBatchNamingService::class)->nameArtifacts($artifacts, $context);
@@ -256,17 +256,17 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $originalName = 'original_name';
-        $artifacts = collect([
+        $artifacts    = collect([
             Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
-                'name' => $originalName,
+                'team_id'      => $this->user->currentTeam->id,
+                'name'         => $originalName,
                 'text_content' => 'Content',
             ]),
         ]);
 
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent       = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $agentThread = AgentThread::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
         ]);
         $agentThreadRun = AgentThreadRun::factory()->create([
@@ -291,7 +291,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
             $agentThreadRun->lastMessage = $mockMessage;
         });
 
-        $context = "Test missing names object";
+        $context = 'Test missing names object';
 
         // When
         $result = app(ArtifactBatchNamingService::class)->nameArtifacts($artifacts, $context);
@@ -308,19 +308,19 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $textContent = str_repeat('a', 1000); // Long text
-        $artifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'test_artifact',
+        $artifact    = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'name'         => 'test_artifact',
             'text_content' => $textContent,
             'json_content' => null,
         ]);
 
         $artifacts = collect([$artifact]);
-        $service = app(ArtifactBatchNamingService::class);
+        $service   = app(ArtifactBatchNamingService::class);
 
         // Use reflection to access protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('buildArtifactContextData');
+        $method     = $reflection->getMethod('buildArtifactContextData');
         $method->setAccessible(true);
 
         // When
@@ -339,19 +339,19 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $jsonContent = ['key' => str_repeat('value', 100)];
-        $artifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'json_artifact',
+        $artifact    = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'name'         => 'json_artifact',
             'text_content' => null,
             'json_content' => $jsonContent,
         ]);
 
         $artifacts = collect([$artifact]);
-        $service = app(ArtifactBatchNamingService::class);
+        $service   = app(ArtifactBatchNamingService::class);
 
         // Use reflection to access protected method
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('buildArtifactContextData');
+        $method     = $reflection->getMethod('buildArtifactContextData');
         $method->setAccessible(true);
 
         // When
@@ -368,7 +368,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
     {
         // Given
         $artifact = Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Content',
         ]);
 
@@ -383,11 +383,11 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
         $artifact->storedFiles()->attach([$storedFile1->id, $storedFile2->id]);
 
         $artifacts = collect([$artifact]);
-        $service = app(ArtifactBatchNamingService::class);
+        $service   = app(ArtifactBatchNamingService::class);
 
         // Use reflection
         $reflection = new \ReflectionClass($service);
-        $method = $reflection->getMethod('buildArtifactContextData');
+        $method     = $reflection->getMethod('buildArtifactContextData');
         $method->setAccessible(true);
 
         // When
@@ -409,7 +409,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
 
         $artifacts = collect([
             Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
+                'team_id'      => $this->user->currentTeam->id,
                 'text_content' => 'Content',
             ]),
         ]);
@@ -417,11 +417,11 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
         // Create agent with the configured model
         $agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'model' => 'gpt-5-nano',
+            'model'   => 'gpt-5-nano',
         ]);
 
         $agentThread = AgentThread::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
         ]);
         $agentThreadRun = AgentThreadRun::factory()->create([
@@ -443,12 +443,12 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
             // Mock the lastMessage with AgentThreadMessage that has getJsonContent()
             $mockMessage = $this->createMock(AgentThreadMessage::class);
             $mockMessage->method('getJsonContent')->willReturn(['names' => [
-                ['artifact_id' => $artifacts[0]->id, 'name' => 'Named Artifact']
+                ['artifact_id' => $artifacts[0]->id, 'name' => 'Named Artifact'],
             ]]);
             $agentThreadRun->lastMessage = $mockMessage;
         });
 
-        $context = "Test configuration";
+        $context = 'Test configuration';
 
         // When
         $result = app(ArtifactBatchNamingService::class)->nameArtifacts($artifacts, $context);
@@ -464,14 +464,14 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
 
         $artifacts = collect([
             Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
+                'team_id'      => $this->user->currentTeam->id,
                 'text_content' => 'Content',
             ]),
         ]);
 
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent       = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $agentThread = AgentThread::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
         ]);
         $agentThreadRun = AgentThreadRun::factory()->create([
@@ -493,13 +493,13 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
             // Mock the lastMessage with AgentThreadMessage that has getJsonContent()
             $mockMessage = $this->createMock(AgentThreadMessage::class);
             $mockMessage->method('getJsonContent')->willReturn(['names' => [
-                ['artifact_id' => $artifacts[0]->id, 'name' => 'Named']
+                ['artifact_id' => $artifacts[0]->id, 'name' => 'Named'],
             ]]);
             $agentThreadRun->lastMessage = $mockMessage;
         });
 
         // When
-        app(ArtifactBatchNamingService::class)->nameArtifacts($artifacts, "Context");
+        app(ArtifactBatchNamingService::class)->nameArtifacts($artifacts, 'Context');
 
         // Then - Mock expectations verified by Mockery
         $this->assertTrue(true);
@@ -514,15 +514,15 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
         $artifacts = collect();
         for ($i = 1; $i <= 12; $i++) {
             $artifacts->push(Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
-                'name' => "artifact_{$i}",
+                'team_id'      => $this->user->currentTeam->id,
+                'name'         => "artifact_{$i}",
                 'text_content' => "Content {$i}",
             ]));
         }
 
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent       = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $agentThread = AgentThread::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
         ]);
         $agentThreadRun = AgentThreadRun::factory()->create([
@@ -552,7 +552,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
             $agentThreadRun->lastMessage = $mockMessage;
         });
 
-        $context = "Test batch size configuration";
+        $context = 'Test batch size configuration';
 
         // When
         $result = app(ArtifactBatchNamingService::class)->nameArtifacts($artifacts, $context);
@@ -570,16 +570,16 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
         // Given
         $artifacts = collect([
             Artifact::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
+                'team_id'      => $this->user->currentTeam->id,
                 'text_content' => 'Content',
             ]),
         ]);
 
-        $contextDescription = "Medical summary documents for case: John Doe vs Hospital";
+        $contextDescription = 'Medical summary documents for case: John Doe vs Hospital';
 
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent       = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $agentThread = AgentThread::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'agent_id' => $agent->id,
         ]);
         $agentThreadRun = AgentThreadRun::factory()->create([
@@ -587,7 +587,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
         ]);
 
         // Mock to verify context is used
-        $threadRepoMock = $this->mock(ThreadRepository::class, function ($mock) use ($agentThread, $contextDescription) {
+        $threadRepoMock = $this->mock(ThreadRepository::class, function ($mock) use ($agentThread) {
             $mock->shouldReceive('create')
                 ->once()
                 ->andReturn($agentThread);
@@ -611,7 +611,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
             // Mock the lastMessage with AgentThreadMessage that has getJsonContent()
             $mockMessage = $this->createMock(AgentThreadMessage::class);
             $mockMessage->method('getJsonContent')->willReturn(['names' => [
-                ['artifact_id' => $artifacts[0]->id, 'name' => 'Medical Summary']
+                ['artifact_id' => $artifacts[0]->id, 'name' => 'Medical Summary'],
             ]]);
             $agentThreadRun->lastMessage = $mockMessage;
         });

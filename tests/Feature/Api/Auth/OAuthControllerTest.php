@@ -3,7 +3,6 @@
 namespace Tests\Feature\Api\Auth;
 
 use App\Models\Auth\AuthToken;
-use App\Services\Auth\OAuthService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Tests\AuthenticatedTestCase;
@@ -22,26 +21,26 @@ class OAuthControllerTest extends AuthenticatedTestCase
 
         // Set proper authentication guard for API tests
         Config::set('auth.defaults.guard', 'web');
-        
+
         // Mock Google OAuth configuration
         Config::set('auth.oauth.google', [
-            'client_id' => 'test_client_id',
+            'client_id'     => 'test_client_id',
             'client_secret' => 'test_client_secret',
-            'redirect_uri' => 'http://localhost/api/oauth/google/callback',
-            'auth_url' => 'https://accounts.google.com/o/oauth2/v2/auth',
-            'token_url' => 'https://oauth2.googleapis.com/token',
-            'revoke_url' => 'https://oauth2.googleapis.com/revoke',
-            'scopes' => [
+            'redirect_uri'  => 'http://localhost/api/oauth/google/callback',
+            'auth_url'      => 'https://accounts.google.com/o/oauth2/v2/auth',
+            'token_url'     => 'https://oauth2.googleapis.com/token',
+            'revoke_url'    => 'https://oauth2.googleapis.com/revoke',
+            'scopes'        => [
                 'https://www.googleapis.com/auth/documents',
                 'https://www.googleapis.com/auth/drive',
                 'openid',
                 'email',
-                'profile'
+                'profile',
             ],
-            'access_type' => 'offline',
-            'approval_prompt' => 'force'
+            'access_type'     => 'offline',
+            'approval_prompt' => 'force',
         ]);
-        
+
         // Set the SPA URL for testing (simulating the .env value)
         Config::set('app.spa_url', env('APP_SPA_URL', 'http://localhost:5173'));
     }
@@ -56,9 +55,9 @@ class OAuthControllerTest extends AuthenticatedTestCase
         $response->assertJsonStructure([
             'authorization_url',
             'service',
-            'state'
+            'state',
         ]);
-        
+
         $url = $response->json('authorization_url');
         $this->assertStringStartsWith('https://accounts.google.com/o/oauth2/v2/auth', $url);
         $this->assertStringContainsString('client_id=test_client_id', $url);
@@ -100,7 +99,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
 
         // Then
         $response->assertOk();
-        $state = $response->json('state');
+        $state     = $response->json('state');
         $stateData = json_decode(base64_decode($state), true);
         $this->assertEquals($redirectUrl, $stateData['redirect_after_auth']);
     }
@@ -108,21 +107,21 @@ class OAuthControllerTest extends AuthenticatedTestCase
     public function test_callback_withValidCode_returnsRedirectWithoutQueryParams(): void
     {
         // Given
-        $code = 'test_authorization_code';
+        $code  = 'test_authorization_code';
         $state = base64_encode(json_encode([
-            'service' => $this->service,
-            'team_id' => $this->user->currentTeam->id,
-            'timestamp' => time()
+            'service'   => $this->service,
+            'team_id'   => $this->user->currentTeam->id,
+            'timestamp' => time(),
         ]));
 
         $tokenData = [
-            'access_token' => 'test_access_token',
+            'access_token'  => 'test_access_token',
             'refresh_token' => 'test_refresh_token',
-            'expires_in' => 3600,
+            'expires_in'    => 3600,
         ];
 
         Http::fake([
-            'oauth2.googleapis.com/token' => Http::response($tokenData, 200)
+            'oauth2.googleapis.com/token' => Http::response($tokenData, 200),
         ]);
 
         // When
@@ -140,33 +139,33 @@ class OAuthControllerTest extends AuthenticatedTestCase
 
         // Verify token was stored
         $this->assertDatabaseHas('auth_tokens', [
-            'team_id' => $this->user->currentTeam->id,
-            'service' => $this->service,
-            'type' => AuthToken::TYPE_OAUTH,
-            'access_token' => 'test_access_token'
+            'team_id'      => $this->user->currentTeam->id,
+            'service'      => $this->service,
+            'type'         => AuthToken::TYPE_OAUTH,
+            'access_token' => 'test_access_token',
         ]);
     }
 
     public function test_callback_withRedirectUrl_redirectsToSpecifiedUrlWithoutQueryParams(): void
     {
         // Given
-        $code = 'test_authorization_code';
+        $code        = 'test_authorization_code';
         $redirectUrl = 'https://example.com/success';
-        $state = base64_encode(json_encode([
-            'service' => $this->service,
-            'team_id' => $this->user->currentTeam->id,
-            'timestamp' => time(),
-            'redirect_after_auth' => $redirectUrl
+        $state       = base64_encode(json_encode([
+            'service'             => $this->service,
+            'team_id'             => $this->user->currentTeam->id,
+            'timestamp'           => time(),
+            'redirect_after_auth' => $redirectUrl,
         ]));
 
         $tokenData = [
-            'access_token' => 'test_access_token',
+            'access_token'  => 'test_access_token',
             'refresh_token' => 'test_refresh_token',
-            'expires_in' => 3600,
+            'expires_in'    => 3600,
         ];
 
         Http::fake([
-            'oauth2.googleapis.com/token' => Http::response($tokenData, 200)
+            'oauth2.googleapis.com/token' => Http::response($tokenData, 200),
         ]);
 
         // When
@@ -203,9 +202,9 @@ class OAuthControllerTest extends AuthenticatedTestCase
     {
         // Given
         $state = base64_encode(json_encode([
-            'service' => $this->service,
-            'team_id' => $this->user->currentTeam->id,
-            'timestamp' => time()
+            'service'   => $this->service,
+            'team_id'   => $this->user->currentTeam->id,
+            'timestamp' => time(),
         ]));
 
         // When - Use getJson() to get JSON error response
@@ -220,11 +219,11 @@ class OAuthControllerTest extends AuthenticatedTestCase
     public function test_callback_withInvalidState_throwsValidationError(): void
     {
         // Given
-        $code = 'test_code';
+        $code         = 'test_code';
         $invalidState = base64_encode(json_encode([
-            'service' => $this->service,
-            'team_id' => 99999, // Non-existent team ID
-            'timestamp' => time()
+            'service'   => $this->service,
+            'team_id'   => 99999, // Non-existent team ID
+            'timestamp' => time(),
         ]));
 
         // When - Use getJson() to get JSON error response
@@ -239,11 +238,11 @@ class OAuthControllerTest extends AuthenticatedTestCase
     public function test_callback_withExpiredState_throwsValidationError(): void
     {
         // Given
-        $code = 'test_code';
+        $code         = 'test_code';
         $expiredState = base64_encode(json_encode([
-            'service' => $this->service,
-            'team_id' => $this->user->currentTeam->id,
-            'timestamp' => time() - 700 // More than 10 minutes ago (600 seconds)
+            'service'   => $this->service,
+            'team_id'   => $this->user->currentTeam->id,
+            'timestamp' => time() - 700, // More than 10 minutes ago (600 seconds)
         ]));
 
         // When - Use getJson() to get JSON error response
@@ -272,7 +271,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
     public function test_callback_withMalformedState_throwsValidationError(): void
     {
         // Given
-        $code = 'test_code';
+        $code           = 'test_code';
         $malformedState = 'not_valid_base64_json';
 
         // When - Use getJson() to get JSON error response
@@ -287,11 +286,11 @@ class OAuthControllerTest extends AuthenticatedTestCase
     public function test_callback_withStateMissingService_throwsValidationError(): void
     {
         // Given
-        $code = 'test_code';
+        $code         = 'test_code';
         $invalidState = base64_encode(json_encode([
             // Missing 'service' field
-            'team_id' => $this->user->currentTeam->id,
-            'timestamp' => time()
+            'team_id'   => $this->user->currentTeam->id,
+            'timestamp' => time(),
         ]));
 
         // When - Use getJson() to get JSON error response
@@ -306,11 +305,11 @@ class OAuthControllerTest extends AuthenticatedTestCase
     public function test_callback_withStateMissingTeamId_throwsValidationError(): void
     {
         // Given
-        $code = 'test_code';
+        $code         = 'test_code';
         $invalidState = base64_encode(json_encode([
             'service' => $this->service,
             // Missing 'team_id' field
-            'timestamp' => time()
+            'timestamp' => time(),
         ]));
 
         // When - Use getJson() to get JSON error response
@@ -325,7 +324,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
     public function test_callback_withStateMissingTimestamp_throwsValidationError(): void
     {
         // Given
-        $code = 'test_code';
+        $code         = 'test_code';
         $invalidState = base64_encode(json_encode([
             'service' => $this->service,
             'team_id' => $this->user->currentTeam->id,
@@ -344,11 +343,11 @@ class OAuthControllerTest extends AuthenticatedTestCase
     public function test_callback_withStateEmptyService_throwsValidationError(): void
     {
         // Given
-        $code = 'test_code';
+        $code         = 'test_code';
         $invalidState = base64_encode(json_encode([
-            'service' => '', // Empty service
-            'team_id' => $this->user->currentTeam->id,
-            'timestamp' => time()
+            'service'   => '', // Empty service
+            'team_id'   => $this->user->currentTeam->id,
+            'timestamp' => time(),
         ]));
 
         // When - Use getJson() to get JSON error response
@@ -363,19 +362,19 @@ class OAuthControllerTest extends AuthenticatedTestCase
     public function test_callback_withTokenExchangeFailure_bubblesException(): void
     {
         // Given
-        $code = 'test_code';
+        $code  = 'test_code';
         $state = base64_encode(json_encode([
-            'service' => $this->service,
-            'team_id' => $this->user->currentTeam->id,
-            'timestamp' => time()
+            'service'   => $this->service,
+            'team_id'   => $this->user->currentTeam->id,
+            'timestamp' => time(),
         ]));
 
         // Mock HTTP failure from token exchange
         Http::fake([
             'oauth2.googleapis.com/token' => Http::response([
-                'error' => 'invalid_grant',
-                'error_description' => 'Invalid authorization code'
-            ], 400)
+                'error'             => 'invalid_grant',
+                'error_description' => 'Invalid authorization code',
+            ], 400),
         ]);
 
         // When - Use getJson() to get JSON error response
@@ -398,9 +397,9 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'has_token' => true,
+            'has_token'     => true,
             'is_configured' => true,
-            'service' => $this->service,
+            'service'       => $this->service,
         ]);
         $response->assertJsonStructure([
             'has_token',
@@ -412,8 +411,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
                 'service',
                 'type',
                 'is_valid',
-                'is_expired'
-            ]
+                'is_expired',
+            ],
         ]);
     }
 
@@ -425,9 +424,9 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'has_token' => false,
+            'has_token'     => false,
             'is_configured' => true,
-            'service' => $this->service,
+            'service'       => $this->service,
         ]);
         $response->assertJsonMissing(['token']);
     }
@@ -437,7 +436,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Given
         $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create();
         Http::fake([
-            'oauth2.googleapis.com/revoke' => Http::response(null, 200)
+            'oauth2.googleapis.com/revoke' => Http::response(null, 200),
         ]);
 
         // When
@@ -448,12 +447,12 @@ class OAuthControllerTest extends AuthenticatedTestCase
         $response->assertJson([
             'success' => true,
             'service' => $this->service,
-            'message' => "OAuth token for {$this->service} revoked successfully"
+            'message' => "OAuth token for {$this->service} revoked successfully",
         ]);
-        
+
         // Token should be soft deleted, not hard deleted
         $this->assertSoftDeleted('auth_tokens', [
-            'id' => $token->id
+            'id' => $token->id,
         ]);
     }
 
@@ -467,21 +466,21 @@ class OAuthControllerTest extends AuthenticatedTestCase
         $response->assertJson([
             'success' => false,
             'service' => $this->service,
-            'message' => "No OAuth token found for {$this->service}"
+            'message' => "No OAuth token found for {$this->service}",
         ]);
     }
 
     public function test_refresh_withValidToken_refreshesToken(): void
     {
         // Given
-        $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->expiresSoon()->create();
+        $token               = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->expiresSoon()->create();
         $originalAccessToken = $token->access_token;
-        
+
         Http::fake([
             'oauth2.googleapis.com/token' => Http::response([
                 'access_token' => 'new_access_token',
-                'expires_in' => 3600,
-            ], 200)
+                'expires_in'   => 3600,
+            ], 200),
         ]);
 
         // When
@@ -494,9 +493,9 @@ class OAuthControllerTest extends AuthenticatedTestCase
             'team_id',
             'service',
             'is_valid',
-            'expires_at'
+            'expires_at',
         ]);
-        
+
         // Verify token was updated in database
         $token->refresh();
         $this->assertNotEquals($originalAccessToken, $token->access_token);
@@ -512,7 +511,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertStatus(404);
         $response->assertJson([
-            'message' => "No OAuth token found for service: {$this->service}"
+            'message' => "No OAuth token found for service: {$this->service}",
         ]);
     }
 
@@ -520,12 +519,12 @@ class OAuthControllerTest extends AuthenticatedTestCase
     {
         // Given
         $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create();
-        
+
         Http::fake([
             'oauth2.googleapis.com/token' => Http::response([
-                'error' => 'invalid_grant',
-                'error_description' => 'Token has been revoked'
-            ], 400)
+                'error'             => 'invalid_grant',
+                'error_description' => 'Token has been revoked',
+            ], 400),
         ]);
 
         // When
@@ -541,7 +540,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Given
         $googleToken = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create();
         $stripeToken = AuthToken::factory()->stripe()->apiKey()->forTeam($this->user->currentTeam)->create();
-        
+
         // Token for different team should not be included
         AuthToken::factory()->google()->create();
 
@@ -552,7 +551,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         $response->assertOk();
         $response->assertJsonStructure([
             'data',
-            'count'
+            'count',
         ]);
         $this->assertEquals(2, $response->json('count'));
     }
@@ -577,10 +576,10 @@ class OAuthControllerTest extends AuthenticatedTestCase
     {
         // Given
         $requestData = [
-            'service' => 'openai',
-            'api_key' => 'sk-test-api-key',
-            'name' => 'OpenAI API Key',
-            'metadata' => ['usage' => 'development']
+            'service'  => 'openai',
+            'api_key'  => 'sk-test-api-key',
+            'name'     => 'OpenAI API Key',
+            'metadata' => ['usage' => 'development'],
         ];
 
         // When
@@ -590,17 +589,17 @@ class OAuthControllerTest extends AuthenticatedTestCase
         $response->assertOk();
         $response->assertJson([
             'service' => 'openai',
-            'type' => AuthToken::TYPE_API_KEY,
+            'type'    => AuthToken::TYPE_API_KEY,
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'OpenAI API Key',
+            'name'    => 'OpenAI API Key',
         ]);
-        
+
         $this->assertDatabaseHas('auth_tokens', [
-            'service' => 'openai',
-            'type' => AuthToken::TYPE_API_KEY,
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'OpenAI API Key',
-            'access_token' => 'sk-test-api-key'
+            'service'      => 'openai',
+            'type'         => AuthToken::TYPE_API_KEY,
+            'team_id'      => $this->user->currentTeam->id,
+            'name'         => 'OpenAI API Key',
+            'access_token' => 'sk-test-api-key',
         ]);
     }
 
@@ -616,12 +615,12 @@ class OAuthControllerTest extends AuthenticatedTestCase
         $response->assertOk();
         $response->assertJson([
             'success' => true,
-            'message' => 'Successfully deleted oauth token for google'
+            'message' => 'Successfully deleted oauth token for google',
         ]);
-        
+
         // Token should be soft deleted, not hard deleted
         $this->assertSoftDeleted('auth_tokens', [
-            'id' => $token->id
+            'id' => $token->id,
         ]);
     }
 
@@ -646,14 +645,14 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Given
         $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
             'access_token' => 'valid_token',
-            'expires_at' => now()->addHour(),
+            'expires_at'   => now()->addHour(),
         ]);
 
         // Mock successful Google API validation
         Http::fake([
             'https://www.googleapis.com/drive/v3/about*' => Http::response([
-                'user' => ['emailAddress' => 'test@example.com']
-            ], 200)
+                'user' => ['emailAddress' => 'test@example.com'],
+            ], 200),
         ]);
 
         // When
@@ -662,9 +661,9 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'has_token' => true,
+            'has_token'     => true,
             'is_configured' => true,
-            'service' => $this->service,
+            'service'       => $this->service,
         ]);
 
         $response->assertJsonStructure([
@@ -674,8 +673,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
             'validation' => [
                 'valid',
                 'reason',
-                'token'
-            ]
+                'token',
+            ],
         ]);
 
         $validation = $response->json('validation');
@@ -694,9 +693,9 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'has_token' => false,
+            'has_token'     => false,
             'is_configured' => true,
-            'service' => $this->service,
+            'service'       => $this->service,
         ]);
 
         $validation = $response->json('validation');
@@ -709,17 +708,17 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Given
         $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
             'access_token' => 'revoked_token',
-            'expires_at' => now()->addHour(),
+            'expires_at'   => now()->addHour(),
         ]);
 
         // Mock failed Google API validation
         Http::fake([
             'https://www.googleapis.com/drive/v3/about*' => Http::response([
                 'error' => [
-                    'code' => 401,
-                    'message' => 'Invalid Credentials'
-                ]
-            ], 401)
+                    'code'    => 401,
+                    'message' => 'Invalid Credentials',
+                ],
+            ], 401),
         ]);
 
         // When
@@ -728,9 +727,9 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'has_token' => false, // Should be false since validation failed
+            'has_token'     => false, // Should be false since validation failed
             'is_configured' => true,
-            'service' => $this->service,
+            'service'       => $this->service,
         ]);
 
         $validation = $response->json('validation');
@@ -746,12 +745,12 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Given
         $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
             'access_token' => 'revoked_token', // Token is actually revoked
-            'expires_at' => now()->addHour(),
+            'expires_at'   => now()->addHour(),
         ]);
 
         // Mock should NOT be called since we're not validating
         Http::fake([
-            'https://www.googleapis.com/drive/v3/about*' => Http::response([], 401)
+            'https://www.googleapis.com/drive/v3/about*' => Http::response([], 401),
         ]);
 
         // When
@@ -760,9 +759,9 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'has_token' => true, // Should be true since we didn't validate
+            'has_token'     => true, // Should be true since we didn't validate
             'is_configured' => true,
-            'service' => $this->service,
+            'service'       => $this->service,
         ]);
 
         // Validation key should not be present
@@ -780,14 +779,14 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Given
         $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
             'access_token' => 'valid_token',
-            'expires_at' => now()->addHour(),
+            'expires_at'   => now()->addHour(),
         ]);
 
         // Mock successful Google API validation
         Http::fake([
             'https://www.googleapis.com/drive/v3/about*' => Http::response([
-                'user' => ['emailAddress' => 'test@example.com']
-            ], 200)
+                'user' => ['emailAddress' => 'test@example.com'],
+            ], 200),
         ]);
 
         // When
@@ -796,7 +795,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'valid' => true,
+            'valid'  => true,
             'reason' => 'valid',
         ]);
         $response->assertJsonStructure([
@@ -808,8 +807,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
                 'service',
                 'type',
                 'is_valid',
-                'is_expired'
-            ]
+                'is_expired',
+            ],
         ]);
 
         $this->assertEquals($token->id, $response->json('token.id'));
@@ -825,7 +824,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'valid' => false,
+            'valid'  => false,
             'reason' => 'no_token',
         ]);
         $response->assertJsonMissing(['token']);
@@ -835,9 +834,9 @@ class OAuthControllerTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
-            'access_token' => 'expired_token',
+            'access_token'  => 'expired_token',
             'refresh_token' => null,
-            'expires_at' => now()->subHour(),
+            'expires_at'    => now()->subHour(),
         ]);
 
         // When
@@ -846,7 +845,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'valid' => false,
+            'valid'  => false,
             'reason' => 'expired',
         ]);
         $response->assertJsonMissing(['token']);
@@ -856,20 +855,20 @@ class OAuthControllerTest extends AuthenticatedTestCase
     {
         // Given
         $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
-            'access_token' => 'expired_token',
+            'access_token'  => 'expired_token',
             'refresh_token' => 'valid_refresh_token',
-            'expires_at' => now()->subHour(),
+            'expires_at'    => now()->subHour(),
         ]);
 
         // Mock token refresh and validation
         Http::fake([
             'oauth2.googleapis.com/token' => Http::response([
                 'access_token' => 'new_access_token',
-                'expires_in' => 3600,
+                'expires_in'   => 3600,
             ], 200),
             'https://www.googleapis.com/drive/v3/about*' => Http::response([
-                'user' => ['emailAddress' => 'test@example.com']
-            ], 200)
+                'user' => ['emailAddress' => 'test@example.com'],
+            ], 200),
         ]);
 
         // When
@@ -878,7 +877,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'valid' => true,
+            'valid'  => true,
             'reason' => 'valid',
         ]);
         $response->assertJsonStructure(['token']);
@@ -894,17 +893,17 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Given
         $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
             'access_token' => 'revoked_token',
-            'expires_at' => now()->addHour(),
+            'expires_at'   => now()->addHour(),
         ]);
 
         // Mock failed Google API validation
         Http::fake([
             'https://www.googleapis.com/drive/v3/about*' => Http::response([
                 'error' => [
-                    'code' => 401,
-                    'message' => 'Invalid Credentials'
-                ]
-            ], 401)
+                    'code'    => 401,
+                    'message' => 'Invalid Credentials',
+                ],
+            ], 401),
         ]);
 
         // When
@@ -913,7 +912,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'valid' => false,
+            'valid'  => false,
             'reason' => 'revoked',
         ]);
         $response->assertJsonMissing(['token']);
@@ -927,7 +926,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Given
         $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
             'access_token' => 'valid_token',
-            'expires_at' => now()->addHour(),
+            'expires_at'   => now()->addHour(),
         ]);
 
         // Mock network error - GoogleDocsApi catches exceptions and returns false
@@ -935,7 +934,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         Http::fake([
             'https://www.googleapis.com/drive/v3/about*' => function () {
                 throw new \Exception('Connection timed out after 30 seconds');
-            }
+            },
         ]);
 
         // When
@@ -944,7 +943,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then
         $response->assertOk();
         $response->assertJson([
-            'valid' => false,
+            'valid'  => false,
             'reason' => 'revoked',
         ]);
         $response->assertJsonMissing(['token']);
@@ -982,14 +981,14 @@ class OAuthControllerTest extends AuthenticatedTestCase
             // Create a fresh token for each test
             $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
                 'access_token' => "test_token_{$index}",
-                'expires_at' => now()->addHour(),
+                'expires_at'   => now()->addHour(),
             ]);
 
             // Mock network error
             Http::fake([
                 'https://www.googleapis.com/drive/v3/about*' => function () use ($error) {
                     throw new \Exception($error);
-                }
+                },
             ]);
 
             // When
@@ -998,7 +997,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
             // Then
             $response->assertOk();
             $response->assertJson([
-                'valid' => false,
+                'valid'  => false,
                 'reason' => 'revoked',
             ]);
 
@@ -1021,14 +1020,14 @@ class OAuthControllerTest extends AuthenticatedTestCase
             // Create a fresh token for each test
             $token = AuthToken::factory()->google()->forTeam($this->user->currentTeam)->create([
                 'access_token' => "test_token_{$index}",
-                'expires_at' => now()->addHour(),
+                'expires_at'   => now()->addHour(),
             ]);
 
             // Mock auth error
             Http::fake([
                 'https://www.googleapis.com/drive/v3/about*' => function () use ($error) {
                     throw new \Exception($error);
-                }
+                },
             ]);
 
             // When
@@ -1037,7 +1036,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
             // Then
             $response->assertOk();
             $response->assertJson([
-                'valid' => false,
+                'valid'  => false,
                 'reason' => 'revoked',
             ]);
 
@@ -1052,7 +1051,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         $otherTeam = \App\Models\Team\Team::factory()->create();
         AuthToken::factory()->google()->forTeam($otherTeam)->create([
             'access_token' => 'other_team_token',
-            'expires_at' => now()->addHour(),
+            'expires_at'   => now()->addHour(),
         ]);
 
         // When - Try to validate as current user
@@ -1061,7 +1060,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // Then - Should return no_token (can't see other team's token)
         $response->assertOk();
         $response->assertJson([
-            'valid' => false,
+            'valid'  => false,
             'reason' => 'no_token',
         ]);
     }

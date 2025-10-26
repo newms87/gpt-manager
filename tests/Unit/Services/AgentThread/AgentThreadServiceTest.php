@@ -107,7 +107,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
     {
         $testTimeouts = [1, 30, 60, 120, 300, 600, null];
 
-        foreach($testTimeouts as $timeout) {
+        foreach ($testTimeouts as $timeout) {
             // Given
             $agentThread = AgentThread::factory()->create();
             $service     = new AgentThreadService();
@@ -117,7 +117,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
             $agentThreadRun = $service->prepareAgentThreadRun($agentThread);
 
             // Then
-            $this->assertEquals($timeout, $agentThreadRun->timeout, "AgentThreadRun API timeout should match service timeout: " . ($timeout ?? 'null'));
+            $this->assertEquals($timeout, $agentThreadRun->timeout, 'AgentThreadRun API timeout should match service timeout: ' . ($timeout ?? 'null'));
 
             // Clean up for next iteration
             $agentThreadRun->delete();
@@ -158,7 +158,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         // Given - various timeout configurations
         $testTimeouts = [1, 120, 300, 600, 1000];
 
-        foreach($testTimeouts as $apiTimeout) {
+        foreach ($testTimeouts as $apiTimeout) {
             // When - creating the job directly with a mock AgentThreadRun
             $agentThreadRun = $this->createMock(\App\Models\Agent\AgentThreadRun::class);
             $job            = new \App\Jobs\ExecuteThreadRunJob($agentThreadRun);

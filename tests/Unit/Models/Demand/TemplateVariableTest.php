@@ -6,7 +6,6 @@ use App\Models\Demand\DemandTemplate;
 use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaAssociation;
 use Illuminate\Validation\ValidationException;
-use Newms87\Danx\Exceptions\ValidationError;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -46,7 +45,7 @@ class TemplateVariableTest extends AuthenticatedTestCase
     {
         // Given
         $schemaAssociation = SchemaAssociation::factory()->create();
-        $variable = TemplateVariable::factory()->teamObjectMapped()->create([
+        $variable          = TemplateVariable::factory()->teamObjectMapped()->create([
             'team_object_schema_association_id' => $schemaAssociation->id,
         ]);
 
@@ -117,7 +116,7 @@ class TemplateVariableTest extends AuthenticatedTestCase
     {
         // Given
         $categories = ['medical', 'legal', 'financial'];
-        $variable = TemplateVariable::factory()->artifactMapped()->create([
+        $variable   = TemplateVariable::factory()->artifactMapped()->create([
             'artifact_categories' => $categories,
         ]);
 
@@ -186,15 +185,15 @@ class TemplateVariableTest extends AuthenticatedTestCase
 
         $varZ = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Zebra',
+            'name'               => 'Zebra',
         ]);
         $varA = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Apple',
+            'name'               => 'Apple',
         ]);
         $varM = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Mango',
+            'name'               => 'Mango',
         ]);
 
         // When
@@ -225,7 +224,7 @@ class TemplateVariableTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => ['medical', 'legal'],
+            'artifact_categories'        => ['medical', 'legal'],
             'artifact_fragment_selector' => null,
         ]);
 
@@ -238,7 +237,7 @@ class TemplateVariableTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'artifact_categories' => null,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => ['type' => 'css', 'selector' => '.test'],
         ]);
 
@@ -268,10 +267,10 @@ class TemplateVariableTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id' => $template->id,
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions' => 'Test instructions',
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
+            'demand_template_id'    => $template->id,
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'       => 'Test instructions',
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
             'multi_value_separator' => ', ',
         ]);
 
@@ -289,9 +288,9 @@ class TemplateVariableTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id' => $template->id,
-            'name' => 'Test Variable',
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
+            'demand_template_id'    => $template->id,
+            'name'                  => 'Test Variable',
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
             'multi_value_separator' => ', ',
         ]);
 
@@ -309,10 +308,10 @@ class TemplateVariableTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id' => $template->id,
-            'name' => 'Test Variable',
-            'mapping_type' => 'invalid_type',
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
+            'demand_template_id'    => $template->id,
+            'name'                  => 'Test Variable',
+            'mapping_type'          => 'invalid_type',
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
             'multi_value_separator' => ', ',
         ]);
 
@@ -330,13 +329,13 @@ class TemplateVariableTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id' => $template->id,
-            'name' => 'Test Variable',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_ARTIFACT,
-            'artifact_categories' => null,
+            'demand_template_id'         => $template->id,
+            'name'                       => 'Test Variable',
+            'mapping_type'               => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'       => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'      => ', ',
         ]);
 
         // When
@@ -353,12 +352,12 @@ class TemplateVariableTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id' => $template->id,
-            'name' => 'Test Variable',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
+            'demand_template_id'                => $template->id,
+            'name'                              => 'Test Variable',
+            'mapping_type'                      => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
             'team_object_schema_association_id' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'multi_value_strategy'              => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'             => ', ',
         ]);
 
         // When
@@ -368,7 +367,6 @@ class TemplateVariableTest extends AuthenticatedTestCase
         $this->assertInstanceOf(TemplateVariable::class, $result);
     }
 
-
     public function test_validate_withInvalidMultiValueStrategy_throwsValidationException(): void
     {
         // Given
@@ -376,11 +374,11 @@ class TemplateVariableTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id' => $template->id,
-            'name' => 'Test Variable',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions' => 'Test instructions',
-            'multi_value_strategy' => 'invalid_strategy',
+            'demand_template_id'    => $template->id,
+            'name'                  => 'Test Variable',
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'       => 'Test instructions',
+            'multi_value_strategy'  => 'invalid_strategy',
             'multi_value_separator' => ', ',
         ]);
 
@@ -465,7 +463,7 @@ class TemplateVariableTest extends AuthenticatedTestCase
     {
         // Given
         $variable = TemplateVariable::factory()->create([
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
             'multi_value_separator' => '; ',
         ]);
 

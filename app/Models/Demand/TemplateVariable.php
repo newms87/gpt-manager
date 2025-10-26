@@ -14,29 +14,29 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TemplateVariable extends Model implements AuditableContract
 {
-    use HasFactory, SoftDeletes, ActionModelTrait, AuditableTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     // Mapping type constants
-    public const MAPPING_TYPE_AI          = 'ai';
-    public const MAPPING_TYPE_ARTIFACT    = 'artifact';
-    public const MAPPING_TYPE_TEAM_OBJECT = 'team_object';
+    public const MAPPING_TYPE_AI          = 'ai',
+        MAPPING_TYPE_ARTIFACT             = 'artifact',
+        MAPPING_TYPE_TEAM_OBJECT          = 'team_object';
 
     // Multi-value strategy constants
-    public const STRATEGY_JOIN   = 'join';
-    public const STRATEGY_FIRST  = 'first';
-    public const STRATEGY_UNIQUE = 'unique';
-    public const STRATEGY_MAX    = 'max';
-    public const STRATEGY_MIN    = 'min';
-    public const STRATEGY_AVG    = 'avg';
-    public const STRATEGY_SUM    = 'sum';
+    public const STRATEGY_JOIN   = 'join',
+        STRATEGY_FIRST           = 'first',
+        STRATEGY_UNIQUE          = 'unique',
+        STRATEGY_MAX             = 'max',
+        STRATEGY_MIN             = 'min',
+        STRATEGY_AVG             = 'avg',
+        STRATEGY_SUM             = 'sum';
 
     // Format type constants
-    public const FORMAT_TEXT       = 'text';
-    public const FORMAT_INTEGER    = 'integer';
-    public const FORMAT_DECIMAL    = 'decimal';
-    public const FORMAT_CURRENCY   = 'currency';
-    public const FORMAT_PERCENTAGE = 'percentage';
-    public const FORMAT_DATE       = 'date';
+    public const FORMAT_TEXT       = 'text',
+        FORMAT_INTEGER             = 'integer',
+        FORMAT_DECIMAL             = 'decimal',
+        FORMAT_CURRENCY            = 'currency',
+        FORMAT_PERCENTAGE          = 'percentage',
+        FORMAT_DATE                = 'date';
 
     protected $fillable = [
         'demand_template_id',

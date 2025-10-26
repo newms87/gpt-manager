@@ -27,7 +27,7 @@ class ActionExecutionService
             // Get the original thread context
             $originalThread   = $action->agentThread;
             $contextResources = $action->payload['context_resources'] ?? [];
-            $threadContext    = $action->payload['thread_context'] ?? 'general-chat';
+            $threadContext    = $action->payload['thread_context']    ?? 'general-chat';
 
             // Build action prompt with full context
             $actionPrompt = $this->buildActionPrompt($action, $originalThread, $contextResources);
@@ -68,7 +68,7 @@ class ActionExecutionService
                 throw new \Exception('No response generated from action execution');
             }
 
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             $action->markFailed($e->getMessage());
 
             return [
@@ -109,13 +109,13 @@ class ActionExecutionService
         // Add context resources
         if (!empty($contextResources)) {
             $prompt .= "Available Context Resources:\n";
-            foreach($contextResources as $resource) {
+            foreach ($contextResources as $resource) {
                 $prompt .= "- {$resource['name']} ({$resource['resource_type']})\n";
                 if (!empty($resource['description'])) {
                     $prompt .= "  Description: {$resource['description']}\n";
                 }
                 if (!empty($resource['data'])) {
-                    $prompt .= "  Data: " . json_encode($resource['data'], JSON_PRETTY_PRINT) . "\n";
+                    $prompt .= '  Data: ' . json_encode($resource['data'], JSON_PRETTY_PRINT) . "\n";
                 }
             }
             $prompt .= "\n";
@@ -131,7 +131,7 @@ class ActionExecutionService
 
         if ($recentMessages->count() > 0) {
             $prompt .= "Recent Conversation Context:\n";
-            foreach($recentMessages as $message) {
+            foreach ($recentMessages as $message) {
                 $role    = ucfirst($message->role);
                 $content = strlen($message->content) > 200
                     ? substr($message->content, 0, 200) . '...'
@@ -148,7 +148,7 @@ class ActionExecutionService
         $prompt .= "4. If you need additional information, request it in your response\n";
         $prompt .= "5. Be thorough and precise in your execution\n\n";
 
-        $prompt .= "Execute the action now:";
+        $prompt .= 'Execute the action now:';
 
         return $prompt;
     }

@@ -13,6 +13,7 @@ use Illuminate\Console\Command;
 class TestUsageSubscriptionSystem extends Command
 {
     protected $signature   = 'test:usage-subscription';
+
     protected $description = 'Test the new polymorphic usage subscription system';
 
     public function handle(): int
@@ -55,7 +56,7 @@ class TestUsageSubscriptionSystem extends Command
         $taskProcess->taskRun()->associate($taskRun);
         $taskProcess->save();
 
-        $this->line("✅ Created test entities:");
+        $this->line('✅ Created test entities:');
         $this->line("   - UiDemand: {$uiDemand->title} (ID: {$uiDemand->id})");
         $this->line("   - WorkflowRun: (ID: {$workflowRun->id})");
         $this->line("   - TaskRun: (ID: {$taskRun->id})");
@@ -87,7 +88,7 @@ class TestUsageSubscriptionSystem extends Command
         $this->line("   - Original object: {$usageEvent->object_type} (ID: {$usageEvent->object_id})");
         $this->line("   - Input tokens: {$usageEvent->input_tokens}");
         $this->line("   - Output tokens: {$usageEvent->output_tokens}");
-        $this->line("   - Total cost: $" . number_format($usageEvent->input_cost + $usageEvent->output_cost, 4));
+        $this->line('   - Total cost: $' . number_format($usageEvent->input_cost + $usageEvent->output_cost, 4));
 
         $uiDemand->refresh();
 
@@ -100,11 +101,11 @@ class TestUsageSubscriptionSystem extends Command
 
         $summary = $uiDemand->usageSummary;
         if ($summary) {
-            $this->line("📊 UiDemand usage summary:");
+            $this->line('📊 UiDemand usage summary:');
             $this->line("   - Event count: {$summary->count}");
             $this->line("   - Input tokens: {$summary->input_tokens}");
             $this->line("   - Output tokens: {$summary->output_tokens}");
-            $this->line("   - Total cost: $" . number_format($summary->total_cost, 4));
+            $this->line('   - Total cost: $' . number_format($summary->total_cost, 4));
         } else {
             $this->error('❌ No usage summary found for UiDemand');
         }
@@ -114,9 +115,9 @@ class TestUsageSubscriptionSystem extends Command
 
         $summary = $uiDemand->usageSummary;
         if ($summary) {
-            $this->line("🧮 UiDemand usage summary:");
+            $this->line('🧮 UiDemand usage summary:');
             $this->line("   - Total tokens: {$summary->total_tokens}");
-            $this->line("   - Total cost: $" . number_format($summary->total_cost, 4));
+            $this->line('   - Total cost: $' . number_format($summary->total_cost, 4));
         }
 
         $this->newLine();

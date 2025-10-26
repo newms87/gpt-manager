@@ -81,8 +81,8 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     /**
      * Filter artifacts based on filter configuration
      *
-     * @param Collection $artifacts Artifacts to filter
-     * @param array      $config    Filter configuration
+     * @param  Collection  $artifacts  Artifacts to filter
+     * @param  array  $config  Filter configuration
      * @return array Filtered artifacts
      */
     protected function filterArtifacts(Collection $artifacts, array $config): array
@@ -92,7 +92,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         $action            = strtolower($config['action'] ?? 'keep');
         $this->keep        = ($action === 'keep');
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             // Evaluate all conditions against the artifact
             $matches = $this->evaluateConditions($artifact, $config['conditions'], $operator);
 
@@ -108,9 +108,9 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     /**
      * Evaluate conditions against an artifact
      *
-     * @param Artifact $artifact   The artifact to evaluate the conditions against
-     * @param array    $conditions The conditions to evaluate
-     * @param string   $operator   The operator to use (AND or OR)
+     * @param  Artifact  $artifact  The artifact to evaluate the conditions against
+     * @param  array  $conditions  The conditions to evaluate
+     * @param  string  $operator  The operator to use (AND or OR)
      * @return bool Whether the artifact matches the conditions
      */
     protected function evaluateConditions(Artifact $artifact, array $conditions, string $operator = 'AND'): bool
@@ -123,7 +123,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
 
         $results = [];
 
-        foreach($conditions as $condition) {
+        foreach ($conditions as $condition) {
             if ($condition['type'] === 'condition') {
                 // Get the field value to evaluate
                 $fieldValue = $this->getFieldValue(
@@ -136,12 +136,12 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
                 $result    = $this->filterService->evaluateCondition($fieldValue, $condition);
                 $results[] = $result;
 
-                static::log("Condition evaluated as: " . ($result ? "true" : "false"));
+                static::log('Condition evaluated as: ' . ($result ? 'true' : 'false'));
             } elseif ($condition['type'] === 'condition_group') {
                 $groupOperator = $condition['operator'] ?? 'AND';
                 $result        = $this->evaluateConditions($artifact, $condition['conditions'], $groupOperator);
                 $results[]     = $result;
-                static::log("Condition group evaluated as: " . ($result ? "true" : "false"));
+                static::log('Condition group evaluated as: ' . ($result ? 'true' : 'false'));
             }
         }
 
@@ -150,7 +150,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             (!empty($results) && !in_array(false, $results)) :
             (!empty($results) && in_array(true, $results));
 
-        static::log("Final result for artifact $artifact->id: " . ($finalResult ? "true" : "false"));
+        static::log("Final result for artifact $artifact->id: " . ($finalResult ? 'true' : 'false'));
 
         return $finalResult;
     }
@@ -158,9 +158,9 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     /**
      * Get value to evaluate from an artifact
      *
-     * @param Artifact   $artifact         The artifact to get the value from
-     * @param string     $field            The field to get
-     * @param array|null $fragmentSelector Optional fragment selector to extract specific data
+     * @param  Artifact  $artifact  The artifact to get the value from
+     * @param  string  $field  The field to get
+     * @param  array|null  $fragmentSelector  Optional fragment selector to extract specific data
      * @return mixed The value from the artifact
      */
     protected function getFieldValue(Artifact $artifact, string $field, ?array $fragmentSelector = null): mixed
@@ -188,12 +188,13 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     /**
      * Validate the task configuration
      *
-     * @param array $config Task configuration
+     * @param  array  $config  Task configuration
+     *
      * @throws ValidationError if the configuration is invalid
      */
     public function validateConfig(array $config): void
     {
-        static::log("Validating filter config");
+        static::log('Validating filter config');
 
         if (!isset($config['conditions'])) {
             throw new ValidationError("Filter config must have a 'conditions' property");
@@ -205,13 +206,13 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
 
         // Skip validation for empty conditions (they will be handled in the run method)
         if (empty($config['conditions'])) {
-            static::log("Empty conditions array detected, validation skipped");
+            static::log('Empty conditions array detected, validation skipped');
 
             return;
         }
 
         // Validate each condition or condition group
-        foreach($config['conditions'] as $condition) {
+        foreach ($config['conditions'] as $condition) {
             if (!isset($condition['type'])) {
                 throw new ValidationError("Each condition must have a 'type' property");
             }
@@ -221,7 +222,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             } elseif ($condition['type'] === 'condition_group') {
                 $this->validateConditionGroup($condition);
             } else {
-                throw new ValidationError("Condition type must be one of: condition, condition_group");
+                throw new ValidationError('Condition type must be one of: condition, condition_group');
             }
         }
 
@@ -235,13 +236,14 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             throw new ValidationError("Filter 'action' must be one of: keep, discard");
         }
 
-        static::log("Filter config validated successfully");
+        static::log('Filter config validated successfully');
     }
 
     /**
      * Validate a condition group
      *
-     * @param array $group The condition group to validate
+     * @param  array  $group  The condition group to validate
+     *
      * @throws ValidationError if the group is invalid
      */
     protected function validateConditionGroup(array $group): void
@@ -259,7 +261,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
         }
 
         // Validate each condition in the group
-        foreach($group['conditions'] as $condition) {
+        foreach ($group['conditions'] as $condition) {
             if (!isset($condition['type'])) {
                 throw new ValidationError("Each condition in group must have a 'type' property");
             }
@@ -269,7 +271,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             } elseif ($condition['type'] === 'condition_group') {
                 $this->validateConditionGroup($condition);
             } else {
-                throw new ValidationError("Condition type in group must be one of: condition, condition_group");
+                throw new ValidationError('Condition type in group must be one of: condition, condition_group');
             }
         }
 
@@ -282,14 +284,14 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
     /**
      * Configure the task runner
      *
-     * @param array $config Task configuration
+     * @param  array  $config  Task configuration
      */
     public function configure(array $config): void
     {
-        static::log("Configuring filter task runner");
+        static::log('Configuring filter task runner');
 
         $this->keep = ($config['action'] ?? 'keep') === 'keep';
 
-        static::log("Filter task runner configured to " . ($this->keep ? "keep" : "discard") . " matching artifacts");
+        static::log('Filter task runner configured to ' . ($this->keep ? 'keep' : 'discard') . ' matching artifacts');
     }
 }

@@ -18,9 +18,11 @@ class BillingServiceTest extends AuthenticatedTestCase
 {
     use SetUpTeamTrait;
 
-    private BillingService                $billingService;
+    private BillingService $billingService;
+
     private StripePaymentServiceInterface $mockStripeService;
-    private Team                          $team;
+
+    private Team $team;
 
     public function setUp(): void
     {
@@ -571,5 +573,4 @@ class BillingServiceTest extends AuthenticatedTestCase
             'stripe_invoice_id' => 'in_test123',
         ]);
     }
-
 }

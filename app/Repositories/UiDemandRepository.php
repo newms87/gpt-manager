@@ -21,7 +21,7 @@ class UiDemandRepository extends ActionRepository
 
     public function applyAction(string $action, Model|null|array $model = null, ?array $data = null)
     {
-        switch($action) {
+        switch ($action) {
             case 'create':
                 return UiDemandResource::details($this->createDemand($data));
             case 'update':

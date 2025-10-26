@@ -18,12 +18,12 @@ class WorkflowBuilderChatFactory extends Factory
     public function definition(): array
     {
         return [
-            'team_id' => Team::factory(),
-            'workflow_input_id' => fn(array $attributes) => WorkflowInput::factory()->recycle(Team::find($attributes['team_id']))->create(),
-            'workflow_definition_id' => fn(array $attributes) => WorkflowDefinition::factory()->recycle(Team::find($attributes['team_id']))->create(),
-            'agent_thread_id' => fn(array $attributes) => AgentThread::factory()->recycle(Team::find($attributes['team_id']))->create(),
-            'status' => WorkflowBuilderChat::STATUS_REQUIREMENTS_GATHERING,
-            'meta' => [],
+            'team_id'                 => Team::factory(),
+            'workflow_input_id'       => fn(array $attributes) => WorkflowInput::factory()->recycle(Team::find($attributes['team_id']))->create(),
+            'workflow_definition_id'  => fn(array $attributes) => WorkflowDefinition::factory()->recycle(Team::find($attributes['team_id']))->create(),
+            'agent_thread_id'         => fn(array $attributes) => AgentThread::factory()->recycle(Team::find($attributes['team_id']))->create(),
+            'status'                  => WorkflowBuilderChat::STATUS_REQUIREMENTS_GATHERING,
+            'meta'                    => [],
             'current_workflow_run_id' => null,
         ];
     }
@@ -42,7 +42,7 @@ class WorkflowBuilderChatFactory extends Factory
         ]);
     }
 
-    public function withCurrentWorkflowRun(WorkflowRun $workflowRun = null): static
+    public function withCurrentWorkflowRun(?WorkflowRun $workflowRun = null): static
     {
         if (!$workflowRun) {
             return $this->afterCreating(function (WorkflowBuilderChat $chat) {
@@ -83,15 +83,15 @@ class WorkflowBuilderChatFactory extends Factory
         return $this->withStatus(WorkflowBuilderChat::STATUS_FAILED);
     }
 
-    public function withArtifacts(array $artifacts = null): static
+    public function withArtifacts(?array $artifacts = null): static
     {
         if ($artifacts === null) {
             $artifacts = [
                 'workflow_definition' => [
-                    'name' => fake()->words(3, true),
+                    'name'  => fake()->words(3, true),
                     'nodes' => [
                         [
-                            'id' => fake()->uuid(),
+                            'id'   => fake()->uuid(),
                             'type' => 'task',
                             'name' => fake()->words(2, true),
                         ],
@@ -102,26 +102,26 @@ class WorkflowBuilderChatFactory extends Factory
         }
 
         return $this->withMeta([
-            'artifacts' => $artifacts,
+            'artifacts'            => $artifacts,
             'artifacts_updated_at' => now()->toISOString(),
         ]);
     }
 
-    public function withBuildState(array $buildState = null): static
+    public function withBuildState(?array $buildState = null): static
     {
         if ($buildState === null) {
             $buildState = [
-                'current_phase' => 'requirements_analysis',
-                'progress' => 25,
+                'current_phase'   => 'requirements_analysis',
+                'progress'        => 25,
                 'steps_completed' => ['requirements_gathered'],
-                'next_steps' => ['analyze_requirements', 'create_workflow_structure'],
+                'next_steps'      => ['analyze_requirements', 'create_workflow_structure'],
             ];
         }
 
         return $this->withMeta([
             'build_state' => $buildState,
-            'phase_data' => [],
-            'updated_at' => now()->toISOString(),
+            'phase_data'  => [],
+            'updated_at'  => now()->toISOString(),
         ]);
     }
 }

@@ -19,7 +19,7 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
     {
         parent::setUp();
         $this->setUpTeam();
-        
+
         $this->repository = app(AuthTokenRepository::class);
     }
 
@@ -27,9 +27,9 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $otherTeam = Team::factory()->create();
-        
+
         // Create tokens for different teams
-        $ourToken = AuthToken::factory()->google()->create(['team_id' => $this->user->currentTeam->id]);
+        $ourToken   = AuthToken::factory()->google()->create(['team_id' => $this->user->currentTeam->id]);
         $otherToken = AuthToken::factory()->google()->create(['team_id' => $otherTeam->id]);
 
         // When
@@ -84,11 +84,11 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $existingToken = AuthToken::factory()->google()->create(['team_id' => $this->user->currentTeam->id]);
-        $tokenData = [
-            'access_token' => 'new_access_token',
+        $tokenData     = [
+            'access_token'  => 'new_access_token',
             'refresh_token' => 'new_refresh_token',
-            'expires_in' => 3600,
-            'scope' => 'https://www.googleapis.com/auth/documents'
+            'expires_in'    => 3600,
+            'scope'         => 'https://www.googleapis.com/auth/documents',
         ];
 
         // When
@@ -97,10 +97,10 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
         // Then
         $this->assertInstanceOf(AuthToken::class, $newToken);
         $this->assertEquals('new_access_token', $newToken->access_token);
-        
+
         // Old token should be deleted
         $this->assertDatabaseMissing('auth_tokens', [
-            'id' => $existingToken->id
+            'id' => $existingToken->id,
         ]);
     }
 
@@ -109,7 +109,7 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
         // Given
         $tokenData = [
             'access_token' => 'test_token',
-            'scope' => ['scope1', 'scope2']
+            'scope'        => ['scope1', 'scope2'],
         ];
 
         // When
@@ -124,7 +124,7 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
         // Given
         $tokenData = [
             'access_token' => 'test_token',
-            'scope' => 'scope1 scope2 scope3'
+            'scope'        => 'scope1 scope2 scope3',
         ];
 
         // When
@@ -151,19 +151,19 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $otherTeam = Team::factory()->create();
-        $token = AuthToken::factory()->google()->create(['team_id' => $otherTeam->id]);
+        $token     = AuthToken::factory()->google()->create(['team_id' => $otherTeam->id]);
 
         // When & Then
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('You do not have permission to access this OAuth token');
-        
+
         $this->repository->revokeToken($token);
     }
 
     public function test_permanentlyDeleteToken_hardDeletesToken(): void
     {
         // Given
-        $token = AuthToken::factory()->google()->create(['team_id' => $this->user->currentTeam->id]);
+        $token   = AuthToken::factory()->google()->create(['team_id' => $this->user->currentTeam->id]);
         $tokenId = $token->id;
 
         // When
@@ -172,7 +172,7 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
         // Then
         $this->assertTrue($result);
         $this->assertDatabaseMissing('auth_tokens', [
-            'id' => $tokenId
+            'id' => $tokenId,
         ]);
     }
 
@@ -180,20 +180,20 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $validToken = AuthToken::factory()->google()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'expires_at' => now()->addHour()
+            'team_id'    => $this->user->currentTeam->id,
+            'expires_at' => now()->addHour(),
         ]);
-        
+
         $expiredWithRefresh = AuthToken::factory()->google()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'expires_at' => now()->subHour(),
-            'refresh_token' => 'valid_refresh_token'
+            'team_id'       => $this->user->currentTeam->id,
+            'expires_at'    => now()->subHour(),
+            'refresh_token' => 'valid_refresh_token',
         ]);
-        
+
         $expiredWithoutRefresh = AuthToken::factory()->google()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'expires_at' => now()->subHour(),
-            'refresh_token' => null
+            'team_id'       => $this->user->currentTeam->id,
+            'expires_at'    => now()->subHour(),
+            'refresh_token' => null,
         ]);
 
         // When
@@ -209,7 +209,7 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
     public function test_getDeletedTokensForTeam_returnsOnlySoftDeletedTokens(): void
     {
         // Given
-        $activeToken = AuthToken::factory()->google()->create(['team_id' => $this->user->currentTeam->id]);
+        $activeToken  = AuthToken::factory()->google()->create(['team_id' => $this->user->currentTeam->id]);
         $deletedToken = AuthToken::factory()->google()->create(['team_id' => $this->user->currentTeam->id]);
         $deletedToken->delete();
 
@@ -251,33 +251,33 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $expiringSoon = AuthToken::factory()->google()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'expires_at' => now()->addMinutes(3),
-            'refresh_token' => 'valid_refresh'
+            'team_id'       => $this->user->currentTeam->id,
+            'expires_at'    => now()->addMinutes(3),
+            'refresh_token' => 'valid_refresh',
         ]);
-        
+
         $expiringSoon2 = AuthToken::factory()->google()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'expires_at' => now()->addMinutes(4),
-            'refresh_token' => 'valid_refresh'
+            'team_id'       => $this->user->currentTeam->id,
+            'expires_at'    => now()->addMinutes(4),
+            'refresh_token' => 'valid_refresh',
         ]);
-        
+
         $notExpiring = AuthToken::factory()->google()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'expires_at' => now()->addHour(),
-            'refresh_token' => 'valid_refresh'
+            'team_id'       => $this->user->currentTeam->id,
+            'expires_at'    => now()->addHour(),
+            'refresh_token' => 'valid_refresh',
         ]);
-        
+
         $alreadyExpired = AuthToken::factory()->google()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'expires_at' => now()->subHour(),
-            'refresh_token' => 'valid_refresh'
+            'team_id'       => $this->user->currentTeam->id,
+            'expires_at'    => now()->subHour(),
+            'refresh_token' => 'valid_refresh',
         ]);
 
         $noRefreshToken = AuthToken::factory()->google()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'expires_at' => now()->addMinutes(2),
-            'refresh_token' => null
+            'team_id'       => $this->user->currentTeam->id,
+            'expires_at'    => now()->addMinutes(2),
+            'refresh_token' => null,
         ]);
 
         // When
@@ -297,18 +297,18 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $expiredWithRefresh = AuthToken::factory()->google()->create([
-            'expires_at' => now()->subHour(),
-            'refresh_token' => 'valid_refresh'
+            'expires_at'    => now()->subHour(),
+            'refresh_token' => 'valid_refresh',
         ]);
-        
+
         $expiredWithoutRefresh = AuthToken::factory()->google()->create([
-            'expires_at' => now()->subHour(),
-            'refresh_token' => null
+            'expires_at'    => now()->subHour(),
+            'refresh_token' => null,
         ]);
-        
+
         $validToken = AuthToken::factory()->google()->create([
-            'expires_at' => now()->addHour(),
-            'refresh_token' => null
+            'expires_at'    => now()->addHour(),
+            'refresh_token' => null,
         ]);
 
         // When
@@ -326,7 +326,7 @@ class AuthTokenRepositoryTest extends AuthenticatedTestCase
         // Given
         $recentlyDeleted = AuthToken::factory()->google()->create(['team_id' => $this->user->currentTeam->id]);
         $recentlyDeleted->delete();
-        
+
         $oldDeleted = AuthToken::factory()->google()->create(['team_id' => $this->user->currentTeam->id]);
         $oldDeleted->delete();
         // Manually set deleted_at to be very old - need to update the trashed record

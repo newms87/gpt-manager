@@ -45,7 +45,7 @@ class UiDemandUsageSubscriber
             }
         }
 
-        foreach($relatedUiDemands as $uiDemand) {
+        foreach ($relatedUiDemands as $uiDemand) {
             $uiDemand->subscribeToUsageEvent($usageEvent);
             $uiDemand->refreshUsageSummaryFromSubscribedEvents();
         }

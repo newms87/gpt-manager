@@ -27,7 +27,8 @@ class GoogleDocsApi extends Api
     ];
 
     protected ?string $accessToken   = null;
-    protected bool    $isInitialized = false;
+
+    protected bool $isInitialized = false;
 
     public function __construct()
     {
@@ -59,18 +60,18 @@ class GoogleDocsApi extends Api
     public function readDocument(string $documentId): array
     {
         try {
-            static::log("Reading document", ['document_id' => $documentId]);
+            static::log('Reading document', ['document_id' => $documentId]);
 
             $response = $this->get("documents/{$documentId}");
             $document = $response->json();
 
             if (!$document) {
-                throw new ApiException("Invalid response from Google Docs API");
+                throw new ApiException('Invalid response from Google Docs API');
             }
 
             $content = app(GoogleDocsContentService::class)->extractTextContent($document);
 
-            static::log("Document read successfully", [
+            static::log('Document read successfully', [
                 'document_id'    => $documentId,
                 'content_length' => strlen($content),
             ]);
@@ -82,8 +83,8 @@ class GoogleDocsApi extends Api
                 'revision_id' => $document['revisionId'] ?? null,
             ];
 
-        } catch(\Exception $e) {
-            static::log("Failed to read document", [
+        } catch (\Exception $e) {
+            static::log('Failed to read document', [
                 'document_id' => $documentId,
                 'error'       => $e->getMessage(),
             ]);
@@ -94,6 +95,7 @@ class GoogleDocsApi extends Api
 
     /**
      * Extract plain text content from Google Docs document structure
+     *
      * @deprecated Use GoogleDocsContentService::extractTextContent() directly
      */
     protected function extractTextContent(array $document): string
@@ -127,6 +129,7 @@ class GoogleDocsApi extends Api
 
     /**
      * Insert content into an existing document
+     *
      * @deprecated Use GoogleDocsContentService::insertContentIntoDocument() directly
      */
     protected function insertContentIntoDocument(string $documentId, string $content): void
@@ -134,11 +137,10 @@ class GoogleDocsApi extends Api
         app(GoogleDocsContentService::class)->insertContentIntoDocument($this, $documentId, $content);
     }
 
-
     /**
      * Set default permissions for the document using Drive API
      */
-    public function setDocumentPermissions(string $documentId, array $permissions = null): void
+    public function setDocumentPermissions(string $documentId, ?array $permissions = null): void
     {
         try {
             $permissions = $permissions ?: config('google-docs.default_permissions');
@@ -146,14 +148,14 @@ class GoogleDocsApi extends Api
             if ($permissions && isset($permissions['type']) && isset($permissions['role'])) {
                 // This would need to use Drive API which has a different base URL
                 // For now, just log that we would do this
-                static::log("Would set document permissions", [
+                static::log('Would set document permissions', [
                     'document_id' => $documentId,
                     'permissions' => $permissions,
                 ]);
             }
 
-        } catch(\Exception $e) {
-            static::log("Failed to set document permissions", [
+        } catch (\Exception $e) {
+            static::log('Failed to set document permissions', [
                 'document_id' => $documentId,
                 'error'       => $e->getMessage(),
             ]);
@@ -170,6 +172,7 @@ class GoogleDocsApi extends Api
 
     /**
      * Replace variables in an existing document using batchUpdate
+     *
      * @deprecated Use GoogleDocsTemplateService::replaceVariablesInDocument() directly
      */
     protected function replaceVariablesInDocument(string $documentId, array $variableMappings): void
@@ -179,6 +182,7 @@ class GoogleDocsApi extends Api
 
     /**
      * Check if a string contains markdown syntax
+     *
      * @deprecated Use GoogleDocsFormattingService::containsMarkdown() directly
      */
     protected function containsMarkdown(string $text): bool
@@ -188,6 +192,7 @@ class GoogleDocsApi extends Api
 
     /**
      * Replace variables with plain text (no formatting)
+     *
      * @deprecated Use GoogleDocsFormattingService::replaceVariablesWithPlainText() directly
      */
     protected function replaceVariablesWithPlainText(string $documentId, array $variableMappings): void
@@ -197,6 +202,7 @@ class GoogleDocsApi extends Api
 
     /**
      * Replace a variable with formatted markdown content
+     *
      * @deprecated Use GoogleDocsFormattingService::replaceVariableWithFormattedMarkdown() directly
      */
     protected function replaceVariableWithFormattedMarkdown(string $documentId, string $variable, string $markdownValue): void
@@ -206,6 +212,7 @@ class GoogleDocsApi extends Api
 
     /**
      * Parse markdown text and return plain text with formatting instructions
+     *
      * @deprecated Use GoogleDocsFormattingService::parseMarkdown() directly
      */
     protected function parseMarkdown(string $markdown): array
@@ -215,6 +222,7 @@ class GoogleDocsApi extends Api
 
     /**
      * Parse inline formatting (bold, italic) from a line
+     *
      * @deprecated Use GoogleDocsFormattingService::parseInlineFormatting() directly
      */
     protected function parseInlineFormatting(string $line, int $lineStart, array &$formats): string
@@ -224,6 +232,7 @@ class GoogleDocsApi extends Api
 
     /**
      * Find the position (index) of text in the document
+     *
      * @deprecated Use GoogleDocsContentService::findTextPosition() directly
      */
     protected function findTextPosition(array $document, string $searchText): ?int
@@ -233,6 +242,7 @@ class GoogleDocsApi extends Api
 
     /**
      * Apply formatting instructions to text in document
+     *
      * @deprecated Use GoogleDocsFormattingService::applyFormattingToText() directly
      */
     protected function applyFormattingToText(string $documentId, int $baseIndex, array $formats): void
@@ -258,26 +268,26 @@ class GoogleDocsApi extends Api
             $token             = $oauthService->getValidToken('google');
             $this->accessToken = $token->access_token;
 
-            static::log("OAuth authentication initialized", [
+            static::log('OAuth authentication initialized', [
                 'team_id'    => $token->team_id,
                 'expires_at' => $token->expires_at?->toISOString(),
             ]);
-        } catch(TokenRevokedException|TokenExpiredException $e) {
-            static::log("OAuth token issue", [
+        } catch (TokenRevokedException|TokenExpiredException $e) {
+            static::log('OAuth token issue', [
                 'service'    => $e->getService(),
                 'team_id'    => $e->getTeamId(),
                 'error_type' => get_class($e),
                 'reason'     => method_exists($e, 'getRevokeReason') ? $e->getRevokeReason() : ($e->getExpiresAt() ?? 'unknown'),
             ]);
             throw new ApiException($e->getMessage(), $e->getCode());
-        } catch(NoTokenFoundException $e) {
-            static::log("No OAuth token found", [
+        } catch (NoTokenFoundException $e) {
+            static::log('No OAuth token found', [
                 'service' => $e->getService(),
                 'team_id' => $e->getTeamId(),
             ]);
             throw new ApiException($e->getMessage(), $e->getCode());
-        } catch(\Exception $e) {
-            static::log("Failed to initialize OAuth authentication", [
+        } catch (\Exception $e) {
+            static::log('Failed to initialize OAuth authentication', [
                 'error' => $e->getMessage(),
             ]);
             throw new ApiException('Failed to initialize Google Docs authentication: ' . $e->getMessage());
@@ -306,7 +316,6 @@ class GoogleDocsApi extends Api
             ->get($driveApiUrl . $endpoint, $params);
     }
 
-
     /**
      * Validate that the current OAuth token is valid by making a test API call
      */
@@ -319,23 +328,25 @@ class GoogleDocsApi extends Api
                 ->get('https://www.googleapis.com/drive/v3/about?fields=user/emailAddress');
 
             if ($response->successful()) {
-                static::log("OAuth token validated successfully", [
+                static::log('OAuth token validated successfully', [
                     'status' => $response->status(),
                 ]);
+
                 return true;
             }
 
-            static::log("OAuth token validation failed", [
-                'status' => $response->status(),
+            static::log('OAuth token validation failed', [
+                'status'   => $response->status(),
                 'response' => $response->json(),
             ]);
 
             return false;
 
-        } catch(\Exception $e) {
-            static::log("OAuth token validation error", [
+        } catch (\Exception $e) {
+            static::log('OAuth token validation error', [
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -350,7 +361,7 @@ class GoogleDocsApi extends Api
             $token        = $oauthService->getToken('google');
 
             return $token && $token->isValid();
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             return false;
         }
     }

@@ -38,13 +38,13 @@ class AuthToken extends Model
     ];
 
     // Token types
-    public const TYPE_OAUTH   = 'oauth';
-    public const TYPE_API_KEY = 'api_key';
+    public const TYPE_OAUTH   = 'oauth',
+        TYPE_API_KEY          = 'api_key';
 
     // Common services
-    public const SERVICE_GOOGLE = 'google';
-    public const SERVICE_STRIPE = 'stripe';
-    public const SERVICE_OPENAI = 'openai';
+    public const SERVICE_GOOGLE = 'google',
+        SERVICE_STRIPE          = 'stripe',
+        SERVICE_OPENAI          = 'openai';
 
     /**
      * Get the team that owns the auth token

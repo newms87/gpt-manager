@@ -13,7 +13,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class SubscriptionPlan extends Model implements AuditableContract
 {
-    use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -48,11 +48,11 @@ class SubscriptionPlan extends Model implements AuditableContract
         }
 
         if (empty($this->name)) {
-            throw new ValidationError("Subscription plan name is required", 400);
+            throw new ValidationError('Subscription plan name is required', 400);
         }
 
         if (empty($this->slug)) {
-            throw new ValidationError("Subscription plan slug is required", 400);
+            throw new ValidationError('Subscription plan slug is required', 400);
         }
 
         return $this;

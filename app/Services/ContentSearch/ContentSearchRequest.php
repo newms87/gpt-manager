@@ -11,17 +11,27 @@ use Illuminate\Support\Collection as SupportCollection;
 
 class ContentSearchRequest
 {
-    private ?string         $naturalLanguageQuery = null;
-    private ?string         $fieldPath            = null;
-    private ?string         $regexPattern         = null;
-    private                 $validationCallback   = null;
-    private ?string         $llmModel             = null;
+    private ?string $naturalLanguageQuery = null;
+
+    private ?string $fieldPath            = null;
+
+    private ?string $regexPattern         = null;
+
+    private $validationCallback   = null;
+
+    private ?string $llmModel             = null;
+
     private ?TaskDefinition $taskDefinition       = null;
-    private                 $artifacts            = null;  // Can be Collection or SupportCollection
-    private                 $directives           = null;  // Can be Collection or SupportCollection
-    private bool            $requireValidation    = false;
-    private int             $maxAttempts          = 3;
-    private array           $searchOptions        = [];
+
+    private $artifacts            = null;  // Can be Collection or SupportCollection
+
+    private $directives           = null;  // Can be Collection or SupportCollection
+
+    private bool $requireValidation    = false;
+
+    private int $maxAttempts          = 3;
+
+    private array $searchOptions        = [];
 
     public function __construct()
     {
@@ -92,7 +102,7 @@ class ContentSearchRequest
         $this->taskDefinition = $taskDefinition;
 
         $this->directives = [];
-        foreach($taskDefinition->taskDefinitionDirectives as $taskDefinitionDirective) {
+        foreach ($taskDefinition->taskDefinitionDirectives as $taskDefinitionDirective) {
             $this->directives[] = $taskDefinitionDirective->directive;
         }
 
@@ -101,7 +111,8 @@ class ContentSearchRequest
 
     /**
      * Set artifacts to search through
-     * @param Collection|SupportCollection $artifacts
+     *
+     * @param  Collection|SupportCollection  $artifacts
      */
     public function searchArtifacts($artifacts): self
     {
@@ -112,7 +123,8 @@ class ContentSearchRequest
 
     /**
      * Set directives to search through
-     * @param Collection|SupportCollection $directives
+     *
+     * @param  Collection|SupportCollection  $directives
      */
     public function searchDirectives($directives): self
     {
@@ -222,7 +234,6 @@ class ContentSearchRequest
         return $this->searchOptions[$key] ?? $default;
     }
 
-
     /**
      * Validate the request configuration
      */
@@ -237,10 +248,10 @@ class ContentSearchRequest
         }
 
         // Validate that we have something to search
-        $hasArtifacts = $this->artifacts !== null && (!is_countable($this->artifacts) || count($this->artifacts) > 0);
-        $hasDirectives = $this->directives !== null && (!is_countable($this->directives) || count($this->directives) > 0);
+        $hasArtifacts                   = $this->artifacts      !== null  && (!is_countable($this->artifacts) || count($this->artifacts) > 0);
+        $hasDirectives                  = $this->directives     !== null  && (!is_countable($this->directives) || count($this->directives) > 0);
         $hasTaskDefinitionForDirectives = $this->taskDefinition !== null;
-        
+
         // Check if we have at least one search source
         if (!$hasArtifacts && !$hasDirectives && !$hasTaskDefinitionForDirectives) {
             throw new InvalidSearchParametersException(

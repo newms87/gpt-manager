@@ -20,7 +20,7 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
         $sourceLevels  = $this->config('source_levels') ?: [0]; // Default to top level
         $targetLevels  = $this->config('target_levels') ?: [1]; // Default to first child level
         $textSeparator = $this->config('text_separator') ?: "\n\n";
-        $textPrefix    = $this->config('text_prefix') ?: "";
+        $textPrefix    = $this->config('text_prefix') ?: '';
 
         // Get all input artifacts
         $allArtifacts = $this->taskProcess->inputArtifacts()->get();
@@ -31,7 +31,7 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
         $outputArtifacts = collect();
 
         // For each hierarchy group, apply the projection between appropriate source and target levels
-        foreach($hierarchyGroups as $hierarchyGroup) {
+        foreach ($hierarchyGroups as $hierarchyGroup) {
             // Filter artifacts by levels
             $sourceArtifacts = $this->getArtifactsByLevels($hierarchyGroup, $sourceLevels);
             $targetArtifacts = $this->getArtifactsByLevels($hierarchyGroup, $targetLevels);
@@ -41,7 +41,7 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
             }
 
             // For each target, project applicable source artifacts
-            foreach($targetArtifacts as $targetArtifact) {
+            foreach ($targetArtifacts as $targetArtifact) {
                 // Find all source artifacts that are in the same hierarchy branch as this target
                 $relatedSourceArtifacts = $this->getRelatedSourceArtifacts($targetArtifact, $sourceArtifacts);
 
@@ -64,14 +64,14 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
      * Group artifacts by their hierarchy structure
      * This ensures that artifacts from different top-level structures are not mixed
      *
-     * @param Collection $artifacts All artifacts
+     * @param  Collection  $artifacts  All artifacts
      * @return array Array of artifact collections, grouped by root ancestor
      */
     private function groupArtifactsByHierarchy(Collection $artifacts): array
     {
         $hierarchyGroups = [];
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $rootAncestor = $this->findRootAncestor($artifact);
             $rootId       = $rootAncestor->id;
 
@@ -88,7 +88,7 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
     /**
      * Find the root ancestor of an artifact (top of hierarchy)
      *
-     * @param Artifact $artifact Artifact to find root for
+     * @param  Artifact  $artifact  Artifact to find root for
      * @return Artifact Root ancestor
      */
     private function findRootAncestor(Artifact $artifact): Artifact
@@ -108,15 +108,15 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
     /**
      * Get artifacts that match the specified levels
      *
-     * @param Collection $artifacts All artifacts
-     * @param array      $levels    Levels to filter by
+     * @param  Collection  $artifacts  All artifacts
+     * @param  array  $levels  Levels to filter by
      * @return Collection Filtered artifacts
      */
     private function getArtifactsByLevels(Collection $artifacts, array $levels): Collection
     {
         $filteredArtifacts = collect();
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $this->processArtifactByLevel($artifact, $levels, $filteredArtifacts);
         }
 
@@ -126,10 +126,10 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
     /**
      * Process an artifact and its children based on the specified levels
      *
-     * @param Artifact   $artifact     The artifact to process
-     * @param array      $levels       The levels to include
-     * @param Collection $result       The collection to add matching artifacts to
-     * @param int        $currentLevel The current nesting level (0 = top level)
+     * @param  Artifact  $artifact  The artifact to process
+     * @param  array  $levels  The levels to include
+     * @param  Collection  $result  The collection to add matching artifacts to
+     * @param  int  $currentLevel  The current nesting level (0 = top level)
      */
     private function processArtifactByLevel(Artifact $artifact, array $levels, Collection &$result, int $currentLevel = 0): void
     {
@@ -140,7 +140,7 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
 
         // Process children recursively at the next level
         if ($artifact->children()->exists()) {
-            foreach($artifact->children as $child) {
+            foreach ($artifact->children as $child) {
                 $this->processArtifactByLevel($child, $levels, $result, $currentLevel + 1);
             }
         }
@@ -150,8 +150,8 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
      * Get source artifacts that are related to the given target artifact
      * (in the same branch of the hierarchy)
      *
-     * @param Artifact   $targetArtifact  Target artifact
-     * @param Collection $sourceArtifacts All source artifacts
+     * @param  Artifact  $targetArtifact  Target artifact
+     * @param  Collection  $sourceArtifacts  All source artifacts
      * @return Collection Related source artifacts
      */
     private function getRelatedSourceArtifacts(Artifact $targetArtifact, Collection $sourceArtifacts): Collection
@@ -160,7 +160,7 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
 
         // For downward projection: find ancestors of the target that are in the source artifacts
         $currentArtifact = $targetArtifact;
-        while($currentArtifact) {
+        while ($currentArtifact) {
             if ($sourceArtifacts->contains('id', $currentArtifact->id)) {
                 $relatedSources->push($currentArtifact);
             }
@@ -178,14 +178,14 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
     /**
      * Find descendants of the target artifact that are in the source artifacts
      *
-     * @param Artifact   $artifact        Current artifact to check descendants of
-     * @param Collection $sourceArtifacts All source artifacts
-     * @param Collection $result          Collection to add matching artifacts to
+     * @param  Artifact  $artifact  Current artifact to check descendants of
+     * @param  Collection  $sourceArtifacts  All source artifacts
+     * @param  Collection  $result  Collection to add matching artifacts to
      */
     private function findRelatedDescendants(Artifact $artifact, Collection $sourceArtifacts, Collection &$result): void
     {
         if ($artifact->children()->exists()) {
-            foreach($artifact->children as $child) {
+            foreach ($artifact->children as $child) {
                 if ($sourceArtifacts->contains('id', $child->id)) {
                     $result->push($child);
                 }
@@ -199,16 +199,16 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
     /**
      * Create a projected artifact by applying task artifact filters
      *
-     * @param Artifact   $targetArtifact  Target artifact to project data onto
-     * @param Collection $sourceArtifacts Source artifacts to project data from
-     * @param string     $textSeparator   Separator for text content
-     * @param string     $textPrefix      Prefix for text content
+     * @param  Artifact  $targetArtifact  Target artifact to project data onto
+     * @param  Collection  $sourceArtifacts  Source artifacts to project data from
+     * @param  string  $textSeparator  Separator for text content
+     * @param  string  $textPrefix  Prefix for text content
      * @return Artifact The target artifact with projected data
      */
     private function createProjectedArtifact(Artifact $targetArtifact, Collection $sourceArtifacts, string $textSeparator, string $textPrefix): Artifact
     {
         // Check if there are task artifact filters for the source task definitions
-        foreach($sourceArtifacts as $sourceArtifact) {
+        foreach ($sourceArtifacts as $sourceArtifact) {
             $sourceTaskDefinitionId = $sourceArtifact->task_definition_id;
 
             $filterService = app(ArtifactFilterService::class)->setArtifact($sourceArtifact);
@@ -266,7 +266,7 @@ class ArtifactLevelProjectionTaskRunner extends BaseTaskRunner
     /**
      * Find a task artifact filter for the given source task definition
      */
-    private function findTaskArtifactFilter(?int $sourceTaskDefinitionId): TaskArtifactFilter|null
+    private function findTaskArtifactFilter(?int $sourceTaskDefinitionId): ?TaskArtifactFilter
     {
         // Skip if source task definition is missing
         if (!$sourceTaskDefinitionId) {

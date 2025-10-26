@@ -104,8 +104,8 @@ class AgentThreadExceptionHandler
         $code = $exception->getCode();
 
         return match ($code) {
-            580 => 'empty_response',
-            581 => 'invalid_response',
+            580     => 'empty_response',
+            581     => 'invalid_response',
             default => 'unknown_error',
         };
     }
@@ -122,7 +122,7 @@ class AgentThreadExceptionHandler
 
                 return $responseJson['error']['code'] ?? null;
             }
-        } catch(Throwable $e) {
+        } catch (Throwable $e) {
             // Ignore parsing errors
         }
 
@@ -172,10 +172,10 @@ class AgentThreadExceptionHandler
     protected function getBaseDelayForExceptionType(string $exceptionType): int
     {
         return match (true) {
-            str_starts_with($exceptionType, 'connection_') => 5,
+            str_starts_with($exceptionType, 'connection_')   => 5,
             str_starts_with($exceptionType, 'server_error_') => 3,
             str_starts_with($exceptionType, 'client_error_') => 2,
-            default => 1
+            default                                          => 1
         };
     }
 

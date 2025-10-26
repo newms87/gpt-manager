@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\Services\WorkflowBuilder;
 
+use App\Models\Task\TaskDefinition;
 use App\Models\Workflow\WorkflowConnection;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
-use App\Models\Task\TaskDefinition;
 use App\Services\WorkflowBuilder\WorkflowBuilderDocumentationService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +17,7 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
     use SetUpTeamTrait;
 
     private WorkflowBuilderDocumentationService $service;
+
     private string $testDocsPath;
 
     public function setUp(): void
@@ -24,15 +25,15 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
         parent::setUp();
         $this->setUpTeam();
         $this->service = new WorkflowBuilderDocumentationService();
-        
+
         // Set up test documentation path
         $this->testDocsPath = base_path('tests/fixtures/workflow-builder-prompts');
         if (!File::exists($this->testDocsPath)) {
             File::makeDirectory($this->testDocsPath, 0755, true);
         }
-        
+
         // Use reflection to override the docs path for testing
-        $reflection = new \ReflectionClass($this->service);
+        $reflection           = new \ReflectionClass($this->service);
         $docsBasePathProperty = $reflection->getProperty('docsBasePath');
         $docsBasePathProperty->setAccessible(true);
         $docsBasePathProperty->setValue($this->service, $this->testDocsPath);
@@ -51,7 +52,7 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
     {
         // Given
         $filename = 'workflow-definition.md';
-        $content = "# Workflow Definition\nThis is test content.";
+        $content  = "# Workflow Definition\nThis is test content.";
         File::put($this->testDocsPath . '/' . $filename, $content);
 
         // When
@@ -93,11 +94,11 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
     {
         // Given
         $filename = 'test-cache.md';
-        $content = "Test content for caching";
+        $content  = 'Test content for caching';
         File::put($this->testDocsPath . '/' . $filename, $content);
 
         // When - load twice
-        $firstResult = $this->service->loadDocumentFile($filename);
+        $firstResult  = $this->service->loadDocumentFile($filename);
         $secondResult = $this->service->loadDocumentFile($filename);
 
         // Then
@@ -157,13 +158,13 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
     {
         // Given - create all orchestrator documentation files
         $docFiles = [
-            'workflow-definition.md' => '# Workflow Definition',
-            'task-definition.md' => '# Task Definition',
+            'workflow-definition.md'  => '# Workflow Definition',
+            'task-definition.md'      => '# Task Definition',
             'workflow-connections.md' => '# Workflow Connections',
             'task-runners-catalog.md' => '# Task Runners Catalog',
-            'agent-selection.md' => '# Agent Selection'
+            'agent-selection.md'      => '# Agent Selection',
         ];
-        
+
         foreach ($docFiles as $filename => $content) {
             File::put($this->testDocsPath . '/' . $filename, $content);
         }
@@ -182,27 +183,27 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
     public function test_getTaskBuilderContext_includesTaskSpecificDocuments(): void
     {
         // Given
-        $workflow = $this->createWorkflowWithNodesAndConnections();
+        $workflow      = $this->createWorkflowWithNodesAndConnections();
         $specification = [
             'task_specification' => [
-                'name' => 'Test Task',
-                'description' => 'Test task description'
+                'name'        => 'Test Task',
+                'description' => 'Test task description',
             ],
             'related_tasks' => [
                 ['name' => 'Related Task 1', 'description' => 'Related task 1 description'],
-                ['name' => 'Related Task 2']
-            ]
+                ['name' => 'Related Task 2'],
+            ],
         ];
-        
+
         // Create required documentation files
         $docFiles = [
-            'task-definition.md' => '# Task Definition',
-            'task-runners-catalog.md' => '# Task Runners',
-            'agent-selection.md' => '# Agent Selection',
+            'task-definition.md'          => '# Task Definition',
+            'task-runners-catalog.md'     => '# Task Runners',
+            'agent-selection.md'          => '# Agent Selection',
             'prompt-engineering-guide.md' => '# Prompt Engineering',
-            'artifact-flow.md' => '# Artifact Flow'
+            'artifact-flow.md'            => '# Artifact Flow',
         ];
-        
+
         foreach ($docFiles as $filename => $content) {
             File::put($this->testDocsPath . '/' . $filename, $content);
         }
@@ -225,17 +226,17 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
         // Given
         $artifacts = [
             [
-                'name' => 'Test Artifact 1',
-                'type' => 'workflow_definition',
-                'content' => ['name' => 'Test Workflow', 'description' => 'Test workflow description']
+                'name'    => 'Test Artifact 1',
+                'type'    => 'workflow_definition',
+                'content' => ['name' => 'Test Workflow', 'description' => 'Test workflow description'],
             ],
             [
-                'name' => 'Test Artifact 2',
-                'type' => 'text',
-                'content' => 'This is plain text content'
-            ]
+                'name'    => 'Test Artifact 2',
+                'type'    => 'text',
+                'content' => 'This is plain text content',
+            ],
         ];
-        
+
         File::put($this->testDocsPath . '/evaluation-guidelines.md', '# Evaluation Guidelines Test');
 
         // When
@@ -257,16 +258,16 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
     public function test_clearCache_clearsDocumentCache(): void
     {
         // Given
-        $filename = 'test-cache-clear.md';
-        $originalContent = "Original content";
-        $newContent = "New content";
-        
+        $filename        = 'test-cache-clear.md';
+        $originalContent = 'Original content';
+        $newContent      = 'New content';
+
         File::put($this->testDocsPath . '/' . $filename, $originalContent);
-        
+
         // Load and cache the original content
         $cachedResult = $this->service->loadDocumentFile($filename);
         $this->assertEquals($originalContent, $cachedResult);
-        
+
         // Update the file content
         File::put($this->testDocsPath . '/' . $filename, $newContent);
 
@@ -286,9 +287,9 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
             'doc1.md',
             'doc2.md',
             'doc3.txt', // Non-markdown file
-            'doc4.md'
+            'doc4.md',
         ];
-        
+
         foreach ($testFiles as $file) {
             File::put($this->testDocsPath . '/' . $file, 'Test content');
         }
@@ -332,14 +333,14 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('existing', $result);
         $this->assertArrayHasKey('missing', $result);
         $this->assertArrayHasKey('base_path', $result);
-        
+
         $this->assertCount(2, $result['existing']);
         $this->assertContains('workflow-definition.md', $result['existing']);
         $this->assertContains('task-definition.md', $result['existing']);
-        
+
         $this->assertGreaterThan(0, count($result['missing']));
         $this->assertContains('workflow-connections.md', $result['missing']);
-        
+
         $this->assertEquals($this->testDocsPath, $result['base_path']);
     }
 
@@ -350,7 +351,7 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
 
         // When - use reflection to access protected method
         $reflection = new \ReflectionClass($this->service);
-        $method = $reflection->getMethod('formatCurrentWorkflowContext');
+        $method     = $reflection->getMethod('formatCurrentWorkflowContext');
         $method->setAccessible(true);
         $result = $method->invoke($this->service, $workflow);
 
@@ -367,20 +368,20 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
         // Given
         $artifacts = [
             [
-                'name' => 'JSON Artifact',
-                'type' => 'json',
-                'content' => ['key' => 'value', 'number' => 42]
+                'name'    => 'JSON Artifact',
+                'type'    => 'json',
+                'content' => ['key' => 'value', 'number' => 42],
             ],
             [
-                'name' => 'Text Artifact',
-                'type' => 'text',
-                'content' => 'Simple text content'
-            ]
+                'name'    => 'Text Artifact',
+                'type'    => 'text',
+                'content' => 'Simple text content',
+            ],
         ];
 
         // When - use reflection to access protected method
         $reflection = new \ReflectionClass($this->service);
-        $method = $reflection->getMethod('formatArtifactsForEvaluation');
+        $method     = $reflection->getMethod('formatArtifactsForEvaluation');
         $method->setAccessible(true);
         $result = $method->invoke($this->service, $artifacts);
 
@@ -390,7 +391,7 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
         $this->assertStringContainsString('**Type:** json', $result);
         $this->assertStringContainsString('```json', $result);
         $this->assertStringContainsString('"key": "value"', $result);
-        
+
         $this->assertStringContainsString('### Artifact 2', $result);
         $this->assertStringContainsString('**Name:** Text Artifact', $result);
         $this->assertStringContainsString('Simple text content', $result);
@@ -399,19 +400,19 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
     public function test_defaultContent_providesReasonableDefaults(): void
     {
         // Given - no files exist, so service should use default content and log warnings
-        
+
         // When - get context without any files (real business logic)
-        $planningResult = $this->service->getPlanningContext();
+        $planningResult     = $this->service->getPlanningContext();
         $orchestratorResult = $this->service->getOrchestratorContext();
 
         // Then - verify the real service provides reasonable defaults
         $this->assertStringContainsString('Workflow Definition', $planningResult);
         $this->assertStringContainsString('Task Definition', $planningResult);
         $this->assertStringContainsString('Workflow Connections', $planningResult);
-        
+
         $this->assertStringContainsString('Task Runners', $orchestratorResult);
         $this->assertStringContainsString('Agent Selection', $orchestratorResult);
-        
+
         // Verify that defaults are substantial (not just empty content)
         $this->assertGreaterThan(100, strlen($planningResult));
         $this->assertGreaterThan(100, strlen($orchestratorResult));
@@ -420,43 +421,43 @@ class WorkflowBuilderDocumentationServiceTest extends AuthenticatedTestCase
     private function createWorkflowWithNodesAndConnections(): WorkflowDefinition
     {
         $workflow = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'Test Workflow',
+            'team_id'     => $this->user->currentTeam->id,
+            'name'        => 'Test Workflow',
             'description' => 'Test workflow description',
-            'max_workers' => 3
+            'max_workers' => 3,
         ]);
 
         // Create task definitions
         $task1 = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'Task 1',
-            'description' => 'First task',
-            'task_runner_name' => 'TestRunner1'
+            'team_id'          => $this->user->currentTeam->id,
+            'name'             => 'Task 1',
+            'description'      => 'First task',
+            'task_runner_name' => 'TestRunner1',
         ]);
 
         $task2 = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'Task 2',
-            'description' => 'Second task',
-            'task_runner_name' => 'TestRunner2'
+            'team_id'          => $this->user->currentTeam->id,
+            'name'             => 'Task 2',
+            'description'      => 'Second task',
+            'task_runner_name' => 'TestRunner2',
         ]);
 
         // Create workflow nodes
         $node1 = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflow->id,
-            'task_definition_id' => $task1->id,
+            'task_definition_id'     => $task1->id,
         ]);
 
         $node2 = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflow->id,
-            'task_definition_id' => $task2->id,
+            'task_definition_id'     => $task2->id,
         ]);
 
         // Create workflow connection
         WorkflowConnection::factory()->create([
             'workflow_definition_id' => $workflow->id,
-            'source_node_id' => $node1->id,
-            'target_node_id' => $node2->id,
+            'source_node_id'         => $node1->id,
+            'target_node_id'         => $node2->id,
         ]);
 
         return $workflow->fresh(['workflowNodes.taskDefinition', 'workflowConnections.sourceNode.taskDefinition', 'workflowConnections.targetNode.taskDefinition']);

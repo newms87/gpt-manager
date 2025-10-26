@@ -15,7 +15,7 @@ class RefreshSeeder extends Seeder
         // all tables in the database
         $tables = DB::select('SHOW TABLES');
 
-        foreach($tables as $table) {
+        foreach ($tables as $table) {
             $table = get_object_vars($table);
             $table = array_values($table);
             $table = $table[0];

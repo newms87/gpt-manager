@@ -45,8 +45,10 @@ class AgentThreadBuilderService
 {
     use HasDebugLogging;
 
-    protected Agent   $agent;
-    protected ?int    $teamId     = null;
+    protected Agent $agent;
+
+    protected ?int $teamId     = null;
+
     protected ?string $threadName = null;
 
     // Messages
@@ -54,13 +56,17 @@ class AgentThreadBuilderService
 
     // Artifact groups (each item: ['artifacts' => Collection, 'filter' => ?ArtifactFilter])
     protected array $artifactGroups     = [];
-    protected bool  $includePageNumbers = false;
+
+    protected bool $includePageNumbers = false;
 
     // Response configuration
     protected ?SchemaDefinition $responseSchema   = null;
-    protected ?SchemaFragment   $responseFragment = null;
-    protected int               $timeout          = 60; // Default 60 seconds
-    protected ?McpServer        $mcpServer        = null;
+
+    protected ?SchemaFragment $responseFragment = null;
+
+    protected int $timeout          = 60; // Default 60 seconds
+
+    protected ?McpServer $mcpServer        = null;
 
     // Built thread (cached)
     protected ?AgentThread $builtThread = null;
@@ -121,9 +127,8 @@ class AgentThreadBuilderService
      */
     public function withArtifacts(
         array|Collection|EloquentCollection $artifacts,
-        ?ArtifactFilter                     $filter = null
-    ): static
-    {
+        ?ArtifactFilter $filter = null
+    ): static {
         $this->artifactGroups[] = [
             'artifacts' => collect($artifacts),
             'filter'    => $filter,
@@ -147,9 +152,8 @@ class AgentThreadBuilderService
      */
     public function withResponseSchema(
         SchemaDefinition $schema,
-        ?SchemaFragment  $fragment = null
-    ): static
-    {
+        ?SchemaFragment $fragment = null
+    ): static {
         $this->responseSchema   = $schema;
         $this->responseFragment = $fragment;
 
@@ -248,7 +252,6 @@ class AgentThreadBuilderService
     /**
      * Protected helper methods
      */
-
     protected function validate(): void
     {
         if (!isset($this->agent)) {
@@ -265,8 +268,8 @@ class AgentThreadBuilderService
     {
         $totalFiles = 0;
 
-        foreach($this->artifactGroups as $group) {
-            foreach($group['artifacts'] as $artifact) {
+        foreach ($this->artifactGroups as $group) {
+            foreach ($group['artifacts'] as $artifact) {
                 $filterService   = $this->resolveArtifactFilterService($artifact, $group['filter']);
                 $filteredMessage = $filterService->setArtifact($artifact)->filter();
 
@@ -283,7 +286,7 @@ class AgentThreadBuilderService
 
     protected function addArtifactGroupsToThread(AgentThread $thread): void
     {
-        foreach($this->artifactGroups as $group) {
+        foreach ($this->artifactGroups as $group) {
             $artifacts = $group['artifacts'];
             $filter    = $group['filter'];
 
@@ -291,7 +294,7 @@ class AgentThreadBuilderService
                 continue;
             }
 
-            foreach($artifacts as $artifact) {
+            foreach ($artifacts as $artifact) {
                 $this->addSingleArtifact($thread, $artifact, $filter);
             }
         }
@@ -343,7 +346,7 @@ class AgentThreadBuilderService
 
     protected function addMessagesToThread(AgentThread $thread): void
     {
-        foreach($this->messages as $message) {
+        foreach ($this->messages as $message) {
             app(ThreadRepository::class)->addMessageToThread(
                 $thread,
                 $message['content'],

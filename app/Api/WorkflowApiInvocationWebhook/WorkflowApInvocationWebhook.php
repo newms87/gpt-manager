@@ -20,7 +20,7 @@ class WorkflowApInvocationWebhook extends Api
         if (!$workflowApiInvocation->webhook_url) {
             return;
         }
-        
+
         $output      = null;
         $workflowRun = $workflowApiInvocation->workflowRun;
 
@@ -41,7 +41,7 @@ class WorkflowApInvocationWebhook extends Api
 
         $output = [];
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $output[] = WebhookArtifactResource::make($artifact);
         }
 

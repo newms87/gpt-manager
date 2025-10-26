@@ -12,37 +12,43 @@ class JsonSchemaService
     /** @var bool When strict mode is enabled, certain type castings will not be allowed (ie: scalar => array/object or object/array => scalar) */
     protected bool $isStrict = false;
 
-    /** @var bool  Whether to use citations for the schema. NOTE: This will modify the output so that */
+    /** @var bool Whether to use citations for the schema. NOTE: This will modify the output so that */
     protected bool $useCitations = false;
-    /** @var bool  Make sure each object includes the ID property */
+
+    /** @var bool Make sure each object includes the ID property */
     protected bool $useId = false;
-    /** @var bool  Include the property_meta definition */
+
+    /** @var bool Include the property_meta definition */
     protected bool $usePropertyMeta = false;
-    /** @var bool  Make sure each object includes the name property */
+
+    /** @var bool Make sure each object includes the name property */
     protected bool $requireName = false;
-    /** @var bool  Automatically add null types for property values (except for id / name of objects) */
+
+    /** @var bool Automatically add null types for property values (except for id / name of objects) */
     protected bool $includeNullValues = false;
+
     /** @var bool Include a meta.name field in the output to label the artifact */
     protected bool $useArtifactMeta = false;
 
-    static array $idCreateOrUpdateDef = [
+    public static array $idCreateOrUpdateDef = [
         'type'        => ['number', 'null'],
         'description' => 'ID must match an object from json_content with the same `type` (ie: the `title` property is an alias for `type` as it may appear as either). If no such object exists, set `id: null`',
     ];
 
-    static array $idCreateDef = [
+    public static array $idCreateDef = [
         'type'        => 'null',
         'description' => 'Set ID to null, this indicates no existing record and a new record should be created',
     ];
 
-    static array $idUpdateDef = [
+    public static array $idUpdateDef = [
         'type'        => 'number',
         'description' => 'ID must match an object from json_content with the same `type` (ie: the `title` property is an alias for `type` as it may appear as either).',
     ];
 
-    static string $nameOptionalDescription = 'If creating a new record and setting ID to null, the name is required. Otherwise set name to null (ie: just updating an existing record and giving an existing record ID)';
+    public static string $nameOptionalDescription = 'If creating a new record and setting ID to null, the name is required. Otherwise set name to null (ie: just updating an existing record and giving an existing record ID)';
 
     protected array $artifactMetaDef = [];
+
     protected array $propertyMetaDef = [];
 
     public function getConfig(): array
@@ -61,12 +67,12 @@ class JsonSchemaService
     {
         $config = $config ?: [];
 
-        $this->useId             = $config['useId'] ?? $this->useId;
-        $this->requireName       = $config['requireName'] ?? $this->requireName;
+        $this->useId             = $config['useId']             ?? $this->useId;
+        $this->requireName       = $config['requireName']       ?? $this->requireName;
         $this->includeNullValues = $config['includeNullValues'] ?? $this->includeNullValues;
-        $this->useCitations      = $config['useCitations'] ?? $this->useCitations;
-        $this->usePropertyMeta   = $config['usePropertyMeta'] ?? $this->usePropertyMeta;
-        $this->useArtifactMeta   = $config['useArtifactMeta'] ?? $this->useArtifactMeta;
+        $this->useCitations      = $config['useCitations']      ?? $this->useCitations;
+        $this->usePropertyMeta   = $config['usePropertyMeta']   ?? $this->usePropertyMeta;
+        $this->useArtifactMeta   = $config['useArtifactMeta']   ?? $this->useArtifactMeta;
 
         return $this;
     }
@@ -169,7 +175,7 @@ class JsonSchemaService
 
         if (!empty($fragmentSelector['children'])) {
             $childDots = [];
-            foreach($fragmentSelector['children'] as $key => $child) {
+            foreach ($fragmentSelector['children'] as $key => $child) {
                 $childDot = $key;
                 if (!empty($child['children'])) {
                     $nestedDot = $this->fragmentSelectorToDot($child);
@@ -194,7 +200,7 @@ class JsonSchemaService
     /**
      * Recursively filters a JSON schema using a fragment selector to select a subset of properties
      */
-    public function applyFragmentSelector(array $schema, array $fragmentSelector = null): array
+    public function applyFragmentSelector(array $schema, ?array $fragmentSelector = null): array
     {
         if (!$fragmentSelector) {
             return $schema;
@@ -225,7 +231,7 @@ class JsonSchemaService
         // The total set of properties defined in the JSON Schema for this object
         $properties = $schema['properties'] ?? [];
 
-        foreach($children as $selectedKey => $selectedProperty) {
+        foreach ($children as $selectedKey => $selectedProperty) {
             if (empty($selectedProperty['type'])) {
                 throw new Exception("Fragment selector must have a type: $selectedKey: " . json_encode($selectedProperty));
             }
@@ -294,7 +300,7 @@ class JsonSchemaService
         }
 
         $types = [];
-        foreach($fragmentSelector['children'] as $child) {
+        foreach ($fragmentSelector['children'] as $child) {
             $types = array_merge($types, $this->getFragmentSelectorLeafTypes($child));
         }
 
@@ -304,7 +310,7 @@ class JsonSchemaService
     /**
      * Recursively filters data using a fragment selector to select a subset of properties
      */
-    public function filterDataByFragmentSelector(array $data, array $fragmentSelector = null): array
+    public function filterDataByFragmentSelector(array $data, ?array $fragmentSelector = null): array
     {
         if (!$fragmentSelector) {
             return $data;
@@ -322,7 +328,7 @@ class JsonSchemaService
 
         // Special case for handling an array of objects at the top level, instead of an object w/ associative keys
         if (!is_associative_array($data)) {
-            foreach($data as $datum) {
+            foreach ($data as $datum) {
                 if (is_array($datum)) {
                     $filtered[] = $this->filterDataByFragmentSelector($datum, $fragmentSelector);
                 }
@@ -337,7 +343,7 @@ class JsonSchemaService
             $fragmentSelector['children']['type'] = ['type' => 'string'];
         }
 
-        foreach($fragmentSelector['children'] as $selectedKey => $selectedProperty) {
+        foreach ($fragmentSelector['children'] as $selectedKey => $selectedProperty) {
             if (empty($selectedProperty['type'])) {
                 throw new Exception("Fragment selector must have a type: $selectedKey: " . json_encode($selectedProperty));
             }
@@ -356,7 +362,7 @@ class JsonSchemaService
                 // If the data is a scalar type, but the fragment selector is looking for an object or an array, then handle this scenario
                 if ($isObjectOrArray) {
                     if ($this->isStrict) {
-                        throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (an array of object type), but found " . gettype($dataProperty) . " (a scalar type) instead");
+                        throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (an array of object type), but found " . gettype($dataProperty) . ' (a scalar type) instead');
                     }
                 }
                 $filtered[$selectedKey] = $dataProperty;
@@ -364,7 +370,7 @@ class JsonSchemaService
                 // If the data is an object or an array, but the fragment selector is looking for a scalar type, then handle this scenario
                 if (!$isObjectOrArray) {
                     if ($this->isStrict) {
-                        throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (a scalar type), but found " . gettype($dataProperty) . " (an array of object type) instead");
+                        throw new ValidationError("Fragment selector type mismatch: $selectedKey: selected fragment specified a $selectedProperty[type] (a scalar type), but found " . gettype($dataProperty) . ' (an array of object type) instead');
                     }
                     $filtered[$selectedKey] = json_encode($dataProperty);
                 } else {
@@ -387,12 +393,12 @@ class JsonSchemaService
     /**
      * Format and clean the schema to match the requirements of a strict JSON schema
      *
-     * @param string $name         The name for this version of the schema
-     * @param array  $schema       The schema to format. The schema should be properly formatted JSON schema (starting
-     *                             with properties of an object as they will be nested inside the main schema)
-     *                             each scalar property is transformed into a citation object
-     * @param int    $depth        The depth of the schema (used for recursion)
-     * @return array
+     * @param  string  $name  The name for this version of the schema
+     * @param  array  $schema  The schema to format. The schema should be properly formatted JSON schema (starting
+     *                         with properties of an object as they will be nested inside the main schema)
+     *                         each scalar property is transformed into a citation object
+     * @param  int  $depth  The depth of the schema (used for recursion)
+     *
      * @throws Exception
      */
     public function formatAndCleanSchema(string $name, array $schema, int $depth = 0): array
@@ -407,7 +413,7 @@ class JsonSchemaService
         $properties = $schema['properties'] ?? $schema;
 
         // Ensures all properties (and sub properties) are both required and have no additional properties. It does this recursively.
-        foreach($properties as $key => $value) {
+        foreach ($properties as $key => $value) {
             $childName = $name . '.' . $key;
             // Id and name are special keys that will have their types explicitly set to null when needed. All other fields should be allowed to be null
             $formattedItem = $this->formatAndCleanSchemaItem($childName, $value, $depth, !in_array($key, ['id', 'name']));
@@ -457,7 +463,6 @@ class JsonSchemaService
             'properties'           => $propertiesSchema,
         ];
 
-
         if (array_key_exists('title', $schema)) {
             $formattedSchema['title'] = $schema['title'];
         }
@@ -489,21 +494,21 @@ class JsonSchemaService
     /**
      * Format and clean the schema property entry or array item to match the requirements of a strict JSON schema
      */
-    public function formatAndCleanSchemaItem($name, $value, $depth = 0, $allowNull = true): array|null
+    public function formatAndCleanSchemaItem($name, $value, $depth = 0, $allowNull = true): ?array
     {
-        $type        = $value['type'] ?? null;
-        $title       = $value['title'] ?? null;
+        $type        = $value['type']        ?? null;
+        $title       = $value['title']       ?? null;
         $description = $value['description'] ?? null;
-        $enum        = $value['enum'] ?? null;
-        $properties  = $value['properties'] ?? [];
-        $items       = $value['items'] ?? [];
+        $enum        = $value['enum']        ?? null;
+        $properties  = $value['properties']  ?? [];
+        $items       = $value['items']       ?? [];
 
         $hasNull  = false;
         $mainType = $type;
 
         if (is_array($type)) {
             $mainType = null;
-            foreach($type as $typeName) {
+            foreach ($type as $typeName) {
                 if ($typeName === 'null') {
                     $hasNull = true;
                 } elseif (!$mainType) {
@@ -540,7 +545,7 @@ class JsonSchemaService
         };
 
         // If the type is an object with no properties, it is an empty object and can be ignored
-        if ($isArray && !$item['items'] ||
+        if ($isArray  && !$item['items'] ||
             $isObject && !$item['properties']) {
             return null;
         }
@@ -567,7 +572,7 @@ class JsonSchemaService
     /**
      * Format the JSON schema and generate a unique name based on the given name and the schema structure
      */
-    public function formatAndFilterSchema(string $name, array $schema, array $fragmentSelector = null): array|string
+    public function formatAndFilterSchema(string $name, array $schema, ?array $fragmentSelector = null): array|string
     {
         if ($fragmentSelector) {
             $schema = $this->applyFragmentSelector($schema, $fragmentSelector);
@@ -593,7 +598,7 @@ class JsonSchemaService
             $jsonContent['id'] = $referenceJsonContent['id'];
         }
 
-        foreach($jsonContent as $propertyKey => $propertyValue) {
+        foreach ($jsonContent as $propertyKey => $propertyValue) {
             $referencePropertyValue = $referenceJsonContent[$propertyKey] ?? null;
 
             // Skip if the property is not in the data
@@ -617,7 +622,7 @@ class JsonSchemaService
 
                 $mappedItems = [];
 
-                foreach($propertyValue as $index => $item) {
+                foreach ($propertyValue as $index => $item) {
                     $mappedItems[$index] = $this->hydrateIdsInJsonContent($item, $referencePropertyValue[$index] ?? null);
                 }
 

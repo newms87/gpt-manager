@@ -15,7 +15,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class Subscription extends Model implements AuditableContract
 {
-    use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -57,11 +57,11 @@ class Subscription extends Model implements AuditableContract
     public function validate(): static
     {
         if (!$this->team_id) {
-            throw new ValidationError("Subscription must be associated with a team", 400);
+            throw new ValidationError('Subscription must be associated with a team', 400);
         }
 
         if (!$this->subscription_plan_id) {
-            throw new ValidationError("Subscription must be associated with a plan", 400);
+            throw new ValidationError('Subscription must be associated with a plan', 400);
         }
 
         // Check for existing active subscription for the team
@@ -70,7 +70,7 @@ class Subscription extends Model implements AuditableContract
             ->whereIn('status', ['active', 'trialing']);
 
         if ($existingSubscription = $query->first()) {
-            throw new ValidationError("Team already has an active subscription", 409);
+            throw new ValidationError('Team already has an active subscription', 409);
         }
 
         return $this;
@@ -89,7 +89,7 @@ class Subscription extends Model implements AuditableContract
     public function isOnTrial(): bool
     {
         return $this->status === 'trialing' &&
-            $this->trial_ends_at &&
+            $this->trial_ends_at            &&
             $this->trial_ends_at->isFuture();
     }
 

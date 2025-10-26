@@ -8,7 +8,7 @@ use Tests\AuthenticatedTestCase;
 
 class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
 {
-    static array $fragmentSelector = [
+    public static array $fragmentSelector = [
         'type'     => 'object',
         'children' => [
             'category' => ['type' => 'string'],
@@ -18,7 +18,7 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
     private function makeArtifactsWithCategories(array $categoryMap): array
     {
         $artifacts = [];
-        foreach($categoryMap as $position => $category) {
+        foreach ($categoryMap as $position => $category) {
             $artifact    = Artifact::factory()->create([
                 'position' => $position,
                 'meta'     => [
@@ -165,7 +165,7 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
             ->resolveCategoryGroups($artifacts);
 
         // Then
-        $this->assertCount(0, $categoryGroups, "There should be no category groups when all artifacts have categories");
+        $this->assertCount(0, $categoryGroups, 'There should be no category groups when all artifacts have categories');
     }
 
     public function test_resolveCategoryGroups_allArtifactsHaveCategoriesWith1DifferentInMiddle()
@@ -187,7 +187,7 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
             ->resolveCategoryGroups($artifacts);
 
         // Then
-        $this->assertCount(0, $categoryGroups, "There should be no category groups when all artifacts have categories");
+        $this->assertCount(0, $categoryGroups, 'There should be no category groups when all artifacts have categories');
     }
 
     /**
@@ -211,7 +211,7 @@ class SequentialCategoryMatcherTaskRunnerTest extends AuthenticatedTestCase
             ->resolveCategoryGroups($artifacts);
 
         // Then
-        $this->assertCount(0, $categoryGroups, "There should be no category groups when all artifacts have empty categories");
+        $this->assertCount(0, $categoryGroups, 'There should be no category groups when all artifacts have empty categories');
     }
 
     /**

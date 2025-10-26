@@ -11,12 +11,12 @@ class WorkflowNodeRepository extends ActionRepository
     public static string $model = WorkflowNode::class;
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'copy' => $this->copyNode($model),
+            'copy'  => $this->copyNode($model),
             default => parent::applyAction($action, $model, $data)
         };
     }
@@ -31,7 +31,7 @@ class WorkflowNodeRepository extends ActionRepository
         $newTaskDefinition->name = ModelHelper::getNextModelName($newTaskDefinition);
         $newTaskDefinition->save();
 
-        foreach($workflowNode->taskDefinition->schemaAssociations as $schemaAssociation) {
+        foreach ($workflowNode->taskDefinition->schemaAssociations as $schemaAssociation) {
             $newTaskDefinition->schemaAssociations()->create([
                 'schema_definition_id' => $schemaAssociation->schema_definition_id,
                 'schema_fragment_id'   => $schemaAssociation->schema_fragment_id,

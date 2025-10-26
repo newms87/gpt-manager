@@ -25,19 +25,17 @@ class TemplateVariableResolutionService
     /**
      * Resolve all variables for a template, separating AI-mapped from pre-resolvable
      *
-     * @param Collection<TemplateVariable> $templateVariables
-     * @param Collection<Artifact>         $artifacts
-     * @param TeamObject|null              $teamObject
-     * @param int                          $teamId Team ID for context (required for AI resolution)
+     * @param  Collection<TemplateVariable>  $templateVariables
+     * @param  Collection<Artifact>  $artifacts
+     * @param  int  $teamId  Team ID for context (required for AI resolution)
      * @return array ['values' => [name => value], 'title' => string]
      */
     public function resolveVariables(
-        Collection  $templateVariables,
-        Collection  $artifacts,
+        Collection $templateVariables,
+        Collection $artifacts,
         ?TeamObject $teamObject = null,
-        int         $teamId = null
-    ): array
-    {
+        ?int $teamId = null
+    ): array {
         // Sort artifacts by name for consistent ordering in results
         $artifacts = $artifacts->sortBy('name')->values();
 
@@ -53,7 +51,7 @@ class TemplateVariableResolutionService
         $preResolvedValues = [];
 
         // Separate variables by resolution type
-        foreach($templateVariables as $variable) {
+        foreach ($templateVariables as $variable) {
             if ($variable->isAiMapped()) {
                 $aiVariables->push($variable);
             } else {
@@ -96,10 +94,9 @@ class TemplateVariableResolutionService
      */
     public function resolveVariable(
         TemplateVariable $variable,
-        Collection       $artifacts,
-        ?TeamObject      $teamObject = null
-    ): string
-    {
+        Collection $artifacts,
+        ?TeamObject $teamObject = null
+    ): string {
         static::log('Resolving single variable', [
             'variable_id'   => $variable->id,
             'variable_name' => $variable->name,
@@ -107,9 +104,9 @@ class TemplateVariableResolutionService
         ]);
 
         $values = match ($variable->mapping_type) {
-            TemplateVariable::MAPPING_TYPE_ARTIFACT => $this->resolveFromArtifacts($variable, $artifacts),
+            TemplateVariable::MAPPING_TYPE_ARTIFACT    => $this->resolveFromArtifacts($variable, $artifacts),
             TemplateVariable::MAPPING_TYPE_TEAM_OBJECT => $this->resolveFromTeamObject($variable, $teamObject),
-            TemplateVariable::MAPPING_TYPE_AI => throw new ValidationError(
+            TemplateVariable::MAPPING_TYPE_AI          => throw new ValidationError(
                 'AI-mapped variables must be resolved through resolveVariables() method',
                 400
             ),
@@ -184,7 +181,7 @@ class TemplateVariableResolutionService
         }
 
         // Apply artifact_fragment_selector to extract data
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $extractedValues = $this->extractFromArtifact($artifact, $variable->artifact_fragment_selector);
             $values          = array_merge($values, $extractedValues);
         }
@@ -209,9 +206,9 @@ class TemplateVariableResolutionService
 
         $data = match ($field) {
             'json_content' => $filterService->getFilteredJson(),
-            'meta' => $filterService->getFilteredMeta(),
+            'meta'         => $filterService->getFilteredMeta(),
             'text_content' => $filterService->getTextContent(),
-            default => null,
+            default        => null,
         };
 
         if (!$data) {
@@ -266,19 +263,17 @@ class TemplateVariableResolutionService
     /**
      * Resolve variables using AI
      *
-     * @param Collection<TemplateVariable> $aiVariables
-     * @param Collection<Artifact>         $artifacts
-     * @param array                        $preResolvedValues
-     * @param int                          $teamId Team ID for context
+     * @param  Collection<TemplateVariable>  $aiVariables
+     * @param  Collection<Artifact>  $artifacts
+     * @param  int  $teamId  Team ID for context
      * @return array ['values' => [name => value], 'title' => string]
      */
     protected function resolveWithAi(
         Collection $aiVariables,
         Collection $artifacts,
-        array      $preResolvedValues,
-        int        $teamId
-    ): array
-    {
+        array $preResolvedValues,
+        int $teamId
+    ): array {
         $instructions = $this->buildAiInstructions($aiVariables, $preResolvedValues);
         $agent        = $this->findOrCreateVariableExtractorAgent();
 
@@ -309,7 +304,7 @@ class TemplateVariableResolutionService
         // Parse response
         $responseData = $threadRun->lastMessage->getJsonContent();
         $variables    = $responseData['variables'] ?? null;
-        $title        = $responseData['title'] ?? '';
+        $title        = $responseData['title']     ?? '';
 
         if (!$variables) {
             throw new ValidationError('AI variable resolution returned invalid response format', 500);
@@ -322,7 +317,7 @@ class TemplateVariableResolutionService
 
         // Convert array of {name, value} objects to name => value map
         $variableValues = [];
-        foreach($variables as $variable) {
+        foreach ($variables as $variable) {
             $variableValue = $variable['value'] ?? null;
             if ($variableValue === null) {
                 $variableValues[$variable['name']] = '{' . $variable['name'] . '}';
@@ -344,7 +339,7 @@ class TemplateVariableResolutionService
     {
         $instructions = "Extract the following variables from the provided artifacts:\n\n";
 
-        foreach($aiVariables as $variable) {
+        foreach ($aiVariables as $variable) {
             $instructions .= "**{$variable->name}**";
             if ($variable->description) {
                 $instructions .= ": {$variable->description}";
@@ -358,14 +353,14 @@ class TemplateVariableResolutionService
         // Add pre-resolved variables as context
         if (!empty($preResolvedValues)) {
             $instructions .= "\nPre-resolved variables for context:\n";
-            foreach($preResolvedValues as $name => $value) {
+            foreach ($preResolvedValues as $name => $value) {
                 $instructions .= "- {$name}: {$value}\n";
             }
             $instructions .= "\n";
         }
 
-        $instructions .= "Also generate an appropriate title for this demand based on the extracted variables. ";
-        $instructions .= "Generate appropriate values for all variables and create a descriptive title based on the extracted information.";
+        $instructions .= 'Also generate an appropriate title for this demand based on the extracted variables. ';
+        $instructions .= 'Generate appropriate values for all variables and create a descriptive title based on the extracted information.';
         $instructions .= "\nUse human readable formats for humans in the USA (ie: dates like May 25th, 2025, currency like $1,234.56, etc.).\n\n";
 
         return $instructions;
@@ -403,14 +398,14 @@ class TemplateVariableResolutionService
         }
 
         return match ($strategy) {
-            TemplateVariable::STRATEGY_FIRST => $this->convertToString($values[0] ?? ''),
+            TemplateVariable::STRATEGY_FIRST  => $this->convertToString($values[0] ?? ''),
             TemplateVariable::STRATEGY_UNIQUE => implode($separator, array_unique(array_map([$this, 'convertToString'], $values))),
-            TemplateVariable::STRATEGY_JOIN => implode($separator, array_map([$this, 'convertToString'], $values)),
-            TemplateVariable::STRATEGY_MAX => app(ArrayAggregationService::class)->max($values),
-            TemplateVariable::STRATEGY_MIN => app(ArrayAggregationService::class)->min($values),
-            TemplateVariable::STRATEGY_AVG => app(ArrayAggregationService::class)->avg($values),
-            TemplateVariable::STRATEGY_SUM => app(ArrayAggregationService::class)->sum($values),
-            default => $this->convertToString($values[0] ?? ''),
+            TemplateVariable::STRATEGY_JOIN   => implode($separator, array_map([$this, 'convertToString'], $values)),
+            TemplateVariable::STRATEGY_MAX    => app(ArrayAggregationService::class)->max($values),
+            TemplateVariable::STRATEGY_MIN    => app(ArrayAggregationService::class)->min($values),
+            TemplateVariable::STRATEGY_AVG    => app(ArrayAggregationService::class)->avg($values),
+            TemplateVariable::STRATEGY_SUM    => app(ArrayAggregationService::class)->sum($values),
+            default                           => $this->convertToString($values[0] ?? ''),
         };
     }
 
@@ -425,7 +420,7 @@ class TemplateVariableResolutionService
 
         $options = [
             'decimals'     => $variable->decimal_places ?? 2,
-            'currencyCode' => $variable->currency_code ?? 'USD',
+            'currencyCode' => $variable->currency_code  ?? 'USD',
         ];
 
         return app(ValueFormattingService::class)->format(
@@ -449,7 +444,7 @@ class TemplateVariableResolutionService
         }
 
         $values = [];
-        foreach($data as $value) {
+        foreach ($data as $value) {
             if (is_scalar($value)) {
                 $values[] = $value;
             } elseif (is_array($value)) {

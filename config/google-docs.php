@@ -19,7 +19,6 @@ return [
 
     'api_url' => env('GOOGLE_DOCS_API_URL', 'https://docs.googleapis.com/v1/'),
 
-
     /*
     |--------------------------------------------------------------------------
     | Default Folder Configuration

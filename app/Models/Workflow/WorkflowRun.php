@@ -30,9 +30,9 @@ use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
 
-class WorkflowRun extends Model implements WorkflowStatesContract, AuditableContract
+class WorkflowRun extends Model implements AuditableContract, WorkflowStatesContract
 {
-    use HasFactory, SoftDeletes, ActionModelTrait, AuditableTrait, HasWorkflowStatesTrait, HasDebugLogging, HasUsageTracking;
+    use ActionModelTrait, AuditableTrait, HasDebugLogging, HasFactory, HasUsageTracking, HasWorkflowStatesTrait, SoftDeletes;
 
     protected $fillable = [
         'workflow_definition_id',
@@ -141,9 +141,10 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
                 if (!$connectionAsTarget->sourceNode) {
                     static::log('Source node did not exist: ' . $connectionAsTarget->source_node_id);
                     $this->cleanCorruptedConnections();
+
                     continue;
                 }
-                static::log("Waiting for $connectionAsTarget->sourceNode to complete: " . ($sourceTaskRun ?: "(No Task Run)"));
+                static::log("Waiting for $connectionAsTarget->sourceNode to complete: " . ($sourceTaskRun ?: '(No Task Run)'));
 
                 return false;
             }
@@ -159,6 +160,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
 
     /**
      * Get all the artifacts from the source nodes of the given target node
+     *
      * @return Collection<Artifact>
      */
     public function collectInputArtifactsForNode(WorkflowNode $node): Collection
@@ -168,6 +170,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
 
     /**
      * Get all the artifacts from the source nodes of the given target node
+     *
      * @return Collection<Artifact>
      */
     public function collectOutputArtifactsForNode(WorkflowNode $node): Collection
@@ -177,6 +180,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
 
     /**
      * Collect all the final output artifacts from the workflow run
+     *
      * @return Collection|Artifact[]
      */
     public function collectFinalOutputArtifacts(): Collection
@@ -202,7 +206,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
 
         // Make sure to set the flag to indicate that all required tasks have been run so the workflow can know when it is completed
         if ($this->hasRunAllTasks()) {
-            static::log("All tasks have been run, setting flag");
+            static::log('All tasks have been run, setting flag');
             $this->has_run_all_tasks = true;
         } else {
             $this->has_run_all_tasks = false;
@@ -546,7 +550,7 @@ class WorkflowRun extends Model implements WorkflowStatesContract, AuditableCont
                     foreach ($workflowRun->taskProcessListeners as $taskProcessListener) {
                         TaskProcessRunnerService::eventTriggered($taskProcessListener);
                     }
-                };
+                }
             }
 
             if ($workflowRun->wasChanged(['status', 'active_workers_count', 'name', 'error_count'])) {

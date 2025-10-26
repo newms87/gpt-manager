@@ -14,9 +14,10 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TeamObjectAttributeSource extends Model implements AuditableContract
 {
-    use AuditableTrait, ActionModelTrait, HasFactory, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
 
     protected $table   = 'team_object_attribute_sources';
+
     protected $guarded = [
         'id',
         'team_object_attribute_id',
@@ -39,5 +40,4 @@ class TeamObjectAttributeSource extends Model implements AuditableContract
     {
         return "<TeamObjectAttributeSource attribute_id='$this->team_object_attribute_id' source_type='$this->source_type' source_id='$this->source_id' />";
     }
-
 }

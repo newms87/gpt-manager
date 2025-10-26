@@ -59,9 +59,9 @@ class PerplexityAiApi extends BearerTokenApi implements AgentApiContract
         }
 
         $response = $this->post('chat/completions', [
-                'model'    => $model,
-                'messages' => $messages,
-            ] + $completionOptions, $httpOptions)->json();
+            'model'    => $model,
+            'messages' => $messages,
+        ] + $completionOptions, $httpOptions)->json();
 
         return PerplexityAiResponsesResponse::make($response);
     }

@@ -27,8 +27,10 @@ class BaseTaskRunner implements TaskRunnerContract
     const bool   IS_TRIGGER = false;
 
     protected ?TaskDefinition $taskDefinition;
-    protected ?TaskRun        $taskRun;
-    protected ?TaskProcess    $taskProcess = null;
+
+    protected ?TaskRun $taskRun;
+
+    protected ?TaskProcess $taskProcess = null;
 
     public static function make(): static
     {
@@ -40,17 +42,17 @@ class BaseTaskRunner implements TaskRunnerContract
         return static::IS_TRIGGER;
     }
 
-
     /**
      * Get all files from the input artifacts of the task process
+     *
      * @return StoredFile[]
      */
     public function getAllFiles($allowedExts = []): array
     {
         $files = [];
 
-        foreach($this->taskProcess->inputArtifacts as $artifact) {
-            foreach($artifact->storedFiles as $storedFile) {
+        foreach ($this->taskProcess->inputArtifacts as $artifact) {
+            foreach ($artifact->storedFiles as $storedFile) {
                 if ($allowedExts && !in_array(strtolower(pathinfo($storedFile->filename, PATHINFO_EXTENSION)), $allowedExts)) {
                     continue;
                 }
@@ -97,7 +99,7 @@ class BaseTaskRunner implements TaskRunnerContract
         $this->activity('Configuring process for running the base task', 1);
     }
 
-    public function step(string $step, float $percentComplete = null): void
+    public function step(string $step, ?float $percentComplete = null): void
     {
         static::log("Step: $step");
 
@@ -107,12 +109,12 @@ class BaseTaskRunner implements TaskRunnerContract
         ]);
     }
 
-    public function activity(string $activity, float $percentComplete = null): void
+    public function activity(string $activity, ?float $percentComplete = null): void
     {
         static::log("Activity: $activity");
 
         if (!$this->taskProcess) {
-            throw new ValidationError("TaskProcess is not set in this context");
+            throw new ValidationError('TaskProcess is not set in this context');
         }
 
         $this->taskProcess->update([
@@ -134,7 +136,7 @@ class BaseTaskRunner implements TaskRunnerContract
     /**
      * Complete the task process and attach any artifacts to the task run and process
      *
-     * @param Artifact[]|Collection $artifacts
+     * @param  Artifact[]|Collection  $artifacts
      */
     public function complete(array|Collection|EloquentCollection $artifacts = []): void
     {
@@ -144,13 +146,13 @@ class BaseTaskRunner implements TaskRunnerContract
             TaskRunnerService::validateArtifacts($artifacts);
             static::prepareArtifactsForOutput($artifacts);
 
-            static::log("Attaching artifacts to task run and process: " . collect($artifacts)->pluck('id')->toJson());
+            static::log('Attaching artifacts to task run and process: ' . collect($artifacts)->pluck('id')->toJson());
 
             $this->attachArtifactsToTaskAndProcess($artifacts);
         }
 
         if ($this->taskProcess->percent_complete < 100) {
-            $this->activity("Task completed successfully", 100);
+            $this->activity('Task completed successfully', 100);
         }
 
         // Finished running the process
@@ -166,9 +168,9 @@ class BaseTaskRunner implements TaskRunnerContract
         $outputMode  = $this->taskDefinition->output_artifact_mode;
         $artifactIds = collect($artifacts)->pluck('id')->toArray();
 
-        switch($outputMode) {
+        switch ($outputMode) {
             case TaskDefinition::OUTPUT_ARTIFACT_MODE_GROUP_ALL:
-                static::log("Grouping all artifacts into a single artifact");
+                static::log('Grouping all artifacts into a single artifact');
 
                 $topLevelArtifact = $this->resolveSingletonTaskRunArtifact($artifacts);
                 $topLevelArtifact->assignChildren($artifacts);
@@ -180,7 +182,7 @@ class BaseTaskRunner implements TaskRunnerContract
                 break;
 
             case TaskDefinition::OUTPUT_ARTIFACT_MODE_PER_PROCESS:
-                static::log("Grouping all artifacts into a single artifact per process");
+                static::log('Grouping all artifacts into a single artifact per process');
 
                 $processArtifact = $this->createMergedArtifactFromTopLevel($artifacts);
 
@@ -194,7 +196,7 @@ class BaseTaskRunner implements TaskRunnerContract
                 break;
 
             default:
-                static::log("Attaching all artifacts to process and task run");
+                static::log('Attaching all artifacts to process and task run');
 
                 // By default, all artifacts go to the process and the task
                 $taskRunArtifactIds = $artifactIds;
@@ -218,13 +220,13 @@ class BaseTaskRunner implements TaskRunnerContract
      * Prepare the artifacts for output by associating them to the task definition of this task run
      * and setting their position in the list
      *
-     * @param Artifact[]|Collection $artifacts
+     * @param  Artifact[]|Collection  $artifacts
      */
     public function prepareArtifactsForOutput(array|Collection|EloquentCollection $artifacts): void
     {
         $maxLevel = $this->taskDefinition->output_artifact_levels[0] ?? 0;
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             // Always make sure the artifact is for this task definition
             $artifact->task_process_id    = $this->taskProcess->id;
             $artifact->task_definition_id = $this->taskDefinition->id;
@@ -245,7 +247,7 @@ class BaseTaskRunner implements TaskRunnerContract
     {
         // Keep moving down the hierarchy until we've reached the max level
         if ($currentLevel < $maxLevel) {
-            foreach($artifact->children as $child) {
+            foreach ($artifact->children as $child) {
                 $this->trimArtifactHierarchy($child, $maxLevel, $currentLevel + 1);
             }
 
@@ -258,13 +260,13 @@ class BaseTaskRunner implements TaskRunnerContract
     /**
      * Resolve the position of the artifact relative to the list of artifacts
      *
-     * @param Artifact[] $artifactList
+     * @param  Artifact[]  $artifactList
      */
     public function resolveArtifactPosition(Artifact $targetArtifact, $artifactList): int
     {
         if ($targetArtifact->storedFiles->isNotEmpty()) {
             $minPage = 9999999;
-            foreach($targetArtifact->storedFiles as $storedFile) {
+            foreach ($targetArtifact->storedFiles as $storedFile) {
                 $minPage = min($minPage, $storedFile->page_number ?? 0);
             }
 
@@ -272,7 +274,7 @@ class BaseTaskRunner implements TaskRunnerContract
         }
 
         $artifactsBefore = 0;
-        foreach($artifactList as $refArtifact) {
+        foreach ($artifactList as $refArtifact) {
             if ($targetArtifact->name > $refArtifact->name || $refArtifact->storedFiles) {
                 $artifactsBefore++;
             }
@@ -283,7 +285,7 @@ class BaseTaskRunner implements TaskRunnerContract
 
     public function afterAllProcessesCompleted(): void
     {
-        static::log("All processes completed.");
+        static::log('All processes completed.');
     }
 
     /**
@@ -310,16 +312,15 @@ class BaseTaskRunner implements TaskRunnerContract
     }
 
     /**
-     * @param Artifact[]|Collection $artifacts
-     * @return Artifact
+     * @param  Artifact[]|Collection  $artifacts
      */
     public function createMergedArtifactFromTopLevel($artifacts): Artifact
     {
         $topLevels = [];
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $currentLevel = $artifact;
 
-            while($currentLevel->parent_id) {
+            while ($currentLevel->parent_id) {
                 $currentLevel = $currentLevel->parent;
             }
 

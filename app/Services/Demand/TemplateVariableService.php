@@ -23,7 +23,7 @@ class TemplateVariableService
 
         return DB::transaction(function () use ($template, $variableNames) {
             // Get existing variables for this template
-            $existingVariables = app(TemplateVariableRepository::class)->findForTemplate($template);
+            $existingVariables       = app(TemplateVariableRepository::class)->findForTemplate($template);
             $existingVariablesByName = $existingVariables->keyBy('name');
 
             // Track which variables we're keeping
@@ -37,11 +37,11 @@ class TemplateVariableService
                 } else {
                     // New variable - create with default mapping_type='ai'
                     $newVariable = new TemplateVariable([
-                        'demand_template_id' => $template->id,
-                        'name' => $variableName,
-                        'description' => '',
-                        'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-                        'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
+                        'demand_template_id'    => $template->id,
+                        'name'                  => $variableName,
+                        'description'           => '',
+                        'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
+                        'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
                         'multi_value_separator' => ', ',
                     ]);
                     $newVariable->save();
@@ -108,18 +108,18 @@ class TemplateVariableService
                 $variable->teamObjectSchemaAssociation,
                 [
                     'schema_definition_id' => $schemaDefinitionId,
-                    'schema_fragment_id' => $schemaFragmentId,
+                    'schema_fragment_id'   => $schemaFragmentId,
                 ]
             );
         } else {
             // Create new association
             $association = new SchemaAssociation([
                 'schema_definition_id' => $schemaDefinitionId,
-                'schema_fragment_id' => $schemaFragmentId,
+                'schema_fragment_id'   => $schemaFragmentId,
             ]);
             // Set polymorphic relationship fields directly (not fillable)
             $association->object_type = TemplateVariable::class;
-            $association->object_id = $variable->id;
+            $association->object_id   = $variable->id;
             $association->save();
 
             // Update variable with association ID

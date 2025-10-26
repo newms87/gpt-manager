@@ -8,17 +8,17 @@ class NoTokenFoundException extends ValidationError
 {
     public function __construct(string $service, ?string $teamId = null, int $code = 404)
     {
-        $teamContext = $teamId ? " for team {$teamId}" : "";
-        $message = "No OAuth token found for {$service}{$teamContext}. Please authorize access first.";
-        
+        $teamContext = $teamId ? " for team {$teamId}" : '';
+        $message     = "No OAuth token found for {$service}{$teamContext}. Please authorize access first.";
+
         parent::__construct($message, $code);
-        
+
         // Set additional context for error handling
         $this->context = [
-            'service' => $service,
-            'team_id' => $teamId,
-            'error_type' => 'no_token_found',
-            'action_required' => 'oauth_authorization'
+            'service'         => $service,
+            'team_id'         => $teamId,
+            'error_type'      => 'no_token_found',
+            'action_required' => 'oauth_authorization',
         ];
     }
 

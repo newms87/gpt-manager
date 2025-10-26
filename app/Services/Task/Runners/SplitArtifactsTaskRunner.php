@@ -13,7 +13,7 @@ class SplitArtifactsTaskRunner extends BaseTaskRunner
         $this->activity('Splitting artifacts', 1);
 
         $groupingKeys = [];
-        foreach($this->taskDefinition->schemaAssociations as $schemaAssociation) {
+        foreach ($this->taskDefinition->schemaAssociations as $schemaAssociation) {
             $groupingKeys[] = $schemaAssociation->schemaFragment->fragment_selector;
         }
 

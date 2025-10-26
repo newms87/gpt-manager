@@ -144,5 +144,4 @@ class WorkflowListenerCompletedListenerTest extends AuthenticatedTestCase
         // We expect at least one listener to be registered for this event
         $this->assertNotEmpty($listeners, 'WorkflowRunUpdatedEvent should have listeners registered');
     }
-
 }

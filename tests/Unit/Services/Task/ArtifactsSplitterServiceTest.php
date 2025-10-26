@@ -42,7 +42,7 @@ class ArtifactsSplitterServiceTest extends TestCase
         $this->assertCount(3, $result->first());
 
         // Check that all artifacts are top-level (have no parent)
-        foreach($result->first() as $artifact) {
+        foreach ($result->first() as $artifact) {
             $this->assertNull($artifact->parent_artifact_id);
         }
     }
@@ -66,7 +66,7 @@ class ArtifactsSplitterServiceTest extends TestCase
         $this->assertCount(3, $result->first());
 
         // Check that all artifacts are level 1 (have a parent)
-        foreach($result->first() as $artifact) {
+        foreach ($result->first() as $artifact) {
             $this->assertNotNull($artifact->parent_artifact_id);
         }
     }
@@ -93,7 +93,7 @@ class ArtifactsSplitterServiceTest extends TestCase
         $level0Count = 0;
         $level2Count = 0;
 
-        foreach($result->first() as $artifact) {
+        foreach ($result->first() as $artifact) {
             if ($artifact->parent_artifact_id === null) {
                 $level0Count++;
             } else {
@@ -153,7 +153,7 @@ class ArtifactsSplitterServiceTest extends TestCase
         $this->assertCount(3, $result);
 
         // Each group should contain exactly 1 artifact
-        foreach($result as $group) {
+        foreach ($result as $group) {
             $this->assertCount(1, $group);
         }
     }
@@ -165,26 +165,26 @@ class ArtifactsSplitterServiceTest extends TestCase
     {
         // Create test artifacts with nested structure
         $artifacts = $this->createArtifactHierarchy();
-        
+
         // Test splitting by top level
         $result = ArtifactsSplitterService::split(
-            ArtifactsSplitterService::ARTIFACT_SPLIT_BY_TOP_LEVEL, 
+            ArtifactsSplitterService::ARTIFACT_SPLIT_BY_TOP_LEVEL,
             $artifacts
         );
-        
+
         // Should have 3 groups (one per top-level artifact)
         $this->assertCount(3, $result);
-        
+
         // The first group should be artifacts from top-level artifact A and its descendants
         $this->assertCount(1, $result[0]->filter(fn($a) => $a->name === 'Artifact A'));
-        
+
         // The second group should be artifacts from top-level artifact B
         $this->assertCount(1, $result[1]->filter(fn($a) => $a->name === 'Artifact B'));
-        
+
         // The third group should be artifacts from top-level artifact C and its descendants
         $this->assertCount(1, $result[2]->filter(fn($a) => $a->name === 'Artifact C'));
     }
-    
+
     /**
      * Test splitting artifacts by top level with level filtering
      */
@@ -192,48 +192,48 @@ class ArtifactsSplitterServiceTest extends TestCase
     {
         // Create test artifacts with nested structure
         $artifacts = $this->createArtifactHierarchy();
-        
+
         // Test splitting by top level with only level 1 artifacts
         $result = ArtifactsSplitterService::split(
-            ArtifactsSplitterService::ARTIFACT_SPLIT_BY_TOP_LEVEL, 
-            $artifacts, 
+            ArtifactsSplitterService::ARTIFACT_SPLIT_BY_TOP_LEVEL,
+            $artifacts,
             [1] // Only include level 1 artifacts
         );
-        
+
         // Should still have 2 groups (one per top-level artifact that has children at level 1)
         // Artifact B has no children, so it won't be included
         $this->assertCount(2, $result);
-        
+
         // First group should contain level 1 children of Artifact A
         $this->assertEquals(2, $result[0]->count());
         $this->assertCount(1, $result[0]->filter(fn($a) => $a->name === 'Child A1'));
         $this->assertCount(1, $result[0]->filter(fn($a) => $a->name === 'Child A2'));
-        
+
         // Second group should contain level 1 children of Artifact C
         $this->assertEquals(1, $result[1]->count());
         $this->assertCount(1, $result[1]->filter(fn($a) => $a->name === 'Child C1'));
     }
-    
+
     /**
      * Test the findTopLevelAncestor private method via the byTopLevel method
      */
     public function testFindTopLevelAncestor()
     {
         // Create a deeply nested artifact structure
-        $artifactA = Artifact::factory()->create(['name' => 'Root A', 'parent_artifact_id' => null]);
-        $childA1 = Artifact::factory()->create(['name' => 'Child A1', 'parent_artifact_id' => $artifactA->id]);
-        $grandchildA1 = Artifact::factory()->create(['name' => 'Grandchild A1', 'parent_artifact_id' => $childA1->id]);
+        $artifactA         = Artifact::factory()->create(['name' => 'Root A', 'parent_artifact_id' => null]);
+        $childA1           = Artifact::factory()->create(['name' => 'Child A1', 'parent_artifact_id' => $artifactA->id]);
+        $grandchildA1      = Artifact::factory()->create(['name' => 'Grandchild A1', 'parent_artifact_id' => $childA1->id]);
         $greatGrandchildA1 = Artifact::factory()->create(['name' => 'Great Grandchild A1', 'parent_artifact_id' => $grandchildA1->id]);
-        
+
         // Create a collection with just the deepest child
         $artifacts = collect([$greatGrandchildA1]);
-        
+
         // Split by top level, which will use findTopLevelAncestor internally
         $result = ArtifactsSplitterService::byTopLevel($artifacts);
-        
+
         // Should have 1 group for the root ancestor of our deep artifact
         $this->assertCount(1, $result);
-        
+
         // Verify the internal working by checking that even when starting with only the
         // deepest artifact, it correctly finds and groups it with its root ancestor ID
         $this->assertEquals($artifactA->id, $result[0]->first()->parent->parent->parent_artifact_id);
@@ -252,9 +252,9 @@ class ArtifactsSplitterServiceTest extends TestCase
      * - Artifact C (top level)
      *   - Child C1 (level 1)
      *
-     * @param int|null $taskDef1Id Task definition ID for Artifact A and its children
-     * @param int|null $taskDef2Id Task definition ID for Artifact B
-     * @param int|null $taskDef3Id Task definition ID for Artifact C and its children
+     * @param  int|null  $taskDef1Id  Task definition ID for Artifact A and its children
+     * @param  int|null  $taskDef2Id  Task definition ID for Artifact B
+     * @param  int|null  $taskDef3Id  Task definition ID for Artifact C and its children
      * @return Collection
      */
     private function createArtifactHierarchy($taskDef1Id = null, $taskDef2Id = null, $taskDef3Id = null)

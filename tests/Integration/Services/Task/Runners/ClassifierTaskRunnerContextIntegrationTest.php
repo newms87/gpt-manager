@@ -19,11 +19,16 @@ use Tests\TestCase;
 
 class ClassifierTaskRunnerContextIntegrationTest extends TestCase
 {
-    protected Team             $team;
-    protected User             $user;
-    protected TaskRun          $taskRun;
-    protected TaskDefinition   $taskDefinition;
-    protected Agent            $agent;
+    protected Team $team;
+
+    protected User $user;
+
+    protected TaskRun $taskRun;
+
+    protected TaskDefinition $taskDefinition;
+
+    protected Agent $agent;
+
     protected SchemaDefinition $schemaDefinition;
 
     public function setUp(): void
@@ -132,7 +137,7 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
         ]);
 
         // Add all artifacts to task run
-        foreach($contextBefore->merge($primaryArtifacts)->merge($contextAfter) as $artifact) {
+        foreach ($contextBefore->merge($primaryArtifacts)->merge($contextAfter) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -141,7 +146,7 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
             'task_run_id' => $this->taskRun->id,
         ]);
 
-        foreach($primaryArtifacts as $artifact) {
+        foreach ($primaryArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -270,7 +275,7 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
         ]);
 
         // Add all artifacts to task run
-        foreach($contextBefore->merge($primaryArtifacts) as $artifact) {
+        foreach ($contextBefore->merge($primaryArtifacts) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -278,7 +283,7 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
             'task_run_id' => $this->taskRun->id,
         ]);
 
-        foreach($primaryArtifacts as $artifact) {
+        foreach ($primaryArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -376,7 +381,7 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
         ]);
 
         // Add all artifacts to task run
-        foreach($contextArtifacts->merge($primaryArtifacts) as $artifact) {
+        foreach ($contextArtifacts->merge($primaryArtifacts) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 

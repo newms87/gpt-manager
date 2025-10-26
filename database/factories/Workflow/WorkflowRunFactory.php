@@ -14,9 +14,9 @@ class WorkflowRunFactory extends Factory
     {
         return [
             'workflow_definition_id' => WorkflowDefinition::factory(),
-            'name' => $this->faker->words(3, true),
-            'status' => 'pending',
-            'started_at' => now(),
+            'name'                   => $this->faker->words(3, true),
+            'status'                 => 'pending',
+            'started_at'             => now(),
         ];
     }
 }

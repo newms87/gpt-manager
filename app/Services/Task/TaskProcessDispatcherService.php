@@ -22,7 +22,7 @@ class TaskProcessDispatcherService
         // If this task run is part of a workflow, dispatch at the workflow level
         // to ensure proper prioritization across all tasks
         if ($taskRun->workflow_run_id) {
-            static::log("TaskRun is part of workflow, dispatching at workflow level");
+            static::log('TaskRun is part of workflow, dispatching at workflow level');
             static::dispatchForWorkflowRun($taskRun->workflowRun);
 
             return;
@@ -42,7 +42,7 @@ class TaskProcessDispatcherService
 
             // Dispatch generic jobs up to the available slots
             static::log("Dispatching $availableSlots TaskProcessJobs for TaskRun {$taskRun->id}");
-            for($i = 0; $i < $availableSlots; $i++) {
+            for ($i = 0; $i < $availableSlots; $i++) {
                 $job = new TaskProcessJob($taskRun);
                 $job->onQueue('task-process');
                 $job->dispatch();
@@ -66,7 +66,7 @@ class TaskProcessDispatcherService
             $availableSlots = static::calculateAvailableSlotsForWorkflow($workflowRun);
 
             if ($availableSlots <= 0) {
-                static::log("No available worker slots");
+                static::log('No available worker slots');
 
                 return;
             }
@@ -78,7 +78,7 @@ class TaskProcessDispatcherService
             $workerCount = min($availableSlots, $pendingProcessesCount);
 
             if ($workerCount <= 0) {
-                static::log("No workers required");
+                static::log('No workers required');
 
                 return;
             }
@@ -88,10 +88,10 @@ class TaskProcessDispatcherService
             // Dispatch generic jobs up to the available slots for the workflow
             // The jobs will internally check queue type limits when selecting workers for task processes
             $jobIds = [];
-            for($i = 0; $i < $availableSlots; $i++) {
+            for ($i = 0; $i < $availableSlots; $i++) {
                 $job = new TaskProcessJob(null, $workflowRun);
                 $job->onQueue('task-process')->dispatch();
-                static::log("Dispatched worker " . ($i + 1) . "/{$availableSlots}");
+                static::log('Dispatched worker ' . ($i + 1) . "/{$availableSlots}");
                 $jobIds[] = $job->getJobDispatch()->id;
             }
 
@@ -102,7 +102,6 @@ class TaskProcessDispatcherService
             LockHelper::release($workflowRun);
         }
     }
-
 
     /**
      * Calculate available slots for a workflow
@@ -133,6 +132,4 @@ class TaskProcessDispatcherService
 
         return $availableSlots;
     }
-
-
 }

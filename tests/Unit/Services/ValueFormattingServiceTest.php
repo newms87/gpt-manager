@@ -305,7 +305,7 @@ class ValueFormattingServiceTest extends AuthenticatedTestCase
         // When
         $result = $service->format('1234.56', 'currency', [
             'currencyCode' => 'EUR',
-            'decimals' => 2,
+            'decimals'     => 2,
         ]);
 
         // Then

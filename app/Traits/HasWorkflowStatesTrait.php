@@ -21,7 +21,6 @@ trait HasWorkflowStatesTrait
         return $this->status === WorkflowStatesContract::STATUS_RUNNING;
     }
 
-
     public function isStatusTimeout(): bool
     {
         return $this->status === WorkflowStatesContract::STATUS_TIMEOUT;

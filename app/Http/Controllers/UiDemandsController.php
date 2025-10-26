@@ -11,6 +11,7 @@ use Newms87\Danx\Http\Controllers\ActionController;
 class UiDemandsController extends ActionController
 {
     public static ?string $repo     = UiDemandRepository::class;
+
     public static ?string $resource = UiDemandResource::class;
 
     /**
@@ -30,7 +31,7 @@ class UiDemandsController extends ActionController
             app(UiDemandWorkflowService::class)->extractData($uiDemand);
 
             return UiDemandResource::details($uiDemand);
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             return $this->handleWorkflowError('extract data', $e);
         }
     }
@@ -44,7 +45,7 @@ class UiDemandsController extends ActionController
             app(UiDemandWorkflowService::class)->writeMedicalSummary($uiDemand, $instructionTemplateId, $additionalInstructions);
 
             return UiDemandResource::details($uiDemand);
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             return $this->handleWorkflowError('write medical summary', $e);
         }
     }
@@ -58,9 +59,8 @@ class UiDemandsController extends ActionController
             app(UiDemandWorkflowService::class)->writeDemandLetter($uiDemand, $templateId, $additionalInstructions);
 
             return UiDemandResource::details($uiDemand);
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             return $this->handleWorkflowError('write demand letter', $e);
         }
     }
-
 }

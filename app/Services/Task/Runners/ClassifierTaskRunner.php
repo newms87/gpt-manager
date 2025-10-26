@@ -42,7 +42,6 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
             return;
         }
 
-
         $inputArtifacts = $this->taskProcess->inputArtifacts;
 
         // Get context artifacts if configured
@@ -57,7 +56,7 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
                 "1. You are classifying ONLY the PRIMARY ARTIFACTS section\n" .
                 "2. Context artifacts are provided to help determine if content flows between pages\n" .
                 "3. ONLY use context artifacts for classification if they appear to be part of the same document/flow as the primary artifacts\n" .
-                "4. If context appears unrelated, IGNORE it for classification purposes"
+                '4. If context appears unrelated, IGNORE it for classification purposes'
             );
         }
 
@@ -66,19 +65,19 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
         $artifact = $this->runAgentThread($agentThread);
 
         if (!$artifact->json_content) {
-            throw new ValidationError(static::class . ": No JSON content returned from agent thread");
+            throw new ValidationError(static::class . ': No JSON content returned from agent thread');
         }
 
         // If the artifact has an excluded flag, then exclude all the artifacts in the input
         if ($this->isExcluded($artifact->json_content)) {
-            $this->activity("Classifier excluded the artifacts", 100);
+            $this->activity('Classifier excluded the artifacts', 100);
             $this->complete();
 
             return;
         }
 
         // Update the metadata classification for input artifacts to the classification returned from the agent
-        foreach($inputArtifacts as $inputArtifact) {
+        foreach ($inputArtifacts as $inputArtifact) {
             $meta = $inputArtifact->meta;
 
             $meta['classification'] = $artifact->json_content;
@@ -96,7 +95,7 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
      */
     public function isExcluded(array $jsonContent): bool
     {
-        foreach($jsonContent as $value) {
+        foreach ($jsonContent as $value) {
             if (is_array($value)) {
                 if ($this->isExcluded($value)) {
                     return true;
@@ -127,29 +126,29 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
             ->exists();
 
         if ($hasVerificationProcesses) {
-            static::log("TaskProcess with classification_verification_property meta found - verification phase completed");
+            static::log('TaskProcess with classification_verification_property meta found - verification phase completed');
 
             return;
         }
 
         if ($hasPropertyProcesses) {
-            static::log("TaskProcess with classification_property meta found - creating verification processes");
+            static::log('TaskProcess with classification_property meta found - creating verification processes');
 
             try {
                 app(ClassificationVerificationService::class)->createVerificationProcessesForTaskRun($this->taskRun);
-            } catch(\Exception $e) {
-                static::log("Error creating classification verification processes: " . $e->getMessage());
+            } catch (\Exception $e) {
+                static::log('Error creating classification verification processes: ' . $e->getMessage());
             }
 
             return;
         }
 
-        static::log("No classification property processes found - creating deduplication processes");
+        static::log('No classification property processes found - creating deduplication processes');
 
         try {
             app(ClassificationDeduplicationService::class)->createDeduplicationProcessesForTaskRun($this->taskRun);
-        } catch(\Exception $e) {
-            static::log("Error creating classification deduplication processes: " . $e->getMessage());
+        } catch (\Exception $e) {
+            static::log('Error creating classification deduplication processes: ' . $e->getMessage());
         }
     }
 

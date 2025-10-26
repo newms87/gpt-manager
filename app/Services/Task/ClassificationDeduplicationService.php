@@ -59,7 +59,7 @@ class ClassificationDeduplicationService
 
         static::log('Found ' . count($labelsToNormalize) . " unique values for property '$property'");
 
-        foreach($labelsToNormalize as $label) {
+        foreach ($labelsToNormalize as $label) {
             static::log('  - ' . (strlen($label) > 80 ? substr($label, 0, 80) . '...' : $label));
         }
 
@@ -72,7 +72,7 @@ class ClassificationDeduplicationService
         }
 
         static::log('Generated ' . count($normalizedMappings) . " normalization mappings for '$property':");
-        foreach($normalizedMappings as $original => $normalized) {
+        foreach ($normalizedMappings as $original => $normalized) {
             if (strlen($original) > 80) {
                 static::log("  '" . substr($original, 0, 80) . "...' => '" . substr($normalized, 0, 80) . "...'");
             } else {
@@ -113,16 +113,17 @@ class ClassificationDeduplicationService
         static::log('Found classification properties: ' . implode(', ', $classificationProperties));
 
         $processesCreated = 0;
-        foreach($classificationProperties as $property) {
+        foreach ($classificationProperties as $property) {
             // Check if this property actually has labels to deduplicate
             $labels = $this->extractClassificationPropertyLabels($artifacts, $property);
 
             if (empty($labels)) {
                 static::log("Skipping property '$property' - no classification labels found");
+
                 continue;
             }
 
-            static::log("Property '$property' has " . count($labels) . " labels - creating deduplication process");
+            static::log("Property '$property' has " . count($labels) . ' labels - creating deduplication process');
 
             $taskRun->taskProcesses()->create([
                 'activity' => "Classification Deduplication for $property w/ " . count($labels) . ' values',
@@ -156,7 +157,7 @@ class ClassificationDeduplicationService
     {
         $labels = [];
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $propertyValue = $artifact->meta['classification'][$property] ?? null;
             if (!$propertyValue) {
                 continue;
@@ -186,7 +187,7 @@ class ClassificationDeduplicationService
                     $labels[] = $value['name'];
                 }
             } else {
-                foreach($value as $item) {
+                foreach ($value as $item) {
                     $this->extractLabelsFromValue($item, $labels);
                 }
             }
@@ -244,7 +245,7 @@ class ClassificationDeduplicationService
 
             // Convert new format to old format for compatibility
             $normalizedMappings = [];
-            foreach($mappingsArray as $mapping) {
+            foreach ($mappingsArray as $mapping) {
                 if (!isset($mapping['correct']) || !isset($mapping['incorrect']) || !is_array($mapping['incorrect'])) {
                     throw new \Exception("Invalid mapping format: 'correct' and 'incorrect' fields are required");
                 }
@@ -252,7 +253,7 @@ class ClassificationDeduplicationService
                 // Clean the correct value returned by the LLM
                 $correctValue = $this->cleanLabelForLLM($mapping['correct']);
 
-                foreach($mapping['incorrect'] as $incorrectValue) {
+                foreach ($mapping['incorrect'] as $incorrectValue) {
                     // Clean the incorrect value returned by the LLM
                     $cleanIncorrectValue                      = $this->cleanLabelForLLM($incorrectValue);
                     $normalizedMappings[$cleanIncorrectValue] = $correctValue;
@@ -260,7 +261,7 @@ class ClassificationDeduplicationService
             }
 
             return $normalizedMappings;
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             static::log('Error parsing JSON response: ' . $e->getMessage());
 
             return null;
@@ -346,7 +347,7 @@ PROMPT;
 
         $totalUpdates = 0;
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $classification = $artifact->meta['classification'] ?? null;
             if (!$classification || !isset($classification[$property])) {
                 continue;

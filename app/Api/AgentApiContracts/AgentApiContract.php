@@ -15,22 +15,13 @@ interface AgentApiContract
 
     /**
      * Execute using the Responses API (if supported by the implementation)
-     *
-     * @param string              $model
-     * @param array               $messages
-     * @param ResponsesApiOptions $options
-     * @return AgentCompletionResponseContract
      */
     public function responses(string $model, array $messages, ResponsesApiOptions $options): AgentCompletionResponseContract;
 
     /**
      * Execute streaming Responses API call with real-time message updates
      *
-     * @param string              $model
-     * @param array               $messages
-     * @param ResponsesApiOptions $options
-     * @param AgentThreadMessage  $streamMessage Message to populate with stream data
-     * @return AgentCompletionResponseContract
+     * @param  AgentThreadMessage  $streamMessage  Message to populate with stream data
      */
     public function streamResponses(string $model, array $messages, ResponsesApiOptions $options, AgentThreadMessage $streamMessage): AgentCompletionResponseContract;
 }

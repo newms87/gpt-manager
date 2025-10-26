@@ -12,21 +12,21 @@ class UsageSummaryFactory extends Factory
 
     public function definition(): array
     {
-        $inputCost = $this->faker->randomFloat(6, 0, 1);
+        $inputCost  = $this->faker->randomFloat(6, 0, 1);
         $outputCost = $this->faker->randomFloat(6, 0, 1);
 
         return [
-            'object_type' => TaskProcess::class,
-            'object_id' => fn() => (string) TaskProcess::factory()->create()->id,
-            'count' => $this->faker->numberBetween(1, 10),
-            'run_time_ms' => $this->faker->numberBetween(1000, 10000),
-            'input_tokens' => $this->faker->numberBetween(0, 2000),
+            'object_type'   => TaskProcess::class,
+            'object_id'     => fn() => (string)TaskProcess::factory()->create()->id,
+            'count'         => $this->faker->numberBetween(1, 10),
+            'run_time_ms'   => $this->faker->numberBetween(1000, 10000),
+            'input_tokens'  => $this->faker->numberBetween(0, 2000),
             'output_tokens' => $this->faker->numberBetween(0, 1000),
-            'input_cost' => $inputCost,
-            'output_cost' => $outputCost,
-            'total_cost' => $inputCost + $outputCost,
+            'input_cost'    => $inputCost,
+            'output_cost'   => $outputCost,
+            'total_cost'    => $inputCost + $outputCost,
             'request_count' => $this->faker->numberBetween(1, 20),
-            'data_volume' => $this->faker->numberBetween(0, 20480),
+            'data_volume'   => $this->faker->numberBetween(0, 20480),
         ];
     }
 
@@ -34,23 +34,23 @@ class UsageSummaryFactory extends Factory
     {
         return $this->state([
             'object_type' => TaskProcess::class,
-            'object_id' => (string) $taskProcess->id,
+            'object_id'   => (string)$taskProcess->id,
         ]);
     }
 
     public function withSpecificCosts(float $inputCost, float $outputCost): self
     {
         return $this->state([
-            'input_cost' => $inputCost,
+            'input_cost'  => $inputCost,
             'output_cost' => $outputCost,
-            'total_cost' => $inputCost + $outputCost,
+            'total_cost'  => $inputCost + $outputCost,
         ]);
     }
 
     public function withTokens(int $inputTokens, int $outputTokens): self
     {
         return $this->state([
-            'input_tokens' => $inputTokens,
+            'input_tokens'  => $inputTokens,
             'output_tokens' => $outputTokens,
         ]);
     }

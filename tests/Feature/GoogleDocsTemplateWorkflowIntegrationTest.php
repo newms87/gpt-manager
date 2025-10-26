@@ -30,7 +30,8 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 {
     use SetUpTeamTrait;
 
-    protected UiDemandWorkflowService           $uiDemandWorkflowService;
+    protected UiDemandWorkflowService $uiDemandWorkflowService;
+
     protected WorkflowListenerCompletedListener $workflowListener;
 
     public function setUp(): void
@@ -92,9 +93,9 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // 3b. Create DemandTemplate linked to the StoredFile
         $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $templateStoredFile->id,
-            'name' => 'Integration Test Template',
+            'name'           => 'Integration Test Template',
         ]);
 
         // 4. Create workflow definition and setup
@@ -207,7 +208,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         // Pass the generated artifacts to the output task
-        foreach($generatedArtifacts as $artifact) {
+        foreach ($generatedArtifacts as $artifact) {
             $outputTaskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -650,7 +651,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Replace the original runner with our mock
         $reflection = new \ReflectionClass($runner);
-        foreach($reflection->getProperties() as $property) {
+        foreach ($reflection->getProperties() as $property) {
             $property->setAccessible(true);
             $value = $property->getValue($runner);
             $property->setValue($mockRunner, $value);

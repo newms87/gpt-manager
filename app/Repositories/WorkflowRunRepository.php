@@ -18,11 +18,11 @@ class WorkflowRunRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createRun($data),
-            'resume' => $this->resumeRun($model),
-            'stop' => $this->stopRun($model),
+            'create'     => $this->createRun($data),
+            'resume'     => $this->resumeRun($model),
+            'stop'       => $this->stopRun($model),
             'start-node' => $this->startNode($model, $data),
-            default => parent::applyAction($action, $model, $data)
+            default      => parent::applyAction($action, $model, $data)
         };
     }
 

@@ -18,7 +18,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 {
     use SetUpTeamTrait;
 
-    static array $schema = [
+    public static array $schema = [
         'type'       => 'object',
         'title'      => 'Person',
         'properties' => [
@@ -75,7 +75,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $this->assertNotNull($resolvedTeamObject);
-        $this->assertEquals($teamObject->id, $resolvedTeamObject->id, "The resolved object should match the original");
+        $this->assertEquals($teamObject->id, $resolvedTeamObject->id, 'The resolved object should match the original');
     }
 
     public function test_resolvedTeamObject_withSameTypeNameButNullSchemaDefinition_doesNotResolveObject(): void
@@ -119,7 +119,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $this->assertNotNull($resolvedTeamObject);
-        $this->assertEquals($teamObject->id, $resolvedTeamObject->id, "The resolved object should match the original");
+        $this->assertEquals($teamObject->id, $resolvedTeamObject->id, 'The resolved object should match the original');
     }
 
     public function test_resolvedTeamObject_withSameTypeNameButNullRootObject_doesNotResolveObject(): void
@@ -164,7 +164,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $this->assertNotNull($resolvedObject);
-        $this->assertEquals($teamObject->id, $resolvedObject->id, "The resolved object should match the original");
+        $this->assertEquals($teamObject->id, $resolvedObject->id, 'The resolved object should match the original');
     }
 
     public function test_resolvedTeamObject_withSameTypeNameRootObjectButNullSchemaDefinition_doesNotResolvesObject(): void
@@ -209,8 +209,8 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $updatedTeamObject = app(TeamObjectRepository::class)->createTeamObject($teamObject->type, $teamObject->name, $input);
 
         // Then
-        $this->assertEquals(2, TeamObject::where('type', $teamObject->type)->where('name', $teamObject->name)->count(), "There should be 2 of the same type + name");
-        $this->assertNotEquals($teamObject->id, $updatedTeamObject->id, "The existing object and updated object should be different");
+        $this->assertEquals(2, TeamObject::where('type', $teamObject->type)->where('name', $teamObject->name)->count(), 'There should be 2 of the same type + name');
+        $this->assertNotEquals($teamObject->id, $updatedTeamObject->id, 'The existing object and updated object should be different');
     }
 
     /**
@@ -244,11 +244,11 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $teamObject->refresh();
-        $this->assertNotNull($teamObject->id, "The team object should have been created");
-        $this->assertEquals($teamObject->id, $response['id'] ?? null, "The ID should have been set in the passed by ref object");
-        $this->assertEquals($response['name'], $teamObject->name, "The name should have been saved");
-        $this->assertEquals($response['date'], $teamObject->date->toDateString(), "The date should have been saved");
-        $this->assertEquals($response['meta'], $teamObject->meta, "The meta data should have been saved");
+        $this->assertNotNull($teamObject->id, 'The team object should have been created');
+        $this->assertEquals($teamObject->id, $response['id'] ?? null, 'The ID should have been set in the passed by ref object');
+        $this->assertEquals($response['name'], $teamObject->name, 'The name should have been saved');
+        $this->assertEquals($response['date'], $teamObject->date->toDateString(), 'The date should have been saved');
+        $this->assertEquals($response['meta'], $teamObject->meta, 'The meta data should have been saved');
     }
 
     public function test_saveTeamObjectUsingSchema_savesScalarAttributeOfTopLevelObject(): void
@@ -268,11 +268,11 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $teamObject->refresh();
-        $this->assertEquals(2, $teamObject->attributes()->count(), "Exactly 2 team object attributes should have been created (name and dob)");
+        $this->assertEquals(2, $teamObject->attributes()->count(), 'Exactly 2 team object attributes should have been created (name and dob)');
         $nameAttribute = $teamObject->attributes()->firstWhere('name', 'name');
-        $this->assertEquals($response['name'], $nameAttribute->getValue(), "The name should have been saved");
+        $this->assertEquals($response['name'], $nameAttribute->getValue(), 'The name should have been saved');
         $dobAttribute = $teamObject->attributes()->firstWhere('name', 'dob');
-        $this->assertEquals($response['dob'], $dobAttribute->getValue(), "The dob should have been saved");
+        $this->assertEquals($response['dob'], $dobAttribute->getValue(), 'The dob should have been saved');
     }
 
     public function test_saveTeamObjectUsingSchema_withNullScalarValue_doesNotSaveAttribute(): void
@@ -291,9 +291,9 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $teamObject->refresh();
-        $this->assertEquals(1, $teamObject->attributes()->count(), "Exactly 1 team object attribute should have been created (dob should have been skipped)");
+        $this->assertEquals(1, $teamObject->attributes()->count(), 'Exactly 1 team object attribute should have been created (dob should have been skipped)');
         $nameAttribute = $teamObject->attributes()->firstWhere('name', 'name');
-        $this->assertNotNull($nameAttribute, "The name attribute should have been created");
+        $this->assertNotNull($nameAttribute, 'The name attribute should have been created');
     }
 
     /**
@@ -320,13 +320,13 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $parentObject->refresh();
-        $this->assertNotNull($parentObject->id, "Parent object should have been created");
+        $this->assertNotNull($parentObject->id, 'Parent object should have been created');
 
         // The child object should have type 'Job' and name 'MyFirstJob'
         $childObjectQuery = $parentObject->relatedObjects('job');
         $this->assertEquals(1, $childObjectQuery->count(), "Exactly 1 nested 'Job' team object should have been created");
         $childObject = $childObjectQuery->first();
-        $this->assertEquals($childObject->id, $response['job']['id'] ?? null, "The ID should have been set in the passed by ref object");
+        $this->assertEquals($childObject->id, $response['job']['id'] ?? null, 'The ID should have been set in the passed by ref object');
         $this->assertEquals('Job', $childObject->type, "The child object should have type 'Job'");
         $this->assertEquals('MyFirstJob', $childObject->name, "The child object should have name 'MyFirstJob'");
         $this->assertEquals('Developer', $childObject->attributes()->firstWhere('name', 'title')?->getValue());
@@ -370,19 +370,19 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $person->refresh();
-        $this->assertNotNull($person->id, "The parent object should have been created");
+        $this->assertNotNull($person->id, 'The parent object should have been created');
 
         // The child objects should have been created
         $homeAddress = $person->relatedObjects('addresses')->firstWhere('name', 'Home');
         $this->assertNotNull($homeAddress, "The 'Home' address object should have been created");
-        $this->assertEquals($homeAddress->id, $response['addresses'][0]['id'] ?? null, "The ID should have been set in the passed by ref object");
+        $this->assertEquals($homeAddress->id, $response['addresses'][0]['id'] ?? null, 'The ID should have been set in the passed by ref object');
         $this->assertEquals('Home', $homeAddress->name, "The 'Home' address object should have name 'Home'");
         $this->assertEquals('123 Main St', $homeAddress->attributes()->firstWhere('name', 'street')?->getValue());
         $this->assertEquals('Springfield', $homeAddress->attributes()->firstWhere('name', 'city')?->getValue());
 
         $workAddress = $person->relatedObjects('addresses')->firstWhere('name', 'Work');
         $this->assertNotNull($workAddress, "The 'Work' address object should have been created");
-        $this->assertEquals($workAddress->id, $response['addresses'][1]['id'] ?? null, "The ID should have been set in the passed by ref object");
+        $this->assertEquals($workAddress->id, $response['addresses'][1]['id'] ?? null, 'The ID should have been set in the passed by ref object');
         $this->assertEquals('Work', $workAddress->name, "The 'Work' address object should have name 'Work'");
         $this->assertEquals('456 Business Rd', $workAddress->attributes()->firstWhere('name', 'street')?->getValue());
         $this->assertEquals('Metropolis', $workAddress->attributes()->firstWhere('name', 'city')?->getValue());
@@ -416,7 +416,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
 
         // Then
         $person->refresh();
-        $this->assertNotNull($person->id, "The parent object should have been created");
+        $this->assertNotNull($person->id, 'The parent object should have been created');
 
         // The attribute should have been created
         $dobAttribute         = $person->attributes()->firstWhere('name', 'dob');
@@ -429,11 +429,11 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         // The source should have been created
         $source         = $dobAttribute->sources()->first();
         $expectedSource = $expectedPropertyMeta['citation']['sources'][0];
-        $this->assertNotNull($source, "The source should have been created");
-        $this->assertEquals($expectedSource['url'], $source->source_id, "The source should have the correct URL");
-        $this->assertNotNull($source->sourceFile()->first(), "The source should have a source file");
-        $this->assertEquals($expectedSource['url'], $source->sourceFile->url, "The source file should have the correct URL");
-        $this->assertEquals($expectedSource['explanation'], $source->explanation, "The source should have the correct explanation");
+        $this->assertNotNull($source, 'The source should have been created');
+        $this->assertEquals($expectedSource['url'], $source->source_id, 'The source should have the correct URL');
+        $this->assertNotNull($source->sourceFile()->first(), 'The source should have a source file');
+        $this->assertEquals($expectedSource['url'], $source->sourceFile->url, 'The source file should have the correct URL');
+        $this->assertEquals($expectedSource['explanation'], $source->explanation, 'The source should have the correct explanation');
     }
 
     /**
@@ -564,7 +564,7 @@ class TeamObjectRepositoryTest extends AuthenticatedTestCase
         $loaded = app(TeamObjectRepository::class)->loadTeamObject('TestType', $teamObject->id);
 
         // Then
-        $this->assertNotNull($loaded, "Should load the object if it exists");
+        $this->assertNotNull($loaded, 'Should load the object if it exists');
         $this->assertEquals($teamObject->id, $loaded->id);
     }
 

@@ -26,16 +26,17 @@ class ListTestResources extends Command
         $this->showAgents();
         $this->newLine();
         $this->showMcpServers();
-        
+
         return 0;
     }
 
     private function showAgents(): void
     {
         $agents = Agent::all();
-        
+
         if ($agents->isEmpty()) {
             $this->warn('No agents found.');
+
             return;
         }
 
@@ -53,9 +54,10 @@ class ListTestResources extends Command
     private function showMcpServers(): void
     {
         $mcpServers = McpServer::all();
-        
+
         if ($mcpServers->isEmpty()) {
             $this->warn('No MCP servers found.');
+
             return;
         }
 

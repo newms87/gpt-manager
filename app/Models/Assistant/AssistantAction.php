@@ -13,19 +13,19 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class AssistantAction extends Model implements AuditableContract
 {
-    use AuditableTrait, ActionModelTrait;
+    use ActionModelTrait, AuditableTrait;
 
-    const STATUS_PENDING     = 'pending';
-    const STATUS_IN_PROGRESS = 'in_progress';
-    const STATUS_COMPLETED   = 'completed';
-    const STATUS_FAILED      = 'failed';
-    const STATUS_CANCELLED   = 'cancelled';
+    const STATUS_PENDING     = 'pending',
+        STATUS_IN_PROGRESS   = 'in_progress',
+        STATUS_COMPLETED     = 'completed',
+        STATUS_FAILED        = 'failed',
+        STATUS_CANCELLED     = 'cancelled';
 
-    const CONTEXT_SCHEMA_EDITOR    = 'schema-editor';
-    const CONTEXT_WORKFLOW_EDITOR  = 'workflow-editor';
-    const CONTEXT_AGENT_MANAGEMENT = 'agent-management';
-    const CONTEXT_TASK_MANAGEMENT  = 'task-management';
-    const CONTEXT_GENERAL_CHAT     = 'general-chat';
+    const CONTEXT_SCHEMA_EDITOR    = 'schema-editor',
+        CONTEXT_WORKFLOW_EDITOR    = 'workflow-editor',
+        CONTEXT_AGENT_MANAGEMENT   = 'agent-management',
+        CONTEXT_TASK_MANAGEMENT    = 'task-management',
+        CONTEXT_GENERAL_CHAT       = 'general-chat';
 
     protected $fillable = [
         'team_id',
@@ -77,7 +77,7 @@ class AssistantAction extends Model implements AuditableContract
         ]);
     }
 
-    public function markCompleted(array $resultData = null): void
+    public function markCompleted(?array $resultData = null): void
     {
         $this->update([
             'completed_at' => now(),

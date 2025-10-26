@@ -37,6 +37,5 @@ Route::middleware('auth')->group(function () {
 // Stripe Webhooks (no auth)
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
-
 // Imports
 require __DIR__ . '/auth.php';

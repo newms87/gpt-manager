@@ -14,9 +14,6 @@ class TaskProcessErrorTrackingService
     /**
      * Update error counts for a JobDispatch
      * Finds associated TaskProcess and updates its error count
-     *
-     * @param JobDispatch $jobDispatch
-     * @return void
      */
     public function updateErrorCountsForJobDispatch(JobDispatch $jobDispatch): void
     {
@@ -27,6 +24,7 @@ class TaskProcessErrorTrackingService
 
         if ($taskProcesses->isEmpty()) {
             static::log("No TaskProcess found for JobDispatch {$jobDispatch->id}");
+
             return;
         }
 
@@ -46,9 +44,6 @@ class TaskProcessErrorTrackingService
 
     /**
      * Update error count for a task process by counting all errors from its job dispatches
-     *
-     * @param TaskProcess $taskProcess
-     * @return void
      */
     public function updateTaskProcessErrorCount(TaskProcess $taskProcess): void
     {
@@ -75,9 +70,6 @@ class TaskProcessErrorTrackingService
 
     /**
      * Update task run error count by summing all task process error counts
-     *
-     * @param TaskRun $taskRun
-     * @return void
      */
     public function updateTaskRunErrorCount(TaskRun $taskRun): void
     {

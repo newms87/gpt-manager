@@ -40,17 +40,17 @@ class JobDispatchUpdatedEventTest extends AuthenticatedTestCase
 
         // When
         $jobDispatch = JobDispatch::create([
-            'ref' => 'test-ref-' . uniqid(),
-            'name' => 'Test Job',
+            'ref'    => 'test-ref-' . uniqid(),
+            'name'   => 'Test Job',
             'status' => JobDispatch::STATUS_PENDING,
         ]);
 
         DB::table('job_dispatchables')->insert([
             'job_dispatch_id' => $jobDispatch->id,
-            'model_type' => WorkflowRun::class,
-            'model_id' => $workflowRun->id,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'model_type'      => WorkflowRun::class,
+            'model_id'        => $workflowRun->id,
+            'created_at'      => now(),
+            'updated_at'      => now(),
         ]);
 
         // Then
@@ -69,27 +69,27 @@ class JobDispatchUpdatedEventTest extends AuthenticatedTestCase
         ]);
 
         $jobDispatch = JobDispatch::create([
-            'ref' => 'test-ref-' . uniqid(),
-            'name' => 'Test Job',
+            'ref'    => 'test-ref-' . uniqid(),
+            'name'   => 'Test Job',
             'status' => JobDispatch::STATUS_PENDING,
         ]);
 
         DB::table('job_dispatchables')->insert([
             'job_dispatch_id' => $jobDispatch->id,
-            'model_type' => WorkflowRun::class,
-            'model_id' => $workflowRun->id,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'model_type'      => WorkflowRun::class,
+            'model_id'        => $workflowRun->id,
+            'created_at'      => now(),
+            'updated_at'      => now(),
         ]);
 
         // Subscribe to ensure broadcastOn() returns channels
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'JobDispatch',
+            'resource_type'      => 'JobDispatch',
             'model_id_or_filter' => true,
         ]);
 
         // When
-        $event = new JobDispatchUpdatedEvent($jobDispatch, 'created');
+        $event    = new JobDispatchUpdatedEvent($jobDispatch, 'created');
         $channels = $event->broadcastOn();
 
         // Then - Should resolve team_id from WorkflowRun through dispatchables

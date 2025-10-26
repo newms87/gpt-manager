@@ -63,7 +63,6 @@ class ConfigurableApiConfig
         return $timestamp->format($this->getTimestampFormat());
     }
 
-
     public function getMinimumTimestamp(): Carbon
     {
         return carbon($this->config['minimum_timestamp'] ?? '1979-01-01 00:00:00');

@@ -11,6 +11,10 @@
         "function_declaration": {
             "closure_fn_spacing": "none"
         },
+        "single_class_element_per_statement": false,
+        "cast_spaces": {
+            "space": "none"
+        },
         "no_extra_blank_lines": {
             "tokens": [
                 "extra",

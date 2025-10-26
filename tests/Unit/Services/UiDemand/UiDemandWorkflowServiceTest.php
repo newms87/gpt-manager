@@ -1094,13 +1094,13 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
 
         // Create a stored file for the template
         $templateFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'  => $this->user->currentTeam->id,
             'filename' => 'demand_template.docx',
         ]);
 
         // Create a demand template
         $template = \App\Models\Demand\DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
+            'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $templateFile->id,
         ]);
 

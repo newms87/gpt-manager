@@ -23,7 +23,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class Team extends Model implements AuditableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait, SoftDeletes, HasUuids;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasUuids, SoftDeletes;
 
     protected $guarded = ['id', 'created_at', 'updated_at', 'deleted_at'];
 

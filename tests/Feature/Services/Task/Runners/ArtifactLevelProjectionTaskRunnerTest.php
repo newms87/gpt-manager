@@ -12,9 +12,12 @@ use Tests\AuthenticatedTestCase;
 
 class ArtifactLevelProjectionTaskRunnerTest extends AuthenticatedTestCase
 {
-    protected TaskDefinition                    $taskDefinition;
-    protected TaskRun                           $taskRun;
-    protected TaskProcess                       $taskProcess;
+    protected TaskDefinition $taskDefinition;
+
+    protected TaskRun $taskRun;
+
+    protected TaskProcess $taskProcess;
+
     protected ArtifactLevelProjectionTaskRunner $taskRunner;
 
     public function setUp(): void
@@ -72,7 +75,7 @@ class ArtifactLevelProjectionTaskRunnerTest extends AuthenticatedTestCase
                 'source_levels'  => [0],
                 'target_levels'  => [2],
                 'text_separator' => "\n---\n",
-                'text_prefix'    => "From root: ",
+                'text_prefix'    => 'From root: ',
             ],
         ]);
 
@@ -90,7 +93,7 @@ class ArtifactLevelProjectionTaskRunnerTest extends AuthenticatedTestCase
         $this->assertCount(2, $outputArtifacts);
 
         // Check that each target artifact has received content from its ancestor
-        foreach($outputArtifacts as $artifact) {
+        foreach ($outputArtifacts as $artifact) {
             // The actual implementation doesn't look up artifacts by name in this exact way
             // Instead, we'll verify the runner produces the expected output structure
             $this->assertNotEmpty($artifact->text_content);
@@ -145,7 +148,7 @@ class ArtifactLevelProjectionTaskRunnerTest extends AuthenticatedTestCase
         $this->assertNotEmpty($outputArtifacts);
 
         // Check that meta data was properly projected
-        foreach($outputArtifacts as $artifact) {
+        foreach ($outputArtifacts as $artifact) {
             // The artifact should have some meta data
             $this->assertNotEmpty($artifact->meta);
             $this->assertArrayHasKey('level2_data', $artifact->meta);
@@ -215,7 +218,7 @@ class ArtifactLevelProjectionTaskRunnerTest extends AuthenticatedTestCase
         // Should have 3 output artifacts (all level 0 artifacts)
         $this->assertCount(3, $outputArtifacts);
 
-        foreach($outputArtifacts as $artifact) {
+        foreach ($outputArtifacts as $artifact) {
             $originalId = $artifact->original_artifact_id;
 
             if ($originalId === $artifacts[0]->id || $originalId === $artifacts[2]->id) {

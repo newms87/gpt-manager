@@ -26,7 +26,7 @@ class TaskProcessFactory extends Factory
         ];
     }
 
-    public function withAgent(Agent $agent = null): static
+    public function withAgent(?Agent $agent = null): static
     {
         return $this->afterCreating(function (TaskProcess $taskProcess) use ($agent) {
             $taskDefinition = $taskProcess->taskRun->taskDefinition;

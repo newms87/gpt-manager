@@ -23,7 +23,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
         // Step 1: Find the Google Doc template stored file
         $storedFile = $this->findGoogleDocStoredFile();
         if (!$storedFile) {
-            throw new Exception("Template could not be resolved. No Google Docs template found in artifacts, text content, or directives.");
+            throw new Exception('Template could not be resolved. No Google Docs template found in artifacts, text content, or directives.');
         }
 
         // Step 2: Extract Google Doc ID from the stored file URL
@@ -39,7 +39,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
         $templateVariables = $template->templateVariables;
 
         static::log('Template variables loaded from database', [
-            'template_id' => $template->id,
+            'template_id'     => $template->id,
             'variables_count' => $templateVariables->count(),
         ]);
 
@@ -56,20 +56,20 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
 
         static::log('Variables resolved', [
             'values_count' => count($resolution['values']),
-            'title' => $resolution['title'],
+            'title'        => $resolution['title'],
         ]);
 
         // Step 7: Find or create output folder
-        $googleDocsApi = app(GoogleDocsApi::class);
+        $googleDocsApi    = app(GoogleDocsApi::class);
         $outputFolderName = config('google-docs.output_folder_name', 'Output Documents');
-        $folderId = app(GoogleDriveFolderService::class)->findOrCreateFolder(
+        $folderId         = app(GoogleDriveFolderService::class)->findOrCreateFolder(
             $googleDocsApi,
             $outputFolderName
         );
 
         static::log('Output folder resolved', [
             'folder_name' => $outputFolderName,
-            'folder_id' => $folderId,
+            'folder_id'   => $folderId,
         ]);
 
         // Step 8: Create document from template (GoogleDocsApi will handle markdown formatting)
@@ -82,7 +82,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
 
         static::log('Document created', [
             'document_id' => $newDocument['document_id'],
-            'url' => $newDocument['url'],
+            'url'         => $newDocument['url'],
         ]);
 
         // Step 9: Create output artifact
@@ -98,14 +98,14 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
         $request = ContentSearchRequest::create()
             ->searchArtifacts($this->taskProcess->inputArtifacts)
             ->withFieldPath('template_stored_file_id')
-            ->withRegexPattern("/[a-zA-Z0-9_-]{25,}/")
+            ->withRegexPattern('/[a-zA-Z0-9_-]{25,}/')
             ->withTaskDefinition($this->taskDefinition)
-            ->withNaturalLanguageQuery("Your job is to find a Google Doc ID that would be used in a URL or in the API to identify a google doc. An example URL is https://docs.google.com/document/d/1eXaMpLeGOOglEDocUrlEhhhh_qJNDkElfmxEKMMDMKEddmiAa. Try to find the real google doc ID in the context given. If you no ID is found then DO NOT return a google doc ID.");
+            ->withNaturalLanguageQuery('Your job is to find a Google Doc ID that would be used in a URL or in the API to identify a google doc. An example URL is https://docs.google.com/document/d/1eXaMpLeGOOglEDocUrlEhhhh_qJNDkElfmxEKMMDMKEddmiAa. Try to find the real google doc ID in the context given. If you no ID is found then DO NOT return a google doc ID.');
 
         $result = app(ContentSearchService::class)->search($request);
 
         if (!$result->isFound()) {
-            throw new Exception("No Google Doc template found in artifacts or text content.");
+            throw new Exception('No Google Doc template found in artifacts or text content.');
         }
 
         $storedFileId = $result->getValue();
@@ -170,12 +170,12 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
     {
         // Direct reference
         if (isset($data['team_object_id'])) {
-            return (int) $data['team_object_id'];
+            return (int)$data['team_object_id'];
         }
 
         // Nested object reference
         if (isset($data['team_object']['id'])) {
-            return (int) $data['team_object']['id'];
+            return (int)$data['team_object']['id'];
         }
 
         // Search recursively
@@ -203,7 +203,6 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
 
         return null;
     }
-
 
     /**
      * Create output artifact with Google Docs information

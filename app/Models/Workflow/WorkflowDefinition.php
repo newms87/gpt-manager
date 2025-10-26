@@ -22,7 +22,7 @@ use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class WorkflowDefinition extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use ActionModelTrait, HasFactory, AuditableTrait, HasRelationCountersTrait, ResourcePackageableTrait, SoftDeletes, HasDebugLogging;
+    use ActionModelTrait, AuditableTrait, HasDebugLogging, HasFactory, HasRelationCountersTrait, ResourcePackageableTrait, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -104,7 +104,7 @@ class WorkflowDefinition extends Model implements AuditableContract, ResourcePac
             ->get();
 
         if ($corruptedConnections->isNotEmpty()) {
-            static::log("Found " . $corruptedConnections->count() . " corrupted connections to delete");
+            static::log('Found ' . $corruptedConnections->count() . ' corrupted connections to delete');
             $corruptedConnections->each->delete();
         }
     }

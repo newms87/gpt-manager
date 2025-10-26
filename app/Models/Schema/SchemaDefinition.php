@@ -20,11 +20,11 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class SchemaDefinition extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, ResourcePackageableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasRelationCountersTrait, KeywordSearchTrait, ResourcePackageableTrait, SoftDeletes;
 
     const string
-        FORMAT_JSON = 'json',
-        FORMAT_YAML = 'yaml',
+        FORMAT_JSON       = 'json',
+        FORMAT_YAML       = 'yaml',
         FORMAT_TYPESCRIPT = 'typescript';
 
     const string

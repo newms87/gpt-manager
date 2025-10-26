@@ -29,12 +29,12 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class TaskDefinition extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use ActionModelTrait, HasFactory, AuditableTrait, ResourcePackageableTrait, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasRelationCountersTrait, KeywordSearchTrait, ResourcePackageableTrait, SoftDeletes;
 
     const string
-        OUTPUT_ARTIFACT_MODE_STANDARD = '',
+        OUTPUT_ARTIFACT_MODE_STANDARD    = '',
         OUTPUT_ARTIFACT_MODE_PER_PROCESS = 'Per Process',
-        OUTPUT_ARTIFACT_MODE_GROUP_ALL = 'Group All';
+        OUTPUT_ARTIFACT_MODE_GROUP_ALL   = 'Group All';
 
     protected $fillable = [
         'name',
@@ -71,7 +71,6 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
             'output_artifact_levels' => 'json',
         ];
     }
-
 
     public function team(): BelongsTo|Team
     {

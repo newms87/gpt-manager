@@ -23,9 +23,11 @@ use Throwable;
 
 class WorkflowImportService
 {
-    protected ResourcePackage        $resourcePackage;
+    protected ResourcePackage $resourcePackage;
+
     protected ResourcePackageVersion $resourcePackageVersion;
-    protected string                 $versionName;
+
+    protected string $versionName;
 
     protected array $importedIdMap = [];
 
@@ -80,14 +82,14 @@ class WorkflowImportService
      */
     public function importFromJson(array $workflowDefinitionJson): WorkflowDefinition
     {
-        $resourcePackageId        = $workflowDefinitionJson['resource_package_id'] ?? null;
+        $resourcePackageId        = $workflowDefinitionJson['resource_package_id']         ?? null;
         $resourcePackageVersionId = $workflowDefinitionJson['resource_package_version_id'] ?? null;
-        $teamUuid                 = $workflowDefinitionJson['creator_team_uuid'] ?? null;
-        $name                     = $workflowDefinitionJson['name'] ?? null;
-        $resourceType             = $workflowDefinitionJson['resource_type'] ?? null;
-        $resourceId               = $workflowDefinitionJson['resource_id'] ?? null;
-        $version                  = $workflowDefinitionJson['version'] ?? null;
-        $definitions              = $workflowDefinitionJson['definitions'] ?? [];
+        $teamUuid                 = $workflowDefinitionJson['creator_team_uuid']           ?? null;
+        $name                     = $workflowDefinitionJson['name']                        ?? null;
+        $resourceType             = $workflowDefinitionJson['resource_type']               ?? null;
+        $resourceId               = $workflowDefinitionJson['resource_id']                 ?? null;
+        $version                  = $workflowDefinitionJson['version']                     ?? null;
+        $definitions              = $workflowDefinitionJson['definitions']                 ?? [];
 
         if (!$resourcePackageId || !$resourcePackageVersionId || !$teamUuid || !$name || !$resourceType || !$resourceId || !$version) {
             throw new ValidationError('Invalid resource package: Missing required fields');
@@ -114,7 +116,7 @@ class WorkflowImportService
             WorkflowConnection::class      => [],
         ];
 
-        foreach($importClasses as $objectType => $config) {
+        foreach ($importClasses as $objectType => $config) {
             $this->importResource($objectType, $config, $definitions[$objectType] ?? []);
         }
 
@@ -131,17 +133,17 @@ class WorkflowImportService
         return $workflowDefinition;
     }
 
-
     /**
      * Import a class from the JSON data
-     * @param Model|string $objectType
+     *
+     * @param  Model|string  $objectType
      **/
     protected function importResource(string $objectType, array $config, array $definitions): void
     {
-        foreach($definitions as $sourceId => $definition) {
+        foreach ($definitions as $sourceId => $definition) {
             try {
                 $this->importResourceDefinition($objectType, $config, $sourceId, $definition);
-            } catch(Throwable $e) {
+            } catch (Throwable $e) {
                 throw new Exception("Failed to import $objectType: $sourceId - " . $e->getMessage(), 0, $e);
             }
         }
@@ -168,7 +170,7 @@ class WorkflowImportService
             $localObject->resource_package_import_id = $resourcePackageImport->id;
         }
 
-        foreach($definition as $key => $value) {
+        foreach ($definition as $key => $value) {
             $localObject->$key = $this->resolveDefinitionValue($key, $value);
         }
 
@@ -215,7 +217,7 @@ class WorkflowImportService
     {
         $orphanedObjectImports = ResourcePackageImport::where('resource_package_version_id', '!=', $resourcePackageVersion->id)->where('resource_package_id', $resourcePackageVersion->resource_package_id)->get();
 
-        foreach($orphanedObjectImports as $orphanedObjectImport) {
+        foreach ($orphanedObjectImports as $orphanedObjectImport) {
             // Delete the local object
             $orphanedObjectImport->getLocalObject()?->delete();
 

@@ -19,18 +19,17 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class AgentThreadRun extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes, ActionModelTrait, HasWorkflowStatesTrait, HasUsageTracking;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasUsageTracking, HasWorkflowStatesTrait, SoftDeletes;
 
     const string
-        RESPONSE_FORMAT_TEXT = 'text',
+        RESPONSE_FORMAT_TEXT        = 'text',
         RESPONSE_FORMAT_JSON_SCHEMA = 'json_schema';
 
     const string
-        STATUS_RUNNING = 'Running',
+        STATUS_RUNNING   = 'Running',
         STATUS_COMPLETED = 'Completed',
-        STATUS_STOPPED = 'Stopped',
-        STATUS_FAILED = 'Failed';
-
+        STATUS_STOPPED   = 'Stopped',
+        STATUS_FAILED    = 'Failed';
 
     protected $fillable = [
         'agent_model',
@@ -104,7 +103,7 @@ class AgentThreadRun extends Model implements AuditableContract
         return app(JsonSchemaService::class)->setConfig($this->json_schema_config);
     }
 
-    public function renderResponseJsonSchema(string $name, array $schema, array $fragmentSelector = null): ?array
+    public function renderResponseJsonSchema(string $name, array $schema, ?array $fragmentSelector = null): ?array
     {
         return $this->getJsonSchemaService()->formatAndFilterSchema($name, $schema, $fragmentSelector);
     }

@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\DB;
 class DatabaseSchemaMapper
 {
     protected SchemaManager $schemaManager;
-    protected Builder       $schema;
+
+    protected Builder $schema;
 
     public function __construct($database = null, $config = null)
     {
@@ -24,7 +25,7 @@ class DatabaseSchemaMapper
     {
         $this->schemaManager = new SchemaManager($prefix, $schemaFile);
 
-        foreach($this->schemaManager->getTables() as $tableName => $tableSchema) {
+        foreach ($this->schemaManager->getTables() as $tableName => $tableSchema) {
             if ($this->schema->hasTable($this->schemaManager->realTableName($tableName))) {
                 $this->updateTable($tableName, $tableSchema);
             } else {
@@ -36,7 +37,7 @@ class DatabaseSchemaMapper
     protected function createTable($tableName, $tableSchema)
     {
         $this->schema->create($this->schemaManager->realTableName($tableName), function (Blueprint $table) use ($tableSchema) {
-            $fields  = $tableSchema['fields'] ?? [];
+            $fields  = $tableSchema['fields']  ?? [];
             $indexes = $tableSchema['indexes'] ?? [];
 
             $this->addColumns($table, $fields);
@@ -47,7 +48,7 @@ class DatabaseSchemaMapper
     protected function updateTable($tableName, $tableSchema)
     {
         $this->schema->table($this->schemaManager->realTableName($tableName), function (Blueprint $table) use ($tableSchema) {
-            $fields  = $tableSchema['fields'] ?? [];
+            $fields  = $tableSchema['fields']  ?? [];
             $indexes = $tableSchema['indexes'] ?? [];
 
             $this->updateColumns($table, $fields);
@@ -58,7 +59,7 @@ class DatabaseSchemaMapper
     protected function getColumn(Blueprint $table, $name): ?array
     {
         $columns = $this->schema->getColumns($table->getTable());
-        foreach($columns as $column) {
+        foreach ($columns as $column) {
             if (strtolower($column['name']) === strtolower($name)) {
                 return $column;
             }
@@ -69,7 +70,7 @@ class DatabaseSchemaMapper
 
     protected function addColumns(Blueprint $table, array $fields)
     {
-        foreach($fields as $fieldName => $fieldDefinition) {
+        foreach ($fields as $fieldName => $fieldDefinition) {
             $this->addColumn($table, $fieldName, $fieldDefinition);
         }
     }
@@ -90,15 +91,15 @@ class DatabaseSchemaMapper
 
         $previousFieldName = null;
 
-        foreach($fields as $fieldName => $fieldDefinition) {
+        foreach ($fields as $fieldName => $fieldDefinition) {
             $column = null;
 
             // Special case for Timestamps
             if (is_bool($fieldDefinition)) {
                 $hasColumn = match ($fieldName) {
-                    'timestamps' => in_array('created_at', $existingColumns),
+                    'timestamps'  => in_array('created_at', $existingColumns),
                     'softDeletes' => in_array('deleted_at', $existingColumns),
-                    default => in_array($fieldName, $existingColumns),
+                    default       => in_array($fieldName, $existingColumns),
                 };
                 if (!$hasColumn) {
                     $column = $this->addColumn($table, $fieldName, $fieldDefinition);
@@ -114,9 +115,9 @@ class DatabaseSchemaMapper
             if ($column) {
                 if ($previousFieldName) {
                     $previousFieldName = match ($previousFieldName) {
-                        'timestamps' => 'updated_at',
+                        'timestamps'  => 'updated_at',
                         'softDeletes' => 'deleted_at',
-                        default => $previousFieldName,
+                        default       => $previousFieldName,
                     };
 
                     $column->after($previousFieldName);
@@ -128,11 +129,11 @@ class DatabaseSchemaMapper
             $previousFieldName = $fieldName;
         }
 
-        foreach($existingColumns as $existingColumn) {
+        foreach ($existingColumns as $existingColumn) {
             if (!in_array($existingColumn, $definedColumns)) {
                 // First drop any FK constraints on the column
                 $fks = $this->schema->getForeignKeys($table->getTable());
-                foreach($fks as $fk) {
+                foreach ($fks as $fk) {
                     if (in_array($existingColumn, $fk['columns'])) {
                         $this->dropForeignKey($table, $fk['name']);
                     }
@@ -183,16 +184,16 @@ class DatabaseSchemaMapper
             $column->default($definition['default']);
         }
         if (in_array($definition['type'], ['foreignId', 'foreignUuid'])) {
-            $foreignKey    = $definition['foreign_key'] ?? null;
+            $foreignKey    = $definition['foreign_key']    ?? null;
             $foreignPrefix = $definition['foreign_prefix'] ?? null;
-            $foreignType   = $definition['foreign_type'] ?? null;
+            $foreignType   = $definition['foreign_type']   ?? null;
 
             if (!$foreignKey) {
-                throw new Exception("foreign_key is required when setting foreignId type");
+                throw new Exception('foreign_key is required when setting foreignId type');
             }
 
             [$foreignTable, $foreignColumn] = explode('.', $foreignKey);
-            $foreignTable = $foreignPrefix === null ? $this->schemaManager->realTableName($foreignTable) : $foreignPrefix . $foreignTable;
+            $foreignTable                   = $foreignPrefix === null ? $this->schemaManager->realTableName($foreignTable) : $foreignPrefix . $foreignTable;
 
             $indexName = 'fk_' . $table->getTable() . '_' . $name;
 
@@ -214,26 +215,26 @@ class DatabaseSchemaMapper
 
     protected function addIndexes(Blueprint $table, $indexes)
     {
-        foreach($indexes as $index) {
+        foreach ($indexes as $index) {
             $this->addIndex($table, $index);
         }
     }
 
     protected function updateIndexes(Blueprint $table, $indexes)
     {
-        foreach($indexes as $index) {
+        foreach ($indexes as $index) {
             $this->updateIndex($table, $index);
         }
 
         $existingIndexes = $this->schema->getIndexes($table->getTable());
         $fks             = $this->schema->getForeignKeys($table->getTable());
 
-        foreach($existingIndexes as $existingIndex) {
+        foreach ($existingIndexes as $existingIndex) {
             if ($existingIndex['primary'] ?? false) {
                 continue;
             }
 
-            foreach($indexes as $index) {
+            foreach ($indexes as $index) {
                 $name = $index['name'] ?? 'index_' . implode('_', $index['columns'] ?? []);
 
                 if ($existingIndex['name'] === $name) {
@@ -242,7 +243,7 @@ class DatabaseSchemaMapper
             }
 
             // Check if the index is a FK constraint, ignore if so (only want to drop declared indexes, not FKs)
-            foreach($fks as $fk) {
+            foreach ($fks as $fk) {
                 if ($fk['name'] === $existingIndex['name']) {
                     continue 2;
                 }
@@ -256,7 +257,7 @@ class DatabaseSchemaMapper
     {
         $columns = $index['columns'] ?? null;
         if (!$columns) {
-            throw new Exception("Columns are required for index: " . json_encode($index));
+            throw new Exception('Columns are required for index: ' . json_encode($index));
         }
 
         $name = $index['name'] ?? 'index_' . implode('_', $columns);
@@ -272,7 +273,7 @@ class DatabaseSchemaMapper
     {
         $columns = $index['columns'] ?? null;
         if (!$columns) {
-            throw new Exception("Columns are required for index: " . json_encode($index));
+            throw new Exception('Columns are required for index: ' . json_encode($index));
         }
 
         $name = $index['name'] ?? 'index_' . implode('_', $columns);
@@ -286,7 +287,7 @@ class DatabaseSchemaMapper
                 $fks        = $this->schema->getForeignKeys($table->getTable());
                 $droppedFks = [];
 
-                foreach($fks as $fk) {
+                foreach ($fks as $fk) {
                     $fkColumns = $fk['columns'];
                     // check if any of the FK columns are in the index
                     if (array_intersect($fkColumns, $columns)) {
@@ -298,7 +299,7 @@ class DatabaseSchemaMapper
                 $this->addIndex($table, $index);
 
                 // Recreate dropped FKs
-                foreach($droppedFks as $fk) {
+                foreach ($droppedFks as $fk) {
                     $this->schema->table($table->getTable(), fn(Blueprint $t) => $t->foreign($fk['columns'], $fk['name'])->references($fk['foreign_columns'])->on($fk['foreign_table']));
                 }
             }
@@ -321,7 +322,7 @@ class DatabaseSchemaMapper
     {
         $indexes = $this->schema->getIndexes($table->getTable());
 
-        foreach($indexes as $index) {
+        foreach ($indexes as $index) {
             if ($index['name'] === $name) {
                 return $index;
             }
@@ -334,7 +335,7 @@ class DatabaseSchemaMapper
     {
         $fks = $this->schema->getForeignKeys($table->getTable());
 
-        foreach($fks as $fk) {
+        foreach ($fks as $fk) {
             if ($fk['name'] === $name) {
                 return true;
             }

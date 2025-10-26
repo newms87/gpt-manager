@@ -38,9 +38,9 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
-        
+
         // Mock the WorkflowRun with all needed properties and methods
         $workflowRun = $this->mock(WorkflowRun::class);
         $workflowRun->shouldReceive('getAttribute')->with('id')->andReturn(1);
@@ -67,7 +67,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Some Other Workflow' // Not the builder workflow
+            'name'    => 'Some Other Workflow', // Not the builder workflow
         ]);
 
         $workflowRun = $this->mock(WorkflowRun::class);
@@ -95,16 +95,16 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'completed_at' => now()
+            'completed_at'           => now(),
         ]);
 
         $event = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
-        
+
         // No WorkflowBuilderChat exists for this workflow run
         // The listener should return early without processing
 
@@ -120,12 +120,12 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'completed_at' => now()
+            'completed_at'           => now(),
         ]);
 
         $anotherWorkflowRun = WorkflowRun::factory()->create([
@@ -134,8 +134,8 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
 
         // Create chat expecting a different workflow run
         WorkflowBuilderChat::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
+            'team_id'                 => $this->user->currentTeam->id,
+            'status'                  => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $anotherWorkflowRun->id, // Different ID
         ]);
 
@@ -155,49 +155,49 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
 
         // Create required agents
         \App\Models\Agent\Agent::factory()->create([
-            'team_id' => null, // System-owned agent
-            'name' => 'Workflow Evaluator',
+            'team_id'     => null, // System-owned agent
+            'name'        => 'Workflow Evaluator',
             'description' => 'Agent for evaluating workflow build results',
-            'model' => 'test-model',
+            'model'       => 'test-model',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'completed_at' => now()
+            'completed_at'           => now(),
         ]);
 
         // Create realistic workflow build artifacts
         $buildArtifact = \App\Models\Task\Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'Workflow Organization',
+            'team_id'      => $this->user->currentTeam->id,
+            'name'         => 'Workflow Organization',
             'json_content' => [
                 'workflow_definition' => [
-                    'name' => 'Test Workflow',
+                    'name'        => 'Test Workflow',
                     'description' => 'A test workflow created by integration test',
-                    'max_workers' => 5
+                    'max_workers' => 5,
                 ],
                 'task_specifications' => [
                     [
-                        'name' => 'Input Processing',
-                        'description' => 'Process input data',
-                        'runner_type' => 'WorkflowInputTaskRunner',
-                        'agent_requirements' => 'General purpose agent'
+                        'name'               => 'Input Processing',
+                        'description'        => 'Process input data',
+                        'runner_type'        => 'WorkflowInputTaskRunner',
+                        'agent_requirements' => 'General purpose agent',
                     ],
-                ]
-            ]
+                ],
+            ],
         ]);
 
         // Associate the artifact as output of the completed workflow run
         $workflowRun->addOutputArtifacts([$buildArtifact]);
 
         $chat = WorkflowBuilderChat::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
+            'team_id'                 => $this->user->currentTeam->id,
+            'status'                  => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $workflowRun->id,
         ]);
 
@@ -216,17 +216,17 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given - Create a chat that will cause the service to fail naturally
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'failed_at' => now()
+            'failed_at'              => now(),
         ]);
 
         $chat = WorkflowBuilderChat::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
+            'team_id'                 => $this->user->currentTeam->id,
+            'status'                  => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $workflowRun->id,
         ]);
 
@@ -247,7 +247,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
@@ -255,14 +255,14 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         ]);
 
         $chat = WorkflowBuilderChat::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
+            'team_id'                 => $this->user->currentTeam->id,
+            'status'                  => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $workflowRun->id,
         ]);
 
         // When - use reflection to access protected method
         $reflection = new \ReflectionClass($this->listener);
-        $method = $reflection->getMethod('findWorkflowBuilderChat');
+        $method     = $reflection->getMethod('findWorkflowBuilderChat');
         $method->setAccessible(true);
         $result = $method->invoke($this->listener, $workflowRun);
 
@@ -276,7 +276,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Some Other Workflow' // Not the builder workflow
+            'name'    => 'Some Other Workflow', // Not the builder workflow
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
@@ -285,7 +285,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
 
         // When - use reflection to access protected method
         $reflection = new \ReflectionClass($this->listener);
-        $method = $reflection->getMethod('findWorkflowBuilderChat');
+        $method     = $reflection->getMethod('findWorkflowBuilderChat');
         $method->setAccessible(true);
         $result = $method->invoke($this->listener, $workflowRun);
 
@@ -298,7 +298,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
@@ -306,14 +306,14 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         ]);
 
         $chat = WorkflowBuilderChat::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'status' => WorkflowBuilderChat::STATUS_COMPLETED, // Wrong status
+            'team_id'                 => $this->user->currentTeam->id,
+            'status'                  => WorkflowBuilderChat::STATUS_COMPLETED, // Wrong status
             'current_workflow_run_id' => $workflowRun->id,
         ]);
 
         // When - use reflection to access protected method
         $reflection = new \ReflectionClass($this->listener);
-        $method = $reflection->getMethod('findWorkflowBuilderChat');
+        $method     = $reflection->getMethod('findWorkflowBuilderChat');
         $method->setAccessible(true);
         $result = $method->invoke($this->listener, $workflowRun);
 
@@ -324,10 +324,10 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
     public function test_findWorkflowBuilderChat_withDifferentTeam_findsChat(): void
     {
         // Given - System-owned LLM Workflow Builder can be used by any team
-        $otherTeam = \App\Models\Team\Team::factory()->create();
+        $otherTeam          = \App\Models\Team\Team::factory()->create();
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
@@ -335,14 +335,14 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         ]);
 
         $chat = WorkflowBuilderChat::factory()->create([
-            'team_id' => $otherTeam->id, // Different team can use system workflow
-            'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
+            'team_id'                 => $otherTeam->id, // Different team can use system workflow
+            'status'                  => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $workflowRun->id,
         ]);
 
         // When - use reflection to access protected method
         $reflection = new \ReflectionClass($this->listener);
-        $method = $reflection->getMethod('findWorkflowBuilderChat');
+        $method     = $reflection->getMethod('findWorkflowBuilderChat');
         $method->setAccessible(true);
         $result = $method->invoke($this->listener, $workflowRun);
 
@@ -356,7 +356,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
@@ -368,14 +368,14 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         ]);
 
         $chat = WorkflowBuilderChat::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
+            'team_id'                 => $this->user->currentTeam->id,
+            'status'                  => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $anotherWorkflowRun->id, // Different workflow run
         ]);
 
         // When - use reflection to access protected method
         $reflection = new \ReflectionClass($this->listener);
-        $method = $reflection->getMethod('findWorkflowBuilderChat');
+        $method     = $reflection->getMethod('findWorkflowBuilderChat');
         $method->setAccessible(true);
         $result = $method->invoke($this->listener, $workflowRun);
 
@@ -388,15 +388,15 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
 
         // Create required agents
         \App\Models\Agent\Agent::factory()->create([
-            'team_id' => null, // System-owned agent
-            'name' => 'Workflow Evaluator',
+            'team_id'     => null, // System-owned agent
+            'name'        => 'Workflow Evaluator',
             'description' => 'Agent for evaluating workflow build results',
-            'model' => 'test-model',
+            'model'       => 'test-model',
         ]);
 
         $workflowRun1 = WorkflowRun::factory()->create([
@@ -409,43 +409,43 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
 
         // Create multiple chats
         $chat1 = WorkflowBuilderChat::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
+            'team_id'                 => $this->user->currentTeam->id,
+            'status'                  => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $workflowRun1->id,
         ]);
 
         $chat2 = WorkflowBuilderChat::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
+            'team_id'                 => $this->user->currentTeam->id,
+            'status'                  => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $workflowRun2->id,
         ]);
 
         // Create realistic workflow build artifacts for workflowRun2
         $buildArtifact = \App\Models\Task\Artifact::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name' => 'Workflow Organization',
+            'team_id'      => $this->user->currentTeam->id,
+            'name'         => 'Workflow Organization',
             'json_content' => [
                 'workflow_definition' => [
-                    'name' => 'Test Workflow',
+                    'name'        => 'Test Workflow',
                     'description' => 'A test workflow created by integration test',
-                    'max_workers' => 5
+                    'max_workers' => 5,
                 ],
                 'task_specifications' => [
                     [
-                        'name' => 'Input Processing',
-                        'description' => 'Process input data',
-                        'runner_type' => 'WorkflowInputTaskRunner',
-                        'agent_requirements' => 'General purpose agent'
+                        'name'               => 'Input Processing',
+                        'description'        => 'Process input data',
+                        'runner_type'        => 'WorkflowInputTaskRunner',
+                        'agent_requirements' => 'General purpose agent',
                     ],
-                ]
-            ]
+                ],
+            ],
         ]);
 
         // Associate the artifact as output of the completed workflow run
         $workflowRun2->addOutputArtifacts([$buildArtifact]);
 
         // For testing, manually set the status to simulate a finished run
-        $workflowRun2->status = 'Completed';
+        $workflowRun2->status       = 'Completed';
         $workflowRun2->completed_at = now();
         $workflowRun2->save();
 
@@ -471,10 +471,10 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
     {
         // Given - System-owned workflows can be used by any team
         $otherTeam = \App\Models\Team\Team::factory()->create();
-        
+
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => null, // System-owned workflow
-            'name' => 'LLM Workflow Builder'
+            'name'    => 'LLM Workflow Builder',
         ]);
 
         $workflowRun = WorkflowRun::factory()->create([
@@ -483,14 +483,14 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
 
         // Create chat for team using system workflow
         $chat = WorkflowBuilderChat::factory()->create([
-            'team_id' => $otherTeam->id,
-            'status' => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
+            'team_id'                 => $otherTeam->id,
+            'status'                  => WorkflowBuilderChat::STATUS_BUILDING_WORKFLOW,
             'current_workflow_run_id' => $workflowRun->id,
         ]);
 
         // When - use reflection to access protected method
         $reflection = new \ReflectionClass($this->listener);
-        $method = $reflection->getMethod('findWorkflowBuilderChat');
+        $method     = $reflection->getMethod('findWorkflowBuilderChat');
         $method->setAccessible(true);
         $result = $method->invoke($this->listener, $workflowRun);
 

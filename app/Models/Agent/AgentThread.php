@@ -19,7 +19,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class AgentThread extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes, ActionModelTrait, HasUsageTracking;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasUsageTracking, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -110,14 +110,13 @@ class AgentThread extends Model implements AuditableContract
     /**
      * Get the last message in the thread with an API response ID
      */
-    public function getLastTrackedMessageInThread(): AgentThreadMessage|null
+    public function getLastTrackedMessageInThread(): ?AgentThreadMessage
     {
         return $this->messages()
             ->whereNotNull('api_response_id')
             ->orderByDesc('created_at')
             ->first();
     }
-
 
     /**
      * Get all messages in the thread after the last tracked response

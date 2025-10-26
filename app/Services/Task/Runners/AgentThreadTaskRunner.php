@@ -40,7 +40,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
         $this->taskProcess->name = $name;
 
-        $this->activity("Preparing agent thread", 1);
+        $this->activity('Preparing agent thread', 1);
     }
 
     public function run(): void
@@ -50,7 +50,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         $this->complete($artifact ? [$artifact] : []);
     }
 
-    public function runAgentThread(AgentThread $agentThread): Artifact|null
+    public function runAgentThread(AgentThread $agentThread): ?Artifact
     {
         $agent             = $agentThread->agent;
         $schemaDefinition  = $this->taskDefinition->schemaDefinition;
@@ -63,7 +63,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         // The default agent thread task runner will use the JsonSchemaService with the database fields (ie: id and name) so we are enabling database I/O
         $jsonSchemaService = app(JsonSchemaService::class)->useArtifactMeta()->includeNullValues();
 
-        $this->activity("Communicating with AI agent in thread", 11);
+        $this->activity('Communicating with AI agent in thread', 11);
         $artifact = $this->runAgentThreadWithSchema($agentThread, $schemaDefinition, $schemaAssociation?->schemaFragment, $jsonSchemaService);
 
         if ($artifact) {
@@ -122,7 +122,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
     /**
      * Run the agent thread and return the last message as an artifact
      */
-    public function runAgentThreadWithSchema(AgentThread $agentThread, SchemaDefinition $schemaDefinition = null, SchemaFragment $schemaFragment = null, JsonSchemaService $jsonSchemaService = null): Artifact|null
+    public function runAgentThreadWithSchema(AgentThread $agentThread, ?SchemaDefinition $schemaDefinition = null, ?SchemaFragment $schemaFragment = null, ?JsonSchemaService $jsonSchemaService = null): ?Artifact
     {
         // Get MCP server from task definition
         $mcpServer = $this->taskDefinition->getMcpServer();
@@ -168,7 +168,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
             static::log("Hydrate artifact json content with reference data for $schemaType: $artifact");
 
             $referenceArtifact = null;
-            foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+            foreach ($this->taskProcess->inputArtifacts as $inputArtifact) {
                 $jsonContentType = $inputArtifact->json_content['type'] ?? null;
                 if ($inputArtifact->json_content && $jsonContentType === $schemaType) {
                     $referenceArtifact = $inputArtifact;
@@ -181,7 +181,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
             if ($referenceArtifact) {
                 $artifact->json_content = app(JsonSchemaService::class)->hydrateIdsInJsonContent($artifact->json_content, $referenceArtifact->json_content);
                 $artifact->save();
-                static::log("Hydration completed");
+                static::log('Hydration completed');
             }
         }
     }
@@ -194,7 +194,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         static::log("Appending text sources to artifact: $artifact");
 
         $sourceTextContent = '';
-        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+        foreach ($this->taskProcess->inputArtifacts as $inputArtifact) {
             $text = trim($inputArtifact->text_content);
             if ($text) {
                 $sourceTextContent .= "\n\n-----\n\n" . $text;
@@ -202,7 +202,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         }
 
         if ($sourceTextContent) {
-            $artifact->text_content = ($artifact->text_content ?? "") . "\n\n-----\n\n# Sources: $sourceTextContent";
+            $artifact->text_content = ($artifact->text_content ?? '') . "\n\n-----\n\n# Sources: $sourceTextContent";
         }
     }
 
@@ -220,12 +220,12 @@ class AgentThreadTaskRunner extends BaseTaskRunner
 
         // Only run deduplication for JSON schema responses
         if ($this->taskDefinition->response_format !== 'json_schema') {
-            static::log("Skipping deduplication - response format is not json_schema");
+            static::log('Skipping deduplication - response format is not json_schema');
 
             return;
         }
 
-        static::log("Running name deduplication across all process artifacts");
+        static::log('Running name deduplication across all process artifacts');
 
         // Get all output artifacts from completed processes
         $artifacts = $this->taskRun->outputArtifacts()
@@ -233,7 +233,7 @@ class AgentThreadTaskRunner extends BaseTaskRunner
             ->get();
 
         if ($artifacts->isEmpty()) {
-            static::log("No JSON artifacts found for deduplication");
+            static::log('No JSON artifacts found for deduplication');
 
             return;
         }
@@ -241,9 +241,9 @@ class AgentThreadTaskRunner extends BaseTaskRunner
         // Run deduplication service
         try {
             app(ArtifactDeduplicationService::class)->deduplicateArtifactNames($artifacts);
-            static::log("Deduplication completed successfully");
-        } catch(Exception $e) {
-            static::log("Error during deduplication: " . $e->getMessage());
+            static::log('Deduplication completed successfully');
+        } catch (Exception $e) {
+            static::log('Error during deduplication: ' . $e->getMessage());
         }
     }
 }

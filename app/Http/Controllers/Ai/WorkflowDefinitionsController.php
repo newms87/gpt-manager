@@ -18,12 +18,13 @@ use Throwable;
 class WorkflowDefinitionsController extends ActionController
 {
     public static ?string $repo     = WorkflowDefinitionRepository::class;
+
     public static ?string $resource = WorkflowDefinitionResource::class;
 
     public function invoke(WorkflowDefinition $workflowDefinition, PagerRequest $request)
     {
         $payload    = $request->getJson('payload');
-        $input      = $payload['input'] ?? [];
+        $input      = $payload['input']       ?? [];
         $webhookUrl = $payload['webhook_url'] ?? null;
 
         try {
@@ -43,7 +44,7 @@ class WorkflowDefinitionsController extends ActionController
                 throw new ValidationError('payload.webhook_url is required');
             }
 
-            foreach($input['files'] ?? [] as $index => $file) {
+            foreach ($input['files'] ?? [] as $index => $file) {
                 if (empty($file['filename'])) {
                     throw new ValidationError("payload.files[$index].filename is required");
                 }
@@ -63,7 +64,7 @@ class WorkflowDefinitionsController extends ActionController
                     'user_id' => user()->id,
                 ]);
 
-            foreach($input['files'] ?? [] as $file) {
+            foreach ($input['files'] ?? [] as $file) {
                 $storedFile = app(FileRepository::class)->createFileWithUrl('workflow-api-invoke/' . $file['filename'], $file['url']);
                 $workflowInput->storedFiles()->attach($storedFile);
             }
@@ -77,7 +78,7 @@ class WorkflowDefinitionsController extends ActionController
                 'webhook_url' => $webhookUrl,
                 'payload'     => $payload,
             ]);
-        } catch(Throwable $throwable) {
+        } catch (Throwable $throwable) {
             return [
                 'error'   => true,
                 'message' => $throwable->getMessage(),

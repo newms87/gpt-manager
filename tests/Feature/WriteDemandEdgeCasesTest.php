@@ -373,7 +373,7 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
 
         // When - Start write demand letter workflow first
         $writeWorkflowRun = $this->service->writeDemandLetter($uiDemand);
-        $uiDemand = $uiDemand->fresh();
+        $uiDemand         = $uiDemand->fresh();
 
         // Verify write demand letter is running
         $this->assertTrue($uiDemand->isWriteDemandLetterRunning());

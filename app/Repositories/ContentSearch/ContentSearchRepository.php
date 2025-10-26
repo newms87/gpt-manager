@@ -4,8 +4,6 @@ namespace App\Repositories\ContentSearch;
 
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
-use App\Models\Task\TaskDefinitionDirective;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Repositories\ActionRepository;
@@ -20,11 +18,11 @@ class ContentSearchRepository extends ActionRepository
     public function getArtifactsForSearch(int $teamId, array $artifactIds = []): EloquentCollection
     {
         $query = Artifact::where('team_id', $teamId);
-        
+
         if (!empty($artifactIds)) {
             $query->whereIn('id', $artifactIds);
         }
-        
+
         return $query->orderBy('created_at')->get();
     }
 
@@ -36,11 +34,11 @@ class ContentSearchRepository extends ActionRepository
         $query = Artifact::where('team_id', $teamId)
             ->whereNotNull('text_content')
             ->where('text_content', '!=', '');
-            
+
         if (!empty($artifactIds)) {
             $query->whereIn('id', $artifactIds);
         }
-        
+
         return $query->orderBy('created_at')->get();
     }
 
@@ -50,15 +48,15 @@ class ContentSearchRepository extends ActionRepository
     public function getArtifactsWithStructuredData(int $teamId, array $artifactIds = []): EloquentCollection
     {
         $query = Artifact::where('team_id', $teamId)
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNotNull('meta')
-                  ->orWhereNotNull('json_content');
+                    ->orWhereNotNull('json_content');
             });
-            
+
         if (!empty($artifactIds)) {
             $query->whereIn('id', $artifactIds);
         }
-        
+
         return $query->orderBy('created_at')->get();
     }
 
@@ -73,6 +71,7 @@ class ContentSearchRepository extends ActionRepository
             ->map(function ($taskDirective) {
                 // Add the directive text directly to the task directive for easier access
                 $taskDirective->directive_text = $taskDirective->directive->directive_text ?? '';
+
                 return $taskDirective;
             });
     }
@@ -94,15 +93,15 @@ class ContentSearchRepository extends ActionRepository
     public function searchArtifactsByFieldPath(int $teamId, string $fieldPath, array $artifactIds = []): EloquentCollection
     {
         $query = Artifact::where('team_id', $teamId)
-            ->where(function($q) use ($fieldPath) {
+            ->where(function ($q) use ($fieldPath) {
                 $q->whereNotNull('meta->' . $fieldPath)
-                  ->orWhereNotNull('json_content->' . $fieldPath);
+                    ->orWhereNotNull('json_content->' . $fieldPath);
             });
-            
+
         if (!empty($artifactIds)) {
             $query->whereIn('id', $artifactIds);
         }
-        
+
         return $query->get();
     }
 
@@ -135,11 +134,11 @@ class ContentSearchRepository extends ActionRepository
             ->whereNotNull('text_content')
             ->where('text_content', '!=', '')
             ->whereRaw('text_content REGEXP ?', [$pattern]);
-            
+
         if (!empty($artifactIds)) {
             $query->whereIn('id', $artifactIds);
         }
-        
+
         return $query->get();
     }
 
@@ -154,17 +153,17 @@ class ContentSearchRepository extends ActionRepository
             ->where('text_content', '!=', '');
 
         if (!empty($patterns)) {
-            $query->where(function($q) use ($patterns) {
+            $query->where(function ($q) use ($patterns) {
                 foreach ($patterns as $pattern) {
                     $q->orWhere('text_content', 'LIKE', "%{$pattern}%");
                 }
             });
         }
-        
+
         if (!empty($artifactIds)) {
             $query->whereIn('id', $artifactIds);
         }
-        
+
         return $query->orderBy('created_at')->get();
     }
 
@@ -174,9 +173,9 @@ class ContentSearchRepository extends ActionRepository
     public function countArtifactsForSearch(int $teamId, array $criteria = []): array
     {
         $baseQuery = Artifact::where('team_id', $teamId);
-        
+
         return [
-            'total' => (clone $baseQuery)->count(),
+            'total'             => (clone $baseQuery)->count(),
             'with_text_content' => (clone $baseQuery)
                 ->whereNotNull('text_content')
                 ->where('text_content', '!=', '')
@@ -188,9 +187,9 @@ class ContentSearchRepository extends ActionRepository
                 ->whereNotNull('json_content')
                 ->count(),
             'with_structured_data' => (clone $baseQuery)
-                ->where(function($q) {
+                ->where(function ($q) {
                     $q->whereNotNull('meta')
-                      ->orWhereNotNull('json_content');
+                        ->orWhereNotNull('json_content');
                 })
                 ->count(),
         ];
@@ -201,11 +200,11 @@ class ContentSearchRepository extends ActionRepository
      */
     public function getArtifactTextLengths(Collection $artifacts): array
     {
-        return $artifacts->map(function($artifact) {
+        return $artifacts->map(function ($artifact) {
             return [
-                'id' => $artifact->id,
-                'text_length' => strlen($artifact->text_content ?? ''),
-                'has_meta' => !empty($artifact->meta),
+                'id'               => $artifact->id,
+                'text_length'      => strlen($artifact->text_content ?? ''),
+                'has_meta'         => !empty($artifact->meta),
                 'has_json_content' => !empty($artifact->json_content),
             ];
         })->toArray();
@@ -213,11 +212,12 @@ class ContentSearchRepository extends ActionRepository
 
     /**
      * Sort artifacts by text content length for optimal processing
-     * @param Collection|EloquentCollection $artifacts
+     *
+     * @param  Collection|EloquentCollection  $artifacts
      */
     public function sortArtifactsByTextLength($artifacts, string $direction = 'asc'): Collection
     {
-        return $artifacts->sortBy(function($artifact) {
+        return $artifacts->sortBy(function ($artifact) {
             return strlen($artifact->text_content ?? '');
         }, SORT_REGULAR, $direction === 'desc');
     }
@@ -230,32 +230,33 @@ class ContentSearchRepository extends ActionRepository
         if (strlen($text) <= $maxLength) {
             return $text;
         }
-        
+
         return substr($text, 0, $maxLength) . '...';
     }
 
     /**
      * Validate team access to resources
-     * @param Collection|EloquentCollection|null $artifacts
+     *
+     * @param  Collection|EloquentCollection|null  $artifacts
      */
-    public function validateTeamAccess(int $teamId, $artifacts = null, TaskDefinition $taskDefinition = null): bool
+    public function validateTeamAccess(int $teamId, $artifacts = null, ?TaskDefinition $taskDefinition = null): bool
     {
         // Validate task definition team access
         if ($taskDefinition && $taskDefinition->team_id !== $teamId) {
             return false;
         }
-        
+
         // Validate all artifacts belong to team
         if ($artifacts) {
-            $invalidArtifacts = $artifacts->filter(function($artifact) use ($teamId) {
+            $invalidArtifacts = $artifacts->filter(function ($artifact) use ($teamId) {
                 return $artifact->team_id !== $teamId;
             });
-            
+
             if ($invalidArtifacts->isNotEmpty()) {
                 return false;
             }
         }
-        
+
         return true;
     }
 }

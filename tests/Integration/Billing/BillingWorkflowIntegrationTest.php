@@ -19,11 +19,15 @@ class BillingWorkflowIntegrationTest extends AuthenticatedTestCase
 {
     use SetUpTeamTrait;
 
-    private BillingService                $billingService;
-    private UsageBillingService           $usageBillingService;
+    private BillingService $billingService;
+
+    private UsageBillingService $usageBillingService;
+
     private StripePaymentServiceInterface $mockStripeService;
-    private Team                          $team;
-    private SubscriptionPlan              $plan;
+
+    private Team $team;
+
+    private SubscriptionPlan $plan;
 
     public function setUp(): void
     {

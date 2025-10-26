@@ -5,13 +5,13 @@ namespace App\Models\Workflow;
 interface WorkflowStatesContract
 {
     const string
-        STATUS_PENDING = 'Pending',
-        STATUS_RUNNING = 'Running',
-        STATUS_STOPPED = 'Stopped',
-        STATUS_SKIPPED = 'Skipped',
-        STATUS_COMPLETED = 'Completed',
-        STATUS_TIMEOUT = 'Timeout',
-        STATUS_FAILED = 'Failed',
+        STATUS_PENDING    = 'Pending',
+        STATUS_RUNNING    = 'Running',
+        STATUS_STOPPED    = 'Stopped',
+        STATUS_SKIPPED    = 'Skipped',
+        STATUS_COMPLETED  = 'Completed',
+        STATUS_TIMEOUT    = 'Timeout',
+        STATUS_FAILED     = 'Failed',
         STATUS_INCOMPLETE = 'Incomplete';
 
     public function isStatusPending(): bool;

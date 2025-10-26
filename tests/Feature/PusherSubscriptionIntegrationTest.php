@@ -42,7 +42,7 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Step 1: Subscribe
         $subscribeResponse = $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
         ]);
 
@@ -58,7 +58,7 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
             $eventFired = true;
         });
 
-        $event = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
+        $event    = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
         $channels = $event->broadcastOn();
 
         // Verify event broadcast
@@ -67,7 +67,7 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Step 3: Unsubscribe
         $unsubscribeResponse = $this->postJson('/api/pusher/unsubscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
         ]);
 
@@ -77,7 +77,7 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         $this->assertFalse(Cache::has($cacheKey));
 
         // Step 4: Verify no longer receiving events
-        $event2 = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
+        $event2    = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
         $channels2 = $event2->broadcastOn();
 
         $this->assertEmpty($channels2);
@@ -97,7 +97,7 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Subscribe
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
         ]);
 
@@ -108,7 +108,7 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         $keepaliveResponse = $this->postJson('/api/pusher/keepalive', [
             'subscriptions' => [
                 [
-                    'resource_type' => 'WorkflowRun',
+                    'resource_type'      => 'WorkflowRun',
                     'model_id_or_filter' => $workflowRun->id,
                 ],
             ],
@@ -119,7 +119,7 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         $this->assertTrue(Cache::has($cacheKey));
 
         // Verify event still broadcast
-        $event = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
+        $event    = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
         $channels = $event->broadcastOn();
         $this->assertNotEmpty($channels);
     }
@@ -145,18 +145,18 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         // Both users subscribe
         $this->actingAs($this->user)
             ->postJson('/api/pusher/subscribe', [
-                'resource_type' => 'WorkflowRun',
+                'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => $workflowRun->id,
             ]);
 
         $this->actingAs($user2)
             ->postJson('/api/pusher/subscribe', [
-                'resource_type' => 'WorkflowRun',
+                'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => $workflowRun->id,
             ]);
 
         // When - Event is triggered
-        $event = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
+        $event    = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
         $channels = $event->broadcastOn();
 
         // Then - Both users should receive on team channel
@@ -165,7 +165,7 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         $this->assertEquals("private-WorkflowRun.{$this->user->currentTeam->id}", $channels[0]->name);
 
         // Verify both users are in cache
-        $cacheKey = "subscribe:WorkflowRun:{$this->user->currentTeam->id}:id:{$workflowRun->id}";
+        $cacheKey    = "subscribe:WorkflowRun:{$this->user->currentTeam->id}:id:{$workflowRun->id}";
         $subscribers = Cache::get($cacheKey);
         $this->assertCount(2, $subscribers);
         $this->assertContains($this->user->id, $subscribers);
@@ -182,34 +182,34 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         $runningWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
+            'started_at'             => now(),
         ]);
 
         $completedWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
-            'completed_at' => now(),
+            'started_at'             => now(),
+            'completed_at'           => now(),
         ]);
 
         // Subscribe with filter
         $filter = ['status' => 'Running'];
 
         $subscribeResponse = $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
         ]);
 
         $subscribeResponse->assertStatus(200);
 
         // When - Event for running workflow
-        $event1 = new WorkflowRunUpdatedEvent($runningWorkflowRun, 'updated');
+        $event1    = new WorkflowRunUpdatedEvent($runningWorkflowRun, 'updated');
         $channels1 = $event1->broadcastOn();
 
         // Then - Should broadcast
         $this->assertNotEmpty($channels1);
 
         // When - Event for completed workflow
-        $event2 = new WorkflowRunUpdatedEvent($completedWorkflowRun, 'updated');
+        $event2    = new WorkflowRunUpdatedEvent($completedWorkflowRun, 'updated');
         $channels2 = $event2->broadcastOn();
 
         // Then - Should NOT broadcast
@@ -217,14 +217,14 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Unsubscribe
         $unsubscribeResponse = $this->postJson('/api/pusher/unsubscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
         ]);
 
         $unsubscribeResponse->assertStatus(200);
 
         // Verify no longer receives events
-        $event3 = new WorkflowRunUpdatedEvent($runningWorkflowRun, 'updated');
+        $event3    = new WorkflowRunUpdatedEvent($runningWorkflowRun, 'updated');
         $channels3 = $event3->broadcastOn();
         $this->assertEmpty($channels3);
     }
@@ -243,17 +243,17 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Subscribe to both channel-wide and model-specific
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => true,
         ]);
 
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
         ]);
 
         // When - Event is triggered
-        $event = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
+        $event    = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
         $channels = $event->broadcastOn();
 
         // Then - Should broadcast (deduplicated to single team channel)
@@ -263,23 +263,23 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Unsubscribe from channel-wide
         $this->postJson('/api/pusher/unsubscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => true,
         ]);
 
         // Should still broadcast (model-specific subscription still active)
-        $event2 = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
+        $event2    = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
         $channels2 = $event2->broadcastOn();
         $this->assertNotEmpty($channels2);
 
         // Unsubscribe from model-specific
         $this->postJson('/api/pusher/unsubscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
         ]);
 
         // Should NOT broadcast (no subscriptions remain)
-        $event3 = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
+        $event3    = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
         $channels3 = $event3->broadcastOn();
         $this->assertEmpty($channels3);
     }
@@ -302,12 +302,12 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Subscribe to multiple resources
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun1->id,
         ]);
 
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun2->id,
         ]);
 
@@ -315,11 +315,11 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         $keepaliveResponse = $this->postJson('/api/pusher/keepalive', [
             'subscriptions' => [
                 [
-                    'resource_type' => 'WorkflowRun',
+                    'resource_type'      => 'WorkflowRun',
                     'model_id_or_filter' => $workflowRun1->id,
                 ],
                 [
-                    'resource_type' => 'WorkflowRun',
+                    'resource_type'      => 'WorkflowRun',
                     'model_id_or_filter' => $workflowRun2->id,
                 ],
             ],
@@ -346,14 +346,14 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
+            'started_at'             => now(),
         ]);
 
         $filter = ['status' => 'Running'];
 
         // Subscribe with filter
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
         ]);
 
@@ -361,7 +361,7 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         $keepaliveResponse = $this->postJson('/api/pusher/keepalive', [
             'subscriptions' => [
                 [
-                    'resource_type' => 'WorkflowRun',
+                    'resource_type'      => 'WorkflowRun',
                     'model_id_or_filter' => ['filter' => $filter],
                 ],
             ],
@@ -375,14 +375,14 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         ksort($sorted);
         $hash = md5(json_encode($sorted, JSON_UNESCAPED_SLASHES));
 
-        $cacheKey = "subscribe:WorkflowRun:{$this->user->currentTeam->id}:filter:{$hash}";
+        $cacheKey      = "subscribe:WorkflowRun:{$this->user->currentTeam->id}:filter:{$hash}";
         $definitionKey = "{$cacheKey}:definition";
 
         $this->assertTrue(Cache::has($cacheKey));
         $this->assertTrue(Cache::has($definitionKey));
 
         // Verify still receives events
-        $event = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
+        $event    = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
         $channels = $event->broadcastOn();
         $this->assertNotEmpty($channels);
     }
@@ -405,28 +405,28 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Subscribe to multiple resources
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun1->id,
         ]);
 
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun2->id,
         ]);
 
         // When - Unsubscribe from workflowRun1
         $this->postJson('/api/pusher/unsubscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun1->id,
         ]);
 
         // Then - workflowRun1 subscription should be removed
-        $event1 = new WorkflowRunUpdatedEvent($workflowRun1, 'updated');
+        $event1    = new WorkflowRunUpdatedEvent($workflowRun1, 'updated');
         $channels1 = $event1->broadcastOn();
         $this->assertEmpty($channels1);
 
         // workflowRun2 subscription should still be active
-        $event2 = new WorkflowRunUpdatedEvent($workflowRun2, 'updated');
+        $event2    = new WorkflowRunUpdatedEvent($workflowRun2, 'updated');
         $channels2 = $event2->broadcastOn();
         $this->assertNotEmpty($channels2);
     }
@@ -441,19 +441,19 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'name' => 'Integration Test Workflow',
-            'started_at' => now(),
+            'name'                   => 'Integration Test Workflow',
+            'started_at'             => now(),
         ]);
 
         // Subscribe
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
         ]);
 
         // When - Event is triggered
         $event = new WorkflowRunUpdatedEvent($workflowRun, 'updated');
-        $data = $event->data();
+        $data  = $event->data();
 
         // Then - Payload should be lightweight and match expected structure
         $this->assertArrayHasKey('id', $data);

@@ -139,7 +139,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Write Medical Summary',
         ]);
-        
+
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
             'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
@@ -265,7 +265,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $this->assertContains($outputFile2->id, $outputFileIds);
 
         // Verify the pivot data has correct category
-        foreach($outputFiles as $file) {
+        foreach ($outputFiles as $file) {
             $this->assertEquals('output', $file->pivot->category ?? 'output');
         }
     }
@@ -342,7 +342,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Write Medical Summary',
         ]);
-        
+
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
             'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
@@ -364,7 +364,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $updatedDemand = $uiDemand->fresh();
         $this->assertEquals(UiDemand::STATUS_FAILED, $updatedDemand->status);
 
-        // Verify metadata includes failure information  
+        // Verify metadata includes failure information
         $this->assertArrayHasKey('write_medical_summary_completed_at', $updatedDemand->metadata);
         $this->assertArrayHasKey('failed_at', $updatedDemand->metadata);
         $this->assertArrayHasKey('error', $updatedDemand->metadata);
@@ -470,7 +470,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Write Medical Summary',
         ]);
-        
+
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
             'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,

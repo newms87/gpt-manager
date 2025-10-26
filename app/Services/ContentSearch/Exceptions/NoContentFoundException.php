@@ -10,7 +10,7 @@ class NoContentFoundException extends ContentSearchException
         if ($searchCriteria) {
             $message .= ": {$searchCriteria}";
         }
-        
+
         parent::__construct($message);
     }
 }

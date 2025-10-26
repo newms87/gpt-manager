@@ -81,7 +81,7 @@ class UsageSummaryUpdatedEventTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $event = new UsageSummaryUpdatedEvent($usageSummary, 'created');
+        $event    = new UsageSummaryUpdatedEvent($usageSummary, 'created');
         $channels = $event->broadcastOn();
 
         // Then - Should resolve team_id from polymorphic object relationship

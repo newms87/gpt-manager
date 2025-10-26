@@ -4,15 +4,11 @@ namespace Tests\Unit\Services\Task\Runners;
 
 use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\Agent\Agent;
-use App\Models\Agent\AgentThread;
-use App\Models\Agent\AgentThreadMessage;
 use App\Models\Demand\DemandTemplate;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Services\ContentSearch\ContentSearchRequest;
-use App\Services\ContentSearch\ContentSearchResult;
 use App\Services\ContentSearch\ContentSearchService;
 use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;
 use Exception;
@@ -24,11 +20,15 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
 {
     use SetUpTeamTrait;
 
-    protected TaskDefinition               $taskDefinition;
-    protected TaskRun                      $taskRun;
-    protected TaskProcess                  $taskProcess;
+    protected TaskDefinition $taskDefinition;
+
+    protected TaskRun $taskRun;
+
+    protected TaskProcess $taskProcess;
+
     protected GoogleDocsTemplateTaskRunner $runner;
-    protected Agent                        $agent;
+
+    protected Agent $agent;
 
     public function setUp(): void
     {
@@ -49,8 +49,8 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
 
         $this->taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
-            'name'   => 'Test Process',
-            'status' => 'pending',
+            'name'        => 'Test Process',
+            'status'      => 'pending',
         ]);
 
         // Ensure the relationship is properly loaded
@@ -144,7 +144,6 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         $this->assertEquals($storedFile->id, $result->id);
     }
 
-
     public function test_extractGoogleDocIdFromStoredFile_withValidUrl_returnsDocId(): void
     {
         // Given - Use factory to avoid HTTP calls in StoredFile::booted()
@@ -201,7 +200,6 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
         // Then
         $this->assertNull($docId);
     }
-
 
     public function test_createOutputArtifact_withValidData_createsArtifactWithCorrectStructure(): void
     {
@@ -296,10 +294,10 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
 
         // Create a DemandTemplate linked to the StoredFile (required by GoogleDocsTemplateTaskRunner)
         $template = DemandTemplate::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $storedFile->id,
-            'name' => 'Test Template',
+            'name'           => 'Test Template',
         ]);
 
         // Mock GoogleDocsApi for external API calls (this is a 3rd party service)
@@ -321,7 +319,7 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
             )
             ->andReturn(new \Illuminate\Http\Client\Response(
                 new \GuzzleHttp\Psr7\Response(200, [], json_encode([
-                    'files' => [] // No existing folder found
+                    'files' => [], // No existing folder found
                 ]))
             ));
 
@@ -334,9 +332,9 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
             )
             ->andReturn(new \Illuminate\Http\Client\Response(
                 new \GuzzleHttp\Psr7\Response(200, [], json_encode([
-                    'id' => 'test-folder-id-123',
-                    'name' => 'Output Documents',
-                    'mimeType' => 'application/vnd.google-apps.folder'
+                    'id'       => 'test-folder-id-123',
+                    'name'     => 'Output Documents',
+                    'mimeType' => 'application/vnd.google-apps.folder',
                 ]))
             ));
 
@@ -353,7 +351,7 @@ class GoogleDocsTemplateTaskRunnerTest extends AuthenticatedTestCase
 
         // Mock TemplateVariableResolutionService for variable resolution
         $resolution = [
-            'title' => 'Generated Test Document',
+            'title'  => 'Generated Test Document',
             'values' => [
                 'client_name' => 'John Doe',
                 'date'        => '2024-01-01',

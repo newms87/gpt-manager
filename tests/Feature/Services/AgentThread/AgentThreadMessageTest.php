@@ -23,7 +23,7 @@ class AgentThreadMessageTest extends AuthenticatedTestCase
     public function test_getCleanContent_providesValidJsonWithoutExtraBackticksPresent(): void
     {
         // Given
-        $content = "{\"key\": \"value\"}";
+        $content = '{"key": "value"}';
         $message = new AgentThreadMessage(['content' => $content]);
 
         // When

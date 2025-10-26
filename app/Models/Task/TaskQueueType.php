@@ -11,7 +11,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskQueueType extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory;
 
     protected $fillable = [
         'name',

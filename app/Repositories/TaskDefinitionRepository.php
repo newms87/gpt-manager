@@ -28,26 +28,26 @@ class TaskDefinitionRepository extends ActionRepository
     public function summaryQuery(array $filter = []): Builder|QueryBuilder
     {
         return parent::summaryQuery($filter)->addSelect([
-            DB::raw("SUM(task_run_count) as task_run_count"),
+            DB::raw('SUM(task_run_count) as task_run_count'),
         ]);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createTaskDefinition($data),
-            'update' => $this->updateTaskDefinition($model, $data),
-            'copy' => $this->copyTaskDefinition($model),
-            'add-fragment' => $this->addFragment($model, $data),
-            'add-input' => $this->addInput($model, $data),
-            'remove-input' => $this->removeInput($model, $data),
-            'save-directive' => $this->saveDirective($model, $data['task_definition_directive_id'] ?? null, $data),
+            'create'            => $this->createTaskDefinition($data),
+            'update'            => $this->updateTaskDefinition($model, $data),
+            'copy'              => $this->copyTaskDefinition($model),
+            'add-fragment'      => $this->addFragment($model, $data),
+            'add-input'         => $this->addInput($model, $data),
+            'remove-input'      => $this->removeInput($model, $data),
+            'save-directive'    => $this->saveDirective($model, $data['task_definition_directive_id'] ?? null, $data),
             'update-directives' => $this->updateDirectives($model, $data['taskDefinitionDirectives'] ?? []),
-            'remove-directive' => $this->removeDirective($model, $data['id'] ?? null),
-            default => parent::applyAction($action, $model, $data)
+            'remove-directive'  => $this->removeDirective($model, $data['id'] ?? null),
+            default             => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -97,7 +97,7 @@ class TaskDefinitionRepository extends ActionRepository
     public function addFragment(TaskDefinition $taskDefinition, array $input = []): SchemaAssociation
     {
         if (!$taskDefinition->schema_definition_id) {
-            throw new ValidationError("Failed to add fragment: First add a schema definition to the task.");
+            throw new ValidationError('Failed to add fragment: First add a schema definition to the task.');
         }
 
         return $taskDefinition->schemaAssociations()->create([
@@ -114,11 +114,11 @@ class TaskDefinitionRepository extends ActionRepository
         $workflowInput = team()->workflowInputs()->find($input['workflow_input_id'] ?? null);
 
         if (!$workflowInput) {
-            throw new ValidationError("The workflow input was not found.");
+            throw new ValidationError('The workflow input was not found.');
         }
 
         if ($taskDefinition->taskInputs()->where('workflow_input_id', $workflowInput->id)->exists()) {
-            throw new ValidationError("The task input already exists for this task definition.");
+            throw new ValidationError('The task input already exists for this task definition.');
         }
 
         return $taskDefinition->taskInputs()->create([
@@ -142,7 +142,6 @@ class TaskDefinitionRepository extends ActionRepository
         return true;
     }
 
-
     /**
      * Add / Update a directive to a task definition
      */
@@ -159,9 +158,9 @@ class TaskDefinitionRepository extends ActionRepository
         }
 
         $promptDirectiveId = $input['prompt_directive_id'] ?? null;
-        $section           = $input['section'] ?? ($taskDefinitionDirective?->section ?: TaskDefinitionDirective::SECTION_TOP);
-        $position          = $input['position'] ?? ($taskDefinitionDirective?->position ?: 0);
-        $name              = $input['name'] ?? '';
+        $section           = $input['section']             ?? ($taskDefinitionDirective?->section ?: TaskDefinitionDirective::SECTION_TOP);
+        $position          = $input['position']            ?? ($taskDefinitionDirective?->position ?: 0);
+        $name              = $input['name']                ?? '';
 
         // Resolve or create the prompt directive
         if ($promptDirectiveId) {
@@ -205,7 +204,7 @@ class TaskDefinitionRepository extends ActionRepository
      */
     public function updateDirectives(TaskDefinition $taskDefinition, $taskDefinitionDirectives): bool
     {
-        foreach($taskDefinitionDirectives as $position => $directive) {
+        foreach ($taskDefinitionDirectives as $position => $directive) {
             $taskDefinitionDirective = $taskDefinition->taskDefinitionDirectives()->find($directive['id']);
 
             if (!$taskDefinitionDirective) {

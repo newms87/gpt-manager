@@ -14,7 +14,7 @@ class PermissionsSeeder extends Seeder
         $roles       = config('permissions.roles');
 
         $permissionMap = [];
-        foreach($permissions as $name => $display) {
+        foreach ($permissions as $name => $display) {
             $permission           = Permission::updateOrCreate(['name' => $name], [
                 'display_name' => $display[0],
                 'description'  => $display[1] ?? '',
@@ -22,7 +22,7 @@ class PermissionsSeeder extends Seeder
             $permissionMap[$name] = $permission->id;
         }
 
-        foreach($roles as $name => $role) {
+        foreach ($roles as $name => $role) {
             $rolePermissions = $role['permissions'];
             $display         = $role['display'];
             $roleModel       = Role::updateOrCreate(['name' => $name], [

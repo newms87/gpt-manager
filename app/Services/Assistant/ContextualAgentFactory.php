@@ -18,10 +18,10 @@ class ContextualAgentFactory
 
         // Create or find context-specific agent
         $agent = $this->createContextAgent($context, $contextData);
-        
+
         // Cache the agent
         $this->contextAgents[$context] = $agent;
-        
+
         return $agent;
     }
 
@@ -30,16 +30,16 @@ class ContextualAgentFactory
         switch ($context) {
             case AssistantAction::CONTEXT_SCHEMA_EDITOR:
                 return $this->createSchemaEditorAgent();
-                
+
             case AssistantAction::CONTEXT_WORKFLOW_EDITOR:
                 return $this->createWorkflowEditorAgent();
-                
+
             case AssistantAction::CONTEXT_AGENT_MANAGEMENT:
                 return $this->createAgentManagementAgent();
-                
+
             case AssistantAction::CONTEXT_TASK_MANAGEMENT:
                 return $this->createTaskManagementAgent();
-                
+
             default:
                 return $this->createGeneralChatAgent();
         }
@@ -50,11 +50,11 @@ class ContextualAgentFactory
         return Agent::firstOrCreate(
             [
                 'team_id' => team()->id,
-                'name' => 'Schema Design Assistant',
+                'name'    => 'Schema Design Assistant',
             ],
             [
                 'description' => 'AI assistant specialized in JSON schema design and modification',
-                'model' => 'o4-mini',
+                'model'       => 'o4-mini',
                 'api_options' => [
                     'temperature' => 0.1,
                 ],
@@ -67,11 +67,11 @@ class ContextualAgentFactory
         return Agent::firstOrCreate(
             [
                 'team_id' => team()->id,
-                'name' => 'Workflow Design Assistant',
+                'name'    => 'Workflow Design Assistant',
             ],
             [
                 'description' => 'AI assistant for workflow design and automation',
-                'model' => 'o4-mini',
+                'model'       => 'o4-mini',
                 'api_options' => [
                     'temperature' => 0.2,
                 ],
@@ -84,11 +84,11 @@ class ContextualAgentFactory
         return Agent::firstOrCreate(
             [
                 'team_id' => team()->id,
-                'name' => 'Agent Management Assistant',
+                'name'    => 'Agent Management Assistant',
             ],
             [
                 'description' => 'AI assistant for configuring and managing AI agents',
-                'model' => 'o4-mini',
+                'model'       => 'o4-mini',
                 'api_options' => [
                     'temperature' => 0.3,
                 ],
@@ -101,11 +101,11 @@ class ContextualAgentFactory
         return Agent::firstOrCreate(
             [
                 'team_id' => team()->id,
-                'name' => 'Task Management Assistant',
+                'name'    => 'Task Management Assistant',
             ],
             [
                 'description' => 'AI assistant for task definition and management',
-                'model' => 'o4-mini',
+                'model'       => 'o4-mini',
                 'api_options' => [
                     'temperature' => 0.2,
                 ],
@@ -118,16 +118,15 @@ class ContextualAgentFactory
         return Agent::firstOrCreate(
             [
                 'team_id' => team()->id,
-                'name' => 'General Assistant',
+                'name'    => 'General Assistant',
             ],
             [
                 'description' => 'General purpose AI assistant for questions and help',
-                'model' => 'o4-mini',
+                'model'       => 'o4-mini',
                 'api_options' => [
                     'temperature' => 0.7,
                 ],
             ]
         );
     }
-
 }

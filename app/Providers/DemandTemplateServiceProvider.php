@@ -16,7 +16,7 @@ class DemandTemplateServiceProvider extends ServiceProvider
     {
         $this->app->singleton(GoogleDocsFileService::class);
         $this->app->singleton(GoogleDocsApi::class);
-        
+
         $this->app->singleton(DemandTemplateService::class, function ($app) {
             return new DemandTemplateService(
                 $app->make(GoogleDocsFileService::class),

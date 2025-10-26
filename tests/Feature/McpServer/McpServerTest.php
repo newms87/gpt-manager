@@ -10,6 +10,7 @@ use Tests\TestCase;
 class McpServerTest extends TestCase
 {
     protected User $user;
+
     protected Team $team;
 
     public function setUp(): void

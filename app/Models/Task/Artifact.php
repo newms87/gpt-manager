@@ -20,7 +20,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class Artifact extends Model implements AuditableContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasRelationCountersTrait, KeywordSearchTrait, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -138,7 +138,7 @@ class Artifact extends Model implements AuditableContract
     /**
      * Get the fragment defined by the fragment selector for the JSON content field
      */
-    public function getJsonFragment(array $fragmentSelector = null): array
+    public function getJsonFragment(?array $fragmentSelector = null): array
     {
         return app(JsonSchemaService::class)->filterDataByFragmentSelector($this->json_content, $fragmentSelector);
     }
@@ -146,7 +146,7 @@ class Artifact extends Model implements AuditableContract
     /**
      * Get the fragment defined by the fragment selector for the meta field
      */
-    public function getMetaFragment(array $fragmentSelector = null): array
+    public function getMetaFragment(?array $fragmentSelector = null): array
     {
         return app(JsonSchemaService::class)->filterDataByFragmentSelector($this->meta, $fragmentSelector);
     }
@@ -154,7 +154,7 @@ class Artifact extends Model implements AuditableContract
     /**
      * Get the first value of the JSON fragment.
      */
-    public function getJsonFragmentValue(array $fragmentSelector = null): mixed
+    public function getJsonFragmentValue(?array $fragmentSelector = null): mixed
     {
         $values = $this->getFlattenedJsonFragmentValues($fragmentSelector);
 
@@ -170,7 +170,7 @@ class Artifact extends Model implements AuditableContract
     /**
      * Get the first value of the meta fragment.
      */
-    public function getMetaFragmentValue(array $fragmentSelector = null): mixed
+    public function getMetaFragmentValue(?array $fragmentSelector = null): mixed
     {
         $values = $this->getFlattenedMetaFragmentValues($fragmentSelector);
 

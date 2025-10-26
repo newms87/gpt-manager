@@ -13,28 +13,28 @@ class AuthTokenFactory extends Factory
     public function definition(): array
     {
         return [
-            'team_id' => Team::factory(),
-            'service' => AuthToken::SERVICE_GOOGLE,
-            'type' => AuthToken::TYPE_OAUTH,
-            'name' => null,
-            'access_token' => $this->faker->sha256(),
+            'team_id'       => Team::factory(),
+            'service'       => AuthToken::SERVICE_GOOGLE,
+            'type'          => AuthToken::TYPE_OAUTH,
+            'name'          => null,
+            'access_token'  => $this->faker->sha256(),
             'refresh_token' => $this->faker->sha256(),
-            'id_token' => $this->faker->sha256(),
-            'scopes' => [
+            'id_token'      => $this->faker->sha256(),
+            'scopes'        => [
                 'https://www.googleapis.com/auth/documents',
                 'https://www.googleapis.com/auth/drive',
                 'openid',
                 'email',
-                'profile'
+                'profile',
             ],
             'expires_at' => now()->addHour(),
-            'metadata' => [],
+            'metadata'   => [],
         ];
     }
 
     public function forService(string $service): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'service' => $service,
         ]);
     }
@@ -56,73 +56,73 @@ class AuthTokenFactory extends Factory
 
     public function oauth(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'type' => AuthToken::TYPE_OAUTH,
         ]);
     }
 
     public function apiKey(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'type' => AuthToken::TYPE_API_KEY,
-            'expires_at' => null, // API keys don't expire
+        return $this->state(fn(array $attributes) => [
+            'type'          => AuthToken::TYPE_API_KEY,
+            'expires_at'    => null, // API keys don't expire
             'refresh_token' => null,
-            'id_token' => null,
+            'id_token'      => null,
         ]);
     }
 
     public function expired(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'expires_at' => now()->subHour(),
         ]);
     }
 
     public function expiresSoon(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'expires_at' => now()->addMinutes(3),
         ]);
     }
 
     public function withoutAccessToken(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'access_token' => '',
         ]);
     }
 
     public function withoutRefreshToken(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'refresh_token' => '',
         ]);
     }
 
     public function forTeam(Team $team): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'team_id' => $team->id,
         ]);
     }
 
     public function withName(string $name): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'name' => $name,
         ]);
     }
 
     public function withScopes(array $scopes): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'scopes' => $scopes,
         ]);
     }
 
     public function withMetadata(array $metadata): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'metadata' => $metadata,
         ]);
     }

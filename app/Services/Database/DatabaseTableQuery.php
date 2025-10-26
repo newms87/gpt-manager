@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 class DatabaseTableQuery extends Builder
 {
     protected array $tableSchema;
+
     protected array $loadedRecords = [];
 
     public function __construct()
@@ -49,10 +50,10 @@ class DatabaseTableQuery extends Builder
         return implode(':', array_map(fn($field) => $record[$field] ?? '', $this->tableSchema['auto_ref']));
     }
 
-    public function prepareRecord(object $record = null): ?object
+    public function prepareRecord(?object $record = null): ?object
     {
         if ($record) {
-            foreach($this->getFields() as $fieldName => $fieldDefinition) {
+            foreach ($this->getFields() as $fieldName => $fieldDefinition) {
                 $type = $fieldDefinition['type'] ?? '';
                 if ($type === 'json') {
                     $record->$fieldName = json_decode($record->$fieldName, true);
@@ -67,7 +68,7 @@ class DatabaseTableQuery extends Builder
     {
         $results = parent::get($columns);
 
-        foreach($results as $result) {
+        foreach ($results as $result) {
             $this->prepareRecord($result);
         }
 
@@ -76,8 +77,9 @@ class DatabaseTableQuery extends Builder
 
     /**
      * Find a record by one or more unique fields
-     * @param int|string $id
-     * @param string[]   $columns
+     *
+     * @param  int|string  $id
+     * @param  string[]  $columns
      */
     public function find($id, $columns = ['*']): object
     {
@@ -122,7 +124,7 @@ class DatabaseTableQuery extends Builder
         }
 
         if (empty($record['ref'])) {
-            throw new Exception("Missing ref field in record: " . json_encode($record));
+            throw new Exception('Missing ref field in record: ' . json_encode($record));
         }
 
         // Fill in previously created record data
@@ -140,7 +142,7 @@ class DatabaseTableQuery extends Builder
      */
     public function processFields($record)
     {
-        foreach($this->getFields() as $fieldName => $fieldDefinition) {
+        foreach ($this->getFields() as $fieldName => $fieldDefinition) {
             if ($fieldName === 'timestamps' && $fieldDefinition === true) {
                 if (empty($record['created_at'])) {
                     $record['created_at'] = $record['created_at'] ?? now()->toDateTimeString();

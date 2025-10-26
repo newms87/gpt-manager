@@ -19,28 +19,31 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
     use SetUpTeamTrait;
 
     private WorkflowDefinitionBuilderTaskRunner $runner;
+
     private TaskRun $taskRun;
+
     private TaskProcess $taskProcess;
+
     private TaskDefinition $taskDefinition;
 
     public function setUp(): void
     {
         parent::setUp();
         $this->setUpTeam();
-        
+
         // Create required models with proper relationships and an agent
         $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        
+
         $this->taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'agent_id' => $agent->id,
-            'task_runner_name' => 'WorkflowDefinitionBuilderTaskRunner'
+            'team_id'          => $this->user->currentTeam->id,
+            'agent_id'         => $agent->id,
+            'task_runner_name' => 'WorkflowDefinitionBuilderTaskRunner',
         ]);
-        
+
         $this->taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id
+            'task_definition_id' => $this->taskDefinition->id,
         ]);
-        
+
         $this->taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
         ]);
@@ -63,7 +66,7 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
     public function test_prepareProcess_withTaskDefinition_usesTaskDefinitionTimeout(): void
     {
         // Given
-        $customTimeout = 300;
+        $customTimeout                               = 300;
         $this->taskDefinition->timeout_after_seconds = $customTimeout;
         $this->taskDefinition->save();
 
@@ -80,16 +83,16 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         // Given
         $inputArtifact = Artifact::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
-            'task_process_id' => $this->taskProcess->id,
-            'name' => 'User Input Requirements',
-            'text_content' => 'I need a workflow for processing data',
+            'task_process_id'    => $this->taskProcess->id,
+            'name'               => 'User Input Requirements',
+            'text_content'       => 'I need a workflow for processing data',
         ]);
 
         $planArtifact = Artifact::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
-            'task_process_id' => $this->taskProcess->id,
-            'name' => 'Approved Plan Document',
-            'text_content' => 'Step 1: Load data, Step 2: Process, Step 3: Output results',
+            'task_process_id'    => $this->taskProcess->id,
+            'name'               => 'Approved Plan Document',
+            'text_content'       => 'Step 1: Load data, Step 2: Process, Step 3: Output results',
         ]);
 
         // Associate artifacts as input artifacts for the task process
@@ -97,7 +100,7 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
 
         // When - use reflection to access protected method
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('extractInputFromArtifacts');
+        $method     = $reflection->getMethod('extractInputFromArtifacts');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner);
 
@@ -105,7 +108,7 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('user_input', $result);
         $this->assertArrayHasKey('approved_plan', $result);
         $this->assertArrayHasKey('workflow_state', $result);
-        
+
         $this->assertStringContainsString('I need a workflow for processing data', $result['user_input']);
         $this->assertStringContainsString('Step 1: Load data', $result['approved_plan']);
         $this->assertNull($result['workflow_state']);
@@ -116,9 +119,9 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         // Given
         $jsonArtifact = Artifact::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
-            'task_process_id' => $this->taskProcess->id,
-            'name' => 'Current Workflow State',
-            'json_content' => ['workflow_id' => 123, 'tasks' => ['task1', 'task2']],
+            'task_process_id'    => $this->taskProcess->id,
+            'name'               => 'Current Workflow State',
+            'json_content'       => ['workflow_id' => 123, 'tasks' => ['task1', 'task2']],
         ]);
 
         // Associate artifacts as input artifacts for the task process
@@ -126,7 +129,7 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
 
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('extractInputFromArtifacts');
+        $method     = $reflection->getMethod('extractInputFromArtifacts');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner);
 
@@ -138,7 +141,7 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $workflowRun = WorkflowRun::factory()->create([
+        $workflowRun        = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
         $this->taskRun->workflow_run_id = $workflowRun->id;
@@ -146,7 +149,7 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
 
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('resolveCurrentWorkflow');
+        $method     = $reflection->getMethod('resolveCurrentWorkflow');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner);
 
@@ -160,11 +163,11 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $this->taskDefinition->update(['task_runner_config' => ['workflow_definition_id' => $workflowDefinition->id]]);
-        
+
         // Refresh the task definition and task run to ensure the config is loaded
         $this->taskDefinition->refresh();
         $this->taskRun->refresh();
-        
+
         // Re-initialize the runner to pick up the updated task definition
         $this->runner = new WorkflowDefinitionBuilderTaskRunner();
         $this->runner->setTaskRun($this->taskRun);
@@ -172,7 +175,7 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
 
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('resolveCurrentWorkflow');
+        $method     = $reflection->getMethod('resolveCurrentWorkflow');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner);
 
@@ -187,7 +190,7 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
 
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('resolveCurrentWorkflow');
+        $method     = $reflection->getMethod('resolveCurrentWorkflow');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner);
 
@@ -199,13 +202,13 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
     {
         // Given
         $input = [
-            'user_input' => 'Create a data processing workflow',
-            'approved_plan' => 'Plan: Load CSV -> Transform -> Save to DB',
-            'workflow_state' => ['existing' => 'data']
+            'user_input'     => 'Create a data processing workflow',
+            'approved_plan'  => 'Plan: Load CSV -> Transform -> Save to DB',
+            'workflow_state' => ['existing' => 'data'],
         ];
         $currentWorkflow = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Existing Workflow'
+            'name'    => 'Existing Workflow',
         ]);
         $context = "# Test Documentation Context\nThis is test documentation.";
 
@@ -231,11 +234,11 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
     {
         // Given
         $input = [
-            'user_input' => 'Create a new workflow',
-            'approved_plan' => '',
-            'workflow_state' => null
+            'user_input'     => 'Create a new workflow',
+            'approved_plan'  => '',
+            'workflow_state' => null,
         ];
-        $context = "Test context";
+        $context = 'Test context';
 
         // When
         $result = $this->runner->buildOrchestratorPrompt($input, null, $context);
@@ -253,7 +256,7 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
 
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('getOrganizationSchemaDefinition');
+        $method     = $reflection->getMethod('getOrganizationSchemaDefinition');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner);
 
@@ -264,10 +267,10 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('workflow_definition', $result->schema['properties']);
         $this->assertArrayHasKey('task_specifications', $result->schema['properties']);
         $this->assertArrayHasKey('connections', $result->schema['properties']);
-        
+
         // Verify it was saved to database
         $this->assertDatabaseHas('schema_definitions', [
-            'name' => 'Workflow Organization Schema',
+            'name'    => 'Workflow Organization Schema',
             'team_id' => $this->user->currentTeam->id,
         ]);
     }
@@ -276,14 +279,14 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
     {
         // Given
         $existingSchema = SchemaDefinition::factory()->create([
-            'name' => 'Workflow Organization Schema',
+            'name'    => 'Workflow Organization Schema',
             'team_id' => $this->user->currentTeam->id,
-            'schema' => ['type' => 'object', 'properties' => ['test' => ['type' => 'string']]]
+            'schema'  => ['type' => 'object', 'properties' => ['test' => ['type' => 'string']]],
         ]);
 
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('getOrganizationSchemaDefinition');
+        $method     = $reflection->getMethod('getOrganizationSchemaDefinition');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner);
 
@@ -297,42 +300,42 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         // Given
         $organizationData = [
             'workflow_definition' => [
-                'name' => 'Test Workflow',
-                'description' => 'Test description'
+                'name'        => 'Test Workflow',
+                'description' => 'Test description',
             ],
             'task_specifications' => [
                 [
-                    'name' => 'Task 1',
+                    'name'        => 'Task 1',
                     'description' => 'First task',
                     'runner_type' => 'AgentThreadTaskRunner',
-                    'prompt' => 'Do task 1'
+                    'prompt'      => 'Do task 1',
                 ],
                 [
-                    'name' => 'Task 2',
+                    'name'        => 'Task 2',
                     'description' => 'Second task',
                     'runner_type' => 'WorkflowOutputTaskRunner',
-                    'prompt' => 'Do task 2'
-                ]
+                    'prompt'      => 'Do task 2',
+                ],
             ],
             'connections' => [
-                ['source' => 'Task 1', 'target' => 'Task 2']
-            ]
+                ['source' => 'Task 1', 'target' => 'Task 2'],
+            ],
         ];
 
         $organizationArtifact = Artifact::factory()->create([
             'task_process_id' => $this->taskProcess->id,
-            'json_content' => $organizationData,
+            'json_content'    => $organizationData,
         ]);
 
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('processOrganizationResults');
+        $method     = $reflection->getMethod('processOrganizationResults');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner, $organizationArtifact);
 
         // Then
         $this->assertCount(2, $result); // Two task specifications should create two artifacts
-        
+
         foreach ($result as $index => $artifact) {
             $this->assertInstanceOf(Artifact::class, $artifact);
             $this->assertArrayHasKey('workflow_definition', $artifact->json_content);
@@ -340,11 +343,11 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
             $this->assertArrayHasKey('connections', $artifact->json_content);
             $this->assertEquals($index, $artifact->json_content['task_index']);
             $this->assertEquals($index, $artifact->position);
-            
+
             // Verify the task specification is correct
             $expectedTask = $organizationData['task_specifications'][$index];
             $this->assertEquals($expectedTask, $artifact->json_content['task_specification']);
-            
+
             // Verify text content formatting
             $this->assertStringContainsString('# Task Specification ' . ($index + 1), $artifact->text_content);
             $this->assertStringContainsString('**Name:** ' . $expectedTask['name'], $artifact->text_content);
@@ -357,13 +360,13 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         // Given
         $organizationArtifact = Artifact::factory()->create([
             'task_process_id' => $this->taskProcess->id,
-            'json_content' => null,
-            'text_content' => 'Some text content',
+            'json_content'    => null,
+            'text_content'    => 'Some text content',
         ]);
 
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('processOrganizationResults');
+        $method     = $reflection->getMethod('processOrganizationResults');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner, $organizationArtifact);
 
@@ -378,17 +381,17 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         $organizationData = [
             'workflow_definition' => ['name' => 'Test'],
             'task_specifications' => [], // Empty task specifications
-            'connections' => []
+            'connections'         => [],
         ];
 
         $organizationArtifact = Artifact::factory()->create([
             'task_process_id' => $this->taskProcess->id,
-            'json_content' => $organizationData,
+            'json_content'    => $organizationData,
         ]);
 
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('processOrganizationResults');
+        $method     = $reflection->getMethod('processOrganizationResults');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner, $organizationArtifact);
 
@@ -401,18 +404,18 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
     {
         // Given
         $taskSpec = [
-            'name' => 'Test Task',
-            'description' => 'This is a test task',
-            'runner_type' => 'AgentThreadTaskRunner',
+            'name'               => 'Test Task',
+            'description'        => 'This is a test task',
+            'runner_type'        => 'AgentThreadTaskRunner',
             'agent_requirements' => 'General purpose agent',
-            'prompt' => 'Execute the test task with given parameters',
-            'configuration' => ['timeout' => 120, 'max_retries' => 3]
+            'prompt'             => 'Execute the test task with given parameters',
+            'configuration'      => ['timeout' => 120, 'max_retries' => 3],
         ];
         $index = 0;
 
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('formatTaskSpecificationText');
+        $method     = $reflection->getMethod('formatTaskSpecificationText');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner, $taskSpec, $index);
 
@@ -435,35 +438,35 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         // Given - Create input artifacts
         $inputArtifact = Artifact::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
-            'task_process_id' => $this->taskProcess->id,
-            'name' => 'User Requirements',
-            'text_content' => 'Create a workflow for data processing',
+            'task_process_id'    => $this->taskProcess->id,
+            'name'               => 'User Requirements',
+            'text_content'       => 'Create a workflow for data processing',
         ]);
 
         // Associate as input artifact
         $this->taskProcess->inputArtifacts()->attach([$inputArtifact->id]);
-        
+
         // Set up the task process as ready
         $this->taskProcess->update(['is_ready' => true]);
 
         // When & Then - Since we can't mock the agent thread services (per the requirements),
         // we expect this to fail when attempting to create/run the agent thread.
         // This verifies the input processing works correctly up to the agent execution stage.
-        
+
         $this->expectException(\Exception::class);
-        
+
         $this->runner->run();
     }
 
     public function test_run_withNoInputArtifacts_completesWithEmptyResult(): void
     {
         // Given - no input artifacts (but task definition has agent)
-        
+
         // When & Then - Without input artifacts, this will still fail at the agent setup stage
         // since the AgentThreadTaskRunner expects specific agent thread configurations
-        
+
         $this->expectException(\Exception::class);
-        
+
         $this->runner->run();
     }
 
@@ -471,10 +474,10 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
     {
         // Given
         $otherTeam = \App\Models\Team\Team::factory()->create();
-        
+
         // When
         $reflection = new \ReflectionClass($this->runner);
-        $method = $reflection->getMethod('getOrganizationSchemaDefinition');
+        $method     = $reflection->getMethod('getOrganizationSchemaDefinition');
         $method->setAccessible(true);
         $result = $method->invoke($this->runner);
 

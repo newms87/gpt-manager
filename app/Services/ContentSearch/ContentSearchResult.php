@@ -4,23 +4,35 @@ namespace App\Services\ContentSearch;
 
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinitionDirective;
-use Illuminate\Support\Collection;
 
 class ContentSearchResult
 {
     private ?string $extractedValue = null;
+
     private bool $found = false;
+
     private string $extractionMethod = '';
+
     private ?Artifact $sourceArtifact = null;
+
     private $sourceDirective = null;
+
     private string $sourceType = '';
+
     private string $sourceLocation = '';
+
     private array $metadata = [];
+
     private bool $validated = false;
+
     private ?string $validationError = null;
+
     private int $attempts = 0;
+
     private float $confidenceScore = 0.0;
+
     private array $allMatches = [];
+
     private array $debugInfo = [];
 
     public function __construct()
@@ -38,10 +50,11 @@ class ContentSearchResult
      */
     public function setFound(string $value, string $method = '', float $confidence = 1.0): self
     {
-        $this->extractedValue = $value;
-        $this->found = true;
+        $this->extractedValue   = $value;
+        $this->found            = true;
         $this->extractionMethod = $method;
-        $this->confidenceScore = $confidence;
+        $this->confidenceScore  = $confidence;
+
         return $this;
     }
 
@@ -51,10 +64,11 @@ class ContentSearchResult
     public function setNotFound(string $reason = ''): self
     {
         $this->extractedValue = null;
-        $this->found = false;
+        $this->found          = false;
         if ($reason) {
             $this->addDebugInfo('not_found_reason', $reason);
         }
+
         return $this;
     }
 
@@ -64,8 +78,9 @@ class ContentSearchResult
     public function setSourceArtifact(Artifact $artifact, string $location = ''): self
     {
         $this->sourceArtifact = $artifact;
-        $this->sourceType = 'artifact';
+        $this->sourceType     = 'artifact';
         $this->sourceLocation = $location;
+
         return $this;
     }
 
@@ -75,8 +90,9 @@ class ContentSearchResult
     public function setSourceDirective($directive, string $location = ''): self
     {
         $this->sourceDirective = $directive;
-        $this->sourceType = 'directive';
-        $this->sourceLocation = $location;
+        $this->sourceType      = 'directive';
+        $this->sourceLocation  = $location;
+
         return $this;
     }
 
@@ -85,8 +101,9 @@ class ContentSearchResult
      */
     public function setValidated(bool $valid, ?string $error = null): self
     {
-        $this->validated = $valid;
+        $this->validated       = $valid;
         $this->validationError = $error;
+
         return $this;
     }
 
@@ -96,6 +113,7 @@ class ContentSearchResult
     public function incrementAttempts(): self
     {
         $this->attempts++;
+
         return $this;
     }
 
@@ -105,6 +123,7 @@ class ContentSearchResult
     public function setMetadata(array $metadata): self
     {
         $this->metadata = $metadata;
+
         return $this;
     }
 
@@ -114,6 +133,7 @@ class ContentSearchResult
     public function addMetadata(string $key, mixed $value): self
     {
         $this->metadata[$key] = $value;
+
         return $this;
     }
 
@@ -123,6 +143,7 @@ class ContentSearchResult
     public function setAllMatches(array $matches): self
     {
         $this->allMatches = $matches;
+
         return $this;
     }
 
@@ -132,6 +153,7 @@ class ContentSearchResult
     public function addDebugInfo(string $key, mixed $value): self
     {
         $this->debugInfo[$key] = $value;
+
         return $this;
     }
 
@@ -141,6 +163,7 @@ class ContentSearchResult
     public function setDebugInfo(array $debugInfo): self
     {
         $this->debugInfo = array_merge($this->debugInfo, $debugInfo);
+
         return $this;
     }
 
@@ -249,14 +272,15 @@ class ContentSearchResult
         if ($this->sourceArtifact) {
             return "artifact:{$this->sourceArtifact->id}";
         }
-        
+
         if ($this->sourceDirective) {
-            $id = is_object($this->sourceDirective) && property_exists($this->sourceDirective, 'id') 
-                ? $this->sourceDirective->id 
+            $id = is_object($this->sourceDirective) && property_exists($this->sourceDirective, 'id')
+                ? $this->sourceDirective->id
                 : 'unknown';
+
             return "directive:{$id}";
         }
-        
+
         return 'unknown';
     }
 
@@ -266,18 +290,18 @@ class ContentSearchResult
     public function getSourceDescription(): string
     {
         $description = $this->sourceType;
-        
+
         if ($this->sourceArtifact) {
             $description .= " (ID: {$this->sourceArtifact->id})";
             if ($this->sourceArtifact->name) {
                 $description .= " '{$this->sourceArtifact->name}'";
             }
         } elseif ($this->sourceDirective) {
-            $id = is_object($this->sourceDirective) && property_exists($this->sourceDirective, 'id') 
-                ? $this->sourceDirective->id 
+            $id = is_object($this->sourceDirective) && property_exists($this->sourceDirective, 'id')
+                ? $this->sourceDirective->id
                 : 'unknown';
             $description .= " (ID: {$id})";
-            
+
             if (is_object($this->sourceDirective) && property_exists($this->sourceDirective, 'directive') && $this->sourceDirective->directive) {
                 $name = is_object($this->sourceDirective->directive) && property_exists($this->sourceDirective->directive, 'name')
                     ? $this->sourceDirective->directive->name
@@ -285,11 +309,11 @@ class ContentSearchResult
                 $description .= " '{$name}'";
             }
         }
-        
+
         if ($this->sourceLocation) {
             $description .= " at {$this->sourceLocation}";
         }
-        
+
         return $description;
     }
 
@@ -299,19 +323,19 @@ class ContentSearchResult
     public function toArray(): array
     {
         return [
-            'found' => $this->found,
-            'value' => $this->extractedValue,
+            'found'             => $this->found,
+            'value'             => $this->extractedValue,
             'extraction_method' => $this->extractionMethod,
-            'source_type' => $this->sourceType,
+            'source_type'       => $this->sourceType,
             'source_identifier' => $this->getSourceIdentifier(),
-            'source_location' => $this->sourceLocation,
-            'validated' => $this->validated,
-            'validation_error' => $this->validationError,
-            'attempts' => $this->attempts,
-            'confidence_score' => $this->confidenceScore,
-            'metadata' => $this->metadata,
+            'source_location'   => $this->sourceLocation,
+            'validated'         => $this->validated,
+            'validation_error'  => $this->validationError,
+            'attempts'          => $this->attempts,
+            'confidence_score'  => $this->confidenceScore,
+            'metadata'          => $this->metadata,
             'all_matches_count' => count($this->allMatches),
-            'debug_info' => $this->debugInfo,
+            'debug_info'        => $this->debugInfo,
         ];
     }
 

@@ -17,8 +17,10 @@ class BillingHistoryRepositoryTest extends AuthenticatedTestCase
     use SetUpTeamTrait;
 
     private BillingHistoryRepository $billingHistoryRepository;
-    private Team                     $team;
-    private Team                     $differentTeam;
+
+    private Team $team;
+
+    private Team $differentTeam;
 
     public function setUp(): void
     {
@@ -438,7 +440,7 @@ class BillingHistoryRepositoryTest extends AuthenticatedTestCase
     {
         // Given
         $records = collect();
-        for($i = 1; $i <= 25; $i++) {
+        for ($i = 1; $i <= 25; $i++) {
             $records->push(BillingHistory::factory()->create([
                 'team_id'     => $this->team->id,
                 'description' => "Record $i",

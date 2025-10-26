@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @mixin ResourcePackageableContract
  * @mixin Model
+ *
  * @property BelongsTo|ResourcePackageImport $resourcePackageImport
  */
 trait ResourcePackageableTrait

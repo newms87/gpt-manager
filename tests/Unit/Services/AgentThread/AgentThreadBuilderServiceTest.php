@@ -106,7 +106,7 @@ class AgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function withArtifacts_withoutFilter_addsAllArtifactContent(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent    = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $artifact = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Test content',
@@ -129,7 +129,7 @@ class AgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function withArtifacts_withFilter_filtersContent(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent    = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $artifact = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Test content',
@@ -159,7 +159,7 @@ class AgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function withArtifacts_calledMultipleTimes_addsMultipleGroups(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent     = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $artifact1 = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'First artifact',
@@ -189,7 +189,7 @@ class AgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function includePageNumbers_withArtifacts_injectsPageNumbers(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent    = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $artifact = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Page content',
@@ -206,7 +206,7 @@ class AgentThreadBuilderServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertInstanceOf(AgentThread::class, $thread);
         $messages = $thread->messages;
-        $content = $messages->pluck('content')->join(' ');
+        $content  = $messages->pluck('content')->join(' ');
         $this->assertStringContainsString('Page 5', $content);
     }
 
@@ -214,7 +214,7 @@ class AgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function build_calledTwice_returnsCachedThread(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent   = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $builder = AgentThreadBuilderService::for($agent)
             ->named('Cached Thread')
             ->withMessage('Test');
@@ -242,7 +242,7 @@ class AgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function withResponseSchema_withSchema_configuresSchema(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent  = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $schema = SchemaDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
 
         // When - Just test that the builder accepts the configuration
@@ -324,7 +324,7 @@ class AgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function artifactFilter_withAllOptionsDisabled_filtersEverything(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent    = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $artifact = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Test content',
@@ -355,7 +355,7 @@ class AgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function named_withLongName_truncatesAppropriately(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent    = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $longName = str_repeat('A', 200);
 
         // When
@@ -388,7 +388,7 @@ class AgentThreadBuilderServiceTest extends AuthenticatedTestCase
     public function artifactFilter_withFragmentSelectors_appliesSelectors(): void
     {
         // Given
-        $agent = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $agent    = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $artifact = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Test content',

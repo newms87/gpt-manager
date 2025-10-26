@@ -14,7 +14,7 @@ return [
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
+        'guard'     => env('AUTH_GUARD', 'web'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     ],
 
@@ -37,7 +37,7 @@ return [
 
     'guards' => [
         'web' => [
-            'driver' => 'session',
+            'driver'   => 'session',
             'provider' => 'users',
         ],
     ],
@@ -62,7 +62,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'model'  => env('AUTH_MODEL', App\Models\User::class),
         ],
 
         // 'users' => [
@@ -93,8 +93,8 @@ return [
     'passwords' => [
         'users' => [
             'provider' => 'users',
-            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
-            'expire' => 60,
+            'table'    => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire'   => 60,
             'throttle' => 60,
         ],
     ],
@@ -124,37 +124,37 @@ return [
 
     'oauth' => [
         'google' => [
-            'client_id' => env('GOOGLE_OAUTH_CLIENT_ID'),
+            'client_id'     => env('GOOGLE_OAUTH_CLIENT_ID'),
             'client_secret' => env('GOOGLE_OAUTH_CLIENT_SECRET'),
-            'redirect_uri' => env('APP_URL') . '/api/oauth/callback',
-            'auth_url' => 'https://accounts.google.com/o/oauth2/v2/auth',
-            'token_url' => 'https://oauth2.googleapis.com/token',
-            'revoke_url' => 'https://oauth2.googleapis.com/revoke',
-            'scopes' => [
+            'redirect_uri'  => env('APP_URL') . '/api/oauth/callback',
+            'auth_url'      => 'https://accounts.google.com/o/oauth2/v2/auth',
+            'token_url'     => 'https://oauth2.googleapis.com/token',
+            'revoke_url'    => 'https://oauth2.googleapis.com/revoke',
+            'scopes'        => [
                 'https://www.googleapis.com/auth/documents',
                 'https://www.googleapis.com/auth/drive',
             ],
-            'access_type' => 'offline',
+            'access_type'     => 'offline',
             'approval_prompt' => 'force',
         ],
 
         // Example configuration for other services
         'stripe' => [
-            'client_id' => env('STRIPE_OAUTH_CLIENT_ID'),
+            'client_id'     => env('STRIPE_OAUTH_CLIENT_ID'),
             'client_secret' => env('STRIPE_OAUTH_CLIENT_SECRET'),
-            'redirect_uri' => env('APP_URL') . '/api/oauth/callback',
-            'auth_url' => 'https://connect.stripe.com/oauth/authorize',
-            'token_url' => 'https://connect.stripe.com/oauth/token',
-            'scopes' => ['read_write'], // Stripe uses different scope format
+            'redirect_uri'  => env('APP_URL') . '/api/oauth/callback',
+            'auth_url'      => 'https://connect.stripe.com/oauth/authorize',
+            'token_url'     => 'https://connect.stripe.com/oauth/token',
+            'scopes'        => ['read_write'], // Stripe uses different scope format
         ],
 
         'github' => [
-            'client_id' => env('GITHUB_OAUTH_CLIENT_ID'),
+            'client_id'     => env('GITHUB_OAUTH_CLIENT_ID'),
             'client_secret' => env('GITHUB_OAUTH_CLIENT_SECRET'),
-            'redirect_uri' => env('APP_URL') . '/api/oauth/callback',
-            'auth_url' => 'https://github.com/login/oauth/authorize',
-            'token_url' => 'https://github.com/login/oauth/access_token',
-            'scopes' => ['repo', 'user'],
+            'redirect_uri'  => env('APP_URL') . '/api/oauth/callback',
+            'auth_url'      => 'https://github.com/login/oauth/authorize',
+            'token_url'     => 'https://github.com/login/oauth/access_token',
+            'scopes'        => ['repo', 'user'],
         ],
 
         // Add more services as needed...
@@ -172,15 +172,15 @@ return [
 
     'api_keys' => [
         'openai' => [
-            'name' => 'OpenAI API Key',
+            'name'        => 'OpenAI API Key',
             'description' => 'API key for OpenAI services',
-            'url' => 'https://platform.openai.com/api-keys',
+            'url'         => 'https://platform.openai.com/api-keys',
         ],
 
         'anthropic' => [
-            'name' => 'Anthropic API Key', 
+            'name'        => 'Anthropic API Key',
             'description' => 'API key for Claude AI services',
-            'url' => 'https://console.anthropic.com/',
+            'url'         => 'https://console.anthropic.com/',
         ],
 
         // Add more API key services as needed...

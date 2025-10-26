@@ -16,7 +16,7 @@ use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class ContentSource extends Model implements AuditableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait, HasRelationCountersTrait, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasRelationCountersTrait, SoftDeletes;
 
     const string
         TYPE_API = 'api',
@@ -50,7 +50,6 @@ class ContentSource extends Model implements AuditableContract
     }
 
     /**
-     * @return static
      * @throws ValidationException
      */
     public function validate(): static

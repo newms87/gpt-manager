@@ -12,7 +12,7 @@ class AuditRequestRepository extends ActionRepository
 
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
-        throw new ValidationError("Actions are not allowed on Audit Requests");
+        throw new ValidationError('Actions are not allowed on Audit Requests');
     }
 
     public function fieldOptions(?array $filter = []): array

@@ -6,7 +6,6 @@ use App\Models\Demand\DemandTemplate;
 use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
-use App\Models\Schema\SchemaFragment;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -48,8 +47,8 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Test Variable',
-            'description' => 'Test Description',
+            'name'               => 'Test Variable',
+            'description'        => 'Test Description',
         ]);
 
         // When
@@ -75,8 +74,8 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $response->assertJsonFragment([
-            'name' => 'Test Variable',
-            'description' => 'Test Description',
+            'name'         => 'Test Variable',
+            'description'  => 'Test Description',
             'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
         ]);
     }
@@ -99,8 +98,8 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
 
         $association = SchemaAssociation::factory()->create([
             'schema_definition_id' => $schemaDefinition->id,
-            'object_type' => TemplateVariable::class,
-            'object_id' => $variable->id,
+            'object_type'          => TemplateVariable::class,
+            'object_id'            => $variable->id,
         ]);
 
         $variable->team_object_schema_association_id = $association->id;
@@ -119,7 +118,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_show_returns404WhenVariableDoesNotExist(): void
     {
         // When
-        $response = $this->getJson("/api/template-variables/99999");
+        $response = $this->getJson('/api/template-variables/99999');
 
         // Then
         $response->assertStatus(404);
@@ -158,34 +157,34 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Original Name',
-            'description' => 'Original Description',
+            'name'               => 'Original Name',
+            'description'        => 'Original Description',
         ]);
 
         $data = [
-            'description' => 'Updated Description',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions' => $variable->ai_instructions,
-            'multi_value_strategy' => $variable->multi_value_strategy,
+            'description'           => 'Updated Description',
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'       => $variable->ai_instructions,
+            'multi_value_strategy'  => $variable->multi_value_strategy,
             'multi_value_separator' => $variable->multi_value_separator,
         ];
 
         // When
         $response = $this->postJson("/api/template-variables/{$variable->id}/apply-action", [
             'action' => 'update',
-            'data' => $data
+            'data'   => $data,
         ]);
 
         // Then
         $response->assertStatus(200);
         $response->assertJsonFragment([
-            'name' => 'Original Name', // Name should remain unchanged
+            'name'        => 'Original Name', // Name should remain unchanged
             'description' => 'Updated Description',
         ]);
 
         $this->assertDatabaseHas('template_variables', [
-            'id' => $variable->id,
-            'name' => 'Original Name', // Name should remain unchanged
+            'id'          => $variable->id,
+            'name'        => 'Original Name', // Name should remain unchanged
             'description' => 'Updated Description',
         ]);
     }
@@ -203,16 +202,16 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $data = [
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_ARTIFACT,
-            'artifact_categories' => ['medical', 'legal'],
-            'multi_value_strategy' => $variable->multi_value_strategy,
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'   => ['medical', 'legal'],
+            'multi_value_strategy'  => $variable->multi_value_strategy,
             'multi_value_separator' => $variable->multi_value_separator,
         ];
 
         // When
         $response = $this->postJson("/api/template-variables/{$variable->id}/apply-action", [
             'action' => 'update',
-            'data' => $data
+            'data'   => $data,
         ]);
 
         // Then
@@ -240,20 +239,20 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $data = [
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_ARTIFACT,
-            'artifact_categories' => ['updated', 'categories'],
+            'mapping_type'               => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'        => ['updated', 'categories'],
             'artifact_fragment_selector' => [
-                'type' => 'xpath',
+                'type'     => 'xpath',
                 'selector' => '//div[@class="content"]',
             ],
-            'multi_value_strategy' => $variable->multi_value_strategy,
+            'multi_value_strategy'  => $variable->multi_value_strategy,
             'multi_value_separator' => $variable->multi_value_separator,
         ];
 
         // When
         $response = $this->postJson("/api/template-variables/{$variable->id}/apply-action", [
             'action' => 'update',
-            'data' => $data
+            'data'   => $data,
         ]);
 
         // Then
@@ -281,16 +280,16 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $data = [
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
-            'schema_definition_id' => $schemaDefinition->id,
-            'multi_value_strategy' => $variable->multi_value_strategy,
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
+            'schema_definition_id'  => $schemaDefinition->id,
+            'multi_value_strategy'  => $variable->multi_value_strategy,
             'multi_value_separator' => $variable->multi_value_separator,
         ];
 
         // When
         $response = $this->postJson("/api/template-variables/{$variable->id}/apply-action", [
             'action' => 'update',
-            'data' => $data
+            'data'   => $data,
         ]);
 
         // Then
@@ -311,20 +310,20 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
             'demand_template_id' => $template->id,
-            'ai_instructions' => 'Original instructions',
+            'ai_instructions'    => 'Original instructions',
         ]);
 
         $data = [
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions' => 'Updated AI instructions for extraction',
-            'multi_value_strategy' => $variable->multi_value_strategy,
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'       => 'Updated AI instructions for extraction',
+            'multi_value_strategy'  => $variable->multi_value_strategy,
             'multi_value_separator' => $variable->multi_value_separator,
         ];
 
         // When
         $response = $this->postJson("/api/template-variables/{$variable->id}/apply-action", [
             'action' => 'update',
-            'data' => $data
+            'data'   => $data,
         ]);
 
         // Then
@@ -343,22 +342,22 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
+            'demand_template_id'    => $template->id,
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
             'multi_value_separator' => ', ',
         ]);
 
         $data = [
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions' => $variable->ai_instructions,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'       => $variable->ai_instructions,
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_FIRST,
             'multi_value_separator' => '|',
         ];
 
         // When
         $response = $this->postJson("/api/template-variables/{$variable->id}/apply-action", [
             'action' => 'update',
-            'data' => $data
+            'data'   => $data,
         ]);
 
         // Then
@@ -388,22 +387,22 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $data = [
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
-            'schema_definition_id' => $newSchemaDefinition->id,
-            'multi_value_strategy' => $variable->multi_value_strategy,
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
+            'schema_definition_id'  => $newSchemaDefinition->id,
+            'multi_value_strategy'  => $variable->multi_value_strategy,
             'multi_value_separator' => $variable->multi_value_separator,
         ];
 
         // When
         $response = $this->postJson("/api/template-variables/{$variable->id}/apply-action", [
             'action' => 'update',
-            'data' => $data
+            'data'   => $data,
         ]);
 
         // Then
         $response->assertStatus(200);
 
-        $updated = $variable->fresh();
+        $updated     = $variable->fresh();
         $association = SchemaAssociation::find($updated->team_object_schema_association_id);
         $this->assertNotNull($association);
         $this->assertEquals($newSchemaDefinition->id, $association->schema_definition_id);
@@ -423,13 +422,13 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
 
         $data = [
             'mapping_type' => 'invalid_type', // Invalid mapping type
-            'description' => '', // Empty description is allowed, but invalid mapping type is not
+            'description'  => '', // Empty description is allowed, but invalid mapping type is not
         ];
 
         // When
         $response = $this->postJson("/api/template-variables/{$variable->id}/apply-action", [
             'action' => 'update',
-            'data' => $data
+            'data'   => $data,
         ]);
 
         // Then
@@ -456,21 +455,21 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
             'demand_template_id' => $template->id,
-            'name' => 'Original Name',
+            'name'               => 'Original Name',
         ]);
 
         $data = [
-            'name' => 'Attempting to Change Name',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions' => $variable->ai_instructions,
-            'multi_value_strategy' => $variable->multi_value_strategy,
+            'name'                  => 'Attempting to Change Name',
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'       => $variable->ai_instructions,
+            'multi_value_strategy'  => $variable->multi_value_strategy,
             'multi_value_separator' => $variable->multi_value_separator,
         ];
 
         // When
         $response = $this->postJson("/api/template-variables/{$variable->id}/apply-action", [
             'action' => 'update',
-            'data' => $data
+            'data'   => $data,
         ]);
 
         // Then
@@ -484,7 +483,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
 
         // Verify name was not changed
         $this->assertDatabaseHas('template_variables', [
-            'id' => $variable->id,
+            'id'   => $variable->id,
             'name' => 'Original Name',
         ]);
     }
@@ -499,16 +498,16 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $data = [
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions' => 'Updated instructions',
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
+            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'       => 'Updated instructions',
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
             'multi_value_separator' => ', ',
         ];
 
         // When
         $response = $this->postJson("/api/template-variables/{$variable->id}/apply-action", [
             'action' => 'update',
-            'data' => $data
+            'data'   => $data,
         ]);
 
         // Then
@@ -538,11 +537,11 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
-            'name' => 'Complete Variable',
-            'description' => 'Full description',
-            'ai_instructions' => 'AI instructions here',
-            'multi_value_strategy' => TemplateVariable::STRATEGY_UNIQUE,
+            'demand_template_id'    => $template->id,
+            'name'                  => 'Complete Variable',
+            'description'           => 'Full description',
+            'ai_instructions'       => 'AI instructions here',
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_UNIQUE,
             'multi_value_separator' => ' :: ',
         ]);
 
@@ -579,7 +578,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
 
         $schemaDefinition = SchemaDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'name' => 'Test Schema',
+            'name'    => 'Test Schema',
         ]);
 
         $variable = TemplateVariable::factory()->teamObjectMapped()->create([
@@ -588,8 +587,8 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
 
         $association = SchemaAssociation::factory()->create([
             'schema_definition_id' => $schemaDefinition->id,
-            'object_type' => TemplateVariable::class,
-            'object_id' => $variable->id,
+            'object_type'          => TemplateVariable::class,
+            'object_id'            => $variable->id,
         ]);
 
         $variable->team_object_schema_association_id = $association->id;
@@ -637,7 +636,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'demand_template_id' => $template->id,
+            'demand_template_id'  => $template->id,
             'artifact_categories' => ['medical', 'legal', 'financial'],
         ]);
 
@@ -660,13 +659,13 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $fragmentSelector = [
-            'type' => 'css_selector',
+            'type'     => 'css_selector',
             'selector' => '.content .section',
-            'options' => ['trim' => true],
+            'options'  => ['trim' => true],
         ];
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'demand_template_id' => $template->id,
+            'demand_template_id'         => $template->id,
             'artifact_fragment_selector' => $fragmentSelector,
         ]);
 

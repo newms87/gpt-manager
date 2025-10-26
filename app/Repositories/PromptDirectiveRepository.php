@@ -21,7 +21,7 @@ class PromptDirectiveRepository extends ActionRepository
     public function summaryQuery(array $filter = []): Builder|QueryBuilder
     {
         return parent::summaryQuery($filter)->addSelect([
-            DB::raw("SUM(agents_count) as agents_count"),
+            DB::raw('SUM(agents_count) as agents_count'),
         ]);
     }
 
@@ -30,7 +30,7 @@ class PromptDirectiveRepository extends ActionRepository
         return match ($action) {
             'create' => $this->createPromptDirective($data),
             'update' => $this->updatePromptDirective($model, $data),
-            default => parent::applyAction($action, $model, $data)
+            default  => parent::applyAction($action, $model, $data)
         };
     }
 

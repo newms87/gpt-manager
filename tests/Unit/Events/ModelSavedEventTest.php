@@ -23,12 +23,13 @@ class ModelSavedEventTest extends AuthenticatedTestCase
         // Given
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'TestObject',
-            'name' => 'Test Object',
+            'type'    => 'TestObject',
+            'name'    => 'Test Object',
         ]);
 
         // When - Create event with 'created' type
-        $event = new class($teamObject, 'created', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent {
+        $event = new class($teamObject, 'created', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent
+        {
             protected function createdData(): array
             {
                 return TeamObjectResource::make($this->model, [
@@ -64,12 +65,13 @@ class ModelSavedEventTest extends AuthenticatedTestCase
         // Given
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type' => 'TestObject',
-            'name' => 'Test Object',
+            'type'    => 'TestObject',
+            'name'    => 'Test Object',
         ]);
 
         // When - Create event with 'updated' type
-        $event = new class($teamObject, 'updated', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent {
+        $event = new class($teamObject, 'updated', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent
+        {
             protected function createdData(): array
             {
                 return TeamObjectResource::make($this->model, [
@@ -104,14 +106,15 @@ class ModelSavedEventTest extends AuthenticatedTestCase
     {
         // Given
         $teamObject = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type' => 'TestObject',
-            'name' => 'Test Object',
+            'team_id'     => $this->user->currentTeam->id,
+            'type'        => 'TestObject',
+            'name'        => 'Test Object',
             'description' => 'Test Description',
         ]);
 
         // When - Use '*' => false to exclude all except specified
-        $event = new class($teamObject, 'updated', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent {
+        $event = new class($teamObject, 'updated', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent
+        {
             protected function createdData(): array
             {
                 return TeamObjectResource::make($this->model, [
@@ -151,7 +154,8 @@ class ModelSavedEventTest extends AuthenticatedTestCase
         ]);
 
         // When - Even with minimal field selection
-        $event = new class($teamObject, 'updated', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent {
+        $event = new class($teamObject, 'updated', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent
+        {
             protected function createdData(): array
             {
                 return TeamObjectResource::make($this->model, [
@@ -188,12 +192,13 @@ class ModelSavedEventTest extends AuthenticatedTestCase
 
         // Subscribe to TeamObject events
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'TeamObject',
+            'resource_type'      => 'TeamObject',
             'model_id_or_filter' => true,
         ]);
 
         // When
-        $event = new class($teamObject, 'updated', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent {
+        $event = new class($teamObject, 'updated', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent
+        {
             protected function createdData(): array
             {
                 return [];
@@ -223,7 +228,8 @@ class ModelSavedEventTest extends AuthenticatedTestCase
         // No subscription created
 
         // When
-        $event = new class($teamObject, 'updated', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent {
+        $event = new class($teamObject, 'updated', TeamObjectResource::class, $teamObject->team_id) extends ModelSavedEvent
+        {
             protected function createdData(): array
             {
                 return [];
@@ -251,12 +257,13 @@ class ModelSavedEventTest extends AuthenticatedTestCase
 
         // Subscribe to TeamObject events
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'TeamObject',
+            'resource_type'      => 'TeamObject',
             'model_id_or_filter' => true,
         ]);
 
         // When - Create event with null team_id
-        $event = new class($teamObject, 'updated', TeamObjectResource::class, null) extends ModelSavedEvent {
+        $event = new class($teamObject, 'updated', TeamObjectResource::class, null) extends ModelSavedEvent
+        {
             protected function createdData(): array
             {
                 return [];

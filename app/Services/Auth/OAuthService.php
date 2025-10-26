@@ -28,7 +28,7 @@ class OAuthService
     public function isConfigured(string $service): bool
     {
         $config = $this->getServiceConfig($service);
-        
+
         return !empty($config['client_id']) && !empty($config['client_secret']);
     }
 
@@ -38,7 +38,7 @@ class OAuthService
     public function hasValidToken(string $service, ?Team $team = null): bool
     {
         $token = $this->repository->getOAuthToken($service, $team);
-        
+
         return $token && $token->isValid();
     }
 
@@ -48,7 +48,7 @@ class OAuthService
     public function hasValidTokenWithScopes(string $service, array $requiredScopes, ?Team $team = null): bool
     {
         $token = $this->repository->getOAuthToken($service, $team);
-        
+
         return $token && $token->isValid() && $token->hasScopes($requiredScopes);
     }
 
@@ -71,7 +71,7 @@ class OAuthService
                 static::log('Failed to refresh token', [
                     'service' => $service,
                     'team_id' => $token->team_id,
-                    'error' => $e->getMessage()
+                    'error'   => $e->getMessage(),
                 ]);
                 // Return the existing token even if refresh failed
                 // The caller can handle expired tokens
@@ -86,7 +86,7 @@ class OAuthService
      */
     public function getValidToken(string $service, ?Team $team = null): AuthToken
     {
-        $team = $team ?: team();
+        $team  = $team ?: team();
         $token = $this->repository->getOAuthToken($service, $team);
 
         if (!$token) {
@@ -95,7 +95,7 @@ class OAuthService
 
         // Check if token is expired or will expire soon
         $needsRefresh = $token->isExpired() || $token->willExpireWithin(5);
-        
+
         if ($needsRefresh && $token->canBeRefreshed()) {
             // Try to refresh the token
             try {
@@ -106,12 +106,12 @@ class OAuthService
             } catch (\Exception $e) {
                 // Refresh failed for other reasons
                 static::log('Token refresh failed', [
-                    'service' => $service,
-                    'team_id' => $team?->id,
-                    'error' => $e->getMessage(),
-                    'was_expired' => $token->isExpired()
+                    'service'     => $service,
+                    'team_id'     => $team?->id,
+                    'error'       => $e->getMessage(),
+                    'was_expired' => $token->isExpired(),
                 ]);
-                
+
                 // If the token is actually expired (not just expiring soon), throw exception
                 if ($token->isExpired()) {
                     throw new TokenExpiredException($service, $team?->id, $token->expires_at?->toISOString());
@@ -144,18 +144,18 @@ class OAuthService
         // If team is provided, encode team ID in state
         if ($team && !$state) {
             $state = base64_encode(json_encode([
-                'service' => $service,
-                'team_id' => $team->id,
-                'timestamp' => time()
+                'service'   => $service,
+                'team_id'   => $team->id,
+                'timestamp' => time(),
             ]));
         }
 
         $params = [
-            'client_id' => $config['client_id'],
-            'redirect_uri' => $config['redirect_uri'],
-            'scope' => is_array($config['scopes']) ? implode(' ', $config['scopes']) : $config['scopes'],
+            'client_id'     => $config['client_id'],
+            'redirect_uri'  => $config['redirect_uri'],
+            'scope'         => is_array($config['scopes']) ? implode(' ', $config['scopes']) : $config['scopes'],
             'response_type' => 'code',
-            'access_type' => $config['access_type'] ?? 'offline',
+            'access_type'   => $config['access_type'] ?? 'offline',
         ];
 
         // Service-specific parameters
@@ -170,9 +170,9 @@ class OAuthService
         $url = $config['auth_url'] . '?' . http_build_query($params);
 
         static::log('Generated authorization URL', [
-            'service' => $service,
+            'service'      => $service,
             'redirect_uri' => $params['redirect_uri'],
-            'scopes' => $params['scope']
+            'scopes'       => $params['scope'],
         ]);
 
         return $url;
@@ -188,24 +188,24 @@ class OAuthService
 
         try {
             static::log('Exchanging authorization code for token', [
-                'service' => $service,
-                'code_length' => strlen($code)
+                'service'     => $service,
+                'code_length' => strlen($code),
             ]);
 
             $response = Http::asForm()->post($config['token_url'], [
-                'client_id' => $config['client_id'],
+                'client_id'     => $config['client_id'],
                 'client_secret' => $config['client_secret'],
-                'redirect_uri' => $config['redirect_uri'],
-                'grant_type' => 'authorization_code',
-                'code' => $code,
+                'redirect_uri'  => $config['redirect_uri'],
+                'grant_type'    => 'authorization_code',
+                'code'          => $code,
             ]);
 
             if (!$response->successful()) {
                 $error = $response->json();
                 static::log('Failed to exchange code for token', [
                     'service' => $service,
-                    'status' => $response->status(),
-                    'error' => $error
+                    'status'  => $response->status(),
+                    'error'   => $error,
                 ]);
                 throw new ValidationError('Failed to exchange authorization code: ' . ($error['error_description'] ?? 'Unknown error'), 400);
             }
@@ -217,9 +217,9 @@ class OAuthService
             }
 
             static::log('Successfully exchanged code for token', [
-                'service' => $service,
+                'service'    => $service,
                 'expires_in' => $tokenData['expires_in'] ?? null,
-                'scope' => $tokenData['scope'] ?? null
+                'scope'      => $tokenData['scope']      ?? null,
             ]);
 
             return $tokenData;
@@ -231,7 +231,7 @@ class OAuthService
 
             static::log('Exception during token exchange', [
                 'service' => $service,
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage(),
             ]);
 
             throw new ValidationError('Failed to exchange authorization code: ' . $e->getMessage(), 500);
@@ -248,9 +248,9 @@ class OAuthService
         $token = $this->repository->storeOAuthToken($service, $tokenData, $team, $metadata);
 
         static::log('OAuth token stored successfully', [
-            'service' => $service,
-            'team_id' => $token->team_id,
-            'expires_at' => $token->expires_at?->toISOString()
+            'service'    => $service,
+            'team_id'    => $token->team_id,
+            'expires_at' => $token->expires_at?->toISOString(),
         ]);
 
         return $token;
@@ -275,25 +275,25 @@ class OAuthService
 
         try {
             static::log('Refreshing OAuth token', [
-                'service' => $service,
-                'team_id' => $token->team_id,
-                'expires_at' => $token->expires_at?->toISOString()
+                'service'    => $service,
+                'team_id'    => $token->team_id,
+                'expires_at' => $token->expires_at?->toISOString(),
             ]);
 
             $response = Http::asForm()->post($config['token_url'], [
-                'client_id' => $config['client_id'],
+                'client_id'     => $config['client_id'],
                 'client_secret' => $config['client_secret'],
                 'refresh_token' => $token->refresh_token,
-                'grant_type' => 'refresh_token',
+                'grant_type'    => 'refresh_token',
             ]);
 
             if (!$response->successful()) {
                 $error = $response->json();
                 static::log('Failed to refresh token', [
                     'service' => $service,
-                    'status' => $response->status(),
-                    'error' => $error,
-                    'team_id' => $token->team_id
+                    'status'  => $response->status(),
+                    'error'   => $error,
+                    'team_id' => $token->team_id,
                 ]);
 
                 // If refresh token is invalid, soft delete the stored token
@@ -314,9 +314,9 @@ class OAuthService
             $token = $this->repository->updateOAuthToken($token, $tokenData);
 
             static::log('Successfully refreshed OAuth token', [
-                'service' => $service,
-                'team_id' => $token->team_id,
-                'new_expires_at' => $token->expires_at?->toISOString()
+                'service'        => $service,
+                'team_id'        => $token->team_id,
+                'new_expires_at' => $token->expires_at?->toISOString(),
             ]);
 
             return $token;
@@ -329,7 +329,7 @@ class OAuthService
             static::log('Exception during token refresh', [
                 'service' => $service,
                 'team_id' => $token->team_id,
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage(),
             ]);
 
             throw new ValidationError('Failed to refresh OAuth token: ' . $e->getMessage(), 500);
@@ -341,7 +341,7 @@ class OAuthService
      */
     public function validateTokenWithApi(string $service, ?Team $team = null): array
     {
-        $team = $team ?: team();
+        $team  = $team ?: team();
         $token = $this->repository->getOAuthToken($service, $team);
 
         // No token exists
@@ -352,7 +352,7 @@ class OAuthService
             ]);
 
             return [
-                'valid' => false,
+                'valid'  => false,
                 'reason' => 'no_token',
             ];
         }
@@ -372,17 +372,17 @@ class OAuthService
                     static::log('Token validation - refresh failed', [
                         'service' => $service,
                         'team_id' => $token->team_id,
-                        'error' => $e->getMessage(),
+                        'error'   => $e->getMessage(),
                     ]);
 
                     return [
-                        'valid' => false,
+                        'valid'  => false,
                         'reason' => 'expired',
                     ];
                 }
             } else {
                 return [
-                    'valid' => false,
+                    'valid'  => false,
                     'reason' => 'expired',
                 ];
             }
@@ -392,7 +392,7 @@ class OAuthService
         try {
             $isValid = match ($service) {
                 'google' => app(GoogleDocsApi::class)->validateToken(),
-                default => throw new ValidationError("Token validation not implemented for service: {$service}", 400),
+                default  => throw new ValidationError("Token validation not implemented for service: {$service}", 400),
             };
 
             if ($isValid) {
@@ -402,9 +402,9 @@ class OAuthService
                 ]);
 
                 return [
-                    'valid' => true,
+                    'valid'  => true,
                     'reason' => 'valid',
-                    'token' => AuthTokenResource::data($token),
+                    'token'  => AuthTokenResource::data($token),
                 ];
             }
 
@@ -417,7 +417,7 @@ class OAuthService
             $token->markAsInvalid();
 
             return [
-                'valid' => false,
+                'valid'  => false,
                 'reason' => 'revoked',
             ];
 
@@ -425,21 +425,22 @@ class OAuthService
             static::log('Token validation API error', [
                 'service' => $service,
                 'team_id' => $token->team_id,
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ]);
 
             // Don't mark token as invalid on network errors (might be temporary)
             // Only mark invalid on clear revocation/auth errors
             if (str_contains($e->getMessage(), '401') || str_contains($e->getMessage(), '403') || str_contains($e->getMessage(), 'revoked')) {
                 $token->markAsInvalid();
+
                 return [
-                    'valid' => false,
+                    'valid'  => false,
                     'reason' => 'revoked',
                 ];
             }
 
             return [
-                'valid' => false,
+                'valid'  => false,
                 'reason' => 'api_error',
             ];
         }
@@ -470,7 +471,7 @@ class OAuthService
         try {
             static::log('Revoking OAuth token', [
                 'service' => $service,
-                'team_id' => $token->team_id
+                'team_id' => $token->team_id,
             ]);
 
             // Revoke the token with the service if revoke URL is configured
@@ -483,7 +484,7 @@ class OAuthService
                     static::log('Failed to revoke token with service (will delete locally)', [
                         'service' => $service,
                         'team_id' => $token->team_id,
-                        'status' => $response->status()
+                        'status'  => $response->status(),
                     ]);
                 }
             }
@@ -493,7 +494,7 @@ class OAuthService
 
             static::log('Successfully revoked OAuth token', [
                 'service' => $service,
-                'team_id' => $token->team_id
+                'team_id' => $token->team_id,
             ]);
 
             return true;
@@ -502,11 +503,12 @@ class OAuthService
             static::log('Exception during token revocation', [
                 'service' => $service,
                 'team_id' => $token->team_id,
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage(),
             ]);
 
             // Still soft delete the local token
             $this->repository->revokeToken($token);
+
             return false;
         }
     }
@@ -517,7 +519,7 @@ class OAuthService
     protected function getServiceConfig(string $service): array
     {
         $config = config("auth.oauth.{$service}");
-        
+
         if (!$config) {
             throw new ValidationError("OAuth configuration not found for service: {$service}", 500);
         }

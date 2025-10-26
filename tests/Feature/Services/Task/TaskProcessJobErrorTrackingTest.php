@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Services\Task;
 
-use App\Jobs\TaskProcessJob;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
@@ -10,10 +9,8 @@ use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowStatesContract;
-use App\Services\Task\TaskProcessExecutorService;
 use App\Services\Task\TaskProcessRunnerService;
 use Exception;
-use Illuminate\Support\Facades\Queue;
 use Newms87\Danx\Audit\AuditDriver;
 use Newms87\Danx\Models\Audit\AuditRequest;
 use Newms87\Danx\Models\Audit\ErrorLog;
@@ -38,19 +35,19 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
     {
         // Given - Create a task run with a ready task process
         $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun = TaskRun::factory()->create([
+        $taskRun        = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
         ]);
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'is_ready' => true,
-            'status' => WorkflowStatesContract::STATUS_PENDING,
+            'is_ready'    => true,
+            'status'      => WorkflowStatesContract::STATUS_PENDING,
         ]);
 
         // When - Manually simulate the job dispatch association (as happens in TaskProcessRunnerService::run)
         $jobDispatch = JobDispatch::create([
-            'ref' => 'test-job-' . uniqid(),
-            'name' => 'TaskProcessJob',
+            'ref'    => 'test-job-' . uniqid(),
+            'name'   => 'TaskProcessJob',
             'status' => JobDispatch::STATUS_RUNNING,
             'ran_at' => now(),
         ]);
@@ -73,42 +70,42 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
     {
         // Given - Create a workflow with task runs
         $workflowDefinition = WorkflowDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $workflowNode = WorkflowNode::factory()->create([
+        $taskDefinition     = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $workflowNode       = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'task_definition_id' => $taskDefinition->id,
+            'task_definition_id'     => $taskDefinition->id,
         ]);
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
         $taskRun = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
-            'workflow_run_id' => $workflowRun->id,
-            'workflow_node_id' => $workflowNode->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
         ]);
 
         // Create a ready task process
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'is_ready' => true,
-            'status' => WorkflowStatesContract::STATUS_PENDING,
+            'is_ready'    => true,
+            'status'      => WorkflowStatesContract::STATUS_PENDING,
         ]);
 
         // Create a job dispatch to simulate job execution
         $jobDispatch = JobDispatch::create([
-            'ref' => 'task-process-test-' . uniqid(),
-            'name' => 'TaskProcessJob',
+            'ref'    => 'task-process-test-' . uniqid(),
+            'name'   => 'TaskProcessJob',
             'status' => JobDispatch::STATUS_RUNNING,
             'ran_at' => now(),
         ]);
 
         // Create audit request for error tracking
         $auditRequest = AuditRequest::create([
-            'session_id' => 'test-session',
+            'session_id'  => 'test-session',
             'environment' => 'testing',
-            'url' => 'task-process-job',
-            'request' => [],
-            'time' => 0,
+            'url'         => 'task-process-job',
+            'request'     => [],
+            'time'        => 0,
         ]);
         AuditDriver::$auditRequest = $auditRequest;
         $jobDispatch->update(['running_audit_request_id' => $auditRequest->id]);
@@ -141,10 +138,10 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
     {
         // Given - Create workflow with multiple task runs and processes
         $workflowDefinition = WorkflowDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $workflowNode = WorkflowNode::factory()->create([
+        $taskDefinition     = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $workflowNode       = WorkflowNode::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'task_definition_id' => $taskDefinition->id,
+            'task_definition_id'     => $taskDefinition->id,
         ]);
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
@@ -153,13 +150,13 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         // Create multiple task runs with different error counts
         $taskRun1 = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
-            'workflow_run_id' => $workflowRun->id,
-            'workflow_node_id' => $workflowNode->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
         ]);
         $taskRun2 = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
-            'workflow_run_id' => $workflowRun->id,
-            'workflow_node_id' => $workflowNode->id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
         ]);
 
         // Create task processes with errors
@@ -193,18 +190,18 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
     {
         // Given - Create task process with associated job dispatch
         $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun = TaskRun::factory()->create([
+        $taskRun        = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
         ]);
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'is_ready' => true,
-            'status' => WorkflowStatesContract::STATUS_RUNNING,
+            'is_ready'    => true,
+            'status'      => WorkflowStatesContract::STATUS_RUNNING,
         ]);
 
         $jobDispatch = JobDispatch::create([
-            'ref' => 'test-job-' . uniqid(),
-            'name' => 'TaskProcessJob',
+            'ref'    => 'test-job-' . uniqid(),
+            'name'   => 'TaskProcessJob',
             'status' => JobDispatch::STATUS_RUNNING,
             'ran_at' => now(),
         ]);
@@ -214,11 +211,11 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
 
         // Create audit request and log errors
         $auditRequest = AuditRequest::create([
-            'session_id' => 'test-session',
+            'session_id'  => 'test-session',
             'environment' => 'testing',
-            'url' => 'test-job',
-            'request' => [],
-            'time' => 0,
+            'url'         => 'test-job',
+            'request'     => [],
+            'time'        => 0,
         ]);
         AuditDriver::$auditRequest = $auditRequest;
         $jobDispatch->update(['running_audit_request_id' => $auditRequest->id]);
@@ -243,17 +240,17 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
     {
         // Given - Task process with running job
         $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun = TaskRun::factory()->create([
+        $taskRun        = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
         ]);
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'status' => WorkflowStatesContract::STATUS_RUNNING,
+            'status'      => WorkflowStatesContract::STATUS_RUNNING,
         ]);
 
         $jobDispatch = JobDispatch::create([
-            'ref' => 'test-job-' . uniqid(),
-            'name' => 'TaskProcessJob',
+            'ref'    => 'test-job-' . uniqid(),
+            'name'   => 'TaskProcessJob',
             'status' => JobDispatch::STATUS_RUNNING,
             'ran_at' => now(),
         ]);
@@ -262,11 +259,11 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
 
         // Create audit request
         $auditRequest = AuditRequest::create([
-            'session_id' => 'test-session',
+            'session_id'  => 'test-session',
             'environment' => 'testing',
-            'url' => 'test-job',
-            'request' => [],
-            'time' => 0,
+            'url'         => 'test-job',
+            'request'     => [],
+            'time'        => 0,
         ]);
         AuditDriver::$auditRequest = $auditRequest;
         $jobDispatch->update(['running_audit_request_id' => $auditRequest->id]);
@@ -287,13 +284,13 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
     {
         // Given - Task process ready to run
         $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun = TaskRun::factory()->create([
+        $taskRun        = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
         ]);
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'is_ready' => true,
-            'status' => WorkflowStatesContract::STATUS_PENDING,
+            'is_ready'    => true,
+            'status'      => WorkflowStatesContract::STATUS_PENDING,
         ]);
 
         // Create a job dispatch with errors
@@ -322,7 +319,7 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
     {
         // Given - Task process with errors
         $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun = TaskRun::factory()->create([
+        $taskRun        = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
         ]);
         $taskProcess = TaskProcess::factory()->create([
@@ -344,14 +341,14 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
     {
         // Given - Task process with errors
         $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun = TaskRun::factory()->create([
+        $taskRun        = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
         ]);
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'is_ready' => true,
-            'status' => WorkflowStatesContract::STATUS_FAILED,
-            'failed_at' => now(),
+            'is_ready'    => true,
+            'status'      => WorkflowStatesContract::STATUS_FAILED,
+            'failed_at'   => now(),
         ]);
 
         $jobDispatch = $this->createJobDispatchWithErrors(5);
@@ -382,8 +379,8 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
     {
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'is_ready' => true,
-            'status' => WorkflowStatesContract::STATUS_RUNNING,
+            'is_ready'    => true,
+            'status'      => WorkflowStatesContract::STATUS_RUNNING,
         ]);
 
         $jobDispatch = $this->createJobDispatchWithErrors($errorCount);
@@ -402,27 +399,27 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
     private function createJobDispatchWithErrors(int $errorCount): JobDispatch
     {
         $jobDispatch = JobDispatch::create([
-            'ref' => 'test-job-' . uniqid(),
-            'name' => 'TaskProcessJob',
-            'status' => JobDispatch::STATUS_COMPLETE,
-            'ran_at' => now(),
+            'ref'          => 'test-job-' . uniqid(),
+            'name'         => 'TaskProcessJob',
+            'status'       => JobDispatch::STATUS_COMPLETE,
+            'ran_at'       => now(),
             'completed_at' => now(),
         ]);
 
         // Create audit request
         $auditRequest = AuditRequest::create([
-            'session_id' => 'test-session',
+            'session_id'  => 'test-session',
             'environment' => 'testing',
-            'url' => 'test-job',
-            'request' => [],
-            'time' => 0,
+            'url'         => 'test-job',
+            'request'     => [],
+            'time'        => 0,
         ]);
         AuditDriver::$auditRequest = $auditRequest;
         $jobDispatch->update(['running_audit_request_id' => $auditRequest->id]);
 
         // Log errors
         for ($i = 0; $i < $errorCount; $i++) {
-            ErrorLog::logErrorMessage(ErrorLog::ERROR, "Test error " . ($i + 1));
+            ErrorLog::logErrorMessage(ErrorLog::ERROR, 'Test error ' . ($i + 1));
         }
 
         return $jobDispatch;

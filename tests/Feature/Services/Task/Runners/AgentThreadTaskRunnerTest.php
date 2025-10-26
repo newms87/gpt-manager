@@ -87,7 +87,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
     {
         // Given
         $beforeContent         = 'Do as i say, not as i do.';
-        $artifactContent       = "Hey There";
+        $artifactContent       = 'Hey There';
         $afterContent          = 'why would you do that?';
         $beforePromptDirective = PromptDirective::factory()->create(['directive_text' => $beforeContent]);
         $afterPromptDirective  = PromptDirective::factory()->create(['directive_text' => $afterContent]);
@@ -288,7 +288,7 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
     {
         $testTimeouts = [1, 30, 60, 300, 600];
 
-        foreach($testTimeouts as $timeout) {
+        foreach ($testTimeouts as $timeout) {
             // Given
             $taskProcess = TaskProcess::factory()->withAgent()->create();
             $taskProcess->taskRun->taskDefinition->update([
@@ -306,5 +306,4 @@ class AgentThreadTaskRunnerTest extends AuthenticatedTestCase
             $this->assertEquals($timeout, $agentThreadRun->timeout, "AgentThreadRun API timeout should match configured value: {$timeout}");
         }
     }
-
 }

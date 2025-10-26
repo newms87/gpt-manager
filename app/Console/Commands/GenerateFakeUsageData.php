@@ -53,40 +53,40 @@ class GenerateFakeUsageData extends Command
         $bar = $this->output->createProgressBar($count);
         $bar->start();
 
-        for($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count; $i++) {
             $model     = fake()->randomElement($models);
             $eventType = fake()->randomElement($eventTypes);
             $provider  = fake()->randomElement($providers);
 
             // Different token/cost patterns based on model
             $inputTokens = match (true) {
-                str_contains($model, 'gpt-4o-mini') => fake()->numberBetween(100, 2000),
-                str_contains($model, 'gpt-4o') => fake()->numberBetween(200, 4000),
+                str_contains($model, 'gpt-4o-mini')       => fake()->numberBetween(100, 2000),
+                str_contains($model, 'gpt-4o')            => fake()->numberBetween(200, 4000),
                 str_contains($model, 'claude-3-5-sonnet') => fake()->numberBetween(300, 5000),
-                str_contains($model, 'claude-3-haiku') => fake()->numberBetween(150, 3000),
-                default => fake()->numberBetween(100, 1000)
+                str_contains($model, 'claude-3-haiku')    => fake()->numberBetween(150, 3000),
+                default                                   => fake()->numberBetween(100, 1000)
             };
 
             $outputTokens = match (true) {
                 str_contains($model, 'mini') || str_contains($model, 'haiku') => fake()->numberBetween(50, 800),
-                default => fake()->numberBetween(100, 1500)
+                default                                                       => fake()->numberBetween(100, 1500)
             };
 
             // Realistic cost calculation based on token usage
             $inputCost = match (true) {
-                str_contains($model, 'gpt-4o-mini') => $inputTokens * 0.00000015, // $0.15 per 1M tokens
-                str_contains($model, 'gpt-4o') => $inputTokens * 0.0000025, // $2.50 per 1M tokens
+                str_contains($model, 'gpt-4o-mini')       => $inputTokens * 0.00000015, // $0.15 per 1M tokens
+                str_contains($model, 'gpt-4o')            => $inputTokens * 0.0000025, // $2.50 per 1M tokens
                 str_contains($model, 'claude-3-5-sonnet') => $inputTokens * 0.000003, // $3.00 per 1M tokens
-                str_contains($model, 'claude-3-haiku') => $inputTokens * 0.00000025, // $0.25 per 1M tokens
-                default => $inputTokens * 0.000001
+                str_contains($model, 'claude-3-haiku')    => $inputTokens * 0.00000025, // $0.25 per 1M tokens
+                default                                   => $inputTokens * 0.000001
             };
 
             $outputCost = match (true) {
-                str_contains($model, 'gpt-4o-mini') => $outputTokens * 0.0000006, // $0.60 per 1M tokens
-                str_contains($model, 'gpt-4o') => $outputTokens * 0.00001, // $10.00 per 1M tokens
+                str_contains($model, 'gpt-4o-mini')       => $outputTokens * 0.0000006, // $0.60 per 1M tokens
+                str_contains($model, 'gpt-4o')            => $outputTokens * 0.00001, // $10.00 per 1M tokens
                 str_contains($model, 'claude-3-5-sonnet') => $outputTokens * 0.000015, // $15.00 per 1M tokens
-                str_contains($model, 'claude-3-haiku') => $outputTokens * 0.00000125, // $1.25 per 1M tokens
-                default => $outputTokens * 0.000002
+                str_contains($model, 'claude-3-haiku')    => $outputTokens * 0.00000125, // $1.25 per 1M tokens
+                default                                   => $outputTokens * 0.000002
             };
 
             try {
@@ -113,8 +113,8 @@ class GenerateFakeUsageData extends Command
                     ],
                     'created_at'    => fake()->dateTimeBetween('-30 days', 'now'),
                 ]);
-            } catch(\Exception $e) {
-                $this->error("Failed to create usage event: " . $e->getMessage());
+            } catch (\Exception $e) {
+                $this->error('Failed to create usage event: ' . $e->getMessage());
                 throw $e;
             }
 

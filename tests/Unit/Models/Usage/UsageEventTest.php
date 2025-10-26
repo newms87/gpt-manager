@@ -2,10 +2,7 @@
 
 namespace Tests\Unit\Models\Usage;
 
-use App\Models\Task\TaskProcess;
-use App\Models\Team\Team;
 use App\Models\Usage\UsageEvent;
-use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -33,10 +30,6 @@ class UsageEventTest extends TestCase
         $this->assertEquals(150, $event->total_tokens);
     }
 
-
-
-
-
     #[Test]
     public function it_handles_null_values_in_cost_calculations()
     {
@@ -50,6 +43,4 @@ class UsageEventTest extends TestCase
         $this->assertEquals(0, $event->total_cost);
         $this->assertEquals(0, $event->total_tokens);
     }
-
-
 }

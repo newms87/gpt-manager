@@ -58,8 +58,8 @@ class ClassificationVerificationService
         // Ensure agent is created by calling getOrCreateClassificationVerificationAgent
         $this->getOrCreateClassificationVerificationAgent();
 
-        foreach($verificationGroups as $groupIndex => $group) {
-            static::log("Processing verification group " . ($groupIndex + 1) . " of " . count($verificationGroups));
+        foreach ($verificationGroups as $groupIndex => $group) {
+            static::log('Processing verification group ' . ($groupIndex + 1) . ' of ' . count($verificationGroups));
             $this->verifyClassificationGroup($group, $property);
         }
 
@@ -111,16 +111,17 @@ class ClassificationVerificationService
         }
 
         $processesCreated = 0;
-        foreach($propertiesToVerify as $property) {
+        foreach ($propertiesToVerify as $property) {
             // Check if this property actually has outliers that need verification
             $verificationGroups = $this->buildVerificationGroups($artifacts, $property);
 
             if (empty($verificationGroups)) {
                 static::log("Skipping property '$property' - no outliers detected that need verification");
+
                 continue;
             }
 
-            static::log("Property '$property' has " . count($verificationGroups) . " outlier groups - creating verification process");
+            static::log("Property '$property' has " . count($verificationGroups) . ' outlier groups - creating verification process');
 
             $taskRun->taskProcesses()->create([
                 'name'     => "Classification Verification: $property",
@@ -148,7 +149,7 @@ class ClassificationVerificationService
         $artifactsArray = $artifacts->values()->all();
         $count          = count($artifactsArray);
 
-        for($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count; $i++) {
             $currentArtifact = $artifactsArray[$i];
             $currentValue    = $this->getPropertyValue($currentArtifact, $property);
 
@@ -204,7 +205,7 @@ class ClassificationVerificationService
             $contextArtifacts = [];
 
             // Add previous 2 artifacts
-            for($j = max(0, $i - 2); $j < $i; $j++) {
+            for ($j = max(0, $i - 2); $j < $i; $j++) {
                 $contextArtifacts[] = [
                     'artifact' => $artifactsArray[$j],
                     'position' => 'previous',
@@ -244,7 +245,7 @@ class ClassificationVerificationService
     protected function getPropertyValue(Artifact $artifact, string $property): ?string
     {
         $classification = $artifact->meta['classification'] ?? [];
-        $value          = $classification[$property] ?? null;
+        $value          = $classification[$property]        ?? null;
 
         if (is_string($value)) {
             return trim($value) ?: null;
@@ -299,14 +300,14 @@ class ClassificationVerificationService
             $jsonContent = $threadRun->lastMessage->getJsonContent();
 
             if (!isset($jsonContent['corrections']) || !is_array($jsonContent['corrections'])) {
-                static::log("No corrections provided in verification response");
+                static::log('No corrections provided in verification response');
 
                 return;
             }
 
             $this->applyVerificationCorrections($group, $jsonContent['corrections'], $property);
 
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             static::log('Error parsing verification response: ' . $e->getMessage());
         }
     }
@@ -321,7 +322,7 @@ class ClassificationVerificationService
         /** @var TaskDefinition $taskDefinition */
         $taskDefinition = $group['context'][0]['artifact']?->taskDefinition;
 
-        foreach($group['context'] as $contextItem) {
+        foreach ($group['context'] as $contextItem) {
             /** @var Artifact $artifact */
             $artifact = $contextItem['artifact'];
             $position = $contextItem['position'];
@@ -390,9 +391,10 @@ PROMPT;
 
         $previousArtifactsCorrected = [];
 
-        foreach($corrections as $correction) {
+        foreach ($corrections as $correction) {
             if (!isset($correction['artifact_id']) || !isset($correction['corrected_value'])) {
                 static::log('Invalid correction format - missing artifact_id or corrected_value');
+
                 continue;
             }
 
@@ -403,7 +405,7 @@ PROMPT;
             // Find the artifact and its position in the context
             $artifact         = null;
             $artifactPosition = null;
-            foreach($group['context'] as $contextItem) {
+            foreach ($group['context'] as $contextItem) {
                 if ($contextItem['artifact']->id == $artifactId) {
                     $artifact         = $contextItem['artifact'];
                     $artifactPosition = $contextItem['position'];
@@ -413,6 +415,7 @@ PROMPT;
 
             if (!$artifact) {
                 static::log("Artifact $artifactId not found in verification group");
+
                 continue;
             }
 
@@ -420,6 +423,7 @@ PROMPT;
 
             if ($originalValue === $correctedValue) {
                 static::log("Artifact $artifactId already has correct value '$correctedValue'");
+
                 continue;
             }
 
@@ -450,11 +454,12 @@ PROMPT;
     {
         static::log('Creating recursive verification processes for ' . count($correctedArtifacts) . ' corrected previous artifacts');
 
-        foreach($correctedArtifacts as $artifact) {
+        foreach ($correctedArtifacts as $artifact) {
             // Get the TaskRun this artifact belongs to
             $taskRun = $artifact->taskRun;
             if (!$taskRun) {
                 static::log("No TaskRun found for artifact {$artifact->id}");
+
                 continue;
             }
 

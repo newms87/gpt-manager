@@ -13,7 +13,7 @@ use Newms87\Danx\Traits\ActionModelTrait;
 
 class SchemaAssociation extends Model implements ResourcePackageableContract
 {
-    use HasFactory, ActionModelTrait, ResourcePackageableTrait;
+    use ActionModelTrait, HasFactory, ResourcePackageableTrait;
 
     protected $fillable = [
         'schema_definition_id',

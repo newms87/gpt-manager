@@ -6,7 +6,6 @@ use App\Models\Billing\BillingHistory;
 use App\Models\Billing\Subscription;
 use App\Models\Team\Team;
 use App\Models\Usage\UsageEvent;
-use App\Models\Usage\UsageSummary;
 use App\Repositories\Billing\BillingHistoryRepository;
 use App\Repositories\Billing\SubscriptionRepository;
 use Carbon\Carbon;
@@ -21,7 +20,8 @@ class UsageBillingService
         protected BillingService $billingService,
         protected BillingHistoryRepository $billingHistoryRepository,
         protected SubscriptionRepository $subscriptionRepository
-    ) {}
+    ) {
+    }
 
     /**
      * Process daily usage billing for all teams
@@ -31,14 +31,14 @@ class UsageBillingService
         Log::info('Starting daily usage billing process');
 
         $teams = $this->getTeamsForBilling();
-        
+
         foreach ($teams as $team) {
             try {
                 $this->processTeamBilling($team);
             } catch (\Exception $e) {
                 Log::error('Failed to process billing for team', [
                     'team_id' => $team->id,
-                    'error' => $e->getMessage(),
+                    'error'   => $e->getMessage(),
                 ]);
             }
         }
@@ -56,15 +56,16 @@ class UsageBillingService
         }
 
         $usage = $this->calculateDailyUsage($team);
-        
+
         if ($usage['total_cost'] <= 0) {
             Log::info('No usage charges for team', ['team_id' => $team->id]);
+
             return;
         }
 
         DB::transaction(function () use ($team, $usage) {
             $charge = $this->createUsageCharge($team, $usage);
-            
+
             if ($charge['status'] === 'succeeded') {
                 $this->recordSuccessfulCharge($team, $usage, $charge);
             } else {
@@ -95,7 +96,7 @@ class UsageBillingService
     protected function shouldChargeTeam(Team $team): bool
     {
         $subscription = $this->subscriptionRepository->getActiveSubscription($team->id);
-        
+
         if (!$subscription) {
             return false;
         }
@@ -103,7 +104,7 @@ class UsageBillingService
         // Load the subscription plan relationship
         $subscription->load('subscriptionPlan');
         $plan = $subscription->subscriptionPlan;
-        
+
         if (!$plan || !isset($plan->usage_limits['usage_based_billing'])) {
             return false;
         }
@@ -117,7 +118,7 @@ class UsageBillingService
     public function calculateDailyUsage(Team $team): array
     {
         $startDate = Carbon::now()->subDay()->startOfDay();
-        $endDate = Carbon::now()->subDay()->endOfDay();
+        $endDate   = Carbon::now()->subDay()->endOfDay();
 
         $usage = UsageEvent::where('team_id', $team->id)
             ->whereBetween('created_at', [$startDate, $endDate])
@@ -135,16 +136,16 @@ class UsageBillingService
         $totalCost = ($usage->total_input_cost ?? 0) + ($usage->total_output_cost ?? 0);
 
         return [
-            'date' => $startDate->toDateString(),
-            'event_count' => $usage->event_count ?? 0,
-            'total_input_tokens' => $usage->total_input_tokens ?? 0,
+            'date'                => $startDate->toDateString(),
+            'event_count'         => $usage->event_count         ?? 0,
+            'total_input_tokens'  => $usage->total_input_tokens  ?? 0,
             'total_output_tokens' => $usage->total_output_tokens ?? 0,
-            'total_tokens' => ($usage->total_input_tokens ?? 0) + ($usage->total_output_tokens ?? 0),
-            'total_input_cost' => $usage->total_input_cost ?? 0,
-            'total_output_cost' => $usage->total_output_cost ?? 0,
-            'total_cost' => $totalCost,
-            'total_requests' => $usage->total_requests ?? 0,
-            'total_data_volume' => $usage->total_data_volume ?? 0,
+            'total_tokens'        => ($usage->total_input_tokens ?? 0) + ($usage->total_output_tokens ?? 0),
+            'total_input_cost'    => $usage->total_input_cost  ?? 0,
+            'total_output_cost'   => $usage->total_output_cost ?? 0,
+            'total_cost'          => $totalCost,
+            'total_requests'      => $usage->total_requests    ?? 0,
+            'total_data_volume'   => $usage->total_data_volume ?? 0,
         ];
     }
 
@@ -154,7 +155,7 @@ class UsageBillingService
     public function getCurrentUsageStats(Team $team): array
     {
         $currentMonth = Carbon::now()->startOfMonth();
-        
+
         $monthlyUsage = UsageEvent::where('team_id', $team->id)
             ->where('created_at', '>=', $currentMonth)
             ->selectRaw('
@@ -180,18 +181,18 @@ class UsageBillingService
 
         return [
             'current_month' => [
-                'period_start' => $currentMonth->toDateString(),
-                'period_end' => Carbon::now()->endOfMonth()->toDateString(),
-                'event_count' => $monthlyUsage->event_count ?? 0,
-                'total_tokens' => ($monthlyUsage->total_input_tokens ?? 0) + ($monthlyUsage->total_output_tokens ?? 0),
-                'total_cost' => ($monthlyUsage->total_input_cost ?? 0) + ($monthlyUsage->total_output_cost ?? 0),
+                'period_start'   => $currentMonth->toDateString(),
+                'period_end'     => Carbon::now()->endOfMonth()->toDateString(),
+                'event_count'    => $monthlyUsage->event_count ?? 0,
+                'total_tokens'   => ($monthlyUsage->total_input_tokens ?? 0) + ($monthlyUsage->total_output_tokens ?? 0),
+                'total_cost'     => ($monthlyUsage->total_input_cost ?? 0)   + ($monthlyUsage->total_output_cost ?? 0),
                 'total_requests' => $monthlyUsage->total_requests ?? 0,
             ],
             'today' => [
-                'date' => Carbon::today()->toDateString(),
-                'event_count' => $todayUsage->event_count ?? 0,
+                'date'         => Carbon::today()->toDateString(),
+                'event_count'  => $todayUsage->event_count ?? 0,
                 'total_tokens' => ($todayUsage->total_input_tokens ?? 0) + ($todayUsage->total_output_tokens ?? 0),
-                'total_cost' => ($todayUsage->total_input_cost ?? 0) + ($todayUsage->total_output_cost ?? 0),
+                'total_cost'   => ($todayUsage->total_input_cost ?? 0)   + ($todayUsage->total_output_cost ?? 0),
             ],
         ];
     }
@@ -201,8 +202,8 @@ class UsageBillingService
      */
     protected function createUsageCharge(Team $team, array $usage): array
     {
-        $amountInCents = (int) round($usage['total_cost'] * 100);
-        
+        $amountInCents = (int)round($usage['total_cost'] * 100);
+
         if ($amountInCents < 50) {
             // Stripe minimum charge is $0.50
             return [
@@ -225,17 +226,17 @@ class UsageBillingService
     protected function recordSuccessfulCharge(Team $team, array $usage, array $charge): void
     {
         $billingHistory = new BillingHistory([
-            'team_id' => $team->id,
-            'type' => 'usage_charge',
-            'description' => "Daily usage charges for {$usage['date']}",
-            'amount' => $usage['total_cost'],
-            'total_amount' => $usage['total_cost'], // Required field in migration
-            'currency' => 'USD',
-            'status' => 'processed',
+            'team_id'          => $team->id,
+            'type'             => 'usage_charge',
+            'description'      => "Daily usage charges for {$usage['date']}",
+            'amount'           => $usage['total_cost'],
+            'total_amount'     => $usage['total_cost'], // Required field in migration
+            'currency'         => 'USD',
+            'status'           => 'processed',
             'stripe_charge_id' => $charge['id'] ?? null,
-            'billing_date' => Carbon::parse($usage['date']),
-            'metadata' => [
-                'usage_stats' => $usage,
+            'billing_date'     => Carbon::parse($usage['date']),
+            'metadata'         => [
+                'usage_stats'    => $usage,
                 'charge_details' => $charge,
             ],
         ]);
@@ -244,8 +245,8 @@ class UsageBillingService
 
         Log::info('Successfully charged team for usage', [
             'team_id' => $team->id,
-            'amount' => $usage['total_cost'],
-            'date' => $usage['date'],
+            'amount'  => $usage['total_cost'],
+            'date'    => $usage['date'],
         ]);
     }
 
@@ -255,19 +256,19 @@ class UsageBillingService
     protected function recordFailedCharge(Team $team, array $usage, array $charge): void
     {
         $billingHistory = new BillingHistory([
-            'team_id' => $team->id,
-            'type' => 'usage_charge',
-            'description' => "Failed charge for usage on {$usage['date']}",
-            'amount' => $usage['total_cost'],
-            'total_amount' => $usage['total_cost'], // Required field in migration
-            'currency' => 'USD',
-            'status' => 'failed',
+            'team_id'          => $team->id,
+            'type'             => 'usage_charge',
+            'description'      => "Failed charge for usage on {$usage['date']}",
+            'amount'           => $usage['total_cost'],
+            'total_amount'     => $usage['total_cost'], // Required field in migration
+            'currency'         => 'USD',
+            'status'           => 'failed',
             'stripe_charge_id' => $charge['id'] ?? null,
-            'billing_date' => Carbon::parse($usage['date']),
-            'metadata' => [
-                'usage_stats' => $usage,
+            'billing_date'     => Carbon::parse($usage['date']),
+            'metadata'         => [
+                'usage_stats'    => $usage,
                 'charge_details' => $charge,
-                'error' => $charge['error'] ?? 'Unknown error',
+                'error'          => $charge['error'] ?? 'Unknown error',
             ],
         ]);
 
@@ -275,9 +276,9 @@ class UsageBillingService
 
         Log::error('Failed to charge team for usage', [
             'team_id' => $team->id,
-            'amount' => $usage['total_cost'],
-            'date' => $usage['date'],
-            'error' => $charge['error'] ?? 'Unknown',
+            'amount'  => $usage['total_cost'],
+            'date'    => $usage['date'],
+            'error'   => $charge['error'] ?? 'Unknown',
         ]);
 
         // TODO: Send notification to team about failed payment
@@ -308,17 +309,17 @@ class UsageBillingService
         return [
             'period' => [
                 'start' => $startDate->toDateString(),
-                'end' => $endDate->toDateString(),
+                'end'   => $endDate->toDateString(),
             ],
             'summary' => $usage->groupBy('date')->map(function ($dayUsage) {
                 return [
                     'total_events' => $dayUsage->sum('event_count'),
                     'total_tokens' => $dayUsage->sum('total_input_tokens') + $dayUsage->sum('total_output_tokens'),
-                    'total_cost' => $dayUsage->sum('total_input_cost') + $dayUsage->sum('total_output_cost'),
-                    'by_type' => $dayUsage->groupBy('event_type')->map(function ($typeUsage) {
+                    'total_cost'   => $dayUsage->sum('total_input_cost')   + $dayUsage->sum('total_output_cost'),
+                    'by_type'      => $dayUsage->groupBy('event_type')->map(function ($typeUsage) {
                         return [
                             'count' => $typeUsage->sum('event_count'),
-                            'cost' => $typeUsage->sum('total_input_cost') + $typeUsage->sum('total_output_cost'),
+                            'cost'  => $typeUsage->sum('total_input_cost') + $typeUsage->sum('total_output_cost'),
                         ];
                     }),
                 ];

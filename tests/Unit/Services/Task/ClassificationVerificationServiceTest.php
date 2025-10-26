@@ -18,8 +18,10 @@ use Tests\TestCase;
 class ClassificationVerificationServiceTest extends TestCase
 {
     protected ClassificationVerificationService $service;
-    protected Team                              $team;
-    protected User                              $user;
+
+    protected Team $team;
+
+    protected User $user;
 
     /**
      * Mock the AI response for verification
@@ -28,7 +30,7 @@ class ClassificationVerificationServiceTest extends TestCase
     {
         $response = ['corrections' => []];
 
-        foreach($corrections as $artifactId => $correction) {
+        foreach ($corrections as $artifactId => $correction) {
             $response['corrections'][] = [
                 'artifact_id'     => $artifactId,
                 'corrected_value' => $correction['value'],
@@ -116,7 +118,7 @@ class ClassificationVerificationServiceTest extends TestCase
         $this->assertGreaterThan(0, count($groups));
 
         // Verify group structure
-        foreach($groups as $group) {
+        foreach ($groups as $group) {
             $this->assertArrayHasKey('focus_artifact_id', $group);
             $this->assertArrayHasKey('focus_position', $group);
             $this->assertArrayHasKey('context', $group);
@@ -192,7 +194,7 @@ class ClassificationVerificationServiceTest extends TestCase
 
         // Find the group for the focus artifact (index 2)
         $focusGroup = null;
-        foreach($groups as $group) {
+        foreach ($groups as $group) {
             if ($group['focus_artifact_id'] === $artifacts[2]->id) {
                 $focusGroup = $group;
                 break;
@@ -313,7 +315,7 @@ class ClassificationVerificationServiceTest extends TestCase
         ]);
 
         // Associate artifact as output
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $taskRun->outputArtifacts()->attach($artifact->id);
         }
 
@@ -330,7 +332,7 @@ class ClassificationVerificationServiceTest extends TestCase
         $this->assertNotContains('category', $processProperties);
 
         // Verify process names
-        foreach($processes as $process) {
+        foreach ($processes as $process) {
             $this->assertStringContainsString('Classification Verification:', $process->name);
             $this->assertArrayHasKey('classification_verification_property', $process->meta);
         }
@@ -357,7 +359,7 @@ class ClassificationVerificationServiceTest extends TestCase
             ]),
         ]);
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $taskRun->outputArtifacts()->attach($artifact->id);
         }
 
@@ -549,8 +551,8 @@ class ClassificationVerificationServiceTest extends TestCase
         // Mock verification response with nonexistent artifact ID
         $this->mockVerificationResponse([
             99999 => [ // Nonexistent artifact ID
-                       'value'  => 'Apple Inc',
-                       'reason' => 'Correction for nonexistent artifact',
+                'value'  => 'Apple Inc',
+                'reason' => 'Correction for nonexistent artifact',
             ],
         ]);
 
@@ -608,7 +610,7 @@ class ClassificationVerificationServiceTest extends TestCase
             ]),
         ]);
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $taskRun->outputArtifacts()->attach($artifact->id);
         }
 
@@ -878,7 +880,7 @@ class ClassificationVerificationServiceTest extends TestCase
         $this->assertContains($artifacts[0]->id, $recursiveArtifactIds);
         $this->assertContains($artifacts[1]->id, $recursiveArtifactIds);
 
-        foreach($processes as $process) {
+        foreach ($processes as $process) {
             $this->assertStringContainsString('Recursive Classification Verification', $process->name);
             $this->assertTrue($process->meta['is_recursive']);
         }

@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Billing\PaymentMethod;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class PaymentMethodPolicy
 {
@@ -70,7 +69,7 @@ class PaymentMethodPolicy
     private function checkTeamOwnership(User $user, PaymentMethod $paymentMethod): bool
     {
         $currentTeam = $user->currentTeam;
-        
+
         return $currentTeam && $paymentMethod->team_id === $currentTeam->id;
     }
 }

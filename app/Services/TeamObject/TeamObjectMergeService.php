@@ -73,13 +73,13 @@ class TeamObjectMergeService
             $schema = $targetObject->schemaDefinition?->schema;
         }
         $schemaProperties = $schema['properties'] ?? [];
-        
-        $sourceRelationships = $sourceObject->relationships()->with('related')->get();
+
+        $sourceRelationships        = $sourceObject->relationships()->with('related')->get();
         $groupedSourceRelationships = $sourceRelationships->groupBy('relationship_name');
 
         foreach ($groupedSourceRelationships as $relationshipName => $relationships) {
             $relationshipSchema = $schemaProperties[$relationshipName] ?? null;
-            $relationshipType = $relationshipSchema['type'] ?? 'array';
+            $relationshipType   = $relationshipSchema['type']          ?? 'array';
 
             if ($relationshipType === 'object') {
                 $this->mergeObjectRelationship($targetObject, $relationshipName, $relationships, $relationshipSchema);
@@ -99,7 +99,7 @@ class TeamObjectMergeService
             ->with('related')
             ->first();
 
-        $sourceRelationship = $sourceRelationships->first();
+        $sourceRelationship  = $sourceRelationships->first();
         $sourceRelatedObject = $sourceRelationship?->related;
 
         if (!$sourceRelatedObject) {
@@ -114,15 +114,15 @@ class TeamObjectMergeService
                 TeamObject::make(['name' => $sourceRelatedObject->name]),
                 'name',
                 [
-                    'team_id' => $sourceRelatedObject->team_id,
-                    'type' => $sourceRelatedObject->type,
+                    'team_id'              => $sourceRelatedObject->team_id,
+                    'type'                 => $sourceRelatedObject->type,
                     'schema_definition_id' => $sourceRelatedObject->schema_definition_id,
-                    'root_object_id' => $targetObject->id,
+                    'root_object_id'       => $targetObject->id,
                 ]
             );
 
             $sourceRelatedObject->update([
-                'name' => $uniqueName,
+                'name'           => $uniqueName,
                 'root_object_id' => $targetObject->id,
             ]);
         }
@@ -141,15 +141,15 @@ class TeamObjectMergeService
                 TeamObject::make(['name' => $relatedObject->name]),
                 'name',
                 [
-                    'team_id' => $relatedObject->team_id,
-                    'type' => $relatedObject->type,
+                    'team_id'              => $relatedObject->team_id,
+                    'type'                 => $relatedObject->type,
                     'schema_definition_id' => $relatedObject->schema_definition_id,
-                    'root_object_id' => $targetObject->id,
+                    'root_object_id'       => $targetObject->id,
                 ]
             );
 
             $relatedObject->update([
-                'name' => $uniqueName,
+                'name'           => $uniqueName,
                 'root_object_id' => $targetObject->id,
             ]);
         }

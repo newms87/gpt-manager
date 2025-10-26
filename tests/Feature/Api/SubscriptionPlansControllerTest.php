@@ -366,7 +366,7 @@ class SubscriptionPlansControllerTest extends AuthenticatedTestCase
             ['GET', '/api/subscription-plans/compare'],
         ];
 
-        foreach($endpoints as [$method, $endpoint]) {
+        foreach ($endpoints as [$method, $endpoint]) {
             $response = $this->json($method, $endpoint);
             if ($response->getStatusCode() !== 401) {
                 $this->fail("Endpoint $method $endpoint should require authentication. Got {$response->getStatusCode()}: " . $response->getContent());

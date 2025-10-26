@@ -12,7 +12,8 @@ class GoogleSerpApi extends Api
     ];
 
     public static string $serviceName = 'Google SERP';
-    protected string     $apiKey;
+
+    protected string $apiKey;
 
     public function __construct()
     {
@@ -27,13 +28,13 @@ class GoogleSerpApi extends Api
     public function search($params = []): string
     {
         $params = [
-                'google_domain' => 'google.com',
-                'gl'            => 'us',
-                'hl'            => 'en',
-                'api_key'       => $this->apiKey,
-                'device'        => 'desktop',
-                'num'           => 5,
-            ] + $params;
+            'google_domain' => 'google.com',
+            'gl'            => 'us',
+            'hl'            => 'en',
+            'api_key'       => $this->apiKey,
+            'device'        => 'desktop',
+            'num'           => 5,
+        ] + $params;
 
         // Cache results for 24 hours
         return CacheHelper::cacheResult($params, function ($params) {
@@ -53,17 +54,17 @@ class GoogleSerpApi extends Api
             return '';
         }
 
-        $skimmed = "";
+        $skimmed = '';
 
         $count = 1;
-        foreach($organicResults as $organicResult) {
+        foreach ($organicResults as $organicResult) {
             $result = $this->formatResult($organicResult);
             if ($result) {
                 $skimmed .= "$count: $result";
                 $count++;
             }
 
-            foreach($organicResult['related_results'] ?? [] as $relatedPage) {
+            foreach ($organicResult['related_results'] ?? [] as $relatedPage) {
                 $result = $this->formatResult($relatedPage);
                 if ($result) {
                     $skimmed .= "$count: $result";
@@ -77,8 +78,8 @@ class GoogleSerpApi extends Api
 
     public function formatResult($result): string|bool
     {
-        $title   = $result['title'] ?? 'No Title';
-        $link    = $result['link'] ?? null;
+        $title   = $result['title']   ?? 'No Title';
+        $link    = $result['link']    ?? null;
         $snippet = $result['snippet'] ?? '';
 
         if (!$link) {

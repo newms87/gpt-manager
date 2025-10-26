@@ -9,9 +9,11 @@ use Newms87\Danx\Jobs\Job;
 
 class ExecuteThreadRunJob extends Job
 {
-    public int  $timeout       = 600;
+    public int $timeout       = 600;
+
     public bool $failOnTimeout = true;
-    public int  $tries         = 1;
+
+    public int $tries         = 1;
 
     public function __construct(public AgentThreadRun $threadRun)
     {

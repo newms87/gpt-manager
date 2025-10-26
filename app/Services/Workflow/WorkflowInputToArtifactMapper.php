@@ -17,7 +17,7 @@ class WorkflowInputToArtifactMapper
         return $this;
     }
 
-    public function map(): Artifact|null
+    public function map(): ?Artifact
     {
         $jsonContent = null;
 
@@ -30,7 +30,7 @@ class WorkflowInputToArtifactMapper
 
         // Parse content JSON and merge all data into json_content
         $contentData = json_decode($this->workflowInput->content, true);
-        
+
         if ($contentData) {
             $jsonContent = $jsonContent ?? [];
             // Merge all content data into json_content

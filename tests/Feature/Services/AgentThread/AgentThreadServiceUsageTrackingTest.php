@@ -103,7 +103,7 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
             'ai.models.gpt-4o' => [
                 'api'    => OpenAiApi::class,
                 'input'  => 0.0025 / 1000,  // 0.0025 per 1000 tokens = 0.0000025 per token
-                'output' => 0.01 / 1000,   // 0.01 per 1000 tokens = 0.00001 per token
+                'output' => 0.01   / 1000,   // 0.01 per 1000 tokens = 0.00001 per token
             ],
         ]);
 
@@ -170,5 +170,4 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
         $this->assertNotNull($usageEvent);
         $this->assertEquals($apiResponseData, $usageEvent->metadata['api_response']);
     }
-
 }

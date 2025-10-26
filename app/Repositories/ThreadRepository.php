@@ -27,7 +27,7 @@ class ThreadRepository extends ActionRepository
     public function create(Agent $agent, $name = ''): AgentThread
     {
         if (!$name) {
-            $name = $agent->name . " " . DateHelper::formatDateTime(now());
+            $name = $agent->name . ' ' . DateHelper::formatDateTime(now());
         }
 
         $thread = AgentThread::make()->forceFill([
@@ -44,13 +44,13 @@ class ThreadRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create-message' => app(MessageRepository::class)->create($model, $data['role'] ?? AgentThreadMessage::ROLE_USER),
+            'create-message'   => app(MessageRepository::class)->create($model, $data['role'] ?? AgentThreadMessage::ROLE_USER),
             'reset-to-message' => $this->resetToMessage($model, $data['message_id']),
-            'copy' => $this->copyThread($model),
-            'run' => $this->runAgentThread($model, $data),
-            'stop' => app(AgentThreadService::class)->stop($model),
-            'resume' => app(AgentThreadService::class)->resume($model),
-            default => parent::applyAction($action, $model, $data)
+            'copy'             => $this->copyThread($model),
+            'run'              => $this->runAgentThread($model, $data),
+            'stop'             => app(AgentThreadService::class)->stop($model),
+            'resume'           => app(AgentThreadService::class)->resume($model),
+            default            => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -59,7 +59,7 @@ class ThreadRepository extends ActionRepository
      */
     public function runAgentThread(AgentThread $agentThread, $data): AgentThreadRun
     {
-        $responseDefinitionId = $data['response_schema_id'] ?? null;
+        $responseDefinitionId = $data['response_schema_id']   ?? null;
         $responseFragmentId   = $data['response_fragment_id'] ?? null;
 
         $schemaDefinition = null;
@@ -132,7 +132,7 @@ class ThreadRepository extends ActionRepository
     {
         $formatted = [];
 
-        foreach($files as $file) {
+        foreach ($files as $file) {
             if ($file instanceof StoredFile) {
                 $formatted[] = [
                     'id'  => $file->id,
@@ -168,12 +168,12 @@ class ThreadRepository extends ActionRepository
         $newThread->name = ModelHelper::getNextModelName($thread);
         $newThread->save();
 
-        foreach($thread->messages as $message) {
+        foreach ($thread->messages as $message) {
             $messageCopy                  = $message->replicate();
             $messageCopy->agent_thread_id = $newThread->id;
             $messageCopy->save();
 
-            foreach($message->storedFiles as $storedFile) {
+            foreach ($message->storedFiles as $storedFile) {
                 $messageCopy->storedFiles()->attach($storedFile);
             }
         }

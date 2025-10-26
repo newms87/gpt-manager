@@ -12,7 +12,9 @@ use Tests\TestCase;
 class PusherSubscriptionServiceTest extends TestCase
 {
     private PusherSubscriptionService $service;
+
     private int $teamId;
+
     private int $userId;
 
     public function setUp(): void
@@ -22,8 +24,8 @@ class PusherSubscriptionServiceTest extends TestCase
         Cache::flush();
 
         $this->service = new PusherSubscriptionService();
-        $this->teamId = 1;
-        $this->userId = 100;
+        $this->teamId  = 1;
+        $this->userId  = 100;
     }
 
     protected function tearDown(): void
@@ -39,7 +41,7 @@ class PusherSubscriptionServiceTest extends TestCase
         $this->service->subscribe('WorkflowRun', true, $this->teamId, $this->userId);
 
         // Then
-        $cacheKey = "subscribe:WorkflowRun:{$this->teamId}:all";
+        $cacheKey    = "subscribe:WorkflowRun:{$this->teamId}:all";
         $subscribers = Cache::get($cacheKey);
 
         $this->assertIsArray($subscribers);
@@ -54,7 +56,7 @@ class PusherSubscriptionServiceTest extends TestCase
         $this->service->subscribe('WorkflowRun', 123, $this->teamId, $this->userId);
 
         // Then
-        $cacheKey = "subscribe:WorkflowRun:{$this->teamId}:id:123";
+        $cacheKey    = "subscribe:WorkflowRun:{$this->teamId}:id:123";
         $subscribers = Cache::get($cacheKey);
 
         $this->assertIsArray($subscribers);
@@ -68,7 +70,7 @@ class PusherSubscriptionServiceTest extends TestCase
         // Given
         $filter = [
             'jobDispatchables.model_type' => 'App\Models\Workflow\WorkflowRun',
-            'jobDispatchables.model_id' => 5,
+            'jobDispatchables.model_id'   => 5,
         ];
 
         // When
@@ -79,10 +81,10 @@ class PusherSubscriptionServiceTest extends TestCase
         ksort($sorted);
         $hash = md5(json_encode($sorted, JSON_UNESCAPED_SLASHES));
 
-        $cacheKey = "subscribe:JobDispatch:{$this->teamId}:filter:{$hash}";
+        $cacheKey      = "subscribe:JobDispatch:{$this->teamId}:filter:{$hash}";
         $definitionKey = "{$cacheKey}:definition";
 
-        $subscribers = Cache::get($cacheKey);
+        $subscribers  = Cache::get($cacheKey);
         $storedFilter = Cache::get($definitionKey);
 
         $this->assertIsArray($subscribers);
@@ -98,7 +100,7 @@ class PusherSubscriptionServiceTest extends TestCase
         $this->service->subscribe('WorkflowRun', 123, $this->teamId, $this->userId);
 
         // Then - User should only appear once
-        $cacheKey = "subscribe:WorkflowRun:{$this->teamId}:id:123";
+        $cacheKey    = "subscribe:WorkflowRun:{$this->teamId}:id:123";
         $subscribers = Cache::get($cacheKey);
 
         $this->assertCount(1, $subscribers);
@@ -113,7 +115,7 @@ class PusherSubscriptionServiceTest extends TestCase
 
         // Then
         $indexKey = 'subscribe:_index';
-        $index = Cache::get($indexKey, []);
+        $index    = Cache::get($indexKey, []);
 
         $cacheKey = "subscribe:WorkflowRun:{$this->teamId}:all";
         $this->assertContains($cacheKey, $index);
@@ -175,7 +177,7 @@ class PusherSubscriptionServiceTest extends TestCase
         $this->service->unsubscribe('WorkflowRun', true, $this->teamId, $this->userId);
 
         // Then
-        $cacheKey = "subscribe:WorkflowRun:{$this->teamId}:all";
+        $cacheKey    = "subscribe:WorkflowRun:{$this->teamId}:all";
         $subscribers = Cache::get($cacheKey);
 
         $this->assertIsArray($subscribers);
@@ -196,7 +198,7 @@ class PusherSubscriptionServiceTest extends TestCase
         ksort($sorted);
         $hash = md5(json_encode($sorted, JSON_UNESCAPED_SLASHES));
 
-        $cacheKey = "subscribe:JobDispatch:{$this->teamId}:filter:{$hash}";
+        $cacheKey      = "subscribe:JobDispatch:{$this->teamId}:filter:{$hash}";
         $definitionKey = "{$cacheKey}:definition";
 
         $this->assertTrue(Cache::has($cacheKey));
@@ -237,7 +239,7 @@ class PusherSubscriptionServiceTest extends TestCase
 
         $subscriptions = [
             [
-                'resource_type' => 'WorkflowRun',
+                'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => 123,
             ],
         ];
@@ -261,11 +263,11 @@ class PusherSubscriptionServiceTest extends TestCase
 
         $subscriptions = [
             [
-                'resource_type' => 'WorkflowRun',
+                'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => 123,
             ],
             [
-                'resource_type' => 'TaskRun',
+                'resource_type'      => 'TaskRun',
                 'model_id_or_filter' => true,
             ],
         ];
@@ -289,7 +291,7 @@ class PusherSubscriptionServiceTest extends TestCase
         // When - Keepalive without subscribing first
         $subscriptions = [
             [
-                'resource_type' => 'WorkflowRun',
+                'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => 999,
             ],
         ];
@@ -312,12 +314,12 @@ class PusherSubscriptionServiceTest extends TestCase
         ksort($sorted);
         $hash = md5(json_encode($sorted, JSON_UNESCAPED_SLASHES));
 
-        $cacheKey = "subscribe:JobDispatch:{$this->teamId}:filter:{$hash}";
+        $cacheKey      = "subscribe:JobDispatch:{$this->teamId}:filter:{$hash}";
         $definitionKey = "{$cacheKey}:definition";
 
         $subscriptions = [
             [
-                'resource_type' => 'JobDispatch',
+                'resource_type'      => 'JobDispatch',
                 'model_id_or_filter' => ['filter' => $filter],
             ],
         ];
@@ -443,13 +445,13 @@ class PusherSubscriptionServiceTest extends TestCase
     public function hashFilter_is_order_independent(): void
     {
         $filter1 = [
-            'status' => 'Running',
+            'status'          => 'Running',
             'workflow_run_id' => 10,
         ];
 
         $filter2 = [
             'workflow_run_id' => 10,
-            'status' => 'Running',
+            'status'          => 'Running',
         ];
 
         $hash1 = $this->service->hashFilter($filter1);
@@ -485,8 +487,8 @@ class PusherSubscriptionServiceTest extends TestCase
     public function sortArrayRecursively_sorts_keys_at_all_levels(): void
     {
         $array = [
-            'z' => 'last',
-            'a' => 'first',
+            'z'      => 'last',
+            'a'      => 'first',
             'nested' => [
                 'y' => 2,
                 'x' => 1,
@@ -512,7 +514,7 @@ class PusherSubscriptionServiceTest extends TestCase
         $this->service->addToSubscriptionIndex($cacheKey2);
 
         $indexKey = 'subscribe:_index';
-        $index = Cache::get($indexKey, []);
+        $index    = Cache::get($indexKey, []);
 
         $this->assertContains($cacheKey1, $index);
         $this->assertContains($cacheKey2, $index);
@@ -527,7 +529,7 @@ class PusherSubscriptionServiceTest extends TestCase
         $this->service->addToSubscriptionIndex($cacheKey);
 
         $indexKey = 'subscribe:_index';
-        $index = Cache::get($indexKey, []);
+        $index    = Cache::get($indexKey, []);
 
         $this->assertCount(1, array_keys($index, $cacheKey));
     }
@@ -544,7 +546,7 @@ class PusherSubscriptionServiceTest extends TestCase
         $this->service->removeFromSubscriptionIndex($cacheKey1);
 
         $indexKey = 'subscribe:_index';
-        $index = Cache::get($indexKey, []);
+        $index    = Cache::get($indexKey, []);
 
         $this->assertNotContains($cacheKey1, $index);
         $this->assertContains($cacheKey2, $index);

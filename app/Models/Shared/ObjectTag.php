@@ -8,7 +8,7 @@ use Newms87\Danx\Traits\ActionModelTrait;
 
 class ObjectTag extends Model
 {
-    use SoftDeletes, ActionModelTrait;
+    use ActionModelTrait, SoftDeletes;
 
     protected $fillable = [
         'name',

@@ -14,10 +14,10 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskDefinitionDirective extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use AuditableTrait, ActionModelTrait, ResourcePackageableTrait;
+    use ActionModelTrait, AuditableTrait, ResourcePackageableTrait;
 
     const string
-        SECTION_TOP = 'Top',
+        SECTION_TOP    = 'Top',
         SECTION_BOTTOM = 'Bottom';
 
     protected $fillable = [

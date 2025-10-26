@@ -43,7 +43,7 @@ class TestClassificationDeduplicationCommand extends Command
 
             return 1;
         }
-        
+
         // Override model in config if specified
         if ($model) {
             config(['ai.classification_deduplication.model' => $model]);
@@ -78,8 +78,8 @@ class TestClassificationDeduplicationCommand extends Command
 
         // Show original classifications
         $this->info('=== ORIGINAL CLASSIFICATIONS ===');
-        foreach($artifacts as $index => $artifact) {
-            $this->info("Artifact " . ($index + 1) . ":");
+        foreach ($artifacts as $index => $artifact) {
+            $this->info('Artifact ' . ($index + 1) . ':');
             $this->line(json_encode($artifact->meta['classification'][$property], JSON_PRETTY_PRINT));
             $this->newLine();
         }
@@ -92,7 +92,7 @@ class TestClassificationDeduplicationCommand extends Command
         try {
             $service->deduplicateClassificationProperty($artifacts, $property);
             $this->info("✅ Property '{$property}' deduplication completed successfully");
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             $this->error("❌ Property '{$property}' deduplication failed: " . $e->getMessage());
             $this->error('Stack trace: ' . $e->getTraceAsString());
 
@@ -103,9 +103,9 @@ class TestClassificationDeduplicationCommand extends Command
 
         // Show updated classifications
         $this->info('=== UPDATED CLASSIFICATIONS ===');
-        foreach($artifacts as $index => $artifact) {
+        foreach ($artifacts as $index => $artifact) {
             $artifact->refresh();
-            $this->info("Artifact " . ($index + 1) . ":");
+            $this->info('Artifact ' . ($index + 1) . ':');
             $this->line(json_encode($artifact->meta['classification'][$property] ?? '', JSON_PRETTY_PRINT));
             $this->newLine();
         }
@@ -217,7 +217,7 @@ class TestClassificationDeduplicationCommand extends Command
         ];
 
         $artifacts = collect();
-        foreach($testData as $index => $data) {
+        foreach ($testData as $index => $data) {
             $artifact = new Artifact([
                 'name' => 'Test Artifact ' . ($index + 1),
                 'meta' => $data,
@@ -240,81 +240,81 @@ class TestClassificationDeduplicationCommand extends Command
         $testData = [
             [
                 'classification' => [
-                    'patient' => 'Renese Antoine; DOB: 1964-11-15; MRN: CT10793',
-                    'provider' => 'Dr. Smith',
+                    'patient'   => 'Renese Antoine; DOB: 1964-11-15; MRN: CT10793',
+                    'provider'  => 'Dr. Smith',
                     'insurance' => 'Aetna',
                 ],
             ],
             [
                 'classification' => [
-                    'patient' => 'Renese Antoine; DOB: 1964-11-15',
-                    'provider' => 'Doctor Smith',
+                    'patient'   => 'Renese Antoine; DOB: 1964-11-15',
+                    'provider'  => 'Doctor Smith',
                     'insurance' => 'aetna',
                 ],
             ],
             [
                 'classification' => [
-                    'patient' => 'Renese Antoine; DOB: 1964-11-15; MRN: CT10793; Gender: Female',
-                    'provider' => 'DR. SMITH',
+                    'patient'   => 'Renese Antoine; DOB: 1964-11-15; MRN: CT10793; Gender: Female',
+                    'provider'  => 'DR. SMITH',
                     'insurance' => 'AETNA',
                 ],
             ],
             [
                 'classification' => [
-                    'patient' => 'Name: Renese Antoine; DOB: 1964-11-15; MRN: CT10793',
-                    'provider' => 'Dr Smith',
+                    'patient'   => 'Name: Renese Antoine; DOB: 1964-11-15; MRN: CT10793',
+                    'provider'  => 'Dr Smith',
                     'insurance' => 'Aetna Inc',
                 ],
             ],
             [
                 'classification' => [
                     // This contains the problematic escaped forward slashes
-                    'patient' => 'Name: Renese Antoine; MRN: CT10793; DOB: 11\\/15\\/1964',
-                    'provider' => 'Dr. Smith MD',
+                    'patient'   => 'Name: Renese Antoine; MRN: CT10793; DOB: 11\\/15\\/1964',
+                    'provider'  => 'Dr. Smith MD',
                     'insurance' => 'Aetna Insurance',
                 ],
             ],
             [
                 'classification' => [
-                    'patient' => 'Renese Antoine; DOB 1964-11-15; MRN CT10793',
-                    'provider' => 'Smith, Dr.',
+                    'patient'   => 'Renese Antoine; DOB 1964-11-15; MRN CT10793',
+                    'provider'  => 'Smith, Dr.',
                     'insurance' => 'Aetna Corp',
                 ],
             ],
             [
                 'classification' => [
                     // More problematic escaped slashes
-                    'patient' => 'Renese Antoine; DOB: 11\\/15\\/1964; MRN: CT10793',
-                    'provider' => 'Dr. John Smith',
+                    'patient'   => 'Renese Antoine; DOB: 11\\/15\\/1964; MRN: CT10793',
+                    'provider'  => 'Dr. John Smith',
                     'insurance' => 'Aetna Healthcare',
                 ],
             ],
             [
                 'classification' => [
-                    'patient' => 'Renese Antoine; MRN: CT10793; DOB: 1964-11-15',
-                    'provider' => 'John Smith, MD',
+                    'patient'   => 'Renese Antoine; MRN: CT10793; DOB: 1964-11-15',
+                    'provider'  => 'John Smith, MD',
                     'insurance' => 'Aetna Health',
                 ],
             ],
             [
                 'classification' => [
                     // Even more problematic patterns
-                    'patient' => 'Renese Antoine, DOB 11\\/15\\/1964, MRN CT10793',
-                    'provider' => 'Dr John Smith',
+                    'patient'   => 'Renese Antoine, DOB 11\\/15\\/1964, MRN CT10793',
+                    'provider'  => 'Dr John Smith',
                     'insurance' => 'AETNA HEALTH',
                 ],
             ],
             [
                 'classification' => [
-                    'patient' => 'Renese Antoine, DOB: 1964-11-15, MRN: CT10793',
-                    'provider' => 'Smith MD',
+                    'patient'   => 'Renese Antoine, DOB: 1964-11-15, MRN: CT10793',
+                    'provider'  => 'Smith MD',
                     'insurance' => 'aetna health insurance',
                 ],
             ],
         ];
 
         $artifacts = collect();
-        foreach($testData as $index => $data) {
+        foreach ($testData as $index => $data) {
             $artifact = new Artifact([
                 'name' => 'Patient Test Artifact ' . ($index + 1),
                 'meta' => $data,
@@ -336,88 +336,88 @@ class TestClassificationDeduplicationCommand extends Command
         $testData = [
             [
                 'classification' => [
-                    'animal_name' => 'African Elephant',
-                    'habitat' => 'Savanna',
-                    'diet' => 'Herbivore',
+                    'animal_name'         => 'African Elephant',
+                    'habitat'             => 'Savanna',
+                    'diet'                => 'Herbivore',
                     'conservation_status' => 'Endangered',
                 ],
             ],
             [
                 'classification' => [
-                    'animal_name' => 'AFRICAN ELEPHANT',
-                    'habitat' => 'savanna',
-                    'diet' => 'herbivore',
+                    'animal_name'         => 'AFRICAN ELEPHANT',
+                    'habitat'             => 'savanna',
+                    'diet'                => 'herbivore',
                     'conservation_status' => 'endangered',
                 ],
             ],
             [
                 'classification' => [
-                    'animal_name' => 'African Elephant (Loxodonta africana)',
-                    'habitat' => 'African Savanna',
-                    'diet' => 'Plant Eater',
+                    'animal_name'         => 'African Elephant (Loxodonta africana)',
+                    'habitat'             => 'African Savanna',
+                    'diet'                => 'Plant Eater',
                     'conservation_status' => 'Critically Endangered',
                 ],
             ],
             [
                 'classification' => [
-                    'animal_name' => 'Loxodonta africana',
-                    'habitat' => 'SAVANNA',
-                    'diet' => 'HERBIVORE',
+                    'animal_name'         => 'Loxodonta africana',
+                    'habitat'             => 'SAVANNA',
+                    'diet'                => 'HERBIVORE',
                     'conservation_status' => 'ENDANGERED',
                 ],
             ],
             [
                 'classification' => [
-                    'animal_name' => 'Siberian Tiger',
-                    'habitat' => 'Taiga Forest',
-                    'diet' => 'Carnivore',
+                    'animal_name'         => 'Siberian Tiger',
+                    'habitat'             => 'Taiga Forest',
+                    'diet'                => 'Carnivore',
                     'conservation_status' => 'Endangered',
                 ],
             ],
             [
                 'classification' => [
-                    'animal_name' => 'SIBERIAN TIGER',
-                    'habitat' => 'taiga forest',
-                    'diet' => 'carnivore',
+                    'animal_name'         => 'SIBERIAN TIGER',
+                    'habitat'             => 'taiga forest',
+                    'diet'                => 'carnivore',
                     'conservation_status' => 'endangered',
                 ],
             ],
             [
                 'classification' => [
-                    'animal_name' => 'Siberian Tiger (Panthera tigris altaica)',
-                    'habitat' => 'Russian Taiga',
-                    'diet' => 'Meat Eater',
+                    'animal_name'         => 'Siberian Tiger (Panthera tigris altaica)',
+                    'habitat'             => 'Russian Taiga',
+                    'diet'                => 'Meat Eater',
                     'conservation_status' => 'Critically Endangered',
                 ],
             ],
             [
                 'classification' => [
-                    'animal_name' => 'Panthera tigris altaica',
-                    'habitat' => 'TAIGA',
-                    'diet' => 'CARNIVORE',
+                    'animal_name'         => 'Panthera tigris altaica',
+                    'habitat'             => 'TAIGA',
+                    'diet'                => 'CARNIVORE',
                     'conservation_status' => 'ENDANGERED',
                 ],
             ],
             [
                 'classification' => [
-                    'animal_name' => 'Giant Panda',
-                    'habitat' => 'Bamboo Forest',
-                    'diet' => 'Herbivore',
+                    'animal_name'         => 'Giant Panda',
+                    'habitat'             => 'Bamboo Forest',
+                    'diet'                => 'Herbivore',
                     'conservation_status' => 'Vulnerable',
                 ],
             ],
             [
                 'classification' => [
-                    'animal_name' => 'GIANT PANDA',
-                    'habitat' => 'bamboo forest',
-                    'diet' => 'herbivore',
+                    'animal_name'         => 'GIANT PANDA',
+                    'habitat'             => 'bamboo forest',
+                    'diet'                => 'herbivore',
                     'conservation_status' => 'vulnerable',
                 ],
             ],
         ];
 
         $artifacts = collect();
-        foreach($testData as $index => $data) {
+        foreach ($testData as $index => $data) {
             $artifact = new Artifact([
                 'name' => 'Zoo Animal Test Artifact ' . ($index + 1),
                 'meta' => $data,

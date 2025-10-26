@@ -99,7 +99,7 @@ class WorkflowBuilderIntegrationTest extends AuthenticatedTestCase
         ]);
 
         // When - Test the private method directly since AgentThreadService calls would require complex setup
-        $mockMessage = (object) [
+        $mockMessage = (object)[
             'id'           => 123,
             'content'      => "Workflow Name: Content Analysis Pipeline\nDescription: Analyzes documents for key insights\n\n1. Document Ingestion: Load and preprocess documents\n2. Content Analysis: Extract key insights using NLP\n3. Result Compilation: Compile findings into report",
             'json_content' => null,
@@ -119,7 +119,7 @@ class WorkflowBuilderIntegrationTest extends AuthenticatedTestCase
     public function test_extractPlanFromResponse_withJsonContent_returnsParsedPlan(): void
     {
         // Given
-        $mockMessage = (object) [
+        $mockMessage = (object)[
             'id'           => 456,
             'content'      => 'Here is the workflow plan...',
             'json_content' => [
@@ -155,7 +155,7 @@ class WorkflowBuilderIntegrationTest extends AuthenticatedTestCase
     public function test_extractPlanFromResponse_withTextContent_fallsBackToTextExtraction(): void
     {
         // Given
-        $mockMessage = (object) [
+        $mockMessage = (object)[
             'id'           => 789,
             'content'      => "Workflow Name: Text Analysis Flow\nDescription: Analyzes text documents\n\n1. Text Preprocessing: Clean and prepare text\n2. Analysis: Perform text analysis\n3. Report Generation: Generate final report",
             'json_content' => null,

@@ -14,18 +14,18 @@ class TaskRunRepository extends ActionRepository
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createTaskRun($data),
-            'resume' => $this->resumeTaskRun($model),
+            'create'  => $this->createTaskRun($data),
+            'resume'  => $this->resumeTaskRun($model),
             'restart' => $this->restartTaskRun($model),
-            'stop' => $this->stopTaskRun($model),
-            default => parent::applyAction($action, $model, $data)
+            'stop'    => $this->stopTaskRun($model),
+            default   => parent::applyAction($action, $model, $data)
         };
     }
 
     public function createTaskRun(array $data): TaskRun
     {
         $taskDefinitionId = $data['task_definition_id'] ?? null;
-        $taskInputId      = $data['task_input_id'] ?? null;
+        $taskInputId      = $data['task_input_id']      ?? null;
 
         $taskDefinition = team()->taskDefinitions()->find($taskDefinitionId);
 
@@ -67,6 +67,4 @@ class TaskRunRepository extends ActionRepository
 
         return $taskRun;
     }
-
-
 }

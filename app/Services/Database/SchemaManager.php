@@ -8,7 +8,8 @@ use Symfony\Component\Yaml\Yaml;
 class SchemaManager
 {
     protected string $prefix;
-    protected array  $schema;
+
+    protected array $schema;
 
     public function __construct(string $prefix, string $schemaFile)
     {
@@ -45,7 +46,7 @@ class SchemaManager
     {
         $tableSchema = $this->getTable($tableName);
         if (!$tableSchema) {
-            throw new Exception("Table not found: " . $tableName);
+            throw new Exception('Table not found: ' . $tableName);
         }
 
         return app(DatabaseTableQuery::class)->setTable($this->prefix . '__', $tableName, $tableSchema);

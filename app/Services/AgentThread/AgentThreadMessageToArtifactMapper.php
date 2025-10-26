@@ -12,9 +12,12 @@ use Newms87\Danx\Helpers\StringHelper;
 
 class AgentThreadMessageToArtifactMapper
 {
-    protected string             $name      = '';
-    protected Agent              $agent;
-    protected ?AgentThreadRun    $threadRun = null;
+    protected string $name      = '';
+
+    protected Agent $agent;
+
+    protected ?AgentThreadRun $threadRun = null;
+
     protected AgentThreadMessage $message;
 
     public function setName(string $name): static
@@ -39,7 +42,7 @@ class AgentThreadMessageToArtifactMapper
         return $this;
     }
 
-    public function map(): Artifact|null
+    public function map(): ?Artifact
     {
         // Produce the artifact
         $jsonContent = null;
@@ -52,7 +55,7 @@ class AgentThreadMessageToArtifactMapper
         }
 
         if (!$textContent && !$jsonContent) {
-            Log::debug("Did not produce an artifact: No text or JSON content found in message");
+            Log::debug('Did not produce an artifact: No text or JSON content found in message');
 
             return null;
         }
@@ -74,9 +77,9 @@ class AgentThreadMessageToArtifactMapper
             'text_content' => $textContent,
             'json_content' => $jsonContent,
             'meta'         => [
-                    'agent_thread_run_id' => $this->threadRun?->id,
-                    'api_response_id'     => $this->message->api_response_id,
-                ] + $jsonMeta,
+                'agent_thread_run_id' => $this->threadRun?->id,
+                'api_response_id'     => $this->message->api_response_id,
+            ] + $jsonMeta,
         ]);
 
         if ($jsonContent) {
@@ -108,7 +111,7 @@ class AgentThreadMessageToArtifactMapper
 
         $fileIds = [];
 
-        foreach($data as $key => $value) {
+        foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $fileIds = array_merge($fileIds, $this->flattenSourceFiles($value));
             } elseif ($key === 'file_id') {

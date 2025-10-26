@@ -20,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
             if (config('services.stripe.mock_mode') || !config('services.stripe.secret')) {
                 return new MockStripePaymentService();
             }
-            
+
             return new StripePaymentService();
         });
     }

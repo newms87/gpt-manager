@@ -68,20 +68,20 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
 
         // Create existing variables with custom configurations
         $existingVar1 = TemplateVariable::factory()->artifactMapped()->create([
-            'demand_template_id' => $template->id,
-            'name' => 'patient_name',
-            'description' => 'The patient full name',
-            'artifact_categories' => ['medical', 'personal'],
-            'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
+            'demand_template_id'    => $template->id,
+            'name'                  => 'patient_name',
+            'description'           => 'The patient full name',
+            'artifact_categories'   => ['medical', 'personal'],
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_FIRST,
             'multi_value_separator' => ' | ',
         ]);
 
         $existingVar2 = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
-            'name' => 'diagnosis',
-            'description' => 'Medical diagnosis',
-            'ai_instructions' => 'Extract the primary diagnosis',
-            'multi_value_strategy' => TemplateVariable::STRATEGY_UNIQUE,
+            'demand_template_id'    => $template->id,
+            'name'                  => 'diagnosis',
+            'description'           => 'Medical diagnosis',
+            'ai_instructions'       => 'Extract the primary diagnosis',
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_UNIQUE,
             'multi_value_separator' => '; ',
         ]);
 
@@ -130,22 +130,22 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
         // Create variables, some will be orphaned
         $keptVar = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'kept_variable',
+            'name'               => 'kept_variable',
         ]);
 
         $orphanedVar1 = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'orphaned_1',
+            'name'               => 'orphaned_1',
         ]);
 
         $orphanedVar2 = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'orphaned_2',
+            'name'               => 'orphaned_2',
         ]);
 
         $orphanedVar3 = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'orphaned_3',
+            'name'               => 'orphaned_3',
         ]);
 
         $variableNames = ['kept_variable', 'new_variable'];
@@ -158,8 +158,8 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
 
         // Verify kept variable still exists
         $this->assertDatabaseHas('template_variables', [
-            'id' => $keptVar->id,
-            'name' => 'kept_variable',
+            'id'         => $keptVar->id,
+            'name'       => 'kept_variable',
             'deleted_at' => null,
         ]);
 
@@ -171,8 +171,8 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
         // Verify new variable was created
         $this->assertDatabaseHas('template_variables', [
             'demand_template_id' => $template->id,
-            'name' => 'new_variable',
-            'deleted_at' => null,
+            'name'               => 'new_variable',
+            'deleted_at'         => null,
         ]);
     }
 
@@ -187,17 +187,17 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
         // Create variables that will all be deleted
         $var1 = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'variable_1',
+            'name'               => 'variable_1',
         ]);
 
         $var2 = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'variable_2',
+            'name'               => 'variable_2',
         ]);
 
         $var3 = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'variable_3',
+            'name'               => 'variable_3',
         ]);
 
         $variableNames = [];
@@ -240,7 +240,7 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
 
         $existingVar = TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'existing_variable',
+            'name'               => 'existing_variable',
         ]);
 
         // When - Pass invalid data that will cause an error during processing
@@ -256,12 +256,12 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
         // Verify both variables exist (transaction committed)
         $this->assertDatabaseHas('template_variables', [
             'demand_template_id' => $template->id,
-            'name' => 'existing_variable',
+            'name'               => 'existing_variable',
         ]);
 
         $this->assertDatabaseHas('template_variables', [
             'demand_template_id' => $template->id,
-            'name' => 'new_variable',
+            'name'               => 'new_variable',
         ]);
     }
 
@@ -276,7 +276,7 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
         // Create some existing variables
         TemplateVariable::factory()->create([
             'demand_template_id' => $template->id,
-            'name' => 'old_var',
+            'name'               => 'old_var',
         ]);
 
         $variableNames = ['new_var_1', 'new_var_2', 'new_var_3'];
@@ -363,14 +363,14 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
         // Create existing variable with schema association
         $existingVar = TemplateVariable::factory()->teamObjectMapped()->create([
             'demand_template_id' => $template->id,
-            'name' => 'team_object_var',
+            'name'               => 'team_object_var',
         ]);
 
         $association = SchemaAssociation::factory()->create([
             'schema_definition_id' => $schemaDefinition->id,
-            'schema_fragment_id' => $schemaFragment->id,
-            'object_type' => TemplateVariable::class,
-            'object_id' => $existingVar->id,
+            'schema_fragment_id'   => $schemaFragment->id,
+            'object_type'          => TemplateVariable::class,
+            'object_id'            => $existingVar->id,
         ]);
 
         $existingVar->team_object_schema_association_id = $association->id;

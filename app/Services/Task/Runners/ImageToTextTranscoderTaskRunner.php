@@ -30,12 +30,12 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         // If the file is already transcoded, just return the completed transcode immediately
         if ($transcodedFile) {
-            $this->activity("File already transcoded", 100);
+            $this->activity('File already transcoded', 100);
             static::log("$transcodedFile");
 
             try {
                 $transcodedContents = $transcodedFile->getContents();
-            } catch(Throwable $e) {
+            } catch (Throwable $e) {
                 // If the transcoded file doesn't exist in S3 (404 error), delete the bad record and continue processing
                 if ($this->is404Error($e)) {
                     $this->activity("Transcoded file not found in S3, cleaning up bad transcode record: {$transcodedFile->filename}", 5);
@@ -81,7 +81,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 
         $this->activity("Storing transcoded data for $fileToTranscode->filename", 100);
 
-        $transcodedFilename = preg_replace("/\\.[a-z0-9]+/", ".image-to-text-transcode.txt", $fileToTranscode->filename);
+        $transcodedFilename = preg_replace('/\\.[a-z0-9]+/', '.image-to-text-transcode.txt', $fileToTranscode->filename);
         // Save the transcoded record
         $transcodedFile = app(TranscodeFileService::class)->storeTranscodedFile(
             $fileToTranscode,
@@ -105,8 +105,8 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
     {
         $filesToTranscode = [];
 
-        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
-            foreach($inputArtifact->storedFiles as $storedFile) {
+        foreach ($this->taskProcess->inputArtifacts as $inputArtifact) {
+            foreach ($inputArtifact->storedFiles as $storedFile) {
                 $filesToTranscode[] = $storedFile;
             }
         }
@@ -116,7 +116,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         }
 
         if (empty($filesToTranscode)) {
-            throw new ValidationError("No files found to transcode");
+            throw new ValidationError('No files found to transcode');
         }
 
         return $filesToTranscode[0];
@@ -137,16 +137,16 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         $this->activity("Setup agent thread with Stored File $storedFile->id" . ($storedFile->page_number ? " (page: $storedFile->page_number)" : ''), 15);
 
         // Add the OCR transcode text to the thread
-        $ocrPrompt = "OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ";
+        $ocrPrompt = 'OCR Transcoded version of the file (use as reference with the image of the file to get the best transcode possible): ';
 
         try {
             $ocrContents = $ocrTranscodedFile->getContents();
-        } catch(Throwable $e) {
+        } catch (Throwable $e) {
             // If the OCR file doesn't exist in S3 (404 error), delete the bad record and re-throw
             if ($this->is404Error($e)) {
                 $this->activity("OCR file not found in S3, cleaning up bad transcode record: {$ocrTranscodedFile->filename}", 5);
                 $ocrTranscodedFile->delete();
-                throw new Exception("OCR transcode file not found in S3. Bad record cleaned up. Please retry the task.", 0, $e);
+                throw new Exception('OCR transcode file not found in S3. Bad record cleaned up. Please retry the task.', 0, $e);
             }
             throw $e;
         }
@@ -192,7 +192,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
                 $runTimeMs
             );
 
-            $transcodedFilename = preg_replace("/\\.[a-z0-9]+/", ".ocr.txt", $storedFile->filename);
+            $transcodedFilename = preg_replace('/\\.[a-z0-9]+/', '.ocr.txt', $storedFile->filename);
             // Save the transcoded record
             $ocrTranscode = app(TranscodeFileService::class)->storeTranscodedFile(
                 $storedFile,

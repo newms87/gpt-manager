@@ -16,9 +16,11 @@ use Tests\TestCase;
 
 class UsageBillingServiceTest extends TestCase
 {
-    private UsageBillingService           $usageBillingService;
+    private UsageBillingService $usageBillingService;
+
     private StripePaymentServiceInterface $mockStripeService;
-    private Team                          $team;
+
+    private Team $team;
 
     public function setUp(): void
     {
@@ -48,7 +50,6 @@ class UsageBillingServiceTest extends TestCase
         // Create payment methods
         PaymentMethod::factory()->create(['team_id' => $team1->id, 'is_default' => true]);
         PaymentMethod::factory()->create(['team_id' => $team2->id, 'is_default' => true]);
-
 
         // Create usage events for both teams
         UsageEvent::factory()->create([

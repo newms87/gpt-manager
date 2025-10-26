@@ -15,20 +15,20 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class WorkflowListener extends Model implements AuditableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory;
 
     // Status constants
     const string
-        STATUS_PENDING = 'pending',
-        STATUS_RUNNING = 'running',
+        STATUS_PENDING   = 'pending',
+        STATUS_RUNNING   = 'running',
         STATUS_COMPLETED = 'completed',
-        STATUS_FAILED = 'failed';
+        STATUS_FAILED    = 'failed';
 
     // Workflow type constants for UI demands
     const string
-        WORKFLOW_TYPE_EXTRACT_DATA = 'extract_data',
+        WORKFLOW_TYPE_EXTRACT_DATA          = 'extract_data',
         WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY = 'write_medical_summary',
-        WORKFLOW_TYPE_WRITE_DEMAND_LETTER = 'write_demand_letter';
+        WORKFLOW_TYPE_WRITE_DEMAND_LETTER   = 'write_demand_letter';
 
     protected $fillable = [
         'team_id',
@@ -50,7 +50,7 @@ class WorkflowListener extends Model implements AuditableContract
         'failed_at'    => 'datetime',
     ];
 
-    public function validate(array $data = null): \Illuminate\Contracts\Validation\Validator
+    public function validate(?array $data = null): \Illuminate\Contracts\Validation\Validator
     {
         return Validator::make($data ?: $this->toArray(), [
             'team_id'         => 'required|exists:teams,id',
@@ -59,11 +59,11 @@ class WorkflowListener extends Model implements AuditableContract
             'listener_id'     => 'required|integer',
             'workflow_type'   => 'required|string|max:255',
             'status'          => 'required|in:' . implode(',', [
-                    self::STATUS_PENDING,
-                    self::STATUS_RUNNING,
-                    self::STATUS_COMPLETED,
-                    self::STATUS_FAILED,
-                ]),
+                self::STATUS_PENDING,
+                self::STATUS_RUNNING,
+                self::STATUS_COMPLETED,
+                self::STATUS_FAILED,
+            ]),
         ]);
     }
 
@@ -187,10 +187,10 @@ class WorkflowListener extends Model implements AuditableContract
 
     // Static helper methods
     public static function createForListener(
-        Model       $listener,
+        Model $listener,
         WorkflowRun $workflowRun,
-        string      $workflowType,
-        array       $metadata = []
+        string $workflowType,
+        array $metadata = []
     ): self {
         return static::create([
             'team_id'         => $listener->team_id,

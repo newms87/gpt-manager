@@ -41,9 +41,9 @@ class ListPromptTests extends Command
         $this->info('Available Prompt Tests:');
         $this->newLine();
 
-        foreach($tests as $category => $testList) {
+        foreach ($tests as $category => $testList) {
             $this->line("<comment>{$category}</comment>");
-            foreach($testList as $test) {
+            foreach ($testList as $test) {
                 $this->line("  • {$test['name']} - {$test['description']}");
             }
             $this->newLine();
@@ -63,7 +63,7 @@ class ListPromptTests extends Command
             new \RecursiveDirectoryIterator($path)
         );
 
-        foreach($iterator as $file) {
+        foreach ($iterator as $file) {
             if (!$file->isFile() || $file->getExtension() !== 'php') {
                 continue;
             }

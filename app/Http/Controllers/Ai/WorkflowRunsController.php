@@ -14,6 +14,7 @@ use Newms87\Danx\Requests\PagerRequest;
 class WorkflowRunsController extends ActionController
 {
     public static ?string $repo     = WorkflowRunRepository::class;
+
     public static ?string $resource = WorkflowRunResource::class;
 
     public function runStatuses(PagerRequest $request): array

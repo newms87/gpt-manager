@@ -21,10 +21,15 @@ class SeedTeamObjectsCommand extends Command
     protected $description = 'Seed random team objects using a specific schema definition structure';
 
     protected $faker;
+
     protected $team;
+
     protected $schema;
+
     protected $schemaProperties = [];
+
     protected $createdObjects   = [];
+
     protected $objectTypes      = [
         'Demand', 'Provider', 'Facility', 'Diagnosis', 'Procedure',
         'Medication', 'Laboratory', 'Radiology', 'Document', 'Address',
@@ -77,7 +82,7 @@ class SeedTeamObjectsCommand extends Command
         }
 
         if ($this->schema->team_id !== $this->team->id) {
-            $this->error("Schema definition does not belong to the specified team");
+            $this->error('Schema definition does not belong to the specified team');
 
             return 1;
         }
@@ -97,7 +102,7 @@ class SeedTeamObjectsCommand extends Command
         $progressBar = $this->output->createProgressBar($rootCount);
         $progressBar->start();
 
-        for($i = 0; $i < $rootCount; $i++) {
+        for ($i = 0; $i < $rootCount; $i++) {
             $rootObject             = $this->createTeamObject(null, 0, $maxDepth);
             $this->createdObjects[] = $rootObject;
             $progressBar->advance();
@@ -124,7 +129,7 @@ class SeedTeamObjectsCommand extends Command
         })->count();
 
         $this->newLine();
-        $this->info("Seeding complete!");
+        $this->info('Seeding complete!');
         $this->table(
             ['Metric', 'Count'],
             [
@@ -145,14 +150,14 @@ class SeedTeamObjectsCommand extends Command
         $this->schemaProperties = $schema['properties'] ?? [];
 
         if (empty($this->schemaProperties)) {
-            $this->error("Schema definition has no properties defined");
+            $this->error('Schema definition has no properties defined');
             exit(1);
         }
 
         $attributeCount    = 0;
         $relationshipCount = 0;
 
-        foreach($this->schemaProperties as $name => $property) {
+        foreach ($this->schemaProperties as $name => $property) {
             $type = $property['type'] ?? 'string';
             if ($type === 'array' && ($property['items']['type'] ?? '') === 'object') {
                 $relationshipCount++;
@@ -192,6 +197,7 @@ class SeedTeamObjectsCommand extends Command
             // Handle array of objects - get properties from items
             if (($propertySchema['type'] ?? '') === 'array') {
                 $items = $propertySchema['items'] ?? [];
+
                 return $items['properties'] ?? [];
             }
             // Handle direct object - get its properties
@@ -278,7 +284,7 @@ class SeedTeamObjectsCommand extends Command
     {
         // Get properties from the passed schema or fall back to root schema
         $schemaProperties = $this->getSchemaProperties($propertySchema);
-        
+
         // Create attributes only for non-relationship properties in the schema
         $attributeProperties = array_filter($schemaProperties, function ($property) {
             $type = $property['type'] ?? 'string';
@@ -286,7 +292,7 @@ class SeedTeamObjectsCommand extends Command
             return !($type === 'object' || ($type === 'array' && ($property['items']['type'] ?? '') === 'object'));
         });
 
-        foreach($attributeProperties as $attrName => $property) {
+        foreach ($attributeProperties as $attrName => $property) {
             $schemaType = $property['type'] ?? 'string';
 
             TeamObjectAttribute::create([
@@ -308,7 +314,7 @@ class SeedTeamObjectsCommand extends Command
     {
         // Get properties from the passed schema or fall back to root schema
         $schemaProperties = $this->getSchemaProperties($propertySchema);
-        
+
         // Create relationships only for object/array properties in the schema
         $relationshipProperties = array_filter($schemaProperties, function ($property) {
             $type = $property['type'] ?? 'string';
@@ -316,13 +322,13 @@ class SeedTeamObjectsCommand extends Command
             return $type === 'object' || ($type === 'array' && ($property['items']['type'] ?? '') === 'object');
         });
 
-        foreach($relationshipProperties as $relationName => $property) {
+        foreach ($relationshipProperties as $relationName => $property) {
             $type = $property['type'] ?? 'string';
 
             if ($type === 'array') {
                 // Create multiple related objects for array relationships
                 $numRelated = rand(1, 3); // Random number of related objects
-                for($i = 0; $i < $numRelated; $i++) {
+                for ($i = 0; $i < $numRelated; $i++) {
                     $relatedObject = $this->createTeamObject($object, $currentDepth + 1, $maxDepth, $property);
 
                     TeamObjectRelationship::create([
@@ -351,7 +357,7 @@ class SeedTeamObjectsCommand extends Command
             return $this->faker->randomElement($property['enum']);
         }
 
-        switch($type) {
+        switch ($type) {
             case 'boolean':
                 return $this->faker->boolean() ? 'true' : 'false';
 
@@ -424,14 +430,14 @@ class SeedTeamObjectsCommand extends Command
     protected function generateJsonAttributeValue($type, $property = [])
     {
         if ($type === 'array') {
-            $items     = $property['items'] ?? [];
-            $itemType  = $items['type'] ?? 'string';
+            $items     = $property['items']    ?? [];
+            $itemType  = $items['type']        ?? 'string';
             $minItems  = $property['minItems'] ?? 1;
             $maxItems  = $property['maxItems'] ?? 5;
             $arraySize = rand($minItems, $maxItems);
 
             $array = [];
-            for($i = 0; $i < $arraySize; $i++) {
+            for ($i = 0; $i < $arraySize; $i++) {
                 if ($itemType === 'string') {
                     $array[] = $this->faker->word();
                 } elseif ($itemType === 'number') {
@@ -451,7 +457,7 @@ class SeedTeamObjectsCommand extends Command
         $object           = [];
 
         if (!empty($objectProperties)) {
-            foreach($objectProperties as $propName => $propDef) {
+            foreach ($objectProperties as $propName => $propDef) {
                 $propType          = $propDef['type'] ?? 'string';
                 $object[$propName] = $this->generateAttributeValue($propType, $propName, $propDef);
             }
@@ -477,7 +483,7 @@ class SeedTeamObjectsCommand extends Command
 
         $numCrossRefs = min(20, (int)(count($this->createdObjects) * 0.3));
 
-        for($i = 0; $i < $numCrossRefs; $i++) {
+        for ($i = 0; $i < $numCrossRefs; $i++) {
             $object1 = $this->faker->randomElement($this->createdObjects);
             $object2 = $this->faker->randomElement($this->createdObjects);
 

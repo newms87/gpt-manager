@@ -34,11 +34,11 @@ class TeamObjectRepository extends ActionRepository
         $name = $data['name'] ?? $model?->name;
 
         return match ($action) {
-            'create' => $this->createTeamObject($type, $name, $data),
-            'update' => (bool)$this->updateTeamObject($model, $data),
+            'create'          => $this->createTeamObject($type, $name, $data),
+            'update'          => (bool)$this->updateTeamObject($model, $data),
             'create-relation' => $this->createRelation($model, $data['relationship_name'] ?? null, $type, $name, $data),
-            'save-attribute' => TeamObjectAttributeResource::make($this->saveTeamObjectAttribute($model, $data['name'] ?? null, $data)),
-            default => parent::applyAction($action, $model, $data)
+            'save-attribute'  => TeamObjectAttributeResource::make($this->saveTeamObjectAttribute($model, $data['name'] ?? null, $data)),
+            default           => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -92,7 +92,7 @@ class TeamObjectRepository extends ActionRepository
      */
     public function createTeamObject($type, $name, $input = []): TeamObject
     {
-        $rootObjectId       = $input['root_object_id'] ?? null;
+        $rootObjectId       = $input['root_object_id']       ?? null;
         $schemaDefinitionId = $input['schema_definition_id'] ?? null;
 
         $rootObject       = $rootObjectId ? TeamObject::find($rootObjectId) : null;
@@ -115,7 +115,7 @@ class TeamObjectRepository extends ActionRepository
     /**
      * Update an existing team object
      */
-    function updateTeamObject(TeamObject $teamObject, $input = []): TeamObject
+    public function updateTeamObject(TeamObject $teamObject, $input = []): TeamObject
     {
         return (new JSONSchemaDataToDatabaseMapper)->updateTeamObject($teamObject, $input);
     }
@@ -127,7 +127,7 @@ class TeamObjectRepository extends ActionRepository
     public function createRelation(TeamObject $teamObject, $relationshipName, $type, $name, $input = []): TeamObject
     {
         if (!$relationshipName) {
-            throw new ValidationError("Save Objects requires a relationship_name for each relation");
+            throw new ValidationError('Save Objects requires a relationship_name for each relation');
         }
 
         unset($input['name']);

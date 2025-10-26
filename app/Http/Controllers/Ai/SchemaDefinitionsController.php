@@ -11,6 +11,7 @@ use Newms87\Danx\Http\Controllers\ActionController;
 class SchemaDefinitionsController extends ActionController
 {
     public static ?string $repo     = SchemaDefinitionRepository::class;
+
     public static ?string $resource = SchemaDefinitionResource::class;
 
     public function history(SchemaDefinition $schemaDefinition)

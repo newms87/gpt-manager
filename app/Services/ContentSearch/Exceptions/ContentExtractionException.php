@@ -10,7 +10,7 @@ class ContentExtractionException extends ContentSearchException
         if ($reason) {
             $message .= ": {$reason}";
         }
-        
+
         parent::__construct($message, 0, $previous);
     }
 }

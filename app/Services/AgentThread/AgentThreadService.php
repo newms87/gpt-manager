@@ -24,11 +24,15 @@ class AgentThreadService
 {
     use HasDebugLogging;
 
-    protected ?SchemaDefinition  $responseSchema    = null;
-    protected ?SchemaFragment    $responseFragment  = null;
+    protected ?SchemaDefinition $responseSchema    = null;
+
+    protected ?SchemaFragment $responseFragment  = null;
+
     protected ?JsonSchemaService $jsonSchemaService = null;
-    protected ?McpServer         $mcpServer         = null;
-    protected ?int               $timeout           = null;
+
+    protected ?McpServer $mcpServer         = null;
+
+    protected ?int $timeout           = null;
 
     protected int $currentTotalRetries = 0;
 
@@ -36,7 +40,7 @@ class AgentThreadService
      * Overrides the response format for the thread run.
      * This will replace the Agent's response format with the provided schema and fragment
      */
-    public function withResponseFormat(SchemaDefinition $responseSchema = null, SchemaFragment $responseFragment = null, JsonSchemaService $jsonSchemaService = null): static
+    public function withResponseFormat(?SchemaDefinition $responseSchema = null, ?SchemaFragment $responseFragment = null, ?JsonSchemaService $jsonSchemaService = null): static
     {
         $this->responseSchema    = $responseSchema;
         $this->responseFragment  = $responseFragment;
@@ -48,7 +52,7 @@ class AgentThreadService
     /**
      * Set the MCP server to be used for this thread run
      */
-    public function withMcpServer(McpServer $mcpServer = null): static
+    public function withMcpServer(?McpServer $mcpServer = null): static
     {
         $this->mcpServer = $mcpServer;
 
@@ -58,13 +62,12 @@ class AgentThreadService
     /**
      * Set the timeout in seconds for this thread run
      */
-    public function withTimeout(int $timeout = null): static
+    public function withTimeout(?int $timeout = null): static
     {
         $this->timeout = $timeout;
 
         return $this;
     }
-
 
     /**
      * Creates an agent thread run based on the defined parameters configured for the service
@@ -96,7 +99,7 @@ class AgentThreadService
             // and so we can clearly see what the schema was at the time of running the request
             if ($this->responseSchema) {
                 if (!$this->responseSchema->schema) {
-                    throw new ValidationError("Response schema has no schema defined: " . $this->responseSchema);
+                    throw new ValidationError('Response schema has no schema defined: ' . $this->responseSchema);
                 }
                 $agentThreadRun->response_json_schema = $agentThreadRun->renderResponseJsonSchema($this->responseSchema->name, $this->responseSchema->schema, $this->responseFragment?->fragment_selector);
             }
@@ -145,7 +148,7 @@ class AgentThreadService
     /**
      * Stop the currently running thread (if it is running)
      */
-    public function stop(AgentThread $thread): AgentThreadRun|null
+    public function stop(AgentThread $thread): ?AgentThreadRun
     {
         LockHelper::acquire($thread);
         $threadRun = $thread->currentRun;
@@ -161,7 +164,7 @@ class AgentThreadService
     /**
      * Resume the previously stopped thread (if there was a stopped thread run)
      */
-    public function resume(AgentThread $agentThread): AgentThreadRun|null
+    public function resume(AgentThread $agentThread): ?AgentThreadRun
     {
         LockHelper::acquire($agentThread);
         $agentThreadRun = $agentThread->runs()->where('status', AgentThreadRun::STATUS_STOPPED)->latest()->first();
@@ -222,11 +225,11 @@ class AgentThreadService
                     }
 
                     if ($response->isMessageEmpty()) {
-                        throw new Exception("Empty response from AI model", 580);
+                        throw new Exception('Empty response from AI model', 580);
                     }
 
-                    throw new Exception("Response from AI model is not finished: " . json_encode($response->getContent()), 581);
-                } catch(Throwable $exception) {
+                    throw new Exception('Response from AI model is not finished: ' . json_encode($response->getContent()), 581);
+                } catch (Throwable $exception) {
                     // Handle all exceptions through centralized retry logic
                     if ($exceptionHandler->shouldRetry($exception)) {
                         continue;
@@ -235,8 +238,8 @@ class AgentThreadService
                     // If we shouldn't retry, throw the exception
                     throw $exception;
                 }
-            } while($retries-- >= 0);
-        } catch(Throwable $throwable) {
+            } while ($retries-- >= 0);
+        } catch (Throwable $throwable) {
             $agentThreadRun->failed_at = now();
             $agentThreadRun->save();
             throw $throwable;
@@ -258,17 +261,17 @@ class AgentThreadService
             $messagesToSend = $thread->sortedMessages()
                 ->where('id', '>', $lastTrackedMessage->id)
                 ->get();
-            static::log("Using optimization: sending " . count($messagesToSend) . " new messages after message {$lastTrackedMessage->id}");
+            static::log('Using optimization: sending ' . count($messagesToSend) . " new messages after message {$lastTrackedMessage->id}");
         } else {
             // No tracked messages, send all messages
             $messagesToSend = $thread->sortedMessages()->get();
-            static::log("No tracked messages found, sending all " . count($messagesToSend) . " messages");
+            static::log('No tracked messages found, sending all ' . count($messagesToSend) . ' messages');
         }
 
         $messages = [];
 
         // Add raw message objects with metadata for API formatting
-        foreach($messagesToSend as $message) {
+        foreach ($messagesToSend as $message) {
             $messageData = [
                 'role'        => $message->role,
                 'content'     => $message->summary ?: $message->content ?: '',
@@ -304,7 +307,7 @@ class AgentThreadService
         $responseMessage = '';
 
         if ($agentThreadRun->response_format === AgentThreadRun::RESPONSE_FORMAT_JSON_SCHEMA && $agentThreadRun->getJsonSchemaService()->isUsingDbFields()) {
-            $responseMessage .= <<<STR
+            $responseMessage .= <<<'STR'
 Your response will be saved to the DB. In order to save correctly, the `name` attribute must be set as the unique identifier for the object type.
 
 Your goal is to **investigate and determine the best value** for each attribute of every object in the response schema.
@@ -342,7 +345,7 @@ STR;
         $newInputTokens  = $response->inputTokens();
         $newOutputTokens = $response->outputTokens();
 
-        static::log("Handling response from AI model. input: " . $newInputTokens . ", output: " . $newOutputTokens);
+        static::log('Handling response from AI model. input: ' . $newInputTokens . ', output: ' . $newOutputTokens);
 
         $threadRun->update([
             'agent_model'  => $thread->agent->model,
@@ -354,9 +357,9 @@ STR;
             // Calculate run time in milliseconds
             $runTimeMs = null;
             if ($threadRun->started_at) {
-                $runTimeMs = (int) ($threadRun->started_at->diffInMilliseconds(now()));
+                $runTimeMs = (int)($threadRun->started_at->diffInMilliseconds(now()));
             }
-            
+
             app(UsageTrackingService::class)->recordAiUsage(
                 $threadRun,
                 $thread->agent->model,
@@ -393,7 +396,7 @@ STR;
      */
     public function finishThreadResponse(AgentThreadRun $threadRun, AgentThreadMessage $lastMessage): void
     {
-        static::log("Finishing thread response...");
+        static::log('Finishing thread response...');
 
         $threadRun->update([
             'status'          => AgentThreadRun::STATUS_COMPLETED,
@@ -401,8 +404,7 @@ STR;
             'last_message_id' => $lastMessage->id,
         ]);
 
-
-        static::log("AgentThread response is finished");
+        static::log('AgentThread response is finished');
     }
 
     /**
@@ -414,12 +416,11 @@ STR;
 
         // Get API options from the thread run (source of truth) or use defaults
         $apiOptions = ResponsesApiOptions::fromArray($agentThreadRun->api_options ?? []);
-        
+
         // Set timeout from the thread run for HTTP API calls
         if ($agentThreadRun->timeout) {
             $apiOptions->setTimeout($agentThreadRun->timeout);
         }
-
 
         // Build system instructions and always prepend them
         $apiOptions->addInstructions($this->buildSystemInstructions($agentThreadRun));
@@ -435,7 +436,7 @@ STR;
             $jsonSchema = $agentThreadRun->response_json_schema;
 
             if (!$jsonSchema) {
-                throw new Exception("JSON Schema response format requires a schema to be set: " . $agentThreadRun);
+                throw new Exception('JSON Schema response format requires a schema to be set: ' . $agentThreadRun);
             }
 
             $apiOptions->setResponseJsonSchema($jsonSchema);
@@ -462,10 +463,8 @@ STR;
             );
         }
 
-
         return $response;
     }
-
 
     /**
      * Execute streaming Responses API call
@@ -493,7 +492,7 @@ STR;
      */
     protected function buildSystemInstructions(AgentThreadRun $agentThreadRun): string
     {
-        $instructions = "The current date and time is " . now()->toDateTimeString() . "\n\n";
+        $instructions = 'The current date and time is ' . now()->toDateTimeString() . "\n\n";
 
         if ($agentThreadRun->responseSchema) {
             $instructions .= "\nResponse Schema Name: {$agentThreadRun->responseSchema->name}";
@@ -528,5 +527,4 @@ STR;
             ],
         ];
     }
-
 }

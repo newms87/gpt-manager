@@ -10,13 +10,14 @@ use Newms87\Danx\Helpers\ArrayHelper;
 class ArtifactsToGroupsMapper
 {
     const string
-        GROUPING_MODE_SPLIT = 'Split',
-        GROUPING_MODE_MERGE = 'Merge',
-        GROUPING_MODE_OVERWRITE = 'Overwrite',
+        GROUPING_MODE_SPLIT       = 'Split',
+        GROUPING_MODE_MERGE       = 'Merge',
+        GROUPING_MODE_OVERWRITE   = 'Overwrite',
         GROUPING_MODE_CONCATENATE = 'Concatenate';
 
     protected string $groupingMode = self::GROUPING_MODE_CONCATENATE;
-    protected bool   $splitByFile  = false;
+
+    protected bool $splitByFile  = false;
 
     /** @var array An array of schema fragment selectors. The resolved values from the artifacts' data will define the group key */
     protected array $fragmentSelector = [];
@@ -93,7 +94,7 @@ class ArtifactsToGroupsMapper
      * Set the grouping keys for the mapper. The resolved values from the artifacts' data will define the number of
      * groups and the group key for each item in the group.
      *
-     * @param array $groupingKeys An array of schema fragment selectors.
+     * @param  array  $groupingKeys  An array of schema fragment selectors.
      */
     public function setGroupingKeys(array $groupingKeys): static
     {
@@ -114,7 +115,7 @@ class ArtifactsToGroupsMapper
     }
 
     /**
-     * @param Artifact[]|Collection $artifacts
+     * @param  Artifact[]|Collection  $artifacts
      * @return Artifact[][] An array of groups of artifacts
      */
     public function map($artifacts): array
@@ -123,7 +124,7 @@ class ArtifactsToGroupsMapper
 
         // Choose a schema definition based on permissions to view. If any of the artifacts are not allowed to be viewed by this team,
         // then we don't want the resulting artifacts to be viewable
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             if ($artifact->schema_definition_id) {
                 if (!$artifact->canView() || !$schemaDefinitionId) {
                     $schemaDefinitionId = $artifact->schema_definition_id;
@@ -138,7 +139,7 @@ class ArtifactsToGroupsMapper
 
         $groups = [];
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $keyPrefix = $this->groupingMode === self::GROUPING_MODE_SPLIT ? $artifact->id : '';
 
             $jsonContent = $artifact->json_content ?? [];
@@ -164,7 +165,7 @@ class ArtifactsToGroupsMapper
 
                 // In OVERWRITE mode, fragment groups overwrite any existing groups with the same key
                 // NOTE: This behaves similarly to SPLIT but differs conceptually since no key prefix is applied, resulting in data being overwritten
-                self:: GROUPING_MODE_OVERWRITE => $fragmentGroups + $groups,
+                self::GROUPING_MODE_OVERWRITE => $fragmentGroups + $groups,
 
                 // In MERGE mode, groups with the same key are combined, keeping only unique values
                 self::GROUPING_MODE_MERGE => ArrayHelper::mergeArraysRecursivelyUnique($groups, $fragmentGroups),
@@ -176,10 +177,10 @@ class ArtifactsToGroupsMapper
 
         $groupsOfArtifacts = [];
 
-        foreach($groups as $groupKey => $items) {
-            foreach($items as $itemKey => $item) {
+        foreach ($groups as $groupKey => $items) {
+            foreach ($items as $itemKey => $item) {
                 $textContent = $item['text_content'] ?? null;
-                $position    = $item['position'] ?? 0;
+                $position    = $item['position']     ?? 0;
                 if (is_array($position)) {
                     $position = $position[0] ?? 0;
                 }
@@ -204,7 +205,7 @@ class ArtifactsToGroupsMapper
      */
     protected function concatenate(array $groups, array $fragmentGroups): array
     {
-        foreach($fragmentGroups as $key => $group) {
+        foreach ($fragmentGroups as $key => $group) {
             $groups[$key] = array_merge($groups[$key] ?? [], $group);
         }
 
@@ -214,16 +215,16 @@ class ArtifactsToGroupsMapper
     /**
      * Add the files from the artifacts to the groups of artifacts
      *
-     * @param Artifact[]|Collection $artifacts
-     * @param Artifact[][]          $groupsOfArtifacts
+     * @param  Artifact[]|Collection  $artifacts
+     * @param  Artifact[][]  $groupsOfArtifacts
      */
     public function addFilesToGroups($artifacts, array $groupsOfArtifacts): array
     {
         $allFiles = [];
-        foreach($artifacts as $artifact) {
-            foreach($artifact->storedFiles as $storedFile) {
+        foreach ($artifacts as $artifact) {
+            foreach ($artifact->storedFiles as $storedFile) {
                 if ($storedFile->transcodes->isNotEmpty()) {
-                    foreach($storedFile->transcodes as $transcode) {
+                    foreach ($storedFile->transcodes as $transcode) {
                         $allFiles[$transcode->id] = $transcode;
                     }
                 } else {
@@ -240,13 +241,13 @@ class ArtifactsToGroupsMapper
         // If splitting by file, cross product all files with all groups so each group contains 1 file and each file is a part of all artifact groups
         if ($this->splitByFile) {
             $fileGroups = [];
-            foreach($allFiles as $file) {
+            foreach ($allFiles as $file) {
                 // Create an artifact containing only the single file
                 $fileArtifact = Artifact::create(['name' => $file->filename]);
                 $fileArtifact->storedFiles()->save($file);
 
                 // Append the file to each artifact group
-                foreach($groupsOfArtifacts as $groupKey => $artifactGroup) {
+                foreach ($groupsOfArtifacts as $groupKey => $artifactGroup) {
                     $fileGroups[$groupKey . ':' . $file->id] = array_merge($artifactGroup, [$fileArtifact]);
                 }
             }
@@ -259,7 +260,7 @@ class ArtifactsToGroupsMapper
         $filesArtifact->storedFiles()->sync(array_keys($allFiles));
 
         // Append the files artifact to each group
-        foreach($groupsOfArtifacts as &$artifactGroup) {
+        foreach ($groupsOfArtifacts as &$artifactGroup) {
             $artifactGroup[] = $filesArtifact;
         }
         unset($artifactGroup);
@@ -271,7 +272,7 @@ class ArtifactsToGroupsMapper
      * Resolve the groups for the given data based on the fragment selector.
      * If no fragment selector is given, returns the data as a single group
      */
-    public function resolveGroupsByFragment(array $data, array $fragmentSelector = null, $keyPrefix = ''): array
+    public function resolveGroupsByFragment(array $data, ?array $fragmentSelector = null, $keyPrefix = ''): array
     {
         if (!$fragmentSelector || empty($fragmentSelector['children'])) {
             $key = $this->getGroupKey($data);
@@ -282,7 +283,7 @@ class ArtifactsToGroupsMapper
         $baseGroupKey = '';
         $childGroups  = [];
 
-        foreach($fragmentSelector['children'] as $propertyName => $childSelector) {
+        foreach ($fragmentSelector['children'] as $propertyName => $childSelector) {
             if (!isset($data[$propertyName])) {
                 continue;
             }
@@ -292,6 +293,7 @@ class ArtifactsToGroupsMapper
             // If the types do not match, just ignore this value
             if (in_array($childSelector['type'], ['array', 'object']) && !is_array($childData)) {
                 Log::warning("WARNING: Ignoring property $propertyName because the type does not match the selector type: $childSelector[type]: " . json_encode($childData));
+
                 continue;
             }
 
@@ -311,12 +313,12 @@ class ArtifactsToGroupsMapper
                     }
                 } else {
                     // Normal array processing
-                    foreach($childData as $item) {
+                    foreach ($childData as $item) {
                         if ($item === null) {
                             // Skip null items entirely
                             continue;
                         }
-                        
+
                         if (!$item || is_scalar($item)) {
                             $childGroups[$propertyName][static::getGroupKey($item)] = $item;
                         } else {
@@ -333,13 +335,13 @@ class ArtifactsToGroupsMapper
         $groups = [($keyPrefix ? "$keyPrefix:" : '') . static::getGroupKey($baseGroupKey) => [$data]];
 
         // Cross product merge the groups together
-        foreach($childGroups as $propertyName => $propertyGroups) {
+        foreach ($childGroups as $propertyName => $propertyGroups) {
             $newGroups = [];
             // Property Group Items will be 1 or more items that have matched the same values of the fragment at this path
             // (eg: if the fragment is matching on the city property of an array of addresses, all addresses in the same city will be in the same propertyGroupItems list)
-            foreach($propertyGroups as $propertyGroupKey => $propertyGroupItems) {
-                foreach($groups as $originalGroupKey => $groupItems) {
-                    foreach($groupItems as $groupItem) {
+            foreach ($propertyGroups as $propertyGroupKey => $propertyGroupItems) {
+                foreach ($groups as $originalGroupKey => $groupItems) {
+                    foreach ($groupItems as $groupItem) {
                         if (is_scalar($propertyGroupItems)) {
                             // If the propertyGroupItems is just a scalar value, set the group item property to the scalar value
                             // as each scalar value will have exactly item since the scalar value itself determines the group key
@@ -377,7 +379,7 @@ class ArtifactsToGroupsMapper
         if (empty($data)) {
             return false;
         }
-        
+
         // If it has non-numeric keys, it's associative
         return array_keys($data) !== range(0, count($data) - 1);
     }

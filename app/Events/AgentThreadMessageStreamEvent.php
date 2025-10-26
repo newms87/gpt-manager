@@ -15,8 +15,8 @@ class AgentThreadMessageStreamEvent implements ShouldBroadcast
 
     public function __construct(
         protected AgentThreadMessage $message,
-        protected string             $content,
-        protected bool               $isComplete = false
+        protected string $content,
+        protected bool $isComplete = false
     ) {
     }
 

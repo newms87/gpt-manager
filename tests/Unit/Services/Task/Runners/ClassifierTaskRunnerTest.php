@@ -18,11 +18,15 @@ use Tests\TestCase;
 
 class ClassifierTaskRunnerTest extends TestCase
 {
-    protected Team           $team;
-    protected User           $user;
-    protected TaskRun        $taskRun;
+    protected Team $team;
+
+    protected User $user;
+
+    protected TaskRun $taskRun;
+
     protected TaskDefinition $taskDefinition;
-    protected Agent          $agent;
+
+    protected Agent $agent;
 
     public function setUp(): void
     {
@@ -86,7 +90,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Associate artifacts as input artifacts
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -348,7 +352,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $this->taskDefinition->save();
         $this->taskRun->refresh();
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -382,7 +386,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Add all artifacts to task run as input artifacts
-        foreach($contextArtifacts->merge($inputArtifacts) as $artifact) {
+        foreach ($contextArtifacts->merge($inputArtifacts) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -397,7 +401,7 @@ class ClassifierTaskRunnerTest extends TestCase
         // Refresh taskRun to clear cached taskDefinition relationship
         $this->taskRun->refresh();
 
-        foreach($inputArtifacts as $artifact) {
+        foreach ($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -430,7 +434,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Add all artifacts to task run as input artifacts
-        foreach($inputArtifacts->merge($contextArtifacts) as $artifact) {
+        foreach ($inputArtifacts->merge($contextArtifacts) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -443,7 +447,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $this->taskDefinition->save();
         $this->taskRun->refresh();
 
-        foreach($inputArtifacts as $artifact) {
+        foreach ($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -484,7 +488,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Add all artifacts to task run as input artifacts
-        foreach($contextBefore->merge($inputArtifacts)->merge($contextAfter) as $artifact) {
+        foreach ($contextBefore->merge($inputArtifacts)->merge($contextAfter) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -500,7 +504,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $this->taskDefinition->save();
         $this->taskRun->refresh();
 
-        foreach($inputArtifacts as $artifact) {
+        foreach ($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -528,7 +532,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Add artifacts to task run as input artifacts
-        foreach($inputArtifacts as $artifact) {
+        foreach ($inputArtifacts as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -544,7 +548,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $this->taskDefinition->save();
         $this->taskRun->refresh();
 
-        foreach($inputArtifacts as $artifact) {
+        foreach ($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -583,7 +587,7 @@ class ClassifierTaskRunnerTest extends TestCase
         ]);
 
         // Add all artifacts to task run as input artifacts
-        foreach($contextArtifacts->merge($inputArtifacts) as $artifact) {
+        foreach ($contextArtifacts->merge($inputArtifacts) as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -599,7 +603,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $this->taskDefinition->save();
         $this->taskRun->refresh();
 
-        foreach($inputArtifacts as $artifact) {
+        foreach ($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 
@@ -633,7 +637,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $inputArtifacts = $allArtifacts->where('position', '>=', 5)->where('position', '<=', 6);
 
         // Add all artifacts to task run as input artifacts
-        foreach($allArtifacts as $artifact) {
+        foreach ($allArtifacts as $artifact) {
             $this->taskRun->inputArtifacts()->attach($artifact->id);
         }
 
@@ -649,7 +653,7 @@ class ClassifierTaskRunnerTest extends TestCase
         $this->taskDefinition->save();
         $this->taskRun->refresh();
 
-        foreach($inputArtifacts as $artifact) {
+        foreach ($inputArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id);
         }
 

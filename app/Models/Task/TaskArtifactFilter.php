@@ -16,7 +16,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class TaskArtifactFilter extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, AuditableTrait, ActionModelTrait, ResourcePackageableTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, ResourcePackageableTrait;
 
     protected $fillable = [
         'include_text',
@@ -54,7 +54,7 @@ class TaskArtifactFilter extends Model implements AuditableContract, ResourcePac
             includeJson: $this->include_json,
             includeMeta: $this->include_meta,
             jsonFragmentSelector: $this->schemaFragment?->fragment_selector ?? [],
-            metaFragmentSelector: $this->meta_fragment_selector ?? []
+            metaFragmentSelector: $this->meta_fragment_selector             ?? []
         );
     }
 

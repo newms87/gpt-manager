@@ -23,7 +23,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class WorkflowInput extends Model implements AuditableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait, HasObjectTags, SoftDeletes, KeywordSearchTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasObjectTags, KeywordSearchTrait, SoftDeletes;
 
     protected $fillable = [
         'name',

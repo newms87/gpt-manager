@@ -24,7 +24,7 @@ class WorkflowInputRepository extends ActionRepository
         return match ($action) {
             'create' => $this->createWorkflowInput($data),
             'update' => $this->updateWorkflowInput($model, $data),
-            default => parent::applyAction($action, $model, $data)
+            default  => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -117,7 +117,7 @@ class WorkflowInputRepository extends ActionRepository
      */
     protected function attachToAssociable(WorkflowInput $workflowInput, array $associations): void
     {
-        foreach($associations as $association) {
+        foreach ($associations as $association) {
             $workflowInput->associations()->create([
                 'associable_type' => $association['associable_type'],
                 'associable_id'   => $association['associable_id'],

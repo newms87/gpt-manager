@@ -1,10 +1,10 @@
 <?php
 
-use Newms87\Danx\Logging\Audit\AuditLogLogger;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
+use Newms87\Danx\Logging\Audit\AuditLogLogger;
 
 return [
 

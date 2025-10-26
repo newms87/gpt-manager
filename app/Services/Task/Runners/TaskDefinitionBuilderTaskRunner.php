@@ -14,7 +14,6 @@ use App\Services\JsonSchema\JsonSchemaService;
 use App\Services\WorkflowBuilder\WorkflowBuilderDocumentationService;
 use Exception;
 use Illuminate\Support\Facades\DB;
-use Newms87\Danx\Exceptions\ValidationError;
 
 class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
 {
@@ -23,55 +22,56 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
     public function prepareProcess(): void
     {
         $this->taskProcess->name = static::RUNNER_NAME;
-        
+
         // Timeout is configured on the TaskDefinition and accessed via relationship
-        
-        $this->activity("Preparing task definition building", 1);
+
+        $this->activity('Preparing task definition building', 1);
     }
 
     public function run(): void
     {
-        $this->activity("Processing task specification artifact", 10);
-        
+        $this->activity('Processing task specification artifact', 10);
+
         // Get single task specification from input artifact (split mode)
         $specification = $this->extractTaskSpecificationFromArtifact();
-        
+
         if (!$specification) {
-            $this->activity("No valid task specification found", 100);
+            $this->activity('No valid task specification found', 100);
             $this->complete([]);
+
             return;
         }
-        
+
         // Resolve workflow context
         $workflow = $this->resolveCurrentWorkflow();
-        
-        $this->activity("Loading task builder context", 20);
-        
+
+        $this->activity('Loading task builder context', 20);
+
         // Load task-specific documentation context
-        $context = $workflow 
+        $context = $workflow
             ? app(WorkflowBuilderDocumentationService::class)->getTaskBuilderContext($specification, $workflow)
             : 'No workflow context available';
-        
-        $this->activity("Building task-focused prompt", 30);
-        
+
+        $this->activity('Building task-focused prompt', 30);
+
         // Build focused prompt for single task
         $prompt = $this->buildTaskPrompt($specification, $context);
-        
-        $this->activity("Running agent thread with task builder schema", 40);
-        
+
+        $this->activity('Running agent thread with task builder schema', 40);
+
         // Run AgentThread with task builder schema
         $artifact = $this->runAgentThreadWithTaskBuilderSchema($prompt);
-        
+
         if ($artifact && $artifact->json_content) {
-            $this->activity("Applying task definition to database", 80);
-            
+            $this->activity('Applying task definition to database', 80);
+
             // Apply the task definition to the database
             $appliedArtifact = $this->applyTaskDefinition($specification, $artifact->json_content);
-            
-            $this->activity("Task definition building completed", 100);
+
+            $this->activity('Task definition building completed', 100);
             $this->complete($appliedArtifact ? [$appliedArtifact] : []);
         } else {
-            $this->activity("No response from task builder", 100);
+            $this->activity('No response from task builder', 100);
             $this->complete([]);
         }
     }
@@ -86,12 +86,14 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
                 // Task specification should contain the task_specification field
                 if (isset($artifact->json_content['task_specification'])) {
                     static::log("Found task specification in artifact: {$artifact->name}");
+
                     return $artifact->json_content;
                 }
             }
         }
 
-        static::log("No valid task specification found in input artifacts");
+        static::log('No valid task specification found in input artifacts');
+
         return null;
     }
 
@@ -129,80 +131,80 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
 
         // Add task specification
         $prompt[] = "# Task Specification to Build\n";
-        
+
         $taskSpec = $specification['task_specification'] ?? [];
-        $prompt[] = "**Task Name:** " . ($taskSpec['name'] ?? 'Unknown Task');
-        
+        $prompt[] = '**Task Name:** ' . ($taskSpec['name'] ?? 'Unknown Task');
+
         if (isset($taskSpec['description'])) {
-            $prompt[] = "**Description:** " . $taskSpec['description'];
+            $prompt[] = '**Description:** ' . $taskSpec['description'];
         }
-        
+
         if (isset($taskSpec['runner_type'])) {
-            $prompt[] = "**Required Runner:** " . $taskSpec['runner_type'];
+            $prompt[] = '**Required Runner:** ' . $taskSpec['runner_type'];
         }
-        
+
         if (isset($taskSpec['agent_requirements'])) {
-            $prompt[] = "**Agent Requirements:** " . $taskSpec['agent_requirements'];
+            $prompt[] = '**Agent Requirements:** ' . $taskSpec['agent_requirements'];
         }
-        
+
         if (isset($taskSpec['prompt'])) {
-            $prompt[] = "**Prompt Requirements:** " . $taskSpec['prompt'];
+            $prompt[] = '**Prompt Requirements:** ' . $taskSpec['prompt'];
         }
-        
+
         if (isset($taskSpec['configuration'])) {
-            $prompt[] = "**Configuration:** " . json_encode($taskSpec['configuration'], JSON_PRETTY_PRINT);
+            $prompt[] = '**Configuration:** ' . json_encode($taskSpec['configuration'], JSON_PRETTY_PRINT);
         }
-        
-        $prompt[] = "";
+
+        $prompt[] = '';
 
         // Add workflow context
         if (isset($specification['workflow_definition'])) {
             $prompt[] = "# Workflow Context\n";
             $workflow = $specification['workflow_definition'];
-            $prompt[] = "**Workflow Name:** " . ($workflow['name'] ?? 'Unknown Workflow');
-            
+            $prompt[] = '**Workflow Name:** ' . ($workflow['name'] ?? 'Unknown Workflow');
+
             if (isset($workflow['description'])) {
-                $prompt[] = "**Workflow Description:** " . $workflow['description'];
+                $prompt[] = '**Workflow Description:** ' . $workflow['description'];
             }
-            $prompt[] = "";
+            $prompt[] = '';
         }
 
         // Add connections context
         if (isset($specification['connections']) && !empty($specification['connections'])) {
             $prompt[] = "# Workflow Connections\n";
-            $prompt[] = "This task is part of a larger workflow with the following connections:";
+            $prompt[] = 'This task is part of a larger workflow with the following connections:';
             foreach ($specification['connections'] as $connection) {
                 $prompt[] = "- {$connection['source']} → {$connection['target']}";
             }
-            $prompt[] = "";
+            $prompt[] = '';
         }
 
         // Add task index context
         if (isset($specification['task_index'])) {
-            $prompt[] = "**Task Position:** " . ($specification['task_index'] + 1) . " in the workflow sequence";
-            $prompt[] = "";
+            $prompt[] = '**Task Position:** ' . ($specification['task_index'] + 1) . ' in the workflow sequence';
+            $prompt[] = '';
         }
 
         // Add task builder instructions
         $prompt[] = "# Your Task\n";
-        $prompt[] = "Create a complete TaskDefinition based on the specification above.";
-        $prompt[] = "Your response must include all necessary properties:";
-        $prompt[] = "1. Basic properties (name, description, runner)";
-        $prompt[] = "2. Agent selection based on requirements";
-        $prompt[] = "3. Detailed prompt following best practices";
-        $prompt[] = "4. Proper configuration for the runner type";
-        $prompt[] = "5. Artifact flow modes appropriate for workflow connections";
-        $prompt[] = "6. Any required directives or schema definitions";
-        $prompt[] = "";
+        $prompt[] = 'Create a complete TaskDefinition based on the specification above.';
+        $prompt[] = 'Your response must include all necessary properties:';
+        $prompt[] = '1. Basic properties (name, description, runner)';
+        $prompt[] = '2. Agent selection based on requirements';
+        $prompt[] = '3. Detailed prompt following best practices';
+        $prompt[] = '4. Proper configuration for the runner type';
+        $prompt[] = '5. Artifact flow modes appropriate for workflow connections';
+        $prompt[] = '6. Any required directives or schema definitions';
+        $prompt[] = '';
 
         // Add important constraints
         $prompt[] = "# Important Constraints\n";
-        $prompt[] = "- Use only documented task runners and agents";
-        $prompt[] = "- Follow prompt engineering best practices";
-        $prompt[] = "- Ensure compatibility with workflow connections";
-        $prompt[] = "- Configure proper timeout and artifact modes";
-        $prompt[] = "- Include team-based access control";
-        $prompt[] = "- Create a complete, ready-to-use task definition";
+        $prompt[] = '- Use only documented task runners and agents';
+        $prompt[] = '- Follow prompt engineering best practices';
+        $prompt[] = '- Ensure compatibility with workflow connections';
+        $prompt[] = '- Configure proper timeout and artifact modes';
+        $prompt[] = '- Include team-based access control';
+        $prompt[] = '- Create a complete, ready-to-use task definition';
 
         return implode("\n", $prompt);
     }
@@ -214,9 +216,9 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
     {
         // Get task builder schema for individual task creation
         $schemaDefinition = $this->getTaskBuilderSchemaDefinition();
-        
+
         if (!$schemaDefinition) {
-            throw new Exception("Task builder schema definition not found");
+            throw new Exception('Task builder schema definition not found');
         }
 
         // Create temporary agent thread for this task building
@@ -227,21 +229,21 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
 
         // Add the task builder prompt as the initial message
         $agentThread->messages()->create([
-            'role' => 'user',
+            'role'    => 'user',
             'content' => $prompt,
-            'team_id' => $this->taskRun->taskDefinition->team_id
+            'team_id' => $this->taskRun->taskDefinition->team_id,
         ]);
 
         // Get timeout from configuration
         $timeout = $this->config('timeout');
         if ($timeout !== null) {
-            $timeout = (int) $timeout;
+            $timeout = (int)$timeout;
             $timeout = max(1, min($timeout, 600)); // Ensure between 1 and 600 seconds
         }
 
         // Run the agent thread with schema validation
         $jsonSchemaService = app(JsonSchemaService::class)->useArtifactMeta()->includeNullValues();
-        
+
         $threadRun = app(AgentThreadService::class)
             ->withResponseFormat($schemaDefinition, null, $jsonSchemaService)
             ->withTimeout($timeout)
@@ -250,9 +252,9 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
         if ($threadRun->lastMessage) {
             // Create artifact from the response
             $artifact = new Artifact([
-                'name' => 'Task Definition Build Result',
+                'name'               => 'Task Definition Build Result',
                 'task_definition_id' => $this->taskDefinition->id,
-                'task_process_id' => $this->taskProcess->id,
+                'task_process_id'    => $this->taskProcess->id,
             ]);
 
             // Store the JSON response
@@ -287,58 +289,58 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
         if (!$schema) {
             // Create task builder schema if it doesn't exist
             $schema = SchemaDefinition::create([
-                'name' => 'Task Builder Schema',
+                'name'    => 'Task Builder Schema',
                 'team_id' => $this->taskRun->taskDefinition->team_id,
-                'schema' => [
-                    'type' => 'object',
-                    'title' => 'TaskDefinitionBuilder',
+                'schema'  => [
+                    'type'       => 'object',
+                    'title'      => 'TaskDefinitionBuilder',
                     'properties' => [
                         'action' => [
-                            'type' => 'string',
-                            'enum' => ['create', 'update', 'delete'],
-                            'description' => 'Action to perform on the task definition'
+                            'type'        => 'string',
+                            'enum'        => ['create', 'update', 'delete'],
+                            'description' => 'Action to perform on the task definition',
                         ],
                         'task_definition' => [
-                            'type' => 'object',
+                            'type'       => 'object',
                             'properties' => [
-                                'name' => ['type' => 'string', 'maxLength' => 80],
-                                'description' => ['type' => 'string'],
-                                'prompt' => ['type' => 'string'],
-                                'task_runner_name' => ['type' => 'string'],
-                                'task_runner_config' => ['type' => 'object'],
-                                'response_format' => ['type' => 'string'],
-                                'input_artifact_mode' => ['type' => 'string'],
-                                'input_artifact_levels' => ['type' => 'array', 'items' => ['type' => 'integer']],
-                                'output_artifact_mode' => ['type' => 'string'],
+                                'name'                   => ['type' => 'string', 'maxLength' => 80],
+                                'description'            => ['type' => 'string'],
+                                'prompt'                 => ['type' => 'string'],
+                                'task_runner_name'       => ['type' => 'string'],
+                                'task_runner_config'     => ['type' => 'object'],
+                                'response_format'        => ['type' => 'string'],
+                                'input_artifact_mode'    => ['type' => 'string'],
+                                'input_artifact_levels'  => ['type' => 'array', 'items' => ['type' => 'integer']],
+                                'output_artifact_mode'   => ['type' => 'string'],
                                 'output_artifact_levels' => ['type' => 'array', 'items' => ['type' => 'integer']],
-                                'timeout_after_seconds' => ['type' => 'integer'],
-                                'agent_name' => ['type' => 'string']
+                                'timeout_after_seconds'  => ['type' => 'integer'],
+                                'agent_name'             => ['type' => 'string'],
                             ],
-                            'required' => ['name', 'description', 'task_runner_name']
+                            'required' => ['name', 'description', 'task_runner_name'],
                         ],
                         'directives' => [
-                            'type' => 'array',
+                            'type'  => 'array',
                             'items' => [
-                                'type' => 'object',
+                                'type'       => 'object',
                                 'properties' => [
-                                    'name' => ['type' => 'string'],
-                                    'content' => ['type' => 'string'],
-                                    'section' => ['type' => 'string', 'enum' => ['Top', 'Bottom']],
-                                    'position' => ['type' => 'integer']
-                                ]
-                            ]
+                                    'name'     => ['type' => 'string'],
+                                    'content'  => ['type' => 'string'],
+                                    'section'  => ['type' => 'string', 'enum' => ['Top', 'Bottom']],
+                                    'position' => ['type' => 'integer'],
+                                ],
+                            ],
                         ],
                         'workflow_node' => [
-                            'type' => 'object',
+                            'type'       => 'object',
                             'properties' => [
-                                'x' => ['type' => 'number'],
-                                'y' => ['type' => 'number'],
-                                'position_notes' => ['type' => 'string']
-                            ]
-                        ]
+                                'x'              => ['type' => 'number'],
+                                'y'              => ['type' => 'number'],
+                                'position_notes' => ['type' => 'string'],
+                            ],
+                        ],
                     ],
-                    'required' => ['action', 'task_definition']
-                ]
+                    'required' => ['action', 'task_definition'],
+                ],
             ]);
         }
 
@@ -350,11 +352,11 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
      */
     protected function applyTaskDefinition(array $specification, array $result): ?Artifact
     {
-        return DB::transaction(function () use ($specification, $result) {
-            $action = $result['action'] ?? 'create';
-            $taskDefData = $result['task_definition'] ?? [];
-            $directivesData = $result['directives'] ?? [];
-            $nodeData = $result['workflow_node'] ?? [];
+        return DB::transaction(function () use ($result) {
+            $action         = $result['action']          ?? 'create';
+            $taskDefData    = $result['task_definition'] ?? [];
+            $directivesData = $result['directives']      ?? [];
+            $nodeData       = $result['workflow_node']   ?? [];
 
             static::log("Applying task definition with action: {$action}");
 
@@ -364,7 +366,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
                 $agent = Agent::where('team_id', $this->taskRun->taskDefinition->team_id)
                     ->where('name', $taskDefData['agent_name'])
                     ->first();
-                
+
                 if (!$agent) {
                     // Find first available agent as fallback
                     $agent = Agent::where('team_id', $this->taskRun->taskDefinition->team_id)->first();
@@ -372,7 +374,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
             }
 
             $taskDefinition = null;
-            $workflow = $this->resolveCurrentWorkflow();
+            $workflow       = $this->resolveCurrentWorkflow();
 
             switch ($action) {
                 case 'create':
@@ -396,17 +398,17 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
 
             // Create result artifact
             $artifact = new Artifact([
-                'name' => "Applied Task Definition: {$action}",
+                'name'               => "Applied Task Definition: {$action}",
                 'task_definition_id' => $this->taskDefinition->id,
-                'task_process_id' => $this->taskProcess->id,
-                'text_content' => $this->formatAppliedResultText($action, $taskDefData, $taskDefinition),
-                'json_content' => [
-                    'action' => $action,
-                    'task_definition_id' => $taskDefinition?->id,
-                    'applied_data' => $taskDefData,
+                'task_process_id'    => $this->taskProcess->id,
+                'text_content'       => $this->formatAppliedResultText($action, $taskDefData, $taskDefinition),
+                'json_content'       => [
+                    'action'                => $action,
+                    'task_definition_id'    => $taskDefinition?->id,
+                    'applied_data'          => $taskDefData,
                     'workflow_node_created' => !empty($nodeData),
-                    'directives_count' => count($directivesData)
-                ]
+                    'directives_count'      => count($directivesData),
+                ],
             ]);
 
             $artifact->save();
@@ -428,8 +430,9 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
         $taskDefinition->save();
 
         $this->createTaskDefinitionDirectives($taskDefinition, $directivesData);
-        
+
         static::log("Created task definition: {$taskDefinition->name} (ID: {$taskDefinition->id})");
+
         return $taskDefinition;
     }
 
@@ -456,6 +459,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
         $this->createTaskDefinitionDirectives($taskDefinition, $directivesData);
 
         static::log("Updated task definition: {$taskDefinition->name} (ID: {$taskDefinition->id})");
+
         return $taskDefinition;
     }
 
@@ -490,8 +494,8 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
             // In a full implementation, you'd want to create/find PromptDirective records first
             TaskDefinitionDirective::create([
                 'task_definition_id' => $taskDefinition->id,
-                'section' => $directiveData['section'] ?? TaskDefinitionDirective::SECTION_TOP,
-                'position' => $directiveData['position'] ?? $index,
+                'section'            => $directiveData['section']  ?? TaskDefinitionDirective::SECTION_TOP,
+                'position'           => $directiveData['position'] ?? $index,
                 // Note: This is simplified - normally you'd create PromptDirective first
                 // and then reference it here via prompt_directive_id
             ]);
@@ -504,15 +508,19 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
     protected function createWorkflowNode(WorkflowDefinition $workflow, TaskDefinition $taskDefinition, array $nodeData): void
     {
         $settings = [];
-        if (isset($nodeData['x'])) $settings['x'] = $nodeData['x'];
-        if (isset($nodeData['y'])) $settings['y'] = $nodeData['y'];
-        
+        if (isset($nodeData['x'])) {
+            $settings['x'] = $nodeData['x'];
+        }
+        if (isset($nodeData['y'])) {
+            $settings['y'] = $nodeData['y'];
+        }
+
         $node = new WorkflowNode([
             'task_definition_id' => $taskDefinition->id,
-            'name' => $taskDefinition->name,
-            'settings' => $settings,
+            'name'               => $taskDefinition->name,
+            'settings'           => $settings,
         ]);
-        
+
         // Set workflow_definition_id directly since it's not fillable
         $node->workflow_definition_id = $workflow->id;
         $node->save();
@@ -531,9 +539,13 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
 
         if ($node) {
             $settings = $node->settings ?? [];
-            if (isset($nodeData['x'])) $settings['x'] = $nodeData['x'];
-            if (isset($nodeData['y'])) $settings['y'] = $nodeData['y'];
-            
+            if (isset($nodeData['x'])) {
+                $settings['x'] = $nodeData['x'];
+            }
+            if (isset($nodeData['y'])) {
+                $settings['y'] = $nodeData['y'];
+            }
+
             $node->update([
                 'settings' => $settings,
             ]);
@@ -548,29 +560,29 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
      */
     protected function formatAppliedResultText(string $action, array $data, ?TaskDefinition $taskDefinition): string
     {
-        $text = [];
+        $text   = [];
         $text[] = "# Task Definition {$action} Applied";
-        $text[] = "";
+        $text[] = '';
         $text[] = "**Action:** {$action}";
-        $text[] = "**Task Name:** " . ($data['name'] ?? 'Unknown');
-        
+        $text[] = '**Task Name:** ' . ($data['name'] ?? 'Unknown');
+
         if ($taskDefinition) {
             $text[] = "**Database ID:** {$taskDefinition->id}";
         }
-        
+
         if (!empty($data['description'])) {
-            $text[] = "**Description:** " . $data['description'];
+            $text[] = '**Description:** ' . $data['description'];
         }
-        
+
         if (!empty($data['task_runner_name'])) {
-            $text[] = "**Runner:** " . $data['task_runner_name'];
+            $text[] = '**Runner:** ' . $data['task_runner_name'];
         }
-        
-        $text[] = "";
-        $text[] = "The task definition has been successfully applied to the database.";
-        
+
+        $text[] = '';
+        $text[] = 'The task definition has been successfully applied to the database.';
+
         if ($taskDefinition && $action !== 'delete') {
-            $text[] = "You can now use this task in workflows or run it independently.";
+            $text[] = 'You can now use this task in workflows or run it independently.';
         }
 
         return implode("\n", $text);

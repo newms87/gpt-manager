@@ -18,7 +18,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class McpServer extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, AuditableTrait, SoftDeletes, ResourcePackageableTrait, KeywordSearchTrait, ActionModelTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, KeywordSearchTrait, ResourcePackageableTrait, SoftDeletes;
 
     protected static function newFactory()
     {

@@ -9,7 +9,6 @@ use App\Services\Billing\BillingService;
 use App\Services\Billing\MockStripePaymentService;
 use App\Services\Billing\StripePaymentServiceInterface;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class StripeWebhookControllerTest extends TestCase
@@ -375,7 +374,7 @@ class StripeWebhookControllerTest extends TestCase
 
         // Verify payment method exists before test
         $this->assertDatabaseHas('payment_methods', [
-            'id' => $paymentMethod->id,
+            'id'                       => $paymentMethod->id,
             'stripe_payment_method_id' => 'pm_detached123',
         ]);
 
@@ -480,5 +479,4 @@ class StripeWebhookControllerTest extends TestCase
         }
         $response->assertOk();
     }
-
 }

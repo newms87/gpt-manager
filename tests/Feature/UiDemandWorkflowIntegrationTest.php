@@ -337,6 +337,7 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         // Execute the WorkflowStartNodeJob to attach input artifacts
         Queue::assertPushed(WorkflowStartNodeJob::class, function ($job) {
             $job->run();
+
             return true;
         });
 
@@ -411,6 +412,7 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         // Execute the WorkflowStartNodeJob to attach input artifacts
         Queue::assertPushed(WorkflowStartNodeJob::class, function ($job) {
             $job->run();
+
             return true;
         });
 

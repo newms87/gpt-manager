@@ -16,15 +16,15 @@ class CostCalculationService
         }
 
         $inputCost = $this->calculateTokenCost(
-            $usage['input_tokens'] ?? 0,
-            $pricing['input'] ?? 0,
+            $usage['input_tokens']        ?? 0,
+            $pricing['input']             ?? 0,
             $usage['cached_input_tokens'] ?? 0,
-            $pricing['cached_input'] ?? null
+            $pricing['cached_input']      ?? null
         );
 
         $outputCost = $this->calculateTokenCost(
             $usage['output_tokens'] ?? 0,
-            $pricing['output'] ?? 0
+            $pricing['output']      ?? 0
         );
 
         $requestCost = $this->calculateRequestCost(
@@ -60,12 +60,11 @@ class CostCalculationService
     }
 
     private function calculateTokenCost(
-        int    $tokens,
-        float  $costPerToken,
-        int    $cachedTokens = 0,
+        int $tokens,
+        float $costPerToken,
+        int $cachedTokens = 0,
         ?float $cachedCostPerToken = null
-    ): float
-    {
+    ): float {
         $cost = $tokens * $costPerToken;
 
         if ($cachedTokens > 0 && $cachedCostPerToken !== null) {

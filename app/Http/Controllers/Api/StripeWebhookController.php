@@ -30,7 +30,7 @@ class StripeWebhookController extends Controller
             $this->processWebhookEvent($event);
 
             return response()->json(['success' => true]);
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Stripe webhook error: ' . $e->getMessage(), [
                 'event_type' => $request->input('type'),
                 'event_id'   => $request->input('id'),
@@ -50,7 +50,7 @@ class StripeWebhookController extends Controller
             'id'   => $event['id'],
         ]);
 
-        switch($event['type']) {
+        switch ($event['type']) {
             case 'payment_intent.succeeded':
                 $this->handlePaymentSucceeded($event['data']['object']);
                 break;

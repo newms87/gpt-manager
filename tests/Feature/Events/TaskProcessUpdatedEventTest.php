@@ -39,7 +39,7 @@ class TaskProcessUpdatedEventTest extends AuthenticatedTestCase
 
         $taskRun = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
-            'workflow_run_id' => $workflowRun->id,
+            'workflow_run_id'    => $workflowRun->id,
         ]);
 
         $taskProcess = TaskProcess::factory()->create([
@@ -59,7 +59,6 @@ class TaskProcessUpdatedEventTest extends AuthenticatedTestCase
         $this->assertTrue($eventFired, 'TaskProcessUpdatedEvent should fire when watched fields change');
     }
 
-
     public function test_teamId_resolvedViaTaskRunRelationship(): void
     {
         // Given
@@ -77,7 +76,7 @@ class TaskProcessUpdatedEventTest extends AuthenticatedTestCase
 
         $taskRun = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
-            'workflow_run_id' => $workflowRun->id,
+            'workflow_run_id'    => $workflowRun->id,
         ]);
 
         $taskProcess = TaskProcess::factory()->create([
@@ -86,12 +85,12 @@ class TaskProcessUpdatedEventTest extends AuthenticatedTestCase
 
         // Subscribe to ensure broadcastOn() returns channels
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'TaskProcess',
+            'resource_type'      => 'TaskProcess',
             'model_id_or_filter' => true,
         ]);
 
         // When
-        $event = new TaskProcessUpdatedEvent($taskProcess, 'updated');
+        $event    = new TaskProcessUpdatedEvent($taskProcess, 'updated');
         $channels = $event->broadcastOn();
 
         // Then - Should resolve team_id from TaskRun->TaskDefinition

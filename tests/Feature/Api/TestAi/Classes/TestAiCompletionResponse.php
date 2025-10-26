@@ -6,11 +6,11 @@ use App\Api\AgentApiContracts\AgentCompletionResponseContract;
 use Newms87\Danx\Input\Input;
 
 /**
- * @property string $id       Unique identifier for the response
- * @property string $status   Status of the response (completed, etc.)
- * @property string $model    Model used for response
- * @property array  $output   Array of response outputs
- * @property array  $usage    Usage statistics for the model (input_tokens, output_tokens)
+ * @property string $id Unique identifier for the response
+ * @property string $status Status of the response (completed, etc.)
+ * @property string $model Model used for response
+ * @property array $output Array of response outputs
+ * @property array $usage Usage statistics for the model (input_tokens, output_tokens)
  */
 class TestAiCompletionResponse extends Input implements AgentCompletionResponseContract
 {
@@ -45,15 +45,16 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
     {
         // Return mock response if set
         if (static::$mockResponse !== null) {
-            $response = static::$mockResponse;
+            $response             = static::$mockResponse;
             static::$mockResponse = null; // Clear after use
+
             return $response;
         }
 
         // Handle Responses API format
         $output = $this->get('output');
         if (isset($output[0]['content'])) {
-            foreach($output[0]['content'] as $content) {
+            foreach ($output[0]['content'] as $content) {
                 if (isset($content['type']) && $content['type'] === 'text' && isset($content['text'])) {
                     return $content['text'];
                 }
@@ -73,7 +74,7 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
         return $this->get('usage.output_tokens', 500);
     }
 
-    public function getResponseId(): string|null
+    public function getResponseId(): ?string
     {
         return 'test-response-id';
     }
@@ -85,6 +86,6 @@ class TestAiCompletionResponse extends Input implements AgentCompletionResponseC
 
     public function after($value, $strict = false)
     {
-        
+
     }
 }

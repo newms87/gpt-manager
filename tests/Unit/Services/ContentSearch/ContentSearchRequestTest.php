@@ -15,7 +15,8 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     use SetUpTeamTrait;
 
     protected TaskDefinition $taskDefinition;
-    protected Agent          $agent;
+
+    protected Agent $agent;
 
     public function setUp(): void
     {
@@ -91,7 +92,9 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     public function test_withValidation_setsValidationCallback(): void
     {
         // Given
-        $validationCallback = function ($value) { return strlen($value) > 10; };
+        $validationCallback = function ($value) {
+            return strlen($value) > 10;
+        };
         $request            = ContentSearchRequest::create();
 
         // When
@@ -106,7 +109,9 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     public function test_withValidation_setsValidationNotRequired(): void
     {
         // Given
-        $validationCallback = function ($value) { return strlen($value) > 10; };
+        $validationCallback = function ($value) {
+            return strlen($value) > 10;
+        };
         $request            = ContentSearchRequest::create();
 
         // When
@@ -319,7 +324,6 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         $request->validate();
     }
 
-
     public function test_validate_withNaturalLanguageQueryButNoTaskDefinition_throwsException(): void
     {
         // Given
@@ -358,7 +362,9 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     {
         // Given
         $artifacts          = collect([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
-        $validationCallback = function ($value) { return !empty($value); };
+        $validationCallback = function ($value) {
+            return !empty($value);
+        };
 
         // When
         $request = ContentSearchRequest::create()

@@ -22,7 +22,7 @@ class WorkflowDefinitionRepository extends ActionRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
@@ -32,11 +32,11 @@ class WorkflowDefinitionRepository extends ActionRepository
         }
 
         return match ($action) {
-            'create' => $this->createWorkflowDefinition($data ?? []),
-            'update' => $this->updateWorkflowDefinition($model, $data),
-            'add-node' => $this->addNode($model, $data),
+            'create'         => $this->createWorkflowDefinition($data ?? []),
+            'update'         => $this->updateWorkflowDefinition($model, $data),
+            'add-node'       => $this->addNode($model, $data),
             'add-connection' => $this->addConnection($model, $data),
-            default => parent::applyAction($action, $model, $data)
+            default          => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -51,7 +51,6 @@ class WorkflowDefinitionRepository extends ActionRepository
         ]);
 
         $workflowDefinition->name = ModelHelper::getNextModelName($workflowDefinition);
-
 
         return $this->updateWorkflowDefinition($workflowDefinition, $input);
     }
@@ -86,7 +85,7 @@ class WorkflowDefinitionRepository extends ActionRepository
         $taskRunnerName = $input['task_runner_name'] ?? null;
 
         if (!$taskRunnerName && !$taskDefinition) {
-            throw new ValidationError("You must choose a task definition or a task runner to create task node.");
+            throw new ValidationError('You must choose a task definition or a task runner to create task node.');
         }
 
         if (!$taskDefinition) {
@@ -107,9 +106,9 @@ class WorkflowDefinitionRepository extends ActionRepository
 
         return $workflowDefinition->workflowNodes()->create([
             'task_definition_id' => $taskDefinition->id,
-            'name'               => $input['name'] ?? $taskDefinition->name,
+            'name'               => $input['name']     ?? $taskDefinition->name,
             'settings'           => $input['settings'] ?? null,
-            'params'             => $input['params'] ?? null,
+            'params'             => $input['params']   ?? null,
         ]);
     }
 
@@ -127,16 +126,16 @@ class WorkflowDefinitionRepository extends ActionRepository
         $targetNode = $workflowDefinition->workflowNodes()->find($input['target_node_id'] ?? null);
 
         if (!$sourceNode || !$targetNode) {
-            throw new Exception("You must choose a source and target node to create a connection.");
+            throw new Exception('You must choose a source and target node to create a connection.');
         }
 
         return $workflowDefinition->workflowConnections()->create([
             'source_node_id'     => $sourceNode->id,
             'target_node_id'     => $targetNode->id,
             'source_output_port' => $input['source_output_port'] ?? 'default',
-            'target_input_port'  => $input['target_input_port'] ?? 'default',
-            'settings'           => $input['settings'] ?? null,
-            'params'             => $input['params'] ?? null,
+            'target_input_port'  => $input['target_input_port']  ?? 'default',
+            'settings'           => $input['settings']           ?? null,
+            'params'             => $input['params']             ?? null,
         ]);
     }
 }

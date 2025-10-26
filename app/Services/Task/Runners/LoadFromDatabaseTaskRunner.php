@@ -14,12 +14,13 @@ class LoadFromDatabaseTaskRunner extends BaseTaskRunner
     public function run(): void
     {
         $uniqueTeamObjects = [];
-        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+        foreach ($this->taskProcess->inputArtifacts as $inputArtifact) {
             $type = $inputArtifact->json_content['type'] ?? null;
-            $id   = $inputArtifact->json_content['id'] ?? null;
+            $id   = $inputArtifact->json_content['id']   ?? null;
 
             if (!$type || !$id) {
                 $this->activity("No ID or type found, skipping $inputArtifact->id");
+
                 continue;
             }
 
@@ -28,7 +29,7 @@ class LoadFromDatabaseTaskRunner extends BaseTaskRunner
 
         // Handle the base case where there were no identified objects to load
         if (!$uniqueTeamObjects) {
-            $this->activity("No unique team objects found", 100);
+            $this->activity('No unique team objects found', 100);
             $this->complete();
 
             return;
@@ -38,7 +39,7 @@ class LoadFromDatabaseTaskRunner extends BaseTaskRunner
         $percentPerArtifact = 90 / count($uniqueTeamObjects);
         $percent            = 10;
 
-        foreach($uniqueTeamObjects as $id => $type) {
+        foreach ($uniqueTeamObjects as $id => $type) {
 
             $this->activity("Loading $type ($id)", $percent);
 

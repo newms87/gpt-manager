@@ -27,7 +27,7 @@ class WorkflowRunnerService
         static::log("Starting $workflowDefinition");
 
         if ($workflowDefinition->startingWorkflowNodes->isEmpty()) {
-            throw  new ValidationError("Workflow does not have any starting nodes");
+            throw new ValidationError('Workflow does not have any starting nodes');
         }
 
         // Create the workflow run
@@ -42,7 +42,7 @@ class WorkflowRunnerService
         $workflowRun->save();
 
         // Start all the starting nodes
-        foreach($workflowDefinition->startingWorkflowNodes as $workflowNode) {
+        foreach ($workflowDefinition->startingWorkflowNodes as $workflowNode) {
             $taskRun = static::prepareNode($workflowRun, $workflowNode);
             (new WorkflowStartNodeJob($taskRun, $artifacts))->dispatch();
         }
@@ -129,7 +129,7 @@ class WorkflowRunnerService
 
         try {
             if (!$workflowRun->isStopped() && !$workflowRun->isStatusPending()) {
-                static::log("WorkflowRun is not stopped, skipping resume");
+                static::log('WorkflowRun is not stopped, skipping resume');
 
                 return;
             }
@@ -138,7 +138,7 @@ class WorkflowRunnerService
             $workflowRun->save();
 
             // Resume all the stopped task runs
-            foreach($workflowRun->taskRuns()->whereNotNull('stopped_at')->get() as $taskRun) {
+            foreach ($workflowRun->taskRuns()->whereNotNull('stopped_at')->get() as $taskRun) {
                 TaskRunnerService::resume($taskRun);
             }
         } finally {
@@ -159,12 +159,12 @@ class WorkflowRunnerService
 
         try {
             if ($workflowRun->isStopped()) {
-                static::log("Workflow run is already stopped");
+                static::log('Workflow run is already stopped');
 
                 return;
             }
 
-            foreach($workflowRun->taskRuns as $taskRun) {
+            foreach ($workflowRun->taskRuns as $taskRun) {
                 TaskRunnerService::stop($taskRun);
             }
 
@@ -194,12 +194,13 @@ class WorkflowRunnerService
 
         try {
             // For every connection on the workflow node, start the target node if it is ready to run
-            foreach($workflowNode->connectionsAsSource as $workflowConnection) {
+            foreach ($workflowNode->connectionsAsSource as $workflowConnection) {
                 $targetNode = $workflowConnection->targetNode;
 
                 // XXX: Sometimes a workflow is getting its connections list corrupted - not sure why but remove when fixed.
                 if (!$targetNode) {
                     $workflowRun->cleanCorruptedConnections();
+
                     continue;
                 }
 
@@ -207,6 +208,7 @@ class WorkflowRunnerService
                 $taskRun = $workflowRun->taskRuns()->where('workflow_node_id', $targetNode->id)->first();
                 if ($taskRun && !$taskRun->isStatusPending()) {
                     static::log("Target node has already been started $targetNode");
+
                     continue;
                 }
 

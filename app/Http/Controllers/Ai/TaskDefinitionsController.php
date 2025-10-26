@@ -12,6 +12,7 @@ use Newms87\Danx\Http\Controllers\ActionController;
 class TaskDefinitionsController extends ActionController
 {
     public static ?string $repo     = TaskDefinitionRepository::class;
+
     public static ?string $resource = TaskDefinitionResource::class;
 
     /**
@@ -33,5 +34,4 @@ class TaskDefinitionsController extends ActionController
             'task_definition_id' => $taskDefinition->id,
         ]);
     }
-
 }

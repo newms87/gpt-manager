@@ -24,7 +24,7 @@ class SchemaDefinitionRepository extends ActionRepository
     public function summaryQuery(array $filter = []): Builder|QueryBuilder
     {
         return parent::summaryQuery($filter)->addSelect([
-            DB::raw("SUM(agents_count) as agents_count"),
+            DB::raw('SUM(agents_count) as agents_count'),
         ]);
     }
 
@@ -34,10 +34,10 @@ class SchemaDefinitionRepository extends ActionRepository
     public function applyAction(string $action, SchemaDefinition|Model|array|null $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => SchemaDefinitionResource::make($this->createSchemaDefinition($data)),
-            'update' => $this->updateSchemaDefinition($model, $data),
+            'create'           => SchemaDefinitionResource::make($this->createSchemaDefinition($data)),
+            'update'           => $this->updateSchemaDefinition($model, $data),
             'generate-example' => $this->generateResponseExample($model),
-            default => parent::applyAction($action, $model, $data)
+            default            => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -77,7 +77,6 @@ class SchemaDefinitionRepository extends ActionRepository
 
         return $schemaDefinition;
     }
-
 
     /**
      * Generate an example response for the given schema.

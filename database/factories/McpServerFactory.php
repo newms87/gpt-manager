@@ -21,13 +21,13 @@ class McpServerFactory extends Factory
     public function definition(): array
     {
         return [
-            'team_id' => Team::factory(),
-            'name' => $this->faker->company . ' MCP Server',
+            'team_id'     => Team::factory(),
+            'name'        => $this->faker->company . ' MCP Server',
             'description' => $this->faker->sentence(),
-            'server_url' => $this->faker->url(),
-            'headers' => [
+            'server_url'  => $this->faker->url(),
+            'headers'     => [
                 'Authorization' => 'Bearer ' . $this->faker->lexify('????????'),
-                'Content-Type' => 'application/json',
+                'Content-Type'  => 'application/json',
             ],
             'allowed_tools' => $this->faker->randomElements(
                 ['search', 'create', 'update', 'delete', 'analyze', 'transform'],
@@ -35,5 +35,4 @@ class McpServerFactory extends Factory
             ),
         ];
     }
-
 }

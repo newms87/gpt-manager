@@ -69,7 +69,7 @@ class TaskProcessExecutorService
     {
         // Check for the existence of the readyToRun Laravel scope on the $taskProcessesQuery builder
         if (!method_exists($taskProcessesQuery->getModel(), 'scopeReadyToRun')) {
-            throw new Exception("The provided query does not have the readyToRun scope");
+            throw new Exception('The provided query does not have the readyToRun scope');
         }
 
         // Use chunk to process one at a time until we find one with available slots
@@ -112,7 +112,6 @@ class TaskProcessExecutorService
         TaskProcessRunnerService::run($taskProcess);
     }
 
-
     /**
      * Check for and mark timed out running processes
      */
@@ -128,7 +127,7 @@ class TaskProcessExecutorService
                 ->get();
         }
 
-        foreach($runningProcesses as $process) {
+        foreach ($runningProcesses as $process) {
             if ($process->isPastTimeout()) {
                 static::log("Marking timed out process as timeout: $process");
                 $process->update([

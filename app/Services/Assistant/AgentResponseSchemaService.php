@@ -77,9 +77,9 @@ class AgentResponseSchemaService
         $enhanced = [];
         $mapping  = $this->getResourceTypeMapping();
 
-        foreach($resources as $resource) {
+        foreach ($resources as $resource) {
             $resourceType = $resource['resource_type'] ?? null;
-            $resourceId   = $resource['resource_id'] ?? null;
+            $resourceId   = $resource['resource_id']   ?? null;
 
             if (!$resourceType || !$resourceId) {
                 continue;
@@ -96,12 +96,12 @@ class AgentResponseSchemaService
                     $enhanced[] = [
                         'resource_type' => $resourceType,
                         'resource_id'   => $resourceId,
-                        'name'          => $model->name ?? 'Unnamed',
+                        'name'          => $model->name        ?? 'Unnamed',
                         'description'   => $model->description ?? null,
                         'data'          => $this->getContextualData($model, $resourceType),
                     ];
                 }
-            } catch(\Exception $e) {
+            } catch (\Exception $e) {
                 \Log::warning("Failed to load context resource: {$resourceType}:{$resourceId}", [
                     'error' => $e->getMessage(),
                 ]);
@@ -116,23 +116,23 @@ class AgentResponseSchemaService
      */
     private function getContextualData($model, string $resourceType): array
     {
-        switch($resourceType) {
+        switch ($resourceType) {
             case 'SchemaDefinitionResource':
                 return [
-                    'schema'    => $model->schema ?? null,
-                    'version'   => $model->version ?? null,
+                    'schema'    => $model->schema    ?? null,
+                    'version'   => $model->version   ?? null,
                     'is_active' => $model->is_active ?? false,
                 ];
 
             case 'AgentResource':
                 return [
                     'model' => $model->model ?? null,
-                    'api'   => $model->api ?? null,
+                    'api'   => $model->api   ?? null,
                 ];
 
             case 'WorkflowDefinitionResource':
                 return [
-                    'status'      => $model->status ?? null,
+                    'status'      => $model->status      ?? null,
                     'max_workers' => $model->max_workers ?? null,
                 ];
 

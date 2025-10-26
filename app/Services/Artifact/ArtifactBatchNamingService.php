@@ -16,20 +16,20 @@ class ArtifactBatchNamingService
     /**
      * Intelligently name artifacts using LLM with context-aware batch processing
      *
-     * @param Collection|Artifact[] $artifacts          Collection of artifacts to name
-     * @param string                $contextDescription Description of the workflow context
+     * @param  Collection|Artifact[]  $artifacts  Collection of artifacts to name
+     * @param  string  $contextDescription  Description of the workflow context
      * @return Collection|Artifact[] Same artifacts collection with updated names
      */
     public function nameArtifacts(Collection $artifacts, string $contextDescription = ''): Collection
     {
         // Validate inputs
         if ($artifacts->isEmpty()) {
-            static::log("No artifacts to name, skipping");
+            static::log('No artifacts to name, skipping');
 
             return $artifacts;
         }
 
-        static::log("Starting batch naming for " . $artifacts->count() . " artifacts with context: {$contextDescription}");
+        static::log('Starting batch naming for ' . $artifacts->count() . " artifacts with context: {$contextDescription}");
 
         // Get configuration
         $maxBatchSize = config('ai.artifact_naming.max_batch_size', 20);
@@ -45,11 +45,6 @@ class ArtifactBatchNamingService
 
     /**
      * Process artifacts in multiple batches
-     *
-     * @param Collection $artifacts
-     * @param string     $contextDescription
-     * @param int        $maxBatchSize
-     * @return Collection
      */
     protected function processBatches(Collection $artifacts, string $contextDescription, int $maxBatchSize): Collection
     {
@@ -58,8 +53,8 @@ class ArtifactBatchNamingService
         $processedArtifacts = collect();
         $chunks             = $artifacts->chunk($maxBatchSize);
 
-        foreach($chunks as $chunkIndex => $chunk) {
-            static::log("Processing batch " . ($chunkIndex + 1) . " of " . $chunks->count());
+        foreach ($chunks as $chunkIndex => $chunk) {
+            static::log('Processing batch ' . ($chunkIndex + 1) . ' of ' . $chunks->count());
             $namedChunk         = $this->processSingleBatch($chunk, $contextDescription);
             $processedArtifacts = $processedArtifacts->merge($namedChunk);
         }
@@ -69,10 +64,6 @@ class ArtifactBatchNamingService
 
     /**
      * Process a single batch of artifacts
-     *
-     * @param Collection $artifacts
-     * @param string     $contextDescription
-     * @return Collection
      */
     protected function processSingleBatch(Collection $artifacts, string $contextDescription): Collection
     {
@@ -84,7 +75,7 @@ class ArtifactBatchNamingService
             $nameMapping = $this->generateNamesViaLLM($artifactData, $contextDescription);
 
             if (!$nameMapping) {
-                static::log("LLM failed to generate names, keeping original names");
+                static::log('LLM failed to generate names, keeping original names');
 
                 return $artifacts;
             }
@@ -92,13 +83,13 @@ class ArtifactBatchNamingService
             // Apply names to artifacts
             $this->applyNamesToArtifacts($artifacts, $nameMapping);
 
-            static::log("Successfully named " . count($nameMapping) . " artifacts in batch");
+            static::log('Successfully named ' . count($nameMapping) . ' artifacts in batch');
 
             return $artifacts;
 
-        } catch(\Exception $e) {
-            static::log("Error during batch naming: " . $e->getMessage());
-            static::log("Keeping original artifact names as fallback");
+        } catch (\Exception $e) {
+            static::log('Error during batch naming: ' . $e->getMessage());
+            static::log('Keeping original artifact names as fallback');
 
             return $artifacts;
         }
@@ -106,16 +97,13 @@ class ArtifactBatchNamingService
 
     /**
      * Build context data for artifacts (preview of content)
-     *
-     * @param Collection $artifacts
-     * @return array
      */
     protected function buildArtifactContextData(Collection $artifacts): array
     {
         $previewLength = config('ai.artifact_naming.content_preview_length', 500);
         $artifactData  = [];
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $contentPreview = $this->getArtifactContentPreview($artifact, $previewLength);
 
             $artifactData[] = [
@@ -134,10 +122,6 @@ class ArtifactBatchNamingService
 
     /**
      * Get a preview of artifact content for context
-     *
-     * @param Artifact $artifact
-     * @param int      $maxLength
-     * @return string
      */
     protected function getArtifactContentPreview(Artifact $artifact, int $maxLength): string
     {
@@ -163,8 +147,6 @@ class ArtifactBatchNamingService
     /**
      * Generate artifact names via LLM using JSON schema response
      *
-     * @param array  $artifactData
-     * @param string $contextDescription
      * @return array|null Mapping of artifact_id => new_name
      */
     protected function generateNamesViaLLM(array $artifactData, string $contextDescription): ?array
@@ -173,7 +155,7 @@ class ArtifactBatchNamingService
         $agent = $this->getAgent();
 
         if (!$agent) {
-            static::log("No agent available for naming");
+            static::log('No agent available for naming');
 
             return null;
         }
@@ -199,7 +181,7 @@ class ArtifactBatchNamingService
                 ->run();
 
             if (!$threadRun->lastMessage) {
-                static::log("Failed to get response from LLM");
+                static::log('Failed to get response from LLM');
 
                 return null;
             }
@@ -208,7 +190,7 @@ class ArtifactBatchNamingService
             $jsonContent = $threadRun->lastMessage->getJsonContent();
 
             if (!$jsonContent) {
-                static::log("Failed to get JSON content from message");
+                static::log('Failed to get JSON content from message');
 
                 return null;
             }
@@ -224,7 +206,7 @@ class ArtifactBatchNamingService
 
             // Convert array of {artifact_id, name} objects to artifact_id => name map
             $nameMapping = [];
-            foreach($jsonContent['names'] as $item) {
+            foreach ($jsonContent['names'] as $item) {
                 if (isset($item['artifact_id']) && isset($item['name'])) {
                     $nameMapping[(string)$item['artifact_id']] = $item['name'];
                 }
@@ -232,8 +214,8 @@ class ArtifactBatchNamingService
 
             return $nameMapping;
 
-        } catch(\Exception $e) {
-            static::log("Error running agent thread: " . $e->getMessage());
+        } catch (\Exception $e) {
+            static::log('Error running agent thread: ' . $e->getMessage());
 
             return null;
         }
@@ -241,8 +223,6 @@ class ArtifactBatchNamingService
 
     /**
      * Get or create the system agent for artifact naming
-     *
-     * @return Agent
      */
     protected function getAgent(): Agent
     {
@@ -260,10 +240,6 @@ class ArtifactBatchNamingService
 
     /**
      * Build the naming prompt with JSON schema
-     *
-     * @param array  $artifactData
-     * @param string $contextDescription
-     * @return string
      */
     protected function buildNamingPrompt(array $artifactData, string $contextDescription): string
     {
@@ -297,19 +273,16 @@ Generate appropriate names for all artifacts based on their content and context.
 PROMPT;
     }
 
-
     /**
      * Apply generated names to artifacts
      *
-     * @param Collection $artifacts
-     * @param array      $nameMapping artifact_id => new_name
-     * @return void
+     * @param  array  $nameMapping  artifact_id => new_name
      */
     protected function applyNamesToArtifacts(Collection $artifacts, array $nameMapping): void
     {
         $updateCount = 0;
 
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             $artifactId = (string)$artifact->id;
 
             if (isset($nameMapping[$artifactId])) {

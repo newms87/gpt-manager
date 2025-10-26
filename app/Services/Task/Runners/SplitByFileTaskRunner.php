@@ -14,16 +14,16 @@ class SplitByFileTaskRunner extends BaseTaskRunner
     {
         $outputArtifacts = [];
 
-        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+        foreach ($this->taskProcess->inputArtifacts as $inputArtifact) {
             if ($inputArtifact->storedFiles->isNotEmpty()) {
-                foreach($inputArtifact->storedFiles as $storedFile) {
+                foreach ($inputArtifact->storedFiles as $storedFile) {
                     if ($storedFile->transcodes->isNotEmpty()) {
                         $fileList = $storedFile->transcodes;
                     } else {
                         $fileList = [$storedFile];
                     }
 
-                    foreach($fileList as $fileItem) {
+                    foreach ($fileList as $fileItem) {
                         $artifact = Artifact::create([
                             'name' => $fileItem->filename,
                             'meta' => [
@@ -59,27 +59,27 @@ class SplitByFileTaskRunner extends BaseTaskRunner
 
         // Group artifacts by their source file to maintain order within each PDF
         $artifactsBySource = [];
-        
+
         foreach ($artifacts as $artifact) {
             foreach ($artifact->storedFiles as $storedFile) {
                 // Use the original file's ID or path as a grouping key
                 $sourceKey = $storedFile->original_stored_file_id ?? $storedFile->id;
-                
+
                 if (!isset($artifactsBySource[$sourceKey])) {
                     $artifactsBySource[$sourceKey] = [];
                 }
-                
+
                 $artifactsBySource[$sourceKey][] = [
-                    'artifact' => $artifact,
-                    'storedFile' => $storedFile,
-                    'originalPageNumber' => $storedFile->page_number
+                    'artifact'           => $artifact,
+                    'storedFile'         => $storedFile,
+                    'originalPageNumber' => $storedFile->page_number,
                 ];
             }
         }
 
         // Sort each source group by original page number to maintain order
         foreach ($artifactsBySource as $sourceKey => &$sourceFiles) {
-            usort($sourceFiles, function($a, $b) {
+            usort($sourceFiles, function ($a, $b) {
                 return ($a['originalPageNumber'] ?? 0) <=> ($b['originalPageNumber'] ?? 0);
             });
         }
@@ -88,10 +88,10 @@ class SplitByFileTaskRunner extends BaseTaskRunner
         // Assign new unique page numbers
         foreach ($artifactsBySource as $sourceFiles) {
             foreach ($sourceFiles as $fileData) {
-                $storedFile = $fileData['storedFile'];
+                $storedFile              = $fileData['storedFile'];
                 $storedFile->page_number = $currentPageNumber;
                 $storedFile->save();
-                
+
                 $currentPageNumber++;
             }
         }

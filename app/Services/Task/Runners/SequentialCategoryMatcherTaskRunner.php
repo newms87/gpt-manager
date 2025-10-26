@@ -28,11 +28,12 @@ use Throwable;
 class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'Sequential Category Matcher';
-    
+
     // Special category constants
     const string CATEGORY_EXCLUDE = '__exclude';
 
-    protected array  $fragmentSelector  = [];
+    protected array $fragmentSelector  = [];
+
     protected string $classificationKey = '';
 
     // A cached list of resolved artifact categories
@@ -121,7 +122,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 
         static::log("Collecting output artifacts...\n\tChanged Artifacts " . collect($this->changedArtifacts)->pluck('id')->toJson() . "\n\tAlready Output Artifacts " . json_encode($taskOutputArtifactIds));
 
-        foreach($this->taskProcess->inputArtifacts as $inputArtifact) {
+        foreach ($this->taskProcess->inputArtifacts as $inputArtifact) {
             // Check if the artifact that was used to clone this input artifact has already been included in the output
             if ($this->getArtifactCategory($inputArtifact) && !in_array($inputArtifact->original_artifact_id, $taskOutputArtifactIds)) {
                 // If the artifact has a category, and has not already been output we will add it to the output artifacts
@@ -161,30 +162,31 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
     {
         $hasChanges = false;
 
-        foreach($categoryGroups as $artifacts) {
+        foreach ($categoryGroups as $artifacts) {
             // If we're looking at the first or last group, try to auto-classify
             $allowedCategoryList = $this->getAllowedCategoryList($artifacts);
 
             if (empty($allowedCategoryList)) {
-                throw new Exception("Auto-classify category group failed: No categories assigned");
+                throw new Exception('Auto-classify category group failed: No categories assigned');
             }
 
             // Start the category matching with the first category sequentially in the list
             $currentCategory       = reset($allowedCategoryList);
             $unclassifiedArtifacts = [];
 
-            foreach($artifacts as $artifact) {
+            foreach ($artifacts as $artifact) {
                 $category = $this->getArtifactCategory($artifact);
 
                 // If the category not set, just add it to the unclassified list
                 if (!$category) {
                     $unclassifiedArtifacts[] = $artifact;
+
                     continue;
                 }
 
                 // If the category is the same as the current category, then apply the category to all the unclassified artifacts found so far
                 if ($category === $currentCategory) {
-                    foreach($unclassifiedArtifacts as $nullArtifact) {
+                    foreach ($unclassifiedArtifacts as $nullArtifact) {
                         $this->activity("Auto classified $nullArtifact->id: $currentCategory");
                         $this->applyCategory($nullArtifact, $currentCategory);
                         $hasChanges = true;
@@ -252,7 +254,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $children = $fragmentSelector['children'] ?? [];
         $key      = '';
 
-        foreach($children as $childKey => $child) {
+        foreach ($children as $childKey => $child) {
             if (in_array($child['type'], ['array', 'object'])) {
                 $childKey = $this->resolveClassificationKey($child);
 
@@ -299,9 +301,9 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
                 $this->validateCategoryResponse($allowedCategoryList, $categoriesWithPages, $pageNumbers);
 
                 return $categoriesWithPages;
-            } catch(Throwable $throwable) {
+            } catch (Throwable $throwable) {
                 // If the agent was unable to provide a valid response, we will ask it to try again
-                static::log("Invalid response: " . $throwable->getMessage());
+                static::log('Invalid response: ' . $throwable->getMessage());
 
                 if ($correctionAttemptsRemaining === 0) {
                     // If we have no more attempts remaining, we will throw the error
@@ -311,10 +313,10 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
                 // Add the error message to the thread so the agent can see it
                 app(ThreadRepository::class)->addMessageToThread($agentThread, $throwable->getMessage());
             }
-        } while($correctionAttemptsRemaining-- > 0);
+        } while ($correctionAttemptsRemaining-- > 0);
 
         // If we reach here, the agent was unable to provide a valid response
-        throw new ValidationError("Agent was unable to provide a valid response for the categories.");
+        throw new ValidationError('Agent was unable to provide a valid response for the categories.');
     }
 
     /**
@@ -324,13 +326,13 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      * NOTE: This is useful for when the agent has already identified categories for some artifacts, and we are trying
      * to resolve The categories for the rest of the artifacts that are related in sequence
      *
-     * @param Artifact[] $artifacts
+     * @param  Artifact[]  $artifacts
      */
     private function getAllowedCategoryList($artifacts): array
     {
         $allowedCategoryList = [];
 
-        foreach($artifacts as $inputArtifact) {
+        foreach ($artifacts as $inputArtifact) {
             // If the artifact has a category, add it to the list
             $category = $this->getArtifactCategory($inputArtifact);
 
@@ -352,7 +354,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $categoryNames = array_map(fn($category) => $category['category'], $categoriesWithPages);
 
         // Verify the categories are in the allowed category list
-        foreach($categoryNames as $categoryName) {
+        foreach ($categoryNames as $categoryName) {
             if (empty($allowedCategoryList[$categoryName])) {
                 throw new ValidationError("The category '$categoryName' is not in the list of allowed categories.");
             }
@@ -360,8 +362,8 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 
         // Check that all pages are added only 1 time and that the page actually exists
         $resolvedPages = [];
-        foreach($categoriesWithPages as $categoryItem) {
-            foreach($categoryItem['pages'] as $page) {
+        foreach ($categoriesWithPages as $categoryItem) {
+            foreach ($categoryItem['pages'] as $page) {
                 if (!empty($resolvedPages[$page])) {
                     throw new ValidationError("Page number '$page' has been assigned to multiple categories.");
                 }
@@ -377,9 +379,9 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         // Make sure all pages have been assigned
         if (count($resolvedPages) !== count($pageNumbers)) {
             $diffPageNumbers = array_values(array_diff($pageNumbers, array_keys($resolvedPages)));
-            throw new ValidationError("Not all page numbers have been assigned to a category. " .
-                "You must assign all page numbers to a category, even if you are not 100% sure." .
-                "Missing page numbers: " . json_encode($diffPageNumbers));
+            throw new ValidationError('Not all page numbers have been assigned to a category. ' .
+                'You must assign all page numbers to a category, even if you are not 100% sure.' .
+                'Missing page numbers: ' . json_encode($diffPageNumbers));
         }
     }
 
@@ -390,16 +392,16 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
     {
         $artifacts = collect($artifacts);
 
-        foreach($categoryList as $categoryItem) {
+        foreach ($categoryList as $categoryItem) {
             $category = $categoryItem['category'] ?? null;
 
             if (!$category) {
-                throw new Exception("Category is not defined in the category list");
+                throw new Exception('Category is not defined in the category list');
             }
 
             $pages = $categoryItem['pages'] ?? [];
 
-            foreach($pages as $page) {
+            foreach ($pages as $page) {
                 // Find the artifact with the given page number
                 /** @var Artifact|null $artifact */
                 $artifact = $artifacts->firstWhere('position', $page);
@@ -435,17 +437,17 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
     protected function createCategoryPrompt($categoryList = [], $pageNumbers = []): string
     {
         // If a category list is given, then the category MUST fall in one of the items in the list no matter what (even if it doesn't really make sense, better to have a defined category than not, so using best guess here)
-        $categoryDescription = "Classify each artifact (identified by page number) by selecting the best-matching category from the provided list. " .
-            "You must choose one of the categories from the list, even if none of them seem like a perfect fit—use your best judgment to select the closest match. " .
+        $categoryDescription = 'Classify each artifact (identified by page number) by selecting the best-matching category from the provided list. ' .
+            'You must choose one of the categories from the list, even if none of them seem like a perfect fit—use your best judgment to select the closest match. ' .
             "Based on the artifact content, if you believe a category in the list is a duplicate of another category in the list (ie: the names are similar, different names referring to the same person, place or thing, etc.), decide which category to keep and disregard the similar category name (DO NOT USE)\n\n" .
             "Categories:\n";
 
-        foreach($categoryList as $category) {
+        foreach ($categoryList as $category) {
             $categoryDescription .= "* $category\n";
         }
 
-        $pagesDescription = "Then provide the list of page numbers for each artifact that belongs to the category. " .
-            "You may include pages even if you are not completely certain, as long as the chosen category is the best available option from the list. Each of these page numbers must appear in exactly 1 category: " . json_encode($pageNumbers);
+        $pagesDescription = 'Then provide the list of page numbers for each artifact that belongs to the category. ' .
+            'You may include pages even if you are not completely certain, as long as the chosen category is the best available option from the list. Each of these page numbers must appear in exactly 1 category: ' . json_encode($pageNumbers);
 
         return $categoryDescription . "\n\n" . $pagesDescription;
 
@@ -456,7 +458,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      */
     protected function createCategorySchema($categoryList = []): SchemaDefinition
     {
-        $categoryDescription = "One of the following categories: " . implode(', ', $categoryList) . ". Use the users description of the categories to identify which pages belong to which category";
+        $categoryDescription = 'One of the following categories: ' . implode(', ', $categoryList) . '. Use the users description of the categories to identify which pages belong to which category';
 
         return SchemaDefinition::make([
             'name'   => 'Category',
@@ -474,7 +476,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
                                 ],
                                 'pages'    => [
                                     'type'        => 'array',
-                                    'description' => "The list of page numbers that belong to the category. Each page can only be assigned to one category",
+                                    'description' => 'The list of page numbers that belong to the category. Each page can only be assigned to one category',
                                     'items'       => ['type' => 'number'],
                                 ],
                             ],
@@ -495,7 +497,8 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      *   - An ending resolved category (if available).
      *
      * These groups are used to infer missing categories based on surrounding context.
-     * @param Artifact[] $artifacts
+     *
+     * @param  Artifact[]  $artifacts
      */
     public function resolveCategoryGroups($artifacts): array
     {
@@ -507,7 +510,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $hasUnresolvedCategory = false;
         $lastIndex             = count($artifacts) - 1;
 
-        foreach($artifacts as $index => $artifact) {
+        foreach ($artifacts as $index => $artifact) {
             $category = $this->getArtifactCategory($artifact);
 
             if (str_contains($category, self::CATEGORY_EXCLUDE)) {
@@ -556,7 +559,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
             $categoryGroups = [];
         }
 
-        static::log("Resolved " . count($categoryGroups) . " category groups");
+        static::log('Resolved ' . count($categoryGroups) . ' category groups');
 
         return array_values($categoryGroups);
     }
@@ -567,11 +570,11 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
      */
     private function dispatchCategoryGroups(array $categoryGroups): void
     {
-        $this->activity("Dispatching " . count($categoryGroups) . " category groups for LLM sequential matching");
+        $this->activity('Dispatching ' . count($categoryGroups) . ' category groups for LLM sequential matching');
 
         $taskProcesses = [];
         /** @var Artifact[] $categoryGroupArtifacts */
-        foreach($categoryGroups as $categoryGroupArtifacts) {
+        foreach ($categoryGroups as $categoryGroupArtifacts) {
             $taskProcesses[] = TaskProcessRunnerService::prepare($this->taskRun, null, $categoryGroupArtifacts);
         }
 
@@ -581,7 +584,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
 
     public static function debugLogCategoryGroups($categoryGroups): void
     {
-        foreach($categoryGroups as $index => $artifacts) {
+        foreach ($categoryGroups as $index => $artifacts) {
             $positions = collect($artifacts)->pluck('position')->implode(',');
             static::log("Group $index: $positions");
         }

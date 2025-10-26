@@ -17,17 +17,17 @@ class DemandTemplateRepository extends ActionRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
         $service = app(DemandTemplateService::class);
 
         return match ($action) {
-            'create' => $service->createTemplate($data ?? []),
-            'update' => $service->updateTemplate($model, $data ?? []),
+            'create'                   => $service->createTemplate($data ?? []),
+            'update'                   => $service->updateTemplate($model, $data ?? []),
             'fetch-template-variables' => $service->fetchTemplateVariables($model),
-            default => parent::applyAction($action, $model, $data)
+            default                    => parent::applyAction($action, $model, $data)
         };
     }
 }

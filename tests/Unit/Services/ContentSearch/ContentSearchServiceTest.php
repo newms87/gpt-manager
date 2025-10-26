@@ -19,8 +19,10 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
     use SetUpTeamTrait;
 
     protected ContentSearchService $service;
-    protected TaskDefinition       $taskDefinition;
-    protected Agent                $agent;
+
+    protected TaskDefinition $taskDefinition;
+
+    protected Agent $agent;
 
     public function setUp(): void
     {
@@ -233,7 +235,6 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         $this->assertEquals('json_content.template_stored_file_id', $result->getSourceLocation()); // Always shows json_content.fieldPath format
     }
 
-
     public function test_searchArtifacts_withMultipleStrategies_usesCorrectPriority(): void
     {
         // Given - artifact with data in structured content
@@ -368,7 +369,6 @@ class ContentSearchServiceTest extends AuthenticatedTestCase
         $this->assertFalse($result->isFound());
         $this->assertFalse($result->isSuccessful());
     }
-
 
     public function test_searchArtifactsWithLlm_sortsByTextLengthForOptimalProcessing(): void
     {

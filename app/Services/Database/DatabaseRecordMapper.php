@@ -17,8 +17,6 @@ class DatabaseRecordMapper
     }
 
     /**
-     * @param array $entries
-     * @return void
      * @throws Exception
      */
     public function map(array $entries): void
@@ -27,15 +25,15 @@ class DatabaseRecordMapper
             throw new Exception('Schema was not set');
         }
 
-        Log::debug("Writing " . count($entries) . " entries to database");
+        Log::debug('Writing ' . count($entries) . ' entries to database');
 
-        foreach($entries as $entry) {
+        foreach ($entries as $entry) {
             $tableName = $entry['table'];
             $records   = $entry['records'] ?? [];
-            Log::debug("\t$tableName: " . count($records) . " records");
+            Log::debug("\t$tableName: " . count($records) . ' records');
             $relationFieldValues = $this->getRelatedFieldValues($entry['relations'] ?? []);
 
-            foreach($records as $record) {
+            foreach ($records as $record) {
                 $record += $relationFieldValues;
                 $this->schema->query($tableName)->createOrUpdateWithRef($record);
             }
@@ -46,26 +44,27 @@ class DatabaseRecordMapper
      * Get the field value pairs for all related fields.
      * ie: ['user_id' => 1, 'role_id' => 2]
      *
-     * @param array $relations  An array of related fields and their table and ref values
-     *                          ie: ['user_id' => ['table' => 'users', 'ref' => 'user-1']]
-     * @return array
+     * @param  array  $relations  An array of related fields and their table and ref values
+     *                            ie: ['user_id' => ['table' => 'users', 'ref' => 'user-1']]
+     *
      * @throws Exception
      */
     public function getRelatedFieldValues(array $relations): array
     {
         $fieldValues = [];
 
-        foreach($relations as $fieldName => $relation) {
+        foreach ($relations as $fieldName => $relation) {
             // If the relationship value is hard coded, use it as is
             if (!is_array($relation)) {
                 $fieldValues[$fieldName] = $relation;
+
                 continue;
             }
 
             $record = $this->schema->query($relation['table'])->find($relation['ref']);
 
             if (!$record) {
-                throw new Exception("Record should be created for relation: " . json_encode($relation));
+                throw new Exception('Record should be created for relation: ' . json_encode($relation));
             }
 
             $fieldValues[$fieldName] = $record->id;

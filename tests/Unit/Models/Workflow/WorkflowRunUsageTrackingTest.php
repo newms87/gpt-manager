@@ -5,7 +5,6 @@ namespace Tests\Unit\Models\Workflow;
 use App\Models\Usage\UsageEvent;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
-use App\Services\Usage\UsageTrackingService;
 use Carbon\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\AuthenticatedTestCase;
@@ -26,15 +25,15 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'name' => 'test-workflow',
+            'name'    => 'test-workflow',
             'team_id' => $this->user->currentTeam->id,
         ]);
 
         // When
         $workflowRun = WorkflowRun::create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'name' => 'Test Run',
-            'started_at' => now(),
+            'name'                   => 'Test Run',
+            'started_at'             => now(),
         ]);
 
         // Then
@@ -53,21 +52,21 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'name' => 'extract-data-workflow',
+            'name'    => 'extract-data-workflow',
             'team_id' => $this->user->currentTeam->id,
         ]);
 
         $workflowRun = WorkflowRun::create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'name' => 'Extract Data Run',
-            'started_at' => Carbon::now()->subMinutes(5),
+            'name'                   => 'Extract Data Run',
+            'started_at'             => Carbon::now()->subMinutes(5),
         ]);
 
         // When - Update status to completed
         $workflowRun->update([
             'completed_at' => now(),
         ]);
-        
+
         // Manually trigger usage event update since event listeners might not work in tests
         $workflowRun->updateWorkflowUsageEvent();
 
@@ -84,21 +83,21 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'name' => 'write-demand-workflow',
+            'name'    => 'write-demand-workflow',
             'team_id' => $this->user->currentTeam->id,
         ]);
 
         $workflowRun = WorkflowRun::create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'name' => 'Failed Run',
-            'started_at' => Carbon::now()->subMinutes(3),
+            'name'                   => 'Failed Run',
+            'started_at'             => Carbon::now()->subMinutes(3),
         ]);
 
         // When - Update status to failed
         $workflowRun->update([
             'failed_at' => now(),
         ]);
-        
+
         // Manually trigger usage event update
         $workflowRun->updateWorkflowUsageEvent();
 
@@ -118,21 +117,21 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
-            'name' => 'stopped-workflow',
+            'name'    => 'stopped-workflow',
             'team_id' => $this->user->currentTeam->id,
         ]);
 
         $workflowRun = WorkflowRun::create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'name' => 'Stopped Run',
-            'started_at' => Carbon::now()->subMinutes(2),
+            'name'                   => 'Stopped Run',
+            'started_at'             => Carbon::now()->subMinutes(2),
         ]);
 
         // When - Update status to stopped
         $workflowRun->update([
             'stopped_at' => now(),
         ]);
-        
+
         // Manually trigger usage event update
         $workflowRun->updateWorkflowUsageEvent();
 
@@ -153,11 +152,11 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         ]);
 
         $startTime = Carbon::now()->subMinutes(10);
-        
+
         $workflowRun = WorkflowRun::create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'name' => 'Test Run',
-            'started_at' => $startTime,
+            'name'                   => 'Test Run',
+            'started_at'             => $startTime,
         ]);
 
         // Test completed workflow
@@ -179,12 +178,12 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         // Create without started_at initially
         $workflowRun = WorkflowRun::create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'name' => 'No Start Time Run',
-            'started_at' => now(), // Set initially to avoid state issues
+            'name'                   => 'No Start Time Run',
+            'started_at'             => now(), // Set initially to avoid state issues
         ]);
-        
+
         // Manually clear started_at and update the usage event
-        $workflowRun->started_at = null;
+        $workflowRun->started_at   = null;
         $workflowRun->completed_at = now();
         $workflowRun->updateWorkflowUsageEvent();
 
@@ -203,21 +202,21 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'name' => 'Test Run',
-            'started_at' => now(),
+            'name'                   => 'Test Run',
+            'started_at'             => now(),
         ]);
 
         // Create additional usage events for the same workflow run (different event types)
         UsageEvent::create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'object_type' => WorkflowRun::class,
-            'object_id' => $workflowRun->id,
+            'team_id'       => $this->user->currentTeam->id,
+            'user_id'       => $this->user->id,
+            'object_type'   => WorkflowRun::class,
+            'object_id'     => $workflowRun->id,
             'object_id_int' => $workflowRun->id,
-            'event_type' => 'other_event',
-            'api_name' => 'internal',
-            'run_time_ms' => 0,
-            'metadata' => []
+            'event_type'    => 'other_event',
+            'api_name'      => 'internal',
+            'run_time_ms'   => 0,
+            'metadata'      => [],
         ]);
 
         // When
@@ -235,14 +234,14 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
     {
         // Given - Create WorkflowRun without workflow definition
         $workflowRun = new WorkflowRun([
-            'name' => 'Test Run',
+            'name'       => 'Test Run',
             'started_at' => now(),
         ]);
-        
+
         // When - Try to create usage event (should fail due to null workflowDefinition)
         $this->expectException(\ErrorException::class);
         $this->expectExceptionMessage('Attempt to read property "name" on null');
-        
+
         $workflowRun->createWorkflowUsageEvent();
     }
 
@@ -257,10 +256,10 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
         // Create WorkflowRun and manually delete its usage event
         $workflowRun = WorkflowRun::create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'name' => 'Test Run',
-            'started_at' => now(),
+            'name'                   => 'Test Run',
+            'started_at'             => now(),
         ]);
-        
+
         $workflowRun->usageEvents()->delete();
 
         // When - Update status which triggers usage event update
@@ -283,8 +282,8 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'name' => 'Test Run',
-            'started_at' => now(),
+            'name'                   => 'Test Run',
+            'started_at'             => now(),
         ]);
 
         // When - Update status
@@ -293,13 +292,13 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
 
         // Then - Metadata should include all required fields
         $usageEvent = $workflowRun->findWorkflowUsageEvent();
-        $metadata = $usageEvent->metadata;
-        
+        $metadata   = $usageEvent->metadata;
+
         $this->assertArrayHasKey('status', $metadata);
         $this->assertArrayHasKey('progress_percent', $metadata);
         $this->assertArrayHasKey('task_run_count', $metadata);
         $this->assertArrayHasKey('task_process_count', $metadata);
-        
+
         $this->assertIsInt($metadata['progress_percent']);
         $this->assertIsInt($metadata['task_run_count']);
         $this->assertIsInt($metadata['task_process_count']);
@@ -311,7 +310,7 @@ class WorkflowRunUsageTrackingTest extends AuthenticatedTestCase
     protected function invokeProtectedMethod($object, $methodName, array $parameters = [])
     {
         $reflection = new \ReflectionClass(get_class($object));
-        $method = $reflection->getMethod($methodName);
+        $method     = $reflection->getMethod($methodName);
         $method->setAccessible(true);
 
         return $method->invokeArgs($object, $parameters);

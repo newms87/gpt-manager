@@ -13,7 +13,7 @@ abstract class TestCase extends BaseTestCase
     public function setUp(): void
     {
         parent::setUp();
-        
+
         // CRITICAL: Ensure tests only run on databases containing "testing" in the name
         $currentDb = config('database.connections.pgsql.database');
         if (stripos($currentDb, 'testing') === false) {
@@ -21,12 +21,11 @@ abstract class TestCase extends BaseTestCase
                 "CRITICAL: Tests must use a database with 'testing' in the name. Current database: {$currentDb}"
             );
         }
-        
+
         // Always reset all jobs to enabled in case a previous test disabled something
         Job::enableAll();
     }
 
-    
     /**
      * Disable automatic seeding for tests to avoid performance issues
      */

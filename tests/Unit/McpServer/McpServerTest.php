@@ -17,11 +17,11 @@ class McpServerTest extends TestCase
         $this->actingAs($user);
 
         $mcpServer = McpServer::factory()->create([
-            'team_id' => $team->id,
-            'name' => 'Test MCP Server',
-            'description' => 'A test MCP server',
-            'server_url' => 'http://localhost:8080',
-            'headers' => ['Authorization' => 'Bearer token'],
+            'team_id'       => $team->id,
+            'name'          => 'Test MCP Server',
+            'description'   => 'A test MCP server',
+            'server_url'    => 'http://localhost:8080',
+            'headers'       => ['Authorization' => 'Bearer token'],
             'allowed_tools' => ['tool1', 'tool2'],
         ]);
 
@@ -41,10 +41,10 @@ class McpServerTest extends TestCase
         $this->actingAs($user);
 
         $mcpServer = new McpServer([
-            'team_id' => $team->id,
-            'name' => 'Valid MCP Server',
-            'server_url' => 'https://api.example.com/mcp',
-            'headers' => ['Content-Type' => 'application/json'],
+            'team_id'       => $team->id,
+            'name'          => 'Valid MCP Server',
+            'server_url'    => 'https://api.example.com/mcp',
+            'headers'       => ['Content-Type' => 'application/json'],
             'allowed_tools' => ['read', 'write'],
         ]);
 
@@ -61,7 +61,7 @@ class McpServerTest extends TestCase
         $this->actingAs($user);
 
         $mcpServer = new McpServer([
-            'team_id' => $team->id,
+            'team_id'    => $team->id,
             'server_url' => 'https://api.example.com/mcp',
         ]);
 
@@ -78,8 +78,8 @@ class McpServerTest extends TestCase
         $this->actingAs($user);
 
         $mcpServer = new McpServer([
-            'team_id' => $team->id,
-            'name' => 'test-server',
+            'team_id'    => $team->id,
+            'name'       => 'test-server',
             'server_url' => 'not-a-valid-url',
         ]);
 

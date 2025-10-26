@@ -9,5 +9,6 @@ use Newms87\Danx\Http\Controllers\ActionController;
 class ArtifactsController extends ActionController
 {
     public static ?string $repo     = ArtifactRepository::class;
+
     public static ?string $resource = ArtifactResource::class;
 }

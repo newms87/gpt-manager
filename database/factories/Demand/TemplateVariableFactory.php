@@ -23,19 +23,19 @@ class TemplateVariableFactory extends Factory
     {
         return [
             'demand_template_id' => DemandTemplate::factory(),
-            'name' => $this->faker->unique()->word(),
-            'description' => $this->faker->optional()->sentence(),
-            'mapping_type' => $this->faker->randomElement([
+            'name'               => $this->faker->unique()->word(),
+            'description'        => $this->faker->optional()->sentence(),
+            'mapping_type'       => $this->faker->randomElement([
                 TemplateVariable::MAPPING_TYPE_AI,
                 TemplateVariable::MAPPING_TYPE_ARTIFACT,
                 TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
             ]),
-            'artifact_categories' => null,
-            'artifact_fragment_selector' => null,
+            'artifact_categories'               => null,
+            'artifact_fragment_selector'        => null,
             'team_object_schema_association_id' => null,
-            'ai_instructions' => null,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'ai_instructions'                   => null,
+            'multi_value_strategy'              => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'             => ', ',
         ];
     }
 
@@ -45,10 +45,10 @@ class TemplateVariableFactory extends Factory
     public function aiMapped(): static
     {
         return $this->state(fn(array $attributes) => [
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions' => $this->faker->paragraph(),
-            'artifact_categories' => null,
-            'artifact_fragment_selector' => null,
+            'mapping_type'                      => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'                   => $this->faker->paragraph(),
+            'artifact_categories'               => null,
+            'artifact_fragment_selector'        => null,
             'team_object_schema_association_id' => null,
         ]);
     }
@@ -59,13 +59,13 @@ class TemplateVariableFactory extends Factory
     public function artifactMapped(): static
     {
         return $this->state(fn(array $attributes) => [
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_ARTIFACT,
-            'artifact_categories' => $this->faker->randomElements(['medical', 'legal', 'financial'], 2),
+            'mapping_type'               => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'        => $this->faker->randomElements(['medical', 'legal', 'financial'], 2),
             'artifact_fragment_selector' => [
-                'type' => 'css_selector',
+                'type'     => 'css_selector',
                 'selector' => '.content .section',
             ],
-            'ai_instructions' => null,
+            'ai_instructions'                   => null,
             'team_object_schema_association_id' => null,
         ]);
     }
@@ -77,11 +77,11 @@ class TemplateVariableFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'mapping_type' => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
+                'mapping_type'                      => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
                 'team_object_schema_association_id' => SchemaAssociation::factory(),
-                'artifact_categories' => null,
-                'artifact_fragment_selector' => null,
-                'ai_instructions' => null,
+                'artifact_categories'               => null,
+                'artifact_fragment_selector'        => null,
+                'ai_instructions'                   => null,
             ];
         });
     }

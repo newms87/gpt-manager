@@ -17,8 +17,10 @@ class DemandTemplateRepositoryTest extends AuthenticatedTestCase
     use SetUpTeamTrait;
 
     protected DemandTemplateRepository $repository;
-    protected DemandTemplateService    $service;
-    protected GoogleDocsFileService    $googleDocsService;
+
+    protected DemandTemplateService $service;
+
+    protected GoogleDocsFileService $googleDocsService;
 
     public function setUp(): void
     {

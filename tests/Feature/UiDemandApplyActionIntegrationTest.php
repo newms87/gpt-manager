@@ -157,7 +157,7 @@ class UiDemandApplyActionIntegrationTest extends AuthenticatedTestCase
         $this->assertTrue($inputFiles->pluck('id')->contains($file2->id));
 
         // Verify pivot data
-        foreach($inputFiles as $file) {
+        foreach ($inputFiles as $file) {
             $this->assertEquals('input', $file->pivot->category);
         }
 

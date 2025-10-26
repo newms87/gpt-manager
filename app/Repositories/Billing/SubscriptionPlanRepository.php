@@ -19,11 +19,11 @@ class SubscriptionPlanRepository extends ActionRepository
     public function applyAction(string $action, SubscriptionPlan|Model|array|null $model = null, ?array $data = null)
     {
         return match ($action) {
-            'create' => $this->createPlan($data),
-            'update' => $this->updatePlan($model, $data),
-            'activate' => $this->activatePlan($model),
+            'create'     => $this->createPlan($data),
+            'update'     => $this->updatePlan($model, $data),
+            'activate'   => $this->activatePlan($model),
             'deactivate' => $this->deactivatePlan($model),
-            default => parent::applyAction($action, $model, $data)
+            default      => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -35,11 +35,11 @@ class SubscriptionPlanRepository extends ActionRepository
     public function getAvailablePlans(bool $includeInactive = false): \Illuminate\Database\Eloquent\Collection
     {
         $query = SubscriptionPlan::query();
-        
+
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
-        
+
         return $query->orderBy('sort_order')->get();
     }
 
@@ -48,7 +48,7 @@ class SubscriptionPlanRepository extends ActionRepository
         $plan = new SubscriptionPlan($data);
         $plan->validate();
         $plan->save();
-        
+
         return $plan->fresh();
     }
 
@@ -57,19 +57,21 @@ class SubscriptionPlanRepository extends ActionRepository
         $plan->fill($data);
         $plan->validate();
         $plan->save();
-        
+
         return $plan->fresh();
     }
 
     protected function activatePlan(SubscriptionPlan $plan): SubscriptionPlan
     {
         $plan->update(['is_active' => true]);
+
         return $plan->fresh();
     }
 
     protected function deactivatePlan(SubscriptionPlan $plan): SubscriptionPlan
     {
         $plan->update(['is_active' => false]);
+
         return $plan->fresh();
     }
 }

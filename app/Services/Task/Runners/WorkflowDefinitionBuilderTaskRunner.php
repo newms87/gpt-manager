@@ -9,7 +9,6 @@ use App\Services\AgentThread\AgentThreadService;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Services\WorkflowBuilder\WorkflowBuilderDocumentationService;
 use Exception;
-use Illuminate\Support\Str;
 
 class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
 {
@@ -18,44 +17,44 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
     public function prepareProcess(): void
     {
         $this->taskProcess->name = static::RUNNER_NAME;
-        
+
         // Timeout is configured on the TaskDefinition and accessed via relationship
-        
-        $this->activity("Preparing workflow organization analysis", 1);
+
+        $this->activity('Preparing workflow organization analysis', 1);
     }
 
     public function run(): void
     {
-        $this->activity("Loading orchestrator context", 10);
-        
+        $this->activity('Loading orchestrator context', 10);
+
         // Get input data from artifacts
-        $inputData = $this->extractInputFromArtifacts();
+        $inputData       = $this->extractInputFromArtifacts();
         $currentWorkflow = $this->resolveCurrentWorkflow();
-        
+
         // Load documentation context
         $context = app(WorkflowBuilderDocumentationService::class)
             ->getOrchestratorContext($currentWorkflow);
-        
-        $this->activity("Building orchestrator prompt", 20);
-        
+
+        $this->activity('Building orchestrator prompt', 20);
+
         // Build comprehensive prompt
         $prompt = $this->buildOrchestratorPrompt($inputData, $currentWorkflow, $context);
-        
-        $this->activity("Running agent thread with organization schema", 30);
-        
+
+        $this->activity('Running agent thread with organization schema', 30);
+
         // Run AgentThreadTaskRunner with organization schema
         $artifact = $this->runAgentThreadWithOrganizationSchema($prompt);
-        
+
         if ($artifact) {
-            $this->activity("Processing workflow organization results", 80);
-            
+            $this->activity('Processing workflow organization results', 80);
+
             // Process and split artifacts per task definition change
             $outputArtifacts = $this->processOrganizationResults($artifact);
-            
-            $this->activity("Workflow organization analysis completed", 100);
+
+            $this->activity('Workflow organization analysis completed', 100);
             $this->complete($outputArtifacts);
         } else {
-            $this->activity("No response from workflow organization analysis", 100);
+            $this->activity('No response from workflow organization analysis', 100);
             $this->complete([]);
         }
     }
@@ -66,16 +65,16 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
     protected function extractInputFromArtifacts(): array
     {
         $inputData = [
-            'user_input' => '',
-            'approved_plan' => '',
-            'workflow_state' => null
+            'user_input'     => '',
+            'approved_plan'  => '',
+            'workflow_state' => null,
         ];
 
         foreach ($this->taskProcess->inputArtifacts as $artifact) {
             if ($artifact->text_content) {
                 // Try to identify the type of input based on artifact name or content
                 $name = strtolower($artifact->name ?? '');
-                
+
                 if (str_contains($name, 'input') || str_contains($name, 'requirement')) {
                     $inputData['user_input'] = $artifact->text_content;
                 } elseif (str_contains($name, 'plan') || str_contains($name, 'approved')) {
@@ -92,7 +91,7 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
         }
 
         // Clean up inputs
-        $inputData['user_input'] = trim($inputData['user_input']);
+        $inputData['user_input']    = trim($inputData['user_input']);
         $inputData['approved_plan'] = trim($inputData['approved_plan']);
 
         return $inputData;
@@ -133,57 +132,57 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
         // Add user intent and requirements
         $prompt[] = "# User Requirements\n";
         if ($input['user_input']) {
-            $prompt[] = "**Original Request:**";
+            $prompt[] = '**Original Request:**';
             $prompt[] = $input['user_input'];
-            $prompt[] = "";
+            $prompt[] = '';
         }
 
         if ($input['approved_plan']) {
-            $prompt[] = "**Approved Plan:**";
+            $prompt[] = '**Approved Plan:**';
             $prompt[] = $input['approved_plan'];
-            $prompt[] = "";
+            $prompt[] = '';
         }
 
         // Add current workflow state context
         if ($currentWorkflow) {
             $prompt[] = "# Current Workflow State\n";
-            $prompt[] = "You are modifying an existing workflow. Consider the current structure when making changes.";
+            $prompt[] = 'You are modifying an existing workflow. Consider the current structure when making changes.';
             $prompt[] = "Only modify what is necessary to fulfill the user's requirements.";
-            $prompt[] = "";
+            $prompt[] = '';
         } else {
             $prompt[] = "# New Workflow Creation\n";
-            $prompt[] = "You are creating a brand new workflow from scratch.";
-            $prompt[] = "";
+            $prompt[] = 'You are creating a brand new workflow from scratch.';
+            $prompt[] = '';
         }
 
         // Add workflow state data if available
         if ($input['workflow_state']) {
-            $prompt[] = "**Current Workflow Data:**";
-            $prompt[] = "```json";
+            $prompt[] = '**Current Workflow Data:**';
+            $prompt[] = '```json';
             $prompt[] = json_encode($input['workflow_state'], JSON_PRETTY_PRINT);
-            $prompt[] = "```";
-            $prompt[] = "";
+            $prompt[] = '```';
+            $prompt[] = '';
         }
 
         // Add orchestrator instructions
         $prompt[] = "# Your Task\n";
-        $prompt[] = "Analyze the requirements and break them down into specific task definitions.";
-        $prompt[] = "Your response should define the complete workflow structure including:";
-        $prompt[] = "1. Task definitions with appropriate runners, agents, and prompts";
-        $prompt[] = "2. Workflow connections showing data flow between tasks";
-        $prompt[] = "3. Proper artifact flow modes for each task";
-        $prompt[] = "4. Node positioning and organization";
-        $prompt[] = "";
-        $prompt[] = "Output your analysis in split mode so each task can be processed individually in parallel.";
-        $prompt[] = "Each task specification should be complete and independent.";
+        $prompt[] = 'Analyze the requirements and break them down into specific task definitions.';
+        $prompt[] = 'Your response should define the complete workflow structure including:';
+        $prompt[] = '1. Task definitions with appropriate runners, agents, and prompts';
+        $prompt[] = '2. Workflow connections showing data flow between tasks';
+        $prompt[] = '3. Proper artifact flow modes for each task';
+        $prompt[] = '4. Node positioning and organization';
+        $prompt[] = '';
+        $prompt[] = 'Output your analysis in split mode so each task can be processed individually in parallel.';
+        $prompt[] = 'Each task specification should be complete and independent.';
 
         // Add examples and constraints
         $prompt[] = "\n# Important Constraints\n";
-        $prompt[] = "- Use only documented task runners from the catalog";
-        $prompt[] = "- Select appropriate agents based on task requirements";
-        $prompt[] = "- Ensure proper artifact flow between connected tasks";
-        $prompt[] = "- Follow established naming and description conventions";
-        $prompt[] = "- Consider performance implications of parallel processing";
+        $prompt[] = '- Use only documented task runners from the catalog';
+        $prompt[] = '- Select appropriate agents based on task requirements';
+        $prompt[] = '- Ensure proper artifact flow between connected tasks';
+        $prompt[] = '- Follow established naming and description conventions';
+        $prompt[] = '- Consider performance implications of parallel processing';
 
         return implode("\n", $prompt);
     }
@@ -195,9 +194,9 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
     {
         // Get organization schema for workflow building
         $schemaDefinition = $this->getOrganizationSchemaDefinition();
-        
+
         if (!$schemaDefinition) {
-            throw new Exception("Organization schema definition not found for workflow building");
+            throw new Exception('Organization schema definition not found for workflow building');
         }
 
         // Create temporary agent thread for this analysis
@@ -208,21 +207,21 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
 
         // Add the orchestrator prompt as the initial message
         $agentThread->messages()->create([
-            'role' => 'user',
+            'role'    => 'user',
             'content' => $prompt,
-            'team_id' => $this->taskRun->taskDefinition->team_id
+            'team_id' => $this->taskRun->taskDefinition->team_id,
         ]);
 
         // Get timeout from configuration
         $timeout = $this->config('timeout');
         if ($timeout !== null) {
-            $timeout = (int) $timeout;
+            $timeout = (int)$timeout;
             $timeout = max(1, min($timeout, 600)); // Ensure between 1 and 600 seconds
         }
 
         // Run the agent thread with schema validation
         $jsonSchemaService = app(JsonSchemaService::class)->useArtifactMeta()->includeNullValues();
-        
+
         $threadRun = app(AgentThreadService::class)
             ->withResponseFormat($schemaDefinition, null, $jsonSchemaService)
             ->withTimeout($timeout)
@@ -231,9 +230,9 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
         if ($threadRun->lastMessage) {
             // Create artifact from the response
             $artifact = new Artifact([
-                'name' => 'Workflow Organization Analysis',
+                'name'               => 'Workflow Organization Analysis',
                 'task_definition_id' => $this->taskDefinition->id,
-                'task_process_id' => $this->taskProcess->id,
+                'task_process_id'    => $this->taskProcess->id,
             ]);
 
             // Store the JSON response
@@ -268,48 +267,48 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
         if (!$schema) {
             // Create basic schema if it doesn't exist
             $schema = SchemaDefinition::create([
-                'name' => 'Workflow Organization Schema',
+                'name'    => 'Workflow Organization Schema',
                 'team_id' => $this->taskRun->taskDefinition->team_id,
-                'schema' => [
-                    'type' => 'object',
-                    'title' => 'WorkflowOrganization',
+                'schema'  => [
+                    'type'       => 'object',
+                    'title'      => 'WorkflowOrganization',
                     'properties' => [
                         'workflow_definition' => [
-                            'type' => 'object',
+                            'type'       => 'object',
                             'properties' => [
-                                'name' => ['type' => 'string'],
+                                'name'        => ['type' => 'string'],
                                 'description' => ['type' => 'string'],
-                                'max_workers' => ['type' => 'integer']
-                            ]
+                                'max_workers' => ['type' => 'integer'],
+                            ],
                         ],
                         'task_specifications' => [
-                            'type' => 'array',
+                            'type'  => 'array',
                             'items' => [
-                                'type' => 'object',
+                                'type'       => 'object',
                                 'properties' => [
-                                    'name' => ['type' => 'string'],
-                                    'description' => ['type' => 'string'],
-                                    'runner_type' => ['type' => 'string'],
+                                    'name'               => ['type' => 'string'],
+                                    'description'        => ['type' => 'string'],
+                                    'runner_type'        => ['type' => 'string'],
                                     'agent_requirements' => ['type' => 'string'],
-                                    'prompt' => ['type' => 'string'],
-                                    'configuration' => ['type' => 'object']
-                                ]
-                            ]
+                                    'prompt'             => ['type' => 'string'],
+                                    'configuration'      => ['type' => 'object'],
+                                ],
+                            ],
                         ],
                         'connections' => [
-                            'type' => 'array',
+                            'type'  => 'array',
                             'items' => [
-                                'type' => 'object',
+                                'type'       => 'object',
                                 'properties' => [
-                                    'source' => ['type' => 'string'],
-                                    'target' => ['type' => 'string'],
-                                    'description' => ['type' => 'string']
-                                ]
-                            ]
-                        ]
+                                    'source'      => ['type' => 'string'],
+                                    'target'      => ['type' => 'string'],
+                                    'description' => ['type' => 'string'],
+                                ],
+                            ],
+                        ],
                     ],
-                    'required' => ['workflow_definition', 'task_specifications']
-                ]
+                    'required' => ['workflow_definition', 'task_specifications'],
+                ],
             ]);
         }
 
@@ -324,47 +323,49 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
         $artifacts = [];
 
         if (!$organizationArtifact->json_content) {
-            static::log("No JSON content found in organization artifact");
+            static::log('No JSON content found in organization artifact');
+
             return [$organizationArtifact];
         }
 
         $organizationData = $organizationArtifact->json_content;
-        
+
         // Extract task specifications for split mode output
         $taskSpecs = $organizationData['task_specifications'] ?? [];
-        
+
         if (empty($taskSpecs)) {
-            static::log("No task specifications found in organization data");
+            static::log('No task specifications found in organization data');
+
             return [$organizationArtifact];
         }
 
-        static::log("Processing " . count($taskSpecs) . " task specifications for split mode");
+        static::log('Processing ' . count($taskSpecs) . ' task specifications for split mode');
 
         // Create individual artifacts for each task specification
         foreach ($taskSpecs as $index => $taskSpec) {
             $taskArtifact = new Artifact([
-                'name' => $taskSpec['name'] ?? "Task Specification " . ($index + 1),
+                'name'               => $taskSpec['name'] ?? 'Task Specification ' . ($index + 1),
                 'task_definition_id' => $this->taskDefinition->id,
-                'task_process_id' => $this->taskProcess->id,
+                'task_process_id'    => $this->taskProcess->id,
             ]);
 
             // Include the full workflow context with this specific task
             $taskArtifact->json_content = [
                 'workflow_definition' => $organizationData['workflow_definition'] ?? null,
-                'connections' => $organizationData['connections'] ?? [],
-                'task_specification' => $taskSpec,
-                'task_index' => $index
+                'connections'         => $organizationData['connections']         ?? [],
+                'task_specification'  => $taskSpec,
+                'task_index'          => $index,
             ];
 
             // Add descriptive text content
             $taskArtifact->text_content = $this->formatTaskSpecificationText($taskSpec, $index);
-            $taskArtifact->position = $index;
-            
+            $taskArtifact->position     = $index;
+
             $taskArtifact->save();
             $artifacts[] = $taskArtifact;
         }
 
-        static::log("Created " . count($artifacts) . " task specification artifacts for split processing");
+        static::log('Created ' . count($artifacts) . ' task specification artifacts for split processing');
 
         return $artifacts;
     }
@@ -374,38 +375,38 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
      */
     protected function formatTaskSpecificationText(array $taskSpec, int $index): string
     {
-        $text = [];
-        $text[] = "# Task Specification " . ($index + 1);
-        $text[] = "";
-        
+        $text   = [];
+        $text[] = '# Task Specification ' . ($index + 1);
+        $text[] = '';
+
         if (isset($taskSpec['name'])) {
-            $text[] = "**Name:** " . $taskSpec['name'];
+            $text[] = '**Name:** ' . $taskSpec['name'];
         }
-        
+
         if (isset($taskSpec['description'])) {
-            $text[] = "**Description:** " . $taskSpec['description'];
+            $text[] = '**Description:** ' . $taskSpec['description'];
         }
-        
+
         if (isset($taskSpec['runner_type'])) {
-            $text[] = "**Runner Type:** " . $taskSpec['runner_type'];
+            $text[] = '**Runner Type:** ' . $taskSpec['runner_type'];
         }
-        
+
         if (isset($taskSpec['agent_requirements'])) {
-            $text[] = "**Agent Requirements:** " . $taskSpec['agent_requirements'];
+            $text[] = '**Agent Requirements:** ' . $taskSpec['agent_requirements'];
         }
-        
+
         if (isset($taskSpec['prompt'])) {
-            $text[] = "";
-            $text[] = "**Prompt:**";
+            $text[] = '';
+            $text[] = '**Prompt:**';
             $text[] = $taskSpec['prompt'];
         }
-        
+
         if (isset($taskSpec['configuration']) && !empty($taskSpec['configuration'])) {
-            $text[] = "";
-            $text[] = "**Configuration:**";
-            $text[] = "```json";
+            $text[] = '';
+            $text[] = '**Configuration:**';
+            $text[] = '```json';
             $text[] = json_encode($taskSpec['configuration'], JSON_PRETTY_PRINT);
-            $text[] = "```";
+            $text[] = '```';
         }
 
         return implode("\n", $text);

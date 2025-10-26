@@ -10,7 +10,8 @@ use Tests\TestCase;
 class MockStripePaymentServiceTest extends TestCase
 {
     private MockStripePaymentService $mockStripeService;
-    private Team                     $team;
+
+    private Team $team;
 
     public function setUp(): void
     {

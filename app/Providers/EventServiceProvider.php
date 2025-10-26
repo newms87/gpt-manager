@@ -73,7 +73,7 @@ class EventServiceProvider extends ServiceProvider
 
         $modelsWithTrait = ModelHelper::getModelsWithTrait(HasRelationCountersTrait::class);
 
-        foreach($modelsWithTrait as $model) {
+        foreach ($modelsWithTrait as $model) {
             $model::registerRelationshipCounters();
         }
     }

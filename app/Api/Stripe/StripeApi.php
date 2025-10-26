@@ -4,7 +4,6 @@ namespace App\Api\Stripe;
 
 use Newms87\Danx\Api\BearerTokenApi;
 use Newms87\Danx\Exceptions\ApiException;
-use Newms87\Danx\Exceptions\ApiRequestException;
 
 class StripeApi extends BearerTokenApi
 {
@@ -13,8 +12,8 @@ class StripeApi extends BearerTokenApi
     public function __construct()
     {
         $this->baseApiUrl = config('stripe.api_url', 'https://api.stripe.com/v1/');
-        $this->token = config('services.stripe.secret');
-        
+        $this->token      = config('services.stripe.secret');
+
         if (!$this->token) {
             throw new ApiException('Stripe API key not configured');
         }
@@ -24,7 +23,7 @@ class StripeApi extends BearerTokenApi
     {
         return [
             'Authorization' => 'Bearer ' . $this->token,
-            'Content-Type' => 'application/x-www-form-urlencoded',
+            'Content-Type'  => 'application/x-www-form-urlencoded',
         ];
     }
 
@@ -50,7 +49,7 @@ class StripeApi extends BearerTokenApi
     public function attachPaymentMethod(string $paymentMethodId, string $customerId): array
     {
         return $this->post("payment_methods/$paymentMethodId/attach", [
-            'customer' => $customerId
+            'customer' => $customerId,
         ])->json();
     }
 

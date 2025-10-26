@@ -3,7 +3,6 @@
 namespace Tests\Integration\Services\Task\Runners;
 
 use App\Api\GoogleDocs\GoogleDocsApi;
-use App\Models\Agent\Agent;
 use App\Models\Demand\DemandTemplate;
 use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaAssociation;
@@ -28,10 +27,15 @@ use Tests\TestCase;
 class GoogleDocsTemplateTaskRunnerTest extends TestCase
 {
     protected Team $team;
+
     protected User $user;
+
     protected TaskRun $taskRun;
+
     protected TaskDefinition $taskDefinition;
+
     protected DemandTemplate $template;
+
     protected StoredFile $templateStoredFile;
 
     public function setUp(): void
@@ -46,11 +50,11 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
 
         // Configure TestAI
         Config::set('ai.models.test-model', [
-            'api' => TestAiApi::class,
-            'name' => 'Test Model',
-            'context' => 4096,
-            'input' => 0,
-            'output' => 0,
+            'api'      => TestAiApi::class,
+            'name'     => 'Test Model',
+            'context'  => 4096,
+            'input'    => 0,
+            'output'   => 0,
             'features' => [
                 'temperature' => true,
             ],
@@ -58,11 +62,11 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
 
         // Configure gpt-4o to use TestAI for testing
         Config::set('ai.models.gpt-4o', [
-            'api' => TestAiApi::class,
-            'name' => 'GPT-4o Test',
-            'context' => 4096,
-            'input' => 0,
-            'output' => 0,
+            'api'      => TestAiApi::class,
+            'name'     => 'GPT-4o Test',
+            'context'  => 4096,
+            'input'    => 0,
+            'output'   => 0,
             'features' => [
                 'temperature' => true,
             ],
@@ -72,31 +76,31 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         $this->templateStoredFile = StoredFile::factory()->create([
             'team_id' => $this->team->id,
             'user_id' => $this->user->id,
-            'url' => 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
-            'disk' => 'external',
-            'mime' => 'application/vnd.google-apps.document',
-            'meta' => ['type' => 'google_docs_template'],
+            'url'     => 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
+            'disk'    => 'external',
+            'mime'    => 'application/vnd.google-apps.document',
+            'meta'    => ['type' => 'google_docs_template'],
         ]);
 
         // Create demand template
         $this->template = DemandTemplate::factory()->create([
-            'team_id' => $this->team->id,
-            'user_id' => $this->user->id,
+            'team_id'        => $this->team->id,
+            'user_id'        => $this->user->id,
             'stored_file_id' => $this->templateStoredFile->id,
-            'name' => 'Test Template',
+            'name'           => 'Test Template',
         ]);
 
         // Create task definition
         $this->taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'Google Docs Template Task',
+            'team_id'          => $this->team->id,
+            'name'             => 'Google Docs Template Task',
             'task_runner_name' => 'Google Docs Template',
         ]);
 
         // Create task run
         $this->taskRun = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
-            'started_at' => now()->subMinutes(10),
+            'started_at'         => now()->subMinutes(10),
         ]);
     }
 
@@ -105,33 +109,33 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
     {
         // Create template variables with artifact mapping using fragment selectors
         $nameVariable = TemplateVariable::factory()->create([
-            'demand_template_id' => $this->template->id,
-            'name' => 'company_name',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_ARTIFACT,
-            'artifact_categories' => null,
+            'demand_template_id'         => $this->template->id,
+            'name'                       => 'company_name',
+            'mapping_type'               => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => [
-                'field' => 'json_content',
-                'type' => 'object',
+                'field'    => 'json_content',
+                'type'     => 'object',
                 'children' => [
-                    'company' => ['type' => 'string']
-                ]
+                    'company' => ['type' => 'string'],
+                ],
             ],
             'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
         ]);
 
         $locationVariable = TemplateVariable::factory()->create([
-            'demand_template_id' => $this->template->id,
-            'name' => 'location',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_ARTIFACT,
-            'artifact_categories' => null,
+            'demand_template_id'         => $this->template->id,
+            'name'                       => 'location',
+            'mapping_type'               => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => [
-                'field' => 'json_content',
-                'type' => 'object',
+                'field'    => 'json_content',
+                'type'     => 'object',
                 'children' => [
-                    'address' => ['type' => 'string']
-                ]
+                    'address' => ['type' => 'string'],
+                ],
             ],
-            'multi_value_strategy' => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
             'multi_value_separator' => ', ',
         ]);
 
@@ -142,21 +146,21 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
 
         // Create input artifacts with data in json_content
         $companyArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'Company Data',
+            'team_id'      => $this->team->id,
+            'name'         => 'Company Data',
             'json_content' => ['company' => 'Acme Corporation'],
         ]);
 
         $addressArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'Address Data',
+            'team_id'      => $this->team->id,
+            'name'         => 'Address Data',
             'json_content' => ['address' => '123 Main Street, San Francisco, CA'],
         ]);
 
         // Artifact with template reference
         $templateArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'Template',
+            'team_id'      => $this->team->id,
+            'name'         => 'Template',
             'json_content' => ['template_stored_file_id' => $this->templateStoredFile->id],
         ]);
 
@@ -174,15 +178,15 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
                     '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
                     [
                         'company_name' => 'Acme Corporation',
-                        'location' => '123 Main Street, San Francisco, CA',
+                        'location'     => '123 Main Street, San Francisco, CA',
                     ],
                     ''
                 )
                 ->andReturn([
                     'document_id' => 'new-doc-id-123',
-                    'title' => 'Generated Document',
-                    'url' => 'https://docs.google.com/document/d/new-doc-id-123/edit',
-                    'created_at' => now()->toISOString(),
+                    'title'       => 'Generated Document',
+                    'url'         => 'https://docs.google.com/document/d/new-doc-id-123/edit',
+                    'created_at'  => now()->toISOString(),
                 ]);
         });
 
@@ -219,9 +223,9 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         // Create schema definition for TeamObject
         $schemaDefinition = SchemaDefinition::factory()->create([
             'team_id' => $this->team->id,
-            'name' => 'Company Schema',
-            'schema' => [
-                'type' => 'object',
+            'name'    => 'Company Schema',
+            'schema'  => [
+                'type'       => 'object',
                 'properties' => [
                     'name' => ['type' => 'string'],
                 ],
@@ -231,8 +235,8 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         // Create schema fragment
         $schemaFragment = SchemaFragment::factory()->create([
             'schema_definition_id' => $schemaDefinition->id,
-            'name' => 'Company Name Fragment',
-            'fragment_selector' => [
+            'name'                 => 'Company Name Fragment',
+            'fragment_selector'    => [
                 'field' => 'name',
             ],
         ]);
@@ -240,24 +244,24 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         // Create schema association
         $schemaAssociation = SchemaAssociation::factory()->create([
             'schema_definition_id' => $schemaDefinition->id,
-            'schema_fragment_id' => $schemaFragment->id,
+            'schema_fragment_id'   => $schemaFragment->id,
         ]);
 
         // Create template variable with TeamObject mapping
         $nameVariable = TemplateVariable::factory()->create([
-            'demand_template_id' => $this->template->id,
-            'name' => 'company_name',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
+            'demand_template_id'                => $this->template->id,
+            'name'                              => 'company_name',
+            'mapping_type'                      => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
             'team_object_schema_association_id' => $schemaAssociation->id,
-            'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
+            'multi_value_strategy'              => TemplateVariable::STRATEGY_FIRST,
         ]);
 
         // Create TeamObject
         $teamObject = TeamObject::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'              => $this->team->id,
             'schema_definition_id' => $schemaDefinition->id,
-            'type' => 'Company',
-            'name' => 'Acme Corp',
+            'type'                 => 'Company',
+            'name'                 => 'Acme Corp',
         ]);
 
         // Create task process
@@ -267,16 +271,16 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
 
         // Create artifact with TeamObject reference
         $teamObjectArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'Company Data',
+            'team_id'      => $this->team->id,
+            'name'         => 'Company Data',
             'json_content' => [
                 'team_object_id' => $teamObject->id,
             ],
         ]);
 
         $templateArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'Template',
+            'team_id'      => $this->team->id,
+            'name'         => 'Template',
             'json_content' => ['template_stored_file_id' => $this->templateStoredFile->id],
         ]);
 
@@ -291,9 +295,9 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
                 ->once()
                 ->andReturn([
                     'document_id' => 'new-doc-id-456',
-                    'title' => 'Generated Document',
-                    'url' => 'https://docs.google.com/document/d/new-doc-id-456/edit',
-                    'created_at' => now()->toISOString(),
+                    'title'       => 'Generated Document',
+                    'url'         => 'https://docs.google.com/document/d/new-doc-id-456/edit',
+                    'created_at'  => now()->toISOString(),
                 ]);
         });
 
@@ -318,10 +322,10 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
     {
         // Create template variables with AI mapping
         $summaryVariable = TemplateVariable::factory()->create([
-            'demand_template_id' => $this->template->id,
-            'name' => 'summary',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions' => 'Extract a brief summary of the document',
+            'demand_template_id'   => $this->template->id,
+            'name'                 => 'summary',
+            'mapping_type'         => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'      => 'Extract a brief summary of the document',
             'multi_value_strategy' => TemplateVariable::STRATEGY_FIRST,
         ]);
 
@@ -332,14 +336,14 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
 
         // Create input artifacts
         $contentArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'Document Content',
+            'team_id'      => $this->team->id,
+            'name'         => 'Document Content',
             'text_content' => 'This is a comprehensive business proposal.',
         ]);
 
         $templateArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'Template',
+            'team_id'      => $this->team->id,
+            'name'         => 'Template',
             'json_content' => ['template_stored_file_id' => $this->templateStoredFile->id],
         ]);
 
@@ -369,9 +373,9 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
                 )
                 ->andReturn([
                     'document_id' => 'new-doc-id-789',
-                    'title' => 'Business Proposal',
-                    'url' => 'https://docs.google.com/document/d/new-doc-id-789/edit',
-                    'created_at' => now()->toISOString(),
+                    'title'       => 'Business Proposal',
+                    'url'         => 'https://docs.google.com/document/d/new-doc-id-789/edit',
+                    'created_at'  => now()->toISOString(),
                 ]);
         });
 
@@ -400,7 +404,7 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         $orphanStoredFile = StoredFile::factory()->create([
             'team_id' => $this->team->id,
             'user_id' => $this->user->id,
-            'url' => 'https://docs.google.com/document/d/orphan-doc-id/edit',
+            'url'     => 'https://docs.google.com/document/d/orphan-doc-id/edit',
         ]);
 
         // Create task process
@@ -410,8 +414,8 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
 
         // Create artifact with orphan stored file reference
         $templateArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
-            'name' => 'Template',
+            'team_id'      => $this->team->id,
+            'name'         => 'Template',
             'json_content' => ['template_stored_file_id' => $orphanStoredFile->id],
         ]);
 
@@ -436,7 +440,7 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
 
         // Create artifact with direct team_object_id reference
         $artifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'      => $this->team->id,
             'json_content' => [
                 'team_object_id' => $teamObject->id,
             ],
@@ -444,10 +448,10 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
 
         // Create simple template variable
         $simpleVariable = TemplateVariable::factory()->create([
-            'demand_template_id' => $this->template->id,
-            'name' => 'test',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_ARTIFACT,
-            'artifact_categories' => null,
+            'demand_template_id'         => $this->template->id,
+            'name'                       => 'test',
+            'mapping_type'               => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null, // Will use artifact name
         ]);
 
@@ -456,7 +460,7 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         ]);
 
         $templateArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'      => $this->team->id,
             'json_content' => ['template_stored_file_id' => $this->templateStoredFile->id],
         ]);
 
@@ -469,9 +473,9 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         $this->mock(GoogleDocsApi::class, function ($mock) {
             $mock->shouldReceive('createDocumentFromTemplate')->once()->andReturn([
                 'document_id' => 'test-doc',
-                'title' => 'Test',
-                'url' => 'https://docs.google.com/document/d/test-doc/edit',
-                'created_at' => now()->toISOString(),
+                'title'       => 'Test',
+                'url'         => 'https://docs.google.com/document/d/test-doc/edit',
+                'created_at'  => now()->toISOString(),
             ]);
         });
 
@@ -492,11 +496,11 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
 
         // Create artifact with nested team_object reference
         $artifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'      => $this->team->id,
             'json_content' => [
                 'data' => [
                     'team_object' => [
-                        'id' => $teamObject->id,
+                        'id'   => $teamObject->id,
                         'name' => 'Test Object',
                     ],
                 ],
@@ -504,10 +508,10 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         ]);
 
         $simpleVariable = TemplateVariable::factory()->create([
-            'demand_template_id' => $this->template->id,
-            'name' => 'test',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_ARTIFACT,
-            'artifact_categories' => null,
+            'demand_template_id'         => $this->template->id,
+            'name'                       => 'test',
+            'mapping_type'               => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
         ]);
 
@@ -516,7 +520,7 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         ]);
 
         $templateArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'      => $this->team->id,
             'json_content' => ['template_stored_file_id' => $this->templateStoredFile->id],
         ]);
 
@@ -529,9 +533,9 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         $this->mock(GoogleDocsApi::class, function ($mock) {
             $mock->shouldReceive('createDocumentFromTemplate')->once()->andReturn([
                 'document_id' => 'test-doc',
-                'title' => 'Test',
-                'url' => 'https://docs.google.com/document/d/test-doc/edit',
-                'created_at' => now()->toISOString(),
+                'title'       => 'Test',
+                'url'         => 'https://docs.google.com/document/d/test-doc/edit',
+                'created_at'  => now()->toISOString(),
             ]);
         });
 
@@ -548,15 +552,15 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
     {
         // Create artifacts without TeamObject reference
         $artifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'      => $this->team->id,
             'json_content' => ['some_data' => 'test'],
         ]);
 
         $simpleVariable = TemplateVariable::factory()->create([
-            'demand_template_id' => $this->template->id,
-            'name' => 'test',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_ARTIFACT,
-            'artifact_categories' => null,
+            'demand_template_id'         => $this->template->id,
+            'name'                       => 'test',
+            'mapping_type'               => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
         ]);
 
@@ -565,7 +569,7 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         ]);
 
         $templateArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'      => $this->team->id,
             'json_content' => ['template_stored_file_id' => $this->templateStoredFile->id],
         ]);
 
@@ -578,9 +582,9 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         $this->mock(GoogleDocsApi::class, function ($mock) {
             $mock->shouldReceive('createDocumentFromTemplate')->once()->andReturn([
                 'document_id' => 'test-doc',
-                'title' => 'Test',
-                'url' => 'https://docs.google.com/document/d/test-doc/edit',
-                'created_at' => now()->toISOString(),
+                'title'       => 'Test',
+                'url'         => 'https://docs.google.com/document/d/test-doc/edit',
+                'created_at'  => now()->toISOString(),
             ]);
         });
 
@@ -596,10 +600,10 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
     public function test_extract_google_doc_id_from_stored_file(): void
     {
         $simpleVariable = TemplateVariable::factory()->create([
-            'demand_template_id' => $this->template->id,
-            'name' => 'test',
-            'mapping_type' => TemplateVariable::MAPPING_TYPE_ARTIFACT,
-            'artifact_categories' => null,
+            'demand_template_id'         => $this->template->id,
+            'name'                       => 'test',
+            'mapping_type'               => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'        => null,
             'artifact_fragment_selector' => null,
         ]);
 
@@ -608,7 +612,7 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         ]);
 
         $templateArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'      => $this->team->id,
             'json_content' => ['template_stored_file_id' => $this->templateStoredFile->id],
         ]);
 
@@ -625,9 +629,9 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
                 )
                 ->andReturn([
                     'document_id' => 'extracted-doc',
-                    'title' => 'Test',
-                    'url' => 'https://docs.google.com/document/d/extracted-doc/edit',
-                    'created_at' => now()->toISOString(),
+                    'title'       => 'Test',
+                    'url'         => 'https://docs.google.com/document/d/extracted-doc/edit',
+                    'created_at'  => now()->toISOString(),
                 ]);
         });
 
@@ -648,7 +652,7 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
         ]);
 
         $templateArtifact = Artifact::factory()->create([
-            'team_id' => $this->team->id,
+            'team_id'      => $this->team->id,
             'json_content' => ['template_stored_file_id' => $this->templateStoredFile->id],
         ]);
 
@@ -661,9 +665,9 @@ class GoogleDocsTemplateTaskRunnerTest extends TestCase
                 ->with('1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', [], '')
                 ->andReturn([
                     'document_id' => 'empty-doc',
-                    'title' => 'Empty Template',
-                    'url' => 'https://docs.google.com/document/d/empty-doc/edit',
-                    'created_at' => now()->toISOString(),
+                    'title'       => 'Empty Template',
+                    'url'         => 'https://docs.google.com/document/d/empty-doc/edit',
+                    'created_at'  => now()->toISOString(),
                 ]);
         });
 

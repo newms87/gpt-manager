@@ -33,9 +33,8 @@ class UniversalAssistantService
     public function createChatThread(
         string $message,
         string $context,
-        array  $contextData = []
-    ): array
-    {
+        array $contextData = []
+    ): array {
         try {
             $schemaService = app(AgentResponseSchemaService::class);
 
@@ -44,8 +43,6 @@ class UniversalAssistantService
 
             // Get context service
             $contextService = $this->getContextService($context);
-
-
 
             // Add user message to thread
             $userMessage = app(ThreadRepository::class)->addMessageToThread($thread, $message);
@@ -65,7 +62,7 @@ class UniversalAssistantService
             // Add context-specific system message to thread
             $contextSystemPrompt = $contextService->buildSystemPrompt($contextData);
             $thread->messages()->create([
-                'role' => 'system',
+                'role'    => 'system',
                 'content' => $contextSystemPrompt,
             ]);
 
@@ -75,10 +72,9 @@ class UniversalAssistantService
             $threadRun = $agentThreadService->run($thread);
 
             // Process the agent response and update message content
-            $processed = $this->processAgentResponse($thread, $threadRun);
+            $processed    = $this->processAgentResponse($thread, $threadRun);
             $responseData = $processed['responseData'];
-            $lastMessage = $processed['lastMessage'];
-
+            $lastMessage  = $processed['lastMessage'];
 
             // Handle action requests
             $actions = [];
@@ -91,7 +87,7 @@ class UniversalAssistantService
                 'actions' => $actions,
             ];
 
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             Log::error('UniversalAssistant thread creation error', [
                 'message' => $message,
                 'context' => $context,
@@ -104,11 +100,10 @@ class UniversalAssistantService
 
     public function handleChatMessage(
         AgentThread $thread,
-        string      $message,
-        string      $context,
-        array       $contextData = []
-    ): array
-    {
+        string $message,
+        string $context,
+        array $contextData = []
+    ): array {
         try {
             $schemaService = app(AgentResponseSchemaService::class);
 
@@ -119,7 +114,6 @@ class UniversalAssistantService
 
             // Get context service
             $contextService = $this->getContextService($context);
-
 
             // Add user message to thread
             $userMessage = app(ThreadRepository::class)->addMessageToThread($thread, $message);
@@ -139,7 +133,7 @@ class UniversalAssistantService
             // Add context-specific system message to thread
             $contextSystemPrompt = $contextService->buildSystemPrompt($contextData);
             $thread->messages()->create([
-                'role' => 'system',
+                'role'    => 'system',
                 'content' => $contextSystemPrompt,
             ]);
 
@@ -149,10 +143,9 @@ class UniversalAssistantService
             $threadRun = $agentThreadService->run($thread);
 
             // Process the agent response and update message content
-            $processed = $this->processAgentResponse($thread, $threadRun);
+            $processed    = $this->processAgentResponse($thread, $threadRun);
             $responseData = $processed['responseData'];
-            $lastMessage = $processed['lastMessage'];
-
+            $lastMessage  = $processed['lastMessage'];
 
             // Handle action requests
             $actions = [];
@@ -165,7 +158,7 @@ class UniversalAssistantService
                 'actions' => $actions,
             ];
 
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             Log::error('UniversalAssistant chat error', [
                 'message'   => $message,
                 'context'   => $context,
@@ -213,7 +206,7 @@ class UniversalAssistantService
 
         // Look for action suggestions in the agent response
         if (isset($result['suggested_actions'])) {
-            foreach($result['suggested_actions'] as $actionData) {
+            foreach ($result['suggested_actions'] as $actionData) {
                 $action = app(UniversalAssistantRepository::class)->create([
                     'agent_thread_id' => $thread->id,
                     'context'         => $context,
@@ -221,8 +214,8 @@ class UniversalAssistantService
                     'target_type'     => $actionData['target_type'],
                     'target_id'       => $actionData['target_id'] ?? null,
                     'title'           => $actionData['title'],
-                    'description'     => $actionData['description'] ?? null,
-                    'payload'         => $actionData['payload'] ?? null,
+                    'description'     => $actionData['description']  ?? null,
+                    'payload'         => $actionData['payload']      ?? null,
                     'preview_data'    => $actionData['preview_data'] ?? null,
                 ]);
 
@@ -260,8 +253,8 @@ class UniversalAssistantService
             }
 
             return $object;
-        } catch(\Exception $e) {
-            Log::error("Failed to load context object", [
+        } catch (\Exception $e) {
+            Log::error('Failed to load context object', [
                 'type'  => $objectType,
                 'id'    => $objectId,
                 'error' => $e->getMessage(),
@@ -271,8 +264,6 @@ class UniversalAssistantService
         }
     }
 
-
-
     /**
      * Process action requests from the agent
      */
@@ -280,15 +271,15 @@ class UniversalAssistantService
     {
         // Extract the action content (schema, etc.) from the response
         $actionContent = $responseData['message'] ?? null;
-        
+
         // Create preview data based on action type
         $previewData = null;
         if ($actionName === 'create_schema' && $actionContent) {
             $previewData = [
                 'modification_type' => 'create_schema',
-                'schema_content' => $actionContent,
-                'target_path' => 'New Schema',
-                'reason' => 'AI agent created a new JSON schema based on your requirements'
+                'schema_content'    => $actionContent,
+                'target_path'       => 'New Schema',
+                'reason'            => 'AI agent created a new JSON schema based on your requirements',
             ];
         }
 
@@ -298,7 +289,7 @@ class UniversalAssistantService
             'context'         => $context,
             'action_type'     => $actionName,
             'target_type'     => $actionName === 'create_schema' ? 'schema' : 'multiple',
-            'title'           => "Create: " . ucwords(str_replace('_', ' ', $actionName)),
+            'title'           => 'Create: ' . ucwords(str_replace('_', ' ', $actionName)),
             'description'     => $this->getActionDescription($actionName),
             'payload'         => [
                 'action_name'       => $actionName,
@@ -316,8 +307,8 @@ class UniversalAssistantService
     protected function getActionDescription(string $actionName): string
     {
         $descriptions = [
-            'create_schema' => 'Create a new JSON schema based on the AI-generated definition',
-            'modify_schema' => 'Modify an existing schema with AI-suggested changes',
+            'create_schema'   => 'Create a new JSON schema based on the AI-generated definition',
+            'modify_schema'   => 'Modify an existing schema with AI-suggested changes',
             'create_workflow' => 'Create a new workflow definition',
             'modify_workflow' => 'Modify an existing workflow',
         ];
@@ -337,15 +328,15 @@ class UniversalAssistantService
 
         // Parse the JSON response using the proper AgentThreadMessage method
         $responseData = $lastMessage->getJsonContent();
-        
+
         if ($responseData && isset($responseData['message'])) {
             // Update the message to show just the user-friendly content
             $lastMessage->update([
                 'content' => $responseData['message'],
-                'data' => ['original_response' => $responseData]
+                'data'    => ['original_response' => $responseData],
             ]);
         }
-        
+
         return ['responseData' => $responseData, 'lastMessage' => $lastMessage];
     }
 }

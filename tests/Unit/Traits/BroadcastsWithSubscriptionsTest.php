@@ -44,12 +44,13 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
 
         // Subscribe using controller
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => true,
         ]);
 
         // When
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($resourceType, $teamId, $model, $modelClass)
@@ -78,12 +79,13 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
 
         // Subscribe using controller
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
         ]);
 
         // When
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($resourceType, $teamId, $model, $modelClass)
@@ -108,17 +110,18 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
 
         $workflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'status' => WorkflowStatesContract::STATUS_RUNNING,
+            'status'                 => WorkflowStatesContract::STATUS_RUNNING,
         ]);
 
         $filter = ['status' => WorkflowStatesContract::STATUS_RUNNING];
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
         ]);
 
         // When
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($resourceType, $teamId, $model, $modelClass)
@@ -147,16 +150,17 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
 
         // User subscribed via both channel-wide and model-specific using controller
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => true,
         ]);
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
         ]);
 
         // When
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($resourceType, $teamId, $model, $modelClass)
@@ -187,7 +191,8 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         // No subscriptions created
 
         // When
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($resourceType, $teamId, $model, $modelClass)
@@ -209,7 +214,8 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         $userIds = [$this->user->id];
 
         // When
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($resourceType, $teamId, $userIds)
@@ -233,7 +239,8 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         $userIds = [];
 
         // When
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($resourceType, $teamId, $userIds)
@@ -254,18 +261,19 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         // Given - Create two filter subscriptions using controller
         $filter1 = ['status' => WorkflowStatesContract::STATUS_RUNNING];
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter1],
         ]);
 
         $filter2 = ['status' => WorkflowStatesContract::STATUS_COMPLETED];
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter2],
         ]);
 
         // When
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($pattern)
@@ -275,7 +283,7 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         };
 
         $pattern = "subscribe:WorkflowRun:{$this->user->currentTeam->id}:filter:*";
-        $keys = $testObject->test($pattern);
+        $keys    = $testObject->test($pattern);
 
         // Then - Should find both filter keys
         $this->assertGreaterThanOrEqual(2, count($keys));
@@ -291,23 +299,24 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
 
         $runningWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now(),
+            'started_at'             => now(),
         ]);
 
         $completedWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
-            'started_at' => now()->subMinutes(5),
-            'completed_at' => now(),
+            'started_at'             => now()->subMinutes(5),
+            'completed_at'           => now(),
         ]);
 
         $filter = ['status' => WorkflowStatesContract::STATUS_RUNNING];
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
         ]);
 
         // When - Test running workflow
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($resourceType, $teamId, $model, $modelClass)
@@ -347,19 +356,20 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         // User1 subscribed via channel-wide using controller
         $this->actingAs($this->user)
             ->postJson('/api/pusher/subscribe', [
-                'resource_type' => 'WorkflowRun',
+                'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => true,
             ]);
 
         // User2 subscribed via model-specific using controller
         $this->actingAs($user2)
             ->postJson('/api/pusher/subscribe', [
-                'resource_type' => 'WorkflowRun',
+                'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => $workflowRun->id,
             ]);
 
         // When
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($resourceType, $teamId, $model, $modelClass)
@@ -391,12 +401,13 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         // Create subscription with invalid filter using controller (field that doesn't exist on model)
         $filter = ['invalid_field' => 'invalid_value'];
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
         ]);
 
         // When - Should not throw exception
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($resourceType, $teamId, $model, $modelClass)
@@ -418,12 +429,13 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         // Given - Create subscription using controller
         $filter = ['status' => WorkflowStatesContract::STATUS_RUNNING];
         $this->postJson('/api/pusher/subscribe', [
-            'resource_type' => 'WorkflowRun',
+            'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
         ]);
 
         // When
-        $testObject = new class {
+        $testObject = new class
+        {
             use BroadcastsWithSubscriptions;
 
             public function test($pattern)
@@ -433,7 +445,7 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         };
 
         $pattern = "subscribe:WorkflowRun:{$this->user->currentTeam->id}:filter:*";
-        $keys = $testObject->test($pattern);
+        $keys    = $testObject->test($pattern);
 
         // Then - Should return keys without cache prefix
         $this->assertIsArray($keys);

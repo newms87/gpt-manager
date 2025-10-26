@@ -19,6 +19,7 @@ use Newms87\Danx\Http\Controllers\ActionController;
 class BillingController extends ActionController
 {
     public static ?string $repo     = SubscriptionRepository::class;
+
     public static ?string $resource = SubscriptionResource::class;
 
     /**
@@ -109,7 +110,7 @@ class BillingController extends ActionController
             return response()->json([
                 'payment_method' => PaymentMethodResource::make($paymentMethod),
             ], 201);
-        } catch(\Newms87\Danx\Exceptions\ValidationError $e) {
+        } catch (\Newms87\Danx\Exceptions\ValidationError $e) {
             return response()->json([
                 'error' => $e->getMessage(),
             ], $e->getCode() ?: 400);

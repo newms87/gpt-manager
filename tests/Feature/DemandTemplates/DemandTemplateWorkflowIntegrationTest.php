@@ -30,9 +30,9 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Set up required workflow configurations
         config([
-            'ui-demands.workflows.extract_data' => 'Extract Service Dates',
+            'ui-demands.workflows.extract_data'          => 'Extract Service Dates',
             'ui-demands.workflows.write_medical_summary' => 'Write Medical Summary',
-            'ui-demands.workflows.write_demand_letter' => 'Write Demand Letter',
+            'ui-demands.workflows.write_demand_letter'   => 'Write Demand Letter',
         ]);
     }
 

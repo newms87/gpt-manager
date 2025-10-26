@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 class RemoveTeamCommand extends Command
 {
     protected $signature   = 'workspace:remove-team {team : Team ID or team name}';
+
     protected $description = 'Thoroughly remove a team and all related data (excluding users)';
 
     public function handle(): void
@@ -98,8 +99,8 @@ class RemoveTeamCommand extends Command
     private function confirmDeletion(Team $team): bool
     {
         $this->warn("\n⚠️  WARNING: This action cannot be undone!");
-        $this->warn("All data associated with this team will be permanently deleted.");
-        $this->warn("Users will NOT be deleted and can be reassigned to other teams.");
+        $this->warn('All data associated with this team will be permanently deleted.');
+        $this->warn('Users will NOT be deleted and can be reassigned to other teams.');
 
         $confirmation = $this->ask("Type the team name '{$team->name}' to confirm deletion:");
 
@@ -111,31 +112,31 @@ class RemoveTeamCommand extends Command
         $this->info("\n🗑️  Starting team removal process...");
 
         DB::transaction(function () use ($team) {
-            $this->info("1. Disabling foreign key constraints...");
+            $this->info('1. Disabling foreign key constraints...');
             DB::statement('SET CONSTRAINTS ALL DEFERRED;');
 
-            $this->info("2. Removing team-user relationships...");
+            $this->info('2. Removing team-user relationships...');
             $team->users()->detach();
 
-            $this->info("3. Force deleting ALL team-related data...");
+            $this->info('3. Force deleting ALL team-related data...');
             $this->forceDeleteAllTeamData($team);
 
-            $this->info("4. Deleting the team record...");
+            $this->info('4. Deleting the team record...');
             DB::table('teams')->where('id', $team->id)->delete();
 
-            $this->info("5. Re-enabling foreign key constraints...");
+            $this->info('5. Re-enabling foreign key constraints...');
             DB::statement('SET CONSTRAINTS ALL IMMEDIATE;');
 
-            $this->info("6. Final verification...");
+            $this->info('6. Final verification...');
             $this->verifyTeamDeletion($team->id);
         });
 
-        $this->info("✅ Team removal completed successfully!");
+        $this->info('✅ Team removal completed successfully!');
     }
 
     private function forceDeleteAllTeamData(Team $team): void
     {
-        $this->info("   Getting all team-related record IDs...");
+        $this->info('   Getting all team-related record IDs...');
 
         $agentIds              = DB::table('agents')->where('team_id', $team->id)->pluck('id');
         $agentThreadIds        = DB::table('agent_threads')->where('team_id', $team->id)->pluck('id');
@@ -154,7 +155,7 @@ class RemoveTeamCommand extends Command
         $taskProcessIds = $taskRunIds->isNotEmpty() ?
             DB::table('task_processes')->whereIn('task_run_id', $taskRunIds)->pluck('id') : collect();
 
-        $this->info("   Force deleting in dependency order...");
+        $this->info('   Force deleting in dependency order...');
 
         $deletionPlan = [
             'agent_thread_messageables'     => ['agent_thread_message_id', $messageIds],
@@ -189,7 +190,7 @@ class RemoveTeamCommand extends Command
             'resource_package_imports'      => ['team_id', [$team->id]],
         ];
 
-        foreach($deletionPlan as $table => $deleteInfo) {
+        foreach ($deletionPlan as $table => $deleteInfo) {
             [$column, $ids] = $deleteInfo;
 
             if (is_array($ids)) {
@@ -208,7 +209,7 @@ class RemoveTeamCommand extends Command
 
     private function verifyTeamDeletion(int $teamId): void
     {
-        $this->info("   Verifying complete team removal...");
+        $this->info('   Verifying complete team removal...');
 
         $verificationTables = [
             'teams',
@@ -228,7 +229,7 @@ class RemoveTeamCommand extends Command
         ];
 
         $totalRemaining = 0;
-        foreach($verificationTables as $table) {
+        foreach ($verificationTables as $table) {
             if (DB::getSchemaBuilder()->hasTable($table)) {
                 $count = DB::table($table)->where('team_id', $teamId)->count();
                 if ($count > 0) {
@@ -239,7 +240,7 @@ class RemoveTeamCommand extends Command
         }
 
         if ($totalRemaining === 0) {
-            $this->info("   ✅ All team data successfully removed!");
+            $this->info('   ✅ All team data successfully removed!');
         } else {
             $this->error("   ❌ {$totalRemaining} total records still remain - something went wrong");
         }

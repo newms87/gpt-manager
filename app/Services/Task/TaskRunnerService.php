@@ -38,8 +38,7 @@ class TaskRunnerService
     /**
      * Prepare task processes for the task run. Each process will receive its own Artifacts / AgentThread
      * based on the input groups and the assigned schema associations for the TaskDefinition
-     * @param TaskRun $taskRun
-     * @return array
+     *
      * @throws ValidationError
      */
     public static function prepareTaskProcesses(TaskRun $taskRun): array
@@ -67,12 +66,11 @@ class TaskRunnerService
 
         $artifacts = $query->get();
 
-
         // Split up the artifacts into the groups defined by the task definition
         $artifactGroups = ArtifactsSplitterService::split($taskDefinition->input_artifact_mode ?: '', $artifacts, $taskDefinition->input_artifact_levels);
 
-        foreach($schemaAssociations as $schemaAssociation) {
-            foreach($artifactGroups as $artifactsInGroup) {
+        foreach ($schemaAssociations as $schemaAssociation) {
+            foreach ($artifactGroups as $artifactsInGroup) {
                 $taskProcesses[] = TaskProcessRunnerService::prepare($taskRun, $schemaAssociation, $artifactsInGroup);
             }
         }
@@ -109,13 +107,13 @@ class TaskRunnerService
             }
 
             if ($taskRun->taskProcesses->isEmpty()) {
-                static::log("No task processes found. Skipping execution");
+                static::log('No task processes found. Skipping execution');
 
                 return;
             }
 
             if ($taskRun->isStatusPending()) {
-                static::log("TaskRun was Pending, starting now...");
+                static::log('TaskRun was Pending, starting now...');
                 // Only start the task run if it is pending
                 $taskRun->started_at = now();
                 $taskRun->save();
@@ -181,7 +179,7 @@ class TaskRunnerService
         }
 
         // Loop through all the source nodes of the target node to gather the output artifacts of each one
-        foreach($taskRun->workflowNode->connectionsAsTarget as $connectionAsTarget) {
+        foreach ($taskRun->workflowNode->connectionsAsTarget as $connectionAsTarget) {
             $outputArtifacts = $taskRun->workflowRun->collectOutputArtifactsForNode($connectionAsTarget->sourceNode);
 
             // Indicate the source task definition for these artifacts so the task run knows the relationship w/ these artifacts and can apply filters, etc.
@@ -200,7 +198,7 @@ class TaskRunnerService
 
         try {
             if (!$taskRun->isStopped() && !$taskRun->isStatusPending()) {
-                static::log("TaskRun is not stopped, skipping resume");
+                static::log('TaskRun is not stopped, skipping resume');
 
                 return;
             }
@@ -208,7 +206,7 @@ class TaskRunnerService
             $taskRun->stopped_at = null;
             $taskRun->save();
 
-            foreach($taskRun->taskProcesses as $taskProcess) {
+            foreach ($taskRun->taskProcesses as $taskProcess) {
                 if ($taskProcess->isStatusStopped()) {
                     $taskProcess->stopped_at           = null;
                     $taskProcess->timeout_at           = null;
@@ -235,12 +233,12 @@ class TaskRunnerService
 
         try {
             if ($taskRun->isStopped()) {
-                static::log("TaskRun is already stopped");
+                static::log('TaskRun is already stopped');
 
                 return;
             }
 
-            foreach($taskRun->taskProcesses as $taskProcess) {
+            foreach ($taskRun->taskProcesses as $taskProcess) {
                 if (!$taskProcess->isCompleted() && !$taskProcess->isStopped() && !$taskProcess->isFailedAndCannotBeRetried()) {
                     $taskProcess->stopped_at = now();
                     $taskProcess->save();
@@ -269,7 +267,7 @@ class TaskRunnerService
 
         $taskRun->getRunner()->afterAllProcessesCompleted();
 
-        static::log("Finished afterAllProcessesCompleted");
+        static::log('Finished afterAllProcessesCompleted');
 
         // If additional task processes were created by the task runner, skip completing the task run and starting the next nodes in the workflow
         if (!$taskRun->refresh()->isCompleted()) {
@@ -291,10 +289,10 @@ class TaskRunnerService
     public static function validateArtifacts($artifacts): void
     {
         // Validate the artifacts are all Artifact instances
-        foreach($artifacts as $artifact) {
+        foreach ($artifacts as $artifact) {
             // Only accept Artifact instances here. The input should have already converted content into an Artifact
             if (!($artifact instanceof Artifact)) {
-                throw new ValidationError("Invalid artifact provided: All artifacts should be an instance of Artifact: " . (is_object($artifact) ? get_class($artifact) : json_encode($artifact)));
+                throw new ValidationError('Invalid artifact provided: All artifacts should be an instance of Artifact: ' . (is_object($artifact) ? get_class($artifact) : json_encode($artifact)));
             }
         }
     }
@@ -305,7 +303,7 @@ class TaskRunnerService
         $taskRunners     = [];
         $taskRunnerFiles = glob(app_path('Services/Task/Runners/*TaskRunner.php'));
 
-        foreach($taskRunnerFiles as $taskRunnerFile) {
+        foreach ($taskRunnerFiles as $taskRunnerFile) {
             $className = 'App\\Services\\Task\\Runners\\' . basename($taskRunnerFile, '.php');
             if (class_exists($className)) {
                 $taskRunners[$className::RUNNER_NAME] = $className;

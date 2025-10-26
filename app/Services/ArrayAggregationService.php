@@ -30,7 +30,7 @@ class ArrayAggregationService
      * Supports both numeric values and ISO date strings.
      * Returns the largest numeric value or the latest date.
      *
-     * @param array $values Array of values to aggregate
+     * @param  array  $values  Array of values to aggregate
      * @return string The maximum value as a string
      */
     public function max(array $values): string
@@ -44,7 +44,7 @@ class ArrayAggregationService
      * Supports both numeric values and ISO date strings.
      * Returns the smallest numeric value or the earliest date.
      *
-     * @param array $values Array of values to aggregate
+     * @param  array  $values  Array of values to aggregate
      * @return string The minimum value as a string
      */
     public function min(array $values): string
@@ -58,7 +58,7 @@ class ArrayAggregationService
      * Only supports numeric values (dates not supported for averaging).
      * Non-numeric values are filtered out automatically.
      *
-     * @param array $values Array of values to aggregate
+     * @param  array  $values  Array of values to aggregate
      * @return string The average value as a string
      */
     public function avg(array $values): string
@@ -72,7 +72,7 @@ class ArrayAggregationService
      * Only supports numeric values (dates not supported for summing).
      * Non-numeric values are filtered out automatically.
      *
-     * @param array $values Array of values to aggregate
+     * @param  array  $values  Array of values to aggregate
      * @return string The sum as a string
      */
     public function sum(array $values): string
@@ -83,9 +83,9 @@ class ArrayAggregationService
     /**
      * Calculate aggregate value from array
      *
-     * @param array $values Array of values to aggregate
-     * @param string $operation The operation type: 'max', 'min', 'avg', 'sum'
-     * @param bool $supportsDates Whether to try parsing dates first (only for MAX/MIN)
+     * @param  array  $values  Array of values to aggregate
+     * @param  string  $operation  The operation type: 'max', 'min', 'avg', 'sum'
+     * @param  bool  $supportsDates  Whether to try parsing dates first (only for MAX/MIN)
      * @return string The calculated aggregate value
      */
     protected function calculateAggregate(
@@ -101,6 +101,7 @@ class ArrayAggregationService
             if (!empty($dateValues)) {
                 $result = $operation === 'max' ? max($dateValues) : min($dateValues);
                 static::log("{$operation} calculated from dates", ['result' => $result]);
+
                 return $result;
             }
         }
@@ -109,6 +110,7 @@ class ArrayAggregationService
         $numericValues = $this->extractNumericValues($values);
         if (empty($numericValues)) {
             static::log("{$operation}: No valid numeric values found, returning 0");
+
             return '0';
         }
 
@@ -120,8 +122,8 @@ class ArrayAggregationService
         };
 
         static::log("{$operation} calculated", [
-            'result' => $result,
-            'valid_count' => count($numericValues)
+            'result'      => $result,
+            'valid_count' => count($numericValues),
         ]);
 
         return $result;
@@ -137,13 +139,13 @@ class ArrayAggregationService
      * - Scientific notation: "1.5e3", "2E2"
      * - Numbers with spaces/commas: "1 234.56", "1,234.56"
      *
-     * @param array $values Array of values to extract numerics from
+     * @param  array  $values  Array of values to extract numerics from
      * @return array Array of float values
      */
     protected function extractNumericValues(array $values): array
     {
         $numericValues = [];
-        $skippedCount = 0;
+        $skippedCount  = 0;
 
         foreach ($values as $value) {
             $parsed = $this->parseNumericValue($value);
@@ -153,13 +155,13 @@ class ArrayAggregationService
                 $skippedCount++;
                 static::log('Skipped non-numeric value', [
                     'value' => substr((string)$value, 0, 100),
-                    'type' => gettype($value),
+                    'type'  => gettype($value),
                 ]);
             }
         }
 
         static::log('Extracted numeric values', [
-            'total_values' => count($values),
+            'total_values'  => count($values),
             'numeric_count' => count($numericValues),
             'skipped_count' => $skippedCount,
         ]);
@@ -178,7 +180,7 @@ class ArrayAggregationService
      * - Negative numbers
      * - Scientific notation (1.5e3)
      *
-     * @param mixed $value Value to parse
+     * @param  mixed  $value  Value to parse
      * @return float|null The parsed numeric value or null if not parseable
      */
     public function parseNumericValue(mixed $value): ?float
@@ -224,7 +226,7 @@ class ArrayAggregationService
      * Only returns values if ALL values in the array are valid dates.
      * This ensures we don't mix date and numeric comparisons.
      *
-     * @param array $values Array of values to parse
+     * @param  array  $values  Array of values to parse
      * @return array Array of ISO date strings or empty array if not all are dates
      */
     protected function parseDateValues(array $values): array
@@ -247,7 +249,7 @@ class ArrayAggregationService
      * Currently supports ISO format (YYYY-MM-DD) at the beginning of the string.
      * Can be extended to support other date formats as needed.
      *
-     * @param mixed $value Value to parse
+     * @param  mixed  $value  Value to parse
      * @return string|null The parsed ISO date string or null if not a date
      */
     protected function parseDate(mixed $value): ?string

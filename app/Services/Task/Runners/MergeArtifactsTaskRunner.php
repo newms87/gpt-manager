@@ -14,7 +14,7 @@ class MergeArtifactsTaskRunner extends BaseTaskRunner
 
         $outputArtifacts = [];
 
-        foreach($groupedArtifacts as $artifactsInGroup) {
+        foreach ($groupedArtifacts as $artifactsInGroup) {
             $outputArtifacts[] = app(ArtifactsMergeService::class)->merge($artifactsInGroup);
         }
 
@@ -31,17 +31,17 @@ class MergeArtifactsTaskRunner extends BaseTaskRunner
 
         $artifacts = $this->taskProcess->inputArtifacts;
 
-        static::log("Merging " . $artifacts->count() . " artifacts:\n" . $artifacts->pluck('id')->implode(','));
+        static::log('Merging ' . $artifacts->count() . " artifacts:\n" . $artifacts->pluck('id')->implode(','));
 
         if (!$metaFragmentSelector && !$jsonContentFragmentSelector) {
-            static::log("No fragment selectors applied, merging full artifacts...");
+            static::log('No fragment selectors applied, merging full artifacts...');
 
             return ['default' => $artifacts];
         }
 
         $artifactsByGroup = [];
 
-        foreach($artifacts as $inputArtifact) {
+        foreach ($artifacts as $inputArtifact) {
             $jsonContentKey = $inputArtifact->getFlattenedJsonFragmentValuesString($jsonContentFragmentSelector);
             $metaKey        = $inputArtifact->getFlattenedMetaFragmentValuesString($metaFragmentSelector);
             $groupKey       = "$jsonContentKey;$metaKey";

@@ -10,8 +10,10 @@ use Tests\TestCase;
 class StripePaymentServiceTest extends TestCase
 {
     private StripePaymentService $stripeService;
-    private Team                 $team;
-    private StripeApi            $mockStripeApi;
+
+    private Team $team;
+
+    private StripeApi $mockStripeApi;
 
     public function setUp(): void
     {

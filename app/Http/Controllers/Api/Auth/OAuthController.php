@@ -14,6 +14,7 @@ use Newms87\Danx\Http\Controllers\ActionController;
 class OAuthController extends ActionController
 {
     public static ?string $repo     = AuthTokenRepository::class;
+
     public static ?string $resource = AuthTokenResource::class;
 
     /**
@@ -101,7 +102,7 @@ class OAuthController extends ActionController
      */
     public function status(Request $request, string $service): JsonResponse
     {
-        $oauthService = app(OAuthService::class);
+        $oauthService   = app(OAuthService::class);
         $shouldValidate = $request->query('validate') === 'true';
 
         // If validation is requested, use the full API validation
@@ -141,7 +142,7 @@ class OAuthController extends ActionController
     public function validate(string $service): JsonResponse
     {
         $oauthService = app(OAuthService::class);
-        $result = $oauthService->validateTokenWithApi($service);
+        $result       = $oauthService->validateTokenWithApi($service);
 
         return response()->json($result);
     }
@@ -182,7 +183,7 @@ class OAuthController extends ActionController
 
             return response()->json(AuthTokenResource::data($refreshedToken));
 
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             if ($e instanceof ValidationError) {
                 throw $e;
             }
@@ -290,7 +291,7 @@ class OAuthController extends ActionController
                 if (!$team) {
                     return ['error' => true, 'message' => 'Invalid team ID in OAuth callback state', 'status' => 403];
                 }
-            } catch(\Exception $e) {
+            } catch (\Exception $e) {
                 return ['error' => true, 'message' => 'Invalid team ID in OAuth callback state', 'status' => 403];
             }
 
@@ -303,7 +304,7 @@ class OAuthController extends ActionController
 
             return [$service, $team, $redirectUrl];
 
-        } catch(\Exception $e) {
+        } catch (\Exception $e) {
             return ['error' => true, 'message' => 'Failed to validate OAuth state parameter', 'status' => 400];
         }
     }

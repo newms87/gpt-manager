@@ -434,7 +434,7 @@ class WorkflowBuilderChatTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = (string) $chat;
+        $result = (string)$chat;
 
         // Then
         $expected = "<WorkflowBuilderChat id='{$chat->id}' status='analyzing_plan' workflow_input_id='{$chat->workflow_input_id}'>";

@@ -28,8 +28,8 @@ class ContentSourceRepository extends ActionRepository
     {
         return match ($action) {
             'create' => $this->create($data),
-            'fetch' => $this->fetch($model),
-            default => parent::applyAction($action, $model, $data)
+            'fetch'  => $this->fetch($model),
+            default  => parent::applyAction($action, $model, $data)
         };
     }
 

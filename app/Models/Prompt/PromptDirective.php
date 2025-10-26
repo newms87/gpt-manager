@@ -23,7 +23,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class PromptDirective extends Model implements AuditableContract, ResourcePackageableContract
 {
-    use HasFactory, ActionModelTrait, AuditableTrait, ResourcePackageableTrait, HasRelationCountersTrait, SoftDeletes, KeywordSearchTrait;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasRelationCountersTrait, KeywordSearchTrait, ResourcePackageableTrait, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -62,7 +62,6 @@ class PromptDirective extends Model implements AuditableContract, ResourcePackag
 
         return parent::delete();
     }
-
 
     public function validate(): static
     {

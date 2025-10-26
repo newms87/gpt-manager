@@ -8,23 +8,22 @@ use App\Exceptions\Auth\TokenExpiredException;
 use App\Exceptions\Auth\TokenRevokedException;
 use App\Models\Auth\AuthToken;
 use App\Services\Auth\OAuthService;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Newms87\Danx\Exceptions\ApiException;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
-use GuzzleHttp\Client;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Psr7\Request;
 
 class GoogleDocsApiTest extends AuthenticatedTestCase
 {
     use SetUpTeamTrait;
 
     protected GoogleDocsApi $api;
+
     protected $team;
 
     public function setUp(): void
@@ -32,21 +31,21 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
         parent::setUp();
         $this->setUpTeam();
         $this->team = $this->user->currentTeam;
-        $this->api = new GoogleDocsApi();
+        $this->api  = new GoogleDocsApi();
 
         // Mock Google OAuth configuration for token refresh
         Config::set('auth.oauth.google', [
-            'client_id' => 'test_client_id',
+            'client_id'     => 'test_client_id',
             'client_secret' => 'test_client_secret',
-            'redirect_uri' => 'http://localhost/api/oauth/callback',
-            'auth_url' => 'https://accounts.google.com/o/oauth2/v2/auth',
-            'token_url' => 'https://oauth2.googleapis.com/token',
-            'revoke_url' => 'https://oauth2.googleapis.com/revoke',
-            'scopes' => [
+            'redirect_uri'  => 'http://localhost/api/oauth/callback',
+            'auth_url'      => 'https://accounts.google.com/o/oauth2/v2/auth',
+            'token_url'     => 'https://oauth2.googleapis.com/token',
+            'revoke_url'    => 'https://oauth2.googleapis.com/revoke',
+            'scopes'        => [
                 'https://www.googleapis.com/auth/documents',
-                'https://www.googleapis.com/auth/drive'
+                'https://www.googleapis.com/auth/drive',
             ],
-            'access_type' => 'offline'
+            'access_type' => 'offline',
         ]);
     }
 
@@ -54,7 +53,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_access_token'
+            'access_token' => 'oauth_access_token',
         ]);
 
         // When
@@ -81,7 +80,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->expired()->create([
-            'refresh_token' => null
+            'refresh_token' => null,
         ]);
 
         // Then
@@ -129,13 +128,13 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $token = AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'initial_token'
+            'access_token' => 'initial_token',
         ]);
-        
+
         // Initialize once
         $headers1 = $this->api->getRequestHeaders();
         $this->assertEquals('Bearer initial_token', $headers1['Authorization']);
-        
+
         // Update token
         $token->update(['access_token' => 'updated_token']);
 
@@ -152,7 +151,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
         // Given
         $accessToken = 'oauth_access_token';
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => $accessToken
+            'access_token' => $accessToken,
         ]);
 
         // When
@@ -169,16 +168,16 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $originalToken = AuthToken::factory()->google()->forTeam($this->team)->expiresSoon()->create([
-            'access_token' => 'old_token',
-            'refresh_token' => 'refresh_token'
+            'access_token'  => 'old_token',
+            'refresh_token' => 'refresh_token',
         ]);
-        
+
         // Mock refresh response
         Http::fake([
             'https://oauth2.googleapis.com/token' => Http::response([
                 'access_token' => 'new_access_token',
-                'expires_in' => 3600,
-            ], 200)
+                'expires_in'   => 3600,
+            ], 200),
         ]);
 
         // When
@@ -192,22 +191,22 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->expiresSoon()->create([
-            'access_token' => 'old_token',
-            'refresh_token' => 'refresh_token'
+            'access_token'  => 'old_token',
+            'refresh_token' => 'refresh_token',
         ]);
-        
+
         // Mock refresh failure with invalid_grant (token revoked)
         Http::fake([
             'https://oauth2.googleapis.com/token' => Http::response([
-                'error' => 'invalid_grant',
-                'error_description' => 'Token has been revoked'
-            ], 400)
+                'error'             => 'invalid_grant',
+                'error_description' => 'Token has been revoked',
+            ], 400),
         ]);
 
         // When & Then
         $this->expectException(ApiException::class);
         $this->expectExceptionMessage('OAuth token for google');
-        
+
         $this->api->getRequestHeaders();
     }
 
@@ -215,32 +214,32 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
-        
-        $documentId = 'test_document_id';
+
+        $documentId      = 'test_document_id';
         $documentContent = [
             'title' => 'Test Document',
-            'body' => [
+            'body'  => [
                 'content' => [
                     [
                         'paragraph' => [
                             'elements' => [
-                                ['textRun' => ['content' => 'Test content']]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                ['textRun' => ['content' => 'Test content']],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
-        
+
         // Create mock Guzzle client
         $mock = new MockHandler([
-            new Response(200, [], json_encode($documentContent))
+            new Response(200, [], json_encode($documentContent)),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $mockClient = new Client(['handler' => $handlerStack]);
-        
+        $mockClient   = new Client(['handler' => $handlerStack]);
+
         // Set mock client on API
         $this->api->setOverrideClient($mockClient);
 
@@ -274,10 +273,10 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     public function test_replaceVariables_replacesAllVariables(): void
     {
         // Given
-        $content = 'Hello {{name}}, your order {{order_id}} is ready.';
+        $content  = 'Hello {{name}}, your order {{order_id}} is ready.';
         $mappings = [
-            'name' => 'John Doe',
-            'order_id' => '12345'
+            'name'     => 'John Doe',
+            'order_id' => '12345',
         ];
 
         // When
@@ -291,14 +290,14 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
-        
+
         Http::fake([
             'https://www.googleapis.com/drive/v3/files' => Http::response([
-                'id' => 'new_doc_id'
+                'id' => 'new_doc_id',
             ], 200),
-            'https://docs.googleapis.com/v1/documents/new_doc_id:batchUpdate' => Http::response([], 200)
+            'https://docs.googleapis.com/v1/documents/new_doc_id:batchUpdate' => Http::response([], 200),
         ]);
 
         // When
@@ -314,29 +313,29 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
-        
-        $templateId = 'template_id';
+
+        $templateId       = 'template_id';
         $variableMappings = [
             'name' => 'John Doe',
-            'date' => '2024-01-01'
+            'date' => '2024-01-01',
         ];
-        
+
         // Mock Laravel HTTP facade for Drive API calls
         Http::fake([
             "https://www.googleapis.com/drive/v3/files/$templateId/copy" => Http::response([
-                'id' => 'copied_doc_id'
-            ], 200)
+                'id' => 'copied_doc_id',
+            ], 200),
         ]);
-        
+
         // Create mock Guzzle client for Docs API calls (batch update)
         $mock = new MockHandler([
-            new Response(200, [], json_encode([]))
+            new Response(200, [], json_encode([])),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $mockClient = new Client(['handler' => $handlerStack]);
-        
+        $mockClient   = new Client(['handler' => $handlerStack]);
+
         // Set mock client on API
         $this->api->setOverrideClient($mockClient);
 
@@ -355,32 +354,32 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
-        
-        $templateId = 'template_id';
+
+        $templateId      = 'template_id';
         $documentContent = [
             'title' => 'Template',
-            'body' => [
+            'body'  => [
                 'content' => [
                     [
                         'paragraph' => [
                             'elements' => [
-                                ['textRun' => ['content' => 'Hello {{customer_name}}, your {{product}} is ready.']]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                ['textRun' => ['content' => 'Hello {{customer_name}}, your {{product}} is ready.']],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
-        
+
         // Create mock Guzzle client
         $mock = new MockHandler([
-            new Response(200, [], json_encode($documentContent))
+            new Response(200, [], json_encode($documentContent)),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $mockClient = new Client(['handler' => $handlerStack]);
-        
+        $mockClient   = new Client(['handler' => $handlerStack]);
+
         // Set mock client on API
         $this->api->setOverrideClient($mockClient);
 
@@ -402,22 +401,22 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'expired_token',
+            'access_token'  => 'expired_token',
             'refresh_token' => 'invalid_refresh_token',
-            'expires_at' => now()->subHour(),
+            'expires_at'    => now()->subHour(),
         ]);
 
         Http::fake([
             'https://oauth2.googleapis.com/token' => Http::response([
-                'error' => 'invalid_grant',
-                'error_description' => 'Token has been revoked'
-            ], 400)
+                'error'             => 'invalid_grant',
+                'error_description' => 'Token has been revoked',
+            ], 400),
         ]);
 
         // When & Then
         $this->expectException(ApiException::class);
         $this->expectExceptionMessage('OAuth token for google');
-        
+
         $this->api->getRequestHeaders();
     }
 
@@ -425,7 +424,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given - Use reflection to test specific exception handling
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('initializeAuthentication');
+        $method     = $reflection->getMethod('initializeAuthentication');
         $method->setAccessible(true);
 
         // Mock OAuthService to throw NoTokenFoundException
@@ -440,7 +439,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
         $this->expectException(ApiException::class);
         $this->expectExceptionMessage('No OAuth token found for google for team ' . $this->team->id);
         $this->expectExceptionCode(404);
-        
+
         $method->invoke($this->api);
     }
 
@@ -448,7 +447,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('initializeAuthentication');
+        $method     = $reflection->getMethod('initializeAuthentication');
         $method->setAccessible(true);
 
         // Mock OAuthService to throw TokenExpiredException
@@ -463,7 +462,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
         $this->expectException(ApiException::class);
         $this->expectExceptionMessage('OAuth token for google for team ' . $this->team->id . ' has expired');
         $this->expectExceptionCode(401);
-        
+
         $method->invoke($this->api);
     }
 
@@ -471,7 +470,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('initializeAuthentication');
+        $method     = $reflection->getMethod('initializeAuthentication');
         $method->setAccessible(true);
 
         // Mock OAuthService to throw TokenRevokedException
@@ -486,7 +485,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
         $this->expectException(ApiException::class);
         $this->expectExceptionMessage('OAuth token for google for team ' . $this->team->id . ' has been revoked');
         $this->expectExceptionCode(401);
-        
+
         $method->invoke($this->api);
     }
 
@@ -494,31 +493,31 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'expired_token',
+            'access_token'  => 'expired_token',
             'refresh_token' => 'valid_refresh_token',
-            'expires_at' => now()->subHour(),
+            'expires_at'    => now()->subHour(),
         ]);
 
         Http::fake([
             'https://oauth2.googleapis.com/token' => Http::response([
                 'access_token' => 'refreshed_access_token',
-                'expires_in' => 3600,
-                'scope' => 'https://www.googleapis.com/auth/documents'
-            ], 200)
+                'expires_in'   => 3600,
+                'scope'        => 'https://www.googleapis.com/auth/documents',
+            ], 200),
         ]);
 
         // When
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('initializeAuthentication');
+        $method     = $reflection->getMethod('initializeAuthentication');
         $method->setAccessible(true);
-        
+
         $method->invoke($this->api);
 
         // Then
         $accessTokenProperty = $reflection->getProperty('accessToken');
         $accessTokenProperty->setAccessible(true);
         $accessToken = $accessTokenProperty->getValue($this->api);
-        
+
         $this->assertEquals('refreshed_access_token', $accessToken);
     }
 
@@ -528,7 +527,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('containsMarkdown');
+        $method     = $reflection->getMethod('containsMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -542,7 +541,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('containsMarkdown');
+        $method     = $reflection->getMethod('containsMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -556,7 +555,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('containsMarkdown');
+        $method     = $reflection->getMethod('containsMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -570,7 +569,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('containsMarkdown');
+        $method     = $reflection->getMethod('containsMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -584,7 +583,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseMarkdown');
+        $method     = $reflection->getMethod('parseMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -602,7 +601,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseMarkdown');
+        $method     = $reflection->getMethod('parseMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -618,7 +617,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseMarkdown');
+        $method     = $reflection->getMethod('parseMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -636,7 +635,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseMarkdown');
+        $method     = $reflection->getMethod('parseMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -652,7 +651,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseMarkdown');
+        $method     = $reflection->getMethod('parseMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -668,7 +667,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseMarkdown');
+        $method     = $reflection->getMethod('parseMarkdown');
         $method->setAccessible(true);
 
         $markdown = "# Summary\n\n**Patient:** John Doe\n\nThis is *important* text.";
@@ -685,7 +684,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseMarkdown');
+        $method     = $reflection->getMethod('parseMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -701,7 +700,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseMarkdown');
+        $method     = $reflection->getMethod('parseMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -717,7 +716,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseMarkdown');
+        $method     = $reflection->getMethod('parseMarkdown');
         $method->setAccessible(true);
 
         // When
@@ -734,7 +733,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseInlineFormatting');
+        $method     = $reflection->getMethod('parseInlineFormatting');
         $method->setAccessible(true);
 
         $formats = [];
@@ -751,7 +750,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('findTextPosition');
+        $method     = $reflection->getMethod('findTextPosition');
         $method->setAccessible(true);
 
         $document = [
@@ -762,16 +761,16 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
                             'elements' => [
                                 [
                                     'textRun' => [
-                                        'content' => 'Some content here'
+                                        'content' => 'Some content here',
                                     ],
                                     'startIndex' => 10,
-                                    'endIndex' => 27
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                    'endIndex'   => 27,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         // When
@@ -785,7 +784,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('findTextPosition');
+        $method     = $reflection->getMethod('findTextPosition');
         $method->setAccessible(true);
 
         $document = [
@@ -796,16 +795,16 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
                             'elements' => [
                                 [
                                     'textRun' => [
-                                        'content' => 'Some content here'
+                                        'content' => 'Some content here',
                                     ],
                                     'startIndex' => 10,
-                                    'endIndex' => 27
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                    'endIndex'   => 27,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         // When
@@ -819,21 +818,21 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
 
         $documentId = 'test_doc_id';
-        $mappings = [
+        $mappings   = [
             'name' => 'John Doe',
-            'age' => '30'
+            'age'  => '30',
         ];
 
         // Create mock Guzzle client
         $mock = new MockHandler([
-            new Response(200, [], json_encode([]))
+            new Response(200, [], json_encode([])),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $mockClient = new Client(['handler' => $handlerStack]);
+        $mockClient   = new Client(['handler' => $handlerStack]);
 
         // Set mock client on API
         $this->api->setOverrideClient($mockClient);
@@ -843,7 +842,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('replaceVariablesInDocument');
+        $method     = $reflection->getMethod('replaceVariablesInDocument');
         $method->setAccessible(true);
 
         // When - Should not throw exception
@@ -857,12 +856,12 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
 
         $documentId = 'test_doc_id';
-        $mappings = [
-            'summary' => '# Summary\n\n**Patient:** John Doe'
+        $mappings   = [
+            'summary' => '# Summary\n\n**Patient:** John Doe',
         ];
 
         // Create mock Guzzle client - needs multiple responses
@@ -878,22 +877,22 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
                                 'elements' => [
                                     [
                                         'textRun' => [
-                                            'content' => 'Summary'
+                                            'content' => 'Summary',
                                         ],
                                         'startIndex' => 1,
-                                        'endIndex' => 8
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
+                                        'endIndex'   => 8,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
             ])),
             // Third for applying formatting
-            new Response(200, [], json_encode([]))
+            new Response(200, [], json_encode([])),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $mockClient = new Client(['handler' => $handlerStack]);
+        $mockClient   = new Client(['handler' => $handlerStack]);
 
         // Set mock client on API
         $this->api->setOverrideClient($mockClient);
@@ -903,7 +902,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('replaceVariablesInDocument');
+        $method     = $reflection->getMethod('replaceVariablesInDocument');
         $method->setAccessible(true);
 
         // When - Should not throw exception
@@ -917,21 +916,21 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
 
         $documentId = 'test_doc_id';
-        $mappings = [
+        $mappings   = [
             'name' => 'John Doe',
-            'age' => '30'
+            'age'  => '30',
         ];
 
         // Create mock Guzzle client
         $mock = new MockHandler([
-            new Response(200, [], json_encode([]))
+            new Response(200, [], json_encode([])),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $mockClient = new Client(['handler' => $handlerStack]);
+        $mockClient   = new Client(['handler' => $handlerStack]);
 
         // Set mock client on API
         $this->api->setOverrideClient($mockClient);
@@ -941,7 +940,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('replaceVariablesWithPlainText');
+        $method     = $reflection->getMethod('replaceVariablesWithPlainText');
         $method->setAccessible(true);
 
         // When - Should not throw exception
@@ -955,25 +954,25 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
 
         $documentId = 'test_doc_id';
-        $baseIndex = 10;
-        $formats = [
+        $baseIndex  = 10;
+        $formats    = [
             [
-                'type' => 'bold',
+                'type'  => 'bold',
                 'start' => 0,
-                'end' => 10
-            ]
+                'end'   => 10,
+            ],
         ];
 
         // Create mock Guzzle client
         $mock = new MockHandler([
-            new Response(200, [], json_encode([]))
+            new Response(200, [], json_encode([])),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $mockClient = new Client(['handler' => $handlerStack]);
+        $mockClient   = new Client(['handler' => $handlerStack]);
 
         // Set mock client on API
         $this->api->setOverrideClient($mockClient);
@@ -983,7 +982,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('applyFormattingToText');
+        $method     = $reflection->getMethod('applyFormattingToText');
         $method->setAccessible(true);
 
         // When - Should not throw exception
@@ -997,25 +996,25 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
 
         $documentId = 'test_doc_id';
-        $baseIndex = 10;
-        $formats = [
+        $baseIndex  = 10;
+        $formats    = [
             [
-                'type' => 'italic',
+                'type'  => 'italic',
                 'start' => 0,
-                'end' => 10
-            ]
+                'end'   => 10,
+            ],
         ];
 
         // Create mock Guzzle client
         $mock = new MockHandler([
-            new Response(200, [], json_encode([]))
+            new Response(200, [], json_encode([])),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $mockClient = new Client(['handler' => $handlerStack]);
+        $mockClient   = new Client(['handler' => $handlerStack]);
 
         // Set mock client on API
         $this->api->setOverrideClient($mockClient);
@@ -1025,7 +1024,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('applyFormattingToText');
+        $method     = $reflection->getMethod('applyFormattingToText');
         $method->setAccessible(true);
 
         // When - Should not throw exception
@@ -1039,25 +1038,25 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
 
         $documentId = 'test_doc_id';
-        $baseIndex = 1;
-        $formats = [
+        $baseIndex  = 1;
+        $formats    = [
             [
-                'type' => 'heading1',
+                'type'  => 'heading1',
                 'start' => 0,
-                'end' => 10
-            ]
+                'end'   => 10,
+            ],
         ];
 
         // Create mock Guzzle client
         $mock = new MockHandler([
-            new Response(200, [], json_encode([]))
+            new Response(200, [], json_encode([])),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $mockClient = new Client(['handler' => $handlerStack]);
+        $mockClient   = new Client(['handler' => $handlerStack]);
 
         // Set mock client on API
         $this->api->setOverrideClient($mockClient);
@@ -1067,7 +1066,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('applyFormattingToText');
+        $method     = $reflection->getMethod('applyFormattingToText');
         $method->setAccessible(true);
 
         // When - Should not throw exception
@@ -1081,35 +1080,35 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
     {
         // Given
         AuthToken::factory()->google()->forTeam($this->team)->create([
-            'access_token' => 'oauth_token'
+            'access_token' => 'oauth_token',
         ]);
 
         $documentId = 'test_doc_id';
-        $baseIndex = 1;
-        $formats = [
+        $baseIndex  = 1;
+        $formats    = [
             [
-                'type' => 'heading1',
+                'type'  => 'heading1',
                 'start' => 0,
-                'end' => 10
+                'end'   => 10,
             ],
             [
-                'type' => 'bold',
+                'type'  => 'bold',
                 'start' => 12,
-                'end' => 20
+                'end'   => 20,
             ],
             [
-                'type' => 'italic',
+                'type'  => 'italic',
                 'start' => 25,
-                'end' => 35
-            ]
+                'end'   => 35,
+            ],
         ];
 
         // Create mock Guzzle client
         $mock = new MockHandler([
-            new Response(200, [], json_encode([]))
+            new Response(200, [], json_encode([])),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $mockClient = new Client(['handler' => $handlerStack]);
+        $mockClient   = new Client(['handler' => $handlerStack]);
 
         // Set mock client on API
         $this->api->setOverrideClient($mockClient);
@@ -1119,7 +1118,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
 
         // Use reflection to test protected method
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('applyFormattingToText');
+        $method     = $reflection->getMethod('applyFormattingToText');
         $method->setAccessible(true);
 
         // When - Should not throw exception
@@ -1136,7 +1135,7 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
 
         // When
         $reflection = new \ReflectionClass($this->api);
-        $method = $reflection->getMethod('parseMarkdown');
+        $method     = $reflection->getMethod('parseMarkdown');
         $method->setAccessible(true);
         $result = $method->invoke($this->api, $markdown);
 
@@ -1151,17 +1150,17 @@ class GoogleDocsApiTest extends AuthenticatedTestCase
 
         // First bold section should start at position 0 and include full text (59 chars)
         $this->assertEquals([
-            'type' => 'bold',
+            'type'  => 'bold',
             'start' => 0,
-            'end' => 59, // "Initial Medical Evaluation – Synergy Chiropractic Clinics"
+            'end'   => 59, // "Initial Medical Evaluation – Synergy Chiropractic Clinics"
         ], $result['formats'][0]);
 
         // Second bold section should start at position 61 (after "...\n\n")
         // and should include the FULL text including "Da" at the start (79 chars)
         $this->assertEquals([
-            'type' => 'bold',
+            'type'  => 'bold',
             'start' => 61,
-            'end' => 140, // 61 + 79 = 140
+            'end'   => 140, // 61 + 79 = 140
         ], $result['formats'][1]);
 
         // Verify the second bold section captures "Dates" correctly (not missing "Da")

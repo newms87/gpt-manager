@@ -9,17 +9,16 @@ use Illuminate\Support\Facades\Log;
 
 class SchemaEditorContextService implements ContextServiceInterface
 {
-
     public function buildSystemPrompt(array $contextData = []): string
     {
         $currentSchema = '';
-        $schemaName = '';
-        
+        $schemaName    = '';
+
         // Check for object in contextData first (from component-based context)
         if (isset($contextData['object']) && $contextData['object'] instanceof SchemaDefinition) {
             $schema = $contextData['object'];
             if ($schema->team_id === team()->id) {
-                $schemaName = $schema->name;
+                $schemaName    = $schema->name;
                 $currentSchema = "\n\nCurrent Schema ({$schemaName}):\n" . json_encode($schema->schema, JSON_PRETTY_PRINT);
             }
         }
@@ -27,7 +26,7 @@ class SchemaEditorContextService implements ContextServiceInterface
         elseif (isset($contextData['schema_id'])) {
             $schema = SchemaDefinition::find($contextData['schema_id']);
             if ($schema && $schema->team_id === team()->id) {
-                $schemaName = $schema->name;
+                $schemaName    = $schema->name;
                 $currentSchema = "\n\nCurrent Schema ({$schemaName}):\n" . json_encode($schema->schema, JSON_PRETTY_PRINT);
             }
         }
@@ -85,14 +84,14 @@ Guidelines:
     public function getCapabilities(array $contextData = []): array
     {
         return [
-            'analyze_schema' => 'Analyze current schema structure and suggest improvements',
-            'add_properties' => 'Add new properties to the schema',
-            'modify_properties' => 'Modify existing schema properties and their validation rules',
-            'remove_properties' => 'Remove unnecessary properties from the schema',
+            'analyze_schema'     => 'Analyze current schema structure and suggest improvements',
+            'add_properties'     => 'Add new properties to the schema',
+            'modify_properties'  => 'Modify existing schema properties and their validation rules',
+            'remove_properties'  => 'Remove unnecessary properties from the schema',
             'restructure_schema' => 'Reorganize schema structure for better design',
-            'validate_schema' => 'Validate schema completeness and best practices',
-            'suggest_types' => 'Recommend appropriate data types and constraints',
-            'generate_examples' => 'Generate example data based on the schema',
+            'validate_schema'    => 'Validate schema completeness and best practices',
+            'suggest_types'      => 'Recommend appropriate data types and constraints',
+            'generate_examples'  => 'Generate example data based on the schema',
         ];
     }
 
@@ -102,36 +101,36 @@ Guidelines:
             if (!$this->canExecuteAction($action)) {
                 return [
                     'success' => false,
-                    'error' => 'Action not supported in schema editor context',
+                    'error'   => 'Action not supported in schema editor context',
                 ];
             }
 
             switch ($action->action_type) {
                 case 'modify_schema':
                     return $this->executeSchemaModification($action);
-                
+
                 case 'validate_schema':
                     return $this->executeSchemaValidation($action);
-                
+
                 case 'generate_example':
                     return $this->executeExampleGeneration($action);
-                
+
                 default:
                     return [
                         'success' => false,
-                        'error' => "Unknown action type: {$action->action_type}",
+                        'error'   => "Unknown action type: {$action->action_type}",
                     ];
             }
 
         } catch (\Exception $e) {
             Log::error('Schema action execution failed', [
                 'action_id' => $action->id,
-                'error' => $e->getMessage(),
+                'error'     => $e->getMessage(),
             ]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ];
         }
     }
@@ -150,13 +149,13 @@ Guidelines:
 
     protected function executeSchemaModification(AssistantAction $action): array
     {
-        $payload = $action->payload;
+        $payload  = $action->payload;
         $schemaId = $action->target_id;
 
         if (!$schemaId) {
             return [
                 'success' => false,
-                'error' => 'Schema ID is required for modification',
+                'error'   => 'Schema ID is required for modification',
             ];
         }
 
@@ -164,12 +163,12 @@ Guidelines:
         if (!$schema || $schema->team_id !== team()->id) {
             return [
                 'success' => false,
-                'error' => 'Schema not found or access denied',
+                'error'   => 'Schema not found or access denied',
             ];
         }
 
         // Apply the modification based on the payload
-        $currentSchema = $schema->schema;
+        $currentSchema  = $schema->schema;
         $modifiedSchema = $this->applySchemaModification($currentSchema, $payload);
 
         // Update the schema
@@ -177,10 +176,10 @@ Guidelines:
 
         return [
             'success' => true,
-            'data' => [
-                'schema_id' => $schema->id,
-                'previous_schema' => $currentSchema,
-                'updated_schema' => $modifiedSchema,
+            'data'    => [
+                'schema_id'         => $schema->id,
+                'previous_schema'   => $currentSchema,
+                'updated_schema'    => $modifiedSchema,
                 'modification_type' => $payload['modification_type'] ?? null,
             ],
             'message' => 'Schema modified successfully',
@@ -194,7 +193,7 @@ Guidelines:
         if (!$schemaId) {
             return [
                 'success' => false,
-                'error' => 'Schema ID is required for validation',
+                'error'   => 'Schema ID is required for validation',
             ];
         }
 
@@ -202,7 +201,7 @@ Guidelines:
         if (!$schema || $schema->team_id !== team()->id) {
             return [
                 'success' => false,
-                'error' => 'Schema not found or access denied',
+                'error'   => 'Schema not found or access denied',
             ];
         }
 
@@ -211,13 +210,13 @@ Guidelines:
 
         return [
             'success' => true,
-            'data' => [
-                'schema_id' => $schema->id,
+            'data'    => [
+                'schema_id'          => $schema->id,
                 'validation_results' => $validation,
-                'is_valid' => empty($validation['errors']),
+                'is_valid'           => empty($validation['errors']),
             ],
-            'message' => empty($validation['errors']) ? 
-                'Schema validation passed' : 
+            'message' => empty($validation['errors']) ?
+                'Schema validation passed' :
                 'Schema validation found issues',
         ];
     }
@@ -229,7 +228,7 @@ Guidelines:
         if (!$schemaId) {
             return [
                 'success' => false,
-                'error' => 'Schema ID is required for example generation',
+                'error'   => 'Schema ID is required for example generation',
             ];
         }
 
@@ -239,8 +238,8 @@ Guidelines:
 
         return [
             'success' => true,
-            'data' => [
-                'schema_id' => $schemaId,
+            'data'    => [
+                'schema_id'         => $schemaId,
                 'generated_example' => $result['response_example'] ?? null,
             ],
             'message' => 'Example generated successfully',
@@ -250,22 +249,22 @@ Guidelines:
     protected function applySchemaModification(array $schema, array $modification): array
     {
         $modificationType = $modification['modification_type'] ?? '';
-        $targetPath = $modification['target_path'] ?? '';
+        $targetPath       = $modification['target_path']       ?? '';
         $modificationData = $modification['modification_data'] ?? [];
 
         switch ($modificationType) {
             case 'add_property':
                 return $this->addPropertyToSchema($schema, $targetPath, $modificationData);
-            
+
             case 'modify_property':
                 return $this->modifyPropertyInSchema($schema, $targetPath, $modificationData);
-            
+
             case 'remove_property':
                 return $this->removePropertyFromSchema($schema, $targetPath);
-            
+
             case 'restructure':
                 return $this->restructureSchema($schema, $modificationData);
-            
+
             default:
                 throw new \Exception("Unsupported modification type: {$modificationType}");
         }
@@ -274,7 +273,7 @@ Guidelines:
     protected function addPropertyToSchema(array $schema, string $path, array $propertyData): array
     {
         $pathParts = explode('.', $path);
-        $current = &$schema;
+        $current   = &$schema;
 
         // Navigate to the target location
         foreach (array_slice($pathParts, 0, -1) as $part) {
@@ -301,7 +300,7 @@ Guidelines:
     protected function modifyPropertyInSchema(array $schema, string $path, array $propertyData): array
     {
         $pathParts = explode('.', $path);
-        $current = &$schema;
+        $current   = &$schema;
 
         // Navigate to the target property
         foreach ($pathParts as $part) {
@@ -319,9 +318,9 @@ Guidelines:
 
     protected function removePropertyFromSchema(array $schema, string $path): array
     {
-        $pathParts = explode('.', $path);
+        $pathParts    = explode('.', $path);
         $propertyName = array_pop($pathParts);
-        $current = &$schema;
+        $current      = &$schema;
 
         // Navigate to the parent of the target property
         foreach ($pathParts as $part) {
@@ -346,8 +345,8 @@ Guidelines:
 
     protected function validateSchemaStructure(array $schema): array
     {
-        $errors = [];
-        $warnings = [];
+        $errors      = [];
+        $warnings    = [];
         $suggestions = [];
 
         // Check for required JSON Schema properties
@@ -387,8 +386,8 @@ Guidelines:
         }
 
         return [
-            'errors' => $errors,
-            'warnings' => $warnings,
+            'errors'      => $errors,
+            'warnings'    => $warnings,
             'suggestions' => $suggestions,
         ];
     }

@@ -28,7 +28,6 @@ interface TaskRunnerContract
 
     public function setTaskProcess(TaskProcess $taskProcess): static;
 
-
     /**
      * Prepare the task runner for running
      */

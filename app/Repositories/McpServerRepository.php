@@ -21,8 +21,8 @@ class McpServerRepository extends ActionRepository
         return match ($action) {
             'create' => $this->createMcpServer($data),
             'update' => $this->updateMcpServer($model, $data),
-            'copy' => $this->copyMcpServer($model),
-            default => parent::applyAction($action, $model, $data)
+            'copy'   => $this->copyMcpServer($model),
+            default  => parent::applyAction($action, $model, $data)
         };
     }
 
@@ -34,7 +34,6 @@ class McpServerRepository extends ActionRepository
 
         $mcpServer->fill($data);
         $mcpServer->name = ModelHelper::getNextModelName($mcpServer);
-
 
         $mcpServer->validate()->save();
 

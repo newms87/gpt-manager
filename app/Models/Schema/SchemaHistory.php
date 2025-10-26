@@ -20,7 +20,7 @@ class SchemaHistory extends Model
         'updated_at',
     ];
 
-    public static function write(User $user, SchemaDefinition $schemaDefinition, array $previousSchema): self|null
+    public static function write(User $user, SchemaDefinition $schemaDefinition, array $previousSchema): ?self
     {
         if (!$previousSchema) {
             return null;

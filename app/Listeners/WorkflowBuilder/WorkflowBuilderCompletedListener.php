@@ -13,7 +13,7 @@ use Newms87\Danx\Helpers\LockHelper;
 
 class WorkflowBuilderCompletedListener implements ShouldQueue
 {
-    use InteractsWithQueue, HasDebugLogging;
+    use HasDebugLogging, InteractsWithQueue;
 
     public function handle(WorkflowRunUpdatedEvent $event): void
     {
@@ -27,10 +27,10 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
         $workflowBuilderChat = $this->findWorkflowBuilderChat($workflowRun);
 
         static::log('triggered', [
-            'workflow_run_id' => $workflowRun->id,
-            'workflow_name' => $workflowRun->workflowDefinition->name,
-            'builder_chat_id' => $workflowBuilderChat?->id,
-            'is_builder_workflow' => (bool) $workflowBuilderChat,
+            'workflow_run_id'     => $workflowRun->id,
+            'workflow_name'       => $workflowRun->workflowDefinition->name,
+            'builder_chat_id'     => $workflowBuilderChat?->id,
+            'is_builder_workflow' => (bool)$workflowBuilderChat,
         ]);
 
         if (!$workflowBuilderChat) {
@@ -45,6 +45,7 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
                 'chat_id'         => $workflowBuilderChat->id,
                 'status'          => $workflowBuilderChat->status,
             ]);
+
             return;
         }
 
@@ -55,6 +56,7 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
                 'expected_run_id' => $workflowBuilderChat->current_workflow_run_id,
                 'chat_id'         => $workflowBuilderChat->id,
             ]);
+
             return;
         }
 
@@ -72,6 +74,7 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
                     'chat_id'         => $workflowBuilderChat->id,
                     'status'          => $workflowBuilderChat->status,
                 ]);
+
                 return;
             }
 

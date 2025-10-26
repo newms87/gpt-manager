@@ -128,5 +128,4 @@ class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
 
         $this->assertNull($usageEvent);
     }
-
 }
