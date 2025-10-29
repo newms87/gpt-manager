@@ -23,13 +23,24 @@ class GoogleDriveFolderService
         // Check cache first
         $cachedFolderId = Cache::get($cacheKey);
         if ($cachedFolderId) {
-            static::log('Using cached folder ID', [
+            // Verify cached folder still exists in Google Drive
+            if ($this->verifyFolderExists($api, $cachedFolderId)) {
+                static::log('Using cached folder ID', [
+                    'folder_name' => $folderName,
+                    'folder_id'   => $cachedFolderId,
+                    'team_id'     => $teamId,
+                ]);
+
+                return $cachedFolderId;
+            }
+
+            // Cached folder no longer exists, invalidate cache
+            static::log('Cached folder no longer exists, invalidating cache', [
                 'folder_name' => $folderName,
                 'folder_id'   => $cachedFolderId,
                 'team_id'     => $teamId,
             ]);
-
-            return $cachedFolderId;
+            Cache::forget($cacheKey);
         }
 
         // Search for existing folder
@@ -179,6 +190,63 @@ class GoogleDriveFolderService
 
             // Don't throw on search failure - just return null to trigger creation
             return null;
+        }
+    }
+
+    /**
+     * Verify that a folder exists in Google Drive by ID
+     */
+    public function verifyFolderExists(GoogleDocsApi $api, string $folderId): bool
+    {
+        try {
+            static::log('Verifying folder exists', [
+                'folder_id' => $folderId,
+            ]);
+
+            $response = $api->getToDriveApi("files/{$folderId}", [
+                'fields' => 'id,name,mimeType,trashed',
+            ]);
+
+            if (!$response->successful()) {
+                static::log('Folder verification failed', [
+                    'folder_id' => $folderId,
+                    'status'    => $response->status(),
+                ]);
+
+                return false;
+            }
+
+            $fileData = $response->json();
+
+            // Verify it's a folder and not trashed
+            $isFolder  = ($fileData['mimeType'] ?? null) === 'application/vnd.google-apps.folder';
+            $isTrashed = $fileData['trashed'] ?? false;
+
+            if (!$isFolder || $isTrashed) {
+                static::log('Folder is invalid or trashed', [
+                    'folder_id'  => $folderId,
+                    'is_folder'  => $isFolder,
+                    'is_trashed' => $isTrashed,
+                ]);
+
+                return false;
+            }
+
+            static::log('Folder exists and is valid', [
+                'folder_id'   => $folderId,
+                'folder_name' => $fileData['name'] ?? 'unknown',
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            static::log('Error verifying folder existence', [
+                'folder_id' => $folderId,
+                'error'     => $e->getMessage(),
+            ]);
+
+            // If we can't verify, assume it doesn't exist to trigger recreation
+            return false;
         }
     }
 
