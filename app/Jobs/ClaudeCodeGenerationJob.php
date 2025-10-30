@@ -13,7 +13,7 @@ class ClaudeCodeGenerationJob extends Job
 {
     public TaskRun $taskRun;
 
-    public int $timeout = 1200; // 20 minutes for code generation
+    public int $timeout = 600; // 10 minutes for code generation
 
     public function __construct(TaskRun $taskRun)
     {
@@ -77,7 +77,7 @@ class ClaudeCodeGenerationJob extends Job
 
         // Use Claude CLI to generate code
         $result = Process::timeout($this->timeout - 60) // Leave 1 minute buffer
-            ->run(['claude', 'code', '--prompt', $prompt]);
+        ->run(['claude', 'code', '--prompt', $prompt]);
 
         if (!$result->successful()) {
             throw new Exception('Claude code generation failed: ' . $result->errorOutput());

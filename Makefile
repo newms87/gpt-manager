@@ -27,6 +27,9 @@ refresh-data:
 deploy-vapor:
 	sh ./deploy.sh
 
+deploy-vapor-west:
+	sh ./deploy-west.sh
+
 deploy-spa:
 	cd spa && sh ./deploy.sh
 

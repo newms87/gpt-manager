@@ -95,7 +95,15 @@
       "Bash(./vendor/bin/pint app/Events/)",
       "Bash(./vendor/bin/pint:*)",
       "Bash(exit 1)",
-      "Bash(php vendor/bin/pint:*)"
+      "Bash(php vendor/bin/pint:*)",
+      "Bash(vapor env:list:*)",
+      "Bash(vapor metrics --help:*)",
+      "Bash(./vendor/bin/vapor env:list:*)",
+      "Bash(./vendor/bin/vapor metrics:*)",
+      "Bash(./vendor/bin/vapor queue:status:*)",
+      "Bash(./vendor/bin/vapor logs:*)",
+      "Bash(./vendor/bin/vapor list:*)",
+      "Bash(./vendor/bin/vapor tail:*)"
     ],
     "deny": [],
     "additionalDirectories": [

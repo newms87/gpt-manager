@@ -35,11 +35,21 @@ class PusherSubscriptionService
         // Maintain an index of all subscription keys for non-Redis cache drivers
         $this->addToSubscriptionIndex($cacheKey);
 
-        // For filter-based subscriptions, store the filter definition
+        // For filter-based subscriptions, store the filter definition and maintain filter index
         if (is_array($modelIdOrFilter) && isset($modelIdOrFilter['filter'])) {
+            $hash = $this->hashFilter($modelIdOrFilter['filter']);
+
             $definitionKey = $cacheKey . ':definition';
             Cache::put($definitionKey, $modelIdOrFilter['filter'], self::TTL);
             $this->addToSubscriptionIndex($definitionKey);
+
+            // Add to filter index
+            $filterIndexKey = "subscribe:{$resourceType}:{$teamId}:filters";
+            $filterHashes   = Cache::get($filterIndexKey, []);
+            if (!in_array($hash, $filterHashes)) {
+                $filterHashes[] = $hash;
+                Cache::put($filterIndexKey, $filterHashes, self::TTL);
+            }
         }
 
         self::log("User subscribed to {$resourceType}", [
@@ -69,11 +79,24 @@ class PusherSubscriptionService
             Cache::forget($cacheKey);
             $this->removeFromSubscriptionIndex($cacheKey);
 
-            // Also delete filter definition if exists
+            // Also delete filter definition and remove from filter index
             if (is_array($modelIdOrFilter) && isset($modelIdOrFilter['filter'])) {
+                $hash = $this->hashFilter($modelIdOrFilter['filter']);
+
                 $definitionKey = $cacheKey . ':definition';
                 Cache::forget($definitionKey);
                 $this->removeFromSubscriptionIndex($definitionKey);
+
+                // Remove from filter index
+                $filterIndexKey = "subscribe:{$resourceType}:{$teamId}:filters";
+                $filterHashes   = Cache::get($filterIndexKey, []);
+                $filterHashes   = array_values(array_filter($filterHashes, fn($h) => $h !== $hash));
+
+                if (empty($filterHashes)) {
+                    Cache::forget($filterIndexKey);
+                } else {
+                    Cache::put($filterIndexKey, $filterHashes, self::TTL);
+                }
             }
         } else {
             // Update with remaining subscribers
@@ -112,12 +135,19 @@ class PusherSubscriptionService
                 Cache::put($cacheKey, $subscribers, self::TTL);
                 $refreshedCount++;
 
-                // Also refresh filter definition TTL if exists
+                // Also refresh filter definition and filter index TTL if exists
                 if (is_array($modelIdOrFilter) && isset($modelIdOrFilter['filter'])) {
                     $definitionKey = $cacheKey . ':definition';
                     $filter        = Cache::get($definitionKey);
                     if ($filter !== null) {
                         Cache::put($definitionKey, $filter, self::TTL);
+
+                        // Refresh filter index TTL
+                        $filterIndexKey = "subscribe:{$resourceType}:{$teamId}:filters";
+                        $filterHashes   = Cache::get($filterIndexKey, []);
+                        if (!empty($filterHashes)) {
+                            Cache::put($filterIndexKey, $filterHashes, self::TTL);
+                        }
                     }
                 }
             }

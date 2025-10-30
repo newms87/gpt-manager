@@ -13,7 +13,7 @@ class ClaudeCodeGenerationStreamJob extends Job
 
     public string $taskDescription;
 
-    public int $timeout = 1200; // 20 minutes for code generation
+    public int $timeout = 600; // 10 minutes for code generation
 
     public function __construct(TaskDefinition $taskDefinition, string $taskDescription)
     {
@@ -86,7 +86,7 @@ class ClaudeCodeGenerationStreamJob extends Job
                 $chunk = fread($pipes[1], 1024);
                 if ($chunk) {
                     $generatedCode .= $chunk;
-                    $progress = min(90, $progress + 2);
+                    $progress      = min(90, $progress + 2);
 
                     // Send progress updates with partial code via WebSocket
                     $this->broadcastEvent('code_chunk', [

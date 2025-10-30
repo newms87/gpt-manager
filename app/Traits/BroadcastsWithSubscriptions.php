@@ -57,14 +57,14 @@ trait BroadcastsWithSubscriptions
      */
     protected function getFilterBasedSubscribers(string $resourceType, ?int $teamId, Model $model, string $modelClass): array
     {
-        $userIds    = [];
-        $filterKeys = $this->scanCacheKeys("subscribe:{$resourceType}:{$teamId}:filter:*");
+        $userIds = [];
 
-        foreach ($filterKeys as $filterKey) {
-            // Skip definition keys
-            if (str_ends_with($filterKey, ':definition')) {
-                continue;
-            }
+        // Get filter index for this resource/team
+        $filterIndexKey = "subscribe:{$resourceType}:{$teamId}:filters";
+        $filterHashes   = Cache::get($filterIndexKey, []);
+
+        foreach ($filterHashes as $filterHash) {
+            $filterKey = "subscribe:{$resourceType}:{$teamId}:filter:{$filterHash}";
 
             // Get filter definition
             $definitionKey = $filterKey . ':definition';

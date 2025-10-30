@@ -31,3 +31,7 @@ pgloader/temp_db_sync.load
 test_assistant_endpoints.php
 
 http/http-client.private.env.json
+
+test-subscriptions.php
+
+.env.production-west
