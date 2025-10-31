@@ -51,11 +51,24 @@ class ResourcePackageImport extends Model implements AuditableContract
         }
 
         try {
-            return $this->object_type::find($this->local_object_id);
+            // Check if the model uses SoftDeletes trait and include trashed records
+            $model = $this->object_type::withTrashed()->find($this->local_object_id);
+
+            // If found and soft-deleted, restore it
+            if ($model && $model->trashed()) {
+                $model->restore();
+            }
+
+            return $model;
         } catch (Throwable $throwable) {
             // Handle the case where the object type is not found or any other error
-            // This can happen when Models are renamed or removed
-            return null;
+            // This can happen when Models are renamed or removed, or when model doesn't use SoftDeletes
+            // If withTrashed() fails (model doesn't use SoftDeletes), fall back to regular find()
+            try {
+                return $this->object_type::find($this->local_object_id);
+            } catch (Throwable $e) {
+                return null;
+            }
         }
     }
 
@@ -95,12 +108,25 @@ class ResourcePackageImport extends Model implements AuditableContract
             $conditions['team_id'] = team()->id;
         }
 
-        // Try to find an existing object with the same unique key values
+        // Try to find an existing object with the same unique key values, including soft-deleted records
         try {
-            return $this->object_type::where($conditions)->first();
+            // Check if the model uses SoftDeletes trait and include trashed records
+            $model = $this->object_type::withTrashed()->where($conditions)->first();
+
+            // If found and soft-deleted, restore it
+            if ($model && $model->trashed()) {
+                $model->restore();
+            }
+
+            return $model;
         } catch (Throwable $throwable) {
-            // Handle any errors that might occur (e.g., column doesn't exist)
-            return null;
+            // Handle any errors that might occur (e.g., column doesn't exist, model doesn't use SoftDeletes)
+            // If withTrashed() fails (model doesn't use SoftDeletes), fall back to regular query
+            try {
+                return $this->object_type::where($conditions)->first();
+            } catch (Throwable $e) {
+                return null;
+            }
         }
     }
 }
