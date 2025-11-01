@@ -427,10 +427,28 @@ PROMPT;
                 continue;
             }
 
-            // Update the artifact's classification
-            $meta                              = $artifact->meta;
-            $meta['classification'][$property] = $correctedValue;
-            $artifact->meta                    = $meta;
+            // Update the artifact's classification, preserving structure
+            $meta         = $artifact->meta;
+            $currentValue = $meta['classification'][$property] ?? null;
+
+            // Preserve complex structure if present (e.g., objects with name, reasoning, confidence)
+            if (is_array($currentValue)) {
+                if (isset($currentValue['name'])) {
+                    // Update only the name field, preserve reasoning and confidence
+                    $meta['classification'][$property]['name'] = $correctedValue;
+                } elseif (isset($currentValue['id'])) {
+                    // Update only the id field, preserve other fields
+                    $meta['classification'][$property]['id'] = $correctedValue;
+                } else {
+                    // Array without name/id structure, replace entirely
+                    $meta['classification'][$property] = $correctedValue;
+                }
+            } else {
+                // Simple string value, replace entirely
+                $meta['classification'][$property] = $correctedValue;
+            }
+
+            $artifact->meta = $meta;
             $artifact->save();
 
             static::logDebug("Updated artifact $artifactId property '$property': '$originalValue' => '$correctedValue' (Reason: $reason)");

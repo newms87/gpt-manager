@@ -885,4 +885,540 @@ class ClassificationVerificationServiceTest extends TestCase
             $this->assertTrue($process->meta['is_recursive']);
         }
     }
+
+    #[Test]
+    public function it_preserves_complex_field_structure_with_name_reasoning_and_confidence()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'providers' => [
+                            'name'       => 'Original Provider',
+                            'reasoning'  => 'This was determined based on the document header',
+                            'confidence' => 'High',
+                        ],
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'providers' => [
+                            'name'       => 'Different Provider',
+                            'reasoning'  => 'Similar document structure',
+                            'confidence' => 'Medium',
+                        ],
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'providers' => [
+                            'name'       => 'Original Provider',
+                            'reasoning'  => 'Consistent with previous',
+                            'confidence' => 'High',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Mock verification correcting the middle artifact (outlier)
+        $this->mockVerificationResponse([
+            $artifacts[1]->id => [
+                'value'  => 'Original Provider',
+                'reason' => 'Should match adjacent artifacts',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'providers');
+
+        // Verify correction was applied but structure was preserved
+        $correctedArtifact = $artifacts[1]->fresh();
+        $classification    = $correctedArtifact->meta['classification']['providers'];
+
+        $this->assertEquals('Original Provider', $classification['name']);
+        $this->assertEquals('Similar document structure', $classification['reasoning']);
+        $this->assertEquals('Medium', $classification['confidence']);
+    }
+
+    #[Test]
+    public function it_preserves_complex_field_structure_with_id_field()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'category' => [
+                            'id'         => 'category-123',
+                            'reasoning'  => 'Based on document type',
+                            'confidence' => 'High',
+                        ],
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'category' => [
+                            'id'         => 'category-456',
+                            'reasoning'  => 'Ambiguous classification',
+                            'confidence' => 'Low',
+                        ],
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'category' => [
+                            'id'         => 'category-123',
+                            'reasoning'  => 'Matches expected pattern',
+                            'confidence' => 'High',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Mock verification correcting the middle artifact
+        $this->mockVerificationResponse([
+            $artifacts[1]->id => [
+                'value'  => 'category-123',
+                'reason' => 'Should match adjacent artifacts',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'category');
+
+        // Verify correction was applied to ID field but structure was preserved
+        $correctedArtifact = $artifacts[1]->fresh();
+        $classification    = $correctedArtifact->meta['classification']['category'];
+
+        $this->assertEquals('category-123', $classification['id']);
+        $this->assertEquals('Ambiguous classification', $classification['reasoning']);
+        $this->assertEquals('Low', $classification['confidence']);
+    }
+
+    #[Test]
+    public function it_replaces_simple_string_values_entirely()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'status' => 'Active',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'status' => 'Inactive',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'status' => 'Active',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Mock verification correcting the middle artifact
+        $this->mockVerificationResponse([
+            $artifacts[1]->id => [
+                'value'  => 'Active',
+                'reason' => 'Should match adjacent artifacts',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'status');
+
+        // Verify simple string was replaced entirely
+        $correctedArtifact = $artifacts[1]->fresh();
+        $this->assertEquals('Active', $correctedArtifact->meta['classification']['status']);
+        $this->assertIsString($correctedArtifact->meta['classification']['status']);
+    }
+
+    #[Test]
+    public function it_replaces_array_without_name_or_id_fields_entirely()
+    {
+        // Note: Arrays without name/id fields return null from getPropertyValue() and won't trigger verification
+        // This test verifies that when we directly call applyVerificationCorrections, it replaces the entire array
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'metadata' => 'report',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'metadata' => [
+                            'count' => 3,
+                            'type'  => 'summary',
+                        ], // Array without name/id
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'metadata' => 'report',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Create a group manually and test applyVerificationCorrections directly
+        $service    = app(ClassificationVerificationService::class);
+        $reflection = new \ReflectionClass($service);
+        $method     = $reflection->getMethod('applyVerificationCorrections');
+        $method->setAccessible(true);
+
+        $group = [
+            'focus_artifact_id' => $artifacts[1]->id,
+            'context'           => [
+                ['artifact' => $artifacts[0], 'position' => 'previous', 'value' => 'report'],
+                ['artifact' => $artifacts[1], 'position' => 'current', 'value' => null],
+                ['artifact' => $artifacts[2], 'position' => 'next', 'value' => 'report'],
+            ],
+        ];
+
+        $corrections = [
+            [
+                'artifact_id'     => $artifacts[1]->id,
+                'corrected_value' => 'report',
+                'reason'          => 'Should match adjacent artifacts',
+            ],
+        ];
+
+        $method->invoke($service, $group, $corrections, 'metadata');
+
+        // Verify array without name/id was replaced entirely
+        $correctedArtifact = $artifacts[1]->fresh();
+        $this->assertEquals('report', $correctedArtifact->meta['classification']['metadata']);
+        $this->assertIsString($correctedArtifact->meta['classification']['metadata']);
+    }
+
+    #[Test]
+    public function it_handles_null_classification_values_gracefully()
+    {
+        // Note: Null values are filtered out by getPropertyValue() and won't trigger verification
+        // This test verifies that when we directly call applyVerificationCorrections, it handles null correctly
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'optional_field' => 'Value 1',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'optional_field' => null,
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'optional_field' => 'Value 1',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Create a group manually and test applyVerificationCorrections directly
+        $service    = app(ClassificationVerificationService::class);
+        $reflection = new \ReflectionClass($service);
+        $method     = $reflection->getMethod('applyVerificationCorrections');
+        $method->setAccessible(true);
+
+        $group = [
+            'focus_artifact_id' => $artifacts[1]->id,
+            'context'           => [
+                ['artifact' => $artifacts[0], 'position' => 'previous', 'value' => 'Value 1'],
+                ['artifact' => $artifacts[1], 'position' => 'current', 'value' => null],
+                ['artifact' => $artifacts[2], 'position' => 'next', 'value' => 'Value 1'],
+            ],
+        ];
+
+        $corrections = [
+            [
+                'artifact_id'     => $artifacts[1]->id,
+                'corrected_value' => 'Value 1',
+                'reason'          => 'Should have a value',
+            ],
+        ];
+
+        $method->invoke($service, $group, $corrections, 'optional_field');
+
+        // Verify null was replaced with the corrected value
+        $correctedArtifact = $artifacts[1]->fresh();
+        $this->assertEquals('Value 1', $correctedArtifact->meta['classification']['optional_field']);
+    }
+
+    #[Test]
+    public function it_handles_missing_classification_fields_gracefully()
+    {
+        // Note: Missing fields are filtered out by getPropertyValue() and won't trigger verification
+        // This test verifies that when we directly call applyVerificationCorrections, it handles missing fields correctly
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'company' => 'Apple Inc',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        // Missing 'company' field entirely
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'company' => 'Apple Inc',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Create a group manually and test applyVerificationCorrections directly
+        $service    = app(ClassificationVerificationService::class);
+        $reflection = new \ReflectionClass($service);
+        $method     = $reflection->getMethod('applyVerificationCorrections');
+        $method->setAccessible(true);
+
+        $group = [
+            'focus_artifact_id' => $artifacts[1]->id,
+            'context'           => [
+                ['artifact' => $artifacts[0], 'position' => 'previous', 'value' => 'Apple Inc'],
+                ['artifact' => $artifacts[1], 'position' => 'current', 'value' => null],
+                ['artifact' => $artifacts[2], 'position' => 'next', 'value' => 'Apple Inc'],
+            ],
+        ];
+
+        $corrections = [
+            [
+                'artifact_id'     => $artifacts[1]->id,
+                'corrected_value' => 'Apple Inc',
+                'reason'          => 'Should have company field',
+            ],
+        ];
+
+        $method->invoke($service, $group, $corrections, 'company');
+
+        // Verify missing field was added with the corrected value
+        $correctedArtifact = $artifacts[1]->fresh();
+        $this->assertEquals('Apple Inc', $correctedArtifact->meta['classification']['company']);
+    }
+
+    #[Test]
+    public function it_handles_empty_string_classification_values()
+    {
+        // Note: Empty strings are filtered out by getPropertyValue() and won't trigger verification
+        // This test verifies that when we directly call applyVerificationCorrections, it handles empty strings correctly
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'location' => 'San Francisco',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'location' => '',
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'location' => 'San Francisco',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Create a group manually and test applyVerificationCorrections directly
+        $service    = app(ClassificationVerificationService::class);
+        $reflection = new \ReflectionClass($service);
+        $method     = $reflection->getMethod('applyVerificationCorrections');
+        $method->setAccessible(true);
+
+        $group = [
+            'focus_artifact_id' => $artifacts[1]->id,
+            'context'           => [
+                ['artifact' => $artifacts[0], 'position' => 'previous', 'value' => 'San Francisco'],
+                ['artifact' => $artifacts[1], 'position' => 'current', 'value' => null],
+                ['artifact' => $artifacts[2], 'position' => 'next', 'value' => 'San Francisco'],
+            ],
+        ];
+
+        $corrections = [
+            [
+                'artifact_id'     => $artifacts[1]->id,
+                'corrected_value' => 'San Francisco',
+                'reason'          => 'Should not be empty',
+            ],
+        ];
+
+        $method->invoke($service, $group, $corrections, 'location');
+
+        // Verify empty string was replaced with the corrected value
+        $correctedArtifact = $artifacts[1]->fresh();
+        $this->assertEquals('San Francisco', $correctedArtifact->meta['classification']['location']);
+    }
+
+    #[Test]
+    public function it_preserves_all_complex_fields_when_correcting_nested_name_field()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'provider' => [
+                            'name'         => 'Dr. Smith',
+                            'reasoning'    => 'Signature matches',
+                            'confidence'   => 'High',
+                            'extra_field'  => 'Should be preserved',
+                            'another_data' => ['nested' => 'structure'],
+                        ],
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'provider' => [
+                            'name'         => 'Dr. Jones',
+                            'reasoning'    => 'Different signature',
+                            'confidence'   => 'Medium',
+                            'extra_field'  => 'Different extra data',
+                            'another_data' => ['nested' => 'different'],
+                        ],
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'provider' => [
+                            'name'         => 'Dr. Smith',
+                            'reasoning'    => 'Matches first artifact',
+                            'confidence'   => 'High',
+                            'extra_field'  => 'Yet another value',
+                            'another_data' => ['nested' => 'third'],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Mock verification correcting the middle artifact
+        $this->mockVerificationResponse([
+            $artifacts[1]->id => [
+                'value'  => 'Dr. Smith',
+                'reason' => 'Should match adjacent artifacts',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'provider');
+
+        // Verify only the name field was updated, all other fields preserved
+        $correctedArtifact = $artifacts[1]->fresh();
+        $provider          = $correctedArtifact->meta['classification']['provider'];
+
+        $this->assertEquals('Dr. Smith', $provider['name']);
+        $this->assertEquals('Different signature', $provider['reasoning']);
+        $this->assertEquals('Medium', $provider['confidence']);
+        $this->assertEquals('Different extra data', $provider['extra_field']);
+        $this->assertEquals(['nested' => 'different'], $provider['another_data']);
+    }
+
+    #[Test]
+    public function it_preserves_all_complex_fields_when_correcting_nested_id_field()
+    {
+        $artifacts = collect([
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'category' => [
+                            'id'          => 'cat-123',
+                            'reasoning'   => 'Pattern matches',
+                            'confidence'  => 'High',
+                            'description' => 'Original description',
+                            'tags'        => ['tag1', 'tag2'],
+                        ],
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'category' => [
+                            'id'          => 'cat-456',
+                            'reasoning'   => 'Different pattern',
+                            'confidence'  => 'Low',
+                            'description' => 'Different description',
+                            'tags'        => ['tag3', 'tag4'],
+                        ],
+                    ],
+                ],
+            ]),
+            Artifact::factory()->create([
+                'meta' => [
+                    'classification' => [
+                        'category' => [
+                            'id'          => 'cat-123',
+                            'reasoning'   => 'Consistent pattern',
+                            'confidence'  => 'High',
+                            'description' => 'Third description',
+                            'tags'        => ['tag5'],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        // Mock verification correcting the middle artifact
+        $this->mockVerificationResponse([
+            $artifacts[1]->id => [
+                'value'  => 'cat-123',
+                'reason' => 'Should match adjacent artifacts',
+            ],
+        ]);
+
+        $service = app(ClassificationVerificationService::class);
+        $service->verifyClassificationProperty($artifacts, 'category');
+
+        // Verify only the id field was updated, all other fields preserved
+        $correctedArtifact = $artifacts[1]->fresh();
+        $category          = $correctedArtifact->meta['classification']['category'];
+
+        $this->assertEquals('cat-123', $category['id']);
+        $this->assertEquals('Different pattern', $category['reasoning']);
+        $this->assertEquals('Low', $category['confidence']);
+        $this->assertEquals('Different description', $category['description']);
+        $this->assertEquals(['tag3', 'tag4'], $category['tags']);
+    }
 }
