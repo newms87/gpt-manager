@@ -45,6 +45,6 @@ class TeamObjectRelationship extends Model implements AuditableContract
 
     public function __toString(): string
     {
-        return "<TeamObjectRelationship ($this->relationship_name) object_id='$this->team_object_id' related_id='$this->related_team_object_id' />";
+        return "<TeamObjectRelationship id='$this->id' relationship_name='$this->relationship_name' object_id='$this->team_object_id' related_id='$this->related_team_object_id'>";
     }
 }

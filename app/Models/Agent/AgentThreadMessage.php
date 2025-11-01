@@ -91,7 +91,7 @@ class AgentThreadMessage extends Model implements AuditableContract
     {
         $message = StringHelper::limitText(20, $this->title ?: $this->content) ?: '(Empty)';
 
-        return "<AgentThreadMessage ($this->id) $message>";
+        return "<AgentThreadMessage id='$this->id' message='$message'>";
     }
 
     public static function booted(): void

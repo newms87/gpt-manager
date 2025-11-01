@@ -125,6 +125,6 @@ class AgentThreadRun extends Model implements AuditableContract
 
     public function __toString(): string
     {
-        return "<AgentThreadRun $this->id $this->status thread='{$this->agentThread->name}'>";
+        return "<AgentThreadRun id='$this->id' status='$this->status' thread='{$this->agentThread->name}'>";
     }
 }

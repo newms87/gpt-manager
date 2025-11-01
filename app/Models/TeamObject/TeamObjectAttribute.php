@@ -66,6 +66,6 @@ class TeamObjectAttribute extends Model implements AuditableContract
     {
         $value = $this->text_value ?? json_encode($this->json_value);
 
-        return "<TeamObjectAttribute ($this->team_object_id) name='$this->name' value='$value' />";
+        return "<TeamObjectAttribute id='$this->id' name='$this->name' team_object_id='$this->team_object_id' value='$value'>";
     }
 }

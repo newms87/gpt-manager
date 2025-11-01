@@ -230,6 +230,6 @@ class Artifact extends Model implements AuditableContract
         $jsonLength = strlen(json_encode($this->json_content));
         $filesCount = $this->storedFiles()->count();
 
-        return "<Artifact ($this->id) name='$this->name' text='$textLength bytes' json='$jsonLength bytes' files='$filesCount'>";
+        return "<Artifact id='$this->id' name='$this->name' text='$textLength bytes' json='$jsonLength bytes' files='$filesCount'>";
     }
 }

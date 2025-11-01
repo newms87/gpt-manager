@@ -49,6 +49,6 @@ class TaskDefinitionDirective extends Model implements AuditableContract, Resour
 
     public function __toString(): string
     {
-        return "<TaskDefinitionDirective {$this->directive->name} position='$this->position' section='$this->section'>";
+        return "<TaskDefinitionDirective id='$this->id' directive_name='{$this->directive->name}' position='$this->position' section='$this->section'>";
     }
 }

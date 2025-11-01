@@ -94,6 +94,6 @@ class PromptDirective extends Model implements AuditableContract, ResourcePackag
 
     public function __toString(): string
     {
-        return "<PromptDirective $this->name>";
+        return "<PromptDirective id='$this->id' name='$this->name'>";
     }
 }

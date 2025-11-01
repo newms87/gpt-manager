@@ -51,6 +51,6 @@ class TaskProcessListener extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<TaskProcessListner id='$this->id' event_type='$this->event_type' event_id='$this->event_id'>";
+        return "<TaskProcessListener id='$this->id' event_type='$this->event_type' event_id='$this->event_id'>";
     }
 }

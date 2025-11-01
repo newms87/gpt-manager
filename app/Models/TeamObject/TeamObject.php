@@ -110,6 +110,6 @@ class TeamObject extends Model implements AuditableContract
 
     public function __toString(): string
     {
-        return "<TeamObject ($this->type) id='$this->id' name='$this->name' />";
+        return "<TeamObject id='$this->id' name='$this->name' type='$this->type'>";
     }
 }

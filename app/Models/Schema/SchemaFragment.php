@@ -71,6 +71,6 @@ class SchemaFragment extends Model implements AuditableContract, ResourcePackage
 
     public function __toString(): string
     {
-        return "<SchemaFragment ($this->id) $this->name>";
+        return "<SchemaFragment id='$this->id' name='$this->name'>";
     }
 }

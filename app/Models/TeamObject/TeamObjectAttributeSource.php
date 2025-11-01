@@ -38,6 +38,6 @@ class TeamObjectAttributeSource extends Model implements AuditableContract
 
     public function __toString(): string
     {
-        return "<TeamObjectAttributeSource attribute_id='$this->team_object_attribute_id' source_type='$this->source_type' source_id='$this->source_id' />";
+        return "<TeamObjectAttributeSource id='$this->id' attribute_id='$this->team_object_attribute_id' source_type='$this->source_type' source_id='$this->source_id'>";
     }
 }

@@ -121,6 +121,6 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
 
     public function __toString(): string
     {
-        return "<Agent ($this->id) " . StringHelper::limitText(20, $this->name) . ": $this->model>";
+        return "<Agent id='$this->id' name='" . StringHelper::limitText(20, $this->name) . "' model='$this->model'>";
     }
 }

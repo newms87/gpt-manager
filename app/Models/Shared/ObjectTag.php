@@ -17,6 +17,6 @@ class ObjectTag extends Model
 
     public function __toString()
     {
-        return "<ObjectTag ($this->id) $this->name>";
+        return "<ObjectTag id='$this->id' name='$this->name'>";
     }
 }

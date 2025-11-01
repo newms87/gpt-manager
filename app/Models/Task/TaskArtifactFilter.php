@@ -86,6 +86,6 @@ class TaskArtifactFilter extends Model implements AuditableContract, ResourcePac
 
     public function __toString()
     {
-        return "<ArtifactFilter ($this->id) text='$this->include_text' files='$this->include_files' json='$this->include_json' meta='$this->include_meta'>";
+        return "<TaskArtifactFilter id='$this->id' text='$this->include_text' files='$this->include_files' json='$this->include_json' meta='$this->include_meta'>";
     }
 }

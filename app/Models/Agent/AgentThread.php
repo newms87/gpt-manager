@@ -159,7 +159,7 @@ class AgentThread extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<AgentThread ($this->id) $this->name>";
+        return "<AgentThread id='$this->id' name='$this->name'>";
     }
 
     public static function booted(): void

@@ -88,6 +88,6 @@ class McpServer extends Model implements AuditableContract, ResourcePackageableC
 
     public function __toString(): string
     {
-        return "<McpServer ($this->id) " . StringHelper::limitText(20, $this->name) . ": $this->server_url>";
+        return "<McpServer id='$this->id' name='" . StringHelper::limitText(20, $this->name) . "' server_url='$this->server_url'>";
     }
 }

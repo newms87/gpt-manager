@@ -97,6 +97,6 @@ class WorkflowInput extends Model implements AuditableContract
         $dataLength    = strlen(json_encode($this->data));
         $filesCount    = $this->storedFiles()->count();
 
-        return "<WorkflowInput id='$this->id' content='$contentLength bytes' data='$dataLength bytes' files='$filesCount'>";
+        return "<WorkflowInput id='$this->id' name='$this->name' content='$contentLength bytes' data='$dataLength bytes' files='$filesCount'>";
     }
 }

@@ -71,6 +71,6 @@ class ContentSource extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<ContentSource ($this->id) $this->name>";
+        return "<ContentSource id='$this->id' name='$this->name'>";
     }
 }

@@ -79,6 +79,6 @@ class Team extends Model implements AuditableContract
 
     public function __toString()
     {
-        return "<Team ($this->id) $this->name>";
+        return "<Team id='$this->id' name='$this->name'>";
     }
 }
