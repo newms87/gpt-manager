@@ -198,7 +198,7 @@ class AgentThreadService
             $agentThreadRun->started_at = now();
             $agentThreadRun->save();
 
-            static::log("Executing $agentThreadRun");
+            static::logDebug("Executing $agentThreadRun");
 
             $agentThread = $agentThreadRun->agentThread;
             $agent       = $agentThread->agent;
@@ -211,7 +211,7 @@ class AgentThreadService
             do {
                 $agentThreadRun->refresh();
                 if (!$agentThreadRun->isStatusRunning()) {
-                    static::log("$agentThreadRun is no longer running: " . $agentThreadRun->status);
+                    static::logDebug("$agentThreadRun is no longer running: " . $agentThreadRun->status);
                     break;
                 }
 
@@ -261,11 +261,11 @@ class AgentThreadService
             $messagesToSend = $thread->sortedMessages()
                 ->where('id', '>', $lastTrackedMessage->id)
                 ->get();
-            static::log('Using optimization: sending ' . count($messagesToSend) . " new messages after message {$lastTrackedMessage->id}");
+            static::logDebug('Using optimization: sending ' . count($messagesToSend) . " new messages after message {$lastTrackedMessage->id}");
         } else {
             // No tracked messages, send all messages
             $messagesToSend = $thread->sortedMessages()->get();
-            static::log('No tracked messages found, sending all ' . count($messagesToSend) . ' messages');
+            static::logDebug('No tracked messages found, sending all ' . count($messagesToSend) . ' messages');
         }
 
         $messages = [];
@@ -345,7 +345,7 @@ STR;
         $newInputTokens  = $response->inputTokens();
         $newOutputTokens = $response->outputTokens();
 
-        static::log('Handling response from AI model. input: ' . $newInputTokens . ', output: ' . $newOutputTokens);
+        static::logDebug('Handling response from AI model. input: ' . $newInputTokens . ', output: ' . $newOutputTokens);
 
         $threadRun->update([
             'agent_model'  => $thread->agent->model,
@@ -381,7 +381,7 @@ STR;
         // Track the response ID for future optimization
         if ($response->getResponseId()) {
             $lastMessage->setApiResponseId($response->getResponseId());
-            static::log("Tracked response ID: {$lastMessage->api_response_id} for message {$lastMessage->id}");
+            static::logDebug("Tracked response ID: {$lastMessage->api_response_id} for message {$lastMessage->id}");
         }
 
         if ($response->isFinished()) {
@@ -396,7 +396,7 @@ STR;
      */
     public function finishThreadResponse(AgentThreadRun $threadRun, AgentThreadMessage $lastMessage): void
     {
-        static::log('Finishing thread response...');
+        static::logDebug('Finishing thread response...');
 
         $threadRun->update([
             'status'          => AgentThreadRun::STATUS_COMPLETED,
@@ -404,7 +404,7 @@ STR;
             'last_message_id' => $lastMessage->id,
         ]);
 
-        static::log('AgentThread response is finished');
+        static::logDebug('AgentThread response is finished');
     }
 
     /**

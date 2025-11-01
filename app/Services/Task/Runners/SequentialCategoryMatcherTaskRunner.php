@@ -120,7 +120,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $outputArtifacts       = $this->changedArtifacts;
         $taskOutputArtifactIds = $this->taskRun->outputArtifacts()->pluck('artifacts.id')->toArray();
 
-        static::log("Collecting output artifacts...\n\tChanged Artifacts " . collect($this->changedArtifacts)->pluck('id')->toJson() . "\n\tAlready Output Artifacts " . json_encode($taskOutputArtifactIds));
+        static::logDebug("Collecting output artifacts...\n\tChanged Artifacts " . collect($this->changedArtifacts)->pluck('id')->toJson() . "\n\tAlready Output Artifacts " . json_encode($taskOutputArtifactIds));
 
         foreach ($this->taskProcess->inputArtifacts as $inputArtifact) {
             // Check if the artifact that was used to clone this input artifact has already been included in the output
@@ -287,7 +287,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
         $correctionAttemptsRemaining = $this->config('correction_attempts', 2);
 
         do {
-            static::log("Categorizing artifacts... $correctionAttemptsRemaining attempts remaining");
+            static::logDebug("Categorizing artifacts... $correctionAttemptsRemaining attempts remaining");
             $categoryArtifact    = $this->runAgentThreadWithSchema($agentThread, $schema);
             $categoriesWithPages = $categoryArtifact->json_content['categories'] ?? [];
 
@@ -303,7 +303,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
                 return $categoriesWithPages;
             } catch (Throwable $throwable) {
                 // If the agent was unable to provide a valid response, we will ask it to try again
-                static::log('Invalid response: ' . $throwable->getMessage());
+                static::logDebug('Invalid response: ' . $throwable->getMessage());
 
                 if ($correctionAttemptsRemaining === 0) {
                     // If we have no more attempts remaining, we will throw the error
@@ -559,7 +559,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
             $categoryGroups = [];
         }
 
-        static::log('Resolved ' . count($categoryGroups) . ' category groups');
+        static::logDebug('Resolved ' . count($categoryGroups) . ' category groups');
 
         return array_values($categoryGroups);
     }
@@ -586,7 +586,7 @@ class SequentialCategoryMatcherTaskRunner extends AgentThreadTaskRunner
     {
         foreach ($categoryGroups as $index => $artifacts) {
             $positions = collect($artifacts)->pluck('position')->implode(',');
-            static::log("Group $index: $positions");
+            static::logDebug("Group $index: $positions");
         }
     }
 }

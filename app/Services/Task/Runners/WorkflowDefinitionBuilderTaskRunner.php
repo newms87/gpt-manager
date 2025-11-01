@@ -323,7 +323,7 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
         $artifacts = [];
 
         if (!$organizationArtifact->json_content) {
-            static::log('No JSON content found in organization artifact');
+            static::logDebug('No JSON content found in organization artifact');
 
             return [$organizationArtifact];
         }
@@ -334,12 +334,12 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
         $taskSpecs = $organizationData['task_specifications'] ?? [];
 
         if (empty($taskSpecs)) {
-            static::log('No task specifications found in organization data');
+            static::logDebug('No task specifications found in organization data');
 
             return [$organizationArtifact];
         }
 
-        static::log('Processing ' . count($taskSpecs) . ' task specifications for split mode');
+        static::logDebug('Processing ' . count($taskSpecs) . ' task specifications for split mode');
 
         // Create individual artifacts for each task specification
         foreach ($taskSpecs as $index => $taskSpec) {
@@ -365,7 +365,7 @@ class WorkflowDefinitionBuilderTaskRunner extends BaseTaskRunner
             $artifacts[] = $taskArtifact;
         }
 
-        static::log('Created ' . count($artifacts) . ' task specification artifacts for split processing');
+        static::logDebug('Created ' . count($artifacts) . ' task specification artifacts for split processing');
 
         return $artifacts;
     }

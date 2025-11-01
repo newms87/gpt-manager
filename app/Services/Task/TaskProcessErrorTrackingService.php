@@ -23,7 +23,7 @@ class TaskProcessErrorTrackingService
         })->get();
 
         if ($taskProcesses->isEmpty()) {
-            static::log("No TaskProcess found for JobDispatch {$jobDispatch->id}");
+            static::logDebug("No TaskProcess found for JobDispatch {$jobDispatch->id}");
 
             return;
         }
@@ -35,7 +35,7 @@ class TaskProcessErrorTrackingService
                 $errorCount = $auditRequest->errorLogEntries()->count();
             }
 
-            static::log("JobDispatch {$jobDispatch->id} has {$errorCount} errors");
+            static::logDebug("JobDispatch {$jobDispatch->id} has {$errorCount} errors");
 
             // Update the task process error count if needed
             $this->updateTaskProcessErrorCount($taskProcess);
@@ -58,7 +58,7 @@ class TaskProcessErrorTrackingService
 
         // Update if changed
         if ($taskProcess->error_count !== $totalErrors) {
-            static::log("Updating TaskProcess {$taskProcess->id} error_count from {$taskProcess->error_count} to {$totalErrors}");
+            static::logDebug("Updating TaskProcess {$taskProcess->id} error_count from {$taskProcess->error_count} to {$totalErrors}");
             $taskProcess->update(['error_count' => $totalErrors]);
 
             // Update the parent task run's aggregate error count
@@ -76,7 +76,7 @@ class TaskProcessErrorTrackingService
         $totalErrors = $taskRun->taskProcesses()->sum('error_count');
 
         if ($taskRun->task_process_error_count !== $totalErrors) {
-            static::log("Updating TaskRun {$taskRun->id} task_process_error_count from {$taskRun->task_process_error_count} to {$totalErrors}");
+            static::logDebug("Updating TaskRun {$taskRun->id} task_process_error_count from {$taskRun->task_process_error_count} to {$totalErrors}");
             $taskRun->update(['task_process_error_count' => $totalErrors]);
         }
     }

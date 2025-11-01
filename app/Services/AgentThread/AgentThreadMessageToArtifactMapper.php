@@ -6,12 +6,14 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThreadMessage;
 use App\Models\Agent\AgentThreadRun;
 use App\Models\Task\Artifact;
-use Illuminate\Support\Facades\Log;
+use App\Traits\HasDebugLogging;
 use Newms87\Danx\Helpers\DateHelper;
 use Newms87\Danx\Helpers\StringHelper;
 
 class AgentThreadMessageToArtifactMapper
 {
+    use HasDebugLogging;
+
     protected string $name      = '';
 
     protected Agent $agent;
@@ -55,7 +57,7 @@ class AgentThreadMessageToArtifactMapper
         }
 
         if (!$textContent && !$jsonContent) {
-            Log::debug('Did not produce an artifact: No text or JSON content found in message');
+            static::logDebug('Did not produce an artifact: No text or JSON content found in message');
 
             return null;
         }
@@ -86,7 +88,7 @@ class AgentThreadMessageToArtifactMapper
             $this->attachCitedSourceFilesToArtifact($artifact);
         }
 
-        Log::debug("Created $artifact");
+        static::logDebug("Created $artifact");
 
         return $artifact;
     }

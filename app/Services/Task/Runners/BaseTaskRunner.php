@@ -101,7 +101,7 @@ class BaseTaskRunner implements TaskRunnerContract
 
     public function step(string $step, ?float $percentComplete = null): void
     {
-        static::log("Step: $step");
+        static::logDebug("Step: $step");
 
         $this->taskRun->update([
             'step'             => $step,
@@ -111,7 +111,7 @@ class BaseTaskRunner implements TaskRunnerContract
 
     public function activity(string $activity, ?float $percentComplete = null): void
     {
-        static::log("Activity: $activity");
+        static::logDebug("Activity: $activity");
 
         if (!$this->taskProcess) {
             throw new ValidationError('TaskProcess is not set in this context');
@@ -130,7 +130,7 @@ class BaseTaskRunner implements TaskRunnerContract
 
     public function eventTriggered(TaskProcessListener $taskProcessListener): void
     {
-        static::log("Event Triggered $taskProcessListener");
+        static::logDebug("Event Triggered $taskProcessListener");
     }
 
     /**
@@ -140,13 +140,13 @@ class BaseTaskRunner implements TaskRunnerContract
      */
     public function complete(array|Collection|EloquentCollection $artifacts = []): void
     {
-        static::log("Task process completed: $this->taskProcess");
+        static::logDebug("Task process completed: $this->taskProcess");
 
         if ($artifacts) {
             TaskRunnerService::validateArtifacts($artifacts);
             static::prepareArtifactsForOutput($artifacts);
 
-            static::log('Attaching artifacts to task run and process: ' . collect($artifacts)->pluck('id')->toJson());
+            static::logDebug('Attaching artifacts to task run and process: ' . collect($artifacts)->pluck('id')->toJson());
 
             $this->attachArtifactsToTaskAndProcess($artifacts);
         }
@@ -170,7 +170,7 @@ class BaseTaskRunner implements TaskRunnerContract
 
         switch ($outputMode) {
             case TaskDefinition::OUTPUT_ARTIFACT_MODE_GROUP_ALL:
-                static::log('Grouping all artifacts into a single artifact');
+                static::logDebug('Grouping all artifacts into a single artifact');
 
                 $topLevelArtifact = $this->resolveSingletonTaskRunArtifact($artifacts);
                 $topLevelArtifact->assignChildren($artifacts);
@@ -182,7 +182,7 @@ class BaseTaskRunner implements TaskRunnerContract
                 break;
 
             case TaskDefinition::OUTPUT_ARTIFACT_MODE_PER_PROCESS:
-                static::log('Grouping all artifacts into a single artifact per process');
+                static::logDebug('Grouping all artifacts into a single artifact per process');
 
                 $processArtifact = $this->createMergedArtifactFromTopLevel($artifacts);
 
@@ -196,7 +196,7 @@ class BaseTaskRunner implements TaskRunnerContract
                 break;
 
             default:
-                static::log('Attaching all artifacts to process and task run');
+                static::logDebug('Attaching all artifacts to process and task run');
 
                 // By default, all artifacts go to the process and the task
                 $taskRunArtifactIds = $artifactIds;
@@ -235,7 +235,7 @@ class BaseTaskRunner implements TaskRunnerContract
             }
             $artifact->save();
 
-            static::log("Trimming artifact hierarchy for $artifact->id, max level: $maxLevel");
+            static::logDebug("Trimming artifact hierarchy for $artifact->id, max level: $maxLevel");
             $this->trimArtifactHierarchy($artifact, $maxLevel);
         }
     }
@@ -285,7 +285,7 @@ class BaseTaskRunner implements TaskRunnerContract
 
     public function afterAllProcessesCompleted(): void
     {
-        static::log('All processes completed.');
+        static::logDebug('All processes completed.');
     }
 
     /**

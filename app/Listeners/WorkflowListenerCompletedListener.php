@@ -25,7 +25,7 @@ class WorkflowListenerCompletedListener implements ShouldQueue
 
         $workflowListener = WorkflowListener::findForWorkflowRun($workflowRun);
 
-        static::log('triggered', [
+        static::logDebug('triggered', [
             'workflow_run_id' => $workflowRun->id,
             'listener_type'   => $workflowListener?->listener_type,
         ]);
@@ -36,7 +36,7 @@ class WorkflowListenerCompletedListener implements ShouldQueue
 
         // Check if already completed - prevents re-processing
         if ($workflowListener->completed_at) {
-            static::log('already_completed', [
+            static::logDebug('already_completed', [
                 'workflow_run_id' => $workflowRun->id,
                 'listener_id'     => $workflowListener->id,
                 'completed_at'    => $workflowListener->completed_at->toISOString(),
@@ -53,7 +53,7 @@ class WorkflowListenerCompletedListener implements ShouldQueue
             $workflowListener->refresh();
 
             if ($workflowListener->completed_at) {
-                static::log('completed_by_another_job', [
+                static::logDebug('completed_by_another_job', [
                     'workflow_run_id' => $workflowRun->id,
                     'listener_id'     => $workflowListener->id,
                 ]);
@@ -83,7 +83,7 @@ class WorkflowListenerCompletedListener implements ShouldQueue
                     'status'       => 'completed',
                 ]);
 
-                static::log('processing_completed', [
+                static::logDebug('processing_completed', [
                     'workflow_run_id' => $workflowRun->id,
                     'listener_id'     => $workflowListener->id,
                 ]);
@@ -99,7 +99,7 @@ class WorkflowListenerCompletedListener implements ShouldQueue
                     ]),
                 ]);
 
-                static::log('processing_failed', [
+                static::logDebug('processing_failed', [
                     'workflow_run_id' => $workflowRun->id,
                     'listener_id'     => $workflowListener->id,
                     'error'           => $e->getMessage(),

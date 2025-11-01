@@ -60,7 +60,7 @@ class GoogleDocsApi extends Api
     public function readDocument(string $documentId): array
     {
         try {
-            static::log('Reading document', ['document_id' => $documentId]);
+            static::logDebug('Reading document', ['document_id' => $documentId]);
 
             $response = $this->get("documents/{$documentId}");
             $document = $response->json();
@@ -71,7 +71,7 @@ class GoogleDocsApi extends Api
 
             $content = app(GoogleDocsContentService::class)->extractTextContent($document);
 
-            static::log('Document read successfully', [
+            static::logDebug('Document read successfully', [
                 'document_id'    => $documentId,
                 'content_length' => strlen($content),
             ]);
@@ -84,7 +84,7 @@ class GoogleDocsApi extends Api
             ];
 
         } catch (\Exception $e) {
-            static::log('Failed to read document', [
+            static::logDebug('Failed to read document', [
                 'document_id' => $documentId,
                 'error'       => $e->getMessage(),
             ]);
@@ -148,14 +148,14 @@ class GoogleDocsApi extends Api
             if ($permissions && isset($permissions['type']) && isset($permissions['role'])) {
                 // This would need to use Drive API which has a different base URL
                 // For now, just log that we would do this
-                static::log('Would set document permissions', [
+                static::logDebug('Would set document permissions', [
                     'document_id' => $documentId,
                     'permissions' => $permissions,
                 ]);
             }
 
         } catch (\Exception $e) {
-            static::log('Failed to set document permissions', [
+            static::logDebug('Failed to set document permissions', [
                 'document_id' => $documentId,
                 'error'       => $e->getMessage(),
             ]);
@@ -268,12 +268,12 @@ class GoogleDocsApi extends Api
             $token             = $oauthService->getValidToken('google');
             $this->accessToken = $token->access_token;
 
-            static::log('OAuth authentication initialized', [
+            static::logDebug('OAuth authentication initialized', [
                 'team_id'    => $token->team_id,
                 'expires_at' => $token->expires_at?->toISOString(),
             ]);
         } catch (TokenRevokedException|TokenExpiredException $e) {
-            static::log('OAuth token issue', [
+            static::logDebug('OAuth token issue', [
                 'service'    => $e->getService(),
                 'team_id'    => $e->getTeamId(),
                 'error_type' => get_class($e),
@@ -281,13 +281,13 @@ class GoogleDocsApi extends Api
             ]);
             throw new ApiException($e->getMessage(), $e->getCode());
         } catch (NoTokenFoundException $e) {
-            static::log('No OAuth token found', [
+            static::logDebug('No OAuth token found', [
                 'service' => $e->getService(),
                 'team_id' => $e->getTeamId(),
             ]);
             throw new ApiException($e->getMessage(), $e->getCode());
         } catch (\Exception $e) {
-            static::log('Failed to initialize OAuth authentication', [
+            static::logDebug('Failed to initialize OAuth authentication', [
                 'error' => $e->getMessage(),
             ]);
             throw new ApiException('Failed to initialize Google Docs authentication: ' . $e->getMessage());
@@ -328,14 +328,14 @@ class GoogleDocsApi extends Api
                 ->get('https://www.googleapis.com/drive/v3/about?fields=user/emailAddress');
 
             if ($response->successful()) {
-                static::log('OAuth token validated successfully', [
+                static::logDebug('OAuth token validated successfully', [
                     'status' => $response->status(),
                 ]);
 
                 return true;
             }
 
-            static::log('OAuth token validation failed', [
+            static::logDebug('OAuth token validation failed', [
                 'status'   => $response->status(),
                 'response' => $response->json(),
             ]);
@@ -343,7 +343,7 @@ class GoogleDocsApi extends Api
             return false;
 
         } catch (\Exception $e) {
-            static::log('OAuth token validation error', [
+            static::logDebug('OAuth token validation error', [
                 'error' => $e->getMessage(),
             ]);
 

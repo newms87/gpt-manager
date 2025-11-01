@@ -35,12 +35,12 @@ class RunWorkflowTaskRunner extends BaseTaskRunner
 
     public function eventTriggered(TaskProcessListener $taskProcessListener): void
     {
-        static::log("Handling Event $taskProcessListener");
+        static::logDebug("Handling Event $taskProcessListener");
 
         $workflowRun = $taskProcessListener->getEventObject();
 
         if (!($workflowRun instanceof WorkflowRun)) {
-            static::log('Ignoring event: event was not a WorkflowRun');
+            static::logDebug('Ignoring event: event was not a WorkflowRun');
 
             return;
         }

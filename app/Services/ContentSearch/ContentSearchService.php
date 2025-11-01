@@ -20,7 +20,7 @@ class ContentSearchService
      */
     public function search(ContentSearchRequest $request): ContentSearchResult
     {
-        static::log('Starting content search', [
+        static::logDebug('Starting content search', [
             'uses_llm'        => $request->usesLlmExtraction(),
             'uses_field_path' => $request->usesFieldPath(),
             'uses_regex'      => $request->usesRegexPattern(),
@@ -50,12 +50,12 @@ class ContentSearchService
 
         // Handle null or empty artifacts
         if (!$artifacts || $artifacts->isEmpty()) {
-            static::log('No artifacts to search');
+            static::logDebug('No artifacts to search');
 
             return ContentSearchResult::notFound('No artifacts provided for searching');
         }
 
-        static::log('Searching artifacts', [
+        static::logDebug('Searching artifacts', [
             'artifact_count' => $artifacts->count(),
         ]);
 
@@ -63,7 +63,7 @@ class ContentSearchService
             foreach ($artifacts as $artifact) {
                 $result = $this->findInFieldPath($request->getFieldPath(), $artifact);
                 if ($result->isFound()) {
-                    static::log('Found via field path', [
+                    static::logDebug('Found via field path', [
                         'value'     => $result->getValue(),
                         'source'    => $result->getSourceIdentifier(),
                         'validated' => $result->isValidated(),
@@ -82,7 +82,7 @@ class ContentSearchService
             }
         }
 
-        static::log('No content found in artifacts');
+        static::logDebug('No content found in artifacts');
 
         return ContentSearchResult::notFound('No matching content found in artifacts');
     }
@@ -129,7 +129,7 @@ class ContentSearchService
     {
         $potentialArtifacts = $this->getPotentialArtifacts($request);
 
-        static::log('Starting LLM search on artifacts', [
+        static::logDebug('Starting LLM search on artifacts', [
             'query'               => $request->getNaturalLanguageQuery(),
             'potential_artifacts' => $potentialArtifacts->count(),
             'model'               => $request->getLlmModel() ?: 'default',
@@ -142,14 +142,14 @@ class ContentSearchService
                     return $result;
                 }
             } catch (Exception $e) {
-                static::log('LLM extraction failed for artifact', [
+                static::logDebug('LLM extraction failed for artifact', [
                     'artifact_id' => $artifact->id,
                     'error'       => $e->getMessage(),
                 ]);
             }
         }
 
-        static::log('LLM search found no matches in artifacts');
+        static::logDebug('LLM search found no matches in artifacts');
 
         return ContentSearchResult::notFound('LLM extraction found no matches');
     }
@@ -192,7 +192,7 @@ class ContentSearchService
                     $result->setSourceDirective($sourceDirective, 'directive_text');
                 }
 
-                static::log('LLM extraction successful from directives', [
+                static::logDebug('LLM extraction successful from directives', [
                     'extracted_value'     => $result->getValue(),
                     'source_directive_id' => $sourceDirective ? (property_exists($sourceDirective, 'id') ? $sourceDirective->id : null) : null,
                 ]);
@@ -200,7 +200,7 @@ class ContentSearchService
                 return $result;
             }
         } catch (Exception $e) {
-            static::log('LLM extraction failed for directives', [
+            static::logDebug('LLM extraction failed for directives', [
                 'error' => $e->getMessage(),
             ]);
 
@@ -219,7 +219,7 @@ class ContentSearchService
         $query = $request->getNaturalLanguageQuery();
         $model = $request->getLlmModel();
 
-        static::log('Starting LLM extraction', [
+        static::logDebug('Starting LLM extraction', [
             'text_length' => strlen($textContent),
             'query'       => $query,
             'model'       => $model,
@@ -242,19 +242,19 @@ class ContentSearchService
         $textContent = $threadRun->lastMessage?->getCleanContent();
 
         if (!$textContent) {
-            static::log('LLM agent failed to provide response');
+            static::logDebug('LLM agent failed to provide response');
 
             return ContentSearchResult::notFound('LLM agent failed to respond');
         }
 
         // Handle "NONE" response
         if (strtoupper($textContent) === 'NONE') {
-            static::log('LLM found no content');
+            static::logDebug('LLM found no content');
 
             return ContentSearchResult::notFound('LLM found no matching content');
         }
 
-        static::log('LLM agent response received', [
+        static::logDebug('LLM agent response received', [
             'response'        => $textContent,
             'response_length' => strlen($textContent),
         ]);
@@ -262,7 +262,7 @@ class ContentSearchService
         $result = ContentSearchResult::llmFound($textContent, $sourceArtifact, $model);
         $result->addMetadata('llm_instructions', $instructions);
 
-        static::log('LLM extraction found a result matching the query');
+        static::logDebug('LLM extraction found a result matching the query');
 
         return $result;
     }
@@ -320,7 +320,7 @@ INSTRUCTIONS;
             $result->setValidated($isValid);
 
             if (!$isValid && $request->isValidationRequired()) {
-                static::log('Validation failed for extracted value', [
+                static::logDebug('Validation failed for extracted value', [
                     'value'  => $result->getValue(),
                     'source' => $result->getSourceIdentifier(),
                 ]);
@@ -333,7 +333,7 @@ INSTRUCTIONS;
             $result->setValidated(false, $e->getMessage());
 
             if ($request->isValidationRequired()) {
-                static::log('Validation error', [
+                static::logDebug('Validation error', [
                     'value' => $result->getValue(),
                     'error' => $e->getMessage(),
                 ]);
@@ -388,7 +388,7 @@ INSTRUCTIONS;
             if ($result->isFound()) {
                 $this->validateResult($result, $request);
 
-                static::log('Search completed with artifact result', [
+                static::logDebug('Search completed with artifact result', [
                     'found'             => $result->isFound(),
                     'value'             => $result->getValue(),
                     'source'            => $result->getSourceIdentifier(),
@@ -410,7 +410,7 @@ INSTRUCTIONS;
             $result = ContentSearchResult::notFound('No content found in artifacts or directives');
         }
 
-        static::log('Search completed', [
+        static::logDebug('Search completed', [
             'found'             => $result->isFound(),
             'value'             => $result->getValue(),
             'source'            => $result->getSourceIdentifier(),

@@ -23,7 +23,7 @@ class TaskRunnerService
      */
     public static function prepareTaskRun(TaskDefinition $taskDefinition): TaskRun
     {
-        static::log("Prepare $taskDefinition");
+        static::logDebug("Prepare $taskDefinition");
 
         $taskRun = $taskDefinition->taskRuns()->make([
             'status' => WorkflowStatesContract::STATUS_PENDING,
@@ -43,7 +43,7 @@ class TaskRunnerService
      */
     public static function prepareTaskProcesses(TaskRun $taskRun): array
     {
-        static::log("Preparing task processes for $taskRun");
+        static::logDebug("Preparing task processes for $taskRun");
 
         $taskProcesses = [];
 
@@ -76,7 +76,7 @@ class TaskRunnerService
         }
 
         if (!$taskProcesses) {
-            static::log("No task processes created. Marking as skipped: $taskRun");
+            static::logDebug("No task processes created. Marking as skipped: $taskRun");
             $taskRun->skipped_at = now();
             $taskRun->save();
         }
@@ -93,7 +93,7 @@ class TaskRunnerService
      */
     public static function continue(TaskRun $taskRun): void
     {
-        static::log("Continue $taskRun");
+        static::logDebug("Continue $taskRun");
 
         // Always start by acquiring the lock for the task run before checking if it can continue
         // NOTE: This prevents allowing the TaskRun to continue if there was a race condition on failing/stopping the TaskRun
@@ -101,19 +101,19 @@ class TaskRunnerService
 
         try {
             if (!$taskRun->canContinue()) {
-                static::log("TaskRun is $taskRun->status. Skipping execution");
+                static::logDebug("TaskRun is $taskRun->status. Skipping execution");
 
                 return;
             }
 
             if ($taskRun->taskProcesses->isEmpty()) {
-                static::log('No task processes found. Skipping execution');
+                static::logDebug('No task processes found. Skipping execution');
 
                 return;
             }
 
             if ($taskRun->isStatusPending()) {
-                static::log('TaskRun was Pending, starting now...');
+                static::logDebug('TaskRun was Pending, starting now...');
                 // Only start the task run if it is pending
                 $taskRun->started_at = now();
                 $taskRun->save();
@@ -133,7 +133,7 @@ class TaskRunnerService
      */
     public static function restart(TaskRun $taskRun): void
     {
-        static::log("Restart $taskRun");
+        static::logDebug("Restart $taskRun");
 
         // Always start by acquiring the lock for the task run before checking if it can continue
         // NOTE: This prevents allowing the TaskRun to continue if there was a race condition on failing/stopping the TaskRun
@@ -192,13 +192,13 @@ class TaskRunnerService
      */
     public static function resume(TaskRun $taskRun): void
     {
-        static::log("Resume $taskRun");
+        static::logDebug("Resume $taskRun");
 
         LockHelper::acquire($taskRun);
 
         try {
             if (!$taskRun->isStopped() && !$taskRun->isStatusPending()) {
-                static::log('TaskRun is not stopped, skipping resume');
+                static::logDebug('TaskRun is not stopped, skipping resume');
 
                 return;
             }
@@ -227,13 +227,13 @@ class TaskRunnerService
      */
     public static function stop(TaskRun $taskRun): void
     {
-        static::log("Stop $taskRun");
+        static::logDebug("Stop $taskRun");
 
         LockHelper::acquire($taskRun);
 
         try {
             if ($taskRun->isStopped()) {
-                static::log('TaskRun is already stopped');
+                static::logDebug('TaskRun is already stopped');
 
                 return;
             }
@@ -263,18 +263,18 @@ class TaskRunnerService
      */
     public static function onComplete(TaskRun $taskRun): void
     {
-        static::log("Running afterAllProcessesCompleted for $taskRun");
+        static::logDebug("Running afterAllProcessesCompleted for $taskRun");
 
         $taskRun->getRunner()->afterAllProcessesCompleted();
 
-        static::log('Finished afterAllProcessesCompleted');
+        static::logDebug('Finished afterAllProcessesCompleted');
 
         // If additional task processes were created by the task runner, skip completing the task run and starting the next nodes in the workflow
         if (!$taskRun->refresh()->isCompleted()) {
             return;
         }
 
-        static::log("Completed $taskRun");
+        static::logDebug("Completed $taskRun");
 
         $workflowRun = $taskRun->workflowRun;
 

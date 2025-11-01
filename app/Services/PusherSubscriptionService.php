@@ -52,7 +52,7 @@ class PusherSubscriptionService
             }
         }
 
-        self::log("User subscribed to {$resourceType}", [
+        self::logDebug("User subscribed to {$resourceType}", [
             'cache_key' => $cacheKey,
             'user_id'   => $userId,
             'team_id'   => $teamId,
@@ -103,7 +103,7 @@ class PusherSubscriptionService
             Cache::put($cacheKey, $subscribers, self::TTL);
         }
 
-        self::log("User unsubscribed from {$resourceType}", [
+        self::logDebug("User unsubscribed from {$resourceType}", [
             'cache_key' => $cacheKey,
             'user_id'   => $userId,
             'team_id'   => $teamId,
@@ -153,7 +153,7 @@ class PusherSubscriptionService
             }
         }
 
-        self::log("Keepalive refreshed {$refreshedCount} subscriptions", [
+        self::logDebug("Keepalive refreshed {$refreshedCount} subscriptions", [
             'user_id'             => $userId,
             'team_id'             => $teamId,
             'total_subscriptions' => count($subscriptions),

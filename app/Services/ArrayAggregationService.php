@@ -93,14 +93,14 @@ class ArrayAggregationService
         string $operation,
         bool $supportsDates = false
     ): string {
-        static::log("Calculating {$operation}", ['value_count' => count($values)]);
+        static::logDebug("Calculating {$operation}", ['value_count' => count($values)]);
 
         // Try dates first (only for MAX/MIN)
         if ($supportsDates) {
             $dateValues = $this->parseDateValues($values);
             if (!empty($dateValues)) {
                 $result = $operation === 'max' ? max($dateValues) : min($dateValues);
-                static::log("{$operation} calculated from dates", ['result' => $result]);
+                static::logDebug("{$operation} calculated from dates", ['result' => $result]);
 
                 return $result;
             }
@@ -109,7 +109,7 @@ class ArrayAggregationService
         // Fall back to numeric values
         $numericValues = $this->extractNumericValues($values);
         if (empty($numericValues)) {
-            static::log("{$operation}: No valid numeric values found, returning 0");
+            static::logDebug("{$operation}: No valid numeric values found, returning 0");
 
             return '0';
         }
@@ -121,7 +121,7 @@ class ArrayAggregationService
             'sum' => (string)array_sum($numericValues),
         };
 
-        static::log("{$operation} calculated", [
+        static::logDebug("{$operation} calculated", [
             'result'      => $result,
             'valid_count' => count($numericValues),
         ]);
@@ -153,14 +153,14 @@ class ArrayAggregationService
                 $numericValues[] = $parsed;
             } else {
                 $skippedCount++;
-                static::log('Skipped non-numeric value', [
+                static::logDebug('Skipped non-numeric value', [
                     'value' => substr((string)$value, 0, 100),
                     'type'  => gettype($value),
                 ]);
             }
         }
 
-        static::log('Extracted numeric values', [
+        static::logDebug('Extracted numeric values', [
             'total_values'  => count($values),
             'numeric_count' => count($numericValues),
             'skipped_count' => $skippedCount,

@@ -35,7 +35,7 @@ class TaskProcessExecutorService
         if ($taskProcess) {
             $this->executeTaskProcess($taskProcess);
         } else {
-            static::log("No available task processes for WorkflowRun {$workflowRun->id}");
+            static::logDebug("No available task processes for WorkflowRun {$workflowRun->id}");
         }
     }
 
@@ -55,7 +55,7 @@ class TaskProcessExecutorService
             if ($taskProcess) {
                 $this->executeTaskProcess($taskProcess);
             } else {
-                static::log("No available task processes for TaskRun {$taskRun->id}");
+                static::logDebug("No available task processes for TaskRun {$taskRun->id}");
             }
         } finally {
             LockHelper::release($taskRun);
@@ -98,11 +98,11 @@ class TaskProcessExecutorService
      */
     protected function executeTaskProcess(TaskProcess $taskProcess): void
     {
-        static::log("Found available task process: $taskProcess");
+        static::logDebug("Found available task process: $taskProcess");
 
         // If this is a timed out or incomplete process, restart it first
         if ($taskProcess->isStatusTimeout() || $taskProcess->isStatusIncomplete()) {
-            static::log("Restarting {$taskProcess->status} process: $taskProcess");
+            static::logDebug("Restarting {$taskProcess->status} process: $taskProcess");
             TaskProcessRunnerService::restart($taskProcess);
 
             return;
@@ -129,7 +129,7 @@ class TaskProcessExecutorService
 
         foreach ($runningProcesses as $process) {
             if ($process->isPastTimeout()) {
-                static::log("Marking timed out process as timeout: $process");
+                static::logDebug("Marking timed out process as timeout: $process");
                 $process->update([
                     'timeout_at' => now(),
                     'status'     => WorkflowStatesContract::STATUS_TIMEOUT,

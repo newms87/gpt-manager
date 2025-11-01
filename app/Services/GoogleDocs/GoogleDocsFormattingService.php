@@ -140,7 +140,7 @@ class GoogleDocsFormattingService
     {
         $requests = [];
 
-        static::log('applyFormattingToText: Starting', [
+        static::logDebug('applyFormattingToText: Starting', [
             'base_index'    => $baseIndex,
             'formats_count' => count($formats),
         ]);
@@ -149,7 +149,7 @@ class GoogleDocsFormattingService
             $startIndex = $baseIndex + $format['start'];
             $endIndex   = $baseIndex + $format['end'];
 
-            static::log('applyFormattingToText: Processing format', [
+            static::logDebug('applyFormattingToText: Processing format', [
                 'format_index'           => $formatIndex,
                 'type'                   => $format['type'],
                 'format_start'           => $format['start'],
@@ -210,7 +210,7 @@ class GoogleDocsFormattingService
         }
 
         if (!empty($requests)) {
-            static::log('applyFormattingToText: Sending batch update', [
+            static::logDebug('applyFormattingToText: Sending batch update', [
                 'requests_count' => count($requests),
                 'requests'       => $requests,
             ]);
@@ -221,7 +221,7 @@ class GoogleDocsFormattingService
 
             $responseData = $response->json();
 
-            static::log('applyFormattingToText: Batch update response', [
+            static::logDebug('applyFormattingToText: Batch update response', [
                 'response' => $responseData,
             ]);
 
@@ -229,7 +229,7 @@ class GoogleDocsFormattingService
                 throw new ApiException('Failed to apply formatting: ' . ($responseData['error']['message'] ?? 'Unknown error'));
             }
 
-            static::log('Formatting applied to text', [
+            static::logDebug('Formatting applied to text', [
                 'document_id'     => $documentId,
                 'formats_applied' => count($requests),
             ]);
@@ -242,7 +242,7 @@ class GoogleDocsFormattingService
     public function replaceVariableWithFormattedMarkdown(GoogleDocsApi $api, string $documentId, string $variable, string $markdownValue): void
     {
         try {
-            static::log('Replacing variable with formatted markdown', [
+            static::logDebug('Replacing variable with formatted markdown', [
                 'document_id'     => $documentId,
                 'variable'        => $variable,
                 'markdown_length' => strlen($markdownValue),
@@ -261,7 +261,7 @@ class GoogleDocsFormattingService
             $placeholderPosition = app(GoogleDocsContentService::class)->findTextPosition($document, $placeholder);
 
             if ($placeholderPosition === null) {
-                static::log('Could not find variable placeholder, falling back to replaceAllText', [
+                static::logDebug('Could not find variable placeholder, falling back to replaceAllText', [
                     'variable'    => $variable,
                     'placeholder' => $placeholder,
                 ]);
@@ -273,7 +273,7 @@ class GoogleDocsFormattingService
 
             $placeholderEndIndex = $placeholderPosition + strlen($placeholder);
 
-            static::log('Found placeholder position', [
+            static::logDebug('Found placeholder position', [
                 'placeholder' => $placeholder,
                 'start_index' => $placeholderPosition,
                 'end_index'   => $placeholderEndIndex,
@@ -309,13 +309,13 @@ class GoogleDocsFormattingService
                 throw new ApiException('Failed to replace variable: ' . ($responseData['error']['message'] ?? 'Unknown error'));
             }
 
-            static::log('Placeholder deleted and text inserted', [
+            static::logDebug('Placeholder deleted and text inserted', [
                 'placeholder_position' => $placeholderPosition,
                 'text_length'          => strlen($plainText),
             ]);
 
             // DEBUG: Log what we're about to format
-            static::log('About to apply formatting', [
+            static::logDebug('About to apply formatting', [
                 'base_index'    => $placeholderPosition,
                 'formats_count' => count($formats),
                 'first_format'  => $formats[0] ?? null,
@@ -329,14 +329,14 @@ class GoogleDocsFormattingService
                 $this->applyFormattingToText($api, $documentId, $formattingBaseIndex, $formats);
             }
 
-            static::log('Variable replaced with formatted markdown successfully', [
+            static::logDebug('Variable replaced with formatted markdown successfully', [
                 'document_id'     => $documentId,
                 'variable'        => $variable,
                 'formats_applied' => count($formats),
             ]);
 
         } catch (\Exception $e) {
-            static::log('Failed to replace variable with formatted markdown', [
+            static::logDebug('Failed to replace variable with formatted markdown', [
                 'document_id' => $documentId,
                 'variable'    => $variable,
                 'error'       => $e->getMessage(),
@@ -377,7 +377,7 @@ class GoogleDocsFormattingService
                 throw new ApiException('Failed to replace variables: ' . ($responseData['error']['message'] ?? 'Unknown error'));
             }
 
-            static::log('Plain text variables replaced in document', [
+            static::logDebug('Plain text variables replaced in document', [
                 'document_id'        => $documentId,
                 'variables_replaced' => count($requests),
             ]);

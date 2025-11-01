@@ -3,11 +3,13 @@
 namespace App\Console\Commands;
 
 use App\Services\Billing\UsageBillingService;
+use App\Traits\HasDebugLogging;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 
 class ProcessDailyUsageBilling extends Command
 {
+    use HasDebugLogging;
+
     /**
      * The name and signature of the console command.
      *
@@ -82,7 +84,7 @@ class ProcessDailyUsageBilling extends Command
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $this->error('Failed to process daily usage billing: ' . $e->getMessage());
-            Log::error('Daily usage billing command failed', [
+            static::logError('Daily usage billing command failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

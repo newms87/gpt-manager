@@ -28,7 +28,7 @@ class ArtifactDeduplicationService
      */
     public function deduplicateArtifactNames(Collection $artifacts): void
     {
-        static::log('Starting deduplication for ' . $artifacts->count() . ' artifacts');
+        static::logDebug('Starting deduplication for ' . $artifacts->count() . ' artifacts');
 
         // Extract names grouped by their path in the JSON structure
         $namesByPath = [];
@@ -42,12 +42,12 @@ class ArtifactDeduplicationService
         }
 
         if (empty($namesByPath)) {
-            static::log('No records with names found for deduplication');
+            static::logDebug('No records with names found for deduplication');
 
             return;
         }
 
-        static::log('Found names at ' . count($namesByPath) . ' different paths');
+        static::logDebug('Found names at ' . count($namesByPath) . ' different paths');
 
         // Process each path separately
         $allMappings = [];
@@ -66,12 +66,12 @@ class ArtifactDeduplicationService
             }
 
             if (empty($newNames)) {
-                static::log("No new names at path: $path");
+                static::logDebug("No new names at path: $path");
 
                 continue;
             }
 
-            static::log("Processing path '$path': " . count($newNames) . ' new names, ' . count($existingNames) . ' existing names');
+            static::logDebug("Processing path '$path': " . count($newNames) . ' new names, ' . count($existingNames) . ' existing names');
 
             // Get normalized name mappings for this specific path
             $pathMappings = $this->getNormalizedNameMappings(
@@ -83,13 +83,13 @@ class ArtifactDeduplicationService
             if ($pathMappings) {
                 foreach ($pathMappings as $original => $normalized) {
                     $allMappings[$path][$original] = $normalized;
-                    static::log("Path '$path': Mapping '$original' => '$normalized'");
+                    static::logDebug("Path '$path': Mapping '$original' => '$normalized'");
                 }
             }
         }
 
         if (empty($allMappings)) {
-            static::log('No name mappings generated');
+            static::logDebug('No name mappings generated');
 
             return;
         }
@@ -97,7 +97,7 @@ class ArtifactDeduplicationService
         // Apply normalized names to all artifacts
         $this->applyNormalizedNamesToArtifacts($artifacts, $allMappings);
 
-        static::log('Deduplication completed');
+        static::logDebug('Deduplication completed');
     }
 
     /**
@@ -176,7 +176,7 @@ class ArtifactDeduplicationService
         $threadRun = (new AgentThreadService())->run($agentThread);
 
         if (!$threadRun->lastMessage || !$threadRun->lastMessage->content) {
-            static::log("Failed to get response from LLM for path: $path");
+            static::logDebug("Failed to get response from LLM for path: $path");
 
             return null;
         }
@@ -184,7 +184,7 @@ class ArtifactDeduplicationService
         // Parse the JSON response
         try {
             $content = $threadRun->lastMessage->content;
-            static::log('Raw LLM response: ' . substr($content, 0, 500) . (strlen($content) > 500 ? '...' : ''));
+            static::logDebug('Raw LLM response: ' . substr($content, 0, 500) . (strlen($content) > 500 ? '...' : ''));
 
             // Try to extract JSON from the response (in case it's wrapped in markdown or has extra text)
             // First try to extract from markdown code blocks
@@ -197,15 +197,15 @@ class ArtifactDeduplicationService
 
             $jsonContent = json_decode($content, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                static::log('Failed to parse JSON response: ' . json_last_error_msg());
-                static::log('Content that failed to parse: ' . $content);
+                static::logDebug('Failed to parse JSON response: ' . json_last_error_msg());
+                static::logDebug('Content that failed to parse: ' . $content);
 
                 return null;
             }
 
             return $jsonContent;
         } catch (\Exception $e) {
-            static::log('Error parsing JSON response: ' . $e->getMessage());
+            static::logDebug('Error parsing JSON response: ' . $e->getMessage());
 
             return null;
         }
@@ -294,7 +294,7 @@ PROMPT;
     protected function applyNormalizedNamesToArtifacts(Collection $artifacts, array $nameMappingsByPath): void
     {
         if (empty($nameMappingsByPath)) {
-            static::log('No name mappings to apply');
+            static::logDebug('No name mappings to apply');
 
             return;
         }
@@ -316,15 +316,15 @@ PROMPT;
                 $artifact->json_content = $jsonContent;
                 $artifact->save();
 
-                static::log("=== Updated artifact {$artifact->id} ===");
+                static::logDebug("=== Updated artifact {$artifact->id} ===");
                 foreach ($updates as $update) {
-                    static::log("  Path: {$update['path']} | '{$update['original']}' => '{$update['normalized']}'");
+                    static::logDebug("  Path: {$update['path']} | '{$update['original']}' => '{$update['normalized']}'");
                     $totalUpdates++;
                 }
             }
         }
 
-        static::log("Total updates across all artifacts: $totalUpdates");
+        static::logDebug("Total updates across all artifacts: $totalUpdates");
     }
 
     /**
@@ -348,7 +348,7 @@ PROMPT;
                     'original'   => $originalName,
                     'normalized' => $normalizedName,
                 ];
-                static::log("Updated name at path '$path': '$originalName' => '$normalizedName'");
+                static::logDebug("Updated name at path '$path': '$originalName' => '$normalizedName'");
             }
         }
 

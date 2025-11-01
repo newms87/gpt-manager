@@ -19,7 +19,7 @@ class GoogleDocsTemplateService
 
         $variables = array_unique($matches[1] ?? []);
 
-        static::log('Parsed template variables', [
+        static::logDebug('Parsed template variables', [
             'variables_found' => count($variables),
             'variables'       => $variables,
         ]);
@@ -42,7 +42,7 @@ class GoogleDocsTemplateService
             $content = str_replace('{{' . $variable . '}}', $stringValue, $content);
         }
 
-        static::log('Variables replaced', [
+        static::logDebug('Variables replaced', [
             'mappings_count' => count($mappings),
             'content_length' => strlen($content),
         ]);
@@ -69,7 +69,7 @@ class GoogleDocsTemplateService
             // Generate title if not provided
             $title = $newTitle ?? ('Document - ' . now()->format('Y-m-d H:i:s'));
 
-            static::log('Creating document from template', [
+            static::logDebug('Creating document from template', [
                 'template_id'      => $templateId,
                 'title'            => $title,
                 'parent_folder_id' => $parentFolderId,
@@ -90,7 +90,7 @@ class GoogleDocsTemplateService
             $documentData = $response->json();
 
             // Log the response to debug
-            static::log('Drive API copy response', [
+            static::logDebug('Drive API copy response', [
                 'status'   => $response->status(),
                 'response' => $documentData,
             ]);
@@ -118,7 +118,7 @@ class GoogleDocsTemplateService
 
             $documentUrl = "https://docs.google.com/document/d/{$documentId}/edit";
 
-            static::log('Document created from template successfully', [
+            static::logDebug('Document created from template successfully', [
                 'document_id'  => $documentId,
                 'document_url' => $documentUrl,
             ]);
@@ -131,7 +131,7 @@ class GoogleDocsTemplateService
             ];
 
         } catch (\Exception $e) {
-            static::log('Failed to create document from template', [
+            static::logDebug('Failed to create document from template', [
                 'template_id' => $templateId,
                 'error'       => $e->getMessage(),
             ]);
@@ -176,7 +176,7 @@ class GoogleDocsTemplateService
             }
 
         } catch (\Exception $e) {
-            static::log('Failed to replace variables in document', [
+            static::logDebug('Failed to replace variables in document', [
                 'document_id' => $documentId,
                 'error'       => $e->getMessage(),
             ]);

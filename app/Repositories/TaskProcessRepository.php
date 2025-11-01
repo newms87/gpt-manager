@@ -34,7 +34,7 @@ class TaskProcessRepository extends ActionRepository
         $statuses         = [WorkflowStatesContract::STATUS_RUNNING, WorkflowStatesContract::STATUS_PENDING];
         $runningProcesses = TaskProcess::whereIn('status', $statuses)->get();
 
-        static::log('Checking for timeouts on task processes: ' . $runningProcesses->count());
+        static::logDebug('Checking for timeouts on task processes: ' . $runningProcesses->count());
 
         foreach ($runningProcesses as $taskProcess) {
             $this->checkForTimeout($taskProcess);
@@ -50,7 +50,7 @@ class TaskProcessRepository extends ActionRepository
 
         try {
             if ($taskProcess->isStatusRunning() && $taskProcess->isPastTimeout()) {
-                static::log("\t$taskProcess->id: Running timeout");
+                static::logDebug("\t$taskProcess->id: Running timeout");
                 TaskProcessRunnerService::handleTimeout($taskProcess);
 
                 return true;

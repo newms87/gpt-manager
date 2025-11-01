@@ -43,27 +43,27 @@ class ClassificationVerificationService
      */
     public function verifyClassificationProperty(Collection $artifacts, string $property): void
     {
-        static::log("Starting classification verification for property '$property' across " . $artifacts->count() . ' artifacts');
+        static::logDebug("Starting classification verification for property '$property' across " . $artifacts->count() . ' artifacts');
 
         $verificationGroups = $this->buildVerificationGroups($artifacts, $property);
 
         if (empty($verificationGroups)) {
-            static::log("No verification groups found for property '$property'");
+            static::logDebug("No verification groups found for property '$property'");
 
             return;
         }
 
-        static::log('Found ' . count($verificationGroups) . " verification groups for property '$property'");
+        static::logDebug('Found ' . count($verificationGroups) . " verification groups for property '$property'");
 
         // Ensure agent is created by calling getOrCreateClassificationVerificationAgent
         $this->getOrCreateClassificationVerificationAgent();
 
         foreach ($verificationGroups as $groupIndex => $group) {
-            static::log('Processing verification group ' . ($groupIndex + 1) . ' of ' . count($verificationGroups));
+            static::logDebug('Processing verification group ' . ($groupIndex + 1) . ' of ' . count($verificationGroups));
             $this->verifyClassificationGroup($group, $property);
         }
 
-        static::log("Classification verification completed for property '$property'");
+        static::logDebug("Classification verification completed for property '$property'");
     }
 
     /**
@@ -71,24 +71,24 @@ class ClassificationVerificationService
      */
     public function createVerificationProcessesForTaskRun(TaskRun $taskRun): void
     {
-        static::log("Creating verification processes for TaskRun {$taskRun->id}");
+        static::logDebug("Creating verification processes for TaskRun {$taskRun->id}");
 
         $taskDefinition = $taskRun->taskDefinition;
         $verifyConfig   = $taskDefinition->task_runner_config['verify'] ?? [];
 
         if (empty($verifyConfig)) {
-            static::log('No verify config found in task_runner_config');
+            static::logDebug('No verify config found in task_runner_config');
 
             return;
         }
 
         if (!is_array($verifyConfig)) {
-            static::log('Invalid verify config - must be an array of property names');
+            static::logDebug('Invalid verify config - must be an array of property names');
 
             return;
         }
 
-        static::log('Found verify config for properties: ' . implode(', ', $verifyConfig));
+        static::logDebug('Found verify config for properties: ' . implode(', ', $verifyConfig));
 
         // Check if artifacts with classification metadata exist
         $artifacts = $taskRun->outputArtifacts()
@@ -96,7 +96,7 @@ class ClassificationVerificationService
             ->get();
 
         if ($artifacts->isEmpty()) {
-            static::log('No artifacts with classification metadata found');
+            static::logDebug('No artifacts with classification metadata found');
 
             return;
         }
@@ -105,7 +105,7 @@ class ClassificationVerificationService
         $propertiesToVerify  = array_intersect($verifyConfig, $availableProperties);
 
         if (empty($propertiesToVerify)) {
-            static::log('No matching properties found between verify config and classification metadata');
+            static::logDebug('No matching properties found between verify config and classification metadata');
 
             return;
         }
@@ -116,12 +116,12 @@ class ClassificationVerificationService
             $verificationGroups = $this->buildVerificationGroups($artifacts, $property);
 
             if (empty($verificationGroups)) {
-                static::log("Skipping property '$property' - no outliers detected that need verification");
+                static::logDebug("Skipping property '$property' - no outliers detected that need verification");
 
                 continue;
             }
 
-            static::log("Property '$property' has " . count($verificationGroups) . ' outlier groups - creating verification process');
+            static::logDebug("Property '$property' has " . count($verificationGroups) . ' outlier groups - creating verification process');
 
             $taskRun->taskProcesses()->create([
                 'name'     => "Classification Verification: $property",
@@ -136,7 +136,7 @@ class ClassificationVerificationService
             $taskRun->updateRelationCounter('taskProcesses');
         }
 
-        static::log("Created $processesCreated verification processes");
+        static::logDebug("Created $processesCreated verification processes");
     }
 
     /**
@@ -269,7 +269,7 @@ class ClassificationVerificationService
     protected function verifyClassificationGroup(array $group, string $property): void
     {
         $focusArtifactId = $group['focus_artifact_id'];
-        static::log("Verifying classification group for artifact $focusArtifactId, property '$property'");
+        static::logDebug("Verifying classification group for artifact $focusArtifactId, property '$property'");
 
         $prompt = $this->buildVerificationPrompt($group, $property);
 
@@ -291,7 +291,7 @@ class ClassificationVerificationService
             ->run($agentThread);
 
         if (!$threadRun->lastMessage || !$threadRun->lastMessage->content) {
-            static::log('Failed to get response from AI agent for classification verification');
+            static::logDebug('Failed to get response from AI agent for classification verification');
 
             return;
         }
@@ -300,7 +300,7 @@ class ClassificationVerificationService
             $jsonContent = $threadRun->lastMessage->getJsonContent();
 
             if (!isset($jsonContent['corrections']) || !is_array($jsonContent['corrections'])) {
-                static::log('No corrections provided in verification response');
+                static::logDebug('No corrections provided in verification response');
 
                 return;
             }
@@ -308,7 +308,7 @@ class ClassificationVerificationService
             $this->applyVerificationCorrections($group, $jsonContent['corrections'], $property);
 
         } catch (\Exception $e) {
-            static::log('Error parsing verification response: ' . $e->getMessage());
+            static::logDebug('Error parsing verification response: ' . $e->getMessage());
         }
     }
 
@@ -382,18 +382,18 @@ PROMPT;
     protected function applyVerificationCorrections(array $group, array $corrections, string $property): void
     {
         if (empty($corrections)) {
-            static::log("No corrections to apply for property '$property'");
+            static::logDebug("No corrections to apply for property '$property'");
 
             return;
         }
 
-        static::log('Applying ' . count($corrections) . " corrections for property '$property'");
+        static::logDebug('Applying ' . count($corrections) . " corrections for property '$property'");
 
         $previousArtifactsCorrected = [];
 
         foreach ($corrections as $correction) {
             if (!isset($correction['artifact_id']) || !isset($correction['corrected_value'])) {
-                static::log('Invalid correction format - missing artifact_id or corrected_value');
+                static::logDebug('Invalid correction format - missing artifact_id or corrected_value');
 
                 continue;
             }
@@ -414,7 +414,7 @@ PROMPT;
             }
 
             if (!$artifact) {
-                static::log("Artifact $artifactId not found in verification group");
+                static::logDebug("Artifact $artifactId not found in verification group");
 
                 continue;
             }
@@ -422,7 +422,7 @@ PROMPT;
             $originalValue = $this->getPropertyValue($artifact, $property);
 
             if ($originalValue === $correctedValue) {
-                static::log("Artifact $artifactId already has correct value '$correctedValue'");
+                static::logDebug("Artifact $artifactId already has correct value '$correctedValue'");
 
                 continue;
             }
@@ -433,7 +433,7 @@ PROMPT;
             $artifact->meta                    = $meta;
             $artifact->save();
 
-            static::log("Updated artifact $artifactId property '$property': '$originalValue' => '$correctedValue' (Reason: $reason)");
+            static::logDebug("Updated artifact $artifactId property '$property': '$originalValue' => '$correctedValue' (Reason: $reason)");
 
             // Track if we corrected a previous artifact
             if ($artifactPosition === 'previous') {
@@ -452,13 +452,13 @@ PROMPT;
      */
     protected function createRecursiveVerificationProcesses(array $correctedArtifacts, string $property): void
     {
-        static::log('Creating recursive verification processes for ' . count($correctedArtifacts) . ' corrected previous artifacts');
+        static::logDebug('Creating recursive verification processes for ' . count($correctedArtifacts) . ' corrected previous artifacts');
 
         foreach ($correctedArtifacts as $artifact) {
             // Get the TaskRun this artifact belongs to
             $taskRun = $artifact->taskRun;
             if (!$taskRun) {
-                static::log("No TaskRun found for artifact {$artifact->id}");
+                static::logDebug("No TaskRun found for artifact {$artifact->id}");
 
                 continue;
             }
@@ -474,7 +474,7 @@ PROMPT;
                 'is_ready' => true,
             ]);
 
-            static::log("Created recursive verification process {$taskProcess->id} for artifact {$artifact->id}");
+            static::logDebug("Created recursive verification process {$taskProcess->id} for artifact {$artifact->id}");
 
             // Update the TaskRun's process counter
             $taskRun->updateRelationCounter('taskProcesses');

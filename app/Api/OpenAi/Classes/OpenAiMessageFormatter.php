@@ -25,9 +25,9 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
     public function rawMessage(string $role, string|array $content, ?array $data = null): array
     {
         return [
-                'role'    => $role,
-                'content' => $content,
-            ] + ($data ?? []);
+            'role'    => $role,
+            'content' => $content,
+        ] + ($data ?? []);
     }
 
     /**
@@ -75,9 +75,9 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
         }
 
         // If only one user message with simple text content, return as string
-        if (count($input) === 1 &&
-            $input[0]['role'] === 'user' &&
-            count($input[0]['content']) === 1 &&
+        if (count($input)                   === 1      &&
+            $input[0]['role']               === 'user' &&
+            count($input[0]['content'])     === 1      &&
             $input[0]['content'][0]['type'] === 'input_text') {
             return $input[0]['content'][0]['text'];
         }
@@ -88,11 +88,11 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
     /**
      * Get Responses API format for image files
      *
-     * @param StoredFile[]|array $storedFiles
+     * @param  StoredFile[]|array  $storedFiles
      */
     protected function formatFilesContent(array $storedFiles, $detail = 'high'): array
     {
-        static::log("\tappending " . count($storedFiles) . ' files');
+        static::logDebug("\tappending " . count($storedFiles) . ' files');
 
         $filesContent = [];
 
@@ -113,7 +113,7 @@ class OpenAiMessageFormatter implements AgentMessageFormatterContract
     /**
      * Get the file name/url pairs for all images and split PDFs into individual images
      *
-     * @param StoredFile[] $files
+     * @param  StoredFile[]  $files
      * @return StoredFile[]
      *
      * @throws Exception

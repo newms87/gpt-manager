@@ -38,7 +38,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
         // Step 4: Load template variables from database
         $templateVariables = $template->templateVariables;
 
-        static::log('Template variables loaded from database', [
+        static::logDebug('Template variables loaded from database', [
             'template_id'     => $template->id,
             'variables_count' => $templateVariables->count(),
         ]);
@@ -54,7 +54,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
             $this->taskDefinition->team_id
         );
 
-        static::log('Variables resolved', [
+        static::logDebug('Variables resolved', [
             'values_count' => count($resolution['values']),
             'title'        => $resolution['title'],
         ]);
@@ -67,7 +67,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
             $outputFolderName
         );
 
-        static::log('Output folder resolved', [
+        static::logDebug('Output folder resolved', [
             'folder_name' => $outputFolderName,
             'folder_id'   => $folderId,
         ]);
@@ -80,7 +80,7 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
             $folderId
         );
 
-        static::log('Document created', [
+        static::logDebug('Document created', [
             'document_id' => $newDocument['document_id'],
             'url'         => $newDocument['url'],
         ]);

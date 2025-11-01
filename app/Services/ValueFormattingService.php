@@ -43,7 +43,7 @@ class ValueFormattingService
         string $formatType = 'text',
         array $options = []
     ): string {
-        static::log('Formatting value', [
+        static::logDebug('Formatting value', [
             'format_type'  => $formatType,
             'value_type'   => gettype($value),
             'value_length' => is_string($value) ? strlen($value) : null,
@@ -213,7 +213,7 @@ class ValueFormattingService
 
             return $date->format('F') . ' ' . $day . $suffix . ', ' . $date->format('Y');
         } catch (\Exception $e) {
-            static::log('Date formatting failed', [
+            static::logDebug('Date formatting failed', [
                 'value' => $value,
                 'error' => $e->getMessage(),
             ]);

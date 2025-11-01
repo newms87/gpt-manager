@@ -92,7 +92,7 @@ class WorkflowDefinition extends Model implements AuditableContract, ResourcePac
      */
     public function cleanCorruptedConnections(): void
     {
-        static::log("Clean corrupted connections for $this");
+        static::logDebug("Clean corrupted connections for $this");
 
         $validNodeIds = $this->workflowNodes()->pluck('id');
 
@@ -104,7 +104,7 @@ class WorkflowDefinition extends Model implements AuditableContract, ResourcePac
             ->get();
 
         if ($corruptedConnections->isNotEmpty()) {
-            static::log('Found ' . $corruptedConnections->count() . ' corrupted connections to delete');
+            static::logDebug('Found ' . $corruptedConnections->count() . ' corrupted connections to delete');
             $corruptedConnections->each->delete();
         }
     }

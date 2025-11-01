@@ -47,42 +47,42 @@ class ClassificationDeduplicationService
      */
     public function deduplicateClassificationProperty(Collection $artifacts, string $property): void
     {
-        static::log("Starting classification deduplication for property '$property' across " . $artifacts->count() . ' artifacts');
+        static::logDebug("Starting classification deduplication for property '$property' across " . $artifacts->count() . ' artifacts');
 
         $labelsToNormalize = $this->extractClassificationPropertyLabels($artifacts, $property);
 
         if (empty($labelsToNormalize)) {
-            static::log("No classification labels found for property '$property'");
+            static::logDebug("No classification labels found for property '$property'");
 
             return;
         }
 
-        static::log('Found ' . count($labelsToNormalize) . " unique values for property '$property'");
+        static::logDebug('Found ' . count($labelsToNormalize) . " unique values for property '$property'");
 
         foreach ($labelsToNormalize as $label) {
-            static::log('  - ' . (strlen($label) > 80 ? substr($label, 0, 80) . '...' : $label));
+            static::logDebug('  - ' . (strlen($label) > 80 ? substr($label, 0, 80) . '...' : $label));
         }
 
         $normalizedMappings = $this->getNormalizedClassificationMappings($labelsToNormalize);
 
         if (empty($normalizedMappings)) {
-            static::log("No normalization mappings generated for property '$property'");
+            static::logDebug("No normalization mappings generated for property '$property'");
 
             return;
         }
 
-        static::log('Generated ' . count($normalizedMappings) . " normalization mappings for '$property':");
+        static::logDebug('Generated ' . count($normalizedMappings) . " normalization mappings for '$property':");
         foreach ($normalizedMappings as $original => $normalized) {
             if (strlen($original) > 80) {
-                static::log("  '" . substr($original, 0, 80) . "...' => '" . substr($normalized, 0, 80) . "...'");
+                static::logDebug("  '" . substr($original, 0, 80) . "...' => '" . substr($normalized, 0, 80) . "...'");
             } else {
-                static::log("  '$original' => '$normalized'");
+                static::logDebug("  '$original' => '$normalized'");
             }
         }
 
         $this->applyNormalizedClassificationsToArtifactsProperty($artifacts, $normalizedMappings, $property);
 
-        static::log("Classification deduplication completed for property '$property'");
+        static::logDebug("Classification deduplication completed for property '$property'");
     }
 
     /**
@@ -90,14 +90,14 @@ class ClassificationDeduplicationService
      */
     public function createDeduplicationProcessesForTaskRun(TaskRun $taskRun): void
     {
-        static::log("Creating deduplication processes for TaskRun {$taskRun->id}");
+        static::logDebug("Creating deduplication processes for TaskRun {$taskRun->id}");
 
         $artifacts = $taskRun->outputArtifacts()
             ->whereNotNull('meta->classification')
             ->get();
 
         if ($artifacts->isEmpty()) {
-            static::log('No artifacts with classification metadata found');
+            static::logDebug('No artifacts with classification metadata found');
 
             return;
         }
@@ -105,12 +105,12 @@ class ClassificationDeduplicationService
         $classificationProperties = $this->extractClassificationProperties($artifacts->first());
 
         if (empty($classificationProperties)) {
-            static::log('No classification properties found to deduplicate');
+            static::logDebug('No classification properties found to deduplicate');
 
             return;
         }
 
-        static::log('Found classification properties: ' . implode(', ', $classificationProperties));
+        static::logDebug('Found classification properties: ' . implode(', ', $classificationProperties));
 
         $processesCreated = 0;
         foreach ($classificationProperties as $property) {
@@ -118,12 +118,12 @@ class ClassificationDeduplicationService
             $labels = $this->extractClassificationPropertyLabels($artifacts, $property);
 
             if (empty($labels)) {
-                static::log("Skipping property '$property' - no classification labels found");
+                static::logDebug("Skipping property '$property' - no classification labels found");
 
                 continue;
             }
 
-            static::log("Property '$property' has " . count($labels) . ' labels - creating deduplication process');
+            static::logDebug("Property '$property' has " . count($labels) . ' labels - creating deduplication process');
 
             $taskRun->taskProcesses()->create([
                 'activity' => "Classification Deduplication for $property w/ " . count($labels) . ' values',
@@ -139,7 +139,7 @@ class ClassificationDeduplicationService
             $taskRun->updateRelationCounter('taskProcesses');
         }
 
-        static::log("Created $processesCreated deduplication processes");
+        static::logDebug("Created $processesCreated deduplication processes");
     }
 
     /**
@@ -228,7 +228,7 @@ class ClassificationDeduplicationService
         $threadRun = $builder->run();
 
         if (!$threadRun->lastMessage || !$threadRun->lastMessage->content) {
-            static::log('Failed to get response from AI agent for classification deduplication');
+            static::logDebug('Failed to get response from AI agent for classification deduplication');
 
             return null;
         }
@@ -262,7 +262,7 @@ class ClassificationDeduplicationService
 
             return $normalizedMappings;
         } catch (\Exception $e) {
-            static::log('Error parsing JSON response: ' . $e->getMessage());
+            static::logDebug('Error parsing JSON response: ' . $e->getMessage());
 
             return null;
         }
@@ -340,7 +340,7 @@ PROMPT;
     protected function applyNormalizedClassificationsToArtifactsProperty(Collection $artifacts, array $normalizedMappings, string $property): void
     {
         if (empty($normalizedMappings)) {
-            static::log("No normalization mappings to apply for property '$property'");
+            static::logDebug("No normalization mappings to apply for property '$property'");
 
             return;
         }
@@ -368,11 +368,11 @@ PROMPT;
                 }
 
                 $totalUpdates++;
-                static::log("Updated artifact {$artifact->id} property '$property'");
+                static::logDebug("Updated artifact {$artifact->id} property '$property'");
             }
         }
 
-        static::log("Applied $totalUpdates updates for property '$property'");
+        static::logDebug("Applied $totalUpdates updates for property '$property'");
     }
 
     /**
@@ -385,7 +385,7 @@ PROMPT;
             $cleanedValue = $this->cleanLabelForLLM(trim($value));
 
             if (isset($normalizedMappings[$cleanedValue])) {
-                static::log("Updated property value: '$cleanedValue' => '{$normalizedMappings[$cleanedValue]}'");
+                static::logDebug("Updated property value: '$cleanedValue' => '{$normalizedMappings[$cleanedValue]}'");
 
                 return $normalizedMappings[$cleanedValue];
             }
@@ -397,11 +397,11 @@ PROMPT;
                 if (isset($value['id']) && isset($normalizedMappings[$value['id']])) {
                     $originalId  = $value['id'];
                     $value['id'] = $normalizedMappings[$originalId];
-                    static::log("Updated object id: '$originalId' => '{$value['id']}'");
+                    static::logDebug("Updated object id: '$originalId' => '{$value['id']}'");
                 } elseif (isset($value['name']) && isset($normalizedMappings[$value['name']])) {
                     $originalName  = $value['name'];
                     $value['name'] = $normalizedMappings[$originalName];
-                    static::log("Updated object name: '$originalName' => '{$value['name']}'");
+                    static::logDebug("Updated object name: '$originalName' => '{$value['name']}'");
                 }
 
                 return $value;

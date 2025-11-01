@@ -93,7 +93,7 @@ class JobDispatchUpdatedEvent extends ModelSavedEvent
                 return $model->taskDefinition?->team_id;
             }
         } catch (\Exception $e) {
-            static::log("Could not determine team_id for JobDispatch {$this->jobDispatch->id}: " . $e->getMessage());
+            static::logDebug("Could not determine team_id for JobDispatch {$this->jobDispatch->id}: " . $e->getMessage());
         }
 
         return null;

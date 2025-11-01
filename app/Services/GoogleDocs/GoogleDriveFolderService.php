@@ -25,7 +25,7 @@ class GoogleDriveFolderService
         if ($cachedFolderId) {
             // Verify cached folder still exists in Google Drive
             if ($this->verifyFolderExists($api, $cachedFolderId)) {
-                static::log('Using cached folder ID', [
+                static::logDebug('Using cached folder ID', [
                     'folder_name' => $folderName,
                     'folder_id'   => $cachedFolderId,
                     'team_id'     => $teamId,
@@ -35,7 +35,7 @@ class GoogleDriveFolderService
             }
 
             // Cached folder no longer exists, invalidate cache
-            static::log('Cached folder no longer exists, invalidating cache', [
+            static::logDebug('Cached folder no longer exists, invalidating cache', [
                 'folder_name' => $folderName,
                 'folder_id'   => $cachedFolderId,
                 'team_id'     => $teamId,
@@ -48,14 +48,14 @@ class GoogleDriveFolderService
 
         // Create folder if not found
         if (!$folderId) {
-            static::log('Folder not found, creating new folder', [
+            static::logDebug('Folder not found, creating new folder', [
                 'folder_name'      => $folderName,
                 'parent_folder_id' => $parentFolderId,
                 'team_id'          => $teamId,
             ]);
             $folderId = $this->createFolder($api, $folderName, $parentFolderId);
         } else {
-            static::log('Found existing folder', [
+            static::logDebug('Found existing folder', [
                 'folder_name' => $folderName,
                 'folder_id'   => $folderId,
                 'team_id'     => $teamId,
@@ -83,7 +83,7 @@ class GoogleDriveFolderService
                 $metadata['parents'] = [$parentFolderId];
             }
 
-            static::log('Creating folder via Drive API', [
+            static::logDebug('Creating folder via Drive API', [
                 'folder_name'      => $folderName,
                 'parent_folder_id' => $parentFolderId,
                 'metadata'         => $metadata,
@@ -94,7 +94,7 @@ class GoogleDriveFolderService
             $folderData = $response->json();
 
             // Log the response for debugging
-            static::log('Drive API create folder response', [
+            static::logDebug('Drive API create folder response', [
                 'status'   => $response->status(),
                 'response' => $folderData,
             ]);
@@ -109,7 +109,7 @@ class GoogleDriveFolderService
                 throw new ApiException('Failed to get folder ID from Drive API create response');
             }
 
-            static::log('Folder created successfully', [
+            static::logDebug('Folder created successfully', [
                 'folder_name' => $folderName,
                 'folder_id'   => $folderId,
             ]);
@@ -117,7 +117,7 @@ class GoogleDriveFolderService
             return $folderId;
 
         } catch (\Exception $e) {
-            static::log('Failed to create folder', [
+            static::logDebug('Failed to create folder', [
                 'folder_name' => $folderName,
                 'error'       => $e->getMessage(),
             ]);
@@ -139,7 +139,7 @@ class GoogleDriveFolderService
                 $query .= " and '" . addslashes($parentFolderId) . "' in parents";
             }
 
-            static::log('Searching for folder via Drive API', [
+            static::logDebug('Searching for folder via Drive API', [
                 'folder_name'      => $folderName,
                 'parent_folder_id' => $parentFolderId,
                 'query'            => $query,
@@ -154,7 +154,7 @@ class GoogleDriveFolderService
             $searchData = $response->json();
 
             // Log the response for debugging
-            static::log('Drive API search folder response', [
+            static::logDebug('Drive API search folder response', [
                 'status'   => $response->status(),
                 'response' => $searchData,
             ]);
@@ -166,7 +166,7 @@ class GoogleDriveFolderService
             $files = $searchData['files'] ?? [];
 
             if (empty($files)) {
-                static::log('No folder found', [
+                static::logDebug('No folder found', [
                     'folder_name' => $folderName,
                 ]);
 
@@ -175,7 +175,7 @@ class GoogleDriveFolderService
 
             $folderId = $files[0]['id'] ?? null;
 
-            static::log('Folder found', [
+            static::logDebug('Folder found', [
                 'folder_name' => $folderName,
                 'folder_id'   => $folderId,
             ]);
@@ -183,7 +183,7 @@ class GoogleDriveFolderService
             return $folderId;
 
         } catch (\Exception $e) {
-            static::log('Failed to search for folder', [
+            static::logDebug('Failed to search for folder', [
                 'folder_name' => $folderName,
                 'error'       => $e->getMessage(),
             ]);
@@ -199,7 +199,7 @@ class GoogleDriveFolderService
     public function verifyFolderExists(GoogleDocsApi $api, string $folderId): bool
     {
         try {
-            static::log('Verifying folder exists', [
+            static::logDebug('Verifying folder exists', [
                 'folder_id' => $folderId,
             ]);
 
@@ -208,7 +208,7 @@ class GoogleDriveFolderService
             ]);
 
             if (!$response->successful()) {
-                static::log('Folder verification failed', [
+                static::logDebug('Folder verification failed', [
                     'folder_id' => $folderId,
                     'status'    => $response->status(),
                 ]);
@@ -223,7 +223,7 @@ class GoogleDriveFolderService
             $isTrashed = $fileData['trashed'] ?? false;
 
             if (!$isFolder || $isTrashed) {
-                static::log('Folder is invalid or trashed', [
+                static::logDebug('Folder is invalid or trashed', [
                     'folder_id'  => $folderId,
                     'is_folder'  => $isFolder,
                     'is_trashed' => $isTrashed,
@@ -232,7 +232,7 @@ class GoogleDriveFolderService
                 return false;
             }
 
-            static::log('Folder exists and is valid', [
+            static::logDebug('Folder exists and is valid', [
                 'folder_id'   => $folderId,
                 'folder_name' => $fileData['name'] ?? 'unknown',
             ]);
@@ -240,7 +240,7 @@ class GoogleDriveFolderService
             return true;
 
         } catch (\Exception $e) {
-            static::log('Error verifying folder existence', [
+            static::logDebug('Error verifying folder existence', [
                 'folder_id' => $folderId,
                 'error'     => $e->getMessage(),
             ]);

@@ -112,7 +112,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         $correctionAttemptsRemaining = $this->config('correction_attempts', 2);
 
         do {
-            static::log("Categorizing artifacts... $correctionAttemptsRemaining attempts remaining");
+            static::logDebug("Categorizing artifacts... $correctionAttemptsRemaining attempts remaining");
             $categoryArtifact    = $this->runAgentThreadWithSchema($agentThread, $schema);
             $categoriesWithPages = $categoryArtifact->json_content['categories'] ?? [];
 
@@ -128,7 +128,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
                 return $categoriesWithPages;
             } catch (Throwable $throwable) {
                 // If the agent was unable to provide a valid response, we will ask it to try again
-                static::log('Invalid response: ' . $throwable->getMessage());
+                static::logDebug('Invalid response: ' . $throwable->getMessage());
 
                 if ($correctionAttemptsRemaining === 0) {
                     // If we have no more attempts remaining, we will throw the error
@@ -329,14 +329,14 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         $finalOutputArtifacts = $this->taskRun->outputArtifacts;
 
         // 1. Sort all the artifacts
-        static::log('Sorting artifacts by position');
+        static::logDebug('Sorting artifacts by position');
         $finalOutputArtifacts = $finalOutputArtifacts->sort(fn(Artifact $a, Artifact $b) => $a->position <=> $b->position);
 
         // 2. Exclude artifacts with __exclude category
         $countBefore          = $finalOutputArtifacts->count();
         $finalOutputArtifacts = $finalOutputArtifacts->filter(fn(Artifact $a) => ($a->json_content['__category'] ?? null) !== self::CATEGORY_EXCLUDE);
         $totalExcluded        = $countBefore - $finalOutputArtifacts->count();
-        static::log("Excluded $totalExcluded artifacts with __exclude category");
+        static::logDebug("Excluded $totalExcluded artifacts with __exclude category");
 
         // 2. Attempt category matching if the task is in sequential mode
         if ($this->isSequentialMode()) {
@@ -344,7 +344,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
         }
 
         // Update the task run's output artifacts
-        static::log('Updating task run with ' . $finalOutputArtifacts->count() . ' output artifacts');
+        static::logDebug('Updating task run with ' . $finalOutputArtifacts->count() . ' output artifacts');
         $this->taskRun->outputArtifacts()->sync($finalOutputArtifacts->pluck('id'));
         $this->taskRun->updateRelationCounter('outputArtifacts');
     }
@@ -357,7 +357,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
      */
     protected function matchSequentialCategories($artifacts): void
     {
-        static::log('Applying sequential categories to artifacts');
+        static::logDebug('Applying sequential categories to artifacts');
 
         /** @var Artifact[][] $categoryGroups */
         $categoryGroups = [];
@@ -390,7 +390,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
             }
         }
 
-        static::log('Resolved categories: ' . json_encode(array_keys($categoryGroups)));
+        static::logDebug('Resolved categories: ' . json_encode(array_keys($categoryGroups)));
 
         $groupsWithUnknowns = [];
         foreach ($categoryGroups as $categoryGroupArtifacts) {
@@ -411,7 +411,7 @@ class CategorizeArtifactsTaskRunner extends AgentThreadTaskRunner
      */
     private function dispatchCategoryGroups(array $categoryGroups): void
     {
-        static::log('Dispatching ' . count($categoryGroups) . ' category groups for sequential matching');
+        static::logDebug('Dispatching ' . count($categoryGroups) . ' category groups for sequential matching');
 
         $taskProcesses = [];
         /** @var Artifact[] $categoryGroupArtifacts */

@@ -86,7 +86,7 @@ trait BroadcastsWithSubscriptions
                 }
             } catch (\Exception $e) {
                 // Log error but continue - invalid filters shouldn't break broadcasting
-                static::log("Filter matching failed for key {$filterKey}: " . $e->getMessage());
+                static::logDebug("Filter matching failed for key {$filterKey}: " . $e->getMessage());
             }
         }
 
@@ -135,9 +135,9 @@ trait BroadcastsWithSubscriptions
                 }
             } while ($cursor !== '0');
         } catch (\RedisException $e) {
-            static::log("Redis error scanning cache keys for pattern {$pattern}: " . $e->getMessage());
+            static::logDebug("Redis error scanning cache keys for pattern {$pattern}: " . $e->getMessage());
         } catch (\Exception $e) {
-            static::log("Unexpected error scanning cache keys for pattern {$pattern}: " . $e->getMessage());
+            static::logDebug("Unexpected error scanning cache keys for pattern {$pattern}: " . $e->getMessage());
         }
 
         return $keys;

@@ -26,7 +26,7 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
         // Check if this is a workflow builder workflow run
         $workflowBuilderChat = $this->findWorkflowBuilderChat($workflowRun);
 
-        static::log('triggered', [
+        static::logDebug('triggered', [
             'workflow_run_id'     => $workflowRun->id,
             'workflow_name'       => $workflowRun->workflowDefinition->name,
             'builder_chat_id'     => $workflowBuilderChat?->id,
@@ -40,7 +40,7 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
         // Check if already completed or failed - prevents re-processing
         if ($workflowBuilderChat->status === WorkflowBuilderChat::STATUS_COMPLETED ||
             $workflowBuilderChat->status === WorkflowBuilderChat::STATUS_FAILED) {
-            static::log('already_completed', [
+            static::logDebug('already_completed', [
                 'workflow_run_id' => $workflowRun->id,
                 'chat_id'         => $workflowBuilderChat->id,
                 'status'          => $workflowBuilderChat->status,
@@ -51,7 +51,7 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
 
         // Verify this is the expected workflow run for the chat
         if ($workflowBuilderChat->current_workflow_run_id !== $workflowRun->id) {
-            static::log('workflow_run_mismatch', [
+            static::logDebug('workflow_run_mismatch', [
                 'workflow_run_id' => $workflowRun->id,
                 'expected_run_id' => $workflowBuilderChat->current_workflow_run_id,
                 'chat_id'         => $workflowBuilderChat->id,
@@ -69,7 +69,7 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
 
             if ($workflowBuilderChat->status === WorkflowBuilderChat::STATUS_COMPLETED ||
                 $workflowBuilderChat->status === WorkflowBuilderChat::STATUS_FAILED) {
-                static::log('completed_by_another_job', [
+                static::logDebug('completed_by_another_job', [
                     'workflow_run_id' => $workflowRun->id,
                     'chat_id'         => $workflowBuilderChat->id,
                     'status'          => $workflowBuilderChat->status,
@@ -82,13 +82,13 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
                 // Call WorkflowBuilderService to process the completion
                 app(WorkflowBuilderService::class)->processWorkflowCompletion($workflowBuilderChat, $workflowRun);
 
-                static::log('processed_completion', [
+                static::logDebug('processed_completion', [
                     'workflow_run_id' => $workflowRun->id,
                     'chat_id'         => $workflowBuilderChat->id,
                     'new_status'      => $workflowBuilderChat->fresh()->status,
                 ]);
             } catch (Exception $e) {
-                static::log('processing_failed', [
+                static::logDebug('processing_failed', [
                     'workflow_run_id' => $workflowRun->id,
                     'chat_id'         => $workflowBuilderChat->id,
                     'error'           => $e->getMessage(),

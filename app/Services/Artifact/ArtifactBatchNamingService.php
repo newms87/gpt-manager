@@ -24,12 +24,12 @@ class ArtifactBatchNamingService
     {
         // Validate inputs
         if ($artifacts->isEmpty()) {
-            static::log('No artifacts to name, skipping');
+            static::logDebug('No artifacts to name, skipping');
 
             return $artifacts;
         }
 
-        static::log('Starting batch naming for ' . $artifacts->count() . " artifacts with context: {$contextDescription}");
+        static::logDebug('Starting batch naming for ' . $artifacts->count() . " artifacts with context: {$contextDescription}");
 
         // Get configuration
         $maxBatchSize = config('ai.artifact_naming.max_batch_size', 20);
@@ -48,13 +48,13 @@ class ArtifactBatchNamingService
      */
     protected function processBatches(Collection $artifacts, string $contextDescription, int $maxBatchSize): Collection
     {
-        static::log("Processing in batches of {$maxBatchSize}");
+        static::logDebug("Processing in batches of {$maxBatchSize}");
 
         $processedArtifacts = collect();
         $chunks             = $artifacts->chunk($maxBatchSize);
 
         foreach ($chunks as $chunkIndex => $chunk) {
-            static::log('Processing batch ' . ($chunkIndex + 1) . ' of ' . $chunks->count());
+            static::logDebug('Processing batch ' . ($chunkIndex + 1) . ' of ' . $chunks->count());
             $namedChunk         = $this->processSingleBatch($chunk, $contextDescription);
             $processedArtifacts = $processedArtifacts->merge($namedChunk);
         }
@@ -75,7 +75,7 @@ class ArtifactBatchNamingService
             $nameMapping = $this->generateNamesViaLLM($artifactData, $contextDescription);
 
             if (!$nameMapping) {
-                static::log('LLM failed to generate names, keeping original names');
+                static::logDebug('LLM failed to generate names, keeping original names');
 
                 return $artifacts;
             }
@@ -83,13 +83,13 @@ class ArtifactBatchNamingService
             // Apply names to artifacts
             $this->applyNamesToArtifacts($artifacts, $nameMapping);
 
-            static::log('Successfully named ' . count($nameMapping) . ' artifacts in batch');
+            static::logDebug('Successfully named ' . count($nameMapping) . ' artifacts in batch');
 
             return $artifacts;
 
         } catch (\Exception $e) {
-            static::log('Error during batch naming: ' . $e->getMessage());
-            static::log('Keeping original artifact names as fallback');
+            static::logDebug('Error during batch naming: ' . $e->getMessage());
+            static::logDebug('Keeping original artifact names as fallback');
 
             return $artifacts;
         }
@@ -155,7 +155,7 @@ class ArtifactBatchNamingService
         $agent = $this->getAgent();
 
         if (!$agent) {
-            static::log('No agent available for naming');
+            static::logDebug('No agent available for naming');
 
             return null;
         }
@@ -181,7 +181,7 @@ class ArtifactBatchNamingService
                 ->run();
 
             if (!$threadRun->lastMessage) {
-                static::log('Failed to get response from LLM');
+                static::logDebug('Failed to get response from LLM');
 
                 return null;
             }
@@ -190,14 +190,14 @@ class ArtifactBatchNamingService
             $jsonContent = $threadRun->lastMessage->getJsonContent();
 
             if (!$jsonContent) {
-                static::log('Failed to get JSON content from message');
+                static::logDebug('Failed to get JSON content from message');
 
                 return null;
             }
 
             // Validate response structure
             if (!isset($jsonContent['names']) || !is_array($jsonContent['names'])) {
-                static::log("Invalid response structure: missing 'names' array", [
+                static::logDebug("Invalid response structure: missing 'names' array", [
                     'response_keys' => array_keys($jsonContent),
                 ]);
 
@@ -215,7 +215,7 @@ class ArtifactBatchNamingService
             return $nameMapping;
 
         } catch (\Exception $e) {
-            static::log('Error running agent thread: ' . $e->getMessage());
+            static::logDebug('Error running agent thread: ' . $e->getMessage());
 
             return null;
         }
@@ -292,12 +292,12 @@ PROMPT;
                 $artifact->name = $newName;
                 $artifact->save();
 
-                static::log("Renamed artifact {$artifactId}: '{$oldName}' => '{$newName}'");
+                static::logDebug("Renamed artifact {$artifactId}: '{$oldName}' => '{$newName}'");
                 $updateCount++;
             }
         }
 
-        static::log("Applied names to {$updateCount} artifacts");
+        static::logDebug("Applied names to {$updateCount} artifacts");
     }
 
     /**

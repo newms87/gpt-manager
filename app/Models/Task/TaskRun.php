@@ -203,7 +203,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 $this->stopped_at   = null;
                 $this->completed_at = null;
                 if (!$this->skipped_at) {
-                    static::log("No processes for task, marking as skipped: $this");
+                    static::logDebug("No processes for task, marking as skipped: $this");
                     $this->skipped_at = now();
                 }
             } else {

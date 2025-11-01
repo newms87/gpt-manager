@@ -85,14 +85,14 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
             if ($artifact->json_content) {
                 // Task specification should contain the task_specification field
                 if (isset($artifact->json_content['task_specification'])) {
-                    static::log("Found task specification in artifact: {$artifact->name}");
+                    static::logDebug("Found task specification in artifact: {$artifact->name}");
 
                     return $artifact->json_content;
                 }
             }
         }
 
-        static::log('No valid task specification found in input artifacts');
+        static::logDebug('No valid task specification found in input artifacts');
 
         return null;
     }
@@ -358,7 +358,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
             $directivesData = $result['directives']      ?? [];
             $nodeData       = $result['workflow_node']   ?? [];
 
-            static::log("Applying task definition with action: {$action}");
+            static::logDebug("Applying task definition with action: {$action}");
 
             // Resolve agent if specified
             $agent = null;
@@ -412,7 +412,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
             ]);
 
             $artifact->save();
-            static::log("Applied task definition successfully: {$action}");
+            static::logDebug("Applied task definition successfully: {$action}");
 
             return $artifact;
         });
@@ -431,7 +431,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
 
         $this->createTaskDefinitionDirectives($taskDefinition, $directivesData);
 
-        static::log("Created task definition: {$taskDefinition->name} (ID: {$taskDefinition->id})");
+        static::logDebug("Created task definition: {$taskDefinition->name} (ID: {$taskDefinition->id})");
 
         return $taskDefinition;
     }
@@ -458,7 +458,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
         $taskDefinition->taskDefinitionDirectives()->delete();
         $this->createTaskDefinitionDirectives($taskDefinition, $directivesData);
 
-        static::log("Updated task definition: {$taskDefinition->name} (ID: {$taskDefinition->id})");
+        static::logDebug("Updated task definition: {$taskDefinition->name} (ID: {$taskDefinition->id})");
 
         return $taskDefinition;
     }
@@ -474,9 +474,9 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
 
         if ($taskDefinition) {
             $taskDefinition->delete();
-            static::log("Deleted task definition: {$taskDefinition->name} (ID: {$taskDefinition->id})");
+            static::logDebug("Deleted task definition: {$taskDefinition->name} (ID: {$taskDefinition->id})");
         } else {
-            static::log("Task definition not found for deletion: {$data['name']}");
+            static::logDebug("Task definition not found for deletion: {$data['name']}");
         }
     }
 
@@ -525,7 +525,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
         $node->workflow_definition_id = $workflow->id;
         $node->save();
 
-        static::log("Created workflow node for task: {$taskDefinition->name}");
+        static::logDebug("Created workflow node for task: {$taskDefinition->name}");
     }
 
     /**
@@ -549,7 +549,7 @@ class TaskDefinitionBuilderTaskRunner extends BaseTaskRunner
             $node->update([
                 'settings' => $settings,
             ]);
-            static::log("Updated workflow node for task: {$taskDefinition->name}");
+            static::logDebug("Updated workflow node for task: {$taskDefinition->name}");
         } else {
             $this->createWorkflowNode($workflow, $taskDefinition, $nodeData);
         }

@@ -19,7 +19,7 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
         // Check if this is a classification property deduplication process
         $classificationProperty = $this->taskProcess->meta['classification_property'] ?? null;
         if ($classificationProperty) {
-            static::log("Running classification deduplication for property: $classificationProperty");
+            static::logDebug("Running classification deduplication for property: $classificationProperty");
 
             $artifacts = $this->taskRun->outputArtifacts;
             app(ClassificationDeduplicationService::class)->deduplicateClassificationProperty($artifacts, $classificationProperty);
@@ -32,7 +32,7 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
         // Check if this is a classification property verification process
         $verificationProperty = $this->taskProcess->meta['classification_verification_property'] ?? null;
         if ($verificationProperty) {
-            static::log("Running classification verification for property: $verificationProperty");
+            static::logDebug("Running classification verification for property: $verificationProperty");
 
             $artifacts = $this->taskRun->outputArtifacts;
             app(ClassificationVerificationService::class)->verifyClassificationProperty($artifacts, $verificationProperty);
@@ -126,29 +126,29 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
             ->exists();
 
         if ($hasVerificationProcesses) {
-            static::log('TaskProcess with classification_verification_property meta found - verification phase completed');
+            static::logDebug('TaskProcess with classification_verification_property meta found - verification phase completed');
 
             return;
         }
 
         if ($hasPropertyProcesses) {
-            static::log('TaskProcess with classification_property meta found - creating verification processes');
+            static::logDebug('TaskProcess with classification_property meta found - creating verification processes');
 
             try {
                 app(ClassificationVerificationService::class)->createVerificationProcessesForTaskRun($this->taskRun);
             } catch (\Exception $e) {
-                static::log('Error creating classification verification processes: ' . $e->getMessage());
+                static::logDebug('Error creating classification verification processes: ' . $e->getMessage());
             }
 
             return;
         }
 
-        static::log('No classification property processes found - creating deduplication processes');
+        static::logDebug('No classification property processes found - creating deduplication processes');
 
         try {
             app(ClassificationDeduplicationService::class)->createDeduplicationProcessesForTaskRun($this->taskRun);
         } catch (\Exception $e) {
-            static::log('Error creating classification deduplication processes: ' . $e->getMessage());
+            static::logDebug('Error creating classification deduplication processes: ' . $e->getMessage());
         }
     }
 

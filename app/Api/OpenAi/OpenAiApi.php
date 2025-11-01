@@ -65,12 +65,12 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
             $this->requestTimeout = $options->getTimeout();
         }
 
-        static::log("OpenAI Making request to Responses API w/ timeout {$this->requestTimeout}s");
+        static::logDebug("OpenAI Making request to Responses API w/ timeout {$this->requestTimeout}s");
 
         // Regular request (no streaming in this method)
         $response = $this->post('responses', $requestBody)->json();
 
-        static::log('OpenAI Responses API response received: ' . strlen(json_encode($response)) . ' bytes');
+        static::logDebug('OpenAI Responses API response received: ' . strlen(json_encode($response)) . ' bytes');
 
         return OpenAiResponsesResponse::make($response);
     }

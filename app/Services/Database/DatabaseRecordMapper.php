@@ -2,11 +2,13 @@
 
 namespace App\Services\Database;
 
+use App\Traits\HasDebugLogging;
 use Exception;
-use Illuminate\Support\Facades\Log;
 
 class DatabaseRecordMapper
 {
+    use HasDebugLogging;
+
     protected ?SchemaManager $schema = null;
 
     public function setSchema(string $prefix, string $schemaFile): static
@@ -25,12 +27,12 @@ class DatabaseRecordMapper
             throw new Exception('Schema was not set');
         }
 
-        Log::debug('Writing ' . count($entries) . ' entries to database');
+        static::logDebug('Writing ' . count($entries) . ' entries to database');
 
         foreach ($entries as $entry) {
             $tableName = $entry['table'];
             $records   = $entry['records'] ?? [];
-            Log::debug("\t$tableName: " . count($records) . ' records');
+            static::logDebug("\t$tableName: " . count($records) . ' records');
             $relationFieldValues = $this->getRelatedFieldValues($entry['relations'] ?? []);
 
             foreach ($records as $record) {

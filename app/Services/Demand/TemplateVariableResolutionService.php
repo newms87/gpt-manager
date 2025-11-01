@@ -39,7 +39,7 @@ class TemplateVariableResolutionService
         // Sort artifacts by name for consistent ordering in results
         $artifacts = $artifacts->sortBy('name')->values();
 
-        static::log('Starting variable resolution', [
+        static::logDebug('Starting variable resolution', [
             'variable_count' => $templateVariables->count(),
             'variable_names' => $templateVariables->pluck('name')->toArray(),
             'artifact_count' => $artifacts->count(),
@@ -61,7 +61,7 @@ class TemplateVariableResolutionService
             }
         }
 
-        static::log('Pre-resolved variables', [
+        static::logDebug('Pre-resolved variables', [
             'pre_resolved_count' => count($preResolvedValues),
             'ai_variable_count'  => $aiVariables->count(),
         ]);
@@ -70,7 +70,7 @@ class TemplateVariableResolutionService
         if ($aiVariables->isNotEmpty()) {
             $aiResults = $this->resolveWithAi($aiVariables, $artifacts, $preResolvedValues, $teamId);
 
-            static::log('AI resolution complete', [
+            static::logDebug('AI resolution complete', [
                 'ai_resolved_count' => count($aiResults['values'] ?? []),
                 'title'             => $aiResults['title'] ?? '',
             ]);
@@ -81,7 +81,7 @@ class TemplateVariableResolutionService
             ];
         }
 
-        static::log('Variable resolution complete (no AI variables)');
+        static::logDebug('Variable resolution complete (no AI variables)');
 
         return [
             'values' => $preResolvedValues,
@@ -97,7 +97,7 @@ class TemplateVariableResolutionService
         Collection $artifacts,
         ?TeamObject $teamObject = null
     ): string {
-        static::log('Resolving single variable', [
+        static::logDebug('Resolving single variable', [
             'variable_id'   => $variable->id,
             'variable_name' => $variable->name,
             'mapping_type'  => $variable->mapping_type,
@@ -122,7 +122,7 @@ class TemplateVariableResolutionService
         // Apply formatting
         $formatted = $this->formatValue($result, $variable);
 
-        static::log('Variable resolved', [
+        static::logDebug('Variable resolved', [
             'variable_name'  => $variable->name,
             'result_length'  => strlen($formatted),
             'result_preview' => substr($formatted, 0, 200),
@@ -136,7 +136,7 @@ class TemplateVariableResolutionService
      */
     protected function resolveFromArtifacts(TemplateVariable $variable, Collection $artifacts): array
     {
-        static::log('Resolving from artifacts', [
+        static::logDebug('Resolving from artifacts', [
             'variable_id'                  => $variable->id,
             'variable_name'                => $variable->name,
             'artifact_categories'          => $variable->artifact_categories,
@@ -150,7 +150,7 @@ class TemplateVariableResolutionService
                 return in_array($artifact->meta['__category'] ?? null, $variable->artifact_categories);
             });
 
-            static::log('Filtered artifacts by categories using meta.__category', [
+            static::logDebug('Filtered artifacts by categories using meta.__category', [
                 'artifact_count_after_filter' => $artifacts->count(),
                 'filtered_by_categories'      => $variable->artifact_categories,
             ]);
@@ -163,7 +163,7 @@ class TemplateVariableResolutionService
             $values = $artifacts->map(function (Artifact $artifact) {
                 // Use text_content as primary, name as fallback
                 $value = $artifact->text_content ?: $artifact->name;
-                static::log('Extracted artifact value', [
+                static::logDebug('Extracted artifact value', [
                     'artifact_id'       => $artifact->id,
                     'used_text_content' => !empty($artifact->text_content),
                     'value_length'      => strlen($value ?? ''),
@@ -172,7 +172,7 @@ class TemplateVariableResolutionService
                 return $value;
             })->filter()->values()->toArray();
 
-            static::log('Extracted artifact content (no fragment selector)', [
+            static::logDebug('Extracted artifact content (no fragment selector)', [
                 'values_count'        => count($values),
                 'sample_value_length' => isset($values[0]) ? strlen($values[0]) : 0,
             ]);
@@ -186,7 +186,7 @@ class TemplateVariableResolutionService
             $values          = array_merge($values, $extractedValues);
         }
 
-        static::log('Extracted artifact content (with fragment selector)', [
+        static::logDebug('Extracted artifact content (with fragment selector)', [
             'values_count'        => count($values),
             'sample_value_length' => isset($values[0]) ? strlen((string)$values[0]) : 0,
         ]);
@@ -310,7 +310,7 @@ class TemplateVariableResolutionService
             throw new ValidationError('AI variable resolution returned invalid response format', 500);
         }
 
-        static::log('AI returned variable resolution response', [
+        static::logDebug('AI returned variable resolution response', [
             'variable_keys' => $variables,
             'title'         => $title,
         ]);

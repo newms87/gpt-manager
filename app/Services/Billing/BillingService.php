@@ -7,6 +7,7 @@ use App\Models\Billing\PaymentMethod;
 use App\Models\Billing\Subscription;
 use App\Models\Billing\SubscriptionPlan;
 use App\Models\Team\Team;
+use App\Traits\HasDebugLogging;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,8 @@ use Newms87\Danx\Exceptions\ValidationError;
 
 class BillingService
 {
+    use HasDebugLogging;
+
     public function __construct(
         protected StripePaymentServiceInterface $stripeService
     ) {
@@ -419,7 +422,7 @@ class BillingService
      */
     public function processFailedPayment(array $paymentIntent): void
     {
-        Log::warning('Processing failed payment', ['payment_intent' => $paymentIntent['id']]);
+        static::logWarning('Processing failed payment', ['payment_intent' => $paymentIntent['id']]);
 
         // TODO: Update billing history record and notify team
     }
@@ -432,7 +435,7 @@ class BillingService
         $team = Team::where('stripe_customer_id', $stripeSubscription['customer'])->first();
 
         if (!$team) {
-            Log::warning('Team not found for Stripe customer', ['customer_id' => $stripeSubscription['customer']]);
+            static::logWarning('Team not found for Stripe customer', ['customer_id' => $stripeSubscription['customer']]);
 
             return;
         }

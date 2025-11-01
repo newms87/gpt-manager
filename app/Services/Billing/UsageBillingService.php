@@ -8,6 +8,7 @@ use App\Models\Team\Team;
 use App\Models\Usage\UsageEvent;
 use App\Repositories\Billing\BillingHistoryRepository;
 use App\Repositories\Billing\SubscriptionRepository;
+use App\Traits\HasDebugLogging;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Log;
 
 class UsageBillingService
 {
+    use HasDebugLogging;
+
     public function __construct(
         protected StripePaymentServiceInterface $stripeService,
         protected BillingService $billingService,
@@ -36,7 +39,7 @@ class UsageBillingService
             try {
                 $this->processTeamBilling($team);
             } catch (\Exception $e) {
-                Log::error('Failed to process billing for team', [
+                static::logError('Failed to process billing for team', [
                     'team_id' => $team->id,
                     'error'   => $e->getMessage(),
                 ]);
@@ -274,7 +277,7 @@ class UsageBillingService
 
         $billingHistory->save();
 
-        Log::error('Failed to charge team for usage', [
+        static::logError('Failed to charge team for usage', [
             'team_id' => $team->id,
             'amount'  => $usage['total_cost'],
             'date'    => $usage['date'],

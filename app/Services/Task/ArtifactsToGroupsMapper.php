@@ -3,12 +3,14 @@
 namespace App\Services\Task;
 
 use App\Models\Task\Artifact;
+use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
-use Log;
 use Newms87\Danx\Helpers\ArrayHelper;
 
 class ArtifactsToGroupsMapper
 {
+    use HasDebugLogging;
+
     const string
         GROUPING_MODE_SPLIT       = 'Split',
         GROUPING_MODE_MERGE       = 'Merge',
@@ -292,7 +294,7 @@ class ArtifactsToGroupsMapper
 
             // If the types do not match, just ignore this value
             if (in_array($childSelector['type'], ['array', 'object']) && !is_array($childData)) {
-                Log::warning("WARNING: Ignoring property $propertyName because the type does not match the selector type: $childSelector[type]: " . json_encode($childData));
+                static::logWarning("WARNING: Ignoring property $propertyName because the type does not match the selector type: $childSelector[type]: " . json_encode($childData));
 
                 continue;
             }

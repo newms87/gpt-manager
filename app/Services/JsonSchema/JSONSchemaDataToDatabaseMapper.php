@@ -10,7 +10,6 @@ use App\Models\TeamObject\TeamObjectAttributeSource;
 use App\Models\TeamObject\TeamObjectRelationship;
 use App\Traits\HasDebugLogging;
 use Exception;
-use Log;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\FileHelper;
 use Newms87\Danx\Helpers\LockHelper;
@@ -201,18 +200,18 @@ class JSONSchemaDataToDatabaseMapper
         $fileId          = $source['file_id']    ?? [];
         $storedFile      = null;
 
-        Log::debug('Saving citation: ' . $teamObjectAttribute->name . ($sourceUrl ? " URL: $sourceUrl" : '') . ($sourceMessageId ? " AgentThreadMessage ID: $sourceMessageId" : ''));
+        static::logDebug('Saving citation: ' . $teamObjectAttribute->name . ($sourceUrl ? " URL: $sourceUrl" : '') . ($sourceMessageId ? " AgentThreadMessage ID: $sourceMessageId" : ''));
 
         if ($sourceUrl) {
             $sourceUrl  = FileHelper::normalizeUrl($sourceUrl);
             $storedFile = StoredFile::firstWhere('url', $sourceUrl);
 
             if (!$storedFile) {
-                Log::debug('Creating Stored File for source URL');
+                static::logDebug('Creating Stored File for source URL');
                 $storedFile = app(FileRepository::class)->createFileWithUrl($sourceUrl, $sourceUrl, ['disk' => 'web', 'mime' => FileHelper::getMimeFromExtension($sourceUrl)]);
             }
 
-            Log::debug("Stored File $storedFile->id references source URL $sourceUrl");
+            static::logDebug("Stored File $storedFile->id references source URL $sourceUrl");
             $sourceId   = $sourceUrl;
             $sourceType = 'file';
         } elseif ($sourceMessageId) {
@@ -239,7 +238,7 @@ class JSONSchemaDataToDatabaseMapper
             'stored_file_id'          => $storedFile?->id,
         ]);
 
-        Log::debug("$attributeSource was " . ($attributeSource->wasRecentlyCreated ? 'created' : 'updated'));
+        static::logDebug("$attributeSource was " . ($attributeSource->wasRecentlyCreated ? 'created' : 'updated'));
 
         return $attributeSource;
     }
@@ -275,7 +274,7 @@ class JSONSchemaDataToDatabaseMapper
      */
     public function saveTeamObjectsUsingSchema(array $schema, array &$objects, ?AgentThreadRun $threadRun = null): array
     {
-        Log::debug('Saving array of TeamObjects: ' . count($objects));
+        static::logDebug('Saving array of TeamObjects: ' . count($objects));
 
         $teamObjects = [];
         foreach ($objects as &$object) {
@@ -299,7 +298,7 @@ class JSONSchemaDataToDatabaseMapper
         $name         = $object['name']['value'] ?? $object['name'] ?? null;
         $propertyMeta = $object['property_meta'] ?? null;
 
-        Log::debug("Saving TeamObject: $type" . ($id ? "($id)" : '(new)') . " $name");
+        static::logDebug("Saving TeamObject: $type" . ($id ? "($id)" : '(new)') . " $name");
 
         // If an ID is set, resolve the existing team object
         if ($id) {
@@ -315,7 +314,7 @@ class JSONSchemaDataToDatabaseMapper
 
             if ($type && $teamObject->type !== $type) {
                 if ($threadRun) {
-                    Log::warning("Team Object ($type: $id): type of object did not match: $type !== $teamObject->type. Setting id to null for LLM agent thread run and continuing...");
+                    static::logWarning("Team Object ($type: $id): type of object did not match: $type !== $teamObject->type. Setting id to null for LLM agent thread run and continuing...");
                     $object['id'] = null;
 
                     return $this->saveTeamObjectUsingSchema($schema, $object, $threadRun);
@@ -327,7 +326,7 @@ class JSONSchemaDataToDatabaseMapper
             // Be sure the type is loaded on the object (for database retrieval purposes from artifacts)
             $object['type'] = $teamObject->type;
 
-            Log::debug("Loaded for update: $teamObject");
+            static::logDebug("Loaded for update: $teamObject");
             $this->updateTeamObject($teamObject, $object);
         } else {
             // Perform a create operation that is safe for concurrent requests
@@ -345,7 +344,7 @@ class JSONSchemaDataToDatabaseMapper
                 $this->setRootObject($teamObject);
             }
 
-            Log::debug("Creating a new teamObject: $teamObject");
+            static::logDebug("Creating a new teamObject: $teamObject");
         }
 
         // Save the properties to the resolved team object
@@ -363,11 +362,11 @@ class JSONSchemaDataToDatabaseMapper
                 continue;
             }
 
-            Log::debug("Saving Property: $title ($type" . ($format ? " [$format]" : '') . ')');
+            static::logDebug("Saving Property: $title ($type" . ($format ? " [$format]" : '') . ')');
 
             // Make sure we keep referencing the object (don't create a new object in memory) so we can continue updating the IDs inline
             if ($object[$propertyName] === null) {
-                Log::debug("Skipping null entry for value of $propertyName");
+                static::logDebug("Skipping null entry for value of $propertyName");
 
                 continue;
             }
@@ -385,7 +384,7 @@ class JSONSchemaDataToDatabaseMapper
                 try {
                     $relatedObjects = $this->saveTeamObjectsUsingSchema($property['items'], $object[$propertyName], $threadRun);
                 } catch (Throwable $throwable) {
-                    static::log("Failed to save array of team objects: $propertyName: " . $throwable->getMessage());
+                    static::logDebug("Failed to save array of team objects: $propertyName: " . $throwable->getMessage());
 
                     continue;
                 }
@@ -399,7 +398,7 @@ class JSONSchemaDataToDatabaseMapper
                 try {
                     $relatedObject = $this->saveTeamObjectUsingSchema($property, $object[$propertyName], $threadRun);
                 } catch (Throwable $throwable) {
-                    static::log("Failed to save Team Object: $propertyName: " . $throwable->getMessage());
+                    static::logDebug("Failed to save Team Object: $propertyName: " . $throwable->getMessage());
 
                     continue;
                 }
@@ -416,7 +415,7 @@ class JSONSchemaDataToDatabaseMapper
 
                 // Skip saving this property if the value is null
                 if ($propertyValue['value'] === null) {
-                    Log::debug("Skipping null value for $propertyName");
+                    static::logDebug("Skipping null value for $propertyName");
 
                     continue;
                 }

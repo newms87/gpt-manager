@@ -4,11 +4,13 @@ namespace App\Jobs;
 
 use App\Models\Agent\AgentThreadRun;
 use App\Services\AgentThread\AgentThreadService;
-use Illuminate\Support\Facades\Log;
+use App\Traits\HasDebugLogging;
 use Newms87\Danx\Jobs\Job;
 
 class ExecuteThreadRunJob extends Job
 {
+    use HasDebugLogging;
+
     public int $timeout       = 600;
 
     public bool $failOnTimeout = true;
@@ -17,7 +19,7 @@ class ExecuteThreadRunJob extends Job
 
     public function __construct(public AgentThreadRun $threadRun)
     {
-        Log::debug("ExecuteThreadRunJob created for thread run $threadRun->id");
+        static::logDebug("ExecuteThreadRunJob created for thread run $threadRun->id");
         parent::__construct();
     }
 

@@ -31,7 +31,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         // If the file is already transcoded, just return the completed transcode immediately
         if ($transcodedFile) {
             $this->activity('File already transcoded', 100);
-            static::log("$transcodedFile");
+            static::logDebug("$transcodedFile");
 
             try {
                 $transcodedContents = $transcodedFile->getContents();

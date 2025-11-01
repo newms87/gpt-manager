@@ -24,7 +24,7 @@ class WorkflowRunnerService
      */
     public static function start(WorkflowDefinition $workflowDefinition, Collection|array $artifacts = []): WorkflowRun
     {
-        static::log("Starting $workflowDefinition");
+        static::logDebug("Starting $workflowDefinition");
 
         if ($workflowDefinition->startingWorkflowNodes->isEmpty()) {
             throw new ValidationError('Workflow does not have any starting nodes');
@@ -55,7 +55,7 @@ class WorkflowRunnerService
      */
     public static function prepareNode(WorkflowRun $workflowRun, WorkflowNode $workflowNode): TaskRun
     {
-        static::log("Preparing node $workflowNode");
+        static::logDebug("Preparing node $workflowNode");
         $taskRun = TaskRunnerService::prepareTaskRun($workflowNode->taskDefinition);
         $taskRun->workflowRun()->associate($workflowRun)->save();
         $taskRun->workflowNode()->associate($workflowNode)->save();
@@ -68,7 +68,7 @@ class WorkflowRunnerService
      */
     public static function startNode(TaskRun $taskRun, Collection|array $artifacts = []): TaskRun
     {
-        static::log("Starting node $taskRun->workflowNode");
+        static::logDebug("Starting node $taskRun->workflowNode");
 
         // Acquire the lock for the task run to prevent workers from picking it up before we're ready
         LockHelper::acquire($taskRun);
@@ -98,14 +98,14 @@ class WorkflowRunnerService
      */
     public static function continue(WorkflowRun $workflowRun): void
     {
-        static::log("Continuing $workflowRun");
+        static::logDebug("Continuing $workflowRun");
 
         // Always start by acquiring the lock for the workflow run before checking if it can continue
         // NOTE: This prevents allowing the WorkflowRun to continue if there was a race condition on failing/stopping the WorkflowRun
         LockHelper::acquire($workflowRun);
 
         if ($workflowRun->isFinished()) {
-            static::log("WorkflowRun is $workflowRun->status, skipping execution");
+            static::logDebug("WorkflowRun is $workflowRun->status, skipping execution");
 
             return;
         }
@@ -123,13 +123,13 @@ class WorkflowRunnerService
      */
     public static function resume(WorkflowRun $workflowRun): void
     {
-        static::log("Resuming $workflowRun");
+        static::logDebug("Resuming $workflowRun");
 
         LockHelper::acquire($workflowRun);
 
         try {
             if (!$workflowRun->isStopped() && !$workflowRun->isStatusPending()) {
-                static::log('WorkflowRun is not stopped, skipping resume');
+                static::logDebug('WorkflowRun is not stopped, skipping resume');
 
                 return;
             }
@@ -153,13 +153,13 @@ class WorkflowRunnerService
      */
     public static function stop(WorkflowRun $workflowRun): void
     {
-        static::log("Stopping $workflowRun");
+        static::logDebug("Stopping $workflowRun");
 
         LockHelper::acquire($workflowRun);
 
         try {
             if ($workflowRun->isStopped()) {
-                static::log('Workflow run is already stopped');
+                static::logDebug('Workflow run is already stopped');
 
                 return;
             }
@@ -180,7 +180,7 @@ class WorkflowRunnerService
      */
     public static function onComplete(WorkflowRun $workflowRun): void
     {
-        static::log("Completed $workflowRun");
+        static::logDebug("Completed $workflowRun");
     }
 
     /**
@@ -188,7 +188,7 @@ class WorkflowRunnerService
      */
     public static function onNodeComplete(WorkflowRun $workflowRun, WorkflowNode $workflowNode): void
     {
-        static::log("Node Completed $workflowNode");
+        static::logDebug("Node Completed $workflowNode");
 
         LockHelper::acquire($workflowRun, 120);
 
@@ -207,7 +207,7 @@ class WorkflowRunnerService
                 // If this workflow node has already been started, we don't want to start it again
                 $taskRun = $workflowRun->taskRuns()->where('workflow_node_id', $targetNode->id)->first();
                 if ($taskRun && !$taskRun->isStatusPending()) {
-                    static::log("Target node has already been started $targetNode");
+                    static::logDebug("Target node has already been started $targetNode");
 
                     continue;
                 }
@@ -219,7 +219,7 @@ class WorkflowRunnerService
                     }
                     (new WorkflowStartNodeJob($taskRun))->dispatch();
                 } else {
-                    static::log("Waiting for sources before running target $targetNode");
+                    static::logDebug("Waiting for sources before running target $targetNode");
                 }
             }
 

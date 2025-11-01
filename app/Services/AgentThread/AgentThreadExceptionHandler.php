@@ -50,7 +50,7 @@ class AgentThreadExceptionHandler
 
         // Check if we've exceeded max retries for this exception type
         if ($this->exceptionRetries[$exceptionType] >= 3) {
-            static::log("Max retries (3) reached for exception type: $exceptionType");
+            static::logDebug("Max retries (3) reached for exception type: $exceptionType");
 
             return false;
         }
@@ -63,7 +63,7 @@ class AgentThreadExceptionHandler
         $baseDelay        = $this->getBaseDelayForExceptionType($exceptionType);
         $exponentialDelay = $baseDelay * pow(2, $attemptNumber - 1) + random_int(1, 3);
 
-        static::log("Retrying exception type '$exceptionType' (attempt $attemptNumber/3) after {$exponentialDelay}s delay: {$exception->getMessage()}");
+        static::logDebug("Retrying exception type '$exceptionType' (attempt $attemptNumber/3) after {$exponentialDelay}s delay: {$exception->getMessage()}");
 
         sleep($exponentialDelay);
 

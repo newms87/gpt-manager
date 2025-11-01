@@ -5,10 +5,12 @@ namespace App\Resources\TeamObject;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
-use Log;
+use App\Traits\HasDebugLogging;
 
 class TeamObjectForAgentsResource
 {
+    use HasDebugLogging;
+
     const array TEAM_OBJECT_FIELDS = ['id', 'type', 'name', 'date', 'description', 'url', 'meta'];
 
     public static function make(TeamObject $teamObject): array
@@ -53,7 +55,7 @@ class TeamObjectForAgentsResource
             $relatedObject = TeamObject::find($relationship->related_team_object_id);
 
             if (!$relatedObject) {
-                Log::warning("Could not find related object with ID: $relationship->related_team_object_id");
+                static::logWarning("Could not find related object with ID: $relationship->related_team_object_id");
 
                 continue;
             }
@@ -67,7 +69,7 @@ class TeamObjectForAgentsResource
             if ($maxDepth > 0) {
                 $relatedRelationships = static::recursivelyLoadTeamObjectRelations($relatedObject, $relatedSchema, $maxDepth - 1);
             } else {
-                Log::warning("Max depth reached for object with ID: $teamObject->id");
+                static::logWarning("Max depth reached for object with ID: $teamObject->id");
             }
 
             $arrayRelatedObject = $relatedAttributes + $relatedRelationships + $arrayRelatedObject;

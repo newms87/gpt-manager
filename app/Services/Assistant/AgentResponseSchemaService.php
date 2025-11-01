@@ -2,8 +2,12 @@
 
 namespace App\Services\Assistant;
 
+use App\Traits\HasDebugLogging;
+
 class AgentResponseSchemaService
 {
+    use HasDebugLogging;
+
     /**
      * Get the JSON schema for agent responses that allows requesting context and actions
      */
@@ -102,7 +106,7 @@ class AgentResponseSchemaService
                     ];
                 }
             } catch (\Exception $e) {
-                \Log::warning("Failed to load context resource: {$resourceType}:{$resourceId}", [
+                static::logWarning("Failed to load context resource: {$resourceType}:{$resourceId}", [
                     'error' => $e->getMessage(),
                 ]);
             }

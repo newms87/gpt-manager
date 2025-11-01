@@ -154,7 +154,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
      */
     public function addPagesToArtifact(Artifact $artifact, array $pages): void
     {
-        static::log('Add pages to artifact: ' . implode(', ', $pages));
+        static::logDebug('Add pages to artifact: ' . implode(', ', $pages));
 
         $artifact->json_content = ($artifact->json_content ?? []) + ['pages' => $pages];
 
@@ -175,7 +175,7 @@ class PageOrganizerTaskRunner extends AgentThreadTaskRunner
                 foreach ($inputArtifact->storedFiles as $storedFile) {
                     if (in_array($storedFile->page_number, $pages)) {
                         $artifactMinPageNumber = min($storedFile->page_number, $artifactMinPageNumber);
-                        static::log("Adding page $storedFile to $artifact");
+                        static::logDebug("Adding page $storedFile to $artifact");
                         $artifact->storedFiles()->attach($storedFile);
                         $matchingPages[] = [
                             'page_number' => $storedFile->page_number,

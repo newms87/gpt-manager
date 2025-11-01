@@ -29,7 +29,7 @@ class TaskProcessRunnerService
     public static function prepare(TaskRun $taskRun, ?SchemaAssociation $schemaAssociation = null, $artifacts = []): TaskProcess
     {
         $artifacts = collect($artifacts);
-        static::log("Prepare task process for $taskRun w/ " . $artifacts->count() . ' artifacts' . ($schemaAssociation ? ' and schema association ' . $schemaAssociation->id : ''));
+        static::logDebug("Prepare task process for $taskRun w/ " . $artifacts->count() . ' artifacts' . ($schemaAssociation ? ' and schema association ' . $schemaAssociation->id : ''));
 
         $taskDefinition = $taskRun->taskDefinition;
         $name           = ($schemaAssociation?->schemaFragment?->name ?: $taskDefinition->name);
@@ -61,7 +61,7 @@ class TaskProcessRunnerService
 
             $taskProcess->getRunner()->prepareProcess();
         } catch (Throwable $throwable) {
-            static::log("TaskProcess preparation failed: $taskProcess");
+            static::logDebug("TaskProcess preparation failed: $taskProcess");
             $taskProcess->incomplete_at = now();
             $taskProcess->save();
             throw $throwable;
@@ -71,7 +71,7 @@ class TaskProcessRunnerService
         $taskProcess->save();
 
         LockHelper::release($taskProcess);
-        static::log("Prepared $taskProcess");
+        static::logDebug("Prepared $taskProcess");
 
         return $taskProcess;
     }
@@ -116,7 +116,7 @@ class TaskProcessRunnerService
      */
     public static function run(TaskProcess $taskProcess): void
     {
-        static::log("Running: $taskProcess");
+        static::logDebug("Running: $taskProcess");
 
         // Make sure the task run is not locked before proceeding to prevent running processes before preparation is complete
         LockHelper::acquire($taskProcess->taskRun);
@@ -127,7 +127,7 @@ class TaskProcessRunnerService
 
         try {
             if (!$taskProcess->canBeRun()) {
-                static::log("TaskProcess is $taskProcess->status, skipping execution");
+                static::logDebug("TaskProcess is $taskProcess->status, skipping execution");
 
                 return;
             }
@@ -162,9 +162,9 @@ class TaskProcessRunnerService
         // Run the task process
         try {
             $taskProcess->getRunner()->run();
-            static::log("TaskProcess finished running: $taskProcess");
+            static::logDebug("TaskProcess finished running: $taskProcess");
         } catch (Throwable $throwable) {
-            static::log("TaskProcess failed: $taskProcess\n" . $throwable->getMessage());
+            static::logDebug("TaskProcess failed: $taskProcess\n" . $throwable->getMessage());
 
             // Update error counts before setting failure status (fallback in case JobDispatch event doesn't catch it)
             app(TaskProcessErrorTrackingService::class)->updateTaskProcessErrorCount($taskProcess);
@@ -185,7 +185,7 @@ class TaskProcessRunnerService
      */
     public static function eventTriggered(TaskProcessListener $taskProcessListener): void
     {
-        static::log("Event Triggered $taskProcessListener");
+        static::logDebug("Event Triggered $taskProcessListener");
 
         $taskProcess = $taskProcessListener->taskProcess;
 
@@ -198,9 +198,9 @@ class TaskProcessRunnerService
             if ($invocation) {
                 (new WorkflowApiInvocationWebhookJob($invocation))->dispatch();
             }
-            static::log("TaskProcess finished handling event: $taskProcessListener");
+            static::logDebug("TaskProcess finished handling event: $taskProcessListener");
         } catch (Throwable $throwable) {
-            static::log("TaskProcess event handler failed: $taskProcess");
+            static::logDebug("TaskProcess event handler failed: $taskProcess");
             $taskProcess->incomplete_at = now();
             $taskProcess->save();
             throw $throwable;
@@ -212,7 +212,7 @@ class TaskProcessRunnerService
      */
     public static function restart(TaskProcess $taskProcess): void
     {
-        static::log("Restart $taskProcess");
+        static::logDebug("Restart $taskProcess");
 
         LockHelper::acquire($taskProcess);
 
@@ -248,13 +248,13 @@ class TaskProcessRunnerService
      */
     public static function resume(TaskProcess $taskProcess): void
     {
-        static::log("Resume $taskProcess");
+        static::logDebug("Resume $taskProcess");
 
         LockHelper::acquire($taskProcess);
 
         try {
             if (!$taskProcess->canResume()) {
-                static::log('TaskProcess is not in a resumable state, skipping resume');
+                static::logDebug('TaskProcess is not in a resumable state, skipping resume');
 
                 return;
             }
@@ -280,13 +280,13 @@ class TaskProcessRunnerService
      */
     public static function stop(TaskProcess $taskProcess): void
     {
-        static::log("Stop $taskProcess");
+        static::logDebug("Stop $taskProcess");
 
         LockHelper::acquire($taskProcess);
 
         try {
             if ($taskProcess->isStopped()) {
-                static::log('TaskProcess is already stopped');
+                static::logDebug('TaskProcess is already stopped');
 
                 return;
             }
@@ -306,7 +306,7 @@ class TaskProcessRunnerService
      */
     public static function complete(TaskProcess $taskProcess): void
     {
-        static::log('TaskProcess completed w/ ' . $taskProcess->outputArtifacts()->count() . " artifacts: $taskProcess");
+        static::logDebug('TaskProcess completed w/ ' . $taskProcess->outputArtifacts()->count() . " artifacts: $taskProcess");
 
         LockHelper::acquire($taskProcess);
 
@@ -342,7 +342,7 @@ class TaskProcessRunnerService
                 return false;
             }
 
-            static::log("Task process timed out: $taskProcess");
+            static::logDebug("Task process timed out: $taskProcess");
             $taskProcess->timeout_at = now();
             $taskProcess->save();
 

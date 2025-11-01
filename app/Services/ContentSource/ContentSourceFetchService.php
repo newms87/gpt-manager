@@ -5,11 +5,13 @@ namespace App\Services\ContentSource;
 use App\Api\ConfigurableApi\ConfigurableApi;
 use App\Api\ConfigurableApi\ConfigurableApiConfig;
 use App\Models\ContentSource\ContentSource;
+use App\Traits\HasDebugLogging;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 
 class ContentSourceFetchService
 {
+    use HasDebugLogging;
+
     public function fetch(ContentSource $contentSource)
     {
         // Fetch content source data
@@ -77,7 +79,7 @@ class ContentSourceFetchService
             $workflowInput->save();
             $workflowInput->addObjectTags('content-source', ['api', $contentSource->name]);
 
-            Log::debug("$contentSource " . ($workflowInput->wasRecentlyCreated ? 'created' : 'updated') . " $workflowInput");
+            static::logDebug("$contentSource " . ($workflowInput->wasRecentlyCreated ? 'created' : 'updated') . " $workflowInput");
         }
     }
 }

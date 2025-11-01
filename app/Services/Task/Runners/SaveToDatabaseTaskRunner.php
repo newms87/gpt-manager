@@ -20,8 +20,8 @@ class SaveToDatabaseTaskRunner extends BaseTaskRunner
                 continue;
             }
 
-            static::log("Save to DB: $inputArtifact");
-            static::log("Using Schema: $inputArtifact->schemaDefinition");
+            static::logDebug("Save to DB: $inputArtifact");
+            static::logDebug("Using Schema: $inputArtifact->schemaDefinition");
 
             $threadRun   = AgentThreadRun::find($inputArtifact->meta['agent_thread_run_id'] ?? null);
             $jsonContent = $inputArtifact->json_content;

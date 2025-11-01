@@ -15,12 +15,15 @@ use App\Models\Workflow\WorkflowRun;
 use App\Repositories\WorkflowInputRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\Workflow\WorkflowRunnerService;
+use App\Traits\HasDebugLogging;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class WorkflowBuilderService
 {
+    use HasDebugLogging;
+
     /**
      * Start the requirements gathering phase for workflow building
      */
@@ -711,7 +714,7 @@ class WorkflowBuilderService
         ]);
 
         // Log detailed failure for debugging
-        Log::error('Workflow build failure', [
+        static::logError('Workflow build failure', [
             'chat_id'         => $chat->id,
             'workflow_run_id' => $failedRun->id,
             'status'          => $failedRun->status,

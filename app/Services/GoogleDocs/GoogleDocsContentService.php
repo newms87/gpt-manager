@@ -43,7 +43,7 @@ class GoogleDocsContentService
     {
         $body = $document['body'] ?? null;
         if (!$body || !isset($body['content'])) {
-            static::log('findTextPosition: No body content found');
+            static::logDebug('findTextPosition: No body content found');
 
             return null;
         }
@@ -52,7 +52,7 @@ class GoogleDocsContentService
         $currentIndex = 1; // Google Docs uses 1-based indexing
         $searchStart  = substr($searchText, 0, 50);
 
-        static::log('findTextPosition: Searching for text', [
+        static::logDebug('findTextPosition: Searching for text', [
             'search_start'  => $searchStart,
             'search_length' => strlen($searchText),
         ]);
@@ -65,7 +65,7 @@ class GoogleDocsContentService
                         $startIndex = $paragraphElement['startIndex'] ?? $currentIndex;
                         $endIndex   = $paragraphElement['endIndex']   ?? ($startIndex + strlen($content));
 
-                        static::log('findTextPosition: Checking text run', [
+                        static::logDebug('findTextPosition: Checking text run', [
                             'element_index'           => $elementIndex,
                             'paragraph_element_index' => $paragraphElementIndex,
                             'start_index'             => $startIndex,
@@ -76,7 +76,7 @@ class GoogleDocsContentService
 
                         // Check if this text run contains our search text
                         if (strpos($content, $searchStart) !== false) {
-                            static::log('findTextPosition: Found matching text', [
+                            static::logDebug('findTextPosition: Found matching text', [
                                 'start_index'       => $startIndex,
                                 'found_at_position' => strpos($content, $searchStart),
                             ]);
@@ -90,7 +90,7 @@ class GoogleDocsContentService
             }
         }
 
-        static::log('findTextPosition: Text not found');
+        static::logDebug('findTextPosition: Text not found');
 
         return null;
     }
@@ -101,7 +101,7 @@ class GoogleDocsContentService
     public function insertContentIntoDocument(GoogleDocsApi $api, string $documentId, string $content): void
     {
         try {
-            static::log('insertContentIntoDocument: start', [
+            static::logDebug('insertContentIntoDocument: start', [
                 'content_length'          => strlen($content),
                 'has_newlines'            => strpos($content, "\n")       !== false,
                 'has_literal_backslash_n' => strpos($content, '\\' . 'n') !== false,
@@ -116,7 +116,7 @@ class GoogleDocsContentService
             // Split content into paragraphs and build requests
             $paragraphs = explode("\n", $content);
 
-            static::log('insertContentIntoDocument: after split', [
+            static::logDebug('insertContentIntoDocument: after split', [
                 'paragraph_count' => count($paragraphs),
                 'paragraphs'      => $paragraphs,
             ]);
@@ -139,7 +139,7 @@ class GoogleDocsContentService
             }
 
         } catch (\Exception $e) {
-            static::log('Failed to insert content', [
+            static::logDebug('Failed to insert content', [
                 'document_id' => $documentId,
                 'error'       => $e->getMessage(),
             ]);
@@ -152,7 +152,7 @@ class GoogleDocsContentService
     public function createDocument(GoogleDocsApi $api, string $title, string $content, ?string $parentFolderId = null): array
     {
         try {
-            static::log('Creating document', [
+            static::logDebug('Creating document', [
                 'title'            => $title,
                 'parent_folder_id' => $parentFolderId,
                 'content_length'   => strlen($content),
@@ -175,7 +175,7 @@ class GoogleDocsContentService
             $documentData = $response->json();
 
             // Log the response to debug
-            static::log('Drive API response', [
+            static::logDebug('Drive API response', [
                 'status'   => $response->status(),
                 'response' => $documentData,
             ]);
@@ -203,7 +203,7 @@ class GoogleDocsContentService
 
             $documentUrl = "https://docs.google.com/document/d/{$documentId}/edit";
 
-            static::log('Document created successfully', [
+            static::logDebug('Document created successfully', [
                 'document_id'  => $documentId,
                 'document_url' => $documentUrl,
             ]);
@@ -216,7 +216,7 @@ class GoogleDocsContentService
             ];
 
         } catch (\Exception $e) {
-            static::log('Failed to create document', [
+            static::logDebug('Failed to create document', [
                 'title' => $title,
                 'error' => $e->getMessage(),
             ]);

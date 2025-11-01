@@ -4,10 +4,12 @@ namespace App\Services\Workflow;
 
 use App\Models\Task\Artifact;
 use App\Models\Workflow\WorkflowInput;
-use Illuminate\Support\Facades\Log;
+use App\Traits\HasDebugLogging;
 
 class WorkflowInputToArtifactMapper
 {
+    use HasDebugLogging;
+
     protected WorkflowInput $workflowInput;
 
     public function setWorkflowInput(WorkflowInput $workflowInput): static
@@ -47,7 +49,7 @@ class WorkflowInputToArtifactMapper
 
         $artifact->storedFiles()->saveMany($this->workflowInput->storedFiles);
 
-        Log::debug("Created $artifact");
+        static::logDebug("Created $artifact");
 
         return $artifact;
     }

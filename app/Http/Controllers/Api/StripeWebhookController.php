@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\Billing\BillingService;
+use App\Traits\HasDebugLogging;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class StripeWebhookController extends Controller
 {
+    use HasDebugLogging;
+
     /**
      * Handle incoming Stripe webhook
      */
@@ -22,7 +25,7 @@ class StripeWebhookController extends Controller
             $event = app(BillingService::class)->validateWebhookSignature($payload, $signature);
 
             if (!$event) {
-                Log::warning('Invalid Stripe webhook signature');
+                static::logWarning('Invalid Stripe webhook signature');
 
                 return response()->json(['error' => 'Invalid signature'], 400);
             }
@@ -31,7 +34,7 @@ class StripeWebhookController extends Controller
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            Log::error('Stripe webhook error: ' . $e->getMessage(), [
+            static::logError('Stripe webhook error: ' . $e->getMessage(), [
                 'event_type' => $request->input('type'),
                 'event_id'   => $request->input('id'),
             ]);

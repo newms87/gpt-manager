@@ -11,10 +11,12 @@ use App\Services\AgentThread\AgentThreadService;
 use App\Services\Assistant\Context\ContextServiceInterface;
 use App\Services\Assistant\Context\GeneralChatContextService;
 use App\Services\Assistant\Context\SchemaEditorContextService;
-use Illuminate\Support\Facades\Log;
+use App\Traits\HasDebugLogging;
 
 class UniversalAssistantService
 {
+    use HasDebugLogging;
+
     protected array $contextServices = [];
 
     public function __construct()
@@ -88,7 +90,7 @@ class UniversalAssistantService
             ];
 
         } catch (\Exception $e) {
-            Log::error('UniversalAssistant thread creation error', [
+            static::logError('UniversalAssistant thread creation error', [
                 'message' => $message,
                 'context' => $context,
                 'error'   => $e->getMessage(),
@@ -159,7 +161,7 @@ class UniversalAssistantService
             ];
 
         } catch (\Exception $e) {
-            Log::error('UniversalAssistant chat error', [
+            static::logError('UniversalAssistant chat error', [
                 'message'   => $message,
                 'context'   => $context,
                 'thread_id' => $thread->id,
@@ -239,7 +241,7 @@ class UniversalAssistantService
         $modelClass = $modelMap[$objectType] ?? null;
 
         if (!$modelClass || !class_exists($modelClass)) {
-            Log::warning("Unknown object type: {$objectType}");
+            static::logWarning("Unknown object type: {$objectType}");
 
             return null;
         }
@@ -254,7 +256,7 @@ class UniversalAssistantService
 
             return $object;
         } catch (\Exception $e) {
-            Log::error('Failed to load context object', [
+            static::logError('Failed to load context object', [
                 'type'  => $objectType,
                 'id'    => $objectId,
                 'error' => $e->getMessage(),

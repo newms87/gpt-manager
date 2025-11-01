@@ -115,7 +115,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
      */
     protected function evaluateConditions(Artifact $artifact, array $conditions, string $operator = 'AND'): bool
     {
-        static::log("Artifact $artifact->id: Evaluating conditions with operator: $operator");
+        static::logDebug("Artifact $artifact->id: Evaluating conditions with operator: $operator");
 
         if (empty($conditions)) {
             return false;
@@ -136,12 +136,12 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
                 $result    = $this->filterService->evaluateCondition($fieldValue, $condition);
                 $results[] = $result;
 
-                static::log('Condition evaluated as: ' . ($result ? 'true' : 'false'));
+                static::logDebug('Condition evaluated as: ' . ($result ? 'true' : 'false'));
             } elseif ($condition['type'] === 'condition_group') {
                 $groupOperator = $condition['operator'] ?? 'AND';
                 $result        = $this->evaluateConditions($artifact, $condition['conditions'], $groupOperator);
                 $results[]     = $result;
-                static::log('Condition group evaluated as: ' . ($result ? 'true' : 'false'));
+                static::logDebug('Condition group evaluated as: ' . ($result ? 'true' : 'false'));
             }
         }
 
@@ -150,7 +150,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             (!empty($results) && !in_array(false, $results)) :
             (!empty($results) && in_array(true, $results));
 
-        static::log("Final result for artifact $artifact->id: " . ($finalResult ? 'true' : 'false'));
+        static::logDebug("Final result for artifact $artifact->id: " . ($finalResult ? 'true' : 'false'));
 
         return $finalResult;
     }
@@ -194,7 +194,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
      */
     public function validateConfig(array $config): void
     {
-        static::log('Validating filter config');
+        static::logDebug('Validating filter config');
 
         if (!isset($config['conditions'])) {
             throw new ValidationError("Filter config must have a 'conditions' property");
@@ -206,7 +206,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
 
         // Skip validation for empty conditions (they will be handled in the run method)
         if (empty($config['conditions'])) {
-            static::log('Empty conditions array detected, validation skipped');
+            static::logDebug('Empty conditions array detected, validation skipped');
 
             return;
         }
@@ -236,7 +236,7 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
             throw new ValidationError("Filter 'action' must be one of: keep, discard");
         }
 
-        static::log('Filter config validated successfully');
+        static::logDebug('Filter config validated successfully');
     }
 
     /**
@@ -288,10 +288,10 @@ class FilterArtifactsTaskRunner extends BaseTaskRunner
      */
     public function configure(array $config): void
     {
-        static::log('Configuring filter task runner');
+        static::logDebug('Configuring filter task runner');
 
         $this->keep = ($config['action'] ?? 'keep') === 'keep';
 
-        static::log('Filter task runner configured to ' . ($this->keep ? 'keep' : 'discard') . ' matching artifacts');
+        static::logDebug('Filter task runner configured to ' . ($this->keep ? 'keep' : 'discard') . ' matching artifacts');
     }
 }

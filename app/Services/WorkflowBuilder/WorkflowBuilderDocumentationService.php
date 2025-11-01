@@ -3,12 +3,14 @@
 namespace App\Services\WorkflowBuilder;
 
 use App\Models\Workflow\WorkflowDefinition;
+use App\Traits\HasDebugLogging;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class WorkflowBuilderDocumentationService
 {
+    use HasDebugLogging;
+
     private array $documentCache = [];
 
     private string $docsBasePath;
@@ -145,7 +147,7 @@ class WorkflowBuilderDocumentationService
         $filePath = $this->docsBasePath . '/' . $filename;
 
         if (!File::exists($filePath)) {
-            Log::warning("Workflow builder documentation file not found: {$filename}", [
+            static::logWarning("Workflow builder documentation file not found: {$filename}", [
                 'path'           => $filePath,
                 'expected_files' => [
                     'workflow-definition.md',
@@ -166,7 +168,7 @@ class WorkflowBuilderDocumentationService
             $content = File::get($filePath);
 
             if (empty(trim($content))) {
-                Log::warning("Workflow builder documentation file is empty: {$filename}");
+                static::logWarning("Workflow builder documentation file is empty: {$filename}");
 
                 return $this->getDefaultDocumentContent($filename);
             }
@@ -176,7 +178,7 @@ class WorkflowBuilderDocumentationService
 
             return $content;
         } catch (\Exception $e) {
-            Log::error("Failed to read workflow builder documentation file: {$filename}", [
+            static::logError("Failed to read workflow builder documentation file: {$filename}", [
                 'error' => $e->getMessage(),
                 'path'  => $filePath,
             ]);

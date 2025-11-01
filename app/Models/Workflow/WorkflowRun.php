@@ -139,12 +139,12 @@ class WorkflowRun extends Model implements AuditableContract, WorkflowStatesCont
             if (!$sourceTaskRun?->isCompleted()) {
                 // Bad data handling - in case something went wrong and the data was corrupted, we can fix it here
                 if (!$connectionAsTarget->sourceNode) {
-                    static::log('Source node did not exist: ' . $connectionAsTarget->source_node_id);
+                    static::logDebug('Source node did not exist: ' . $connectionAsTarget->source_node_id);
                     $this->cleanCorruptedConnections();
 
                     continue;
                 }
-                static::log("Waiting for $connectionAsTarget->sourceNode to complete: " . ($sourceTaskRun ?: '(No Task Run)'));
+                static::logDebug("Waiting for $connectionAsTarget->sourceNode to complete: " . ($sourceTaskRun ?: '(No Task Run)'));
 
                 return false;
             }
@@ -206,7 +206,7 @@ class WorkflowRun extends Model implements AuditableContract, WorkflowStatesCont
 
         // Make sure to set the flag to indicate that all required tasks have been run so the workflow can know when it is completed
         if ($this->hasRunAllTasks()) {
-            static::log('All tasks have been run, setting flag');
+            static::logDebug('All tasks have been run, setting flag');
             $this->has_run_all_tasks = true;
         } else {
             $this->has_run_all_tasks = false;

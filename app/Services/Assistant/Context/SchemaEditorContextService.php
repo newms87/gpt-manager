@@ -5,10 +5,12 @@ namespace App\Services\Assistant\Context;
 use App\Models\Assistant\AssistantAction;
 use App\Models\Schema\SchemaDefinition;
 use App\Repositories\SchemaDefinitionRepository;
-use Illuminate\Support\Facades\Log;
+use App\Traits\HasDebugLogging;
 
 class SchemaEditorContextService implements ContextServiceInterface
 {
+    use HasDebugLogging;
+
     public function buildSystemPrompt(array $contextData = []): string
     {
         $currentSchema = '';
@@ -123,7 +125,7 @@ Guidelines:
             }
 
         } catch (\Exception $e) {
-            Log::error('Schema action execution failed', [
+            static::logError('Schema action execution failed', [
                 'action_id' => $action->id,
                 'error'     => $e->getMessage(),
             ]);
