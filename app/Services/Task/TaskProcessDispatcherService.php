@@ -17,7 +17,7 @@ class TaskProcessDispatcherService
      */
     public static function dispatchForTaskRun(TaskRun $taskRun): void
     {
-        static::log("Dispatching workers for TaskRun $taskRun");
+        static::log("Dispatching workers for $taskRun");
 
         // If this task run is part of a workflow, dispatch at the workflow level
         // to ensure proper prioritization across all tasks
