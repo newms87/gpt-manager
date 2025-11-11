@@ -14,20 +14,55 @@ class PusherSubscriptionService
 
     /**
      * Subscribe a user to model updates via Pusher
+     *
+     * @return array Subscription metadata including ID, resource_type, model_id_or_filter, events, expires_at, cache_key
      */
-    public function subscribe(string $resourceType, $modelIdOrFilter, int $teamId, int $userId): void
-    {
+    public function subscribe(
+        string $resourceType,
+        int|string|bool|array $modelIdOrFilter,
+        int $teamId,
+        int $userId,
+        array $events,
+        string $subscriptionId
+    ): array {
+        self::logDebug('Starting subscription', [
+            'subscription_id'    => $subscriptionId,
+            'resource_type'      => $resourceType,
+            'model_id_or_filter' => $modelIdOrFilter,
+            'events'             => $events,
+            'team_id'            => $teamId,
+            'user_id'            => $userId,
+        ]);
+
         $this->validateModelIdOrFilter($modelIdOrFilter);
 
         $cacheKey = $this->buildCacheKey($resourceType, $teamId, $modelIdOrFilter);
 
+        self::logDebug('Generated cache key', [
+            'subscription_id' => $subscriptionId,
+            'cache_key'       => $cacheKey,
+        ]);
+
         // Get current subscribers or initialize empty array
         $subscribers = Cache::get($cacheKey, []);
 
+        $isNewSubscription = !in_array($userId, $subscribers);
+
         // Add user ID to subscribers if not already present
-        if (!in_array($userId, $subscribers)) {
+        if ($isNewSubscription) {
             $subscribers[] = $userId;
         }
+
+        // Calculate expiration timestamp
+        $expiresAt = now()->addSeconds(self::TTL);
+
+        self::logDebug('Subscription metadata', [
+            'subscription_id'       => $subscriptionId,
+            'is_new_subscription'   => $isNewSubscription,
+            'total_subscribers'     => count($subscribers),
+            'expires_at'            => $expiresAt->toIso8601String(),
+            'ttl_seconds'           => self::TTL,
+        ]);
 
         // Store subscribers with TTL
         Cache::put($cacheKey, $subscribers, self::TTL);
@@ -52,29 +87,83 @@ class PusherSubscriptionService
             }
         }
 
+        // Store subscription metadata by ID for keepalive lookups
+        $subscriptionMetadata = [
+            'id'                 => $subscriptionId,
+            'resource_type'      => $resourceType,
+            'model_id_or_filter' => $modelIdOrFilter,
+            'events'             => $events,
+            'team_id'            => $teamId,
+            'user_id'            => $userId,
+            'cache_key'          => $cacheKey,
+            'expires_at'         => $expiresAt->toIso8601String(),
+        ];
+
+        Cache::put("subscription:id:{$subscriptionId}", $subscriptionMetadata, self::TTL);
+
         self::logDebug("User subscribed to {$resourceType}", [
-            'cache_key' => $cacheKey,
-            'user_id'   => $userId,
-            'team_id'   => $teamId,
+            'subscription_id' => $subscriptionId,
+            'cache_key'       => $cacheKey,
+            'user_id'         => $userId,
+            'team_id'         => $teamId,
         ]);
+
+        return [
+            'success'      => true,
+            'subscription' => [
+                'id'                 => $subscriptionId,
+                'resource_type'      => $resourceType,
+                'model_id_or_filter' => $modelIdOrFilter,
+                'events'             => $events,
+                'expires_at'         => $expiresAt->toIso8601String(),
+                'cache_key'          => $cacheKey,
+            ],
+        ];
     }
 
     /**
      * Unsubscribe a user from model updates
      */
-    public function unsubscribe(string $resourceType, $modelIdOrFilter, int $teamId, int $userId): void
+    public function unsubscribe(string $resourceType, int|string|bool|array $modelIdOrFilter, int $teamId, int $userId): void
     {
+        self::logDebug('Starting unsubscribe', [
+            'resource_type'      => $resourceType,
+            'model_id_or_filter' => $modelIdOrFilter,
+            'team_id'            => $teamId,
+            'user_id'            => $userId,
+        ]);
+
         $this->validateModelIdOrFilter($modelIdOrFilter);
 
         $cacheKey = $this->buildCacheKey($resourceType, $teamId, $modelIdOrFilter);
 
         // Get current subscribers
-        $subscribers = Cache::get($cacheKey, []);
+        $subscribers   = Cache::get($cacheKey, []);
+        $wasSubscribed = in_array($userId, $subscribers);
+
+        self::logDebug('Subscription state', [
+            'cache_key'         => $cacheKey,
+            'user_id'           => $userId,
+            'was_subscribed'    => $wasSubscribed,
+            'total_subscribers' => count($subscribers),
+        ]);
+
+        if (!$wasSubscribed) {
+            self::logDebug('User was not subscribed', [
+                'cache_key' => $cacheKey,
+                'user_id'   => $userId,
+            ]);
+        }
 
         // Remove user ID from subscribers
         $subscribers = array_values(array_filter($subscribers, fn($id) => $id !== $userId));
 
         if (empty($subscribers)) {
+            self::logDebug('No remaining subscribers, removing cache keys', [
+                'cache_key' => $cacheKey,
+                'user_id'   => $userId,
+            ]);
+
             // Delete cache key if no subscribers remain
             Cache::forget($cacheKey);
             $this->removeFromSubscriptionIndex($cacheKey);
@@ -97,95 +186,205 @@ class PusherSubscriptionService
                 } else {
                     Cache::put($filterIndexKey, $filterHashes, self::TTL);
                 }
+
+                self::logDebug('Filter definition removed', [
+                    'definition_key' => $definitionKey,
+                    'filter_index'   => $filterIndexKey,
+                ]);
             }
         } else {
+            self::logDebug('Updating subscribers list', [
+                'cache_key'             => $cacheKey,
+                'remaining_subscribers' => count($subscribers),
+            ]);
+
             // Update with remaining subscribers
             Cache::put($cacheKey, $subscribers, self::TTL);
         }
 
         self::logDebug("User unsubscribed from {$resourceType}", [
-            'cache_key' => $cacheKey,
-            'user_id'   => $userId,
-            'team_id'   => $teamId,
+            'cache_key'      => $cacheKey,
+            'user_id'        => $userId,
+            'team_id'        => $teamId,
+            'was_subscribed' => $wasSubscribed,
         ]);
     }
 
     /**
-     * Keep subscriptions alive by refreshing TTL
-     * Returns the count of refreshed subscriptions
+     * Keep subscriptions alive by refreshing TTL using subscription IDs
+     *
+     * @param  array  $subscriptionIds  Array of subscription IDs to refresh
+     * @param  int  $userId  User ID to verify ownership
+     * @return array Results array with success/error status for each subscription ID
      */
-    public function keepalive(array $subscriptions, int $teamId, int $userId): int
+    public function keepaliveByIds(array $subscriptionIds, int $userId): array
     {
-        $refreshedCount = 0;
-
-        foreach ($subscriptions as $subscription) {
-            $resourceType    = $subscription['resource_type'];
-            $modelIdOrFilter = $subscription['model_id_or_filter'];
-
-            // Validate model_id_or_filter
-            $this->validateModelIdOrFilter($modelIdOrFilter);
-
-            $cacheKey = $this->buildCacheKey($resourceType, $teamId, $modelIdOrFilter);
-
-            // Check if user is in the subscribers list
-            $subscribers = Cache::get($cacheKey, []);
-
-            if (in_array($userId, $subscribers)) {
-                // Refresh TTL
-                Cache::put($cacheKey, $subscribers, self::TTL);
-                $refreshedCount++;
-
-                // Also refresh filter definition and filter index TTL if exists
-                if (is_array($modelIdOrFilter) && isset($modelIdOrFilter['filter'])) {
-                    $definitionKey = $cacheKey . ':definition';
-                    $filter        = Cache::get($definitionKey);
-                    if ($filter !== null) {
-                        Cache::put($definitionKey, $filter, self::TTL);
-
-                        // Refresh filter index TTL
-                        $filterIndexKey = "subscribe:{$resourceType}:{$teamId}:filters";
-                        $filterHashes   = Cache::get($filterIndexKey, []);
-                        if (!empty($filterHashes)) {
-                            Cache::put($filterIndexKey, $filterHashes, self::TTL);
-                        }
-                    }
-                }
-            }
-        }
-
-        self::logDebug("Keepalive refreshed {$refreshedCount} subscriptions", [
-            'user_id'             => $userId,
-            'team_id'             => $teamId,
-            'total_subscriptions' => count($subscriptions),
+        self::logDebug('Starting keepalive by IDs', [
+            'user_id'              => $userId,
+            'total_subscriptions'  => count($subscriptionIds),
+            'subscription_ids'     => $subscriptionIds,
         ]);
 
-        return $refreshedCount;
+        $results = [];
+
+        foreach ($subscriptionIds as $subscriptionId) {
+            $metadataKey = "subscription:id:{$subscriptionId}";
+            $metadata    = Cache::get($metadataKey);
+
+            if (!$metadata) {
+                self::logDebug('Subscription not found', [
+                    'subscription_id' => $subscriptionId,
+                    'user_id'         => $userId,
+                    'metadata_key'    => $metadataKey,
+                ]);
+
+                $results[$subscriptionId] = [
+                    'success' => false,
+                    'error'   => 'Subscription not found or expired',
+                ];
+
+                continue;
+            }
+
+            self::logDebug('Processing keepalive for subscription', [
+                'subscription_id' => $subscriptionId,
+                'user_id'         => $userId,
+                'found'           => true,
+                'resource_type'   => $metadata['resource_type'] ?? null,
+                'cache_key'       => $metadata['cache_key']     ?? null,
+            ]);
+
+            // Verify this subscription belongs to this user
+            if ($metadata['user_id'] !== $userId) {
+                self::logDebug('Ownership verification failed', [
+                    'subscription_id' => $subscriptionId,
+                    'user_id'         => $userId,
+                    'owner_user_id'   => $metadata['user_id'],
+                ]);
+
+                $results[$subscriptionId] = [
+                    'success' => false,
+                    'error'   => 'Unauthorized',
+                ];
+
+                continue;
+            }
+
+            // Check if user is still in the subscribers list
+            $cacheKey    = $metadata['cache_key'];
+            $subscribers = Cache::get($cacheKey, []);
+
+            if (!in_array($userId, $subscribers)) {
+                self::logDebug('User not in subscribers list', [
+                    'subscription_id' => $subscriptionId,
+                    'user_id'         => $userId,
+                    'cache_key'       => $cacheKey,
+                    'subscribers'     => $subscribers,
+                ]);
+
+                $results[$subscriptionId] = [
+                    'success' => false,
+                    'error'   => 'User not subscribed',
+                ];
+
+                continue;
+            }
+
+            // Refresh TTL
+            $expiresAt = now()->addSeconds(self::TTL);
+            Cache::put($cacheKey, $subscribers, self::TTL);
+            Cache::put($metadataKey, array_merge($metadata, [
+                'expires_at' => $expiresAt->toIso8601String(),
+            ]), self::TTL);
+
+            self::logDebug('TTL refreshed successfully', [
+                'subscription_id' => $subscriptionId,
+                'user_id'         => $userId,
+                'cache_key'       => $cacheKey,
+                'expires_at'      => $expiresAt->toIso8601String(),
+                'ttl_seconds'     => self::TTL,
+            ]);
+
+            // Also refresh filter definition and filter index TTL if exists
+            $modelIdOrFilter = $metadata['model_id_or_filter'];
+            if (is_array($modelIdOrFilter) && isset($modelIdOrFilter['filter'])) {
+                $definitionKey = $cacheKey . ':definition';
+                $filter        = Cache::get($definitionKey);
+                if ($filter !== null) {
+                    Cache::put($definitionKey, $filter, self::TTL);
+
+                    // Refresh filter index TTL
+                    $resourceType   = $metadata['resource_type'];
+                    $teamId         = $metadata['team_id'];
+                    $filterIndexKey = "subscribe:{$resourceType}:{$teamId}:filters";
+                    $filterHashes   = Cache::get($filterIndexKey, []);
+                    if (!empty($filterHashes)) {
+                        Cache::put($filterIndexKey, $filterHashes, self::TTL);
+                    }
+
+                    self::logDebug('Filter definition TTL refreshed', [
+                        'subscription_id' => $subscriptionId,
+                        'definition_key'  => $definitionKey,
+                        'filter_index'    => $filterIndexKey,
+                    ]);
+                }
+            }
+
+            $results[$subscriptionId] = [
+                'success'    => true,
+                'expires_at' => $expiresAt->toIso8601String(),
+            ];
+        }
+
+        $successCount = count(array_filter($results, fn($r) => $r['success']));
+        $failureCount = count($subscriptionIds) - $successCount;
+
+        self::logDebug('Keepalive by IDs completed', [
+            'user_id'              => $userId,
+            'total_subscriptions'  => count($subscriptionIds),
+            'successful_refreshes' => $successCount,
+            'failed_refreshes'     => $failureCount,
+        ]);
+
+        return $results;
     }
 
     /**
      * Validate model_id_or_filter parameter
      */
-    public function validateModelIdOrFilter($value): void
+    public function validateModelIdOrFilter(mixed $value): void
     {
         // Reject any empty value: null, '', [], false, 0
         if (empty($value)) {
             throw new ValidationError('model_id_or_filter cannot be empty');
         }
 
-        // Must be integer, boolean true, or array with 'filter' key
+        // Must be integer, string, boolean true, or array with 'filter' key
         $isValid = is_int($value)
+            || is_string($value)
             || $value === true
             || (is_array($value) && isset($value['filter']) && !empty($value['filter']));
 
         if (!$isValid) {
-            throw new ValidationError('model_id_or_filter must be an integer, true, or an object with a filter key');
+            throw new ValidationError('model_id_or_filter must be an integer, a string, true, or an object with a filter key');
+        }
+
+        // Validate string IDs are reasonable (not empty after trim, reasonable length)
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if (empty($trimmed)) {
+                throw new ValidationError('model_id_or_filter string cannot be empty or whitespace only');
+            }
+            if (strlen($trimmed) > 255) {
+                throw new ValidationError('model_id_or_filter string cannot exceed 255 characters');
+            }
         }
     }
 
     /**
      * Build cache key for subscription
      */
-    public function buildCacheKey(string $resourceType, int $teamId, $modelIdOrFilter): string
+    public function buildCacheKey(string $resourceType, int $teamId, int|string|bool|array $modelIdOrFilter): string
     {
         $prefix = "subscribe:{$resourceType}:{$teamId}";
 
@@ -193,7 +392,8 @@ class PusherSubscriptionService
             return "{$prefix}:all";
         }
 
-        if (is_int($modelIdOrFilter)) {
+        // Handle both numeric and string IDs
+        if (is_int($modelIdOrFilter) || is_string($modelIdOrFilter)) {
             return "{$prefix}:id:{$modelIdOrFilter}";
         }
 

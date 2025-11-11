@@ -22,7 +22,7 @@ export const pusher = {
 
 	/**
 	 * Pusher keepalive endpoint
-	 * @endpoint POST /pusher/keepalive
+	 * @endpoint POST /pusher/keepalive-by-ids
 	 */
-	keepalive: buildApiUrl("/pusher/keepalive"),
+	keepaliveByIds: buildApiUrl("/pusher/keepalive-by-ids"),
 } as const;

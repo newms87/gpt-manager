@@ -13,26 +13,31 @@ class PusherSubscriptionController extends Controller
      */
     public function subscribe(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
+            'subscription_id'    => 'required|string|uuid',
             'resource_type'      => 'required|string',
             'model_id_or_filter' => 'required',
+            'events'             => 'required|array',
+            'events.*'           => 'string',
         ]);
 
         // Validate model_id_or_filter - reject any empty value
-        $modelIdOrFilter = $request->input('model_id_or_filter');
+        $modelIdOrFilter = $validated['model_id_or_filter'];
 
         if (empty($modelIdOrFilter)) {
             throw new ValidationError('model_id_or_filter cannot be empty');
         }
 
-        app(PusherSubscriptionService::class)->subscribe(
-            $request->input('resource_type'),
-            $request->input('model_id_or_filter'),
+        $result = app(PusherSubscriptionService::class)->subscribe(
+            $validated['resource_type'],
+            $validated['model_id_or_filter'],
             team()->id,
-            auth()->id()
+            auth()->id(),
+            $validated['events'],
+            $validated['subscription_id']
         );
 
-        return response()->json(['success' => true]);
+        return response()->json($result);
     }
 
     /**
@@ -63,22 +68,24 @@ class PusherSubscriptionController extends Controller
     }
 
     /**
-     * Keep subscriptions alive by refreshing TTL
+     * Keep subscriptions alive by refreshing TTL using subscription IDs
      */
-    public function keepalive(Request $request)
+    public function keepaliveByIds(Request $request)
     {
-        $request->validate([
-            'subscriptions'                      => 'required|array',
-            'subscriptions.*.resource_type'      => 'required|string',
-            'subscriptions.*.model_id_or_filter' => 'required',
+        $validated = $request->validate([
+            'subscription_ids'   => 'required|array',
+            'subscription_ids.*' => 'string|uuid',
         ]);
 
-        app(PusherSubscriptionService::class)->keepalive(
-            $request->input('subscriptions'),
-            team()->id,
+        $results = app(PusherSubscriptionService::class)->keepaliveByIds(
+            $validated['subscription_ids'],
             auth()->id()
         );
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success'       => true,
+            'subscriptions' => $results,
+        ]);
     }
+
 }

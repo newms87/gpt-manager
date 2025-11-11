@@ -54,6 +54,18 @@
 					@click="onRunWorkflow"
 				/>
 			</div>
+			<div class="flex items-center space-x-2">
+				<LabelPillWidget
+					:label="`${runningCount} Running`"
+					color="orange"
+					size="xs"
+				/>
+				<LabelPillWidget
+					:label="`${completedCount} Completed`"
+					color="green"
+					size="xs"
+				/>
+			</div>
 			<div>
 				<ShowHideButton
 					v-model="isShowing"
@@ -109,10 +121,11 @@ import SelectWorkflowInputDialog
 import WorkflowRunCard from "@/components/Modules/WorkflowDefinitions/WorkflowRunCard";
 import WorkflowWorkersInfoDialog from "@/components/Modules/WorkflowDefinitions/WorkflowWorkersInfoDialog.vue";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
+import { usePusher } from "@/helpers/pusher";
 import { WorkflowInput, WorkflowRun } from "@/types";
 import { FaSolidPersonRunning as RunsIcon } from "danx-icon";
 import { ActionButton, EditableDiv, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 defineEmits(["confirm", "close"]);
 
@@ -125,6 +138,34 @@ const resumeWorkflowRunAction = dxWorkflowRun.getAction("resume");
 const isRunning = computed(() => ["Running", "Pending"].includes(activeWorkflowRun.value?.status));
 const isStopped = computed(() => ["Stopped"].includes(activeWorkflowRun.value?.status));
 const hasWorkflowInputNode = computed(() => !!activeWorkflowDefinition.value?.nodes.find((node) => node.taskDefinition.task_runner_name === "Workflow Input"));
+
+const pusher = usePusher();
+
+// Subscribe to WorkflowRun events
+onMounted(async () => {
+	if (pusher) {
+		await pusher.subscribeToModel("WorkflowRun", ["created", "updated"], true);
+	}
+});
+
+onUnmounted(async () => {
+	if (pusher) {
+		await pusher.unsubscribeFromModel("WorkflowRun", ["created", "updated"], true);
+	}
+});
+
+// Computed properties for status counts
+const runningCount = computed(() => {
+	return activeWorkflowDefinition.value?.runs?.filter(r =>
+		["Running", "Pending"].includes(r.status)
+	).length || 0;
+});
+
+const completedCount = computed(() => {
+	return activeWorkflowDefinition.value?.runs?.filter(r =>
+		r.status === "Completed"
+	).length || 0;
+});
 
 function onRunWorkflow() {
 	if (!activeWorkflowDefinition.value) return;

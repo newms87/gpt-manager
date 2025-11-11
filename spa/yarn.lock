@@ -4385,19 +4385,17 @@ pusher-js@^8.4.0:
   dependencies:
     tweetnacl "^1.0.3"
 
-quasar-ui-danx@^0.4.92:
-  version "0.4.92"
-  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.4.92.tgz#3d2d859801269e63a824ac9ce1c1ada10784c4f1"
-  integrity sha512-i8rHKXIJzTHYeeb23NQiEM6cxUiJw3Xcj3OAKU+ij3M/zU3YPGjAW4TFHbFxy8pwfXnpkj7s3x48K40nO/HNvA==
+quasar-ui-danx@^0.3.55:
+  version "0.3.55"
+  resolved "https://registry.yarnpkg.com/quasar-ui-danx/-/quasar-ui-danx-0.3.55.tgz#7fdd575c6952368ef2d3ac724c40062aea745857"
+  integrity sha512-xQpNTbGNU0fN8ee+XKUpuG1VSiuFJTRvm+BhwdaNcZITWa49T3+bm3v7jKw8DLgF7lB7C1sSMXbF/OQ8HhN1cA==
   dependencies:
     "@heroicons/vue" v1
     "@tinymce/tinymce-vue" "^5.1.1"
     "@vueuse/core" "^10.7.2"
-    danx-icon "^1.0.2"
     exifreader "^4.21.1"
     gsap "^3.12.5"
     luxon "^3.4.4"
-    yaml "^2.4.5"
 
 quasar@^2.15.2:
   version "2.15.2"

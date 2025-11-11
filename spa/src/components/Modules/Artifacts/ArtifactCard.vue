@@ -117,6 +117,7 @@ import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import NodeTaskProcessCard from "@/components/Modules/WorkflowCanvas/NodeTaskProcessCard";
+import { useStoredFileUpdates } from "@/composables/useStoredFileUpdates";
 import { Artifact, TaskProcess } from "@/types";
 import {
 	FaSolidBarcode as MetaIcon,
@@ -197,4 +198,17 @@ async function toggleShowTaskProcess() {
 		taskProcess.value = await dxTaskProcess.routes.details({ id: props.artifact.task_process_id } as TaskProcess) as TaskProcess;
 	}
 }
+
+// Subscribe to file updates for real-time transcoding progress
+const { subscribeToFileUpdates, unsubscribeFromFileUpdates } = useStoredFileUpdates();
+
+// Subscribe to files when they're actually visible (isShowingFiles is true)
+watch([() => props.artifact.files, isShowingFiles], ([files, showing]) => {
+	if (showing && files?.length > 0) {
+		files.forEach(file => subscribeToFileUpdates(file));
+	} else if (!showing && files?.length > 0) {
+		// Unsubscribe when files are hidden
+		files.forEach(file => unsubscribeFromFileUpdates(file));
+	}
+});
 </script>

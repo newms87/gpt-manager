@@ -99,6 +99,7 @@ import {
 	isLoadingAvailableTeamObjects,
 	loadAvailableTeamObjectsByType
 } from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/teamObjectStore";
+import { useStoredFileUpdates } from "@/composables/useStoredFileUpdates";
 import { WorkflowInput } from "@/types";
 import { FaSolidIndustry as TeamObjectIcon, FaSolidPencil as EditIcon } from "danx-icon";
 import {
@@ -139,4 +140,25 @@ const debouncedUpdateAction = dxWorkflowInput.getAction("update", { debounce: 50
 function onUpdateTeamObjectType(team_object_type) {
 	updateAction.trigger(props.workflowInput, { team_object_type, team_object_id: null });
 }
+
+// Subscribe to file updates for real-time transcoding progress
+const { subscribeToFileUpdates } = useStoredFileUpdates();
+
+// Subscribe to workflow input files when they change
+watch(() => props.workflowInput.files, (files) => {
+	if (files && files.length > 0) {
+		files.forEach(file => {
+			if (file?.id) {
+				subscribeToFileUpdates(file);
+			}
+		});
+	}
+}, { immediate: true, deep: true });
+
+// Also subscribe to thumb if it exists
+watch(() => props.workflowInput.thumb, (thumb) => {
+	if (thumb?.id) {
+		subscribeToFileUpdates(thumb);
+	}
+}, { immediate: true });
 </script>

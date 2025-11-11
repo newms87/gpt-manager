@@ -25,14 +25,14 @@ class WorkflowListenerCompletedListener implements ShouldQueue
 
         $workflowListener = WorkflowListener::findForWorkflowRun($workflowRun);
 
+        if (!$workflowListener) {
+            return;
+        }
+        
         static::logDebug('triggered', [
             'workflow_run_id' => $workflowRun->id,
             'listener_type'   => $workflowListener?->listener_type,
         ]);
-
-        if (!$workflowListener) {
-            return;
-        }
 
         // Check if already completed - prevents re-processing
         if ($workflowListener->completed_at) {

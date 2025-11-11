@@ -188,5 +188,5 @@ Route::post('broadcasting/auth', function (Request $request) {
 Route::prefix('pusher')->group(function () {
     Route::post('subscribe', [PusherSubscriptionController::class, 'subscribe']);
     Route::post('unsubscribe', [PusherSubscriptionController::class, 'unsubscribe']);
-    Route::post('keepalive', [PusherSubscriptionController::class, 'keepalive']);
+    Route::post('keepalive-by-ids', [PusherSubscriptionController::class, 'keepaliveByIds']);
 });

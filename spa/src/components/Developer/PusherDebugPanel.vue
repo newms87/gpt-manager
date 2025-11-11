@@ -7,9 +7,10 @@
     >
         <!-- Header -->
         <PusherDebugHeader
-            :is-connected="isConnected"
+            :connection-state="connectionState"
             :active-subscription-count="activeSubscriptionCount"
             :total-event-count="totalEventCount"
+            :keepalive-state="keepaliveState"
             @close="$emit('close')"
         />
 
@@ -32,14 +33,17 @@
         <div class="flex-grow overflow-hidden">
             <!-- Active Subscriptions Tab -->
             <div v-if="activeTab === 'subscriptions'" class="h-full overflow-auto p-6">
-                <div class="space-y-3">
+                <div v-if="activeSubscriptions.size === 0" class="text-center text-slate-400 py-8">
+                    No active subscriptions
+                </div>
+                <div v-else class="space-y-3">
                     <SubscriptionListItem
-                        v-for="[key, subscription] in activeSubscriptions"
-                        :key="key"
+                        v-for="[subscriptionId, subscription] in activeSubscriptions"
+                        :key="subscriptionId"
                         :subscription="subscription"
-                        :subscription-key="key"
-                        :event-counts="subscriptionEventCounts.get(key) || {}"
-                        @click="onSubscriptionClick(key, subscription)"
+                        :subscription-key="subscriptionId"
+                        :event-counts="subscriptionEventCounts.get(subscriptionId) || {}"
+                        @click="onSubscriptionClick(subscriptionId, subscription)"
                     />
                 </div>
             </div>
@@ -107,11 +111,21 @@ defineEmits<{
 
 const pusher = usePusher();
 
-// Get reactive data from pusher
+// Get reactive data from pusher - use the actual refs, not fallbacks
 const activeSubscriptions = pusher?.activeSubscriptions || ref(new Map());
 const eventLog = pusher?.eventLog || ref<PusherEvent[]>([]);
 const eventCounts = pusher?.eventCounts || ref(new Map<string, number>());
 const subscriptionEventCounts = pusher?.subscriptionEventCounts || ref(new Map<string, Record<string, number>>());
+const keepaliveState = pusher?.keepaliveState || ref({
+    lastKeepaliveAt: null,
+    nextKeepaliveAt: null,
+    keepaliveCount: 0,
+    lastKeepaliveSuccess: null,
+    lastKeepaliveError: null
+});
+
+// Use computed to ensure reactivity with the actual pusher connectionState ref
+const connectionState = computed(() => pusher?.connectionState?.value || 'initialized');
 
 // Tab state
 const activeTab = ref<"subscriptions" | "events" | "statistics">("subscriptions");
@@ -121,9 +135,6 @@ const eventSearchText = ref("");
 const eventResourceTypeFilter = ref<string | null>(null);
 const eventNameFilter = ref<string | null>(null);
 const isFilteredBySubscription = ref(false);
-
-// Connection status
-const isConnected = computed(() => pusher?.pusher?.connection?.state === "connected");
 
 // Active subscription count
 const activeSubscriptionCount = computed(() => activeSubscriptions.value.size);

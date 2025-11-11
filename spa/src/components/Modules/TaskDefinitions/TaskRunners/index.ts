@@ -24,6 +24,7 @@ import {
 	CategorizeArtifactsTaskRunnerConfig,
 	ClassifierTaskRunnerConfig,
 	ClaudeTaskRunnerConfig,
+	FileOrganizationTaskRunnerConfig,
 	FilterArtifactsTaskRunnerConfig,
 	GoogleDocsTemplateTaskRunnerConfig,
 	ImageToTextTranscoderTaskRunnerConfig,
@@ -68,6 +69,12 @@ export const TaskRunnerClasses = {
 		description: "Generate and execute custom PHP code using Claude AI to perform complex tasks.",
 		lottie: AgentThreadRunnerLottie,
 		config: ClaudeTaskRunnerConfig
+	},
+	"File Organization": {
+		name: "File Organization",
+		description: "Organize files intelligently by analyzing content and suggesting optimal folder structures",
+		lottie: PageOrganizerLottie,
+		config: FileOrganizationTaskRunnerConfig
 	},
 	"Filter Artifacts": {
 		name: "Filter Artifacts",

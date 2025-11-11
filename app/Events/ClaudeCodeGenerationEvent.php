@@ -3,10 +3,10 @@
 namespace App\Events;
 
 use App\Models\Task\TaskDefinition;
-use App\Traits\BroadcastsWithSubscriptions;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Newms87\Danx\Traits\BroadcastsWithSubscriptions;
 
 class ClaudeCodeGenerationEvent implements ShouldBroadcast
 {

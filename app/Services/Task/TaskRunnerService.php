@@ -147,12 +147,13 @@ class TaskRunnerService
             $taskRun->clearOutputArtifacts();
             $taskRun->clearInputArtifacts();
 
-            // Reset task run statuses
-            $taskRun->stopped_at   = null;
-            $taskRun->completed_at = null;
-            $taskRun->failed_at    = null;
-            $taskRun->started_at   = null;
-            $taskRun->skipped_at   = null;
+            // Reset task run statuses and error counts
+            $taskRun->stopped_at               = null;
+            $taskRun->completed_at             = null;
+            $taskRun->failed_at                = null;
+            $taskRun->started_at               = null;
+            $taskRun->skipped_at               = null;
+            $taskRun->task_process_error_count = 0;
             $taskRun->save();
 
             // If this task run is part of a workflow run, collect the output artifacts from the source nodes and replace the current input artifacts

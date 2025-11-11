@@ -177,11 +177,12 @@ import {
   FaSolidFileLines
 } from "danx-icon";
 import { MultiFileField, fDateTime, ConfirmDialog, type StoredFile } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { UiCard } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
 import { DEMAND_STATUS } from "../../config";
 import DemandMedicalSummaries from "./DemandMedicalSummaries.vue";
+import { useStoredFileUpdates } from "@/composables/useStoredFileUpdates";
 
 const props = defineProps<{
   demand: UiDemand | null;
@@ -305,7 +306,21 @@ const formatFileSize = (size: number): string => {
 const formatFileDate = (file: StoredFile): string => {
   const date = file.updated_at || file.created_at;
   if (!date) return '';
-  
+
   return `Created ${fDateTime(date, { format: "MMM d, yyyy h:mm a" })}`;
 };
+
+// Subscribe to file updates for real-time transcoding progress
+const { subscribeToFileUpdates } = useStoredFileUpdates();
+
+// Subscribe to input files when they change
+watch(() => inputFiles.value, (files) => {
+  if (files && files.length > 0) {
+    files.forEach(file => {
+      if (file?.id) {
+        subscribeToFileUpdates(file);
+      }
+    });
+  }
+}, { immediate: true, deep: true });
 </script>

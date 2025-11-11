@@ -26,13 +26,6 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
         // Check if this is a workflow builder workflow run
         $workflowBuilderChat = $this->findWorkflowBuilderChat($workflowRun);
 
-        static::logDebug('triggered', [
-            'workflow_run_id'     => $workflowRun->id,
-            'workflow_name'       => $workflowRun->workflowDefinition->name,
-            'builder_chat_id'     => $workflowBuilderChat?->id,
-            'is_builder_workflow' => (bool)$workflowBuilderChat,
-        ]);
-
         if (!$workflowBuilderChat) {
             return;
         }
@@ -97,8 +90,8 @@ class WorkflowBuilderCompletedListener implements ShouldQueue
 
                 // Update chat status to failed if processing fails
                 $workflowBuilderChat->updatePhase(WorkflowBuilderChat::STATUS_FAILED, [
-                    'processing_error'      => $e->getMessage(),
-                    'processing_failed_at'  => now()->toISOString(),
+                    'processing_error'     => $e->getMessage(),
+                    'processing_failed_at' => now()->toISOString(),
                 ]);
 
                 // Re-throw to ensure the queue job fails and can be retried

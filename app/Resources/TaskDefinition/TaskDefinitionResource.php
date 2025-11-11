@@ -17,6 +17,7 @@ class TaskDefinitionResource extends ActionResource
             'id'                     => $taskDefinition->id,
             'name'                   => $taskDefinition->name,
             'description'            => $taskDefinition->description,
+            'prompt'                 => $taskDefinition->prompt,
             'is_trigger'             => $taskDefinition->isTrigger(),
             'task_runner_name'       => $taskDefinition->task_runner_name,
             'task_runner_config'     => $taskDefinition->task_runner_config,

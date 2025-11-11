@@ -18,6 +18,7 @@ export interface TaskDefinition extends ActionTargetItem {
 	id: string;
 	name: string;
 	description: string;
+	prompt?: string;
 	is_trigger: boolean;
 	task_runner_name: string;
 	task_runner_config?: AnyObject;

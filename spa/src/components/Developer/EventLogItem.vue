@@ -18,6 +18,12 @@
 				<span v-if="event.modelId" class="text-purple-400 text-xs">
 					ID: {{ event.modelId }}
 				</span>
+				<LabelPillWidget
+					v-if="event.matchingSubscriptions && event.matchingSubscriptions.length > 0"
+					:label="`${event.matchingSubscriptions.length} subscription${event.matchingSubscriptions.length > 1 ? 's' : ''}`"
+					color="orange"
+					size="xs"
+				/>
 			</div>
 			<div class="flex items-center space-x-2 flex-shrink-0">
 				<ActionButton
@@ -29,9 +35,27 @@
 			</div>
 		</div>
 
-		<div v-if="isExpanded" class="border-t border-slate-700 bg-slate-950 p-4">
-			<div class="text-sm text-slate-400 mb-2">Payload:</div>
-			<pre class="text-xs text-slate-300 bg-slate-900 p-3 rounded overflow-auto max-h-96">{{ formattedPayload }}</pre>
+		<div v-if="isExpanded" class="border-t border-slate-700 bg-slate-950 p-4 space-y-3">
+			<!-- Matching Subscriptions -->
+			<div v-if="event.matchingSubscriptions && event.matchingSubscriptions.length > 0">
+				<div class="text-sm text-slate-400 mb-2">Matching Subscriptions:</div>
+				<div class="flex flex-wrap gap-2">
+					<div
+						v-for="subId in event.matchingSubscriptions"
+						:key="subId"
+						class="bg-slate-800 rounded px-2 py-1 text-xs font-mono text-orange-400 border border-orange-700/30"
+						:title="subId"
+					>
+						{{ subId.substring(0, 8) }}...
+					</div>
+				</div>
+			</div>
+
+			<!-- Payload -->
+			<div>
+				<div class="text-sm text-slate-400 mb-2">Payload:</div>
+				<pre class="text-xs text-slate-300 bg-slate-900 p-3 rounded overflow-auto max-h-96">{{ formattedPayload }}</pre>
+			</div>
 		</div>
 	</div>
 </template>

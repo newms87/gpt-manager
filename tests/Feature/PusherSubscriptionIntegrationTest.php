@@ -41,9 +41,12 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         ]);
 
         // Step 1: Subscribe
+        $subscriptionId    = '550e8400-e29b-41d4-a716-446655440000';
         $subscribeResponse = $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => $subscriptionId,
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
+            'events'             => ['updated'],
         ]);
 
         $subscribeResponse->assertStatus(200);
@@ -95,23 +98,22 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
 
+        $subscriptionId = '550e8400-e29b-41d4-a716-446655440000';
+
         // Subscribe
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => $subscriptionId,
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
+            'events'             => ['updated'],
         ]);
 
         $cacheKey = "subscribe:WorkflowRun:{$this->user->currentTeam->id}:id:{$workflowRun->id}";
         $this->assertTrue(Cache::has($cacheKey));
 
-        // When - Send keepalive
-        $keepaliveResponse = $this->postJson('/api/pusher/keepalive', [
-            'subscriptions' => [
-                [
-                    'resource_type'      => 'WorkflowRun',
-                    'model_id_or_filter' => $workflowRun->id,
-                ],
-            ],
+        // When - Send keepalive by IDs
+        $keepaliveResponse = $this->postJson('/api/pusher/keepalive-by-ids', [
+            'subscription_ids' => [$subscriptionId],
         ]);
 
         // Then
@@ -145,14 +147,18 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         // Both users subscribe
         $this->actingAs($this->user)
             ->postJson('/api/pusher/subscribe', [
+                'subscription_id'    => '550e8400-e29b-41d4-a716-446655440001',
                 'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => $workflowRun->id,
+                'events'             => ['updated'],
             ]);
 
         $this->actingAs($user2)
             ->postJson('/api/pusher/subscribe', [
+                'subscription_id'    => '550e8400-e29b-41d4-a716-446655440002',
                 'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => $workflowRun->id,
+                'events'             => ['updated'],
             ]);
 
         // When - Event is triggered
@@ -192,11 +198,14 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
         ]);
 
         // Subscribe with filter
-        $filter = ['status' => 'Running'];
+        $filter         = ['status' => 'Running'];
+        $subscriptionId = '550e8400-e29b-41d4-a716-446655440000';
 
         $subscribeResponse = $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => $subscriptionId,
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
+            'events'             => ['updated'],
         ]);
 
         $subscribeResponse->assertStatus(200);
@@ -243,13 +252,17 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Subscribe to both channel-wide and model-specific
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => '550e8400-e29b-41d4-a716-446655440001',
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => true,
+            'events'             => ['updated'],
         ]);
 
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => '550e8400-e29b-41d4-a716-446655440002',
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
+            'events'             => ['updated'],
         ]);
 
         // When - Event is triggered
@@ -300,29 +313,27 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
             'workflow_definition_id' => $workflowDefinition->id,
         ]);
 
+        $subscriptionId1 = '550e8400-e29b-41d4-a716-446655440001';
+        $subscriptionId2 = '550e8400-e29b-41d4-a716-446655440002';
+
         // Subscribe to multiple resources
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => $subscriptionId1,
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun1->id,
+            'events'             => ['updated'],
         ]);
 
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => $subscriptionId2,
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun2->id,
+            'events'             => ['updated'],
         ]);
 
-        // When - Keepalive for both subscriptions
-        $keepaliveResponse = $this->postJson('/api/pusher/keepalive', [
-            'subscriptions' => [
-                [
-                    'resource_type'      => 'WorkflowRun',
-                    'model_id_or_filter' => $workflowRun1->id,
-                ],
-                [
-                    'resource_type'      => 'WorkflowRun',
-                    'model_id_or_filter' => $workflowRun2->id,
-                ],
-            ],
+        // When - Keepalive for both subscriptions by IDs
+        $keepaliveResponse = $this->postJson('/api/pusher/keepalive-by-ids', [
+            'subscription_ids' => [$subscriptionId1, $subscriptionId2],
         ]);
 
         // Then
@@ -349,22 +360,20 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
             'started_at'             => now(),
         ]);
 
-        $filter = ['status' => 'Running'];
+        $filter         = ['status' => 'Running'];
+        $subscriptionId = '550e8400-e29b-41d4-a716-446655440000';
 
         // Subscribe with filter
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => $subscriptionId,
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
+            'events'             => ['updated'],
         ]);
 
-        // When - Keepalive
-        $keepaliveResponse = $this->postJson('/api/pusher/keepalive', [
-            'subscriptions' => [
-                [
-                    'resource_type'      => 'WorkflowRun',
-                    'model_id_or_filter' => ['filter' => $filter],
-                ],
-            ],
+        // When - Keepalive by IDs
+        $keepaliveResponse = $this->postJson('/api/pusher/keepalive-by-ids', [
+            'subscription_ids' => [$subscriptionId],
         ]);
 
         // Then
@@ -405,13 +414,17 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Subscribe to multiple resources
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => '550e8400-e29b-41d4-a716-446655440011',
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun1->id,
+            'events'             => ['updated'],
         ]);
 
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => '550e8400-e29b-41d4-a716-446655440012',
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun2->id,
+            'events'             => ['updated'],
         ]);
 
         // When - Unsubscribe from workflowRun1
@@ -447,8 +460,10 @@ class PusherSubscriptionIntegrationTest extends AuthenticatedTestCase
 
         // Subscribe
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => '550e8400-e29b-41d4-a716-446655440099',
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
+            'events'             => ['updated'],
         ]);
 
         // When - Event is triggered

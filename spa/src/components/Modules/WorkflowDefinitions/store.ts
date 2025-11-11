@@ -12,7 +12,7 @@ import {
     WorkflowRun
 } from "@/types";
 import { getItem, setItem } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { Router } from "vue-router";
 
 const ACTIVE_WORKFLOW_DEFINITION_KEY = "dx-active-workflow-definition-id";
@@ -22,6 +22,7 @@ const workflowLoadError = ref<string | null>(null);
 const activeWorkflowDefinition = ref<WorkflowDefinition>(null);
 const activeWorkflowRun = ref<WorkflowRun>(null);
 const workflowDefinitions = ref<WorkflowDefinition[]>([]);
+const pusher = usePusher();
 
 // Computed property for read-only access control
 const isReadOnly = computed(() => {
@@ -32,6 +33,30 @@ const isReadOnly = computed(() => {
 
     // Workflows from other teams are read-only
     return activeWorkflowDefinition.value.team_id !== authTeam.value.id;
+});
+
+// Track active TaskRun subscription for cleanup
+let activeTaskRunSubscription: { workflowRunId: number } | null = null;
+
+// Subscribe to TaskRun events filtered by workflow_run_id
+watch(activeWorkflowRun, async (newRun, oldRun) => {
+    if (!pusher) return;
+
+    // Unsubscribe from old workflow run's TaskRuns if exists
+    if (oldRun?.id && activeTaskRunSubscription) {
+        await pusher.unsubscribeFromModel("TaskRun", ["created", "updated"], {
+            filter: { workflow_run_id: oldRun.id }
+        });
+        activeTaskRunSubscription = null;
+    }
+
+    // Subscribe to new workflow run's TaskRuns
+    if (newRun?.id) {
+        await pusher.subscribeToModel("TaskRun", ["created", "updated"], {
+            filter: { workflow_run_id: newRun.id }
+        });
+        activeTaskRunSubscription = { workflowRunId: newRun.id };
+    }
 });
 
 async function refreshActiveWorkflowDefinition() {
@@ -182,30 +207,6 @@ async function refreshWorkflowRun(workflowRun?: WorkflowRun) {
     // Keep running the queue until it's empty
     refreshingWorkflowRun.value = null;
     await refreshWorkflowRun();
-}
-
-/**
- * GLOBAL SUBSCRIPTION - TaskRun "created" events
- *
- * This subscription intentionally lives for the entire app lifecycle to capture
- * TaskRun "created" events across all workflows. This is appropriate for a global
- * store and does NOT require cleanup - the subscription persists throughout the
- * user's session.
- *
- * Client-side filtering is applied in the event handler to only process events
- * for the currently active workflow run.
- */
-const pusher = usePusher();
-if (pusher) {
-    pusher.subscribeToModel("TaskRun", ["created"], true).catch(error => {
-        console.error("Failed to subscribe to TaskRun events:", error);
-    });
-
-    pusher.onEvent("TaskRun", "created", async (taskRun: TaskRun) => {
-        if (taskRun.workflow_run_id === activeWorkflowRun.value?.id) {
-            await refreshWorkflowRun(activeWorkflowRun.value);
-        }
-    });
 }
 
 const addNodeAction = dxWorkflowDefinition.getAction("add-node", {

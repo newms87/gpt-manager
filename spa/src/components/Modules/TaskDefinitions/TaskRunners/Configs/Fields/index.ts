@@ -14,6 +14,7 @@ export { default as TaskArtifactFiltersField } from "./TaskArtifactFiltersField.
 export { default as TaskArtifactFiltersFieldForm } from "./TaskArtifactFiltersFieldForm.vue";
 export { default as TaskDefinitionAgentConfigField } from "./TaskDefinitionAgentConfigField.vue";
 export { default as TaskDefinitionDirectivesConfigField } from "./TaskDefinitionDirectivesConfigField.vue";
+export { default as TaskDefinitionPromptField } from "./TaskDefinitionPromptField.vue";
 export { default as TimeoutConfigField } from "./TimeoutConfigField.vue";
 export { default as UniquePageNumbersField } from "./UniquePageNumbersField.vue";
 export { default as VerificationConfigField } from "./VerificationConfigField.vue";
