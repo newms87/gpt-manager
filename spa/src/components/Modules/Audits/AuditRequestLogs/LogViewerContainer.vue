@@ -112,8 +112,13 @@ const scrollToBottom = () => {
 
 const handleExport = () => {
 	if (props.logs) {
+		// Apply the same filters used for display
+		const rawLines = parsedLines.value.map(line => line.raw);
+		const filteredRawLines = filterLogLines(rawLines, keyword.value, selectedLevels.value, showLocks.value);
+		const filteredLogsString = filteredRawLines.join('\n');
+
 		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-		exportLogs(props.logs, `logs-${timestamp}.txt`);
+		exportLogs(filteredLogsString, `logs-${timestamp}.txt`);
 	}
 };
 
