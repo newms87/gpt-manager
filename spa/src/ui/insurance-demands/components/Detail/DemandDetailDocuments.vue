@@ -311,16 +311,32 @@ const formatFileDate = (file: StoredFile): string => {
 };
 
 // Subscribe to file updates for real-time transcoding progress
-const { subscribeToFileUpdates } = useStoredFileUpdates();
+const { subscribeToFileUpdates, unsubscribeFromFileUpdates } = useStoredFileUpdates();
 
-// Subscribe to input files when they change
-watch(() => inputFiles.value, (files) => {
-  if (files && files.length > 0) {
-    files.forEach(file => {
-      if (file?.id) {
-        subscribeToFileUpdates(file);
+// Track previously subscribed file IDs
+const subscribedFileIds = ref<Set<string>>(new Set());
+
+// Subscribe/unsubscribe to input files when they change
+watch(() => inputFiles.value, (newFiles, oldFiles) => {
+  const newFileIds = new Set(newFiles?.map(f => f?.id).filter(Boolean) || []);
+
+  // Unsubscribe from files that were removed
+  subscribedFileIds.value.forEach(fileId => {
+    if (!newFileIds.has(fileId)) {
+      const oldFile = oldFiles?.find(f => f?.id === fileId);
+      if (oldFile) {
+        unsubscribeFromFileUpdates(oldFile);
       }
-    });
-  }
+      subscribedFileIds.value.delete(fileId);
+    }
+  });
+
+  // Subscribe to new files
+  newFiles?.forEach(file => {
+    if (file?.id && !subscribedFileIds.value.has(file.id)) {
+      subscribeToFileUpdates(file);
+      subscribedFileIds.value.add(file.id);
+    }
+  });
 }, { immediate: true, deep: true });
 </script>

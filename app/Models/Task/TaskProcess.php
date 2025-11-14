@@ -90,6 +90,14 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         return $this->belongsTo(TaskRun::class);
     }
 
+    /**
+     * Get the team_id from the TaskRun->TaskDefinition relationship
+     */
+    public function getTeamIdAttribute(): ?string
+    {
+        return $this->taskRun?->taskDefinition?->team_id;
+    }
+
     public function taskProcessListeners(): HasMany|TaskProcessListener
     {
         return $this->hasMany(TaskProcessListener::class);

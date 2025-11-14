@@ -194,6 +194,8 @@ class ModelSavedEventTest extends AuthenticatedTestCase
         $this->postJson('/api/pusher/subscribe', [
             'resource_type'      => 'TeamObject',
             'model_id_or_filter' => true,
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
+            'events'             => ['updated', 'created'],
         ]);
 
         // When
@@ -259,6 +261,8 @@ class ModelSavedEventTest extends AuthenticatedTestCase
         $this->postJson('/api/pusher/subscribe', [
             'resource_type'      => 'TeamObject',
             'model_id_or_filter' => true,
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
+            'events'             => ['updated', 'created'],
         ]);
 
         // When - Create event with null team_id

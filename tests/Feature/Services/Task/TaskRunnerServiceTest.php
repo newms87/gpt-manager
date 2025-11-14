@@ -6,8 +6,10 @@ use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
+use App\Models\Task\TaskProcess;
 use App\Services\Task\TaskRunnerService;
 use Illuminate\Database\Eloquent\Builder;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\AuthenticatedTestCase;
 
 class TaskRunnerServiceTest extends AuthenticatedTestCase
@@ -174,5 +176,48 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
         $taskProcess->refresh();
         $this->assertTrue($taskRun->isCompleted(), 'TaskRun should be completed');
         $this->assertEquals(0, $taskProcess->outputArtifacts()->count(), 'TaskProcess should not have any output artifacts');
+    }
+
+    #[Test]
+    public function restart_clears_error_counts(): void
+    {
+        // GIVEN: A TaskRun with error counts
+        $taskDefinition = TaskDefinition::factory()->create([
+            'task_runner_name' => 'agent-thread',
+        ]);
+
+        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition);
+        TaskRunnerService::prepareTaskProcesses($taskRun);
+
+        // Set error counts and failed state
+        $taskRun->task_process_error_count = 5;
+        $taskRun->failed_at                = now();
+        $taskRun->started_at               = now();
+        $taskRun->save();
+
+        // Create some task processes with errors
+        TaskProcess::factory()->count(3)->create([
+            'task_run_id' => $taskRun->id,
+            'error_count' => 2,
+        ]);
+
+        // Verify error count is set
+        $this->assertEquals(5, $taskRun->task_process_error_count);
+        $this->assertEquals(4, $taskRun->taskProcesses()->count(), 'Should have 4 task processes (1 from prepare + 3 manually created)');
+
+        // WHEN: The TaskRun is restarted
+        TaskRunnerService::restart($taskRun);
+
+        // THEN: Error count should be reset to 0
+        $taskRun->refresh();
+        $this->assertEquals(0, $taskRun->task_process_error_count, 'task_process_error_count should be reset to 0 on restart');
+
+        // AND: Critical timestamp fields should be reset (failed_at is the key one)
+        $this->assertNull($taskRun->failed_at, 'failed_at should be null - TaskRun is no longer in failed state');
+        $this->assertNull($taskRun->stopped_at, 'stopped_at should be null - TaskRun is no longer stopped');
+        $this->assertNull($taskRun->skipped_at, 'skipped_at should be null - TaskRun is no longer skipped');
+
+        // Note: started_at and completed_at may be set by the restart process running the new task processes,
+        // but the important thing is that error counts are cleared and failed state is reset
     }
 }

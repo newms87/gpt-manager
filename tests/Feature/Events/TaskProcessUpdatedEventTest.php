@@ -85,8 +85,10 @@ class TaskProcessUpdatedEventTest extends AuthenticatedTestCase
 
         // Subscribe to ensure broadcastOn() returns channels
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'TaskProcess',
             'model_id_or_filter' => true,
+            'events'             => ['updated', 'created'],
         ]);
 
         // When

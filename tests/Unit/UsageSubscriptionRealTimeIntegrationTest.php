@@ -120,8 +120,10 @@ class UsageSubscriptionRealTimeIntegrationTest extends AuthenticatedTestCase
 
         // Subscribe to UsageSummary events (required for BroadcastsWithSubscriptions)
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'UsageSummary',
             'model_id_or_filter' => true,
+            'events'             => ['updated', 'created'],
         ]);
 
         $capturedChannel = null;

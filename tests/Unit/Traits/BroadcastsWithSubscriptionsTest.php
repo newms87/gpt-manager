@@ -44,8 +44,10 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
 
         // Subscribe using controller
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => true,
+            'events'             => ['updated', 'created'],
         ]);
 
         // When
@@ -79,8 +81,10 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
 
         // Subscribe using controller
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
+            'events'             => ['updated', 'created'],
         ]);
 
         // When
@@ -115,8 +119,10 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
 
         $filter = ['status' => WorkflowStatesContract::STATUS_RUNNING];
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
+            'events'             => ['updated', 'created'],
         ]);
 
         // When
@@ -150,12 +156,16 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
 
         // User subscribed via both channel-wide and model-specific using controller
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => true,
+            'events'             => ['updated', 'created'],
         ]);
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => $workflowRun->id,
+            'events'             => ['updated', 'created'],
         ]);
 
         // When
@@ -261,14 +271,18 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         // Given - Create two filter subscriptions using controller
         $filter1 = ['status' => WorkflowStatesContract::STATUS_RUNNING];
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter1],
+            'events'             => ['updated', 'created'],
         ]);
 
         $filter2 = ['status' => WorkflowStatesContract::STATUS_COMPLETED];
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter2],
+            'events'             => ['updated', 'created'],
         ]);
 
         // When
@@ -310,8 +324,10 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
 
         $filter = ['status' => WorkflowStatesContract::STATUS_RUNNING];
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
+            'events'             => ['updated', 'created'],
         ]);
 
         // When - Test running workflow
@@ -356,15 +372,19 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         // User1 subscribed via channel-wide using controller
         $this->actingAs($this->user)
             ->postJson('/api/pusher/subscribe', [
+                'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
                 'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => true,
+                'events'             => ['updated', 'created'],
             ]);
 
         // User2 subscribed via model-specific using controller
         $this->actingAs($user2)
             ->postJson('/api/pusher/subscribe', [
+                'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
                 'resource_type'      => 'WorkflowRun',
                 'model_id_or_filter' => $workflowRun->id,
+                'events'             => ['updated', 'created'],
             ]);
 
         // When
@@ -401,8 +421,10 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         // Create subscription with invalid filter using controller (field that doesn't exist on model)
         $filter = ['invalid_field' => 'invalid_value'];
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
+            'events'             => ['updated', 'created'],
         ]);
 
         // When - Should not throw exception
@@ -429,8 +451,10 @@ class BroadcastsWithSubscriptionsTest extends AuthenticatedTestCase
         // Given - Create subscription using controller
         $filter = ['status' => WorkflowStatesContract::STATUS_RUNNING];
         $this->postJson('/api/pusher/subscribe', [
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
             'resource_type'      => 'WorkflowRun',
             'model_id_or_filter' => ['filter' => $filter],
+            'events'             => ['updated', 'created'],
         ]);
 
         // When

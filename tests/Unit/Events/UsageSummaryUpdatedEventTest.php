@@ -78,6 +78,8 @@ class UsageSummaryUpdatedEventTest extends AuthenticatedTestCase
         $this->postJson('/api/pusher/subscribe', [
             'resource_type'      => 'UsageSummary',
             'model_id_or_filter' => true,
+            'subscription_id'    => \Illuminate\Support\Str::uuid()->toString(),
+            'events'             => ['updated', 'created'],
         ]);
 
         // When

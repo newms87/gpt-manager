@@ -26,6 +26,7 @@ class WorkflowInputFactory extends Factory
     {
         if (!$storedFile) {
             $storedFile = StoredFile::create([
+                'team_id'  => team()?->id,
                 'disk'     => 'local',
                 'filepath' => 'test.jpg',
                 'filename' => 'test.jpg',

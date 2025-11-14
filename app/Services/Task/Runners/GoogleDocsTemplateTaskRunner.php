@@ -239,7 +239,8 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
      */
     protected function createGoogleDocsStoredFile(array $newDocument): StoredFile
     {
-        $storedFile = new StoredFile([
+        return StoredFile::create([
+            'team_id'  => $this->taskDefinition->team_id,
             'disk'     => 'external',
             'filepath' => $newDocument['url'],
             'filename' => $newDocument['title'] . '.gdoc',
@@ -252,12 +253,5 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
                 'created_at'  => $newDocument['created_at'],
             ],
         ]);
-
-        // Set team_id and user_id separately since they're not fillable
-        $storedFile->team_id = $this->taskDefinition->team_id;
-        $storedFile->user_id = user()?->id;
-        $storedFile->save();
-
-        return $storedFile;
     }
 }

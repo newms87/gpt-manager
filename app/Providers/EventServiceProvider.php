@@ -8,6 +8,7 @@ use App\Events\WorkflowRunUpdatedEvent;
 use App\Listeners\UiDemandUsageSubscriber;
 use App\Listeners\WorkflowBuilder\WorkflowBuilderCompletedListener;
 use App\Listeners\WorkflowListenerCompletedListener;
+use App\Models\Task\TaskProcess;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\Task\TaskProcessErrorTrackingService;
 use Illuminate\Support\Facades\Event;
@@ -53,9 +54,16 @@ class EventServiceProvider extends ServiceProvider
         JobDispatch::updated(function (JobDispatch $jobDispatch) {
             // Check for errors on ANY status change - errors can occur at any point
             if ($jobDispatch->wasChanged('status')) {
-                // Update error counts for any associated TaskProcesses
-                app(TaskProcessErrorTrackingService::class)
-                    ->updateErrorCountsForJobDispatch($jobDispatch);
+                // Only update error counts if this JobDispatch is related to a TaskProcess
+                // Check via the morphToMany relationship (uses pivot table job_dispatchables)
+                $hasTaskProcess = TaskProcess::whereHas('jobDispatches', function ($query) use ($jobDispatch) {
+                    $query->where('job_dispatch.id', $jobDispatch->id);
+                })->exists();
+
+                if ($hasTaskProcess) {
+                    app(TaskProcessErrorTrackingService::class)
+                        ->updateErrorCountsForJobDispatch($jobDispatch);
+                }
 
                 // Notify the WorkflowRuns when a job dispatch worker has changed state
                 $workflowRuns = WorkflowRun::whereHas('jobDispatches', function ($query) use ($jobDispatch) {
