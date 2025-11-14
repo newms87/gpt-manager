@@ -186,15 +186,15 @@ watch(isShowingTaskProcesses, async () => {
 	if (pusher) {
 		if (isShowingTaskProcesses.value) {
 			try {
-				// Subscribe to all TaskProcess events (channel-wide)
-				await pusher.subscribeToModel("TaskProcess", ["updated", "created"], true);
+				// Subscribe to TaskProcess events filtered by task_run_id
+				await pusher.subscribeToModel("TaskProcess", ["updated", "created"], { filter: { task_run_id: props.taskRun.id } });
 			} catch (error) {
 				console.error("Failed to subscribe to task processes:", error);
 			}
 			loadTaskProcesses();
 		} else {
 			try {
-				await pusher.unsubscribeFromModel("TaskProcess", ["updated", "created"], true);
+				await pusher.unsubscribeFromModel("TaskProcess", ["updated", "created"], { filter: { task_run_id: props.taskRun.id } });
 			} catch (error) {
 				console.error("Failed to unsubscribe from task processes:", error);
 			}

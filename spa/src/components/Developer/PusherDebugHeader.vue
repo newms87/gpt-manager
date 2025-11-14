@@ -1,116 +1,91 @@
 <template>
-	<div class="bg-slate-800 p-4 border-b border-slate-700 flex-shrink-0">
-		<!-- Main Header -->
-		<div class="flex items-center justify-between mb-3">
-			<div class="flex items-center space-x-4">
-				<BugIcon class="w-6 text-sky-400" />
-				<h2 class="text-xl font-semibold text-slate-200">
-					Pusher Debug Panel
+	<div class="bg-slate-800 px-4 py-2 border-b border-slate-700 flex-shrink-0">
+		<!-- Single Row Compact Layout -->
+		<div class="flex items-center justify-between gap-6">
+			<!-- Title & Close Button -->
+			<div class="flex items-center gap-3">
+				<BugIcon class="w-5 text-sky-400" />
+				<h2 class="text-base font-semibold text-slate-200">
+					Pusher Debug
 				</h2>
 			</div>
+
+			<!-- Connection Status -->
+			<div class="flex items-center gap-2">
+				<div
+					class="w-2 h-2 rounded-full flex-shrink-0"
+					:class="[
+						connectionStatusColor,
+						connectionState === 'connecting' ? 'animate-pulse' : ''
+					]"
+				/>
+				<span class="text-slate-300 text-sm whitespace-nowrap">{{ connectionStateLabel }}</span>
+				<LabelPillWidget
+					:label="`${activeSubscriptionCount} Subscriptions`"
+					color="sky"
+					size="xs"
+				/>
+				<LabelPillWidget
+					:label="`${totalEventCount} Events`"
+					color="purple"
+					size="xs"
+				/>
+			</div>
+
+			<!-- System Info -->
+			<div class="flex items-center gap-4 text-xs text-slate-300">
+				<div class="whitespace-nowrap">
+					<span class="text-slate-500">User ID:</span>
+					<span class="ml-1 font-mono">{{ userId || 'N/A' }}</span>
+				</div>
+				<div class="whitespace-nowrap">
+					<span class="text-slate-500">Team ID:</span>
+					<span class="ml-1 font-mono">{{ teamId || 'N/A' }}</span>
+				</div>
+			</div>
+
+			<!-- Keepalive Status -->
+			<div v-if="activeSubscriptionCount > 0" class="flex items-center gap-4 text-xs">
+				<div class="whitespace-nowrap">
+					<span class="text-slate-500">Next:</span>
+					<span class="ml-1 text-slate-300 font-mono">{{ nextKeepaliveCountdown }}</span>
+				</div>
+				<div class="whitespace-nowrap">
+					<span class="text-slate-500">Last:</span>
+					<span class="ml-1 text-slate-300 font-mono">{{ lastKeepaliveTime }}</span>
+				</div>
+				<div class="whitespace-nowrap">
+					<span class="text-slate-500">Cycles:</span>
+					<span class="ml-1 text-slate-300 font-mono">{{ keepaliveCount }}</span>
+				</div>
+				<div class="flex items-center gap-1 whitespace-nowrap">
+					<div
+						v-if="lastKeepaliveSuccess === true"
+						class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"
+					/>
+					<div
+						v-else-if="lastKeepaliveSuccess === false"
+						class="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"
+					/>
+					<div
+						v-else
+						class="w-2 h-2 bg-slate-500 rounded-full flex-shrink-0"
+					/>
+					<span class="text-slate-300">{{ keepaliveStatusText }}</span>
+				</div>
+			</div>
+
+			<!-- Close Button -->
 			<QBtn
 				round
 				flat
 				icon="close"
 				size="sm"
-				class="text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-all"
+				class="text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-all flex-shrink-0"
 				@click="$emit('close')"
 			>
 				<QTooltip>Close Panel</QTooltip>
 			</QBtn>
-		</div>
-
-		<!-- Stats Row -->
-		<div class="grid grid-cols-2 gap-4">
-			<!-- Connection & Subscription Stats -->
-			<div class="bg-slate-750 rounded-lg p-3 space-y-2">
-				<div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Connection Status</div>
-				<div class="flex items-center gap-2">
-					<div
-						class="w-2 h-2 rounded-full"
-						:class="[
-							connectionStatusColor,
-							connectionState === 'connecting' ? 'animate-pulse' : ''
-						]"
-					/>
-					<span class="text-slate-300 text-sm">{{ connectionStateLabel }}</span>
-				</div>
-				<div class="flex items-center space-x-2">
-					<LabelPillWidget
-						:label="`${activeSubscriptionCount} Subscriptions`"
-						color="sky"
-						size="xs"
-					/>
-					<LabelPillWidget
-						:label="`${totalEventCount} Total Events`"
-						color="purple"
-						size="xs"
-					/>
-				</div>
-			</div>
-
-			<!-- System Info -->
-			<div class="bg-slate-750 rounded-lg p-3 space-y-2">
-				<div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">System Info</div>
-				<div class="text-xs text-slate-300 space-y-1">
-					<div>
-						<span class="text-slate-500">User ID:</span>
-						<span class="ml-2 font-mono">{{ userId || 'N/A' }}</span>
-					</div>
-					<div>
-						<span class="text-slate-500">Team ID:</span>
-						<span class="ml-2 font-mono">{{ teamId || 'N/A' }}</span>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Keepalive Status Row -->
-		<div v-if="activeSubscriptionCount > 0" class="mt-3 bg-slate-750 rounded-lg p-3">
-			<div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Keepalive Status</div>
-			<div class="grid grid-cols-4 gap-4 text-xs">
-				<div>
-					<div class="text-slate-500 mb-1">Next Refresh</div>
-					<div class="text-slate-300 font-mono">
-						{{ nextKeepaliveCountdown }}
-					</div>
-				</div>
-				<div>
-					<div class="text-slate-500 mb-1">Last Refresh</div>
-					<div class="text-slate-300 font-mono">
-						{{ lastKeepaliveTime }}
-					</div>
-				</div>
-				<div>
-					<div class="text-slate-500 mb-1">Total Cycles</div>
-					<div class="text-slate-300 font-mono">
-						{{ keepaliveCount }}
-					</div>
-				</div>
-				<div>
-					<div class="text-slate-500 mb-1">Status</div>
-					<div class="flex items-center space-x-1">
-						<div
-							v-if="lastKeepaliveSuccess === true"
-							class="w-2 h-2 bg-green-500 rounded-full"
-						/>
-						<div
-							v-else-if="lastKeepaliveSuccess === false"
-							class="w-2 h-2 bg-red-500 rounded-full"
-						/>
-						<div
-							v-else
-							class="w-2 h-2 bg-slate-500 rounded-full"
-						/>
-						<span class="text-slate-300">
-							{{ keepaliveStatusText }}
-						</span>
-					</div>
-					<div v-if="lastKeepaliveError" class="text-red-400 text-xs mt-1" :title="lastKeepaliveError">
-						{{ lastKeepaliveError.substring(0, 30) }}...
-					</div>
-				</div>
-			</div>
 		</div>
 	</div>
 </template>

@@ -260,16 +260,35 @@ tooltip="Create New"
 
 ### Utilities
 
-**ListControlsPagination** - Pagination controls
+**PaginationNavigator** - Robust pagination with page size selector
 
 ```vue
+<script setup>
+import PaginationNavigator from "@/components/Shared/Utilities/PaginationNavigator.vue";
 
-<ListControlsPagination
-    v-model:page="currentPage"
-    :total="totalItems"
-    :per-page="itemsPerPage"
-/>
+const pagination = ref({
+  page: 1,
+  perPage: 10,
+  total: 0
+});
+</script>
+
+<template>
+  <PaginationNavigator
+    v-model="pagination"
+    :page-sizes="[10, 20, 50, 100]"
+    :default-size="10"
+  />
+</template>
 ```
+
+Features:
+- Per page size selector with customizable options
+- First/previous/next/last navigation buttons
+- Smart page number display with ellipsis
+- "Go to page" input for quick navigation
+- Item range display (e.g., "1-10 of 45 items")
+- Always visible (even with 1 page)
 
 ## 2. State Management with ActionRoutes
 

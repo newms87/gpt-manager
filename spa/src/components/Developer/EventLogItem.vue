@@ -6,24 +6,29 @@
 					{{ formattedTime }}
 				</span>
 				<LabelPillWidget
-					:label="event.resourceType"
-					color="sky"
-					size="xs"
-				/>
-				<LabelPillWidget
 					:label="event.eventName"
-					color="green"
+					:color="eventColor"
 					size="xs"
 				/>
 				<span v-if="event.modelId" class="text-purple-400 text-xs">
 					ID: {{ event.modelId }}
 				</span>
-				<LabelPillWidget
-					v-if="event.matchingSubscriptions && event.matchingSubscriptions.length > 0"
-					:label="`${event.matchingSubscriptions.length} subscription${event.matchingSubscriptions.length > 1 ? 's' : ''}`"
-					color="orange"
-					size="xs"
-				/>
+				<span v-if="event.payload?.name" class="text-slate-300 text-xs">
+					{{ event.payload.name }}
+				</span>
+				<span v-if="event.payload?.step" class="text-slate-300 text-xs">
+					{{ event.payload.step }}
+				</span>
+				<span v-if="event.payload?.activity" class="text-slate-300 text-xs">
+					{{ event.payload.activity }}
+				</span>
+				<span v-if="event.payload?.status">
+					<LabelPillWidget
+						:label="event.payload.status"
+						color="amber"
+						size="xs"
+					/>
+				</span>
 			</div>
 			<div class="flex items-center space-x-2 flex-shrink-0">
 				<ActionButton
@@ -46,7 +51,7 @@
 						class="bg-slate-800 rounded px-2 py-1 text-xs font-mono text-orange-400 border border-orange-700/30"
 						:title="subId"
 					>
-						{{ subId.substring(0, 8) }}...
+						{{ getSubscriptionLabel(subId) }}
 					</div>
 				</div>
 			</div>
@@ -65,9 +70,23 @@ import type { PusherEvent } from "@/types/pusher-debug";
 import { ActionButton, LabelPillWidget } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
-const props = defineProps<{
+interface Subscription {
+	id: string;
+	resourceType: string;
+	modelIdOrFilter: boolean | number | string;
+	events: string[];
+	expiresAt?: string;
+	cacheKey?: string;
+	createdAt?: Date;
+}
+
+const props = withDefaults(defineProps<{
 	event: PusherEvent;
-}>();
+	eventColor?: string;
+	subscriptions?: Map<string, Subscription>;
+}>(), {
+	eventColor: "green"
+});
 
 const isExpanded = ref(false);
 
@@ -86,5 +105,11 @@ const formattedPayload = computed(() => {
 
 function toggleExpanded() {
 	isExpanded.value = !isExpanded.value;
+}
+
+function getSubscriptionLabel(subId: string): string {
+	const sub = props.subscriptions?.get(subId);
+	const last6 = subId.slice(-6);
+	return sub ? `${sub.resourceType} ${last6}` : last6;
 }
 </script>
