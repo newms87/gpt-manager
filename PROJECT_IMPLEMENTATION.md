@@ -76,6 +76,43 @@ Read this file to understand specific commands, syntax requirements, and technic
 
 ---
 
+## 🚨 CRITICAL: Database Operations (ABSOLUTE ZERO TOLERANCE)
+
+### NEVER EVER DROP OR MODIFY DATABASES DIRECTLY
+
+**FORBIDDEN COMMANDS:**
+- ❌ `./vendor/bin/sail artisan db:wipe` - NEVER
+- ❌ `./vendor/bin/sail artisan migrate:fresh` - NEVER
+- ❌ `./vendor/bin/sail artisan migrate:reset` - NEVER
+- ❌ Direct SQL operations (DROP, TRUNCATE, ALTER, etc.) - NEVER
+- ❌ Any command that drops or modifies database structure - NEVER
+
+**ALLOWED:**
+- ✅ Laravel migrations ONLY for schema changes
+- ✅ Reading database schema for verification
+
+**Why:** Dropping databases destroys data and creates irreversible problems. Always use migrations for schema changes.
+
+### Parallel Test Execution - Database Conflicts
+
+**CRITICAL UNDERSTANDING:**
+- Tests often run in parallel causing apparent database issues
+- Database errors like "relation already exists" or "duplicate column" are USUALLY parallel test conflicts
+- **FIRST RESPONSE**: Retry the test command - most "database issues" resolve on retry
+- **SECOND RESPONSE**: Only if repeated failures occur, then investigate actual code issues
+- **NEVER**: Drop or reset databases as a solution
+
+**CORRECT RESPONSE TO DATABASE ERRORS IN TESTS:**
+1. ✅ **Retry the test** - Run `./vendor/bin/sail test --filter=TestName` again
+2. ✅ **Check for parallel conflicts** - If error mentions migrations/tables, likely parallel execution issue
+3. ✅ **Wait and retry** - Give database a moment, then retry test
+4. ✅ **Only if persistent** - Investigate actual test code or migration issues
+5. ❌ **NEVER drop/reset database** - This is NEVER the solution
+
+**Why:** Parallel tests create timing conflicts that look like database errors but aren't. Retrying almost always resolves these.
+
+---
+
 ## Authentication & API Testing
 
 Use the `auth:token` command to generate authentication tokens for testing endpoints via CLI:
