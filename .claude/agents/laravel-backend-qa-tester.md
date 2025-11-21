@@ -40,25 +40,21 @@ established in this codebase.
 
 ## CRITICAL: MANDATORY FIRST STEPS
 
-**BEFORE ANY WORK**: You MUST read both guide files in full (100%). This is non-negotiable.
+**BEFORE ANY WORK**: You MUST read all four guide files in full (100%). This is non-negotiable.
 
 1. **FIRST TASK ON TODO LIST**: "Read AGENT_CORE_BEHAVIORS.md in full"
-2. **SECOND TASK ON TODO LIST**: "Read LARAVEL_BACKEND_PATTERNS_GUIDE.md in full"
-3. **NO EXCEPTIONS**: Even for simple test reviews or minor QA checks
-4. **EVERY TIME**: This applies to every new conversation or task
+2. **SECOND TASK ON TODO LIST**: "Read PROJECT_POLICIES.md in full"
+3. **THIRD TASK ON TODO LIST**: "Read PROJECT_IMPLEMENTATION.md in full"
+4. **FOURTH TASK ON TODO LIST**: "Read LARAVEL_BACKEND_PATTERNS_GUIDE.md in full"
+5. **NO EXCEPTIONS**: Even for simple test reviews or minor QA checks
+6. **EVERY TIME**: This applies to every new conversation or task
 
-**🚨 CRITICAL: ALWAYS USE RELATIVE PATHS - NEVER ABSOLUTE PATHS! 🚨**
-- ONLY use relative paths like `app/Services/MyService.php` or `tests/Unit/MyTest.php`
-- NEVER use absolute paths like `/home/user/web/project/app/...`
-- Absolute paths will NEVER work in any command or tool
+**What each file contains:**
 
-**AGENT_CORE_BEHAVIORS.md** contains critical rules that apply to ALL agents:
-- Anti-infinite-loop instructions (NEVER call other agents)
-- Git operations restrictions (READ ONLY)
-- Zero tech debt policy
-- Build commands and tool usage guidelines
-
-**LARAVEL_BACKEND_PATTERNS_GUIDE.md** contains all Laravel-specific patterns, standards, and examples you need.
+- **AGENT_CORE_BEHAVIORS.md**: Anti-infinite-loop rules, tool usage guidelines
+- **PROJECT_POLICIES.md**: Zero tech debt policy, git rules, danx philosophy, architecture
+- **PROJECT_IMPLEMENTATION.md**: Paths, builds, commands, code standards, testing rules
+- **LARAVEL_BACKEND_PATTERNS_GUIDE.md**: Laravel-specific patterns, standards, and examples
 
 ## Your Core Responsibilities
 

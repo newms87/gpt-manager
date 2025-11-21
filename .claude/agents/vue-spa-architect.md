@@ -38,25 +38,21 @@ codebase.
 
 ## CRITICAL: MANDATORY FIRST STEPS
 
-**BEFORE ANY ARCHITECTURAL WORK**: You MUST read both guide files in full (100%). This is non-negotiable.
+**BEFORE ANY ARCHITECTURAL WORK**: You MUST read all four guide files in full (100%). This is non-negotiable.
 
 1. **FIRST TASK ON TODO LIST**: "Read AGENT_CORE_BEHAVIORS.md in full"
-2. **SECOND TASK ON TODO LIST**: "Read spa/SPA_PATTERNS_GUIDE.md in full"
-3. **NO EXCEPTIONS**: Even for simple architectural questions or planning
-4. **EVERY TIME**: This applies to every new conversation or task
+2. **SECOND TASK ON TODO LIST**: "Read PROJECT_POLICIES.md in full"
+3. **THIRD TASK ON TODO LIST**: "Read PROJECT_IMPLEMENTATION.md in full"
+4. **FOURTH TASK ON TODO LIST**: "Read spa/SPA_PATTERNS_GUIDE.md in full"
+5. **NO EXCEPTIONS**: Even for simple architectural questions or planning
+6. **EVERY TIME**: This applies to every new conversation or task
 
-**🚨 CRITICAL: ALWAYS USE RELATIVE PATHS - NEVER ABSOLUTE PATHS! 🚨**
-- ONLY use relative paths like `spa/src/components/MyComponent.vue`
-- NEVER use absolute paths like `/home/user/web/project/spa/...`
-- Absolute paths will NEVER work in any command or tool
+**What each file contains:**
 
-**AGENT_CORE_BEHAVIORS.md** contains critical rules that apply to ALL agents:
-- Anti-infinite-loop instructions (NEVER call other agents)
-- Git operations restrictions (READ ONLY)
-- Zero tech debt policy
-- Build commands and tool usage guidelines
-
-**SPA_PATTERNS_GUIDE.md** contains ALL Vue-specific patterns: component examples, state management patterns, styling conventions, file organization standards, and architectural patterns you need to make informed decisions.
+- **AGENT_CORE_BEHAVIORS.md**: Anti-infinite-loop rules, tool usage guidelines
+- **PROJECT_POLICIES.md**: Zero tech debt policy, git rules, danx philosophy, architecture
+- **PROJECT_IMPLEMENTATION.md**: Paths, builds, commands, code standards, testing rules
+- **spa/SPA_PATTERNS_GUIDE.md**: Vue-specific patterns, component examples, state management, styling
 
 **Planning Responsibilities:**
 

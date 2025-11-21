@@ -36,25 +36,21 @@ management, and styling best practices.
 
 ## CRITICAL: MANDATORY FIRST STEPS
 
-**BEFORE ANY IMPLEMENTATION WORK**: You MUST read both guide files in full (100%). This is non-negotiable.
+**BEFORE ANY IMPLEMENTATION WORK**: You MUST read all four guide files in full (100%). This is non-negotiable.
 
 1. **FIRST TASK ON TODO LIST**: "Read AGENT_CORE_BEHAVIORS.md in full"
-2. **SECOND TASK ON TODO LIST**: "Read spa/SPA_PATTERNS_GUIDE.md in full"
-3. **NO EXCEPTIONS**: Even for single-line changes or simple component modifications
-4. **EVERY TIME**: This applies to every new conversation or task
+2. **SECOND TASK ON TODO LIST**: "Read PROJECT_POLICIES.md in full"
+3. **THIRD TASK ON TODO LIST**: "Read PROJECT_IMPLEMENTATION.md in full"
+4. **FOURTH TASK ON TODO LIST**: "Read spa/SPA_PATTERNS_GUIDE.md in full"
+5. **NO EXCEPTIONS**: Even for single-line changes or simple component modifications
+6. **EVERY TIME**: This applies to every new conversation or task
 
-**🚨 CRITICAL: ALWAYS USE RELATIVE PATHS - NEVER ABSOLUTE PATHS! 🚨**
-- ONLY use relative paths like `spa/src/components/MyComponent.vue`
-- NEVER use absolute paths like `/home/user/web/project/spa/...`
-- Absolute paths will NEVER work in any command or tool
+**What each file contains:**
 
-**AGENT_CORE_BEHAVIORS.md** contains critical rules that apply to ALL agents:
-- Anti-infinite-loop instructions (NEVER call other agents)
-- Git operations restrictions (READ ONLY)
-- Zero tech debt policy
-- Build commands and tool usage guidelines
-
-**SPA_PATTERNS_GUIDE.md** contains ALL Vue-specific patterns: component examples, usage patterns, state management rules, styling conventions, and implementation standards you need to write correct Vue code.
+- **AGENT_CORE_BEHAVIORS.md**: Anti-infinite-loop rules, tool usage guidelines
+- **PROJECT_POLICIES.md**: Zero tech debt policy, git rules, danx philosophy, architecture
+- **PROJECT_IMPLEMENTATION.md**: Paths, builds, commands, code standards, testing rules
+- **spa/SPA_PATTERNS_GUIDE.md**: Vue-specific patterns, component examples, state management, styling
 
 ### Critical Data Management Patterns (Summary)
 
@@ -260,7 +256,7 @@ await request.post('/api/endpoint', data);
 1. **DRY (Don't Repeat Yourself)**: You never duplicate code or logic. You identify patterns and extract them into
    reusable components, composables, or utilities.
 
-2. **No Legacy Code & ZERO BACKWARDS COMPATIBILITY**: You write modern Vue 3 code using `<script setup>` syntax and the Composition API. You never introduce backwards compatibility hacks or deprecated patterns. **IMMEDIATE REPLACEMENT ONLY** - Replace old code completely, no compatibility layers. Update ALL related code to new pattern instantly.
+2. **No Legacy Code & ZERO BACKWARDS COMPATIBILITY**: You write modern Vue 3 code using `<script setup>` syntax and the Composition API. You never introduce backwards compatibility hacks or deprecated patterns. See PROJECT_POLICIES.md for migration strategy.
 
 3. **Component Reusability**: You always check for existing components before creating new ones. You only create new
    components when the required functionality doesn't exist or when explicitly directed by an architect's plan.
@@ -327,15 +323,6 @@ await request.post('/api/endpoint', data);
 - Inline styles or style attributes
 - Direct DOM manipulation
 - Global state pollution
-
-## Migration Strategy
-
-When encountering legacy code:
-
-1. **IMMEDIATE REPLACEMENT** - Never work around legacy patterns
-2. **COMPLETE REMOVAL** - Delete old code entirely, no compatibility layers
-3. **ZERO BACKWARDS COMPATIBILITY** - Update ALL related code to new pattern instantly
-4. **NO GRADUAL MIGRATION** - Replace everything in one atomic change
 
 **When Refactoring**:
 
@@ -416,8 +403,7 @@ async function handleAction() {
 
 ### MANDATORY for non-trivial frontend changes:
 
-- **Build Validation**: ALWAYS run `yarn build` from the spa directory to ensure build passes
-- **NEVER use `npm run dev` or `npm run type-check`** - ONLY `yarn build` is allowed
+- **Build Validation**: Run `yarn build` from spa directory (see PROJECT_IMPLEMENTATION.md)
 - **Linting**: DO NOT use command-line linting tools - linting is handled manually via the IDE
 - Check for proper error handling and loading states
 
@@ -426,5 +412,4 @@ async function handleAction() {
 Before EVERY code change, remember:
 "I will follow best practices: DRY Principles, no Legacy/backwards compatibility, use correct patterns."
 
-ALWAYS read the component/class you're about to interact with BEFORE using it. Understand the method completely before
-assuming its behavior. Never guess - it is CRITICAL you understand what you are doing before you do it.
+ALWAYS read the component/class you're about to interact with BEFORE using it. Understand the method completely before assuming its behavior. Never guess - it is CRITICAL you understand what you are doing before you do it.
