@@ -3,6 +3,9 @@
 namespace App\Models\Usage;
 
 use App\Events\UsageSummaryUpdatedEvent;
+use App\Models\Agent\AgentThreadRun;
+use App\Models\Task\TaskProcess;
+use App\Models\Task\TaskRun;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -44,7 +47,38 @@ class UsageSummary extends Model
         static::saved(function (UsageSummary $usageSummary) {
             // Broadcast event when usage summary is updated
             UsageSummaryUpdatedEvent::broadcast($usageSummary);
+
+            // Refresh parent usage aggregation if applicable
+            static::refreshParentUsage($usageSummary);
         });
+    }
+
+    /**
+     * Refresh parent model usage aggregation when child usage is updated
+     * Only refreshes if parent already has a usage summary (doesn't create new ones)
+     */
+    protected static function refreshParentUsage(UsageSummary $usageSummary): void
+    {
+        $object = $usageSummary->object;
+
+        if (!$object) {
+            return;
+        }
+
+        // AgentThreadRun -> AgentThread (only if AgentThread already has usage tracking)
+        if ($object instanceof AgentThreadRun && $object->agentThread && $object->agentThread->usageSummary) {
+            $object->agentThread->refreshUsageFromRuns();
+        }
+
+        // TaskProcess -> TaskRun (only if TaskRun already has usage tracking)
+        if ($object instanceof TaskProcess && $object->taskRun && $object->taskRun->usageSummary) {
+            $object->taskRun->refreshUsageFromProcesses();
+        }
+
+        // TaskRun -> WorkflowRun (only if WorkflowRun already has usage tracking)
+        if ($object instanceof TaskRun && $object->workflowRun && $object->workflowRun->usageSummary) {
+            $object->workflowRun->refreshUsageFromTaskRuns();
+        }
     }
 
     public function object(): MorphTo

@@ -239,8 +239,10 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
      */
     protected function createGoogleDocsStoredFile(array $newDocument): StoredFile
     {
-        return StoredFile::create([
+        $storedFile = new StoredFile();
+        $storedFile->forceFill([
             'team_id'  => $this->taskDefinition->team_id,
+            'user_id'  => user()->id ?? null,
             'disk'     => 'external',
             'filepath' => $newDocument['url'],
             'filename' => $newDocument['title'] . '.gdoc',
@@ -253,5 +255,8 @@ class GoogleDocsTemplateTaskRunner extends AgentThreadTaskRunner
                 'created_at'  => $newDocument['created_at'],
             ],
         ]);
+        $storedFile->save();
+
+        return $storedFile;
     }
 }

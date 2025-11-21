@@ -78,14 +78,16 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         // 3. Create template StoredFile
-        $templateStoredFile = StoredFile::create([
+        $templateStoredFile = new StoredFile();
+        $templateStoredFile->forceFill([
             'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'disk'     => 'google',
             'filename' => 'Template Document',
             'url'      => 'https://docs.google.com/document/d/template-doc-123/edit',
             'mime'     => 'application/vnd.google-apps.document',
             'size'     => 0,
-        ]);
+        ])->save();
 
         // 3b. Create DemandTemplate linked to the StoredFile
         $template = DemandTemplate::factory()->create([
@@ -286,8 +288,10 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         // Create an existing StoredFile (as if from previous workflow run)
-        $existingStoredFile = StoredFile::create([
+        $existingStoredFile = new StoredFile();
+        $existingStoredFile->forceFill([
             'team_id'  => $this->user->currentTeam->id,
+            'user_id'  => $this->user->id,
             'disk'     => 'external',
             'filename' => 'Reused Document.gdoc',
             'url'      => 'https://docs.google.com/document/d/reused-doc-789/edit',
@@ -297,7 +301,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
                 'type'        => 'google_docs',
                 'document_id' => 'reused-doc-789',
             ],
-        ]);
+        ])->save();
 
         // First workflow run
         $firstWorkflowRun = WorkflowRun::factory()->create([
