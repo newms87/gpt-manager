@@ -113,15 +113,16 @@ import JobDispatchList from "@/components/Modules/Audits/JobDispatches/JobDispat
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
 import AiTokenUsageButton from "@/components/Shared/Buttons/AiTokenUsageButton";
+import { usePusher } from "@/helpers/pusher";
 import { TaskProcess } from "@/types";
 import {
 	FaSolidMessage as AgentThreadIcon,
 	FaSolidPersonRunning as RunThreadIcon
 } from "danx-icon";
 import { ActionButton, fPercent, LabelPillWidget, ShowHideButton } from "quasar-ui-danx";
-import { ref } from "vue";
+import { onUnmounted, ref, watch } from "vue";
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
 	taskProcess: TaskProcess;
 	colorClass?: string;
 }>(), {
@@ -142,5 +143,26 @@ const agentThreadField = { messages: { files: { thumb: true } } };
 
 // Defines the fields to fetch when requesting JobDispatches
 const jobDispatchesField = { logs: true, apiLogs: true, errors: true };
+
+// Initialize pusher
+const pusher = usePusher();
+
+// Watch for agent thread toggle and manage subscription
+watch(isShowingAgentThread, async (isShowing) => {
+	if (isShowing && props.taskProcess.agentThread?.id) {
+		// Subscribe to AgentThread updates when shown
+		await pusher?.subscribeToModel("AgentThread", ["updated"], props.taskProcess.agentThread.id);
+	} else if (!isShowing && props.taskProcess.agentThread?.id) {
+		// Unsubscribe when hidden
+		await pusher?.unsubscribeFromModel("AgentThread", ["updated"], props.taskProcess.agentThread.id);
+	}
+});
+
+// Cleanup subscription on component unmount
+onUnmounted(async () => {
+	if (isShowingAgentThread.value && props.taskProcess.agentThread?.id) {
+		await pusher?.unsubscribeFromModel("AgentThread", ["updated"], props.taskProcess.agentThread.id);
+	}
+});
 
 </script>

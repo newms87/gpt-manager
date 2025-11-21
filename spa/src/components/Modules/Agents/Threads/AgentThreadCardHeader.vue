@@ -23,7 +23,7 @@
 			:hide-icon="HideLogsIcon"
 			icon-class="w-5"
 		/>
-		<AiTokenUsageButton :usage="thread.usage" class="py-3 mr-3" />
+		<AiTokenUsageButton v-if="thread.usage" :usage="thread.usage" class="py-3 mr-3" />
 		<ActionButton
 			:action="runAction"
 			:target="thread"
