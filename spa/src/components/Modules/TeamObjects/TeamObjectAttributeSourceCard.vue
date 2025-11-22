@@ -25,7 +25,19 @@
 <script setup lang="ts">
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
 import { TeamObjectAttributeSourceCardProps } from "@/components/Modules/TeamObjects/team-objects";
+import { useStoredFileUpdates } from "@/composables/useStoredFileUpdates";
 import { FilePreview, LabelValuePillWidget } from "quasar-ui-danx";
+import { watch } from "vue";
 
-defineProps<TeamObjectAttributeSourceCardProps>();
+const props = defineProps<TeamObjectAttributeSourceCardProps>();
+
+// Subscribe to file updates for real-time transcoding progress
+const { subscribeToFileUpdates } = useStoredFileUpdates();
+
+// Subscribe to source file when it's available
+watch(() => props.source.sourceFile, (sourceFile) => {
+	if (sourceFile) {
+		subscribeToFileUpdates(sourceFile);
+	}
+}, { immediate: true });
 </script>

@@ -86,6 +86,9 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const pusher = usePusher();
 
+// Track active TaskRun subscription for cleanup
+let activeTaskRunSubscription: { workflowRunId: number } | null = null;
+
 const statusColor = computed(() => {
     if (!props.workflowRun?.status) return "text-slate-400";
 
@@ -138,6 +141,12 @@ const onTaskRunCreated = (taskRun: TaskRun) => {
     }
 };
 
+const onTaskRunUpdated = (taskRun: TaskRun) => {
+    if (taskRun.workflow_run_id === props.workflowRun?.id) {
+        refreshWorkflowRun(props.workflowRun);
+    }
+};
+
 const loadOnChange = () => {
     loadWorkflowDefinition();
 
@@ -146,16 +155,34 @@ const loadOnChange = () => {
     subscribeToUpdates();
 };
 
-const subscribeToUpdates = () => {
+const subscribeToUpdates = async () => {
+    if (!props.workflowRun?.id) return;
+
     // Subscribe to workflow run updates for real-time status changes
     pusher.onModelEvent(props.workflowRun, "updated", onWorkflowRunUpdate);
-    pusher.onEvent("TaskRun", "created", onTaskRunCreated);
+
+    // Subscribe to TaskRun events filtered by workflow_run_id
+    await pusher.subscribeToModel("TaskRun", ["created", "updated"], {
+        filter: { workflow_run_id: props.workflowRun.id }
+    });
+    pusher.onEvent("TaskRun", ["created"], onTaskRunCreated);
+    pusher.onEvent("TaskRun", ["updated"], onTaskRunUpdated);
+    activeTaskRunSubscription = { workflowRunId: props.workflowRun.id };
 };
 
-const unsubscribeFromUpdates = () => {
-    // Clean up the subscription using the same callback reference
+const unsubscribeFromUpdates = async () => {
+    // Clean up the workflow run subscription
     pusher.offModelEvent(props.workflowRun, "updated", onWorkflowRunUpdate);
-    pusher.offEvent("TaskRun", "created", onTaskRunCreated);
+
+    // Clean up TaskRun subscriptions
+    if (activeTaskRunSubscription && props.workflowRun?.id) {
+        pusher.offEvent("TaskRun", ["created", "updated"], onTaskRunCreated);
+        pusher.offEvent("TaskRun", ["created", "updated"], onTaskRunUpdated);
+        await pusher.unsubscribeFromModel("TaskRun", ["created", "updated"], {
+            filter: { workflow_run_id: props.workflowRun.id }
+        });
+        activeTaskRunSubscription = null;
+    }
 };
 
 onMounted(loadOnChange);
