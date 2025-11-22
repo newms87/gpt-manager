@@ -38,12 +38,28 @@ const isReadOnly = computed(() => {
 // Track active TaskRun subscription for cleanup
 let activeTaskRunSubscription: { workflowRunId: number } | null = null;
 
+// Event handler for TaskRun created events
+const onTaskRunCreated = (taskRun: TaskRun) => {
+    if (taskRun.workflow_run_id === activeWorkflowRun.value?.id) {
+        refreshWorkflowRun(activeWorkflowRun.value);
+    }
+};
+
+// Event handler for TaskRun updated events
+const onTaskRunUpdated = (taskRun: TaskRun) => {
+    if (taskRun.workflow_run_id === activeWorkflowRun.value?.id) {
+        refreshWorkflowRun(activeWorkflowRun.value);
+    }
+};
+
 // Subscribe to TaskRun events filtered by workflow_run_id
 watch(activeWorkflowRun, async (newRun, oldRun) => {
     if (!pusher) return;
 
     // Unsubscribe from old workflow run's TaskRuns if exists
     if (oldRun?.id && activeTaskRunSubscription) {
+        pusher.offEvent("TaskRun", ["created", "updated"], onTaskRunCreated);
+        pusher.offEvent("TaskRun", ["created", "updated"], onTaskRunUpdated);
         await pusher.unsubscribeFromModel("TaskRun", ["created", "updated"], {
             filter: { workflow_run_id: oldRun.id }
         });
@@ -55,6 +71,8 @@ watch(activeWorkflowRun, async (newRun, oldRun) => {
         await pusher.subscribeToModel("TaskRun", ["created", "updated"], {
             filter: { workflow_run_id: newRun.id }
         });
+        pusher.onEvent("TaskRun", ["created"], onTaskRunCreated);
+        pusher.onEvent("TaskRun", ["updated"], onTaskRunUpdated);
         activeTaskRunSubscription = { workflowRunId: newRun.id };
     }
 });

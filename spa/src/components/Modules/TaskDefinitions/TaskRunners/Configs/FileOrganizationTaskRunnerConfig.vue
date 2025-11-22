@@ -7,6 +7,13 @@
 				structures based on their content and relationships.
 			</div>
 
+			<!-- Agent Selection -->
+			<TaskDefinitionAgentConfigField
+				:task-definition="taskDefinition"
+				:source-task-definitions="sourceTaskDefinitions"
+				class="mb-6"
+			/>
+
 			<!-- Organization Instructions -->
 			<TaskDefinitionPromptField
 				:task-definition="taskDefinition"
@@ -45,7 +52,7 @@ import { useDebounceFn } from "@vueuse/core";
 import { NumberField } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
-import { TaskDefinitionPromptField } from "./Fields";
+import { TaskDefinitionAgentConfigField, TaskDefinitionPromptField } from "./Fields";
 
 export interface FileOrganizationTaskRunnerConfig {
 	comparison_window_size: number;
@@ -53,6 +60,7 @@ export interface FileOrganizationTaskRunnerConfig {
 
 const props = defineProps<{
 	taskDefinition: TaskDefinition;
+	sourceTaskDefinitions?: TaskDefinition[];
 }>();
 
 const config = computed(() => (props.taskDefinition.task_runner_config || {}) as FileOrganizationTaskRunnerConfig);

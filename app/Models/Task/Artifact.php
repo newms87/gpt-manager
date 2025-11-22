@@ -119,6 +119,23 @@ class Artifact extends Model implements AuditableContract
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
     }
 
+    /**
+     * Create a deep copy of this artifact including stored file relationships.
+     * Does NOT copy children - the copy will have no children.
+     */
+    public function copy(): static
+    {
+        $copy = $this->replicate();
+        $copy->save();
+
+        // Copy stored file relationships
+        if ($this->storedFiles->isNotEmpty()) {
+            $copy->storedFiles()->sync($this->storedFiles->pluck('id'));
+        }
+
+        return $copy;
+    }
+
     public function assignChildren($artifacts): static
     {
         $this->children()->saveMany($artifacts);

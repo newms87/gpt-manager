@@ -1,7 +1,7 @@
 <template>
 	<div class="task-process-agent-thread-card bg-transparent text-slate-300 flex flex-col flex-nowrap h-full">
 		<div class="flex items-center justify-end flex-nowrap space-x-2">
-			<AiTokenUsageButton :usage="agentThread.usage" class="py-3" />
+			<AiTokenUsageButton v-if="agentThread.usage" :usage="agentThread.usage" class="py-3" />
 			<ShowHideButton
 				v-model="isShowingJobDispatch"
 				:loading="isLoadingJobDispatch"

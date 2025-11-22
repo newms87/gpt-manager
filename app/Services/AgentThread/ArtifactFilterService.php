@@ -153,7 +153,8 @@ class ArtifactFilterService
             return null;
         }
 
-        $filteredArtifact = $this->artifact->replicate();
+        // Use copy() method which handles stored files relationship
+        $filteredArtifact = $this->artifact->copy();
 
         if (!$this->hasText()) {
             $filteredArtifact->text_content = null;
@@ -171,12 +172,7 @@ class ArtifactFilterService
             $filteredArtifact->meta = null;
         }
 
-        // Save all items on the artifact (before adding files, so we have an ID to associate to)
         $filteredArtifact->save();
-
-        if ($this->hasFiles()) {
-            $filteredArtifact->storedFiles()->sync($this->artifact->storedFiles->pluck('id'));
-        }
 
         return $filteredArtifact;
     }

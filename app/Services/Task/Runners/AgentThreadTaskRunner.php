@@ -150,7 +150,13 @@ class AgentThreadTaskRunner extends BaseTaskRunner
                     $artifact->schemaDefinition()->associate($schemaDefinition)->save();
                 }
 
-                $artifact->assignChildren($this->taskProcess->inputArtifacts);
+                // Create copies of input artifacts to preserve originals (input artifacts are READ ONLY)
+                $artifactCopies = [];
+                foreach ($this->taskProcess->inputArtifacts as $inputArtifact) {
+                    $artifactCopies[] = $inputArtifact->copy();
+                }
+
+                $artifact->assignChildren($artifactCopies);
             }
 
             return $artifact;

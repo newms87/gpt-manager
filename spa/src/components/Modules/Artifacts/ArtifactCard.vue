@@ -70,15 +70,22 @@
 				<QSkeleton v-else class="h-20 w-full" />
 			</div>
 			<div v-if="hasFiles && isShowingFiles">
-				<div class="flex items-stretch justify-start">
-					<FilePreview
-						v-for="file in artifact.files"
+				<div class="flex items-stretch justify-start flex-wrap gap-2">
+					<div
+						v-for="(file, index) in artifact.files"
 						:key="'file-upload-' + file.id"
-						class="cursor-pointer bg-gray-200 w-16 h-16 m-1"
-						:file="file"
-						:related-files="file.transcodes"
-						downloadable
-					/>
+						class="flex flex-col items-center"
+					>
+						<FilePreview
+							class="cursor-pointer bg-gray-200 w-32 h-32"
+							:file="file"
+							:related-files="file.transcodes"
+							downloadable
+						/>
+						<div class="text-xs text-gray-400 mt-1 w-32 text-center truncate" :title="(index + 1) + '. ' + file.filename">
+							{{ index + 1 }}. {{ file.filename }}
+						</div>
+					</div>
 				</div>
 			</div>
 			<div v-if="hasText && isShowingText">

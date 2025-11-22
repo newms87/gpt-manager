@@ -8,9 +8,12 @@ This file provides a high-level overview of the project structure and documentat
 
 **For different roles, read different files:**
 
-### 🎯 If you are the ORCHESTRATOR agent:
-- **START HERE**: Read `ORCHESTRATOR_GUIDE.md` - Contains all delegation rules
+### 🎯 If you are Claude Code (the main CLI assistant):
+- **YOU ARE THE ORCHESTRATOR AGENT - YOU CANNOT WRITE CODE**
+- **MANDATORY FIRST STEP**: Read `ORCHESTRATOR_GUIDE.md` EVERY time you are invoked
+- **YOUR ONLY ROLE**: Investigate and delegate to specialized agents
 - Then familiarize yourself with `PROJECT_POLICIES.md` for project-wide policies
+- **⛔ NEVER write/edit .php, .vue, .ts, .js files - ALWAYS delegate ⛔**
 
 ### 🔧 If you are a SUB-AGENT (vue-spa-engineer, laravel-backend-engineer, etc.):
 - **START HERE**: Read `AGENT_CORE_BEHAVIORS.md` - Contains critical anti-loop rules
@@ -59,6 +62,6 @@ This file provides a high-level overview of the project structure and documentat
 ---
 
 **Remember:**
-- Orchestrator agents: Read `ORCHESTRATOR_GUIDE.md` first
-- Sub-agents: Read `AGENT_CORE_BEHAVIORS.md` first
-- Everyone: Familiarize yourself with `PROJECT_POLICIES.md`
+- **Claude Code (Orchestrator)**: Read `ORCHESTRATOR_GUIDE.md` FIRST on EVERY invocation - NEVER write code yourself
+- **Sub-agents**: Read `AGENT_CORE_BEHAVIORS.md` first - NEVER call other agents
+- **Everyone**: Familiarize yourself with `PROJECT_POLICIES.md`

@@ -83,15 +83,15 @@ class TaskProcessDispatcherService
                 return;
             }
 
-            static::logDebug("Dispatching $availableSlots workers");
+            static::logDebug("Dispatching $workerCount workers");
 
             // Dispatch generic jobs up to the available slots for the workflow
             // The jobs will internally check queue type limits when selecting workers for task processes
             $jobIds = [];
-            for ($i = 0; $i < $availableSlots; $i++) {
+            for ($i = 0; $i < $workerCount; $i++) {
                 $job = new TaskProcessJob(null, $workflowRun);
                 $job->onQueue('task-process')->dispatch();
-                static::logDebug('Dispatched worker ' . ($i + 1) . "/{$availableSlots}");
+                static::logDebug('Dispatched worker ' . ($i + 1) . "/{$workerCount}");
                 $jobIds[] = $job->getJobDispatch()->id;
             }
 

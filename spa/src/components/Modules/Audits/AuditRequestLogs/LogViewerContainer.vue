@@ -75,9 +75,9 @@ const props = defineProps<{
 // Reactive state
 const keyword = ref('');
 const selectedLevels = ref<LogLevel[]>([]);
-const showTimestamp = ref(false);
-const autoScroll = ref(true);
-const showLocks = ref(true);
+const showTimestamp = ref(localStorage.getItem('logViewer.showTimestamp') === 'true');
+const autoScroll = ref(localStorage.getItem('logViewer.autoScroll') !== 'false'); // default true
+const showLocks = ref(localStorage.getItem('logViewer.showLocks') === 'true');
 const virtualScrollRef = ref<InstanceType<typeof QVirtualScroll> | null>(null);
 const scrollContainer = ref<HTMLElement | null>(null);
 
@@ -94,6 +94,19 @@ const filteredLines = computed(() => {
 
 const hasActiveFilters = computed(() => {
 	return keyword.value !== '' || selectedLevels.value.length > 0;
+});
+
+// Save preferences to localStorage
+watch(showTimestamp, (newValue) => {
+	localStorage.setItem('logViewer.showTimestamp', String(newValue));
+});
+
+watch(autoScroll, (newValue) => {
+	localStorage.setItem('logViewer.autoScroll', String(newValue));
+});
+
+watch(showLocks, (newValue) => {
+	localStorage.setItem('logViewer.showLocks', String(newValue));
 });
 
 // Auto-scroll to bottom when new logs arrive
