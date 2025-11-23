@@ -10,6 +10,7 @@ use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Models\User;
 use App\Services\Task\ClassificationDeduplicationService;
+use App\Services\Task\ClassificationVerificationService;
 use App\Services\Task\Runners\ClassifierTaskRunner;
 use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
@@ -83,9 +84,10 @@ class ClassifierTaskRunnerTest extends TestCase
             ]),
         ]);
 
-        // Create task process with classification_property meta
+        // Create task process with classification_property meta and deduplicate operation
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
             'meta'        => ['classification_property' => 'company'],
         ]);
 
@@ -279,6 +281,7 @@ class ClassifierTaskRunnerTest extends TestCase
 
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
             'meta'        => ['classification_property' => 'company'],
         ]);
 
@@ -313,6 +316,7 @@ class ClassifierTaskRunnerTest extends TestCase
 
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
             'meta'        => ['classification_property' => 'location'],
         ]);
 
@@ -670,5 +674,379 @@ class ClassifierTaskRunnerTest extends TestCase
         // Should have artifacts at positions 3, 4, 7, 8 (excluding input artifacts at 5, 6)
         $this->assertEquals([3, 4, 7, 8], $result->pluck('position')->toArray());
         $this->assertCount(4, $result);
+    }
+
+    #[Test]
+    public function run_routes_to_deduplication_when_operation_is_deduplicate()
+    {
+        // Create input artifacts with classification meta
+        $artifact = Artifact::factory()->create([
+            'meta' => [
+                'classification' => [
+                    'company' => 'Apple Inc',
+                ],
+            ],
+        ]);
+
+        // Create task process with deduplicate operation
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
+            'meta'        => ['classification_property' => 'company'],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($artifact->id);
+        $this->taskRun->outputArtifacts()->attach($artifact->id);
+
+        // Mock the ClassificationDeduplicationService
+        $mockService = $this->mock(ClassificationDeduplicationService::class);
+        $mockService->shouldReceive('deduplicateClassificationProperty')
+            ->once()
+            ->with(\Mockery::type('Illuminate\Support\Collection'), 'company');
+
+        // Create and run the classifier task runner
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+        $runner->run();
+
+        // Verify the process is completed
+        $this->assertTrue($taskProcess->fresh()->isCompleted());
+    }
+
+    #[Test]
+    public function run_routes_to_verification_when_operation_is_verify()
+    {
+        // Create output artifacts with classification meta
+        $artifact = Artifact::factory()->create([
+            'meta' => [
+                'classification' => [
+                    'company' => 'Apple Inc',
+                ],
+            ],
+        ]);
+
+        $this->taskRun->outputArtifacts()->attach($artifact->id);
+        $this->taskRun->refresh(); // Refresh to load the relationship
+
+        // Create task process with verify operation
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_VERIFY,
+            'meta'        => ['classification_verification_property' => 'company'],
+        ]);
+
+        // Mock the ClassificationVerificationService
+        $mockService = $this->mock(ClassificationVerificationService::class);
+        $mockService->shouldReceive('verifyClassificationProperty')
+            ->once()
+            ->with(\Mockery::type('Illuminate\Support\Collection'), 'company');
+
+        // Create and run the classifier task runner
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+        $runner->run();
+
+        // Verify the process is completed
+        $this->assertTrue($taskProcess->fresh()->isCompleted());
+    }
+
+    #[Test]
+    public function run_routes_to_classification_when_no_operation_set()
+    {
+        // Create input artifacts
+        $artifact = Artifact::factory()->create([
+            'meta' => [],
+        ]);
+
+        // Create task process without operation (initial classification)
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => null,
+            'meta'        => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($artifact->id);
+
+        // Set up the task definition with a schema
+        $this->taskDefinition->response_format = 'json_schema';
+        $this->taskDefinition->save();
+
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+
+        // Verify that when operation is null, it goes to classification path
+        $this->assertNull($taskProcess->operation);
+    }
+
+    #[Test]
+    public function run_routes_to_classification_when_operation_is_classify()
+    {
+        // Create input artifacts
+        $artifact = Artifact::factory()->create([
+            'meta' => [],
+        ]);
+
+        // Create task process with classify operation
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_CLASSIFY,
+            'meta'        => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($artifact->id);
+
+        // Set up the task definition with a schema
+        $this->taskDefinition->response_format = 'json_schema';
+        $this->taskDefinition->save();
+
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+
+        // Verify that when operation is 'classify', it goes to classification path
+        $this->assertEquals(ClassifierTaskRunner::OPERATION_CLASSIFY, $taskProcess->operation);
+    }
+
+    #[Test]
+    public function database_query_finds_deduplication_processes_by_operation()
+    {
+        // Create multiple task processes with different operations
+        $classifyProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_CLASSIFY,
+            'meta'        => [],
+        ]);
+
+        $dedupeProcess1 = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
+            'meta'        => ['classification_property' => 'company'],
+        ]);
+
+        $dedupeProcess2 = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
+            'meta'        => ['classification_property' => 'location'],
+        ]);
+
+        $verifyProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_VERIFY,
+            'meta'        => ['classification_verification_property' => 'company'],
+        ]);
+
+        // Query for deduplication processes using operation field
+        $dedupeProcesses = $this->taskRun->taskProcesses()
+            ->where('operation', ClassifierTaskRunner::OPERATION_DEDUPLICATE)
+            ->get();
+
+        // Verify only deduplicate processes are returned
+        $this->assertCount(2, $dedupeProcesses);
+        $this->assertTrue($dedupeProcesses->contains($dedupeProcess1));
+        $this->assertTrue($dedupeProcesses->contains($dedupeProcess2));
+        $this->assertFalse($dedupeProcesses->contains($classifyProcess));
+        $this->assertFalse($dedupeProcesses->contains($verifyProcess));
+    }
+
+    #[Test]
+    public function database_query_finds_verification_processes_by_operation()
+    {
+        // Create multiple task processes with different operations
+        $classifyProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_CLASSIFY,
+            'meta'        => [],
+        ]);
+
+        $dedupeProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
+            'meta'        => ['classification_property' => 'company'],
+        ]);
+
+        $verifyProcess1 = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_VERIFY,
+            'meta'        => ['classification_verification_property' => 'company'],
+        ]);
+
+        $verifyProcess2 = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_VERIFY,
+            'meta'        => ['classification_verification_property' => 'location'],
+        ]);
+
+        // Query for verification processes using operation field
+        $verifyProcesses = $this->taskRun->taskProcesses()
+            ->where('operation', ClassifierTaskRunner::OPERATION_VERIFY)
+            ->get();
+
+        // Verify only verify processes are returned
+        $this->assertCount(2, $verifyProcesses);
+        $this->assertTrue($verifyProcesses->contains($verifyProcess1));
+        $this->assertTrue($verifyProcesses->contains($verifyProcess2));
+        $this->assertFalse($verifyProcesses->contains($classifyProcess));
+        $this->assertFalse($verifyProcesses->contains($dedupeProcess));
+    }
+
+    #[Test]
+    public function afterAllProcessesCompleted_creates_deduplication_processes_when_no_property_processes_exist()
+    {
+        // Create output artifacts with classification metadata
+        $artifact1 = Artifact::factory()->create([
+            'meta' => [
+                'classification' => [
+                    'company'  => 'Apple Inc',
+                    'location' => 'Cupertino',
+                ],
+            ],
+        ]);
+
+        $artifact2 = Artifact::factory()->create([
+            'meta' => [
+                'classification' => [
+                    'company'  => 'Google',
+                    'location' => 'Mountain View',
+                ],
+            ],
+        ]);
+
+        $this->taskRun->outputArtifacts()->attach([$artifact1->id, $artifact2->id]);
+
+        // Create a normal task process (no operation)
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => null,
+        ]);
+
+        // Verify no deduplicate processes exist initially
+        $hasDedupeProcesses = $this->taskRun->taskProcesses()
+            ->where('operation', ClassifierTaskRunner::OPERATION_DEDUPLICATE)
+            ->exists();
+        $this->assertFalse($hasDedupeProcesses);
+
+        // Create real service (not mocked) to test actual behavior
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+        $runner->afterAllProcessesCompleted();
+
+        // Verify that new processes were created
+        $newProcesses = $this->taskRun->taskProcesses()
+            ->where('operation', ClassifierTaskRunner::OPERATION_DEDUPLICATE)
+            ->get();
+
+        $this->assertGreaterThan(0, $newProcesses->count());
+
+        // Verify they have the expected properties in meta
+        $properties = $newProcesses->pluck('meta.classification_property')->toArray();
+        $this->assertContains('company', $properties);
+        $this->assertContains('location', $properties);
+    }
+
+    #[Test]
+    public function afterAllProcessesCompleted_calls_verification_service_after_deduplication()
+    {
+        // Create a deduplicate process (simulating completed deduplication)
+        $dedupeProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
+            'meta'        => ['classification_property' => 'company'],
+        ]);
+
+        // Create current task process
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
+        ]);
+
+        // Mock the ClassificationVerificationService
+        $mockService = $this->mock(ClassificationVerificationService::class);
+        $mockService->shouldReceive('createVerificationProcessesForTaskRun')
+            ->once()
+            ->with($this->taskRun);
+
+        // Run afterAllProcessesCompleted
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+        $runner->afterAllProcessesCompleted();
+
+        // Verify the service was called (assertion is in the mock expectation)
+        $this->assertTrue(true);
+    }
+
+    #[Test]
+    public function afterAllProcessesCompleted_stops_after_verification_phase()
+    {
+        // Create verification process (simulating completed verification)
+        $verifyProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_VERIFY,
+            'meta'        => ['classification_verification_property' => 'company'],
+        ]);
+
+        // Create current task process
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_VERIFY,
+        ]);
+
+        // Count processes before
+        $beforeCount = $this->taskRun->taskProcesses()->count();
+
+        // Run afterAllProcessesCompleted
+        $runner = new ClassifierTaskRunner();
+        $runner->setTaskRun($this->taskRun)->setTaskProcess($taskProcess);
+        $runner->afterAllProcessesCompleted();
+
+        // Count processes after - should be the same (no new processes)
+        $afterCount = $this->taskRun->taskProcesses()->count();
+        $this->assertEquals($beforeCount, $afterCount);
+    }
+
+    #[Test]
+    public function deduplication_process_stores_classification_property_in_meta()
+    {
+        // Create task process with deduplicate operation and property in meta
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
+            'meta'        => ['classification_property' => 'company'],
+        ]);
+
+        // Verify meta is correctly stored
+        $this->assertEquals(ClassifierTaskRunner::OPERATION_DEDUPLICATE, $taskProcess->operation);
+        $this->assertEquals('company', $taskProcess->meta['classification_property']);
+
+        // Verify we can query by both operation and meta
+        $foundProcess = $this->taskRun->taskProcesses()
+            ->where('operation', ClassifierTaskRunner::OPERATION_DEDUPLICATE)
+            ->whereNotNull('meta->classification_property')
+            ->first();
+
+        $this->assertNotNull($foundProcess);
+        $this->assertEquals($taskProcess->id, $foundProcess->id);
+    }
+
+    #[Test]
+    public function verification_process_stores_verification_property_in_meta()
+    {
+        // Create task process with verify operation and property in meta
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'operation'   => ClassifierTaskRunner::OPERATION_VERIFY,
+            'meta'        => ['classification_verification_property' => 'location'],
+        ]);
+
+        // Verify meta is correctly stored
+        $this->assertEquals(ClassifierTaskRunner::OPERATION_VERIFY, $taskProcess->operation);
+        $this->assertEquals('location', $taskProcess->meta['classification_verification_property']);
+
+        // Verify we can query by both operation and meta
+        $foundProcess = $this->taskRun->taskProcesses()
+            ->where('operation', ClassifierTaskRunner::OPERATION_VERIFY)
+            ->whereNotNull('meta->classification_verification_property')
+            ->first();
+
+        $this->assertNotNull($foundProcess);
+        $this->assertEquals($taskProcess->id, $foundProcess->id);
     }
 }

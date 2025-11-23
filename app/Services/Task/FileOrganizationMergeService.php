@@ -5,6 +5,7 @@ namespace App\Services\Task;
 use App\Models\Task\Artifact;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
+use Newms87\Danx\Exceptions\ValidationError;
 
 /**
  * Merges file organization windows from parallel comparison processes into final groups.
@@ -23,7 +24,7 @@ class FileOrganizationMergeService
      * Merge window results from parallel comparison processes into final groups.
      *
      * @param  Collection  $windowArtifacts  Collection of artifacts containing window comparison results
-     * @return array Array of final groups with file IDs in correct order
+     * @return array Array with 'groups' and 'file_to_group_mapping' keys
      */
     public function mergeWindowResults(Collection $windowArtifacts): array
     {
@@ -35,12 +36,15 @@ class FileOrganizationMergeService
         if (empty($windows)) {
             static::logDebug('No windows found in artifacts');
 
-            return [];
+            return [
+                'groups'                => [],
+                'file_to_group_mapping' => [],
+            ];
         }
 
         static::logDebug('Extracted ' . count($windows) . ' windows for merging');
 
-        // Build file-to-group mapping from windows (later windows override earlier)
+        // Build file-to-group mapping from windows (highest confidence wins)
         $fileToGroup = $this->buildFileToGroupMapping($windows);
 
         static::logDebug('Built file-to-group mapping with ' . count($fileToGroup) . ' files');
@@ -50,7 +54,11 @@ class FileOrganizationMergeService
 
         static::logDebug('Created ' . count($finalGroups) . ' final groups');
 
-        return $finalGroups;
+        // Return both groups and mapping (mapping needed for low-confidence detection)
+        return [
+            'groups'                => $finalGroups,
+            'file_to_group_mapping' => $fileToGroup,
+        ];
     }
 
     /**
@@ -82,22 +90,22 @@ class FileOrganizationMergeService
                 continue;
             }
 
-            // Build position-to-file_id mapping from window metadata
-            $positionToFileMap = [];
+            // Build page_number-to-file_id mapping from window metadata
+            $pageNumberToFileMap = [];
             if ($windowFiles && is_array($windowFiles)) {
                 foreach ($windowFiles as $file) {
-                    if (isset($file['position']) && isset($file['file_id'])) {
-                        $positionToFileMap[$file['position']] = $file['file_id'];
+                    if (isset($file['page_number']) && isset($file['file_id'])) {
+                        $pageNumberToFileMap[$file['page_number']] = $file['file_id'];
                     }
                 }
             }
 
             $windows[] = [
-                'artifact_id'          => $artifact->id,
-                'window_start'         => $windowStart,
-                'window_end'           => $windowEnd,
-                'groups'               => $jsonContent['groups'],
-                'position_to_file_map' => $positionToFileMap,
+                'artifact_id'             => $artifact->id,
+                'window_start'            => $windowStart,
+                'window_end'              => $windowEnd,
+                'groups'                  => $jsonContent['groups'],
+                'page_number_to_file_map' => $pageNumberToFileMap,
             ];
 
             static::logDebug("Extracted window from artifact {$artifact->id}: positions {$windowStart}-{$windowEnd} with " . count($jsonContent['groups']) . ' groups');
@@ -110,28 +118,32 @@ class FileOrganizationMergeService
     }
 
     /**
-     * Build file-to-group mapping from windows using simple overwrite logic.
-     * Groups identified by NAME. Later windows override earlier windows.
+     * Build file-to-group mapping from windows using confidence-based logic.
+     * Groups identified by NAME. Highest confidence assignment wins.
+     * Supports both old format (integer page_number) and new format (object with confidence).
      *
-     * @return array Map of file_id => ['group_name' => string, 'description' => string, 'position' => int]
+     * @return array Map of file_id => ['group_name' => string, 'description' => string, 'page_number' => int, 'confidence' => int, 'all_explanations' => array]
      */
     protected function buildFileToGroupMapping(array $windows): array
     {
         $fileToGroup = [];
 
         foreach ($windows as $window) {
-            static::logDebug("Processing window {$window['artifact_id']}: positions {$window['window_start']}-{$window['window_end']}");
+            static::logDebug("Processing window {$window['artifact_id']}: page numbers {$window['window_start']}-{$window['window_end']}");
 
-            // Build position-to-file_id mapping from window metadata
-            $positionToFileId = [];
-            if (isset($window['position_to_file_map'])) {
-                $positionToFileId = $window['position_to_file_map'];
+            // Build page_number-to-file_id mapping from window metadata
+            $pageNumberToFileId = [];
+            if (isset($window['page_number_to_file_map'])) {
+                $pageNumberToFileId = $window['page_number_to_file_map'];
             }
 
+            // Get list of valid page numbers for this window (for validation)
+            $validPageNumbers = array_keys($pageNumberToFileId);
+
             foreach ($window['groups'] as $group) {
-                $groupName   = $group['name'] ?? null;
+                $groupName   = $group['name']        ?? null;
                 $description = $group['description'] ?? '';
-                $files       = $group['files'] ?? [];
+                $files       = $group['files']       ?? [];
 
                 if (!$groupName) {
                     static::logDebug('Group missing name, skipping');
@@ -141,29 +153,68 @@ class FileOrganizationMergeService
 
                 static::logDebug("  Group '$groupName': " . count($files) . ' files');
 
-                foreach ($files as $position) {
-                    // Files are now always just position numbers (integers)
-                    $fileId = $positionToFileId[$position] ?? null;
+                foreach ($files as $fileData) {
+                    // Handle both old format (integer) and new format (object)
+                    if (is_int($fileData)) {
+                        // Old format: just the page number
+                        $pageNumber  = $fileData;
+                        $confidence  = 3; // Default confidence for legacy data
+                        $explanation = 'Legacy assignment (no confidence score provided)';
+                    } else {
+                        // New format: object with page_number, confidence, explanation
+                        $pageNumber  = $fileData['page_number']  ?? null;
+                        $confidence  = $fileData['confidence']   ?? 3;
+                        $explanation = $fileData['explanation']  ?? '';
+                    }
 
-                    if (!$fileId || $position === null) {
-                        static::logDebug('    File missing file_id or position, skipping');
+                    // Validate that agent only returned page numbers that were in the prompt
+                    if (!in_array($pageNumber, $validPageNumbers)) {
+                        throw new ValidationError(
+                            "Agent returned invalid page_number $pageNumber in group '$groupName'. " .
+                            'Valid page numbers for this window are: ' . implode(', ', $validPageNumbers),
+                            400
+                        );
+                    }
+
+                    $fileId = $pageNumberToFileId[$pageNumber] ?? null;
+
+                    if (!$fileId || $pageNumber === null) {
+                        static::logDebug("    File missing file_id for page_number $pageNumber, skipping");
 
                         continue;
                     }
 
-                    // Check if this file was already assigned by a previous window
-                    if (isset($fileToGroup[$fileId])) {
-                        static::logDebug("    File $fileId (pos $position): overriding previous assignment '{$fileToGroup[$fileId]['group_name']}' with '$groupName'");
-                    } else {
-                        static::logDebug("    File $fileId (pos $position): assigned to group '$groupName'");
+                    // Initialize all_explanations if this is the first time we see this file
+                    if (!isset($fileToGroup[$fileId])) {
+                        $fileToGroup[$fileId] = [
+                            'group_name'        => $groupName,
+                            'description'       => $description,
+                            'page_number'       => $pageNumber,
+                            'confidence'        => $confidence,
+                            'all_explanations'  => [],
+                        ];
                     }
 
-                    // Later windows override earlier windows (simple overwrite)
-                    $fileToGroup[$fileId] = [
+                    // Track ALL explanations for this file across all windows
+                    $fileToGroup[$fileId]['all_explanations'][] = [
                         'group_name'  => $groupName,
-                        'description' => $description,
-                        'position'    => $position,
+                        'confidence'  => $confidence,
+                        'explanation' => $explanation,
+                        'window_id'   => $window['artifact_id'],
                     ];
+
+                    // Check if this assignment has higher confidence than the current assignment
+                    if ($confidence > $fileToGroup[$fileId]['confidence']) {
+                        static::logDebug("    File $fileId (page $pageNumber): upgrading from '{$fileToGroup[$fileId]['group_name']}' (confidence {$fileToGroup[$fileId]['confidence']}) to '$groupName' (confidence $confidence)");
+
+                        $fileToGroup[$fileId]['group_name']  = $groupName;
+                        $fileToGroup[$fileId]['description'] = $description;
+                        $fileToGroup[$fileId]['confidence']  = $confidence;
+                    } elseif ($confidence === $fileToGroup[$fileId]['confidence'] && $fileToGroup[$fileId]['group_name'] !== $groupName) {
+                        static::logDebug("    File $fileId (page $pageNumber): same confidence ($confidence) for different groups - keeping '{$fileToGroup[$fileId]['group_name']}' (first wins on tie)");
+                    } else {
+                        static::logDebug("    File $fileId (page $pageNumber): lower confidence ($confidence) than current assignment (confidence {$fileToGroup[$fileId]['confidence']}) - keeping '{$fileToGroup[$fileId]['group_name']}'");
+                    }
                 }
             }
         }
@@ -171,10 +222,42 @@ class FileOrganizationMergeService
         return $fileToGroup;
     }
 
+    /**
+     * Identify files with low confidence scores (< 3).
+     * Returns files that may need manual review or additional processing.
+     *
+     * @param  array  $fileToGroup  Map from buildFileToGroupMapping
+     * @return array Array of low-confidence files with all their explanations
+     */
+    public function identifyLowConfidenceFiles(array $fileToGroup): array
+    {
+        $lowConfidenceFiles = [];
+
+        foreach ($fileToGroup as $fileId => $data) {
+            if ($data['confidence'] < 3) {
+                $lowConfidenceFiles[] = [
+                    'file_id'           => $fileId,
+                    'page_number'       => $data['page_number'],
+                    'best_assignment'   => [
+                        'group_name'  => $data['group_name'],
+                        'description' => $data['description'],
+                        'confidence'  => $data['confidence'],
+                    ],
+                    'all_explanations'  => $data['all_explanations'],
+                ];
+
+                static::logDebug("Low confidence file: page {$data['page_number']} (confidence {$data['confidence']}) assigned to '{$data['group_name']}'");
+            }
+        }
+
+        static::logDebug('Found ' . count($lowConfidenceFiles) . ' low-confidence files');
+
+        return $lowConfidenceFiles;
+    }
 
     /**
      * Build final groups from file-to-group mapping.
-     * Groups files by name, sorts by position, uses earliest description.
+     * Groups files by name, sorts by page_number, uses earliest description.
      *
      * @return array Array of groups: [['name' => string, 'description' => string, 'files' => [file_id, ...]], ...]
      */
@@ -191,7 +274,7 @@ class FileOrganizationMergeService
         foreach ($fileToGroup as $fileId => $data) {
             $groupName   = $data['group_name'];
             $description = $data['description'];
-            $position    = $data['position'];
+            $pageNumber  = $data['page_number'];
 
             if (!isset($groupsMap[$groupName])) {
                 $groupsMap[$groupName] = [];
@@ -200,55 +283,71 @@ class FileOrganizationMergeService
             }
 
             $groupsMap[$groupName][] = [
-                'file_id'  => $fileId,
-                'position' => $position,
+                'file_id'     => $fileId,
+                'page_number' => $pageNumber,
             ];
         }
 
-        // Sort files within each group by position
+        // Sort files within each group by page_number
         foreach ($groupsMap as $groupName => $files) {
-            usort($files, fn($a, $b) => $a['position'] <=> $b['position']);
+            usort($files, fn($a, $b) => $a['page_number'] <=> $b['page_number']);
             $groupsMap[$groupName] = $files;
         }
 
-        // Convert to final output format
+        // Convert to final output format with confidence metadata
         $finalGroups = [];
 
         foreach ($groupsMap as $groupName => $files) {
             $fileIds = array_map(fn($file) => $file['file_id'], $files);
 
+            // Calculate confidence statistics for this group
+            $confidences   = array_map(fn($file) => $fileToGroup[$file['file_id']]['confidence'], $files);
+            $avgConfidence = count($confidences) > 0 ? round(array_sum($confidences) / count($confidences), 2) : 0;
+            $minConfidence = count($confidences) > 0 ? min($confidences) : 0;
+            $maxConfidence = count($confidences) > 0 ? max($confidences) : 0;
+
             $finalGroups[] = [
-                'name'        => $groupName,
-                'description' => $groupDescriptions[$groupName],
-                'files'       => $fileIds,
+                'name'               => $groupName,
+                'description'        => $groupDescriptions[$groupName],
+                'files'              => $fileIds,
+                'confidence_summary' => [
+                    'avg' => $avgConfidence,
+                    'min' => $minConfidence,
+                    'max' => $maxConfidence,
+                ],
             ];
 
-            static::logDebug("Final group '$groupName': " . count($fileIds) . ' files (positions ' .
-                $files[0]['position'] . '-' . $files[count($files) - 1]['position'] . ')');
+            static::logDebug("Final group '$groupName': " . count($fileIds) . ' files (page numbers ' .
+                $files[0]['page_number'] . '-' . $files[count($files) - 1]['page_number'] .
+                ", confidence avg=$avgConfidence min=$minConfidence max=$maxConfidence)");
         }
 
         return $finalGroups;
     }
 
     /**
-     * Get file IDs from artifacts in position order.
+     * Get file IDs from artifacts with page_number from StoredFile.
      * Used to create the initial list of files for window creation.
      *
-     * @return array Array of ['file_id' => artifact_id, 'position' => int]
+     * @return array Array of ['file_id' => artifact_id, 'page_number' => int]
      */
     public function getFileListFromArtifacts(Collection $artifacts): array
     {
         $files = [];
 
         foreach ($artifacts as $artifact) {
+            // Get page_number from the StoredFile model (NOT from artifact meta or position)
+            $storedFile = $artifact->storedFiles ? $artifact->storedFiles->first() : null;
+            $pageNumber = $storedFile?->page_number ?? $artifact->position ?? 0;
+
             $files[] = [
-                'file_id'  => $artifact->id,
-                'position' => $artifact->position ?? 0,
+                'file_id'     => $artifact->id,
+                'page_number' => $pageNumber,
             ];
         }
 
-        // Sort by position
-        usort($files, fn($a, $b) => $a['position'] <=> $b['position']);
+        // Sort by page_number
+        usort($files, fn($a, $b) => $a['page_number'] <=> $b['page_number']);
 
         static::logDebug('Extracted ' . count($files) . ' files from artifacts');
 
@@ -264,7 +363,7 @@ class FileOrganizationMergeService
      * - 6 files, size 5 → 2 windows: [1-5], [5-6]
      * - 4 files, size 5 → 1 window: [1-4]
      *
-     * @param  array  $files  Array of ['file_id' => id, 'position' => int]
+     * @param  array  $files  Array of ['file_id' => id, 'page_number' => int]
      * @param  int  $windowSize  Maximum number of files per window
      * @return array Array of windows with metadata
      */
@@ -292,14 +391,14 @@ class FileOrganizationMergeService
         $startIndex  = 0;
 
         while ($startIndex < $fileCount) {
-            $windowFiles = [];
-            $positions   = [];
+            $windowFiles  = [];
+            $pageNumbers  = [];
 
             // Collect up to $windowSize files for this window
             for ($j = 0; $j < $windowSize && ($startIndex + $j) < $fileCount; $j++) {
                 $file          = $files[$startIndex + $j];
                 $windowFiles[] = $file;
-                $positions[]   = $file['position'];
+                $pageNumbers[] = $file['page_number'];
             }
 
             // Only create window if we have at least 2 files
@@ -310,12 +409,12 @@ class FileOrganizationMergeService
 
             $windows[] = [
                 'window_index' => $windowIndex,
-                'window_start' => min($positions),
-                'window_end'   => max($positions),
+                'window_start' => min($pageNumbers),
+                'window_end'   => max($pageNumbers),
                 'files'        => $windowFiles,
             ];
 
-            static::logDebug("Window $windowIndex: positions " . min($positions) . '-' . max($positions) . ' (' . count($windowFiles) . ' files)');
+            static::logDebug("Window $windowIndex: page numbers " . min($pageNumbers) . '-' . max($pageNumbers) . ' (' . count($windowFiles) . ' files)');
             $windowIndex++;
 
             // Move to next window starting at the LAST file of current window (overlap by 1)

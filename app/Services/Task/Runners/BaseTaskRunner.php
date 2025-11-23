@@ -26,6 +26,9 @@ class BaseTaskRunner implements TaskRunnerContract
     // Indicates if the class is a workflow trigger
     const bool   IS_TRIGGER = false;
 
+    // Default operation type for task processes
+    const string OPERATION_DEFAULT = 'Default Task';
+
     protected ?TaskDefinition $taskDefinition;
 
     protected ?TaskRun $taskRun;

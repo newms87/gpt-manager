@@ -9,6 +9,7 @@ use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
+use App\Services\Task\Runners\ClassifierTaskRunner;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 
@@ -124,9 +125,10 @@ class ClassificationVerificationService
             static::logDebug("Property '$property' has " . count($verificationGroups) . ' outlier groups - creating verification process');
 
             $taskRun->taskProcesses()->create([
-                'name'     => "Classification Verification: $property",
-                'meta'     => ['classification_verification_property' => $property],
-                'is_ready' => true,
+                'name'      => "Classification Verification: $property",
+                'operation' => ClassifierTaskRunner::OPERATION_VERIFY,
+                'meta'      => ['classification_verification_property' => $property],
+                'is_ready'  => true,
             ]);
 
             $processesCreated++;
@@ -483,13 +485,14 @@ PROMPT;
 
             // Create a new task process for recursive verification
             $taskProcess = $taskRun->taskProcesses()->create([
-                'name'     => "Recursive Classification Verification: $property (Artifact {$artifact->id})",
-                'meta'     => [
+                'name'      => "Recursive Classification Verification: $property (Artifact {$artifact->id})",
+                'operation' => ClassifierTaskRunner::OPERATION_VERIFY,
+                'meta'      => [
                     'classification_verification_property' => $property,
                     'recursive_verification_artifact_id'   => $artifact->id,
                     'is_recursive'                         => true,
                 ],
-                'is_ready' => true,
+                'is_ready'  => true,
             ]);
 
             static::logDebug("Created recursive verification process {$taskProcess->id} for artifact {$artifact->id}");

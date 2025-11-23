@@ -17,13 +17,20 @@
 				<h3 class="text-sm font-semibold mb-2">Show only processes with:</h3>
 
 				<!-- Filter toggles -->
-				<div class="flex-x gap-2">
+				<div class="flex flex-col gap-2">
 					<SelectField
 						v-model="selectedStatuses"
 						multiple
 						placeholder="(All Statuses)"
-						:options="statusOptions"
+						:options="filterFieldOptions?.status || []"
 						@update="filters = {...filters, status: selectedStatuses}"
+					/>
+					<SelectField
+						v-model="selectedOperations"
+						multiple
+						placeholder="(All Operations)"
+						:options="filterFieldOptions?.operation || []"
+						@update="filters = {...filters, operation: selectedOperations}"
 					/>
 				</div>
 
@@ -42,26 +49,44 @@
 </template>
 
 <script setup lang="ts">
+import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import PopoverMenu from "@/components/Shared/Utilities/PopoverMenu";
 import { FaSolidFilter as FilterIcon } from "danx-icon";
 import { AnyObject, SelectField, ShowHideButton } from "quasar-ui-danx";
-import { computed, defineModel, ref } from "vue";
+import { computed, defineModel, ref, watch } from "vue";
+
+// Props
+const props = defineProps<{
+	taskRunId: number;
+}>();
 
 // Define reactive model
 const filters = defineModel<AnyObject>({ default: {} });
 
 const selectedStatuses = ref([]);
-const statusOptions = [
-	{ label: "Running", value: "Running" },
-	{ label: "Completed", value: "Completed" },
-	{ label: "Failed", value: "Failed" },
-	{ label: "Stopped", value: "Stopped" },
-	{ label: "Pending", value: "Pending" },
-	{ label: "Incomplete", value: "Incomplete" },
-	{ label: "Timeout", value: "Timeout" }
-];
+const selectedOperations = ref([]);
+const filterFieldOptions = ref<{ operation?: string[], status?: string[] }>({});
+
 // PopMenu state
 const isShowing = ref(false);
+
+// Load filter options from backend
+async function loadFilterOptions() {
+	if (!props.taskRunId) return;
+
+	const options = await dxTaskProcess.routes.fieldOptions({
+		params: { filter: { task_run_id: props.taskRunId } }
+	});
+
+	filterFieldOptions.value = options;
+}
+
+// Load filter options when the menu is shown
+watch(isShowing, async (showing) => {
+	if (showing && !filterFieldOptions.value.operation) {
+		await loadFilterOptions();
+	}
+});
 
 // Count active filters
 const activeFilterCount = computed(() => Object.values(filters.value).filter((value) => value).length);
@@ -69,6 +94,8 @@ const activeFilterCount = computed(() => Object.values(filters.value).filter((va
 // Reset all filters
 function resetFilters() {
 	filters.value = {};
+	selectedStatuses.value = [];
+	selectedOperations.value = [];
 	isShowing.value = false;
 }
 </script>

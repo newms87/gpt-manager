@@ -40,8 +40,11 @@ class TaskProcessRunnerService
 
         LockHelper::acquire($taskProcess);
 
-        $taskProcess->jobDispatches()->attach(Job::$runningJob);
-        $taskProcess->updateRelationCounter('jobDispatches');
+        // Only attach non-prepare jobs to task processes (PrepareTaskProcessJob is task run level)
+        if (Job::$runningJob && Job::$runningJob->name !== 'PrepareTaskProcessJob') {
+            $taskProcess->jobDispatches()->attach(Job::$runningJob);
+            $taskProcess->updateRelationCounter('jobDispatches');
+        }
 
         // Associate an identical schema association to the task process
         if ($schemaAssociation) {

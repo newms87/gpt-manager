@@ -286,7 +286,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                 $taskRun->workflowRun?->updateErrorCount();
             }
 
-            if ($taskRun->wasRecentlyCreated || $taskRun->wasChanged(['status', 'input_artifacts_count', 'output_artifacts_count', 'percent_complete', 'task_process_error_count'])) {
+            if ($taskRun->wasRecentlyCreated || $taskRun->wasChanged(['status', 'input_artifacts_count', 'output_artifacts_count', 'percent_complete', 'task_process_error_count', 'process_count'])) {
                 // If this is a task process job, we want to broadcast the changes immediately to provide a better user experience
                 // No need to spin up another job just to broadcast the status
                 if (Job::$runningJob) {

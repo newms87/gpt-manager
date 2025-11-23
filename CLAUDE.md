@@ -64,6 +64,50 @@ Use the correct specialized agent for each type of work:
 - ✅ Use `Explore` agent for codebase investigation before delegating implementation
 - ✅ Always use the most specific agent for the task
 
+**🧪 TESTING BEST PRACTICES**
+
+When instructing the `laravel-backend-qa-tester` agent to run tests:
+
+**DO:**
+- ✅ Run TARGETED tests related to your changes
+- ✅ Use `--filter` to run specific test classes or methods
+- ✅ Example: `./vendor/bin/sail test --filter=FileOrganizationTaskRunnerTest`
+- ✅ Example: `./vendor/bin/sail test --filter=test_operation_routing`
+- ✅ Run tests for the specific feature/module you modified
+
+**DON'T:**
+- ❌ Run the full test suite (`./vendor/bin/sail test`) for small changes
+- ❌ Run unrelated tests that couldn't be affected by your changes
+- ❌ Waste time running 1000+ tests when 10-20 targeted tests will verify the change
+
+**Examples:**
+
+```bash
+# Good - Testing specific Task Runner changes
+./vendor/bin/sail test --filter=FileOrganizationTaskRunner
+./vendor/bin/sail test --filter=ClassifierTaskRunner
+
+# Good - Testing specific feature area
+./vendor/bin/sail test tests/Feature/Services/Task/
+
+# Good - Testing single test method
+./vendor/bin/sail test --filter=test_creates_window_processes_with_correct_operations
+
+# Bad - Running everything for a small change
+./vendor/bin/sail test  # DON'T DO THIS unless necessary
+```
+
+**When to run full test suite:**
+- Before creating a pull request
+- After major refactoring across multiple modules
+- When changes could have widespread effects
+- As final validation before deployment
+
+**Always include in test instructions:**
+- Which specific tests to run (use `--filter`)
+- Why those tests are relevant to the changes
+- What you expect the test results to validate
+
 ### 🔧 If you are a SUB-AGENT (vue-spa-engineer, laravel-backend-engineer, etc.):
 - **START HERE**: Read `AGENT_CORE_BEHAVIORS.md` - Contains critical anti-loop rules
 - **NEVER** read `ORCHESTRATOR_GUIDE.md` - Those rules don't apply to you

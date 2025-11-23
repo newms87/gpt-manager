@@ -6,6 +6,7 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowInput;
+use App\Services\Task\Runners\FileOrganizationTaskRunner;
 use App\Services\Task\TaskProcessDispatcherService;
 use Illuminate\Console\Command;
 
@@ -96,7 +97,7 @@ class TestFileOrganizationCommand extends Command
         $this->info('Creating TaskDefinition for File Organization runner');
         $taskDefinition = TaskDefinition::factory()->create([
             'name'                => 'Test File Organization',
-            'task_runner_name'    => \App\Services\Task\Runners\FileOrganizationTaskRunner::RUNNER_NAME,
+            'task_runner_name'    => FileOrganizationTaskRunner::RUNNER_NAME,
             'team_id'             => $workflowInput->team_id,
             'agent_id'            => $agent->id,
             'task_runner_config'  => [
@@ -133,7 +134,7 @@ class TestFileOrganizationCommand extends Command
         $this->info('Preparing TaskRun');
         $runner = $taskRun->getRunner();
 
-        $this->line("Runner class: " . get_class($runner));
+        $this->line('Runner class: ' . get_class($runner));
         $this->line("Before prepareRun - processes: {$taskRun->taskProcesses()->count()}");
 
         $runner->prepareRun();
@@ -159,8 +160,8 @@ class TestFileOrganizationCommand extends Command
         $this->line("Window processes created: {$windowProcesses->count()}");
         foreach ($windowProcesses as $process) {
             $windowStart = $process->meta['window_start'] ?? 'N/A';
-            $windowEnd = $process->meta['window_end'] ?? 'N/A';
-            $fileCount = count($process->meta['window_files'] ?? []);
+            $windowEnd   = $process->meta['window_end']   ?? 'N/A';
+            $fileCount   = count($process->meta['window_files'] ?? []);
             $this->line("  - Window {$windowStart}-{$windowEnd}: {$fileCount} files");
         }
         $this->newLine();
@@ -247,25 +248,25 @@ class TestFileOrganizationCommand extends Command
      */
     protected function waitForProcesses(TaskRun $taskRun, string $processType): void
     {
-        $maxWaitTime = 300; // 5 minutes
-        $startTime   = time();
-        $dotInterval = 2; // Print a dot every 2 seconds
-        $lastDot     = time();
+        $maxWaitTime    = 300; // 5 minutes
+        $startTime      = time();
+        $dotInterval    = 2; // Print a dot every 2 seconds
+        $lastDot        = time();
         $statusInterval = 10; // Print detailed status every 10 seconds
-        $lastStatus = time();
+        $lastStatus     = time();
 
         while (true) {
             $taskRun->refresh();
 
             if ($processType === 'window') {
                 $allProcesses = $taskRun->taskProcesses()
-                    ->whereNotNull('meta->window_files')
+                    ->where('operation', FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW)
                     ->get();
                 $pendingProcesses = $allProcesses->whereNotIn('status', ['Completed', 'Failed'])->count();
             } else {
                 // merge
                 $allProcesses = $taskRun->taskProcesses()
-                    ->whereNotNull('meta->is_merge_process')
+                    ->where('operation', FileOrganizationTaskRunner::OPERATION_MERGE)
                     ->get();
                 $pendingProcesses = $allProcesses->whereNotIn('status', ['Completed', 'Failed'])->count();
             }
@@ -289,8 +290,8 @@ class TestFileOrganizationCommand extends Command
             if (time() - $lastStatus >= $statusInterval) {
                 $this->line(''); // New line
                 $completed = $allProcesses->where('status', 'Completed')->count();
-                $failed = $allProcesses->where('status', 'Failed')->count();
-                $running = $allProcesses->whereIn('status', ['Running', 'Pending'])->count();
+                $failed    = $allProcesses->where('status', 'Failed')->count();
+                $running   = $allProcesses->whereIn('status', ['Running', 'Pending'])->count();
                 $this->line("  Status: {$completed} completed, {$failed} failed, {$running} running/pending");
                 $lastStatus = time();
             } elseif (time() - $lastDot >= $dotInterval) {

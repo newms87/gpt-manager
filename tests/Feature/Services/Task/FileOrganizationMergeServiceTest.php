@@ -31,8 +31,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 0,
                 windowEnd: 1,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
                 ],
                 groups: [
                     ['name' => 'group1', 'description' => 'First group', 'files' => [0, 1]],
@@ -42,8 +42,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 2,
                 windowEnd: 3,
                 windowFiles: [
-                    ['file_id' => 3, 'position' => 2],
-                    ['file_id' => 4, 'position' => 3],
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
                 ],
                 groups: [
                     ['name' => 'group2', 'description' => 'Second group', 'files' => [2, 3]],
@@ -52,7 +52,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: Both groups preserved with all files
         $this->assertCount(2, $result);
@@ -71,9 +72,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 0,
                 windowEnd: 2,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
                 ],
                 groups: [
                     ['name' => 'groupA', 'description' => 'Group A', 'files' => [0, 1, 2]],
@@ -83,9 +84,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 1,
                 windowEnd: 3,
                 windowFiles: [
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
-                    ['file_id' => 4, 'position' => 3],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
                 ],
                 groups: [
                     ['name' => 'groupA', 'description' => 'Group A', 'files' => [1, 2, 3]],
@@ -94,7 +95,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: Single group with all files in order
         $this->assertCount(1, $result);
@@ -103,40 +105,57 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function merges_overlapping_windows_with_conflicts_later_wins(): void
+    public function merges_overlapping_windows_with_conflicts_higher_confidence_wins(): void
     {
-        // Given: Two windows that disagree on file grouping - later should override
+        // Given: Two windows that disagree on file grouping - higher confidence wins
         $artifacts = new Collection([
             $this->createWindowArtifact(
                 windowStart: 0,
                 windowEnd: 2,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
                 ],
                 groups: [
-                    ['name' => 'group1', 'description' => 'First group', 'files' => [0, 1, 2]],
+                    [
+                        'name' => 'group1',
+                        'description' => 'First group',
+                        'files' => [
+                            ['page_number' => 0, 'confidence' => 3, 'explanation' => 'Low confidence'],
+                            ['page_number' => 1, 'confidence' => 2, 'explanation' => 'Uncertain'],
+                            ['page_number' => 2, 'confidence' => 2, 'explanation' => 'Uncertain'],
+                        ],
+                    ],
                 ]
             ),
             $this->createWindowArtifact(
                 windowStart: 1,
                 windowEnd: 3,
                 windowFiles: [
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
-                    ['file_id' => 4, 'position' => 3],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
                 ],
                 groups: [
-                    ['name' => 'group2', 'description' => 'Second group', 'files' => [1, 2, 3]],
+                    [
+                        'name' => 'group2',
+                        'description' => 'Second group',
+                        'files' => [
+                            ['page_number' => 1, 'confidence' => 4, 'explanation' => 'High confidence'],
+                            ['page_number' => 2, 'confidence' => 4, 'explanation' => 'High confidence'],
+                            ['page_number' => 3, 'confidence' => 4, 'explanation' => 'High confidence'],
+                        ],
+                    ],
                 ]
             ),
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
-        // Then: File 1 stays in group1, files 2-4 move to group2 (later window wins)
+        // Then: File 1 stays in group1 (only one assignment), files 2-3 move to group2 (higher confidence wins)
         $this->assertCount(2, $result);
 
         // Find groups by name
@@ -156,11 +175,11 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 0,
                 windowEnd: 4,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
-                    ['file_id' => 4, 'position' => 3],
-                    ['file_id' => 5, 'position' => 4],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
+                    ['file_id' => 5, 'page_number' => 4],
                 ],
                 groups: [
                     ['name' => 'ordered', 'description' => 'Ordered group', 'files' => [4, 1, 3, 0, 2]],
@@ -169,7 +188,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: Files ordered by position
         $this->assertEquals([1, 2, 3, 4, 5], $result[0]['files']);
@@ -184,9 +204,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 0,
                 windowEnd: 2,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
                 ],
                 groups: [
                     ['name' => 'solo', 'description' => 'Solo group', 'files' => [0, 1, 2]],
@@ -195,7 +215,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: Single group with all files
         $this->assertCount(1, $result);
@@ -212,8 +233,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 0,
                 windowEnd: 1,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
                 ],
                 groups: [
                     ['name' => 'empty', 'description' => 'Empty group', 'files' => []],
@@ -223,7 +244,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: Only valid group with files
         $this->assertCount(1, $result);
@@ -233,15 +255,15 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
     #[Test]
     public function handles_overlapping_files_in_different_groups(): void
     {
-        // Given: Same file appears in different groups in different windows
+        // Given: Same file appears in different groups - same confidence means first wins
         $artifacts = new Collection([
             $this->createWindowArtifact(
                 windowStart: 0,
                 windowEnd: 2,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
                 ],
                 groups: [
                     ['name' => 'first', 'description' => 'First group', 'files' => [0, 1]],
@@ -252,9 +274,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 1,
                 windowEnd: 3,
                 windowFiles: [
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
-                    ['file_id' => 4, 'position' => 3],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
                 ],
                 groups: [
                     ['name' => 'second', 'description' => 'Second group', 'files' => [1, 2, 3]],
@@ -263,16 +285,17 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
-        // Then: Later window reassigns file 2 to 'second' group
+        // Then: With same confidence (default 3), first assignment wins - file 2 stays in 'first'
         $this->assertCount(2, $result);
 
         $first  = collect($result)->firstWhere('name', 'first');
         $second = collect($result)->firstWhere('name', 'second');
 
-        $this->assertEquals([1], $first['files']);
-        $this->assertEquals([2, 3, 4], $second['files']);
+        $this->assertEquals([1, 2], $first['files']); // File 2 stays in 'first' (first assignment wins on tie)
+        $this->assertEquals([3, 4], $second['files']);
     }
 
     #[Test]
@@ -284,11 +307,11 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 0,
                 windowEnd: 4,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
-                    ['file_id' => 4, 'position' => 3],
-                    ['file_id' => 5, 'position' => 4],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
+                    ['file_id' => 5, 'page_number' => 4],
                 ],
                 groups: [
                     ['name' => 'max', 'description' => 'Max size group', 'files' => [0, 1, 2, 3, 4]],
@@ -297,7 +320,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: All 5 files grouped correctly
         $this->assertCount(1, $result);
@@ -313,8 +337,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 0,
                 windowEnd: 1,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
                 ],
                 groups: [
                     ['name' => 'min', 'description' => 'Min size group', 'files' => [0, 1]],
@@ -323,7 +347,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: Both files grouped correctly
         $this->assertCount(1, $result);
@@ -339,9 +364,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 0,
                 windowEnd: 2,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
                 ],
                 groups: [
                     ['name' => 'continuous', 'description' => 'Continuous group', 'files' => [0, 1, 2]],
@@ -351,9 +376,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 1,
                 windowEnd: 3,
                 windowFiles: [
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
-                    ['file_id' => 4, 'position' => 3],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
                 ],
                 groups: [
                     ['name' => 'continuous', 'description' => 'Continuous group', 'files' => [1, 2, 3]],
@@ -363,9 +388,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 2,
                 windowEnd: 4,
                 windowFiles: [
-                    ['file_id' => 3, 'position' => 2],
-                    ['file_id' => 4, 'position' => 3],
-                    ['file_id' => 5, 'position' => 4],
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
+                    ['file_id' => 5, 'page_number' => 4],
                 ],
                 groups: [
                     ['name' => 'continuous', 'description' => 'Continuous group', 'files' => [2, 3, 4]],
@@ -374,7 +399,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: One continuous group with all files
         $this->assertCount(1, $result);
@@ -385,14 +411,14 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
     #[Test]
     public function handles_split_groups_file_breaks_continuity(): void
     {
-        // Given: Windows that create a split in grouping
+        // Given: Windows that create a split in grouping - with same confidence, first assignment wins
         $artifacts = new Collection([
             $this->createWindowArtifact(
                 windowStart: 0,
                 windowEnd: 1,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
                 ],
                 groups: [
                     ['name' => 'groupA', 'description' => 'Group A', 'files' => [0, 1]],
@@ -402,8 +428,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 1,
                 windowEnd: 2,
                 windowFiles: [
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
                 ],
                 groups: [
                     ['name' => 'groupA', 'description' => 'Group A', 'files' => [1]],
@@ -414,8 +440,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 2,
                 windowEnd: 3,
                 windowFiles: [
-                    ['file_id' => 3, 'position' => 2],
-                    ['file_id' => 4, 'position' => 3],
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
                 ],
                 groups: [
                     ['name' => 'groupA', 'description' => 'Group A', 'files' => [2, 3]],
@@ -424,12 +450,17 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
-        // Then: Later windows override - all files end up in groupA
-        $this->assertCount(1, $result);
-        $this->assertEquals('groupA', $result[0]['name']);
-        $this->assertEquals([1, 2, 3, 4], $result[0]['files']);
+        // Then: With same confidence, first assignment wins - creates split
+        $this->assertCount(2, $result);
+
+        $groupA = collect($result)->firstWhere('name', 'groupA');
+        $groupB = collect($result)->firstWhere('name', 'groupB');
+
+        $this->assertEquals([1, 2, 4], $groupA['files']); // File 3 goes to groupB (first assignment)
+        $this->assertEquals([3], $groupB['files']);
     }
 
     #[Test]
@@ -439,7 +470,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $artifacts = new Collection([]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: Empty result
         $this->assertEmpty($result);
@@ -456,8 +488,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 windowStart: 0,
                 windowEnd: 1,
                 windowFiles: [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
                 ],
                 groups: [
                     ['name' => 'valid', 'description' => 'Valid group', 'files' => [0]],
@@ -466,7 +498,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: Only valid artifact processed
         $this->assertCount(1, $result);
@@ -489,7 +522,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $artifacts = new Collection([$artifact]);
 
         // When
-        $result = $this->service->mergeWindowResults($artifacts);
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
 
         // Then: Artifact skipped due to missing metadata
         $this->assertEmpty($result);
@@ -500,11 +534,11 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
     {
         // Given: List of 5 files with window size 3
         $files = [
-            ['file_id' => 1, 'position' => 0],
-            ['file_id' => 2, 'position' => 1],
-            ['file_id' => 3, 'position' => 2],
-            ['file_id' => 4, 'position' => 3],
-            ['file_id' => 5, 'position' => 4],
+            ['file_id' => 1, 'page_number' => 0],
+            ['file_id' => 2, 'page_number' => 1],
+            ['file_id' => 3, 'page_number' => 2],
+            ['file_id' => 4, 'page_number' => 3],
+            ['file_id' => 5, 'page_number' => 4],
         ];
 
         // When
@@ -533,9 +567,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
     {
         // Given: List of 3 files with window size 3
         $files = [
-            ['file_id' => 1, 'position' => 0],
-            ['file_id' => 2, 'position' => 1],
-            ['file_id' => 3, 'position' => 2],
+            ['file_id' => 1, 'page_number' => 0],
+            ['file_id' => 2, 'page_number' => 1],
+            ['file_id' => 3, 'page_number' => 2],
         ];
 
         // When
@@ -553,8 +587,8 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
     {
         // Given: Window size less than 2
         $files = [
-            ['file_id' => 1, 'position' => 0],
-            ['file_id' => 2, 'position' => 1],
+            ['file_id' => 1, 'page_number' => 0],
+            ['file_id' => 2, 'page_number' => 1],
         ];
 
         // When
@@ -580,29 +614,54 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
     #[Test]
     public function gets_file_list_from_artifacts_in_position_order(): void
     {
-        // Given: Artifacts with different positions
-        $artifacts = new Collection([
-            Artifact::factory()->create(['position' => 2]),
-            Artifact::factory()->create(['position' => 0]),
-            Artifact::factory()->create(['position' => 1]),
-        ]);
+        // Given: Artifacts with StoredFiles that have different page_numbers
+        $artifacts = new Collection();
+        foreach ([2, 0, 1] as $pageNum) {
+            $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+            $storedFile = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+                'page_number' => $pageNum,
+                'filename'    => "page-$pageNum.jpg",
+                'filepath'    => "test/page-$pageNum.jpg",
+                'disk'        => 'public',
+                'mime'        => 'image/jpeg',
+            ]);
+            $artifact->storedFiles()->attach($storedFile->id);
+            $artifacts->push($artifact);
+        }
 
         // When
         $files = $this->service->getFileListFromArtifacts($artifacts);
 
-        // Then: Files ordered by position
+        // Then: Files ordered by page_number
         $this->assertCount(3, $files);
-        $this->assertEquals(0, $files[0]['position']);
-        $this->assertEquals(1, $files[1]['position']);
-        $this->assertEquals(2, $files[2]['position']);
+        $this->assertEquals(0, $files[0]['page_number']);
+        $this->assertEquals(1, $files[1]['page_number']);
+        $this->assertEquals(2, $files[2]['page_number']);
     }
 
     #[Test]
     public function gets_file_list_from_artifacts_uses_artifact_id_as_file_id(): void
     {
-        // Given: Artifacts
-        $artifact1 = Artifact::factory()->create(['position' => 0]);
-        $artifact2 = Artifact::factory()->create(['position' => 1]);
+        // Given: Artifacts with StoredFiles
+        $artifact1 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $storedFile1 = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+            'page_number' => 0,
+            'filename'    => 'page-0.jpg',
+            'filepath'    => 'test/page-0.jpg',
+            'disk'        => 'public',
+            'mime'        => 'image/jpeg',
+        ]);
+        $artifact1->storedFiles()->attach($storedFile1->id);
+
+        $artifact2 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $storedFile2 = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+            'page_number' => 1,
+            'filename'    => 'page-1.jpg',
+            'filepath'    => 'test/page-1.jpg',
+            'disk'        => 'public',
+            'mime'        => 'image/jpeg',
+        ]);
+        $artifact2->storedFiles()->attach($storedFile2->id);
 
         $artifacts = new Collection([$artifact1, $artifact2]);
 

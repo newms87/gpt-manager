@@ -12,13 +12,19 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'Classifier';
 
+    const string OPERATION_CLASSIFY = 'Classify';
+
+    const string OPERATION_DEDUPLICATE = 'Deduplicate';
+
+    const string OPERATION_VERIFY = 'Verify';
+
     const string CATEGORY_EXCLUDE = '__exclude';
 
     public function run(): void
     {
         // Check if this is a classification property deduplication process
-        $classificationProperty = $this->taskProcess->meta['classification_property'] ?? null;
-        if ($classificationProperty) {
+        if ($this->taskProcess->operation === self::OPERATION_DEDUPLICATE) {
+            $classificationProperty = $this->taskProcess->meta['classification_property'] ?? null;
             static::logDebug("Running classification deduplication for property: $classificationProperty");
 
             $artifacts = $this->taskRun->outputArtifacts;
@@ -30,8 +36,8 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
         }
 
         // Check if this is a classification property verification process
-        $verificationProperty = $this->taskProcess->meta['classification_verification_property'] ?? null;
-        if ($verificationProperty) {
+        if ($this->taskProcess->operation === self::OPERATION_VERIFY) {
+            $verificationProperty = $this->taskProcess->meta['classification_verification_property'] ?? null;
             static::logDebug("Running classification verification for property: $verificationProperty");
 
             $artifacts = $this->taskRun->outputArtifacts;
@@ -116,13 +122,13 @@ class ClassifierTaskRunner extends AgentThreadTaskRunner
     {
         parent::afterAllProcessesCompleted();
 
-        // Check if any TaskProcesses in this TaskRun have classification_property or verification meta set
+        // Check if any TaskProcesses in this TaskRun have deduplicate or verify operations
         $hasPropertyProcesses = $this->taskRun->taskProcesses()
-            ->whereNotNull('meta->classification_property')
+            ->where('operation', self::OPERATION_DEDUPLICATE)
             ->exists();
 
         $hasVerificationProcesses = $this->taskRun->taskProcesses()
-            ->whereNotNull('meta->classification_verification_property')
+            ->where('operation', self::OPERATION_VERIFY)
             ->exists();
 
         if ($hasVerificationProcesses) {

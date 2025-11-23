@@ -14,7 +14,7 @@
 			<div class="w-[70rem] h-[80vh] overflow-hidden">
 				<div class="flex flex-col flex-no-wrap h-full overflow-hidden">
 					<div class="flex-x gap-2 mb-4">
-						<TaskProcessFilterButton v-model="filters" />
+						<TaskProcessFilterButton v-model="filters" :task-run-id="taskRun.id" />
 						<SearchBox
 							class="flex-grow"
 							:model-value="filters.keywords"

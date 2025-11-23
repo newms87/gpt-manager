@@ -25,7 +25,7 @@ class ArtifactResource extends ActionResource
                 'message'          => 'You are not allowed to view this schema',
                 'schemaDefinition' => $artifact->schemaDefinition->only(['id', 'type', 'name']),
             ],
-            'files'                 => fn($fields) => StoredFileResource::collection($artifact->storedFiles->load('transcodes'), $fields),
+            'files'                 => fn($fields) => StoredFileResource::collection($artifact->storedFiles->sortBy('page_number')->load('transcodes'), $fields),
             'meta'                  => fn($fields) => $artifact->meta,
             'task_process_id'       => $artifact->task_process_id,
             'taskProcess'           => fn($fields) => TaskProcessResource::make($artifact->taskProcess, $fields),

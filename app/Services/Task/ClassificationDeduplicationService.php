@@ -7,6 +7,7 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskRun;
 use App\Services\AgentThread\AgentThreadBuilderService;
+use App\Services\Task\Runners\ClassifierTaskRunner;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Helpers\LockHelper;
@@ -126,10 +127,11 @@ class ClassificationDeduplicationService
             static::logDebug("Property '$property' has " . count($labels) . ' labels - creating deduplication process');
 
             $taskRun->taskProcesses()->create([
-                'activity' => "Classification Deduplication for $property w/ " . count($labels) . ' values',
-                'name'     => "Classification Deduplication: $property",
-                'meta'     => ['classification_property' => $property],
-                'is_ready' => true,
+                'name'      => "Classification Deduplication: $property",
+                'operation' => ClassifierTaskRunner::OPERATION_DEDUPLICATE,
+                'activity'  => "Classification Deduplication for $property w/ " . count($labels) . ' values',
+                'meta'      => ['classification_property' => $property],
+                'is_ready'  => true,
             ]);
 
             $processesCreated++;

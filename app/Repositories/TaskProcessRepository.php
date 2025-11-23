@@ -88,4 +88,44 @@ class TaskProcessRepository extends ActionRepository
 
         return $taskProcess;
     }
+
+    /**
+     * Get filter field options for task processes
+     */
+    public function fieldOptions(?array $filter = []): array
+    {
+        // Build base query with team scoping via task_runs and task_definitions
+        $query = TaskProcess::query()
+            ->join('task_runs', 'task_processes.task_run_id', '=', 'task_runs.id')
+            ->join('task_definitions', 'task_runs.task_definition_id', '=', 'task_definitions.id')
+            ->where('task_definitions.team_id', team()->id);
+
+        // Apply additional filters if provided (e.g., task_run_id)
+        if (!empty($filter['task_run_id'])) {
+            $query->where('task_processes.task_run_id', $filter['task_run_id']);
+        }
+
+        // Get distinct operation values
+        $operations = (clone $query)
+            ->whereNotNull('task_processes.operation')
+            ->distinct()
+            ->pluck('task_processes.operation')
+            ->sort()
+            ->values()
+            ->toArray();
+
+        // Get distinct status values
+        $statuses = (clone $query)
+            ->whereNotNull('task_processes.status')
+            ->distinct()
+            ->pluck('task_processes.status')
+            ->sort()
+            ->values()
+            ->toArray();
+
+        return [
+            'operation' => $operations,
+            'status'    => $statuses,
+        ];
+    }
 }

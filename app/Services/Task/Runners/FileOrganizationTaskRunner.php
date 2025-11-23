@@ -4,7 +4,6 @@ namespace App\Services\Task\Runners;
 
 use App\Models\Agent\AgentThread;
 use App\Models\Schema\SchemaDefinition;
-use App\Repositories\ThreadRepository;
 use App\Services\Task\FileOrganizationMergeService;
 use App\Services\Task\TaskProcessDispatcherService;
 use App\Services\Task\TaskProcessRunnerService;
@@ -15,22 +14,37 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 {
     const string RUNNER_NAME = 'File Organization';
 
+    const string OPERATION_INITIALIZE = 'Initialize';
+
+    const string OPERATION_COMPARISON_WINDOW = 'Comparison Window';
+
+    const string OPERATION_MERGE = 'Merge';
+
+    const string OPERATION_LOW_CONFIDENCE_RESOLUTION = 'Low Confidence Resolution';
+
     public function run(): void
     {
         // Check if this is a comparison window process
-        $windowFiles = $this->taskProcess->meta['window_files'] ?? null;
-        if ($windowFiles) {
+        if ($this->taskProcess->operation === self::OPERATION_COMPARISON_WINDOW) {
             static::logDebug('Running comparison window process');
+            $windowFiles = $this->taskProcess->meta['window_files'] ?? null;
             $this->runComparisonWindow($windowFiles);
 
             return;
         }
 
         // Check if this is a merge process
-        $isMergeProcess = $this->taskProcess->meta['is_merge_process'] ?? false;
-        if ($isMergeProcess) {
+        if ($this->taskProcess->operation === self::OPERATION_MERGE) {
             static::logDebug('Running merge process');
             $this->runMergeProcess();
+
+            return;
+        }
+
+        // Check if this is a low confidence resolution process
+        if ($this->taskProcess->operation === self::OPERATION_LOW_CONFIDENCE_RESOLUTION) {
+            static::logDebug('Running low confidence resolution process');
+            $this->runLowConfidenceResolution();
 
             return;
         }
@@ -58,24 +72,15 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         // Setup agent thread
         $agentThread = $this->setupAgentThread($artifactsInWindow);
 
-        // Add file organization specific instructions
-        app(ThreadRepository::class)->addMessageToThread($agentThread,
-            "You are comparing adjacent files to organize them into logical groups.\n" .
-            "Each file represents a page or document section.\n" .
-            "Group files that belong together based on their content and context.\n\n" .
-            "For each group:\n" .
-            "- 'name': A clear, descriptive name for the group (e.g., 'Bills', 'Medical Summary')\n" .
-            "- 'description': A high-level summary of what the group contains\n" .
-            "- 'files': Array of position numbers (integers) for files in this group\n\n" .
-            "IMPORTANT: Only include files that should be kept. If a file should be ignored (e.g., blank page, irrelevant content), simply don't include its position number in any group."
-        );
-
         // Run the agent thread
         $artifact = $this->runAgentThread($agentThread);
 
         if (!$artifact || !$artifact->json_content) {
             throw new ValidationError(static::class . ': No JSON content returned from agent thread');
         }
+
+        // Validate that no page appears in multiple groups
+        $this->validateNoDuplicatePages($artifact->json_content);
 
         // Store window metadata in the artifact
         $meta                 = $artifact->meta ?? [];
@@ -131,7 +136,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         // Get all window artifacts from window task processes
         // Note: Window artifacts are not in task run outputs, only in their process outputs
         $windowProcesses = $this->taskRun->taskProcesses()
-            ->whereNotNull('meta->window_files')
+            ->where('operation', self::OPERATION_COMPARISON_WINDOW)
             ->get();
 
         $windowArtifacts = collect();
@@ -150,9 +155,24 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
         // Merge the windows
         $mergeService = app(FileOrganizationMergeService::class);
-        $finalGroups  = $mergeService->mergeWindowResults($windowArtifacts);
+        $mergeResult  = $mergeService->mergeWindowResults($windowArtifacts);
+        $finalGroups  = $mergeResult['groups'];
+        $fileToGroup  = $mergeResult['file_to_group_mapping'];
 
         static::logDebug('Merge completed: ' . count($finalGroups) . ' final groups');
+
+        // Check for low-confidence files
+        $lowConfidenceFiles = $mergeService->identifyLowConfidenceFiles($fileToGroup);
+
+        if (!empty($lowConfidenceFiles)) {
+            static::logDebug('Found ' . count($lowConfidenceFiles) . ' low-confidence files - storing in task process meta');
+
+            // Store low-confidence files in the merge process meta for later resolution
+            $this->taskProcess->meta = array_merge($this->taskProcess->meta ?? [], [
+                'low_confidence_files' => $lowConfidenceFiles,
+            ]);
+            $this->taskProcess->save();
+        }
 
         // Create output artifacts for each final group
         $outputArtifacts = [];
@@ -246,7 +266,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
             return;
         }
 
-        // Create file list from artifacts
+        // Create file list from artifacts (using page_number from StoredFile)
         $mergeService = app(FileOrganizationMergeService::class);
         $files        = $mergeService->getFileListFromArtifacts($inputArtifacts);
 
@@ -271,15 +291,16 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
             // Create the process directly (not using TaskProcessRunnerService::prepare to avoid agent setup)
             $taskProcess = $this->taskRun->taskProcesses()->create([
-                'name'     => "Compare Files {$window['window_start']}-{$window['window_end']}",
-                'activity' => 'Comparing adjacent files in window',
-                'meta'     => [
-                    'window_files' => $windowFiles,
+                'name'      => "Compare Files {$window['window_start']}-{$window['window_end']}",
+                'operation' => self::OPERATION_COMPARISON_WINDOW,
+                'activity'  => 'Comparing adjacent files in window',
+                'meta'      => [
+                    'window_files' => $windowFiles, // Contains page_number and file_id
                     'window_start' => $window['window_start'],
                     'window_end'   => $window['window_end'],
                     'window_index' => $window['window_index'],
                 ],
-                'is_ready' => true, // Ready to run immediately
+                'is_ready'  => true, // Ready to run immediately
             ]);
 
             // Attach input artifacts to the window process
@@ -288,7 +309,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
             }
             $taskProcess->updateRelationCounter('inputArtifacts');
 
-            static::logDebug("Created window process {$taskProcess->id}: positions {$window['window_start']}-{$window['window_end']}");
+            static::logDebug("Created window process {$taskProcess->id}: page numbers {$window['window_start']}-{$window['window_end']}");
         }
 
         $this->taskRun->updateRelationCounter('taskProcesses');
@@ -310,10 +331,11 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
         // Create the initial process that will create window processes
         $initialProcess = $this->taskRun->taskProcesses()->create([
-            'name'     => 'Initialize File Organization',
-            'activity' => 'Creating window processes for file comparison',
-            'meta'     => [], // Empty meta indicates this is the initial process
-            'is_ready' => true, // Ready to run immediately
+            'name'      => 'Initialize File Organization',
+            'operation' => self::OPERATION_INITIALIZE,
+            'activity'  => 'Creating window processes for file comparison',
+            'meta'      => [],
+            'is_ready'  => true, // Ready to run immediately
         ]);
 
         $this->taskRun->updateRelationCounter('taskProcesses');
@@ -323,15 +345,71 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
     /**
      * Called after all parallel processes have completed.
-     * Creates a merge process to combine all window results.
+     * Creates a merge process to combine all window results, or a resolution process for low-confidence files.
      */
     public function afterAllProcessesCompleted(): void
     {
         parent::afterAllProcessesCompleted();
 
+        // Check if a resolution process already exists
+        $hasResolutionProcess = $this->taskRun->taskProcesses()
+            ->where('operation', self::OPERATION_LOW_CONFIDENCE_RESOLUTION)
+            ->exists();
+
+        if ($hasResolutionProcess) {
+            static::logDebug('Resolution process already exists or completed');
+
+            return;
+        }
+
+        // Check if merge process has low-confidence files
+        $mergeProcess = $this->taskRun->taskProcesses()
+            ->where('operation', self::OPERATION_MERGE)
+            ->first();
+
+        if ($mergeProcess && isset($mergeProcess->meta['low_confidence_files'])) {
+            $lowConfidenceFiles = $mergeProcess->meta['low_confidence_files'];
+
+            if (!empty($lowConfidenceFiles)) {
+                static::logDebug('Creating resolution process for ' . count($lowConfidenceFiles) . ' low-confidence files');
+
+                // Get the uncertain files' artifacts
+                $uncertainFileIds   = array_column($lowConfidenceFiles, 'file_id');
+                $uncertainArtifacts = $this->taskRun->inputArtifacts()
+                    ->whereIn('artifacts.id', $uncertainFileIds)
+                    ->get();
+
+                // Create the resolution process
+                $resolutionProcess = $this->taskRun->taskProcesses()->create([
+                    'name'      => 'Resolve Low Confidence Files',
+                    'operation' => self::OPERATION_LOW_CONFIDENCE_RESOLUTION,
+                    'activity'  => 'Reviewing files with uncertain grouping',
+                    'meta'      => [
+                        'low_confidence_files' => $lowConfidenceFiles,
+                    ],
+                    'is_ready'  => true,
+                ]);
+
+                // Attach uncertain files as input artifacts
+                foreach ($uncertainArtifacts as $artifact) {
+                    $resolutionProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
+                }
+                $resolutionProcess->updateRelationCounter('inputArtifacts');
+
+                $this->taskRun->updateRelationCounter('taskProcesses');
+
+                static::logDebug("Created resolution process: $resolutionProcess");
+
+                // Dispatch the resolution process
+                TaskProcessDispatcherService::dispatchForTaskRun($this->taskRun);
+
+                return;
+            }
+        }
+
         // Check if a merge process already exists
         $hasMergeProcess = $this->taskRun->taskProcesses()
-            ->whereNotNull('meta->is_merge_process')
+            ->where('operation', self::OPERATION_MERGE)
             ->exists();
 
         if ($hasMergeProcess) {
@@ -342,7 +420,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
         // Check if window processes exist and have completed
         $windowProcesses = $this->taskRun->taskProcesses()
-            ->whereNotNull('meta->window_files')
+            ->where('operation', self::OPERATION_COMPARISON_WINDOW)
             ->get();
 
         if ($windowProcesses->isEmpty()) {
@@ -366,10 +444,11 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
         // Create the merge process
         $mergeProcess = $this->taskRun->taskProcesses()->create([
-            'name'     => 'Merge Window Results',
-            'activity' => 'Merging window comparison results into final groups',
-            'meta'     => ['is_merge_process' => true],
-            'is_ready' => true,
+            'name'      => 'Merge Window Results',
+            'operation' => self::OPERATION_MERGE,
+            'activity'  => 'Merging window comparison results into final groups',
+            'meta'      => [],
+            'is_ready'  => true,
         ]);
 
         $this->taskRun->updateRelationCounter('taskProcesses');
@@ -404,16 +483,33 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
                             'files'       => [
                                 'type'        => 'array',
                                 'items'       => [
-                                    'type'        => 'integer',
-                                    'description' => 'Position number of the file in the original document',
+                                    'type'                 => 'object',
+                                    'properties'           => [
+                                        'page_number' => [
+                                            'type'        => 'integer',
+                                            'description' => 'Page number of the file in the original document',
+                                        ],
+                                        'confidence'  => [
+                                            'type'        => 'integer',
+                                            'minimum'     => 0,
+                                            'maximum'     => 5,
+                                            'description' => 'Confidence score (0-5) for this file assignment',
+                                        ],
+                                        'explanation' => [
+                                            'type'        => 'string',
+                                            'description' => 'Brief explanation for this assignment and confidence level',
+                                        ],
+                                    ],
+                                    'required'             => ['page_number', 'confidence', 'explanation'],
+                                    'additionalProperties' => false,
                                 ],
-                                'description' => 'Array of file position numbers that belong to this group',
+                                'description' => 'Array of file assignments with confidence scores',
                             ],
                         ],
                         'required'             => ['name', 'description', 'files'],
                         'additionalProperties' => false,
                     ],
-                    'description' => 'Groups of related files. Only include files that should be kept - omit files that should be ignored (e.g., blank pages).',
+                    'description' => 'Groups of related files with confidence scores. Each page must appear in EXACTLY ONE group. If uncertain about placement, use a low confidence score (0-2) to trigger automatic resolution.',
                 ],
             ],
             'required'             => ['groups'],
@@ -422,12 +518,55 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Override runAgentThreadWithSchema to use our custom schema.
+     * Override setupAgentThread to use simplified artifact filtering.
+     * Only sends page_number from metadata, along with the file itself.
      */
     public function setupAgentThread($artifacts = [], $contextArtifacts = []): AgentThread
     {
-        // Call parent to create the thread
-        $agentThread = parent::setupAgentThread($artifacts, $contextArtifacts);
+        // NEVER reuse an existing agent thread - each comparison window needs a fresh thread
+        // with its own set of file messages. Reusing would result in missing file messages.
+        $taskDefinition = $this->taskRun->taskDefinition;
+
+        if (!$taskDefinition->agent) {
+            throw new \Exception("Agent not found for TaskRun: $this->taskRun");
+        }
+
+        $this->activity("Setting up agent thread for: {$taskDefinition->agent->name}", 5);
+
+        // Build the agent thread using the task-specific builder WITHOUT artifacts
+        // We'll manually add artifacts in a simplified format
+        $builder = \App\Services\Task\TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $this->taskRun);
+
+        // Build the thread (this adds directives and prompts)
+        $agentThread = $builder->build();
+
+        // Manually add artifacts in a simplified format: just the page number in text
+        // The image file itself is attached to the message
+        foreach (collect($artifacts) as $artifact) {
+            // Get page_number from the StoredFile model (NOT from artifact meta)
+            // Each artifact should have ONE storedFile with a page_number
+            $storedFile = $artifact->storedFiles ? $artifact->storedFiles->first() : null;
+            $pageNumber = $storedFile?->page_number ?? null;
+
+            // Get stored file IDs safely
+            $fileIds = $artifact->storedFiles ? $artifact->storedFiles->pluck('id')->toArray() : [];
+
+            if ($pageNumber !== null) {
+                // Add message with just the page number - the file itself is already attached
+                app(\App\Repositories\ThreadRepository::class)->addMessageToThread(
+                    $agentThread,
+                    "Page $pageNumber",
+                    $fileIds
+                );
+            } else {
+                // No page number, just attach the files without text
+                app(\App\Repositories\ThreadRepository::class)->addMessageToThread(
+                    $agentThread,
+                    '',
+                    $fileIds
+                );
+            }
+        }
 
         // Get or create the schema definition for file organization
         $schema = $this->getFileOrganizationSchema();
@@ -446,6 +585,440 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $this->taskDefinition->schema_definition_id = $schemaDefinition->id;
         $this->taskDefinition->save();
 
+        $this->taskProcess->agentThread()->associate($agentThread)->save();
+
+        // Add file organization specific instructions as the LAST message in the thread
+        // This must be the final message before the agent runs
+        app(\App\Repositories\ThreadRepository::class)->addMessageToThread($agentThread,
+            "You are comparing adjacent files to organize them into logical groups.\n" .
+            "Each file represents a page or document section.\n" .
+            "Group files that belong together based on their content and context.\n\n" .
+            "For each group:\n" .
+            "- 'name': A clear, descriptive name for the group (e.g., 'Bills', 'Medical Summary')\n" .
+            "- 'description': A high-level summary of what the group contains\n" .
+            "- 'files': Array of file objects with page_number, confidence, and explanation\n\n" .
+            "CONFIDENCE SCORING (0-5 scale):\n" .
+            "- 5: Absolutely certain - clear evidence this file belongs in this group\n" .
+            "- 4: Very confident - strong indicators support this grouping\n" .
+            "- 3: Moderately confident - reasonable but not definitive\n" .
+            "- 2: Uncertain - could belong here or elsewhere\n" .
+            "- 1: Very uncertain - minimal evidence for this grouping\n" .
+            "- 0: Guessing - no clear indicators\n\n" .
+            "CRITICAL RULES:\n" .
+            "- Each page MUST appear in EXACTLY ONE group - NEVER place the same page in multiple groups\n" .
+            "- If uncertain about placement, use a LOW confidence score (0-2) rather than duplicating the page\n" .
+            "- Low confidence files (< 3) will automatically trigger a resolution process with full context\n" .
+            "- Only include page numbers that were provided in the input messages\n" .
+            "- If a file should be ignored (e.g., blank page), simply don't include it in any group\n\n" .
+            "Example file object:\n" .
+            "{\n" .
+            "  \"page_number\": 98,\n" .
+            "  \"confidence\": 4,\n" .
+            "  \"explanation\": \"Contains billing information consistent with other files in this group\"\n" .
+            '}'
+        );
+
         return $agentThread;
+    }
+
+    /**
+     * Run low confidence resolution process.
+     * Reviews files with uncertain grouping assignments and updates existing merged artifacts.
+     */
+    protected function runLowConfidenceResolution(): void
+    {
+        static::logDebug('Starting low confidence resolution');
+
+        $lowConfidenceFiles = $this->taskProcess->meta['low_confidence_files'] ?? [];
+
+        if (empty($lowConfidenceFiles)) {
+            static::logDebug('No low-confidence files to resolve');
+            $this->complete();
+
+            return;
+        }
+
+        static::logDebug('Resolving ' . count($lowConfidenceFiles) . ' low-confidence files');
+
+        // Setup agent thread with uncertain files and context
+        $uncertainFileIds   = array_column($lowConfidenceFiles, 'file_id');
+        $uncertainArtifacts = $this->taskProcess->inputArtifacts()
+            ->whereIn('artifacts.id', $uncertainFileIds)
+            ->get();
+
+        $agentThread = $this->setupResolutionAgentThread($uncertainArtifacts, $lowConfidenceFiles);
+
+        // Run the agent thread
+        $artifact = $this->runAgentThread($agentThread);
+
+        if (!$artifact || !$artifact->json_content) {
+            throw new ValidationError(static::class . ': No JSON content returned from resolution agent thread');
+        }
+
+        // Validate resolution has no duplicate pages
+        $this->validateNoDuplicatePages($artifact->json_content);
+
+        static::logDebug('Resolution completed successfully');
+
+        // Apply resolution decisions to existing merged artifacts
+        $this->applyResolutionToMergedArtifacts($artifact->json_content);
+
+        // Delete the temporary resolution artifact - we don't need it as output
+        $artifact->delete();
+
+        $this->complete();
+    }
+
+    /**
+     * Setup agent thread for low-confidence file resolution.
+     * Provides all context from window comparisons to help agent make better decisions.
+     */
+    protected function setupResolutionAgentThread($artifacts, array $lowConfidenceFiles): AgentThread
+    {
+        $taskDefinition = $this->taskRun->taskDefinition;
+
+        if (!$taskDefinition->agent) {
+            throw new \Exception("Agent not found for TaskRun: $this->taskRun");
+        }
+
+        $this->activity("Setting up resolution agent thread for: {$taskDefinition->agent->name}", 5);
+
+        // Build the agent thread
+        $builder     = \App\Services\Task\TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $this->taskRun);
+        $agentThread = $builder->build();
+
+        // Add file messages
+        foreach ($artifacts as $artifact) {
+            $storedFile = $artifact->storedFiles ? $artifact->storedFiles->first() : null;
+            $pageNumber = $storedFile?->page_number ?? null;
+            $fileIds    = $artifact->storedFiles ? $artifact->storedFiles->pluck('id')->toArray() : [];
+
+            if ($pageNumber !== null) {
+                app(\App\Repositories\ThreadRepository::class)->addMessageToThread(
+                    $agentThread,
+                    "Page $pageNumber",
+                    $fileIds
+                );
+            } else {
+                app(\App\Repositories\ThreadRepository::class)->addMessageToThread(
+                    $agentThread,
+                    '',
+                    $fileIds
+                );
+            }
+        }
+
+        // Build context message showing ALL explanations from all windows
+        $contextMessage = "CONTEXT: Low-confidence file assignments requiring review\n\n";
+        $contextMessage .= "These files were assigned with low confidence (< 3) during the windowed comparison process.\n";
+        $contextMessage .= "Below are ALL explanations from ALL comparison windows for each file:\n\n";
+
+        foreach ($lowConfidenceFiles as $fileData) {
+            $pageNumber      = $fileData['page_number'];
+            $bestAssignment  = $fileData['best_assignment'];
+            $allExplanations = $fileData['all_explanations'];
+
+            $contextMessage .= "--- Page $pageNumber ---\n";
+            $contextMessage .= "Best assignment: '{$bestAssignment['group_name']}' (confidence: {$bestAssignment['confidence']})\n";
+            $contextMessage .= "Description: {$bestAssignment['description']}\n\n";
+
+            $contextMessage .= "All explanations from comparison windows:\n";
+            foreach ($allExplanations as $idx => $explanation) {
+                $num = $idx + 1;
+                $contextMessage .= "  $num. Group: '{$explanation['group_name']}' (confidence: {$explanation['confidence']})\n";
+                $contextMessage .= "     Explanation: {$explanation['explanation']}\n";
+            }
+            $contextMessage .= "\n";
+        }
+
+        app(\App\Repositories\ThreadRepository::class)->addMessageToThread($agentThread, $contextMessage);
+
+        // Use the same schema as window comparisons
+        $schema = $this->getFileOrganizationSchema();
+
+        $schemaDefinition = SchemaDefinition::updateOrCreate([
+            'team_id' => $this->taskRun->taskDefinition->team_id,
+            'name'    => 'File Organization Response',
+            'type'    => 'FileOrganizationResponse',
+        ], [
+            'description'   => 'JSON schema for file organization task responses',
+            'schema'        => $schema,
+            'schema_format' => SchemaDefinition::FORMAT_JSON,
+        ]);
+
+        $this->taskDefinition->schema_definition_id = $schemaDefinition->id;
+        $this->taskDefinition->save();
+
+        $this->taskProcess->agentThread()->associate($agentThread)->save();
+
+        // Add resolution-specific instructions
+        app(\App\Repositories\ThreadRepository::class)->addMessageToThread($agentThread,
+            "TASK: Resolve uncertain file groupings\n\n" .
+            "You have been provided with files that had LOW CONFIDENCE assignments (< 3) from the initial comparison.\n" .
+            "Above, you can see ALL explanations from ALL comparison windows that reviewed each file.\n\n" .
+            "Your task:\n" .
+            "1. Review each file carefully with the full context provided\n" .
+            "2. Make a FINAL DECISION on the correct group assignment\n" .
+            "3. Assign a NEW confidence score (0-5) based on your review\n" .
+            "4. Provide a detailed explanation for your decision\n\n" .
+            "IMPORTANT:\n" .
+            "- You can create NEW groups if none of the existing groups fit\n" .
+            "- Use ALL the context from previous windows to make informed decisions\n" .
+            "- Aim for confidence >= 3 for all assignments\n" .
+            "- If still uncertain after review, explain WHY in detail\n\n" .
+            'Return your assignments using the same format as the comparison windows.'
+        );
+
+        return $agentThread;
+    }
+
+    /**
+     * Validate that no page_number appears in multiple groups.
+     * Each page must belong to exactly ONE group.
+     *
+     * @param  array  $jsonContent  The artifact's json_content with groups
+     * @throws ValidationError if any page appears in multiple groups
+     */
+    protected function validateNoDuplicatePages(array $jsonContent): void
+    {
+        $groups = $jsonContent['groups'] ?? [];
+
+        if (empty($groups)) {
+            return;
+        }
+
+        // Track which page_numbers we've seen and in which group
+        $pageToGroup = [];
+
+        foreach ($groups as $group) {
+            $groupName = $group['name'] ?? 'Unknown';
+            $files     = $group['files'] ?? [];
+
+            foreach ($files as $fileData) {
+                // Handle both old format (integer) and new format (object)
+                if (is_int($fileData)) {
+                    $pageNumber = $fileData;
+                } else {
+                    $pageNumber = $fileData['page_number'] ?? null;
+                }
+
+                if ($pageNumber === null) {
+                    continue;
+                }
+
+                // Check if we've seen this page before
+                if (isset($pageToGroup[$pageNumber])) {
+                    $firstGroup = $pageToGroup[$pageNumber];
+                    throw new ValidationError(
+                        "Invalid file organization: Page $pageNumber appears in multiple groups.\n" .
+                        "First group: '$firstGroup'\n" .
+                        "Second group: '$groupName'\n\n" .
+                        "Each page must belong to exactly ONE group. Please revise the grouping so that each page appears in only one group.",
+                        400
+                    );
+                }
+
+                // Record this page
+                $pageToGroup[$pageNumber] = $groupName;
+            }
+        }
+
+        static::logDebug('Validation passed: No duplicate pages found across ' . count($groups) . ' groups');
+    }
+
+    /**
+     * Apply resolution decisions to existing merged artifacts.
+     * Moves files between groups based on the agent's final decisions.
+     *
+     * @param  array  $resolutionContent  The resolution artifact's json_content with final group assignments
+     */
+    protected function applyResolutionToMergedArtifacts(array $resolutionContent): void
+    {
+        static::logDebug('Applying resolution decisions to merged artifacts');
+
+        $resolutionGroups = $resolutionContent['groups'] ?? [];
+
+        if (empty($resolutionGroups)) {
+            static::logDebug('No resolution groups found');
+
+            return;
+        }
+
+        // Build a map of file_id => group_name from resolution
+        $fileToResolvedGroup = [];
+        foreach ($resolutionGroups as $group) {
+            $groupName = $group['name'] ?? null;
+            $files     = $group['files'] ?? [];
+
+            if (!$groupName) {
+                continue;
+            }
+
+            foreach ($files as $fileData) {
+                // Handle both old format (integer) and new format (object)
+                if (is_int($fileData)) {
+                    $pageNumber = $fileData;
+                } else {
+                    $pageNumber = $fileData['page_number'] ?? null;
+                }
+
+                if ($pageNumber === null) {
+                    continue;
+                }
+
+                // Map page_number to file_id by looking at input artifacts
+                foreach ($this->taskRun->inputArtifacts as $inputArtifact) {
+                    $storedFile = $inputArtifact->storedFiles ? $inputArtifact->storedFiles->first() : null;
+                    $artifactPageNumber = $storedFile?->page_number ?? null;
+
+                    if ($artifactPageNumber === $pageNumber) {
+                        $fileToResolvedGroup[$inputArtifact->id] = $groupName;
+                        static::logDebug("Resolution: Page $pageNumber (file {$inputArtifact->id}) -> '$groupName'");
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (empty($fileToResolvedGroup)) {
+            static::logDebug('No file resolutions to apply');
+
+            return;
+        }
+
+        // Get existing merged artifacts from the task run output
+        $mergedArtifacts = $this->taskRun->outputArtifacts()->get();
+
+        if ($mergedArtifacts->isEmpty()) {
+            static::logDebug('No merged artifacts found to update');
+
+            return;
+        }
+
+        static::logDebug('Found ' . $mergedArtifacts->count() . ' merged artifacts to update');
+
+        // For each resolved file, move it to the correct group
+        foreach ($fileToResolvedGroup as $fileId => $targetGroupName) {
+            static::logDebug("Processing file $fileId -> '$targetGroupName'");
+
+            // Find which merged artifact currently contains this file
+            $sourceArtifact = null;
+            $targetArtifact = null;
+
+            foreach ($mergedArtifacts as $artifact) {
+                $groupName = $artifact->meta['group_name'] ?? null;
+
+                // Check if this artifact's children include a copy of the input artifact
+                // Children are copies that reference the original input artifact as their parent
+                $hasFile = false;
+                foreach ($artifact->children as $child) {
+                    // Check if this child is a copy of the input artifact
+                    // The child's parent should be the original input artifact
+                    if ($child->parent_artifact_id == $fileId) {
+                        $hasFile = true;
+                        break;
+                    }
+                }
+
+                if ($hasFile && $groupName !== $targetGroupName) {
+                    $sourceArtifact = $artifact;
+                    static::logDebug("  Found file in source group: '$groupName'");
+                } elseif ($groupName === $targetGroupName) {
+                    $targetArtifact = $artifact;
+                    static::logDebug("  Found target group: '$targetGroupName'");
+                }
+            }
+
+            // If file is already in the correct group, skip
+            if (!$sourceArtifact && $targetArtifact) {
+                static::logDebug("  File already in correct group, skipping");
+
+                continue;
+            }
+
+            // If we found a source but no target, the agent wants to move to a NEW group
+            if ($sourceArtifact && !$targetArtifact) {
+                static::logDebug("  Creating new group: '$targetGroupName'");
+
+                // Get the input artifact
+                $inputArtifact = $this->taskRun->inputArtifacts()->where('artifacts.id', $fileId)->first();
+
+                if (!$inputArtifact) {
+                    static::logDebug("  ERROR: Could not find input artifact $fileId");
+
+                    continue;
+                }
+
+                // Create a copy for the new group
+                $artifactCopy = $inputArtifact->copy();
+
+                // Create new merged artifact for this group
+                $targetArtifact = app(\App\Services\Task\ArtifactsMergeService::class)->merge([$artifactCopy]);
+                $targetArtifact->name = "Group: $targetGroupName";
+                $targetArtifact->meta = [
+                    'group_name'  => $targetGroupName,
+                    'description' => "Group created during resolution",
+                    'file_count'  => 1,
+                ];
+                $targetArtifact->save();
+
+                // Add to task run outputs
+                $this->taskRun->outputArtifacts()->attach($targetArtifact->id, ['category' => 'output']);
+
+                static::logDebug("  Created new merged artifact: $targetArtifact");
+            }
+
+            // Move the file from source to target
+            if ($sourceArtifact && $targetArtifact) {
+                static::logDebug("  Moving file from '{$sourceArtifact->meta['group_name']}' to '$targetGroupName'");
+
+                // Get the child artifact (copy) from source
+                // Find the child whose parent is the input artifact
+                $childArtifact = null;
+                foreach ($sourceArtifact->children as $child) {
+                    if ($child->parent_artifact_id == $fileId) {
+                        $childArtifact = $child;
+                        break;
+                    }
+                }
+
+                if (!$childArtifact) {
+                    static::logDebug("  ERROR: Could not find child artifact in source");
+
+                    continue;
+                }
+
+                // Remove from source artifact's children
+                $sourceArtifact->children()->detach($childArtifact->id);
+                $sourceArtifact->updateRelationCounter('children');
+
+                // Update source artifact meta
+                $sourceArtifact->meta = array_merge($sourceArtifact->meta ?? [], [
+                    'file_count' => $sourceArtifact->children()->count(),
+                ]);
+                $sourceArtifact->save();
+
+                // If source artifact now has no children, delete it
+                if ($sourceArtifact->children()->count() === 0) {
+                    static::logDebug("  Source group '{$sourceArtifact->meta['group_name']}' now empty - removing from outputs");
+                    $this->taskRun->outputArtifacts()->detach($sourceArtifact->id);
+                    $sourceArtifact->delete();
+                }
+
+                // Add to target artifact's children
+                $targetArtifact->children()->attach($childArtifact->id);
+                $targetArtifact->updateRelationCounter('children');
+
+                // Update target artifact meta
+                $targetArtifact->meta = array_merge($targetArtifact->meta ?? [], [
+                    'file_count' => $targetArtifact->children()->count(),
+                ]);
+                $targetArtifact->save();
+
+                static::logDebug("  Successfully moved file");
+            }
+        }
+
+        static::logDebug('Resolution application completed');
     }
 }

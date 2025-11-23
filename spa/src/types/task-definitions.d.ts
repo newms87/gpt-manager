@@ -90,6 +90,7 @@ export interface TaskRun extends TaskRunner {
 export interface TaskProcess extends TaskRunner {
 	id: number;
 	activity: string;
+	operation?: string;
 	percent_complete: number;
 	created_at: string;
 	input_artifact_count: number;
