@@ -223,11 +223,12 @@ class FileOrganizationMergeService
     }
 
     /**
-     * Identify files with low confidence scores (< 3).
-     * Returns files that may need manual review or additional processing.
+     * Identify files with low confidence scores (< 3) that have MULTIPLE different group assignments.
+     * Only returns files that need resolution due to ambiguity (appeared in multiple groups across windows).
+     * Files with only one low-confidence assignment are kept as-is (that's the only answer we have).
      *
      * @param  array  $fileToGroup  Map from buildFileToGroupMapping
-     * @return array Array of low-confidence files with all their explanations
+     * @return array Array of low-confidence files that have multiple conflicting assignments
      */
     public function identifyLowConfidenceFiles(array $fileToGroup): array
     {
@@ -235,22 +236,31 @@ class FileOrganizationMergeService
 
         foreach ($fileToGroup as $fileId => $data) {
             if ($data['confidence'] < 3) {
-                $lowConfidenceFiles[] = [
-                    'file_id'           => $fileId,
-                    'page_number'       => $data['page_number'],
-                    'best_assignment'   => [
-                        'group_name'  => $data['group_name'],
-                        'description' => $data['description'],
-                        'confidence'  => $data['confidence'],
-                    ],
-                    'all_explanations'  => $data['all_explanations'],
-                ];
+                // Count how many DIFFERENT groups this file appeared in
+                $allExplanations = $data['all_explanations'] ?? [];
+                $uniqueGroups = array_unique(array_column($allExplanations, 'group_name'));
 
-                static::logDebug("Low confidence file: page {$data['page_number']} (confidence {$data['confidence']}) assigned to '{$data['group_name']}'");
+                // Only include if file appeared in MULTIPLE different groups
+                if (count($uniqueGroups) > 1) {
+                    $lowConfidenceFiles[] = [
+                        'file_id'           => $fileId,
+                        'page_number'       => $data['page_number'],
+                        'best_assignment'   => [
+                            'group_name'  => $data['group_name'],
+                            'description' => $data['description'],
+                            'confidence'  => $data['confidence'],
+                        ],
+                        'all_explanations'  => $allExplanations,
+                    ];
+
+                    static::logDebug("Low confidence file with MULTIPLE assignments: page {$data['page_number']} (confidence {$data['confidence']}) - appeared in " . count($uniqueGroups) . " different groups");
+                } else {
+                    static::logDebug("Low confidence file with SINGLE assignment: page {$data['page_number']} (confidence {$data['confidence']}) assigned to '{$data['group_name']}' - keeping as-is (only answer available)");
+                }
             }
         }
 
-        static::logDebug('Found ' . count($lowConfidenceFiles) . ' low-confidence files');
+        static::logDebug('Found ' . count($lowConfidenceFiles) . ' low-confidence files requiring resolution (have multiple conflicting assignments)');
 
         return $lowConfidenceFiles;
     }
