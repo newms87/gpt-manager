@@ -120,49 +120,24 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 /**
- * Color palette for hash-based color assignment
+ * Color configuration type for backward compatibility with log components
+ * Re-exported from useHashedColor composable
  */
-export interface ColorConfig {
-	bg: string;
-	text: string;
-}
+import {
+	getHashedColor as getHashedColorUtil,
+	type TailwindDarkConfig
+} from '@/composables/useHashedColor';
 
-export const COLOR_PALETTE: ColorConfig[] = [
-	{ bg: 'bg-sky-950', text: 'text-sky-400' },
-	{ bg: 'bg-blue-950', text: 'text-blue-400' },
-	{ bg: 'bg-indigo-950', text: 'text-indigo-400' },
-	{ bg: 'bg-purple-950', text: 'text-purple-400' },
-	{ bg: 'bg-pink-950', text: 'text-pink-400' },
-	{ bg: 'bg-rose-950', text: 'text-rose-400' },
-	{ bg: 'bg-orange-950', text: 'text-orange-400' },
-	{ bg: 'bg-amber-950', text: 'text-amber-400' },
-	{ bg: 'bg-yellow-950', text: 'text-yellow-400' },
-	{ bg: 'bg-lime-950', text: 'text-lime-400' },
-	{ bg: 'bg-green-950', text: 'text-green-400' },
-	{ bg: 'bg-emerald-950', text: 'text-emerald-400' },
-	{ bg: 'bg-teal-950', text: 'text-teal-400' },
-	{ bg: 'bg-cyan-950', text: 'text-cyan-400' }
-];
+export type ColorConfig = TailwindDarkConfig;
 
 /**
- * Simple hash function for deterministic color assignment
- */
-function hashString(str: string): number {
-	let hash = 0;
-	for (let i = 0; i < str.length; i++) {
-		const char = str.charCodeAt(i);
-		hash = ((hash << 5) - hash) + char;
-		hash = hash & hash; // Convert to 32-bit integer
-	}
-	return Math.abs(hash);
-}
-
-/**
- * Get a color from the palette based on content hash
- * Same content will always get the same color
+ * Get a hashed color configuration for the given content.
+ * This is a wrapper around the composable for backward compatibility.
+ * Same content will always get the same color.
+ *
+ * @param content - The string to hash for color selection
+ * @returns ColorConfig with bg and text Tailwind classes
  */
 export function getHashedColor(content: string): ColorConfig {
-	const hash = hashString(content);
-	const index = hash % COLOR_PALETTE.length;
-	return COLOR_PALETTE[index];
+	return getHashedColorUtil(content, { format: 'tailwind-dark' });
 }

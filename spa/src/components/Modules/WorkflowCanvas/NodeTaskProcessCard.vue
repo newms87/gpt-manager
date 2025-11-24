@@ -40,6 +40,7 @@
 			</div>
 			<div class="flex-x space-x-2 mt-2">
 				<LabelPillWidget :label="`pid: ${taskProcess.id}`" color="sky" size="xs" class="whitespace-nowrap" />
+				<LabelPillWidget v-if="taskProcess.operation" :label="taskProcess.operation" :color="operationColor" size="xs" class="whitespace-nowrap" />
 				<LabelPillWidget :label="taskProcess.name" color="blue" size="xs" class="text-center max-w-64" />
 				<UsageSummaryCard v-if="taskProcess.usage" :usage="taskProcess.usage" variant="compact" class="max-w-32" />
 				<div class="flex-grow overflow-hidden">
@@ -124,6 +125,7 @@ import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/Tas
 import NodeArtifactsButton from "@/components/Modules/WorkflowCanvas/NodeArtifactsButton";
 import TaskProcessAgentThreadCard from "@/components/Modules/WorkflowCanvas/TaskProcessAgentThreadCard";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
+import { useHashedColor } from "@/composables/useHashedColor";
 import { TaskProcess } from "@/types";
 import { FaSolidBusinessTime as JobDispatchIcon, FaSolidMessage as AgentThreadIcon } from "danx-icon";
 import { ActionButton, fPercent, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
@@ -143,6 +145,8 @@ const isShowingAgentThread = ref(false);
 const isShowingJobDispatches = ref(false);
 const isShowingInputArtifacts = ref(false);
 const isShowingOutputArtifacts = ref(false);
+
+const operationColor = useHashedColor(computed(() => props.taskProcess.operation));
 
 async function refreshJobDispatchesRelation() {
 	await dxTaskProcess.routes.details(props.taskProcess, { jobDispatches: { logs: true, apiLogs: true, errors: true } });

@@ -689,4 +689,141 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
             ],
         ]);
     }
+
+    #[Test]
+    public function identifyLowConfidenceFiles_only_returns_files_with_multiple_assignments(): void
+    {
+        // Given: Three windows with various low-confidence assignments
+        $artifacts = new Collection([
+            // Window 1: File 1 in Group A (confidence 2), File 2 in Group B (confidence 1)
+            $this->createWindowArtifact(
+                windowStart: 0,
+                windowEnd: 2,
+                windowFiles: [
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Group A',
+                        'description' => 'First group',
+                        'files'       => [
+                            ['page_number' => 0, 'confidence' => 2, 'explanation' => 'Uncertain about Group A'],
+                        ],
+                    ],
+                    [
+                        'name'        => 'Group B',
+                        'description' => 'Second group',
+                        'files'       => [
+                            ['page_number' => 1, 'confidence' => 1, 'explanation' => 'Very uncertain'],
+                            ['page_number' => 2, 'confidence' => 5, 'explanation' => 'Definitely Group B'],
+                        ],
+                    ],
+                ]
+            ),
+            // Window 2: File 1 appears again in Group B (confidence 2) - CONFLICT!
+            $this->createWindowArtifact(
+                windowStart: 1,
+                windowEnd: 3,
+                windowFiles: [
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Group B',
+                        'description' => 'Second group',
+                        'files'       => [
+                            ['page_number' => 1, 'confidence' => 2, 'explanation' => 'Could be Group B'],
+                            ['page_number' => 2, 'confidence' => 4, 'explanation' => 'Likely Group B'],
+                            ['page_number' => 3, 'confidence' => 5, 'explanation' => 'Definitely Group B'],
+                        ],
+                    ],
+                ]
+            ),
+            // Window 3: File 1 appears in Group C (confidence 1) - ANOTHER CONFLICT!
+            $this->createWindowArtifact(
+                windowStart: 2,
+                windowEnd: 4,
+                windowFiles: [
+                    ['file_id' => 3, 'page_number' => 2],
+                    ['file_id' => 4, 'page_number' => 3],
+                    ['file_id' => 1, 'page_number' => 0],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Group C',
+                        'description' => 'Third group',
+                        'files'       => [
+                            ['page_number' => 2, 'confidence' => 5, 'explanation' => 'Definitely Group C'],
+                            ['page_number' => 3, 'confidence' => 5, 'explanation' => 'Definitely Group C'],
+                            ['page_number' => 0, 'confidence' => 1, 'explanation' => 'Maybe Group C?'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $fileToGroup = $mergeResult['file_to_group_mapping'];
+
+        $lowConfidenceFiles = $this->service->identifyLowConfidenceFiles($fileToGroup);
+
+        // Then: Only File 1 should be returned (appeared in Groups A, B, and C with low confidence)
+        // File 2 should NOT be returned (only appeared in Group B, even though confidence is 2)
+        $this->assertCount(1, $lowConfidenceFiles, 'Only files with MULTIPLE different group assignments should need resolution');
+
+        $lowConfFile = $lowConfidenceFiles[0];
+        $this->assertEquals(1, $lowConfFile['file_id'], 'File 1 should need resolution (appeared in 3 different groups)');
+        $this->assertEquals(0, $lowConfFile['page_number']);
+
+        // Verify it has multiple explanations from different groups
+        $uniqueGroups = array_unique(array_column($lowConfFile['all_explanations'], 'group_name'));
+        $this->assertGreaterThan(1, count($uniqueGroups), 'File should have appeared in multiple different groups');
+    }
+
+    #[Test]
+    public function identifyLowConfidenceFiles_keeps_single_low_confidence_assignment(): void
+    {
+        // Given: A file with low confidence but only ONE group assignment
+        $artifacts = new Collection([
+            $this->createWindowArtifact(
+                windowStart: 0,
+                windowEnd: 2,
+                windowFiles: [
+                    ['file_id' => 1, 'page_number' => 0],
+                    ['file_id' => 2, 'page_number' => 1],
+                    ['file_id' => 3, 'page_number' => 2],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Group A',
+                        'description' => 'First group',
+                        'files'       => [
+                            ['page_number' => 0, 'confidence' => 5, 'explanation' => 'Definitely A'],
+                            ['page_number' => 1, 'confidence' => 2, 'explanation' => 'Uncertain but only option'],
+                            ['page_number' => 2, 'confidence' => 5, 'explanation' => 'Definitely A'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $fileToGroup = $mergeResult['file_to_group_mapping'];
+
+        $lowConfidenceFiles = $this->service->identifyLowConfidenceFiles($fileToGroup);
+
+        // Then: No files should need resolution (File 2 only appeared in one group)
+        $this->assertEmpty($lowConfidenceFiles, 'Files with only ONE low-confidence assignment should not need resolution');
+
+        // Verify File 2 is still in the final groups (not discarded)
+        $finalGroups = $mergeResult['groups'];
+        $groupA = $finalGroups[0];
+        $this->assertContains(2, $groupA['files'], 'Low-confidence file with single assignment should still be included in final groups');
+    }
 }

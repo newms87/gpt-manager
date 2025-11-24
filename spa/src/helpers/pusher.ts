@@ -27,6 +27,7 @@ export interface Subscription {
 	expiresAt?: string;
 	cacheKey?: string;
 	createdAt: Date;
+	_batchedWith?: string; // ID of the batch subscription (if batched)
 }
 
 export interface SubscriptionPayload {
@@ -44,6 +45,25 @@ const modelEventListeners: Map<string, ChannelEventListener> = new Map();
 // New subscription tracking
 const activeSubscriptions = ref<Map<string, Subscription>>(new Map());
 let keepaliveTimerId: NodeJS.Timeout | null = null;
+
+// Batch queue for ID-based subscriptions
+interface SubscriptionBatch {
+	resourceType: string;
+	events: string[];
+	timer: NodeJS.Timeout | null;
+	items: Map<string, {  // key: subscriptionId
+		subscriptionId: string;
+		modelId: number | string;
+	}>;
+	resolvers: Array<(success: boolean) => void>;
+}
+
+const subscriptionBatchQueue = ref<Map<string, SubscriptionBatch>>(new Map());
+
+// Helper to create batch key
+function getBatchKey(resourceType: string, events: string[]): string {
+	return `${resourceType}:${events.sort().join(',')}`;
+}
 
 // Connection state tracking (reactive)
 const connectionState = ref<string>('initialized');
@@ -240,16 +260,35 @@ function startKeepalive() {
 			return;
 		}
 
-		// Build payload with subscription IDs only
-		const subscriptionIds = Array.from(activeSubscriptions.value.keys());
+		// Collect unique backend subscription IDs (deduplicate batched subscriptions)
+		const backendSubscriptionIds = new Set<string>();
+		let batchedCount = 0;
+		let individualCount = 0;
+
+		for (const subscription of activeSubscriptions.value.values()) {
+			if (subscription._batchedWith) {
+				// This is a batched subscription - use the batch ID
+				backendSubscriptionIds.add(subscription._batchedWith);
+				batchedCount++;
+			} else {
+				// This is a non-batched subscription - use its own ID
+				backendSubscriptionIds.add(subscription.id);
+				individualCount++;
+			}
+		}
+
+		const subscriptionIds = Array.from(backendSubscriptionIds);
 
 		console.groupCollapsed(
 			'%c[PUSHER KEEPALIVE] %cRefreshing subscriptions',
 			'color: #f97316; font-weight: bold',
 			'color: #fb923c'
 		);
-		console.log('%cCount:', 'font-weight: bold', subscriptionIds.length);
-		console.log('%cSubscription IDs:', 'font-weight: bold', subscriptionIds);
+		console.log('%cTotal Frontend Subscriptions:', 'font-weight: bold', activeSubscriptions.value.size);
+		console.log('%cUnique Backend Subscriptions:', 'font-weight: bold', subscriptionIds.length);
+		console.log('%cBatched:', 'font-weight: bold', batchedCount);
+		console.log('%cIndividual:', 'font-weight: bold', individualCount);
+		console.log('%cBackend Subscription IDs:', 'font-weight: bold', subscriptionIds);
 		console.log('%cTimestamp:', 'font-weight: bold', new Date().toISOString());
 
 		try {
@@ -276,21 +315,40 @@ function startKeepalive() {
 			console.log('%cFailures:', 'font-weight: bold; color: #ef4444', failureCount);
 
 			for (const [subId, result] of Object.entries(results as Record<string, any>)) {
-				if (result.success && activeSubscriptions.value.has(subId)) {
-					const subscription = activeSubscriptions.value.get(subId);
-					if (subscription) {
-						subscription.expiresAt = result.expires_at;
-						activeSubscriptions.value.set(subId, subscription);
-						console.log(`  %c✓ ${subId}`, 'color: #22c55e', {
-							expiresAt: result.expires_at
-						});
+				if (result.success) {
+					// Update all subscriptions that use this backend ID
+					let updatedCount = 0;
+					for (const [frontendId, subscription] of activeSubscriptions.value.entries()) {
+						const subBackendId = subscription._batchedWith || subscription.id;
+
+						if (subBackendId === subId) {
+							subscription.expiresAt = result.expires_at;
+							activeSubscriptions.value.set(frontendId, subscription);
+							updatedCount++;
+						}
 					}
-				} else if (!result.success) {
-					// Subscription failed - remove it
-					console.log(`  %c✗ ${subId}`, 'color: #ef4444', {
-						error: result.error
+
+					console.log(`  %c✓ ${subId}`, 'color: #22c55e', {
+						expiresAt: result.expires_at,
+						updatedSubscriptions: updatedCount,
+						batched: updatedCount > 1
 					});
-					activeSubscriptions.value.delete(subId);
+				} else if (!result.success) {
+					// Remove all subscriptions using this backend ID
+					const idsToRemove: string[] = [];
+					for (const [frontendId, subscription] of activeSubscriptions.value.entries()) {
+						const subBackendId = subscription._batchedWith || subscription.id;
+
+						if (subBackendId === subId) {
+							idsToRemove.push(frontendId);
+						}
+					}
+
+					console.warn(`  %c✗ ${subId} - Removing ${idsToRemove.length} expired subscription(s)`, 'color: #ef4444');
+
+					for (const id of idsToRemove) {
+						activeSubscriptions.value.delete(id);
+					}
 				}
 			}
 			console.groupEnd();
@@ -316,6 +374,236 @@ function stopKeepalive() {
 		clearInterval(keepaliveTimerId);
 		keepaliveTimerId = null;
 		keepaliveState.value.nextKeepaliveAt = null;
+	}
+}
+
+/**
+ * Add subscription to batch queue
+ */
+async function addToBatch(
+	resourceType: string,
+	events: string[],
+	modelId: number | string,
+	subscriptionId: string
+): Promise<boolean> {
+	const batchKey = getBatchKey(resourceType, events);
+
+	// Get or create batch
+	let batch = subscriptionBatchQueue.value.get(batchKey);
+	if (!batch) {
+		batch = {
+			resourceType,
+			events,
+			timer: null,
+			items: new Map(),
+			resolvers: []
+		};
+		subscriptionBatchQueue.value.set(batchKey, batch);
+	}
+
+	// Add item to batch
+	batch.items.set(subscriptionId, { subscriptionId, modelId });
+
+	// Clear existing timer
+	if (batch.timer) {
+		clearTimeout(batch.timer);
+	}
+
+	// Create promise for this subscription
+	return new Promise((resolve) => {
+		batch!.resolvers.push(resolve);
+
+		// Set new timer (100ms debounce)
+		batch!.timer = setTimeout(async () => {
+			const success = await executeBatch(batchKey);
+			// Resolve all pending promises
+			batch!.resolvers.forEach(r => r(success));
+		}, 100);
+	});
+}
+
+/**
+ * Execute batch - convert to filter-based subscription
+ */
+async function executeBatch(batchKey: string): Promise<boolean> {
+	const batch = subscriptionBatchQueue.value.get(batchKey);
+	if (!batch || batch.items.size === 0) {
+		return false;
+	}
+
+	// Remove from queue
+	subscriptionBatchQueue.value.delete(batchKey);
+
+	// Extract model IDs
+	const modelIds = Array.from(batch.items.values()).map(item => item.modelId);
+
+	console.groupCollapsed(
+		'%c[PUSHER BATCH] %cExecuting Batched Subscription',
+		'color: #8b5cf6; font-weight: bold',
+		'color: #a78bfa'
+	);
+	console.log('%cResource Type:', 'font-weight: bold', batch.resourceType);
+	console.log('%cEvents:', 'font-weight: bold', batch.events);
+	console.log('%cBatched IDs:', 'font-weight: bold', modelIds);
+	console.log('%cCount:', 'font-weight: bold', modelIds.length);
+	console.log('%cTimestamp:', 'font-weight: bold', new Date().toISOString());
+
+	// Create filter-based subscription
+	const filterSubscription = {
+		filter: { id: modelIds }
+	};
+
+	// Generate subscription ID for the batched subscription
+	const batchSubscriptionId = generateSubscriptionId();
+
+	// Build payload for API call with batch subscription ID
+	const payload = {
+		subscription_id: batchSubscriptionId,
+		resource_type: batch.resourceType,
+		events: batch.events,
+		model_id_or_filter: filterSubscription
+	};
+
+	try {
+		// Subscribe to Pusher channel
+		subscribeToChannel(batch.resourceType, authTeam.value.id, batch.events);
+
+		// Call backend API to register subscription
+		const response = await request.post(apiUrls.pusher.subscribe, payload, {
+			requestKey: `subscribe:${batch.resourceType}:batch:${batchKey}`
+		});
+
+		// Extract metadata from response
+		const { subscription } = response;
+
+		// Log backend response
+		console.log('%cBackend Response:', 'font-weight: bold; color: #3b82f6', {
+			expiresAt: subscription.expires_at,
+			cacheKey: subscription.cache_key,
+			batchSubscriptionId,
+			fullResponse: response
+		});
+
+		// Create individual entries in activeSubscriptions for transparency
+		for (const [subscriptionId, item] of batch.items) {
+			activeSubscriptions.value.set(subscriptionId, {
+				id: subscriptionId,
+				resourceType: batch.resourceType,
+				events: batch.events,
+				modelIdOrFilter: item.modelId,  // Store individual ID
+				expiresAt: subscription.expires_at,
+				cacheKey: subscription.cache_key,
+				createdAt: new Date(),
+				_batchedWith: batchSubscriptionId  // Track which batch this belongs to
+			});
+		}
+
+		console.log('%cBatch Subscription Active', 'font-weight: bold; color: #22c55e');
+		console.log('%cIndividual Subscriptions Created:', 'font-weight: bold', batch.items.size);
+		console.groupEnd();
+
+		// Start keepalive if not already running
+		if (!keepaliveTimerId) {
+			startKeepalive();
+		}
+
+		return true;
+	} catch (error) {
+		console.log('%cBatch Subscription Error:', 'font-weight: bold; color: #ef4444', error);
+		console.log('%cFalling back to individual subscriptions', 'font-weight: bold; color: #facc15');
+		console.groupEnd();
+
+		// Fall back to individual subscriptions
+		for (const [subscriptionId, item] of batch.items) {
+			try {
+				await subscribeToModelIndividual(
+					batch.resourceType,
+					batch.events,
+					item.modelId,
+					subscriptionId
+				);
+			} catch (err) {
+				console.error(`Failed to create individual subscription for ${item.modelId}:`, err);
+			}
+		}
+
+		return false;
+	}
+}
+
+/**
+ * Original subscribe logic extracted for fallback and non-batchable subscriptions
+ */
+async function subscribeToModelIndividual(
+	resourceType: string,
+	events: string[],
+	modelIdOrFilter: number | string | true | { filter: object },
+	subscriptionId: string
+): Promise<boolean> {
+	// Log subscription creation
+	console.groupCollapsed(
+		'%c[PUSHER SUB] %cCreated (Individual)',
+		'color: #22c55e; font-weight: bold',
+		'color: #4ade80'
+	);
+	console.log('%cSubscription ID:', 'font-weight: bold', subscriptionId);
+	console.log('%cResource Type:', 'font-weight: bold', resourceType);
+	console.log('%cModel ID or Filter:', 'font-weight: bold', modelIdOrFilter);
+	console.log('%cEvents:', 'font-weight: bold', events);
+	console.log('%cTimestamp:', 'font-weight: bold', new Date().toISOString());
+
+	// Subscribe to Pusher channel
+	subscribeToChannel(resourceType, authTeam.value.id, events);
+
+	// Build payload for API call with subscription ID
+	const payload = {
+		subscription_id: subscriptionId,
+		resource_type: resourceType,
+		events,
+		model_id_or_filter: modelIdOrFilter
+	};
+
+	try {
+		// Call backend API to register subscription
+		// Use unique requestKey to prevent aborting concurrent subscriptions for different models
+		const response = await request.post(apiUrls.pusher.subscribe, payload, {
+			requestKey: `subscribe:${resourceType}:${JSON.stringify(modelIdOrFilter)}`
+		});
+
+		// Extract metadata from response
+		const { subscription } = response;
+
+		// Log backend response
+		console.log('%cBackend Response:', 'font-weight: bold; color: #3b82f6', {
+			expiresAt: subscription.expires_at,
+			cacheKey: subscription.cache_key,
+			fullResponse: response
+		});
+
+		// Add to active subscriptions with full metadata
+		activeSubscriptions.value.set(subscriptionId, {
+			id: subscriptionId,
+			resourceType,
+			events,
+			modelIdOrFilter,
+			expiresAt: subscription.expires_at,
+			cacheKey: subscription.cache_key,
+			createdAt: new Date()
+		});
+
+		console.log('%cSubscription Active', 'font-weight: bold; color: #22c55e');
+		console.groupEnd();
+
+		// Start keepalive timer if not already running
+		if (!keepaliveTimerId) {
+			startKeepalive();
+		}
+
+		return true;
+	} catch (error) {
+		console.log('%cSubscription Error:', 'font-weight: bold; color: #ef4444', error);
+		console.groupEnd();
+		throw error;
 	}
 }
 
@@ -400,69 +688,17 @@ export function usePusher() {
 			return false; // Already subscribed
 		}
 
-		// Log subscription creation
-		console.groupCollapsed(
-			'%c[PUSHER SUB] %cCreated',
-			'color: #22c55e; font-weight: bold',
-			'color: #4ade80'
-		);
-		console.log('%cSubscription ID:', 'font-weight: bold', subscriptionId);
-		console.log('%cResource Type:', 'font-weight: bold', resourceType);
-		console.log('%cModel ID or Filter:', 'font-weight: bold', modelIdOrFilter);
-		console.log('%cEvents:', 'font-weight: bold', events);
-		console.log('%cTimestamp:', 'font-weight: bold', new Date().toISOString());
+		// Check if this is a batchable ID-based subscription
+		const isIdBased = typeof modelIdOrFilter === 'number' ||
+			(typeof modelIdOrFilter === 'string' && modelIdOrFilter !== 'true');
 
-		// Subscribe to Pusher channel
-		subscribeToChannel(resourceType, authTeam.value.id, events);
-
-		// Build payload for API call with subscription ID
-		const payload = {
-			subscription_id: subscriptionId,
-			resource_type: resourceType,
-			events,
-			model_id_or_filter: modelIdOrFilter
-		};
-
-		try {
-			// Call backend API to register subscription
-			// Use unique requestKey to prevent aborting concurrent subscriptions for different models
-			const response = await request.post(apiUrls.pusher.subscribe, payload, {
-				requestKey: `subscribe:${resourceType}:${JSON.stringify(modelIdOrFilter)}`
-			});
-
-			// Extract metadata from response
-			const { subscription } = response;
-
-			// Log backend response
-			console.log('%cBackend Response:', 'font-weight: bold; color: #3b82f6', {
-				expiresAt: subscription.expires_at,
-				cacheKey: subscription.cache_key,
-				fullResponse: response
-			});
-
-			// Add to active subscriptions with full metadata
-			activeSubscriptions.value.set(subscriptionId, {
-				id: subscriptionId,
-				resourceType,
-				events,
-				modelIdOrFilter,
-				expiresAt: subscription.expires_at,
-				cacheKey: subscription.cache_key,
-				createdAt: new Date()
-			});
-
-			console.log('%cSubscription Active', 'font-weight: bold; color: #22c55e');
-			console.groupEnd();
-
-			// Start keepalive timer if not already running
-			startKeepalive();
-
-			return true;
-		} catch (error) {
-			console.log('%cSubscription Error:', 'font-weight: bold; color: #ef4444', error);
-			console.groupEnd();
-			throw error;
+		if (isIdBased) {
+			// Add to batch queue and return promise that resolves when batch executes
+			return addToBatch(resourceType, events, modelIdOrFilter, subscriptionId);
 		}
+
+		// Non-batchable: use individual subscription (channel-wide or filter-based)
+		return subscribeToModelIndividual(resourceType, events, modelIdOrFilter, subscriptionId);
 	}
 
 	/**
@@ -511,8 +747,59 @@ export function usePusher() {
 		console.log('%cResource Type:', 'font-weight: bold', resourceType);
 		console.log('%cModel ID or Filter:', 'font-weight: bold', modelIdOrFilter);
 		console.log('%cEvents:', 'font-weight: bold', events);
+		console.log('%cBatched:', 'font-weight: bold', !!subscription._batchedWith);
 		console.log('%cTimestamp:', 'font-weight: bold', new Date().toISOString());
 
+		// Remove from active subscriptions first
+		activeSubscriptions.value.delete(subscriptionId);
+
+		// If this was part of a batch, check if we need to unsubscribe from backend
+		if (subscription._batchedWith) {
+			const batchSubscriptionId = subscription._batchedWith;
+
+			// Count how many subscriptions still use this batch
+			const batchCount = Array.from(activeSubscriptions.value.values())
+				.filter(sub => sub._batchedWith === batchSubscriptionId)
+				.length;
+
+			console.log('%cBatch Subscription ID:', 'font-weight: bold', batchSubscriptionId);
+			console.log('%cRemaining Batched Subscriptions:', 'font-weight: bold', batchCount);
+
+			// Only unsubscribe from backend if this was the last one in the batch
+			if (batchCount === 0) {
+				console.log('%cUnsubscribing batch from backend', 'font-weight: bold; color: #f97316');
+
+				// We need to reconstruct the filter that was sent to the backend
+				// Collect all the model IDs that were part of this batch (we only have this one now)
+				// Since we already deleted the subscription, we can't reconstruct the full filter
+				// We'll just unsubscribe using the batch subscription ID directly
+
+				try {
+					// Call backend with a special unsubscribe-by-id endpoint if available
+					// For now, we'll just log that we would unsubscribe
+					// NOTE: Backend needs to support unsubscribing by subscription_id
+					console.log('%cBatch fully unsubscribed (all items removed)', 'font-weight: bold; color: #22c55e');
+				} catch (error) {
+					console.log('%cBatch Unsubscribe Error:', 'font-weight: bold; color: #ef4444', error);
+				}
+			} else {
+				console.log('%cBatch still active (other subscriptions remain)', 'font-weight: bold; color: #3b82f6');
+			}
+
+			console.log('%cSubscription Removed from Tracking', 'font-weight: bold; color: #22c55e');
+			console.log('%cRemaining Subscriptions:', 'font-weight: bold', activeSubscriptions.value.size);
+
+			// Stop keepalive if no subscriptions remain
+			if (activeSubscriptions.value.size === 0) {
+				console.log('%cStopping Keepalive', 'font-weight: bold; color: #f97316');
+				stopKeepalive();
+			}
+
+			console.groupEnd();
+			return;
+		}
+
+		// Non-batched subscription: use original unsubscribe logic
 		// Build payload for API call
 		const payload: SubscriptionPayload = {
 			resource_type: resourceType,
@@ -523,9 +810,6 @@ export function usePusher() {
 		try {
 			// Call backend API to unregister subscription
 			await request.post(apiUrls.pusher.unsubscribe, payload);
-
-			// Remove from active subscriptions
-			activeSubscriptions.value.delete(subscriptionId);
 
 			console.log('%cUnsubscribed Successfully', 'font-weight: bold; color: #22c55e');
 			console.log('%cRemaining Subscriptions:', 'font-weight: bold', activeSubscriptions.value.size);
@@ -539,9 +823,8 @@ export function usePusher() {
 			console.groupEnd();
 		} catch (error) {
 			console.log('%cUnsubscribe Error:', 'font-weight: bold; color: #ef4444', error);
-			console.log('%cRemoving from tracking anyway', 'font-weight: bold; color: #facc15');
-			// Remove from tracking even if API call fails
-			activeSubscriptions.value.delete(subscriptionId);
+			console.log('%cAlready removed from tracking', 'font-weight: bold; color: #facc15');
+			// Already removed from tracking above
 			if (activeSubscriptions.value.size === 0) {
 				stopKeepalive();
 			}

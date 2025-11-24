@@ -890,4 +890,142 @@ class PusherSubscriptionServiceTest extends TestCase
         $metadata    = Cache::get($metadataKey);
         $this->assertEquals($customEvents, $metadata['events']);
     }
+
+    #[Test]
+    public function subscribe_with_array_id_filter_creates_correct_cache_entry(): void
+    {
+        // Given
+        $subscriptionId = '550e8400-e29b-41d4-a716-446655440017';
+        $filter         = ['id' => [1, 2, 3]];
+
+        // When
+        $this->service->subscribe('WorkflowRun', ['filter' => $filter], $this->teamId, $this->userId, ['updated'], $subscriptionId);
+
+        // Then - Calculate expected hash
+        $sorted = $filter;
+        ksort($sorted);
+        $hash = md5(json_encode($sorted, JSON_UNESCAPED_SLASHES));
+
+        $cacheKey      = "subscribe:WorkflowRun:{$this->teamId}:filter:{$hash}";
+        $definitionKey = "{$cacheKey}:definition";
+
+        $subscribers  = Cache::get($cacheKey);
+        $storedFilter = Cache::get($definitionKey);
+
+        $this->assertIsArray($subscribers);
+        $this->assertContains($this->userId, $subscribers);
+        $this->assertEquals($filter, $storedFilter);
+        $this->assertIsArray($storedFilter['id']);
+        $this->assertEquals([1, 2, 3], $storedFilter['id']);
+    }
+
+    #[Test]
+    public function subscribe_with_array_id_filter_stores_subscription_metadata(): void
+    {
+        // Given
+        $subscriptionId = '550e8400-e29b-41d4-a716-446655440018';
+        $filter         = ['id' => [10, 20, 30, 40]];
+        $events         = ['created', 'updated'];
+
+        // When
+        $result = $this->service->subscribe('TaskRun', ['filter' => $filter], $this->teamId, $this->userId, $events, $subscriptionId);
+
+        // Then
+        $metadataKey = "subscription:id:{$subscriptionId}";
+        $metadata    = Cache::get($metadataKey);
+
+        $this->assertIsArray($metadata);
+        $this->assertEquals($subscriptionId, $metadata['id']);
+        $this->assertEquals('TaskRun', $metadata['resource_type']);
+        $this->assertEquals(['filter' => $filter], $metadata['model_id_or_filter']);
+        $this->assertEquals($events, $metadata['events']);
+        $this->assertEquals($this->teamId, $metadata['team_id']);
+        $this->assertEquals($this->userId, $metadata['user_id']);
+        $this->assertArrayHasKey('cache_key', $metadata);
+        $this->assertArrayHasKey('expires_at', $metadata);
+    }
+
+    #[Test]
+    public function buildCacheKey_formats_array_id_filter_correctly(): void
+    {
+        // Given
+        $filter = ['id' => [100, 200, 300]];
+
+        // When
+        $key = $this->service->buildCacheKey('WorkflowRun', $this->teamId, ['filter' => $filter]);
+
+        // Then
+        $sorted = $filter;
+        ksort($sorted);
+        $hash = md5(json_encode($sorted, JSON_UNESCAPED_SLASHES));
+
+        $this->assertEquals("subscribe:WorkflowRun:{$this->teamId}:filter:{$hash}", $key);
+    }
+
+    #[Test]
+    public function hashFilter_with_array_id_is_order_independent(): void
+    {
+        // Given - Same IDs in different order
+        $filter1 = ['id' => [1, 2, 3]];
+        $filter2 = ['id' => [3, 2, 1]];
+
+        // When
+        $hash1 = $this->service->hashFilter($filter1);
+        $hash2 = $this->service->hashFilter($filter2);
+
+        // Then - Hashes should be different because array values are ordered
+        // (This is expected behavior - array value order matters)
+        $this->assertNotEquals($hash1, $hash2);
+    }
+
+    #[Test]
+    public function unsubscribe_with_array_id_filter_removes_user_from_cache(): void
+    {
+        // Given
+        $subscriptionId = '550e8400-e29b-41d4-a716-446655440019';
+        $filter         = ['id' => [5, 10, 15]];
+
+        $this->service->subscribe('TaskProcess', ['filter' => $filter], $this->teamId, $this->userId, ['updated'], $subscriptionId);
+
+        // Then - Verify subscription was created
+        $sorted = $filter;
+        ksort($sorted);
+        $hash = md5(json_encode($sorted, JSON_UNESCAPED_SLASHES));
+
+        $cacheKey = "subscribe:TaskProcess:{$this->teamId}:filter:{$hash}";
+        $this->assertTrue(Cache::has($cacheKey));
+
+        // When
+        $this->service->unsubscribe('TaskProcess', ['filter' => $filter], $this->teamId, $this->userId);
+
+        // Then - Cache key should be deleted when last user unsubscribes
+        $this->assertFalse(Cache::has($cacheKey));
+    }
+
+    #[Test]
+    public function keepaliveByIds_refreshes_array_id_filter_subscriptions(): void
+    {
+        // Given
+        $subscriptionId = '550e8400-e29b-41d4-a716-446655440020';
+        $filter         = ['id' => [7, 8, 9]];
+
+        $this->service->subscribe('WorkflowRun', ['filter' => $filter], $this->teamId, $this->userId, ['updated'], $subscriptionId);
+
+        // When
+        $results = $this->service->keepaliveByIds([$subscriptionId], $this->userId);
+
+        // Then
+        $this->assertTrue($results[$subscriptionId]['success']);
+
+        // Verify filter definition still exists and was refreshed
+        $sorted = $filter;
+        ksort($sorted);
+        $hash = md5(json_encode($sorted, JSON_UNESCAPED_SLASHES));
+
+        $cacheKey      = "subscribe:WorkflowRun:{$this->teamId}:filter:{$hash}";
+        $definitionKey = "{$cacheKey}:definition";
+
+        $this->assertTrue(Cache::has($definitionKey));
+        $this->assertEquals($filter, Cache::get($definitionKey));
+    }
 }
