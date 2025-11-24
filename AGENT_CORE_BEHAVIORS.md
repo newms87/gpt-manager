@@ -152,6 +152,26 @@ Before starting any work, you MUST:
 
 ---
 
+## 🚨 CRITICAL: Reverting Changes - NEVER Use Git Commands
+
+**NEVER use `git checkout` or `git revert` to undo changes**
+
+Why: Files may contain user changes mixed with yours. Git blindly reverts EVERYTHING, destroying user work.
+
+**CORRECT process to revert:**
+1. Read the file
+2. Identify YOUR specific changes
+3. Edit to remove ONLY your changes
+4. Preserve all user changes
+
+Example:
+- ❌ WRONG: `git checkout -- app/Models/User.php`
+- ✅ CORRECT: Read file → Find your code → Edit to remove it
+
+If unsure what's yours vs theirs: Ask the user, never guess.
+
+---
+
 ## Scope Verification
 
 **Before starting work, verify you're the right agent:**
