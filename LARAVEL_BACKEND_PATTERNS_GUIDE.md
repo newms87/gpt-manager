@@ -16,11 +16,42 @@ This application follows a strict **Service-Repository-Controller** pattern with
 
 #### Namespace and Import Rules
 
-- **CRITICAL: ALL class imports MUST use namespace `use` statements at the top of the file**
-- **NEVER use inline class references** like `\App\Models\User::find()` or `\DB::table()`
-- **ALWAYS add proper use statements** at the top: `use App\Models\User;` then use `User::find()`
-- **This applies to ALL classes**: models, services, repositories, facades, exceptions, traits, interfaces
-- **Group imports logically**: Laravel/PHP core first, then third-party packages, then app classes
+**CRITICAL: NEVER use inline class references with backslashes - add `use` statements at top instead.**
+
+```php
+// ❌ WRONG - Inline backslash references
+app(\App\Services\Task\ArtifactsMergeService::class)->merge($a, $b);
+\DB::table('users')->get();
+
+// ✅ CORRECT - Use statements at top
+use App\Services\Task\ArtifactsMergeService;
+use Illuminate\Support\Facades\DB;
+
+app(ArtifactsMergeService::class)->merge($a, $b);
+DB::table('users')->get();
+```
+
+**Applies to:** models, services, repositories, facades, exceptions, traits, interfaces
+**Import order:** Laravel/PHP core → third-party packages → app classes
+
+#### Class Constant Declaration Standards
+
+**Group related constants using comma separation - NOT separate declarations.**
+
+```php
+// ✅ CORRECT - Grouped constants
+public const string STATUS_PENDING = 'pending',
+                    STATUS_RUNNING = 'running',
+                    STATUS_COMPLETED = 'completed';
+
+public const string TYPE_A = 'type_a',
+                    TYPE_B = 'type_b';
+
+// ❌ WRONG - Separate declarations
+public const string STATUS_PENDING = 'pending';
+public const string STATUS_RUNNING = 'running';
+public const string STATUS_COMPLETED = 'completed';
+```
 
 #### Dependency Injection Rules
 
@@ -238,8 +269,14 @@ class [Model] extends Model implements AuditableContract
     use AuditableTrait, ActionModelTrait, SoftDeletes;
 
     // Constants for enums (NO hard-coded strings)
-    public const STATUS_ACTIVE = 'active';
-    public const STATUS_INACTIVE = 'inactive';
+    // Group related constants on a single line with comma separation
+    public const string STATUS_ACTIVE = 'active',
+                        STATUS_INACTIVE = 'inactive',
+                        STATUS_PENDING = 'pending';
+
+    public const string TYPE_A = 'type_a',
+                        TYPE_B = 'type_b',
+                        TYPE_C = 'type_c';
 
     protected $table = '[table_name]';
     protected $guarded = ['id', 'created_at', 'updated_at', 'deleted_at'];
@@ -929,11 +966,13 @@ WorkflowRunUpdatedEvent::broadcast($workflowRun);
 3. **ALWAYS use database transactions** for multi-step operations
 4. **ALWAYS validate ownership** before performing operations
 5. **ALWAYS use app() helper** for ALL dependency injection everywhere
-6. **ALWAYS use namespace imports** at the top of files
-7. **NEVER put business logic** in controllers or models
-8. **NEVER use inline class references** with backslashes
-9. **NEVER test controllers directly** - test services instead
-10. **NEVER use static mocking** in tests
+6. **ALWAYS use namespace imports** at the top of files - NEVER inline with backslashes
+7. **ALWAYS group related constants** using comma separation on a single const declaration
+8. **NEVER put business logic** in controllers or models
+9. **NEVER use inline class references** with backslashes (e.g., `\App\Services\...`)
+10. **NEVER declare constants separately** - group related ones together
+11. **NEVER test controllers directly** - test services instead
+12. **NEVER use static mocking** in tests
 
 ---
 

@@ -79,7 +79,7 @@
                         <FilePreview
                             class="cursor-pointer bg-gray-200 w-32 h-32"
                             :file="file"
-                            :related-files="file.transcodes"
+                            :related-files="artifact.files"
                             downloadable
                         />
                         <div

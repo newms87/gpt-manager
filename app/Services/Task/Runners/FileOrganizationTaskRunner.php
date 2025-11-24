@@ -4,7 +4,9 @@ namespace App\Services\Task\Runners;
 
 use App\Models\Agent\AgentThread;
 use App\Models\Schema\SchemaDefinition;
+use App\Repositories\ThreadRepository;
 use App\Services\Task\FileOrganizationMergeService;
+use App\Services\Task\TaskAgentThreadBuilderService;
 use App\Services\Task\TaskProcessDispatcherService;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Task\TaskRunnerService;
@@ -535,7 +537,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
         // Build the agent thread using the task-specific builder WITHOUT artifacts
         // We'll manually add artifacts in a simplified format
-        $builder = \App\Services\Task\TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $this->taskRun);
+        $builder = TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $this->taskRun);
 
         // Build the thread (this adds directives and prompts)
         $agentThread = $builder->build();
@@ -553,14 +555,14 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
             if ($pageNumber !== null) {
                 // Add message with just the page number - the file itself is already attached
-                app(\App\Repositories\ThreadRepository::class)->addMessageToThread(
+                app(ThreadRepository::class)->addMessageToThread(
                     $agentThread,
                     "Page $pageNumber",
                     $fileIds
                 );
             } else {
                 // No page number, just attach the files without text
-                app(\App\Repositories\ThreadRepository::class)->addMessageToThread(
+                app(ThreadRepository::class)->addMessageToThread(
                     $agentThread,
                     '',
                     $fileIds
@@ -589,7 +591,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
         // Add file organization specific instructions as the LAST message in the thread
         // This must be the final message before the agent runs
-        app(\App\Repositories\ThreadRepository::class)->addMessageToThread($agentThread,
+        app(ThreadRepository::class)->addMessageToThread($agentThread,
             "You are comparing adjacent files to organize them into logical groups.\n" .
             "Each file represents a page or document section.\n" .
             "Group files that belong together based on their content and context.\n\n" .
@@ -597,19 +599,37 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
             "- 'name': A clear, descriptive name for the group (e.g., 'Bills', 'Medical Summary')\n" .
             "- 'description': A high-level summary of what the group contains\n" .
             "- 'files': Array of file objects with page_number, confidence, and explanation\n\n" .
+            "GROUPING STRATEGY - PRIORITIZE CONTINUITY:\n" .
+            "Pages are presented in sequential order. Follow these rules:\n" .
+            "1. DEFAULT TO SAME GROUP: When a page has no clear grouping indicators, keep it with the PREVIOUS page's group\n" .
+            "2. ONLY SPLIT when there is CLEAR EVIDENCE of a boundary (new document type, new provider, new topic)\n" .
+            "3. CONTINUATION PAGES: Multi-page documents, narratives, or related content should stay together\n" .
+            "4. BLANK/SEPARATOR PAGES: These often belong to the FOLLOWING content, not the preceding content\n" .
+            "5. AMBIGUOUS PAGES: When in doubt, assume continuity - use the same group as the previous page\n\n" .
+            "Examples of CLEAR boundaries (split groups):\n" .
+            "- Different provider letterhead or billing entity\n" .
+            "- Different document type (e.g., clinical note → billing form)\n" .
+            "- Different patient or case number\n" .
+            "- Explicit \"end of section\" or new section headers\n\n" .
+            "Examples of CONTINUITY (same group):\n" .
+            "- Page 2, 3, 4 of a multi-page document\n" .
+            "- Narrative text continuing from previous page\n" .
+            "- Same provider, same date, same context\n" .
+            "- Generic forms or tables without clear headers (assume continuation)\n\n" .
             "CONFIDENCE SCORING (0-5 scale):\n" .
             "- 5: Absolutely certain - clear evidence this file belongs in this group\n" .
             "- 4: Very confident - strong indicators support this grouping\n" .
-            "- 3: Moderately confident - reasonable but not definitive\n" .
+            "- 3: Moderately confident - reasonable but not definitive (or continuation assumed)\n" .
             "- 2: Uncertain - could belong here or elsewhere\n" .
             "- 1: Very uncertain - minimal evidence for this grouping\n" .
             "- 0: Guessing - no clear indicators\n\n" .
             "CRITICAL RULES:\n" .
             "- Each page MUST appear in EXACTLY ONE group - NEVER place the same page in multiple groups\n" .
-            "- If uncertain about placement, use a LOW confidence score (0-2) rather than duplicating the page\n" .
-            "- Low confidence files (< 3) will automatically trigger a resolution process with full context\n" .
+            "- PREFER CONTINUITY: When uncertain, default to the same group as the previous page\n" .
+            "- If uncertain about placement, use a MODERATE confidence score (3) for continuity assumptions\n" .
+            "- Only use LOW confidence (0-2) when genuinely conflicted between multiple different groups\n" .
             "- Only include page numbers that were provided in the input messages\n" .
-            "- If a file should be ignored (e.g., blank page), simply don't include it in any group\n\n" .
+            "- If a file should be ignored (e.g., completely blank page), simply don't include it in any group\n\n" .
             "Example file object:\n" .
             "{\n" .
             "  \"page_number\": 98,\n" .
@@ -684,7 +704,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $this->activity("Setting up resolution agent thread for: {$taskDefinition->agent->name}", 5);
 
         // Build the agent thread
-        $builder     = \App\Services\Task\TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $this->taskRun);
+        $builder     = TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $this->taskRun);
         $agentThread = $builder->build();
 
         // Add file messages
@@ -694,13 +714,13 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
             $fileIds    = $artifact->storedFiles ? $artifact->storedFiles->pluck('id')->toArray() : [];
 
             if ($pageNumber !== null) {
-                app(\App\Repositories\ThreadRepository::class)->addMessageToThread(
+                app(ThreadRepository::class)->addMessageToThread(
                     $agentThread,
                     "Page $pageNumber",
                     $fileIds
                 );
             } else {
-                app(\App\Repositories\ThreadRepository::class)->addMessageToThread(
+                app(ThreadRepository::class)->addMessageToThread(
                     $agentThread,
                     '',
                     $fileIds
@@ -724,14 +744,14 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
             $contextMessage .= "All explanations from comparison windows:\n";
             foreach ($allExplanations as $idx => $explanation) {
-                $num = $idx + 1;
+                $num            = $idx + 1;
                 $contextMessage .= "  $num. Group: '{$explanation['group_name']}' (confidence: {$explanation['confidence']})\n";
                 $contextMessage .= "     Explanation: {$explanation['explanation']}\n";
             }
             $contextMessage .= "\n";
         }
 
-        app(\App\Repositories\ThreadRepository::class)->addMessageToThread($agentThread, $contextMessage);
+        app(ThreadRepository::class)->addMessageToThread($agentThread, $contextMessage);
 
         // Use the same schema as window comparisons
         $schema = $this->getFileOrganizationSchema();
@@ -752,18 +772,25 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $this->taskProcess->agentThread()->associate($agentThread)->save();
 
         // Add resolution-specific instructions
-        app(\App\Repositories\ThreadRepository::class)->addMessageToThread($agentThread,
+        app(ThreadRepository::class)->addMessageToThread($agentThread,
             "TASK: Resolve uncertain file groupings\n\n" .
-            "You have been provided with files that had LOW CONFIDENCE assignments (< 3) from the initial comparison.\n" .
+            "You have been provided with files that had CONFLICTING LOW CONFIDENCE assignments from multiple windows.\n" .
             "Above, you can see ALL explanations from ALL comparison windows that reviewed each file.\n\n" .
             "Your task:\n" .
             "1. Review each file carefully with the full context provided\n" .
-            "2. Make a FINAL DECISION on the correct group assignment\n" .
-            "3. Assign a NEW confidence score (0-5) based on your review\n" .
-            "4. Provide a detailed explanation for your decision\n\n" .
+            "2. Look at the sequential context - which group did pages BEFORE and AFTER belong to?\n" .
+            "3. Make a FINAL DECISION on the correct group assignment\n" .
+            "4. Assign a NEW confidence score (0-5) based on your review\n" .
+            "5. Provide a detailed explanation for your decision\n\n" .
+            "RESOLUTION STRATEGY - PREFER CONTINUITY:\n" .
+            "- If a file appears between pages that belong to the SAME group, it likely belongs there too\n" .
+            "- Only place a file in a DIFFERENT group if there's clear evidence of a document boundary\n" .
+            "- When genuinely uncertain, default to the group that maintains sequential continuity\n" .
+            "- Continuation pages (page 2, 3, 4 of a document) almost always stay with page 1\n\n" .
             "IMPORTANT:\n" .
-            "- You can create NEW groups if none of the existing groups fit\n" .
+            "- You can create NEW groups if none of the existing groups fit AND there's clear evidence\n" .
             "- Use ALL the context from previous windows to make informed decisions\n" .
+            "- Consider the SEQUENCE: what came before and after this page?\n" .
             "- Aim for confidence >= 3 for all assignments\n" .
             "- If still uncertain after review, explain WHY in detail\n\n" .
             'Return your assignments using the same format as the comparison windows.'
@@ -776,7 +803,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
      * Validate that no page_number appears in multiple groups.
      * Each page must belong to exactly ONE group.
      *
-     * @param  array  $jsonContent  The artifact's json_content with groups
+     * @param array $jsonContent The artifact's json_content with groups
      * @throws ValidationError if any page appears in multiple groups
      */
     protected function validateNoDuplicatePages(array $jsonContent): void
@@ -830,7 +857,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
      * Apply resolution decisions to existing merged artifacts.
      * Moves files between groups based on the agent's final decisions.
      *
-     * @param  array  $resolutionContent  The resolution artifact's json_content with final group assignments
+     * @param array $resolutionContent The resolution artifact's json_content with final group assignments
      */
     protected function applyResolutionToMergedArtifacts(array $resolutionContent): void
     {
@@ -868,7 +895,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
                 // Map page_number to file_id by looking at input artifacts
                 foreach ($this->taskRun->inputArtifacts as $inputArtifact) {
-                    $storedFile = $inputArtifact->storedFiles ? $inputArtifact->storedFiles->first() : null;
+                    $storedFile         = $inputArtifact->storedFiles ? $inputArtifact->storedFiles->first() : null;
                     $artifactPageNumber = $storedFile?->page_number ?? null;
 
                     if ($artifactPageNumber === $pageNumber) {
@@ -953,7 +980,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
                 $artifactCopy = $inputArtifact->copy();
 
                 // Create new merged artifact for this group
-                $targetArtifact = app(\App\Services\Task\ArtifactsMergeService::class)->merge([$artifactCopy]);
+                $targetArtifact       = app(\App\Services\Task\ArtifactsMergeService::class)->merge([$artifactCopy]);
                 $targetArtifact->name = "Group: $targetGroupName";
                 $targetArtifact->meta = [
                     'group_name'  => $targetGroupName,
